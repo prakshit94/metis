@@ -1,0 +1,105 @@
+// ==========================================================================
+// Chart Components - ApexCharts Overrides & Custom Styles
+// ==========================================================================
+
+// ---------------------------------------------------------------------------
+// Base ApexCharts overrides
+// ---------------------------------------------------------------------------
+.apexcharts-canvas {
+  max-width: 100% !important;
+}
+
+.apexcharts-svg {
+  overflow: visible;
+}
+
+// Prevent chart tooltips from being clipped by card overflow
+.card {
+  overflow: visible;
+}
+
+// ---------------------------------------------------------------------------
+// Dark theme overrides for ApexCharts
+// ---------------------------------------------------------------------------
+[data-bs-theme="dark"] {
+  .apexcharts-tooltip {
+    background: var(--bs-body-bg) !important;
+    border-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .apexcharts-tooltip-title {
+    background: var(--bs-secondary-bg) !important;
+    border-bottom-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+  }
+
+  .apexcharts-tooltip-text {
+    color: var(--bs-body-color) !important;
+  }
+
+  .apexcharts-xaxistooltip,
+  .apexcharts-yaxistooltip {
+    background: var(--bs-body-bg) !important;
+    border-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+  }
+
+  .apexcharts-xaxistooltip-bottom::before,
+  .apexcharts-xaxistooltip-bottom::after {
+    border-bottom-color: var(--bs-border-color) !important;
+  }
+
+  .apexcharts-legend-text {
+    color: var(--bs-body-color) !important;
+  }
+
+  .apexcharts-text,
+  .apexcharts-yaxis text,
+  .apexcharts-xaxis text {
+    fill: var(--bs-secondary-color) !important;
+  }
+
+  .apexcharts-gridline {
+    stroke: var(--bs-border-color) !important;
+  }
+
+  .apexcharts-datalabels text {
+    fill: var(--bs-body-color) !important;
+  }
+
+  .apexcharts-menu {
+    background: var(--bs-body-bg) !important;
+    border-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+  }
+
+  .apexcharts-menu-item:hover {
+    background: var(--bs-secondary-bg) !important;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Chart container utility classes
+// ---------------------------------------------------------------------------
+.chart-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+
+  &--sm  { min-height: 200px; }
+  &--md  { min-height: 280px; }
+  &--lg  { min-height: 350px; }
+  &--xl  { min-height: 450px; }
+}
+
+// ---------------------------------------------------------------------------
+// Responsive chart sizing
+// ---------------------------------------------------------------------------
+@media (max-width: 767.98px) {
+  #revenueChart        { min-height: 220px !important; }
+  #userGrowthChart     { min-height: 200px !important; }
+  #orderStatusChart    { min-height: 220px !important; }
+  #salesByLocationChart { min-height: 250px !important; }
+}

@@ -9,7 +9,6 @@
 // 2. Include our custom variables and overrides (before Bootstrap variables)
 @import "abstracts/variables";
 @import "abstracts/mixins";
-@import "abstracts/utilities";
 
 // 3. Include Bootstrap variables and maps
 @import "~bootstrap/scss/variables";
@@ -93,4 +92,4 @@
 @import "themes/light";
 
 // 9. Include utilities and helpers
-@import "abstracts/utilities"; 
+@import "abstracts/utilities";

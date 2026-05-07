@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="Server error – Modern Bootstrap Admin">
+    <title>500 – Server Error | Modern Bootstrap Admin</title>
+    <meta name="theme-color" content="#6366f1">
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg">
+    <link rel="icon" type="image/png"     href="/assets/icons/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+</head>
+
+<body data-page="error-500">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <div class="error-page" id="main-content">
+        <div class="error-content">
+
+            <!-- Animated icon -->
+            <div class="error-illustration">
+                <div class="error-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+            </div>
+
+            <!-- Error code -->
+            <div class="error-code" aria-hidden="true">500</div>
+
+            <h1 class="error-title">Internal Server Error</h1>
+            <p class="error-description">
+                Something went wrong on our end. Our team has been notified
+                and we're working to fix it. Please try again in a few moments.
+            </p>
+
+            <!-- Actions -->
+            <div class="error-actions">
+                <button type="button" class="btn btn-primary btn-lg px-4" onclick="window.location.reload()">
+                    <i class="bi bi-arrow-clockwise me-2"></i>
+                    Try Again
+                </button>
+                <a href="./index.html" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="bi bi-house me-2"></i>
+                    Go Home
+                </a>
+            </div>
+
+            <!-- Status / countdown -->
+            <div class="mt-5" x-data="errorCountdown()" x-init="start()">
+                <p class="text-muted small">
+                    Auto-retrying in
+                    <strong class="text-primary" x-text="countdown"></strong>
+                    seconds…
+                </p>
+                <div class="progress mx-auto" style="height: 3px; max-width: 200px;">
+                    <div class="progress-bar bg-primary"
+                         role="progressbar"
+                         :style="`width: ${(30 - countdown) / 30 * 100}%`"
+                         :aria-valuenow="30 - countdown"
+                         aria-valuemin="0"
+                         aria-valuemax="30">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 11">
+        <div id="toast-container"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="/scripts/main.js"></script>
+
+    <script type="module">
+        import Alpine from 'alpinejs';
+
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('errorCountdown', () => ({
+                countdown: 30,
+                _timer: null,
+
+                start() {
+                    this._timer = setInterval(() => {
+                        this.countdown--;
+                        if (this.countdown <= 0) {
+                            clearInterval(this._timer);
+                            window.location.reload();
+                        }
+                    }, 1000);
+                },
+
+                destroy() {
+                    if (this._timer) clearInterval(this._timer);
+                },
+            }));
+        });
+    </script>
+</body>
+</html>

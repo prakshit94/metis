@@ -35,7 +35,7 @@ export class NotificationManager {
   }
 
   configureSweetAlert() {
-    Swal.mixin({
+    this.swal = Swal.mixin({
       customClass: {
         confirmButton: 'btn btn-primary me-2',
         cancelButton: 'btn btn-secondary',
@@ -132,7 +132,9 @@ export class NotificationManager {
   }
 
   _sanitizeType(type) {
-    const allowed = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark', 'error'];
+    // 'error' is not a valid Bootstrap bg class — map to 'danger'
+    if (type === 'error') return 'danger';
+    const allowed = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'];
     return allowed.includes(type) ? type : 'info';
   }
 

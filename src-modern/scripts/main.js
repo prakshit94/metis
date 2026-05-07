@@ -19,17 +19,13 @@ import { DashboardManager } from './components/dashboard.js';
 import { NotificationManager } from './utils/notifications.js';
 import { SidebarManager } from './components/sidebar.js';
 import { iconManager } from './utils/icon-manager.js';
+import { createSearchComponent } from './utils/search-component.js';
 
 // Import Alpine.js for reactive components
 import Alpine from 'alpinejs';
 
 // Import styles (Bootstrap Icons are included in SCSS)
 import '../styles/scss/main.scss';
-
-// Import user components
-// import { UsersComponent } from './components/users.js';
-// import { AnalyticsComponent } from './components/analytics.js';
-// import { FormsComponent } from './components/forms.js';
 
 // Application Class
 class AdminApp {
@@ -50,17 +46,14 @@ class AdminApp {
         });
       }
 
+      // Dismiss loading screen as soon as DOM is ready
+      this._hideLoadingScreen();
+
       // Initialize core managers
       this.themeManager = new ThemeManager();
       this.notificationManager = new NotificationManager();
       this.sidebarManager = new SidebarManager();
       this.iconManager = iconManager;
-
-      // Preload common icons for better performance
-      this.iconManager.preloadIcons([
-        'dashboard', 'users', 'analytics', 'settings', 'notifications',
-        'search', 'menu', 'check', 'warning', 'info', 'success', 'error'
-      ]);
 
       // Initialize Bootstrap components
       this.initBootstrapComponents();
@@ -86,12 +79,17 @@ class AdminApp {
       this.isInitialized = true;
       console.log('🚀 Admin App initialized successfully');
 
-      // Show initialization complete notification
-      this.notificationManager.show('Application loaded successfully!', 'success');
-
     } catch (error) {
       console.error('❌ Failed to initialize Admin App:', error);
     }
+  }
+
+  // Dismiss the loading screen overlay
+  _hideLoadingScreen() {
+    const screen = document.getElementById('loading-screen');
+    if (!screen) return;
+    screen.classList.add('hidden');
+    screen.addEventListener('transitionend', () => screen.remove(), { once: true });
   }
 
   // Initialize Bootstrap components
@@ -176,16 +174,15 @@ class AdminApp {
       case 'elements':
         await this.initElementsPage();
         break;
-      // Add more page-specific initializations here
       default:
-        console.log('Page-specific components loading complete');
+        // No page-specific component needed
+        break;
     }
   }
 
   // Initialize forms page
   async initFormsPage() {
     try {
-      // Dynamically load the forms component script (it self-registers with Alpine)
       await import('./components/forms.js');
       console.log('📝 Forms page script loaded successfully');
     } catch (error) {
@@ -327,8 +324,7 @@ class AdminApp {
 
   // Handle keyboard shortcuts
   handleKeyboardShortcuts(event) {
-    // Ctrl/Cmd + K for search. event.code is layout-independent (KeyK regardless
-    // of locale or modifier-shifted key value); event.key can vary by layout.
+    // Ctrl/Cmd + K for search
     const isSearchShortcut =
       (event.ctrlKey || event.metaKey) &&
       !event.altKey &&
@@ -343,16 +339,15 @@ class AdminApp {
   }
 
   // Replace the literal "Ctrl+K" placeholder hint with the platform-correct one.
-  // Mac users expect ⌘K, not Ctrl+K — and the keydown handler already accepts both.
   localizeShortcutHints() {
     const isMac = /Mac|iPhone|iPad|iPod/i.test(
       (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || ''
     );
-    if (!isMac) return; // Ctrl+K is already correct for Windows/Linux
+    if (!isMac) return;
 
     document.querySelectorAll('[data-search-input]').forEach((el) => {
       if (el.placeholder && el.placeholder.includes('Ctrl+K')) {
-        el.placeholder = el.placeholder.replace('Ctrl+K', '⌘K'); // ⌘K
+        el.placeholder = el.placeholder.replace('Ctrl+K', '⌘K');
       }
     });
   }
@@ -377,52 +372,45 @@ class AdminApp {
 
   // Initialize navigation functionality
   initNavigation() {
-    // Handle submenu state persistence
     const currentPage = window.location.pathname;
     const elementsPages = [
-      '/elements', '/elements-buttons.html', '/elements-alerts.html', 
+      '/elements', '/elements-buttons.html', '/elements-alerts.html',
       '/elements-badges.html', '/elements-cards.html', '/elements-modals.html',
       '/elements-forms.html', '/elements-tables.html'
     ];
-    
-    // Check if current page is an Elements page
+
     const isElementsPage = elementsPages.some(page => currentPage.includes(page.replace('.html', '')));
-    
+
     if (isElementsPage) {
-      // Expand Elements submenu on Elements pages
       const elementsSubmenu = document.getElementById('elementsSubmenu');
       const elementsToggle = document.querySelector('[data-bs-target="#elementsSubmenu"]');
-      
+
       if (elementsSubmenu && elementsToggle) {
         elementsSubmenu.classList.add('show');
         elementsToggle.setAttribute('aria-expanded', 'true');
-        
-        // Mark current page as active in submenu
+
         const activeSubmenuLink = document.querySelector(`.nav-submenu a[href="${currentPage}"]`);
         if (activeSubmenuLink) {
           activeSubmenuLink.classList.add('active');
         }
       }
     }
-    
+
     // Handle submenu toggle persistence
     document.addEventListener('click', (e) => {
       const toggleButton = e.target.closest('[data-bs-toggle="collapse"]');
       if (toggleButton) {
         const targetId = toggleButton.getAttribute('data-bs-target');
         const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
-        
-        // Store submenu state
         localStorage.setItem(`submenu-${targetId}`, (!isExpanded).toString());
       }
     });
-    
+
     // Restore submenu states from localStorage
-    const submenuToggles = document.querySelectorAll('[data-bs-toggle="collapse"]');
-    submenuToggles.forEach(toggle => {
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(toggle => {
       const targetId = toggle.getAttribute('data-bs-target');
       const savedState = localStorage.getItem(`submenu-${targetId}`);
-      
+
       if (savedState === 'true' && !isElementsPage) {
         const targetElement = document.querySelector(targetId);
         if (targetElement) {
@@ -435,53 +423,53 @@ class AdminApp {
 
   // Initialize Alpine.js
   initAlpine() {
-    // Register Alpine data components
-    Alpine.data('searchComponent', () => ({
-      query: '',
-      results: [],
-      isLoading: false,
-      
-      async search() {
-        if (this.query.length < 2) {
-          this.results = [];
-          return;
-        }
-        
-        this.isLoading = true;
-        // Simulate API search
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        this.results = [
-          { title: 'Dashboard', url: '/', type: 'page' },
-          { title: 'Users', url: '/users', type: 'page' },
-          { title: 'Settings', url: '/settings', type: 'page' },
-          { title: 'Analytics', url: '/analytics', type: 'page' }
-        ].filter(item => 
-          item.title.toLowerCase().includes(this.query.toLowerCase())
-        );
-        
-        this.isLoading = false;
-      }
+    // Shared navbar search — uses the factory from search-component.js
+    const navbarPages = [
+      { title: 'Dashboard',  url: './index.html',     type: 'page' },
+      { title: 'Users',      url: './users.html',      type: 'page' },
+      { title: 'Analytics',  url: './analytics.html',  type: 'page' },
+      { title: 'Products',   url: './products.html',   type: 'page' },
+      { title: 'Orders',     url: './orders.html',     type: 'page' },
+      { title: 'Reports',    url: './reports.html',    type: 'page' },
+      { title: 'Messages',   url: './messages.html',   type: 'page' },
+      { title: 'Calendar',   url: './calendar.html',   type: 'page' },
+      { title: 'Files',      url: './files.html',      type: 'page' },
+      { title: 'Settings',   url: './settings.html',   type: 'page' },
+      { title: 'Security',   url: './security.html',   type: 'page' },
+      { title: 'Help',       url: './help.html',       type: 'page' },
+    ];
+
+    Alpine.data('searchComponent', createSearchComponent({
+      getResults: (query) =>
+        navbarPages.filter(p => p.title.toLowerCase().includes(query.toLowerCase())),
     }));
 
+    // Stats counter — tracked interval so it can be cleaned up on pagehide
     Alpine.data('statsCounter', (initialValue = 0, increment = 1) => ({
       value: initialValue,
-      
+      _intervalId: null,
+
       init() {
-        // Auto-increment every 5 seconds
-        setInterval(() => {
+        this._intervalId = setInterval(() => {
           this.value += Math.floor(Math.random() * increment) + 1;
         }, 5000);
-      }
+      },
+
+      destroy() {
+        if (this._intervalId !== null) {
+          clearInterval(this._intervalId);
+          this._intervalId = null;
+        }
+      },
     }));
 
     Alpine.data('themeSwitch', () => ({
       currentTheme: 'light',
-      
+
       init() {
         this.currentTheme = localStorage.getItem('theme') || 'light';
       },
-      
+
       toggle() {
         this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
@@ -495,7 +483,6 @@ class AdminApp {
       switchProvider(provider) {
         this.currentProvider = provider;
         iconManager.switchProvider(provider);
-        console.log(`🎨 Switched to ${provider} icons`);
       },
 
       getIcon(iconName) {
@@ -513,7 +500,6 @@ class AdminApp {
       assignee: '',
 
       init() {
-        // Set default date to now
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         this.dateTime = now.toISOString().slice(0, 16);
@@ -532,36 +518,16 @@ class AdminApp {
 
       saveItem() {
         if (!this.title.trim()) {
-          window.AdminApp.notificationManager.warning('Please enter a title');
+          window.AdminApp?.notificationManager?.warning('Please enter a title');
           return;
         }
 
-        const item = {
-          type: this.itemType,
-          title: this.title,
-          description: this.description,
-          priority: this.itemType === 'task' ? this.priority : null,
-          dateTime: ['event', 'reminder'].includes(this.itemType) ? this.dateTime : null,
-          assignee: this.itemType === 'task' ? this.assignee : null,
-          createdAt: new Date().toISOString()
-        };
+        const typeLabels = { task: 'Task', note: 'Note', event: 'Event', reminder: 'Reminder' };
 
-        // In a real app, this would send to an API
-        console.log('New item created:', item);
-
-        // Show success notification with item type
-        const typeLabels = {
-          task: 'Task',
-          note: 'Note',
-          event: 'Event',
-          reminder: 'Reminder'
-        };
-
-        window.AdminApp.notificationManager.success(
+        window.AdminApp?.notificationManager?.success(
           `${typeLabels[this.itemType]} "${this.title}" created successfully!`
         );
 
-        // Reset form for next use
         this.resetForm();
       }
     }));
@@ -569,26 +535,6 @@ class AdminApp {
     // Start Alpine.js
     Alpine.start();
     window.Alpine = Alpine;
-  }
-
-  // Show demo notifications
-  showDemoNotifications() {
-    setTimeout(() => {
-      this.notificationManager.info('New user registered', {
-        action: {
-          text: 'View',
-          handler: 'window.location.href="/users"'
-        }
-      });
-    }, 3000);
-
-    setTimeout(() => {
-      this.notificationManager.warning('Server maintenance in 10 minutes');
-    }, 6000);
-
-    setTimeout(() => {
-      this.notificationManager.success('Backup completed successfully');
-    }, 9000);
   }
 
   // Cleanup method
@@ -617,4 +563,4 @@ window.AdminApp = app;
 window.IconManager = iconManager;
 
 // Export the app instance for module imports
-export default app; 
+export default app;

@@ -2,8 +2,8 @@
 // Custom Mixins
 // ==========================================================================
 
-// Import Bootstrap functions and mixins for use in our custom mixins
-@import "~bootstrap/scss/mixins";
+// NOTE: Bootstrap mixins are imported by main.scss after variables/maps are loaded.
+// Do NOT import them here — premature import causes Sass ordering failures.
 
 // Smooth transitions
 @mixin transition($property: all, $duration: 0.3s, $timing: ease) {

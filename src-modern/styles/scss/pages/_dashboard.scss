@@ -1,0 +1,76 @@
+// ==========================================================================
+// Dashboard Page Styles
+// ==========================================================================
+
+// ---------------------------------------------------------------------------
+// Loading Screen (shown during app init, hidden via JS after DOMContentLoaded)
+// ---------------------------------------------------------------------------
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bs-body-bg);
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+
+  .loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+
+    .spinner-border {
+      width: 3rem;
+      height: 3rem;
+    }
+
+    .loading-brand {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--bs-secondary-color);
+      letter-spacing: 0.02em;
+    }
+  }
+
+  &.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Stats Cards — dashboard-specific spacing
+// ---------------------------------------------------------------------------
+.stats-card {
+  .card-body {
+    padding: 1.25rem;
+
+    @media (min-width: 992px) {
+      padding: 1.5rem;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Activity Feed
+// ---------------------------------------------------------------------------
+.activity-feed {
+  max-height: 320px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bs-border-color) transparent;
+
+  &::-webkit-scrollbar       { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background-color: var(--bs-border-color); border-radius: 2px; }
+}
+
+// ---------------------------------------------------------------------------
+// Revenue chart period buttons
+// ---------------------------------------------------------------------------
+.btn-group [data-chart-period].active {
+  z-index: 1;
+}

@@ -371,17 +371,19 @@ export class DashboardManager {
     let current = start;
     let step = 0;
 
+    // Target the <span x-text> child if present; otherwise the element itself
+    const target = element.querySelector('span') || element;
+
     const timer = setInterval(() => {
       current += stepValue;
       step++;
 
-      const formatted = Math.floor(current).toLocaleString();
-      element.textContent = element.textContent.replace(/[\d,]+/, formatted);
+      target.textContent = Math.floor(current).toLocaleString();
 
       if (step >= STAT_ANIMATION_STEPS) {
         clearInterval(timer);
         this.intervals.delete(timer);
-        element.textContent = element.textContent.replace(/[\d,]+/, end.toLocaleString());
+        target.textContent = end.toLocaleString();
       }
     }, STAT_ANIMATION_DURATION_MS / STAT_ANIMATION_STEPS);
     this.intervals.add(timer);
@@ -418,10 +420,71 @@ export class DashboardManager {
     }
   }
 
-  loadWeeklyData() {}
-  loadMonthlyData() {}
-  loadQuarterlyData() {}
-  loadYearlyData() {}
+  loadWeeklyData() {
+    const chart = this.charts.get('revenue');
+    if (!chart) return;
+    // Show last 7 data points
+    const slice = this.data.revenue.slice(-7);
+    chart.updateOptions({
+      series: [
+        { name: 'Revenue', data: slice.map(d => d.revenue) },
+        { name: 'Profit',  data: slice.map(d => d.profit)  },
+      ],
+      xaxis: { categories: slice.map(d => d.month) }
+    });
+  }
+
+  loadMonthlyData() {
+    const chart = this.charts.get('revenue');
+    if (!chart) return;
+    chart.updateOptions({
+      series: [
+        { name: 'Revenue', data: this.data.revenue.map(d => d.revenue) },
+        { name: 'Profit',  data: this.data.revenue.map(d => d.profit)  },
+      ],
+      xaxis: { categories: this.data.revenue.map(d => d.month) }
+    });
+  }
+
+  loadQuarterlyData() {
+    const chart = this.charts.get('revenue');
+    if (!chart) return;
+    // Group months into quarters
+    const quarters = [
+      { label: 'Q1', revenue: 0, profit: 0 },
+      { label: 'Q2', revenue: 0, profit: 0 },
+      { label: 'Q3', revenue: 0, profit: 0 },
+      { label: 'Q4', revenue: 0, profit: 0 },
+    ];
+    this.data.revenue.forEach((d, i) => {
+      const q = Math.floor(i / 3);
+      quarters[q].revenue += d.revenue;
+      quarters[q].profit  += d.profit;
+    });
+    chart.updateOptions({
+      series: [
+        { name: 'Revenue', data: quarters.map(q => q.revenue) },
+        { name: 'Profit',  data: quarters.map(q => q.profit)  },
+      ],
+      xaxis: { categories: quarters.map(q => q.label) }
+    });
+  }
+
+  loadYearlyData() {
+    const chart = this.charts.get('revenue');
+    if (!chart) return;
+    const total = this.data.revenue.reduce((acc, d) => ({
+      revenue: acc.revenue + d.revenue,
+      profit:  acc.profit  + d.profit
+    }), { revenue: 0, profit: 0 });
+    chart.updateOptions({
+      series: [
+        { name: 'Revenue', data: [total.revenue] },
+        { name: 'Profit',  data: [total.profit]  },
+      ],
+      xaxis: { categories: ['This Year'] }
+    });
+  }
 
   exportChart(chartName) {
     const chart = this.charts.get(chartName);
