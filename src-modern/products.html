@@ -534,7 +534,7 @@
                                                 <th style="width: 40px;">
                                                     <input type="checkbox" 
                                                            class="form-check-input" 
-                                                           @change="toggleAll($event.target.checked)"
+                                                           @change="$event.isTrusted && toggleAll($event.target.checked)"
                                                            :checked="selectedProducts.length === filteredProducts.length && filteredProducts.length > 0">
                                                 </th>
                                                 <th>Product</th>
@@ -553,7 +553,8 @@
                                                         <input type="checkbox" 
                                                                class="form-check-input" 
                                                                :value="product.id"
-                                                               x-model="selectedProducts">
+                                                               :checked="selectedProducts.includes(product.id)"
+                                                               @change="toggleProduct(product.id)">
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center">

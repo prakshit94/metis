@@ -15,13 +15,46 @@ document.addEventListener('alpine:init', () => {
     sortField: 'name',
     sortDirection: 'asc',
     isLoading: false,
+    charts: {},
+    _resizeHandler: null,
 
     init() {
       this.loadSampleData();
       this.filterUsers();
       this.$nextTick(() => {
         this.initCharts();
+        this.initResizeHandler();
       });
+      const onHide = () => this.destroy();
+      window.addEventListener('pagehide', onHide, { once: true });
+    },
+
+    destroy() {
+      if (this._resizeHandler) {
+        window.removeEventListener('resize', this._resizeHandler);
+        this._resizeHandler = null;
+      }
+      this.clearExistingCharts();
+    },
+
+    clearExistingCharts() {
+      Object.values(this.charts).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+          chart.destroy();
+        }
+      });
+      this.charts = {};
+    },
+
+    initResizeHandler() {
+      this._resizeHandler = () => {
+        Object.values(this.charts).forEach(chart => {
+          if (chart && typeof chart.updateOptions === 'function') {
+            chart.updateOptions({ chart: { width: '100%' } }, false, true);
+          }
+        });
+      };
+      window.addEventListener('resize', this._resizeHandler);
     },
 
     loadSampleData() {
@@ -220,7 +253,7 @@ document.addEventListener('alpine:init', () => {
     // Selection Management
     toggleAll(checked) {
         if (checked) {
-            this.selectedUsers = this.paginatedUsers.map(user => user.id);
+            this.selectedUsers = this.filteredUsers.map(user => user.id);
         } else {
             this.selectedUsers = [];
         }
@@ -500,7 +533,8 @@ document.addEventListener('alpine:init', () => {
                 stroke: { curve: 'smooth', width: 2 },
                 colors: ['#10b981']
             };
-            new ApexCharts(activeUserChartEl, activeUserOptions).render();
+            this.charts.activeUsers = new ApexCharts(activeUserChartEl, activeUserOptions);
+            this.charts.activeUsers.render();
         }
 
         // User Growth Chart
@@ -568,7 +602,8 @@ document.addEventListener('alpine:init', () => {
                     theme: 'light'
                 }
             };
-            new ApexCharts(userGrowthChartEl, userGrowthOptions).render();
+            this.charts.userGrowth = new ApexCharts(userGrowthChartEl, userGrowthOptions);
+            this.charts.userGrowth.render();
         }
 
         // Role Distribution Chart
@@ -611,7 +646,8 @@ document.addEventListener('alpine:init', () => {
                     }
                 }]
             };
-            new ApexCharts(roleDistributionChartEl, roleDistributionOptions).render();
+            this.charts.roleDistribution = new ApexCharts(roleDistributionChartEl, roleDistributionOptions);
+            this.charts.roleDistribution.render();
         }
     }
   }));

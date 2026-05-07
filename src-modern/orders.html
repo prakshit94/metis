@@ -535,7 +535,7 @@
                                                 <th style="width: 40px;">
                                                     <input type="checkbox" 
                                                            class="form-check-input" 
-                                                           @change="toggleAll($event.target.checked)"
+                                                           @change="$event.isTrusted && toggleAll($event.target.checked)"
                                                            :checked="selectedOrders.length === filteredOrders.length && filteredOrders.length > 0">
                                                 </th>
                                                 <th @click="sortBy('orderNumber')" class="sortable">Order #</th>
@@ -554,7 +554,8 @@
                                                         <input type="checkbox" 
                                                                class="form-check-input" 
                                                                :value="order.id"
-                                                               x-model="selectedOrders">
+                                                               :checked="selectedOrders.includes(order.id)"
+                                                               @change="toggleOrder(order.id)">
                                                     </td>
                                                     <td>
                                                         <div class="fw-medium" x-text="order.orderNumber"></div>

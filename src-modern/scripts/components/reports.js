@@ -11,6 +11,8 @@ document.addEventListener('alpine:init', () => {
     // Data
     recentReports: [],
     topProducts: [],
+    charts: {},
+    _resizeHandler: null,
     chartsInitialized: false,
 
     // KPI Data
@@ -31,7 +33,40 @@ document.addEventListener('alpine:init', () => {
       // Delay chart initialization to ensure DOM is fully ready
       setTimeout(() => {
         this.initCharts();
+        this.initResizeHandler();
       }, 500);
+
+      const onHide = () => this.destroy();
+      window.addEventListener('pagehide', onHide, { once: true });
+    },
+
+    destroy() {
+      if (this._resizeHandler) {
+        window.removeEventListener('resize', this._resizeHandler);
+        this._resizeHandler = null;
+      }
+      this.clearExistingCharts();
+    },
+
+    clearExistingCharts() {
+      Object.values(this.charts).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+          chart.destroy();
+        }
+      });
+      this.charts = {};
+      this.chartsInitialized = false;
+    },
+
+    initResizeHandler() {
+      this._resizeHandler = () => {
+        Object.values(this.charts).forEach(chart => {
+          if (chart && typeof chart.updateOptions === 'function') {
+            chart.updateOptions({ chart: { width: '100%' } }, false, true);
+          }
+        });
+      };
+      window.addEventListener('resize', this._resizeHandler);
     },
 
     loadSampleData() {
@@ -267,8 +302,8 @@ document.addEventListener('alpine:init', () => {
           }
         };
 
-        const chart = new ApexCharts(chartElement, chartData);
-        chart.render();
+        this.charts.revenueTrends = new ApexCharts(chartElement, chartData);
+        this.charts.revenueTrends.render();
       } catch (error) {
         console.error('Error rendering revenue trends chart:', error);
       }
@@ -312,8 +347,8 @@ document.addEventListener('alpine:init', () => {
           }
         };
 
-        const chart = new ApexCharts(chartElement, chartData);
-        chart.render();
+        this.charts.topProducts = new ApexCharts(chartElement, chartData);
+        this.charts.topProducts.render();
       } catch (error) {
         console.error('Error rendering top products chart:', error);
       }
@@ -364,8 +399,8 @@ document.addEventListener('alpine:init', () => {
           }
         };
 
-        const chart = new ApexCharts(chartElement, chartData);
-        chart.render();
+        this.charts.customerAcquisition = new ApexCharts(chartElement, chartData);
+        this.charts.customerAcquisition.render();
       } catch (error) {
         console.error('Error rendering customer acquisition chart:', error);
       }
@@ -406,8 +441,8 @@ document.addEventListener('alpine:init', () => {
           }
         };
 
-        const chart = new ApexCharts(chartElement, chartData);
-        chart.render();
+        this.charts.regionSales = new ApexCharts(chartElement, chartData);
+        this.charts.regionSales.render();
       } catch (error) {
         console.error('Error rendering region sales chart:', error);
       }

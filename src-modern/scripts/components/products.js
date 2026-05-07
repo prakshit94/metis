@@ -14,6 +14,8 @@ document.addEventListener('alpine:init', () => {
     sortField: 'name',
     sortDirection: 'asc',
     isLoading: false,
+    charts: {},
+    _resizeHandler: null,
     chartsInitialized: false,
 
     // Statistics
@@ -34,7 +36,40 @@ document.addEventListener('alpine:init', () => {
       // Delay chart initialization to ensure DOM is fully ready
       setTimeout(() => {
         this.initCharts();
+        this.initResizeHandler();
       }, 500);
+
+      const onHide = () => this.destroy();
+      window.addEventListener('pagehide', onHide, { once: true });
+    },
+
+    destroy() {
+      if (this._resizeHandler) {
+        window.removeEventListener('resize', this._resizeHandler);
+        this._resizeHandler = null;
+      }
+      this.clearExistingCharts();
+    },
+
+    clearExistingCharts() {
+      Object.values(this.charts).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+          chart.destroy();
+        }
+      });
+      this.charts = {};
+      this.chartsInitialized = false;
+    },
+
+    initResizeHandler() {
+      this._resizeHandler = () => {
+        Object.values(this.charts).forEach(chart => {
+          if (chart && typeof chart.updateOptions === 'function') {
+            chart.updateOptions({ chart: { width: '100%' } }, false, true);
+          }
+        });
+      };
+      window.addEventListener('resize', this._resizeHandler);
     },
 
     loadSampleData() {
@@ -428,9 +463,17 @@ document.addEventListener('alpine:init', () => {
 
     toggleAll(checked) {
       if (checked) {
-        this.selectedProducts = this.paginatedProducts.map(p => p.id);
+        this.selectedProducts = this.filteredProducts.map(p => p.id);
       } else {
         this.selectedProducts = [];
+      }
+    },
+
+    toggleProduct(productId) {
+      if (this.selectedProducts.includes(productId)) {
+        this.selectedProducts = this.selectedProducts.filter(id => id !== productId);
+      } else {
+        this.selectedProducts = [...this.selectedProducts, productId];
       }
     },
 
@@ -599,8 +642,8 @@ document.addEventListener('alpine:init', () => {
         }
       };
 
-        const chart = new ApexCharts(salesChart, salesData);
-        chart.render();
+        this.charts.sales = new ApexCharts(salesChart, salesData);
+        this.charts.sales.render();
       } catch (error) {
         console.error('Error rendering sales chart:', error);
       }
@@ -645,8 +688,8 @@ document.addEventListener('alpine:init', () => {
         }
       };
 
-        const chart = new ApexCharts(categoryChart, chartData);
-        chart.render();
+        this.charts.category = new ApexCharts(categoryChart, chartData);
+        this.charts.category.render();
       } catch (error) {
         console.error('Error rendering category chart:', error);
       }

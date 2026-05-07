@@ -24,6 +24,7 @@ export class DashboardManager {
       recentOrders: [],
       salesByLocation: []
     };
+    this.currentPeriod = '7d';
     this.init();
   }
 
@@ -39,6 +40,26 @@ export class DashboardManager {
 
     this.startRealTimeUpdates();
     this.initInteractiveElements();
+    this.initResizeHandler();
+
+    // Set initial view to match active UI state (7D)
+    this.updateChartPeriod(this.currentPeriod);
+  }
+
+  initResizeHandler() {
+    const onResize = () => {
+      const t = setTimeout(() => {
+        this.charts.forEach(chart => {
+          if (typeof chart.updateOptions === 'function') {
+            chart.updateOptions({ chart: { width: '100%' } }, false, true);
+          }
+        });
+        this.timeouts.delete(t);
+      }, CHART_RESIZE_DEBOUNCE_MS);
+      this.timeouts.add(t);
+    };
+    window.addEventListener('resize', onResize);
+    this.cleanupFns.push(() => window.removeEventListener('resize', onResize));
   }
 
   async loadDashboardData() {
@@ -289,17 +310,6 @@ export class DashboardManager {
     const chart = new ApexCharts(chartElement, options);
     chart.render();
     this.charts.set('salesByLocation', chart);
-
-    const onResize = () => {
-      if (!this.charts.has('salesByLocation')) return;
-      const t = setTimeout(() => {
-        chart.updateOptions({ chart: { width: '100%' } }, false, true);
-        this.timeouts.delete(t);
-      }, CHART_RESIZE_DEBOUNCE_MS);
-      this.timeouts.add(t);
-    };
-    window.addEventListener('resize', onResize);
-    this.cleanupFns.push(() => window.removeEventListener('resize', onResize));
   }
 
   populateRecentOrders() {
@@ -348,10 +358,8 @@ export class DashboardManager {
       this.data.revenue.push({ month: 'New', revenue: newRevenue, profit: newProfit });
       if (this.data.revenue.length > 12) this.data.revenue.shift();
 
-      revenueChart.updateSeries([
-        { name: 'Revenue', data: this.data.revenue.map(item => item.revenue) },
-        { name: 'Profit', data: this.data.revenue.map(item => item.profit) }
-      ]);
+      // Instead of overwriting with all data, respect the current filtered view
+      this.updateChartPeriod(this.currentPeriod);
     }
 
     this.updateStatsCards();
@@ -392,8 +400,8 @@ export class DashboardManager {
   initInteractiveElements() {
     const onPeriodClick = (e) => {
       if (e.target.matches('[data-chart-period]')) {
-        const period = e.target.dataset.chartPeriod;
-        this.updateChartPeriod(period);
+        this.currentPeriod = e.target.dataset.chartPeriod;
+        this.updateChartPeriod(this.currentPeriod);
         document.querySelectorAll('[data-chart-period]').forEach(btn => btn.classList.remove('active'));
         e.target.classList.add('active');
       }

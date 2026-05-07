@@ -204,22 +204,16 @@ document.addEventListener('alpine:init', () => {
 
         const chartElement = document.querySelector("#revenueChart");
         if (chartElement) {
-            // Clear any existing chart instance
-            if (this.charts.revenue) {
-                this.charts.revenue.destroy();
-            }
-
             this.charts.revenue = new ApexCharts(chartElement, revenueOptions);
             this.charts.revenue.render();
 
             // Handle window resize (one handler total, replaceable)
-            if (this._resizeHandler) {
-                window.removeEventListener('resize', this._resizeHandler);
-            }
             this._resizeHandler = () => {
-                if (this.charts.revenue) {
-                    this.charts.revenue.updateOptions({ chart: { width: '100%' } });
-                }
+                Object.values(this.charts).forEach(chart => {
+                    if (chart && typeof chart.updateOptions === 'function') {
+                        chart.updateOptions({ chart: { width: '100%' } }, false, true);
+                    }
+                });
             };
             window.addEventListener('resize', this._resizeHandler);
         }

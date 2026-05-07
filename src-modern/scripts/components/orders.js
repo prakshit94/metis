@@ -14,6 +14,8 @@ document.addEventListener('alpine:init', () => {
     sortField: 'orderNumber',
     sortDirection: 'desc',
     isLoading: false,
+    charts: {},
+    _resizeHandler: null,
     chartsInitialized: false,
 
     // Statistics
@@ -34,7 +36,40 @@ document.addEventListener('alpine:init', () => {
       // Delay chart initialization to ensure DOM is fully ready
       setTimeout(() => {
         this.initCharts();
+        this.initResizeHandler();
       }, 500);
+
+      const onHide = () => this.destroy();
+      window.addEventListener('pagehide', onHide, { once: true });
+    },
+
+    destroy() {
+      if (this._resizeHandler) {
+        window.removeEventListener('resize', this._resizeHandler);
+        this._resizeHandler = null;
+      }
+      this.clearExistingCharts();
+    },
+
+    clearExistingCharts() {
+      Object.values(this.charts).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+          chart.destroy();
+        }
+      });
+      this.charts = {};
+      this.chartsInitialized = false;
+    },
+
+    initResizeHandler() {
+      this._resizeHandler = () => {
+        Object.values(this.charts).forEach(chart => {
+          if (chart && typeof chart.updateOptions === 'function') {
+            chart.updateOptions({ chart: { width: '100%' } }, false, true);
+          }
+        });
+      };
+      window.addEventListener('resize', this._resizeHandler);
     },
 
     loadSampleData() {
@@ -498,9 +533,17 @@ document.addEventListener('alpine:init', () => {
 
     toggleAll(checked) {
       if (checked) {
-        this.selectedOrders = this.paginatedOrders.map(o => o.id);
+        this.selectedOrders = this.filteredOrders.map(o => o.id);
       } else {
         this.selectedOrders = [];
+      }
+    },
+
+    toggleOrder(orderId) {
+      if (this.selectedOrders.includes(orderId)) {
+        this.selectedOrders = this.selectedOrders.filter(id => id !== orderId);
+      } else {
+        this.selectedOrders = [...this.selectedOrders, orderId];
       }
     },
 
@@ -670,8 +713,8 @@ document.addEventListener('alpine:init', () => {
           }
         };
 
-        const chart = new ApexCharts(chartElement, trendsData);
-        chart.render();
+        this.charts.orderTrends = new ApexCharts(chartElement, trendsData);
+        this.charts.orderTrends.render();
       } catch (error) {
         console.error('Error rendering order trends chart:', error);
       }
@@ -715,8 +758,8 @@ document.addEventListener('alpine:init', () => {
           }
         };
 
-        const chart = new ApexCharts(chartElement, chartData);
-        chart.render();
+        this.charts.status = new ApexCharts(chartElement, chartData);
+        this.charts.status.render();
       } catch (error) {
         console.error('Error rendering status chart:', error);
       }

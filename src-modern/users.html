@@ -672,7 +672,7 @@
                                                 <th style="width: 40px;">
                                                     <input type="checkbox" 
                                                            class="user-select-checkbox"
-                                                           @change="toggleAll($event.target.checked)"
+                                                           @change="$event.isTrusted && toggleAll($event.target.checked)"
                                                            :checked="selectedUsers.length === filteredUsers.length && filteredUsers.length > 0">
                                                 </th>
                                                 <th scope="col"
