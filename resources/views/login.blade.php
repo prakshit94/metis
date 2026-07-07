@@ -1,130 +1,158 @@
 @extends('layouts.auth')
 
-@section('title', 'Login')
+@section('title', 'Sign In')
+@section('description', 'Sign in to your Metis Admin account')
+@section('page', 'login')
 
 @section('content')
 <div class="auth-page" id="main-content">
-        <div class="auth-card" x-data="loginApp()">
+    <div class="auth-card" x-data="loginApp()">
 
-            <!-- Logo -->
-            <div class="auth-logo">
-                <img src="/assets/images/logo.svg" alt="Metis Logo" width="36" height="36">
-                <span class="auth-brand-name">Metis</span>
-            </div>
+        {{-- ── Logo ───────────────────────────────────────────────────────── --}}
+        <div class="auth-logo mb-4">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect width="36" height="36" rx="10" fill="url(#metis-grad)"/>
+                <path d="M10 26V12l8 8 8-8v14" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <defs>
+                    <linearGradient id="metis-grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#6366f1"/>
+                        <stop offset="1" stop-color="#8b5cf6"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span class="auth-brand-name">Metis</span>
+        </div>
 
-            <!-- Tab Switcher -->
-            <div class="auth-tabs" role="tablist">
-                <button class="auth-tab"
-                        :class="{ active: activeTab === 'login' }"
-                        @click="activeTab = 'login'"
-                        role="tab"
-                        :aria-selected="activeTab === 'login'"
-                        id="tab-login">
-                    Sign In
-                </button>
-                <button class="auth-tab"
-                        :class="{ active: activeTab === 'register' }"
-                        @click="activeTab = 'register'"
-                        role="tab"
-                        :aria-selected="activeTab === 'register'"
-                        id="tab-register">
-                    Create Account
-                </button>
-            </div>
+        {{-- ════════════════════════════════════════════════════════════════ --}}
+        {{-- ── SIGN-IN PANEL ─────────────────────────────────────────────── --}}
+        {{-- ════════════════════════════════════════════════════════════════ --}}
+        <div>
+            <p class="auth-subtitle">Welcome back! Please sign in to your account.</p>
 
-            <!-- ─── LOGIN PANEL ─── -->
-            <div x-show="activeTab === 'login'"
-                 x-transition:enter="transition ease-out duration-200"
-                 x-transition:enter-start="opacity-0 translate-y-1"
-                 x-transition:enter-end="opacity-100 translate-y-0"
-                 role="tabpanel"
-                 aria-labelledby="tab-login">
+            {{-- ── Server-side session flash / validation errors ─────────── --}}
+            @if (session('error'))
+                <div class="alert alert-danger d-flex align-items-center gap-2 mb-3 py-2 px-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                    <span>{{ session('error') }}</span>
+                </div>
+            @endif
 
-                <p class="auth-subtitle">Welcome back! Please sign in to your account.</p>
+            @if ($errors->any())
+                <div class="alert alert-danger d-flex align-items-start gap-2 mb-3 py-2 px-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                    <div>
+                        @foreach ($errors->all() as $error)
+                            <div>{{ $error }}</div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
 
-                <!-- Social Login -->
-                <div class="d-flex gap-2 mb-4">
-                    <button type="button" class="auth-social-btn flex-fill" aria-label="Sign in with Google">
-                        <i class="bi bi-google text-danger"></i>
-                        <span>Google</span>
-                    </button>
-                    <button type="button" class="auth-social-btn flex-fill" aria-label="Sign in with GitHub">
-                        <i class="bi bi-github"></i>
-                        <span>GitHub</span>
-                    </button>
+            {{-- ── Login Form (posts to real Laravel route) ─────────────── --}}
+            <form method="POST" action="{{ route('login.submit') }}" id="loginForm" @submit="isSubmitting = true">
+                @csrf
+
+                {{-- Email ------------------------------------------------- --}}
+                <div class="mb-3">
+                    <label for="loginEmail" class="form-label fw-semibold">Email address</label>
+                    <input type="email"
+                           class="form-control @error('email') is-invalid @enderror"
+                           id="loginEmail"
+                           name="email"
+                           value="{{ old('email', request()->cookie('remembered_email')) }}"
+                           placeholder="you@example.com"
+                           autocomplete="email"
+                           autofocus
+                           required>
+                    @error('email')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
 
-                <div class="divider-text mb-4">or continue with email</div>
-
-                <!-- Login Form -->
-                <form @submit.prevent="submitLogin()" novalidate>
-                    <div class="mb-3">
-                        <label for="loginEmail" class="form-label fw-semibold">Email address</label>
-                        <input type="email"
-                               class="form-control"
-                               id="loginEmail"
-                               x-model="loginForm.email"
-                               placeholder="you@example.com"
-                               autocomplete="email"
-                               required>
-                        <div class="invalid-feedback" x-show="loginErrors.email" x-text="loginErrors.email"></div>
+                {{-- Password ----------------------------------------------- --}}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label for="loginPassword" class="form-label fw-semibold mb-0">Password</label>
+                        <a href="#" class="auth-forgot-link" tabindex="-1">Forgot password?</a>
                     </div>
+                    <div class="input-group">
+                        <input :type="showPassword ? 'text' : 'password'"
+                               class="form-control @error('password') is-invalid @enderror"
+                               id="loginPassword"
+                               name="password"
+                               placeholder="••••••••"
+                               autocomplete="current-password"
+                               required>
+                        <button class="btn btn-outline-secondary password-toggle"
+                                type="button"
+                                @click="showPassword = !showPassword"
+                                :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                                tabindex="-1">
+                            <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                        </button>
+                        @error('password')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                {{-- Remember Me -------------------------------------------- --}}
+                <div class="mb-4 d-flex align-items-center justify-content-between">
+                    <div class="form-check mb-0">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="rememberMe"
+                               name="remember"
+                               value="1"
+                               {{ old('remember') ? 'checked' : '' }}
+                               x-model="remember">
+                        <label class="form-check-label text-secondary" for="rememberMe">
+                            Remember me
+                        </label>
+                    </div>
+                    <span class="auth-remember-hint" x-show="remember" x-transition>
+                        <i class="bi bi-shield-check text-success"></i>
+                        <small class="text-success">30 days</small>
+                    </span>
+                </div>
+
+                {{-- Submit ------------------------------------------------- --}}
+                <button type="submit"
+                        class="btn btn-primary w-100 auth-submit-btn"
+                        id="loginSubmitBtn"
+                        :disabled="isSubmitting">
+                    <span x-show="!isSubmitting" class="d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        Sign In
+                    </span>
+                    <span x-show="isSubmitting" style="display: none;" class="d-flex align-items-center justify-content-center gap-2">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Signing in…
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>{{-- /.auth-card --}}
+</div>{{-- /.auth-page --}}
 @endsection
 
 @push('scripts')
-<script type="module">
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('loginApp', () => ({
+            showPassword: false,
+            isSubmitting: false,
 
-        import Alpine from 'alpinejs';
+            // Sign-in state
+            remember: {{ old('remember') ? 'true' : 'false' }},
 
-        // Theme switch (reuse global registration from main.js, but also define locally for safety)
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('loginApp', () => ({
-                activeTab: 'login',
-                showPassword: false,
-                showRegPassword: false,
-                isSubmitting: false,
-
-                loginForm:  { email: '', password: '', remember: false },
-                loginErrors: {},
-
-                regForm: { firstName: '', lastName: '', email: '', password: '', agreeTerms: false },
-                strength: { score: 0, label: 'Weak' },
-
-                calcStrength() {
-                    const p = this.regForm.password;
-                    let score = 0;
-                    if (p.length >= 8)           score++;
-                    if (/[a-z]/.test(p))         score++;
-                    if (/[A-Z]/.test(p))         score++;
-                    if (/[0-9]/.test(p))         score++;
-                    if (/[^A-Za-z0-9]/.test(p))  score++;
-                    const labels = ['', 'Weak', 'Weak', 'Fair', 'Good', 'Strong'];
-                    this.strength = { score, label: labels[score] || 'Strong' };
-                },
-
-                async submitLogin() {
-                    this.loginErrors = {};
-                    if (!this.loginForm.email)    { this.loginErrors.email    = 'Email is required'; return; }
-                    if (!this.loginForm.password) { this.loginErrors.password = 'Password is required'; return; }
-
-                    this.isSubmitting = true;
-                    await new Promise(r => setTimeout(r, 1200));
+            // Reset spinner if server returned a validation error
+            init() {
+                @if ($errors->any())
                     this.isSubmitting = false;
-
-                    window.AdminApp?.notificationManager?.success('Signed in successfully! Redirecting…');
-                    setTimeout(() => { window.location.href = './index.html'; }, 1500);
-                },
-
-                async submitRegister() {
-                    this.isSubmitting = true;
-                    await new Promise(r => setTimeout(r, 1200));
-                    this.isSubmitting = false;
-
-                    window.AdminApp?.notificationManager?.success('Account created! Welcome aboard.');
-                    setTimeout(() => { window.location.href = './index.html'; }, 1500);
-                },
-            }));
-        });
-    
+                @endif
+            },
+        }));
+    });
 </script>
 @endpush

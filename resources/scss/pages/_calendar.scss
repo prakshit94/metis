@@ -3,19 +3,27 @@
 // ==========================================================================
 
 .calendar-page {
+  // Fill all remaining height beneath the app header, using flex column
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--header-height));
+
+  // Page title bar (h1 + action buttons)
+  > .d-flex {
+    flex-shrink: 0;
+    padding: 1rem 1.25rem 0.75rem;
+  }
   
-  // Main calendar container
+  // Main calendar container — flex:1 so it fills what the page header leaves
   .calendar-container {
-    height: calc(100vh - var(--header-height) - 2rem);
+    flex: 1;
+    min-height: 0; // critical: allows flex child to shrink below content size
     background: var(--calendar-bg);
     border-radius: var(--border-radius-lg);
     overflow: hidden;
     box-shadow: var(--box-shadow);
     border: 1px solid var(--calendar-border);
-
-    @include media-breakpoint-up(lg) {
-      height: calc(100vh - var(--header-height) - 1rem);
-    }
+    margin: 0 1.25rem 1rem;
   }
 
   // Calendar layout wrapper
@@ -209,73 +217,110 @@
       gap: 0.75rem;
       cursor: pointer;
       transition: all var(--transition-fast);
-      padding: 0.5rem;
+      padding: 0.5rem 0.625rem;
       border-radius: var(--border-radius-sm);
+      border: 1px solid transparent;
 
       &:hover {
-        background: rgba(var(--bs-secondary-rgb), 0.05);
+        background: rgba(var(--bs-secondary-rgb), 0.07);
+        border-color: var(--calendar-border);
       }
 
+      // The real checkbox is visually hidden but still focusable/operable
       .form-check-input {
-        display: none; // Hide the actual checkbox
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
       }
 
+      // Color swatch — acts as a visual checkbox
       .category-color {
-        width: 16px;
-        height: 16px;
-        border-radius: var(--border-radius-sm);
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
         flex-shrink: 0;
         position: relative;
-        border: 2px solid transparent;
+        border: 2px solid rgba(0, 0, 0, 0.15);
         transition: all var(--transition-fast);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        // Checkmark tick drawn via ::after
+        &::after {
+          content: '';
+          display: block;
+          width: 5px;
+          height: 9px;
+          border: 2px solid white;
+          border-top: none;
+          border-left: none;
+          transform: rotate(45deg) translateY(-1px);
+          opacity: 0;
+          transition: opacity var(--transition-fast);
+        }
       }
 
       .category-name {
         flex: 1;
-        font-size: 0.9rem;
+        font-size: 0.875rem;
         color: var(--calendar-text);
         font-weight: 500;
         transition: all var(--transition-fast);
+        user-select: none;
       }
 
       .category-count {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        font-weight: 600;
         color: var(--calendar-text-muted);
         background: rgba(var(--bs-secondary-rgb), 0.1);
-        padding: 0.25rem 0.5rem;
+        padding: 0.2rem 0.5rem;
         border-radius: 50px;
-        min-width: 24px;
+        min-width: 26px;
         text-align: center;
         transition: all var(--transition-fast);
       }
 
-      // Styling for when category is enabled/selected
-      &.active,
+      // ── ACTIVE / CHECKED STATE ───────────────────────────────────────────
       &:has(.form-check-input:checked) {
         .category-color {
-          border-color: var(--calendar-text);
-          box-shadow: 0 0 0 1px var(--calendar-text);
+          border-color: transparent;
+          box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+
+          // Show the tick
+          &::after {
+            opacity: 1;
+          }
         }
-        
+
         .category-name {
           font-weight: 600;
+          color: var(--calendar-text);
+        }
+
+        .category-count {
+          font-weight: 700;
+          color: var(--bs-primary);
+          background: rgba(var(--bs-primary-rgb), 0.1);
         }
       }
 
-      // Styling for when category is disabled/unchecked
-      &:not(.active):not(:has(.form-check-input:checked)) {
-        opacity: 0.6;
-        
+      // ── UNCHECKED / DISABLED STATE ───────────────────────────────────────
+      &:not(:has(.form-check-input:checked)) {
+        opacity: 0.45;
+
         .category-color {
-          opacity: 0.5;
+          filter: grayscale(0.6);
+          &::after { opacity: 0; }
         }
-        
+
         .category-name {
           color: var(--calendar-text-muted);
-        }
-        
-        .category-count {
-          opacity: 0.7;
+          font-weight: 400;
+          text-decoration: line-through;
         }
       }
     }
@@ -1071,6 +1116,18 @@
 }
 
 // ==========================================================================
+// LAYOUT OVERRIDE — Strip container padding for full-height calendar
+// ==========================================================================
+
+// The app layout wraps @yield('content') in `container-fluid p-4 p-lg-5`.
+// The calendar is a full-height component and must break out of that padding.
+body[data-page="calendar"] {
+  .admin-main > .container-fluid {
+    padding: 0 !important;
+  }
+}
+
+// ==========================================================================
 // CSS CUSTOM PROPERTIES
 // ==========================================================================
 
@@ -1100,8 +1157,13 @@
 
 @include media-breakpoint-down(lg) {
   .calendar-page {
+    // calendar-container now uses flex:1 — no fixed height override needed
+    > .d-flex {
+      padding: 0.75rem 1rem 0.5rem;
+    }
+
     .calendar-container {
-      height: calc(100vh - var(--header-height) - 1rem);
+      margin: 0 0.75rem 0.75rem;
     }
 
     .calendar-header {
@@ -1149,8 +1211,12 @@
 
 @include media-breakpoint-down(sm) {
   .calendar-page {
+    > .d-flex {
+      padding: 0.5rem 0.75rem 0.375rem;
+    }
+
     .calendar-container {
-      height: calc(100vh - var(--header-height) - 0.5rem);
+      margin: 0 0 0.5rem; // flush to edges on mobile
       border-radius: var(--border-radius);
     }
 

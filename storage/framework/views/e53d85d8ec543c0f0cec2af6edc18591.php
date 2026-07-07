@@ -104,14 +104,19 @@
                              width="24"
                              height="24"
                              class="rounded-circle me-2">
-                        <span class="d-none d-md-inline">John Doe</span>
+                        <span class="d-none d-md-inline"><?php echo e(Auth::user()?->name ?? 'User'); ?></span>
                         <i class="bi bi-chevron-down ms-1"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item" href="<?php echo e(route('settings')); ?>"><i class="bi bi-gear me-2"></i>Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="<?php echo e(route('login')); ?>"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        <li>
+                            <form method="POST" action="<?php echo e(route('logout')); ?>">
+                                <?php echo csrf_field(); ?>
+                                <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
             </div>

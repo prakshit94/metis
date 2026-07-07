@@ -149,3 +149,79 @@
     color: var(--bs-emphasis-color);
   }
 }
+
+// Forgot password link
+.auth-forgot-link {
+  font-size: 0.8125rem;
+  color: var(--bs-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.75;
+    text-decoration: underline;
+  }
+}
+
+// "30 days" remember hint badge
+.auth-remember-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+
+// Divider "or continue with" text
+.divider-text {
+  position: relative;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--bs-secondary-color);
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 38%;
+    height: 1px;
+    background: var(--bs-border-color);
+  }
+
+  &::before { left: 0; }
+  &::after  { right: 0; }
+}
+
+// Submit button — primary with subtle glow on hover
+.auth-submit-btn {
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 0.6rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Password strength bar
+.auth-strength-bar {
+  height: 4px;
+  background: var(--bs-border-color);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+
+  .auth-strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+  }
+}

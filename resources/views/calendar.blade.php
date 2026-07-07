@@ -4,12 +4,10 @@
 @section('page', 'calendar')
 
 @section('content')
-<div class="container-fluid p-4 p-lg-4">
-                    
                     <!-- Calendar Container with Header -->
                     <div class="calendar-page" x-data="calendarComponent" x-init="init()">
                         <!-- Page Header -->
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h1 class="h3 mb-0">Calendar</h1>
                                 <p class="text-muted mb-0">Schedule and manage your events</p>
@@ -29,8 +27,8 @@
 
                         <!-- Calendar Container -->
                         <div class="calendar-container">
-                        <div class="calendar-layout">
-                            
+                            <div class="calendar-layout">
+
                             <!-- Calendar Sidebar -->
                             <div class="calendar-sidebar" :class="{ 'mobile-show': sidebarVisible }">
                                 <!-- Sidebar Header -->
@@ -322,8 +320,6 @@
                         </div>
                         </div>
                     </div>
-
-                </div>
 @endsection
 
 @push('modals')

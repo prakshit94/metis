@@ -532,9 +532,9 @@ class AdminApp {
       }
     }));
 
-    // Start Alpine.js
-    Alpine.start();
+    // Expose Alpine globally BEFORE starting it so alpine:init listeners can use it
     window.Alpine = Alpine;
+    Alpine.start();
   }
 
   // Cleanup method
