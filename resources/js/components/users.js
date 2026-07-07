@@ -1,32 +1,200 @@
 import Alpine from 'alpinejs';
 import ApexCharts from 'apexcharts';
+import { Modal } from 'bootstrap';
+import Swal from 'sweetalert2';
 import { createSearchComponent } from '../utils/search-component.js';
 
+// ─── CSRF helper ─────────────────────────────────────────────────────────────
+function getCsrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+}
+
+async function apiFetch(url, options = {}) {
+  const res = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-CSRF-TOKEN': getCsrfToken(),
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : {};
+
+  if (!res.ok) {
+    const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
+    const message = validation || data?.message || data?.error || 'Request failed';
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+function downloadBlob(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  URL.revokeObjectURL(link.href);
+  document.body.removeChild(link);
+}
+
+function csvEscape(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+function parseCsvLine(line) {
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const next = line[i + 1];
+
+    if (char === '"' && inQuotes && next === '"') {
+      current += '"';
+      i++;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      values.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  values.push(current.trim());
+  return values;
+}
+
+function formatRoleName(role) {
+  if (!role) return 'User';
+  return role.split(/\s+/).map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join(' ');
+}
+
+function splitFullName(name) {
+  const parts = String(name ?? '').trim().split(/\s+/).filter(Boolean);
+  return {
+    first_name: parts[0] ?? '',
+    middle_name: parts.length > 2 ? parts.slice(1, -1).join(' ') : '',
+    last_name: parts.length > 1 ? parts[parts.length - 1] : '',
+  };
+}
+
+function buildFullName(firstName, middleName, lastName) {
+  return [firstName, middleName, lastName]
+    .map(value => String(value ?? '').trim())
+    .filter(Boolean)
+    .join(' ');
+}
+
+function getModal(elementOrSelector) {
+  const element = typeof elementOrSelector === 'string'
+    ? document.querySelector(elementOrSelector)
+    : elementOrSelector;
+
+  return element ? Modal.getOrCreateInstance(element) : null;
+}
+
+// ─── Toast helper ─────────────────────────────────────────────────────────────
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const id = 'toast-' + Date.now();
+  const iconMap = {
+    success: 'bi-check-circle-fill',
+    danger:  'bi-x-circle-fill',
+    warning: 'bi-exclamation-triangle-fill',
+    info:    'bi-info-circle-fill',
+  };
+
+  const el = document.createElement('div');
+  el.id = id;
+  el.className = `toast align-items-center text-bg-${type} border-0 show mb-2`;
+  el.setAttribute('role', 'alert');
+  el.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="bi ${iconMap[type] ?? 'bi-info-circle-fill'} me-2"></i><span></span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>`;
+  el.querySelector('.toast-body span').textContent = message;
+
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it' }) {
+  const result = await Swal.fire({
+    title,
+    text,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText,
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#dc3545',
+    reverseButtons: true,
+    focusCancel: true,
+  });
+
+  return result.isConfirmed;
+}
+
+// ─── Alpine components ────────────────────────────────────────────────────────
 document.addEventListener('alpine:init', () => {
+
+  // ─── userTable ──────────────────────────────────────────────────────────────
   Alpine.data('userTable', () => ({
-    users: [],
-    filteredUsers: [],
+    users:         [],
     selectedUsers: [],
-    currentPage: 1,
-    itemsPerPage: 10,
-    searchQuery: '',
-    statusFilter: '',
-    roleFilter: '',
-    sortField: 'name',
+    searchQuery:   '',
+    statusFilter:  '',
+    roleFilter:    '',
+    sortField:     'name',
     sortDirection: 'asc',
-    isLoading: false,
+    isLoading:     false,
+    availableRoles: [],
+    growthPeriod:  7,
+
+    // Server-side pagination meta
+    currentPage:  1,
+    totalPages:   1,
+    totalUsers:   0,
+    itemsPerPage: 10,
+
+    // Chart instances
     charts: {},
     _resizeHandler: null,
+    _themeObserver: null,
 
-    init() {
-      this.loadSampleData();
-      this.filterUsers();
+    // ── Lifecycle ────────────────────────────────────────────────────────────
+    async init() {
+      await this.loadRoles();
+      await this.loadUsers();
       this.$nextTick(() => {
         this.initCharts();
         this.initResizeHandler();
       });
-      const onHide = () => this.destroy();
-      window.addEventListener('pagehide', onHide, { once: true });
+      window.addEventListener('pagehide', () => this.destroy(), { once: true });
+
+      this._themeObserver = new MutationObserver(() => {
+        this.$nextTick(() => {
+          this.clearExistingCharts();
+          this.initCharts();
+        });
+      });
+      this._themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-bs-theme'],
+      });
     },
 
     destroy() {
@@ -34,16 +202,30 @@ document.addEventListener('alpine:init', () => {
         window.removeEventListener('resize', this._resizeHandler);
         this._resizeHandler = null;
       }
+      if (this._themeObserver) {
+        this._themeObserver.disconnect();
+        this._themeObserver = null;
+      }
       this.clearExistingCharts();
     },
 
     clearExistingCharts() {
       Object.values(this.charts).forEach(chart => {
-        if (chart && typeof chart.destroy === 'function') {
-          chart.destroy();
-        }
+        if (chart && typeof chart.destroy === 'function') chart.destroy();
       });
       this.charts = {};
+    },
+
+    async loadRoles() {
+      try {
+        this.availableRoles = await apiFetch('/api/roles');
+      } catch {
+        this.availableRoles = [
+          { id: 'admin', name: 'Admin' },
+          { id: 'manager', name: 'Manager' },
+          { id: 'user', name: 'User' },
+        ];
+      }
     },
 
     initResizeHandler() {
@@ -57,706 +239,814 @@ document.addEventListener('alpine:init', () => {
       window.addEventListener('resize', this._resizeHandler);
     },
 
-    loadSampleData() {
-        this.users = [
-        {
-            id: 1,
-            name: 'John Doe',
-            email: 'john@example.com',
-            role: 'admin',
-            status: 'active',
-            lastActive: '2 minutes ago',
-            joinDate: '2023-01-15',
-            avatar: '/assets/images/avatar-placeholder.svg',
-            phone: '+1 (555) 123-4567',
-            department: 'Engineering'
-        },
-        {
-            id: 2,
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            role: 'user',
-            status: 'active',
-            lastActive: '1 hour ago',
-            joinDate: '2023-02-20',
-            avatar: '/assets/images/avatar-placeholder.svg',
-            phone: '+1 (555) 987-6543',
-            department: 'Marketing'
-        },
-        {
-            id: 3,
-            name: 'Mike Johnson',
-            email: 'mike@example.com',
-            role: 'moderator',
-            status: 'pending',
-            lastActive: '1 day ago',
-            joinDate: '2023-03-10',
-            avatar: '/assets/images/avatar-placeholder.svg',
-            phone: '+1 (555) 456-7890',
-            department: 'Support'
-        },
-        {
-            id: 4,
-            name: 'Sarah Wilson',
-            email: 'sarah@example.com',
-            role: 'user',
-            status: 'active',
-            lastActive: '5 minutes ago',
-            joinDate: '2023-04-05',
-            avatar: '/assets/images/avatar-placeholder.svg',
-            phone: '+1 (555) 321-0987',
-            department: 'Sales'
-        },
-        {
-            id: 5,
-            name: 'Bob Brown',
-            email: 'bob@example.com',
-            role: 'user',
-            status: 'inactive',
-            lastActive: '1 week ago',
-            joinDate: '2023-01-30',
-            avatar: '/assets/images/avatar-placeholder.svg',
-            phone: '+1 (555) 654-3210',
-            department: 'HR'
-        },
-        {
-            id: 6,
-            name: 'Alice Davis',
-            email: 'alice@example.com',
-            role: 'admin',
-            status: 'active',
-            lastActive: '30 minutes ago',
-            joinDate: '2022-12-01',
-            avatar: '/assets/images/avatar-placeholder.svg',
-            phone: '+1 (555) 789-0123',
-            department: 'Engineering'
-        },
-        {
-            id: 7,
-            name: 'Tom Miller',
-            email: 'tom@example.com',
-            role: 'user',
-            status: 'active',
-            lastActive: '3 hours ago',
-            joinDate: '2023-05-15',
-            avatar: '/assets/images/avatar-placeholder.svg',
-            phone: '+1 (555) 147-2580',
-            department: 'Design'
-        },
-        {
-            id: 8,
-            name: 'Lisa Garcia',
-            email: 'lisa@example.com',
-            role: 'moderator',
-            status: 'active',
-            lastActive: '1 hour ago',
-            joinDate: '2023-03-25',
-            avatar: '/assets/images/avatar-placeholder.svg',
-            phone: '+1 (555) 369-1470',
-            department: 'Support'
-        }
-        ];
+    // ── API: Load users (server-side filtering / sorting / pagination) ────────
+    async loadUsers() {
+      this.isLoading = true;
+      try {
+        const params = new URLSearchParams({
+          page:     this.currentPage,
+          per_page: this.itemsPerPage,
+          sort_by:  this.sortField,
+          sort_dir: this.sortDirection,
+        });
+        if (this.searchQuery)  params.set('search',    this.searchQuery);
+        if (this.statusFilter === 'active')   params.set('is_active', '1');
+        if (this.statusFilter === 'inactive') params.set('is_active', '0');
+        if (this.statusFilter === 'deleted')  params.set('deleted', 'only');
+        if (this.roleFilter)   params.set('role',      this.roleFilter);
+
+        const data = await apiFetch(`/api/users?${params}`);
+
+        // Map API response to the shape the template expects
+        this.users      = (data.data ?? []).map(u => this._mapUser(u));
+        this.totalUsers = data.total        ?? this.users.length;
+        this.totalPages = data.last_page    ?? 1;
+        this.currentPage = data.current_page ?? 1;
+
+        // Rebuild charts with fresh data
+        this.$nextTick(() => {
+          this.clearExistingCharts();
+          this.initCharts();
+        });
+      } catch (err) {
+        showToast('Failed to load users: ' + err.message, 'danger');
+      } finally {
+        this.isLoading = false;
+      }
     },
 
-    // Filtering and Search
+    // Normalise an API user object → template-friendly shape
+    _mapUser(u) {
+      const roleLabel = u.roles?.[0]?.name ?? 'User';
+      const roleName = roleLabel.toLowerCase();
+      const fallbackNameParts = splitFullName(u.name);
+      const firstName = u.first_name ?? fallbackNameParts.first_name;
+      const middleName = u.middle_name ?? fallbackNameParts.middle_name;
+      const lastName = u.last_name ?? fallbackNameParts.last_name;
+      const displayName = buildFullName(firstName, middleName, lastName) || u.name;
+      return {
+        id:         u.id,
+        name:       displayName,
+        first_name: firstName,
+        middle_name: middleName,
+        last_name:  lastName,
+        email:      u.email,
+        phone:      u.phone      ?? '',
+        department: u.department ?? '',
+        role:       roleName,
+        roleLabel,
+        roleClass:  this.roleBadgeClass(roleName),
+        roles:      u.roles      ?? [],
+        status:     u.deleted_at ? 'deleted' : (u.is_active ? 'active' : 'inactive'),
+        is_active:  u.is_active,
+        isDeleted:  Boolean(u.deleted_at),
+        deleted_at: u.deleted_at ?? null,
+        lastActive: u.updated_at
+          ? new Date(u.updated_at).toLocaleDateString()
+          : 'N/A',
+        joinDate:   u.created_at
+          ? new Date(u.created_at).toLocaleDateString()
+          : 'N/A',
+        avatar: '/assets/images/avatar-placeholder.svg',
+      };
+    },
+
+    roleBadgeClass(role) {
+      const normalized = String(role ?? '').toLowerCase();
+      if (normalized === 'super admin') return 'bg-danger';
+      if (normalized === 'admin') return 'bg-dark';
+      if (normalized === 'manager') return 'bg-warning text-dark';
+      return 'bg-primary';
+    },
+
+    // ── Filtering helpers (trigger server reload) ────────────────────────────
     filterUsers() {
-        this.filteredUsers = this.users.filter(user => {
-        const matchesSearch = this.searchQuery === '' || 
-            user.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            user.email.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            user.department.toLowerCase().includes(this.searchQuery.toLowerCase());
-        
-        const matchesStatus = this.statusFilter === '' || user.status === this.statusFilter;
-        const matchesRole = this.roleFilter === '' || user.role === this.roleFilter;
-        
-        return matchesSearch && matchesStatus && matchesRole;
-        });
-        
-        this.sortUsers();
-        this.currentPage = 1;
+      this.currentPage = 1;
+      this.selectedUsers = [];
+      this.loadUsers();
     },
 
-    // Sorting
     sortBy(field) {
-        if (this.sortField === field) {
+      if (this.sortField === field) {
         this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-        this.sortField = field;
+      } else {
+        this.sortField    = field;
         this.sortDirection = 'asc';
-        }
-        this.sortUsers();
+      }
+      this.loadUsers();
     },
 
-    sortUsers() {
-        this.filteredUsers.sort((a, b) => {
-        let aVal = a[this.sortField];
-        let bVal = b[this.sortField];
-        
-        if (typeof aVal === 'string') {
-            aVal = aVal.toLowerCase();
-            bVal = bVal.toLowerCase();
-        }
-        
-        if (this.sortDirection === 'asc') {
-            return aVal > bVal ? 1 : -1;
-        } else {
-            return aVal < bVal ? 1 : -1;
-        }
-        });
-    },
-
-    // Pagination
+    // ── Pagination ────────────────────────────────────────────────────────────
     get paginatedUsers() {
-        const start = (this.currentPage - 1) * this.itemsPerPage;
-        const end = start + this.itemsPerPage;
-        return this.filteredUsers.slice(start, end);
+      return this.users; // already a single page from the server
     },
 
-    get totalPages() {
-        return Math.ceil(this.filteredUsers.length / this.itemsPerPage);
+    get filteredUsers() {
+      return this.users; // alias for compatibility with template bindings
+    },
+
+    get selectedRows() {
+      return this.users.filter(user => this.selectedUsers.includes(user.id));
+    },
+
+    get hasSelectedDeletedUsers() {
+      return this.selectedRows.some(user => user.isDeleted);
+    },
+
+    get hasSelectedActiveUsers() {
+      return this.selectedRows.some(user => !user.isDeleted);
     },
 
     get visiblePages() {
-        const delta = 2;
-        const range = [];
-        const rangeWithDots = [];
-        
-        for (let i = Math.max(2, this.currentPage - delta);
-            i <= Math.min(this.totalPages - 1, this.currentPage + delta);
-            i++) {
+      const delta = 2;
+      const range = [];
+      for (let i = Math.max(2, this.currentPage - delta);
+           i <= Math.min(this.totalPages - 1, this.currentPage + delta); i++) {
         range.push(i);
-        }
-        
-        if (this.currentPage - delta > 2) {
-        rangeWithDots.push(1, '...');
-        } else {
-        rangeWithDots.push(1);
-        }
-        
-        rangeWithDots.push(...range);
-        
-        if (this.currentPage + delta < this.totalPages - 1) {
-        rangeWithDots.push('...', this.totalPages);
-        } else if (this.totalPages > 1) {
-        rangeWithDots.push(this.totalPages);
-        }
-        
-        return rangeWithDots.filter((v, i, a) => a.indexOf(v) === i && v <= this.totalPages);
+      }
+      const result = [];
+      if (this.currentPage - delta > 2) result.push(1, '...');
+      else result.push(1);
+      result.push(...range);
+      if (this.currentPage + delta < this.totalPages - 1) result.push('...', this.totalPages);
+      else if (this.totalPages > 1) result.push(this.totalPages);
+      return result.filter((v, i, a) => a.indexOf(v) === i && (typeof v === 'string' || v <= this.totalPages));
     },
 
     goToPage(page) {
-        if (page >= 1 && page <= this.totalPages) {
+      if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page;
-        }
+        this.loadUsers();
+      }
     },
 
-    // Selection Management
+    // ── Pagination display text ───────────────────────────────────────────────
+    get pageFrom() {
+      if (this.totalUsers === 0) return 0;
+      return (this.currentPage - 1) * this.itemsPerPage + 1;
+    },
+    get pageTo() {
+      return Math.min(this.currentPage * this.itemsPerPage, this.totalUsers);
+    },
+
+    // ── Selection management ──────────────────────────────────────────────────
     toggleAll(checked) {
-        if (checked) {
-            this.selectedUsers = this.filteredUsers.map(user => user.id);
-        } else {
-            this.selectedUsers = [];
-        }
+      this.selectedUsers = checked ? this.users.map(u => u.id) : [];
     },
 
     toggleUser(userId) {
-        if (this.selectedUsers.includes(userId)) {
-            this.selectedUsers = this.selectedUsers.filter(id => id !== userId);
-        } else {
-            this.selectedUsers = [...this.selectedUsers, userId];
-        }
+      if (this.selectedUsers.includes(userId)) {
+        this.selectedUsers = this.selectedUsers.filter(id => id !== userId);
+      } else {
+        this.selectedUsers = [...this.selectedUsers, userId];
+      }
     },
 
-    // CRUD Operations
-    createUser(userData) {
-        const newUser = {
-            id: this.users.length + 1,
-            name: `${userData.firstName} ${userData.lastName}`,
-            email: userData.email,
-            role: userData.role,
-            status: userData.status,
-            phone: userData.phone,
-            lastActive: 'Just now',
-            joinDate: new Date().toISOString().split('T')[0],
-            avatar: '/assets/images/avatar-placeholder.svg',
-            department: 'New'
-        };
-        this.users.push(newUser);
-        this.filterUsers();
-    },
-
+    // ── CRUD Operations ───────────────────────────────────────────────────────
     editUser(user) {
-        // Open edit modal with user data
-        const userForm = Alpine.$data(document.querySelector('[x-data="userForm"]'));
-        if (userForm) {
-            const nameParts = user.name.split(' ');
-            userForm.form.firstName = nameParts[0] || '';
-            userForm.form.lastName = nameParts.slice(1).join(' ') || '';
-            userForm.form.email = user.email;
-            userForm.form.role = user.role;
-            userForm.form.status = user.status;
-            userForm.form.phone = user.phone;
-            userForm.editingUserId = user.id;
-        }
+      if (user.isDeleted) {
+        showToast('Restore this user before editing.', 'warning');
+        return;
+      }
+
+      const form = Alpine.$data(document.querySelector('[x-data="userForm"]'));
+      if (!form) return;
+      form.editingUserId   = user.id;
+      form.form.first_name = user.first_name ?? '';
+      form.form.middle_name = user.middle_name ?? '';
+      form.form.last_name  = user.last_name ?? '';
+      form.form.email      = user.email;
+      form.form.phone      = user.phone ?? '';
+      form.form.department = user.department ?? '';
+      form.form.role       = user.roles?.[0]?.name ?? 'User';
+      form.form.is_active  = user.is_active ?? true;
+      form.form.password   = '';
+      form.form.password_confirmation = '';
+
+      // Update modal title
+      const title = document.querySelector('#userModal .modal-title');
+      if (title) title.textContent = 'Edit User';
+
+      getModal('#userModal')?.show();
     },
 
-    viewUser(user) {
-        // Navigate to user profile or show user details
-        console.log('Viewing user:', user);
-        // In a real app, this would navigate to user profile page
+    openCreateUser() {
+      const form = Alpine.$data(document.querySelector('[x-data="userForm"]'));
+      if (form) form.resetForm();
+      const title = document.querySelector('#userModal .modal-title');
+      if (title) title.textContent = 'Add New User';
+      getModal('#userModal')?.show();
     },
 
-    deleteUser(user) {
-        if (confirm(`Are you sure you want to delete ${user.name}?`)) {
-            this.users = this.users.filter(u => u.id !== user.id);
-            this.filterUsers();
-        }
+    async viewUser(user) {
+      const form = Alpine.$data(document.querySelector('[x-data="userProfile"]'));
+      if (!form) return;
+      form.loading = true;
+      form.user    = user;
+
+      getModal('#viewUserModal')?.show();
+
+      try {
+        const data = await apiFetch(`/api/users/${user.id}`);
+        form.user         = this._mapUser(data.data ?? data);
+        form.loginHistory = data.login_history ?? [];
+      } catch (err) {
+        showToast('Could not load full profile: ' + err.message, 'warning');
+      } finally {
+        form.loading = false;
+      }
     },
 
-    // Bulk Operations
-    bulkAction(action) {
-        if (this.selectedUsers.length === 0) {
-            alert('Please select users first');
-            return;
-        }
+    async toggleActive(user) {
+      if (user.isDeleted) {
+        showToast('Restore this user before changing account status.', 'warning');
+        return;
+      }
 
-        const selectedUserObjects = this.users.filter(u => this.selectedUsers.includes(u.id));
-        
-        switch (action) {
-            case 'activate':
-                selectedUserObjects.forEach(user => user.status = 'active');
-                break;
-            case 'deactivate':
-                selectedUserObjects.forEach(user => user.status = 'inactive');
-                break;
-            case 'delete':
-                if (confirm(`Are you sure you want to delete ${this.selectedUsers.length} users?`)) {
-                    this.users = this.users.filter(u => !this.selectedUsers.includes(u.id));
-                }
-                break;
+      try {
+        const res = await apiFetch(`/api/users/${user.id}/toggle-active`, { method: 'PATCH' });
+        showToast(res.message);
+        await this.loadUsers();
+
+        const profile = Alpine.$data(document.querySelector('[x-data="userProfile"]'));
+        if (profile?.user?.id === user.id) {
+          const refreshed = this.users.find(u => u.id === user.id);
+          if (refreshed) profile.user = refreshed;
         }
-        
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
+    async deleteUser(user) {
+      const confirmed = await confirmDelete({
+        title: 'Temporarily delete user?',
+        text: `Do you want to move ${user.name} to deleted users? You can restore this user later.`,
+        confirmButtonText: 'Yes, delete user',
+      });
+      if (!confirmed) return;
+
+      try {
+        const res = await apiFetch(`/api/users/${user.id}`, { method: 'DELETE' });
+        showToast(res.message || `${user.name} deleted successfully.`, 'success');
+        await this.loadUsers();
+      } catch (err) {
+        showToast(`Failed to delete ${user.name}: ${err.message}`, 'danger');
+      }
+    },
+
+    async restoreUser(user) {
+      try {
+        const res = await apiFetch(`/api/users/${user.id}/restore`, { method: 'PATCH' });
+        showToast(res.message || `${user.name} restored successfully.`, 'success');
+        await this.loadUsers();
+      } catch (err) {
+        showToast(`Failed to restore ${user.name}: ${err.message}`, 'danger');
+      }
+    },
+
+    async forceDeleteUser(user) {
+      const confirmed = await confirmDelete({
+        title: 'Permanently delete user?',
+        text: `This will permanently delete ${user.name}. This action cannot be undone.`,
+        confirmButtonText: 'Yes, permanently delete',
+      });
+      if (!confirmed) return;
+
+      try {
+        const res = await apiFetch(`/api/users/${user.id}/force`, { method: 'DELETE' });
+        showToast(res.message || `${user.name} permanently deleted successfully.`, 'success');
+        await this.loadUsers();
+      } catch (err) {
+        showToast(`Failed to permanently delete ${user.name}: ${err.message}`, 'danger');
+      }
+    },
+
+    // ── Bulk Operations ───────────────────────────────────────────────────────
+    async bulkAction(action) {
+      if (this.selectedUsers.length === 0) {
+        showToast('Please select users first.', 'warning');
+        return;
+      }
+      if (action === 'delete') {
+        const confirmed = await confirmDelete({
+          title: 'Temporarily delete selected users?',
+          text: `Do you want to move ${this.selectedUsers.length} selected user(s) to deleted users? You can restore them later.`,
+          confirmButtonText: 'Yes, delete users',
+        });
+        if (!confirmed) return;
+      }
+      if (action === 'force-delete') {
+        const confirmed = await confirmDelete({
+          title: 'Permanently delete selected users?',
+          text: `This will permanently delete ${this.selectedUsers.length} selected user(s). This action cannot be undone.`,
+          confirmButtonText: 'Yes, permanently delete',
+        });
+        if (!confirmed) return;
+      }
+
+      try {
+        const res = await apiFetch('/api/users/bulk-action', {
+          method: 'POST',
+          body: JSON.stringify({ action, ids: this.selectedUsers }),
+        });
+        showToast(res.message, 'success');
         this.selectedUsers = [];
-        this.filterUsers();
+        await this.loadUsers();
+      } catch (err) {
+        showToast(`Bulk action failed: ${err.message}`, 'danger');
+      }
     },
 
-    // Export and Reporting
-    exportUsers() {
-        const csvContent = this.generateCSV(this.filteredUsers);
-        this.downloadCSV(csvContent, 'users-export.csv');
+    _queryParams(overrides = {}) {
+      const params = new URLSearchParams({
+        page:     overrides.page ?? this.currentPage,
+        per_page: overrides.per_page ?? this.itemsPerPage,
+        sort_by:  this.sortField,
+        sort_dir: this.sortDirection,
+      });
+      if (this.searchQuery) params.set('search', this.searchQuery);
+      if (this.statusFilter === 'active') params.set('is_active', '1');
+      if (this.statusFilter === 'inactive') params.set('is_active', '0');
+      if (this.statusFilter === 'deleted') params.set('deleted', 'only');
+      if (this.roleFilter) params.set('role', this.roleFilter);
+      return params;
     },
 
-    generateCSV(users) {
-        const headers = ['ID', 'Name', 'Email', 'Role', 'Status', 'Department', 'Phone', 'Join Date', 'Last Active'];
-        const rows = users.map(user => [
-            user.id,
-            user.name,
-            user.email,
-            user.role,
-            user.status,
-            user.department,
-            user.phone,
-            user.joinDate,
-            user.lastActive
+    async fetchAllFilteredUsers() {
+      const first = await apiFetch(`/api/users?${this._queryParams({ page: 1, per_page: 100 })}`);
+      const mapped = (first.data ?? []).map(u => this._mapUser(u));
+      const lastPage = first.last_page ?? 1;
+
+      for (let page = 2; page <= lastPage; page++) {
+        const data = await apiFetch(`/api/users?${this._queryParams({ page, per_page: 100 })}`);
+        mapped.push(...(data.data ?? []).map(u => this._mapUser(u)));
+      }
+
+      return mapped;
+    },
+
+    // ── Export ────────────────────────────────────────────────────────────────
+    async exportUsers() {
+      try {
+        const users = await this.fetchAllFilteredUsers();
+        const headers = ['ID','First Name','Middle Name','Last Name','Full Name','Email','Phone','Department','Role','Status','Join Date','Last Active'];
+        const rows = users.map(u => [
+          u.id, u.first_name, u.middle_name, u.last_name, u.name, u.email, u.phone,
+          u.department, u.roleLabel, u.status, u.joinDate, u.lastActive,
         ]);
-        
-        return [headers, ...rows].map(row => row.join(',')).join('\n');
-    },
-
-    downloadCSV(content, filename) {
-        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const csv = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\n');
+        downloadBlob('users-export.csv', csv, 'text/csv;charset=utf-8;');
+        showToast(`Exported ${users.length} user(s).`);
+      } catch (err) {
+        showToast('Export failed: ' + err.message, 'danger');
+      }
     },
 
     sendBulkInvites() {
-        if (this.selectedUsers.length === 0) {
-            alert('Please select users to send invites to');
-            return;
-        }
-        
-        // Simulate sending invites
-        alert(`Sent invites to ${this.selectedUsers.length} users`);
-        this.selectedUsers = [];
+      if (this.selectedUsers.length === 0) {
+        showToast('Please select users to send invites to.', 'warning');
+        return;
+      }
+      const selected = this.users.filter(user => this.selectedUsers.includes(user.id));
+      const emails = selected.map(user => user.email).filter(Boolean);
+      if (emails.length === 0) {
+        showToast('Selected users do not have email addresses.', 'warning');
+        return;
+      }
+      const subject = encodeURIComponent('Invitation to Metis Admin');
+      const body = encodeURIComponent('Hi,\n\nYou are invited to access Metis Admin.\n\nThanks.');
+      window.location.href = `mailto:${emails.join(',')}?subject=${subject}&body=${body}`;
+      showToast(`Prepared invite email for ${emails.length} user(s).`);
+      this.selectedUsers = [];
     },
 
-    generateReport() {
-        // Generate and download user report
-        const reportData = {
-            generatedAt: new Date().toISOString(),
-            totalUsers: this.users.length,
-            stats: this.stats,
-            departmentBreakdown: this.departmentStats,
-            recentActivity: this.recentActivities
+    async generateReport() {
+      try {
+        const users = await this.fetchAllFilteredUsers();
+        const report = {
+          generatedAt: new Date().toISOString(),
+          filters: {
+            search: this.searchQuery,
+            status: this.statusFilter || 'all',
+            role: this.roleFilter || 'all',
+          },
+          totalUsers:  users.length,
+          stats:       this.stats,
+          users,
         };
-        
-        const jsonContent = JSON.stringify(reportData, null, 2);
-        this.downloadCSV(jsonContent, 'user-report.json');
+        downloadBlob('user-report.json', JSON.stringify(report, null, 2), 'application/json');
+        showToast(`Generated report for ${users.length} user(s).`);
+      } catch (err) {
+        showToast('Report failed: ' + err.message, 'danger');
+      }
     },
-    
+
+    // ── Computed stats (derived from current page + totals) ───────────────────
     get stats() {
-        const active = this.users.filter(u => u.status === 'active').length;
-        const pending = this.users.filter(u => u.status === 'pending').length;
-        const inactive = this.users.filter(u => u.status === 'inactive').length;
-        const thisMonth = new Date();
-        const newThisMonth = this.users.filter(u => {
-            const joinDate = new Date(u.joinDate);
-            return joinDate.getMonth() === thisMonth.getMonth() && 
-                   joinDate.getFullYear() === thisMonth.getFullYear();
-        }).length;
-        
-        return {
-            total: this.users.length,
-            active,
-            pending,
-            inactive,
-            newThisMonth,
-            activePercentage: this.users.length > 0 ? (active / this.users.length) * 100 : 0,
-            pendingPercentage: this.users.length > 0 ? (pending / this.users.length) * 100 : 0,
-            inactivePercentage: this.users.length > 0 ? (inactive / this.users.length) * 100 : 0,
-        };
+      const active   = this.users.filter(u => u.status === 'active').length;
+      const inactive = this.users.filter(u => u.status === 'inactive').length;
+      const now      = new Date();
+      const newThisMonth = this.users.filter(u => {
+        const d = new Date(u.joinDate);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }).length;
+
+      return {
+        total:             this.totalUsers,
+        active,
+        inactive,
+        newThisMonth,
+        activePercentage:  this.users.length > 0 ? Math.round((active / this.users.length) * 100) : 0,
+      };
     },
 
     get departmentStats() {
-        const counts = this.users.reduce((acc, user) => {
-            acc[user.department] = (acc[user.department] || 0) + 1;
-            return acc;
-        }, {});
-        
-        const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
-        
-        return Object.entries(counts).map(([name, count], index) => ({
-            name,
-            count,
-            percentage: this.users.length > 0 ? Math.round((count / this.users.length) * 100) : 0,
-            color: colors[index % colors.length]
-        }));
+      const counts = this.users.reduce((acc, u) => {
+        const dept = u.department || 'Unknown';
+        acc[dept] = (acc[dept] || 0) + 1;
+        return acc;
+      }, {});
+      const colors = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
+      return Object.entries(counts).map(([name, count], i) => ({
+        name, count,
+        percentage: this.users.length > 0 ? Math.round((count / this.users.length) * 100) : 0,
+        color: colors[i % colors.length],
+      }));
     },
 
     get recentActivities() {
-        return [
-            { 
-                id: 1,
-                user: 'John Doe', 
-                action: 'logged in', 
-                time: '2 minutes ago', 
-                type: 'login',
-                icon: 'bi-box-arrow-in-right',
-                details: 'User logged in from Chrome on Windows'
-            },
-            { 
-                id: 2,
-                user: 'Jane Smith', 
-                action: 'updated profile', 
-                time: '1 hour ago', 
-                type: 'update',
-                icon: 'bi-person-gear',
-                details: 'Updated contact information and preferences'
-            },
-            { 
-                id: 3,
-                user: 'Mike Johnson', 
-                action: 'created account', 
-                time: '1 day ago', 
-                type: 'create',
-                icon: 'bi-person-plus',
-                details: 'New user account created and activated'
-            },
-            { 
-                id: 4,
-                user: 'Sarah Wilson', 
-                action: 'changed password', 
-                time: '2 days ago', 
-                type: 'security',
-                icon: 'bi-shield-lock',
-                details: 'Password changed for security reasons'
-            },
-            { 
-                id: 5,
-                user: 'Bob Brown', 
-                action: 'logged out', 
-                time: '1 week ago', 
-                type: 'logout',
-                icon: 'bi-box-arrow-right',
-                details: 'User logged out from all devices'
-            }
-        ];
+      return this.users.slice(0, 5).map((u, i) => ({
+        id:      i + 1,
+        user:    u.name,
+        action:  u.status === 'active' ? 'logged in' : 'account inactive',
+        time:    u.lastActive,
+        type:    u.status === 'active' ? 'login' : 'logout',
+        icon:    u.status === 'active' ? 'box-arrow-in-right' : 'box-arrow-right',
+        details: `${u.department || 'No department'} · ${u.email}`,
+      }));
     },
 
     get systemAlerts() {
-        return [
-            { 
-                id: 1, 
-                title: 'User Registration Alert',
-                message: 'New user registrations require approval', 
-                type: 'warning', 
-                time: '5 minutes ago' 
-            },
-            { 
-                id: 2, 
-                title: 'Backup Complete',
-                message: 'System backup completed successfully', 
-                type: 'success', 
-                time: '1 hour ago' 
-            },
-            { 
-                id: 3, 
-                title: 'Maintenance Notice',
-                message: 'Database maintenance scheduled for tonight', 
-                type: 'info', 
-                time: '2 hours ago' 
-            }
-        ];
+      const alerts = [];
+      if (this.totalUsers === 0) {
+        alerts.push({
+          id: 2,
+          title: 'No Users',
+          message: 'No users found in the system. Add your first user.',
+          type: 'info',
+          time: 'Just now',
+        });
+      }
+      return alerts;
     },
-    
+
+    // ── Charts ────────────────────────────────────────────────────────────────
     initCharts() {
-        // Active Users Chart
-        const activeUserChartEl = document.querySelector('#activeUserChart');
-        if (activeUserChartEl && !activeUserChartEl.hasAttribute('data-chart-initialized')) {
-            activeUserChartEl.setAttribute('data-chart-initialized', 'true');
-            const activeUserOptions = {
-                series: [{
-                    name: 'Active Users',
-                    data: [65, 70, 80, 85, 90, 95, 88]
-                }],
-                chart: {
-                    type: 'line',
-                    height: 50,
-                    sparkline: { enabled: true }
-                },
-                stroke: { curve: 'smooth', width: 2 },
-                colors: ['#10b981']
-            };
-            this.charts.activeUsers = new ApexCharts(activeUserChartEl, activeUserOptions);
-            this.charts.activeUsers.render();
-        }
+      this._initSparkline();
+      this._initGrowthChart();
+      this._initRoleChart();
+    },
 
-        // User Growth Chart
-        const userGrowthChartEl = document.querySelector('#userGrowthChart');
-        if (userGrowthChartEl && !userGrowthChartEl.hasAttribute('data-chart-initialized')) {
-            userGrowthChartEl.setAttribute('data-chart-initialized', 'true');
-            const userGrowthOptions = {
-                series: [{
-                    name: 'New Users',
-                    data: [5, 8, 12, 15, 10, 18, 22]
-                }],
-                chart: {
-                    type: 'bar',
-                    height: 250,
-                    width: '100%',
-                    toolbar: { show: false },
-                    parentHeightOffset: 0,
-                    offsetX: 0,
-                    offsetY: 0,
-                    zoom: {
-                        enabled: false
-                    },
-                    selection: {
-                        enabled: false
-                    }
-                },
-                responsive: [{
-                    breakpoint: 768,
-                    options: {
-                        chart: {
-                            height: 200
-                        }
-                    }
-                }],
-                colors: ['#6366f1'],
-                plotOptions: {
-                    bar: {
-                        borderRadius: 4,
-                        columnWidth: '50%',
-                        barHeight: '70%',
-                        distributed: false
-                    }
-                },
-                xaxis: {
-                    categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    axisBorder: { show: false },
-                    axisTicks: { show: false },
-                    labels: {
-                        style: {
-                            fontSize: '12px',
-                            colors: '#64748b'
-                        }
-                    }
-                },
-                yaxis: { 
-                    show: false 
-                },
-                grid: { 
-                    show: false 
-                },
-                dataLabels: {
-                    enabled: false
-                },
-                tooltip: {
-                    theme: 'light'
-                }
-            };
-            this.charts.userGrowth = new ApexCharts(userGrowthChartEl, userGrowthOptions);
-            this.charts.userGrowth.render();
+    setGrowthPeriod(days) {
+      this.growthPeriod = Number(days);
+      this.$nextTick(() => {
+        if (this.charts.userGrowth) {
+          this.charts.userGrowth.destroy();
+          delete this.charts.userGrowth;
         }
+        document.querySelector('#userGrowthChart')?.removeAttribute('data-chart-initialized');
+        this._initGrowthChart();
+      });
+    },
 
-        // Role Distribution Chart
-        const roleDistributionChartEl = document.querySelector('#roleDistributionChart');
-        if (roleDistributionChartEl && !roleDistributionChartEl.hasAttribute('data-chart-initialized')) {
-            roleDistributionChartEl.setAttribute('data-chart-initialized', 'true');
-            const roleCounts = this.users.reduce((acc, user) => {
-                acc[user.role] = (acc[user.role] || 0) + 1;
-                return acc;
-            }, {});
-            
-            const roleDistributionOptions = {
-                series: Object.values(roleCounts),
-                chart: {
-                    type: 'donut',
-                    height: 140
-                },
-                labels: Object.keys(roleCounts),
-                colors: ['#6366f1', '#10b981', '#f59e0b', '#ef4444'],
-                legend: { 
-                    show: false
-                },
-                plotOptions: {
-                    pie: {
-                        donut: {
-                            size: '70%'
-                        }
-                    }
-                },
-                dataLabels: {
-                    enabled: false
-                },
-                tooltip: {
-                    theme: 'light'
-                },
-                responsive: [{
-                    breakpoint: 480,
-                    options: {
-                        chart: { width: 200 }
-                    }
-                }]
-            };
-            this.charts.roleDistribution = new ApexCharts(roleDistributionChartEl, roleDistributionOptions);
-            this.charts.roleDistribution.render();
-        }
-    }
+    _initSparkline() {
+      const el = document.querySelector('#activeUserChart');
+      if (!el || el.hasAttribute('data-chart-initialized')) return;
+      el.setAttribute('data-chart-initialized', 'true');
+      this.charts.activeUsers = new ApexCharts(el, {
+        series: [{ name: 'Active', data: [65,70,80,85,90,95,88] }],
+        chart:  { type: 'line', height: 50, sparkline: { enabled: true } },
+        stroke: { curve: 'smooth', width: 2 },
+        colors: ['#10b981'],
+      });
+      this.charts.activeUsers.render();
+    },
+
+    _initGrowthChart() {
+      const el = document.querySelector('#userGrowthChart');
+      if (!el || el.hasAttribute('data-chart-initialized')) return;
+      el.setAttribute('data-chart-initialized', 'true');
+
+      const period = Number(this.growthPeriod) || 7;
+      const dayCounts = new Array(period).fill(0);
+      const dayLabels = [];
+      const now = new Date();
+      for (let i = period - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        dayLabels.push(d.toLocaleDateString('en', period <= 7 ? { weekday: 'short' } : { month: 'short', day: 'numeric' }));
+        dayCounts[period - 1 - i] = this.users.filter(u => {
+          const j = new Date(u.joinDate);
+          return j.toDateString() === d.toDateString();
+        }).length;
+      }
+
+      this.charts.userGrowth = new ApexCharts(el, {
+        series: [{ name: 'New Users', data: dayCounts }],
+        chart:  { type: 'bar', height: 250, width: '100%', toolbar: { show: false }, zoom: { enabled: false } },
+        colors: ['#6366f1'],
+        plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
+        xaxis: {
+          categories: dayLabels,
+          axisBorder: { show: false },
+          axisTicks:  { show: false },
+          labels: { style: { fontSize: '12px', colors: '#64748b' } },
+        },
+        yaxis: { show: false },
+        grid:  { show: false },
+        dataLabels: { enabled: false },
+        tooltip: { theme: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light' },
+      });
+      this.charts.userGrowth.render();
+    },
+
+    _initRoleChart() {
+      const el = document.querySelector('#roleDistributionChart');
+      if (!el || el.hasAttribute('data-chart-initialized')) return;
+      el.setAttribute('data-chart-initialized', 'true');
+
+      const roleCounts = this.users.reduce((acc, u) => {
+        acc[u.roleLabel] = (acc[u.roleLabel] || 0) + 1;
+        return acc;
+      }, {});
+
+      if (Object.keys(roleCounts).length === 0) return;
+
+      this.charts.roleDistribution = new ApexCharts(el, {
+        series: Object.values(roleCounts),
+        chart:  { type: 'donut', height: 140 },
+        labels: Object.keys(roleCounts),
+        colors: ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6'],
+        legend: { show: false },
+        plotOptions: { pie: { donut: { size: '70%' } } },
+        dataLabels: { enabled: false },
+        tooltip: { theme: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light' },
+      });
+      this.charts.roleDistribution.render();
+    },
   }));
 
-  // Search Component for header search
+  // ─── userForm ───────────────────────────────────────────────────────────────
+  Alpine.data('userForm', () => ({
+    form: {
+      first_name: '',
+      middle_name: '',
+      last_name:  '',
+      email:      '',
+      phone:      '',
+      department: '',
+      role:       'User',
+      is_active:  true,
+      password:              '',
+      password_confirmation: '',
+    },
+    editingUserId: null,
+    saving:        false,
+    roles:         [],
+
+    async init() {
+      this.resetForm();
+      try {
+        const data = await apiFetch('/api/roles');
+        this.roles = data;
+      } catch { /* roles list optional */ }
+
+      // Reset form when modal is hidden
+      document.getElementById('userModal')?.addEventListener('hidden.bs.modal', () => {
+        this.resetForm();
+        const title = document.querySelector('#userModal .modal-title');
+        if (title) title.textContent = 'Add New User';
+      });
+    },
+
+    resetForm() {
+      this.form = {
+        first_name: '',
+        middle_name: '',
+        last_name:  '',
+        email:      '',
+        phone:      '',
+        department: '',
+        role:       'User',
+        is_active:  true,
+        password:              '',
+        password_confirmation: '',
+      };
+      this.editingUserId = null;
+      this.saving        = false;
+    },
+
+    async saveUser() {
+      if (!this.form.first_name || !this.form.email) {
+        showToast('First name and email are required.', 'warning');
+        return;
+      }
+      if (!this.editingUserId && !this.form.password) {
+        showToast('Password is required when creating a user.', 'warning');
+        return;
+      }
+
+      this.saving = true;
+      try {
+        const name = buildFullName(this.form.first_name, this.form.middle_name, this.form.last_name);
+        const payload = {
+          name,
+          first_name:  this.form.first_name,
+          middle_name: this.form.middle_name || null,
+          last_name:   this.form.last_name || null,
+          email:       this.form.email,
+          phone:       this.form.phone      || null,
+          department:  this.form.department || null,
+          is_active:   this.form.is_active,
+          roles:       [this.form.role],
+        };
+        if (this.form.password) {
+          payload.password              = this.form.password;
+          payload.password_confirmation = this.form.password_confirmation;
+        }
+
+        if (this.editingUserId) {
+          const res = await apiFetch(`/api/users/${this.editingUserId}`, {
+            method: 'PUT',
+            body:   JSON.stringify(payload),
+          });
+          showToast(res.message || 'User updated successfully.', 'success');
+        } else {
+          const res = await apiFetch('/api/users', {
+            method: 'POST',
+            body:   JSON.stringify(payload),
+          });
+          showToast(res.message || 'User created successfully.', 'success');
+        }
+
+        // Close modal
+        getModal('#userModal')?.hide();
+
+        // Reload table
+        const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
+        if (table) await table.loadUsers();
+
+      } catch (err) {
+        showToast(`${this.editingUserId ? 'Failed to update user' : 'Failed to create user'}: ${err.message}`, 'danger');
+      } finally {
+        this.saving = false;
+      }
+    },
+  }));
+
+  // ─── userProfile ────────────────────────────────────────────────────────────
+  Alpine.data('userProfile', () => ({
+    user:         null,
+    loginHistory: [],
+    loading:      false,
+    saving:       false,
+
+    editFromProfile() {
+      if (!this.user) return;
+      getModal('#viewUserModal')?.hide();
+
+      this.$nextTick(() => {
+        const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
+        if (table) table.editUser(this.user);
+      });
+    },
+
+    async toggleActive() {
+      if (!this.user) return;
+      this.saving = true;
+      try {
+        const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
+        if (table) {
+          await table.toggleActive(this.user);
+        }
+      } finally {
+        this.saving = false;
+      }
+    },
+  }));
+
+  // ─── importForm ─────────────────────────────────────────────────────────────
+  Alpine.data('importForm', () => ({
+    file:     null,
+    importing: false,
+    result:   null,
+
+    async importUsers() {
+      if (!this.file) {
+        showToast('Please select a CSV file.', 'warning');
+        return;
+      }
+      this.importing = true;
+      this.result    = null;
+
+      const text = await this.file.text();
+      const lines = text.trim().split('\n').filter(l => l.trim());
+      if (lines.length < 2) {
+        showToast('CSV file is empty or has no data rows.', 'warning');
+        this.importing = false;
+        return;
+      }
+
+      // Skip header row; parse: first_name, middle_name, last_name, email, role, status, phone, department
+      let created = 0;
+      let errors  = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const [firstName, middleName, lastName, email, role, statusRaw, phone, department] = parseCsvLine(lines[i]);
+        if (!firstName || !email) { errors.push(`Row ${i + 1}: missing first name or email`); continue; }
+
+        const isActive = statusRaw?.toLowerCase() !== 'inactive';
+        const name = buildFullName(firstName, middleName, lastName);
+
+        try {
+          const tempPw = `Temp@${Math.random().toString(36).slice(2, 8)}1Aa`;
+          await apiFetch('/api/users', {
+            method: 'POST',
+            body: JSON.stringify({
+              name,
+              first_name: firstName,
+              middle_name: middleName || null,
+              last_name: lastName || null,
+              email,
+              phone: phone || null,
+              department: department || null,
+              password:              tempPw,
+              password_confirmation: tempPw,
+              is_active: isActive,
+              roles: [formatRoleName(role)],
+            }),
+          });
+          created++;
+        } catch (err) {
+          errors.push(`Row ${i + 1} (${email}): ${err.message}`);
+        }
+      }
+
+      this.result = { created, errors };
+      this.importing = false;
+
+      if (created > 0) {
+        showToast(`Imported ${created} user(s) successfully.`);
+        const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
+        if (table) await table.loadUsers();
+      }
+      if (errors.length > 0) {
+        showToast(`${errors.length} row(s) failed. See import result.`, 'warning');
+      }
+    },
+
+    handleFile(event) {
+      this.file   = event.target.files[0] ?? null;
+      this.result = null;
+    },
+  }));
+
+  // ─── searchComponent ─────────────────────────────────────────────────────────
   Alpine.data('searchComponent', createSearchComponent({
     delayMs: 300,
     getResults(query) {
-      const userTable = Alpine.$data(document.querySelector('[x-data="userTable"]'));
-      if (userTable) {
-        userTable.searchQuery = query;
-        userTable.filterUsers();
+      const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
+      if (table) {
+        table.searchQuery = query;
+        table.filterUsers();
       }
       const q = query.toLowerCase();
       return [
-        { title: 'Dashboard', url: '/', type: 'page' },
-        { title: 'Users', url: '/users.html', type: 'page' },
-        { title: 'Settings', url: '/settings.html', type: 'page' },
-        { title: 'Analytics', url: '/analytics.html', type: 'page' },
-        { title: 'Security', url: '/security.html', type: 'page' },
-        { title: 'Help', url: '/help.html', type: 'page' },
-      ].filter((item) => item.title.toLowerCase().includes(q));
+        { title: 'Dashboard',  url: '/',          type: 'page' },
+        { title: 'Users',      url: '/users',      type: 'page' },
+        { title: 'Settings',   url: '/settings',   type: 'page' },
+        { title: 'Analytics',  url: '/analytics',  type: 'page' },
+        { title: 'Security',   url: '/security',   type: 'page' },
+        { title: 'Help',       url: '/help',        type: 'page' },
+      ].filter(item => item.title.toLowerCase().includes(q));
     },
   }));
 
-  // Theme Switch Component
+  // ─── themeSwitch ─────────────────────────────────────────────────────────────
   Alpine.data('themeSwitch', () => ({
     currentTheme: 'light',
-    
     init() {
-      // Get theme from localStorage or default to light
       this.currentTheme = localStorage.getItem('theme') || 'light';
       this.applyTheme();
     },
-    
     toggle() {
       this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
       this.applyTheme();
       localStorage.setItem('theme', this.currentTheme);
     },
-    
     applyTheme() {
       document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
-    }
+    },
   }));
-
-  // User Form Component for modal
-  Alpine.data('userForm', () => ({
-    form: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      role: 'user',
-      status: 'active',
-      phone: ''
-    },
-    editingUserId: null,
-    
-    init() {
-      this.resetForm();
-    },
-    
-    resetForm() {
-      this.form = {
-        firstName: '',
-        lastName: '',
-        email: '',
-        role: 'user',
-        status: 'active',
-        phone: ''
-      };
-      this.editingUserId = null;
-    },
-    
-    saveUser() {
-      // Validate form
-      if (!this.form.firstName || !this.form.lastName || !this.form.email) {
-        alert('Please fill in all required fields');
-        return;
-      }
-      
-      // Get the user table component
-      const userTable = Alpine.$data(document.querySelector('[x-data="userTable"]'));
-      if (!userTable) return;
-      
-      if (this.editingUserId) {
-        // Update existing user
-        const user = userTable.users.find(u => u.id === this.editingUserId);
-        if (user) {
-          user.name = `${this.form.firstName} ${this.form.lastName}`;
-          user.email = this.form.email;
-          user.role = this.form.role;
-          user.status = this.form.status;
-          user.phone = this.form.phone;
-          userTable.filterUsers();
-        }
-      } else {
-        // Create new user
-        userTable.createUser(this.form);
-      }
-      
-      // Close modal and reset form
-      const modal = document.querySelector('#userModal');
-      if (modal) {
-        const bsModal = bootstrap.Modal.getInstance(modal);
-        if (bsModal) bsModal.hide();
-      }
-      
-      this.resetForm();
-    }
-  }));
-}); 
+});

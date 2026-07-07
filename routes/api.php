@@ -72,6 +72,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // ── User Management ──────────────────────────────────────────────────────
     Route::middleware('permission:manage-users')->group(function (): void {
+        Route::patch('users/{user}/restore', [UserController::class, 'restore'])
+            ->name('api.users.restore');
+
+        Route::delete('users/{user}/force', [UserController::class, 'forceDelete'])
+            ->name('api.users.force-delete');
+
         Route::apiResource('users', UserController::class)
             ->names([
                 'index'   => 'api.users.index',

@@ -180,14 +180,17 @@
   .navbar-brand {
     font-weight: 700;
     font-size: 1.25rem;
+    transition: opacity 0.2s ease;
 
     img {
       margin-right: 0.5rem;
+      transition: opacity 0.2s ease;
     }
 
     .h4 {
       font-size: 1.125rem;
       letter-spacing: -0.01em;
+      transition: opacity 0.2s ease;
     }
   }
 
@@ -340,6 +343,33 @@
     .admin-main,
     .admin-footer {
       margin-left: var(--sidebar-mini-width);
+    }
+  }
+}
+
+@media (min-width: 992px) {
+  .admin-header {
+    .navbar-brand {
+      width: var(--sidebar-width);
+      min-width: var(--sidebar-width);
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.2s ease;
+    }
+  }
+
+  .admin-wrapper.sidebar-collapsed {
+    .admin-header {
+      .navbar-brand {
+        width: var(--sidebar-mini-width);
+        min-width: var(--sidebar-mini-width);
+
+        img,
+        .h4 {
+          opacity: 0;
+          pointer-events: none;
+        }
+      }
     }
   }
 }

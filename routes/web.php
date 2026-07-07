@@ -45,4 +45,28 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/modals', [PageController::class, 'elementsModals'])->name('elements-modals');
         Route::get('/tables', [PageController::class, 'elementsTables'])->name('elements-tables');
     });
+
+    // ─── User Management JSON API ─────────────────────────────────────────────
+    Route::prefix('api')->group(function (): void {
+        // Bulk action must be defined before the resource to avoid route conflict
+        Route::post('/users/bulk-action', \App\Http\Controllers\Users\BulkUserController::class)->name('api.users.bulk');
+        Route::patch('/users/{user}/restore', [\App\Http\Controllers\Users\UserController::class, 'restore'])->name('api.users.restore');
+        Route::delete('/users/{user}/force', [\App\Http\Controllers\Users\UserController::class, 'forceDelete'])->name('api.users.force-delete');
+        Route::apiResource('/users', \App\Http\Controllers\Users\UserController::class)->names([
+            'index'   => 'api.users.index',
+            'store'   => 'api.users.store',
+            'show'    => 'api.users.show',
+            'update'  => 'api.users.update',
+            'destroy' => 'api.users.destroy',
+        ]);
+        Route::patch('/users/{user}/toggle-active', [\App\Http\Controllers\Users\UserController::class, 'toggleActive'])->name('api.users.toggle-active');
+        Route::post('/users/{user}/sync-roles', [\App\Http\Controllers\Users\UserController::class, 'syncRoles'])->name('api.users.sync-roles');
+        Route::post('/users/{user}/sync-permissions', [\App\Http\Controllers\Users\UserController::class, 'syncPermissions'])->name('api.users.sync-permissions');
+        Route::get('/users/{user}/login-history', [\App\Http\Controllers\Users\UserController::class, 'loginHistory'])->name('api.users.login-history');
+
+        // Roles list (for dropdowns)
+        Route::get('/roles', function () {
+            return response()->json(\Spatie\Permission\Models\Role::orderBy('name')->get(['id', 'name']));
+        })->name('api.roles.index');
+    });
 });

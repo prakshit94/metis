@@ -10,13 +10,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -25,8 +26,13 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'first_name',
+        'middle_name',
+        'last_name',
         'email',
         'password',
+        'phone',
+        'department',
         'is_active',
         'password_changed_at',
         'suspended_until',
@@ -55,6 +61,7 @@ class User extends Authenticatable
             'is_active'          => 'boolean',
             'password_changed_at' => 'datetime',
             'suspended_until'    => 'datetime',
+            'deleted_at'         => 'datetime',
         ];
     }
 

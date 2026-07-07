@@ -20,10 +20,15 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'          => ['required', 'string', 'max:255'],
+            'name'          => ['sometimes', 'string', 'max:255'],
+            'first_name'    => ['required_without:name', 'string', 'max:100'],
+            'middle_name'   => ['sometimes', 'nullable', 'string', 'max:100'],
+            'last_name'     => ['sometimes', 'nullable', 'string', 'max:100'],
             'email'         => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password'      => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'is_active'     => ['sometimes', 'boolean'],
+            'phone'         => ['sometimes', 'nullable', 'string', 'max:30'],
+            'department'    => ['sometimes', 'nullable', 'string', 'max:100'],
             'roles'         => ['sometimes', 'array'],
             'roles.*'       => ['string', 'exists:roles,name'],
             'permissions'   => ['sometimes', 'array'],
@@ -33,8 +38,15 @@ class StoreUserRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $name = trim(implode(' ', array_filter([
+            trim((string) $this->input('first_name', '')),
+            trim((string) $this->input('middle_name', '')),
+            trim((string) $this->input('last_name', '')),
+        ])));
+
         $this->merge([
             'email' => strtolower(trim((string) $this->input('email', ''))),
+            'name'  => $name !== '' ? $name : $this->input('name'),
         ]);
     }
 }

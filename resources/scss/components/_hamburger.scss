@@ -53,6 +53,10 @@
     transform: translateY(-50%);
   }
 
+  .admin-wrapper.sidebar-collapsed .admin-header .hamburger-menu {
+    left: calc(var(--sidebar-mini-width) - 40px - 0.5rem);
+  }
+
   // Override :active transform so vertical centering isn't lost
   .admin-header .hamburger-menu:active {
     transform: translateY(-50%) scale(0.95);

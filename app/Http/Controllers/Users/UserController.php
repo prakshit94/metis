@@ -27,14 +27,37 @@ class UserController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $sortMap = [
+            'name'       => 'name',
+            'firstName'  => 'first_name',
+            'lastName'   => 'last_name',
+            'email'      => 'email',
+            'lastActive' => 'updated_at',
+            'joinDate'   => 'created_at',
+            'created_at' => 'created_at',
+            'updated_at' => 'updated_at',
+        ];
+        $sortBy = $sortMap[$request->input('sort_by', 'name')] ?? 'name';
+        $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+
+        $deletedFilter = $request->input('deleted');
+
         $users = User::query()
+            ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
+            ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
             ->with(['roles', 'permissions'])
             ->when(
                 $request->filled('search'),
                 fn ($q) => $q->where(function ($inner) use ($request): void {
                     $term = '%' . $request->input('search') . '%';
                     $inner->where('name', 'like', $term)
-                        ->orWhere('email', 'like', $term);
+                        ->orWhere('first_name', 'like', $term)
+                        ->orWhere('middle_name', 'like', $term)
+                        ->orWhere('last_name', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('phone', 'like', $term)
+                        ->orWhere('department', 'like', $term);
                 }),
             )
             ->when(
@@ -45,8 +68,8 @@ class UserController extends Controller
                 $request->has('is_active'),
                 fn ($q) => $q->where('is_active', (bool) $request->input('is_active')),
             )
-            ->orderBy($request->input('sort_by', 'name'), $request->input('sort_dir', 'asc'))
-            ->paginate((int) $request->input('per_page', 15));
+            ->orderBy($sortBy, $sortDir)
+            ->paginate($perPage);
 
         return response()->json($users);
     }
@@ -59,10 +82,15 @@ class UserController extends Controller
         $validated = $request->validated();
 
         $user = User::create([
-            'name'      => $validated['name'],
-            'email'     => $validated['email'],
-            'password'  => Hash::make($validated['password']),
-            'is_active' => $validated['is_active'] ?? true,
+            'name'        => $validated['name'],
+            'first_name'  => $validated['first_name'] ?? null,
+            'middle_name' => $validated['middle_name'] ?? null,
+            'last_name'   => $validated['last_name'] ?? null,
+            'email'       => $validated['email'],
+            'password'    => Hash::make($validated['password']),
+            'is_active'   => $validated['is_active'] ?? true,
+            'phone'       => $validated['phone'] ?? null,
+            'department'  => $validated['department'] ?? null,
         ]);
 
         if (! empty($validated['roles'])) {
@@ -84,9 +112,11 @@ class UserController extends Controller
     /**
      * Show a single user with their roles, permissions, and recent login history.
      */
-    public function show(User $user): JsonResponse
+    public function show(int|string $user): JsonResponse
     {
-        $user->load(['roles', 'permissions']);
+        $user = User::withTrashed()
+            ->with(['roles', 'permissions'])
+            ->findOrFail($user);
 
         $loginHistory = $user->loginHistories()
             ->orderByDesc('attempted_at')
@@ -107,14 +137,19 @@ class UserController extends Controller
     {
         $validated = $request->validated();
 
-        $fillable = array_filter([
-            'name'      => $validated['name'] ?? null,
-            'email'     => $validated['email'] ?? null,
-            'is_active' => $validated['is_active'] ?? null,
-            'password'  => isset($validated['password']) ? Hash::make($validated['password']) : null,
-        ], fn ($v) => $v !== null);
+        $fillable = [];
+        foreach (['name', 'first_name', 'middle_name', 'last_name', 'email', 'is_active', 'phone', 'department'] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $fillable[$field] = $validated[$field];
+            }
+        }
+        if (array_key_exists('password', $validated)) {
+            $fillable['password'] = Hash::make($validated['password']);
+        }
 
-        $user->update($fillable);
+        if (! empty($fillable)) {
+            $user->update($fillable);
+        }
 
         if (array_key_exists('roles', $validated)) {
             $user->syncRoles($validated['roles']);
@@ -133,11 +168,21 @@ class UserController extends Controller
     }
 
     /**
-     * Delete a user and revoke all their Sanctum tokens.
+     * Temporarily delete a user and revoke all their Sanctum tokens.
      * Prevents deletion of the last Super Admin.
      */
-    public function destroy(User $user): JsonResponse
+    public function destroy(int|string $user): JsonResponse
     {
+        $user = User::withTrashed()
+            ->with('roles')
+            ->findOrFail($user);
+
+        if ($user->trashed()) {
+            return response()->json([
+                'message' => "User [{$user->email}] is already temporarily deleted.",
+            ]);
+        }
+
         if ($user->hasRole('Super Admin')) {
             $superAdminCount = User::role('Super Admin')->count();
             if ($superAdminCount <= 1) {
@@ -154,7 +199,59 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json([
-            'message' => "User [{$email}] deleted successfully.",
+            'message' => "User [{$email}] temporarily deleted successfully.",
+        ]);
+    }
+
+    /**
+     * Restore a temporarily deleted user.
+     */
+    public function restore(int|string $user): JsonResponse
+    {
+        $user = User::withTrashed()
+            ->with(['roles', 'permissions'])
+            ->findOrFail($user);
+
+        if (! $user->trashed()) {
+            return response()->json([
+                'message' => "User [{$user->email}] is not deleted.",
+                'data'    => $user,
+            ]);
+        }
+
+        $user->restore();
+        $user->load(['roles', 'permissions']);
+
+        return response()->json([
+            'message' => "User [{$user->email}] restored successfully.",
+            'data'    => $user,
+        ]);
+    }
+
+    /**
+     * Permanently delete a user.
+     */
+    public function forceDelete(int|string $user): JsonResponse
+    {
+        $user = User::withTrashed()
+            ->with('roles')
+            ->findOrFail($user);
+
+        if ($user->hasRole('Super Admin')) {
+            $superAdminCount = User::role('Super Admin')->count();
+            if (! $user->trashed() && $superAdminCount <= 1) {
+                return response()->json([
+                    'message' => 'Cannot permanently delete the last Super Admin user.',
+                ], 403);
+            }
+        }
+
+        $email = $user->email;
+        $user->tokens()->delete();
+        $user->forceDelete();
+
+        return response()->json([
+            'message' => "User [{$email}] permanently deleted successfully.",
         ]);
     }
 

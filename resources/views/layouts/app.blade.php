@@ -79,7 +79,7 @@
     </div><!-- /.admin-wrapper -->
 
     <!-- Toast Container -->
-    <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 11">
+    <div aria-live="polite" aria-atomic="true" class="toast-stack position-fixed end-0 p-3">
         <div id="toast-container"></div>
     </div>
 
