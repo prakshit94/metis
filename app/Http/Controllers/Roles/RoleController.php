@@ -7,18 +7,17 @@ namespace App\Http\Controllers\Roles;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Roles\StoreRoleRequest;
 use App\Http\Requests\Roles\UpdateRoleRequest;
+use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
 
 /**
  * Full CRUD for Spatie Roles, including permission syncing.
  *
- * All routes are protected at the route level via:
- *   middleware('permission:manage-roles')
+ * Routes are protected by operation-level role permissions.
  *
- * The Super Admin bypass is enforced globally via Gate::before in
- * AppServiceProvider and therefore applies automatically here.
+ * Super Admin is protected from modification and receives permissions via
+ * RolesAndPermissionsSeeder.
  */
 class RoleController extends Controller
 {
@@ -28,8 +27,25 @@ class RoleController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        abort_unless($request->user()?->can('role-view'), 403);
+
+        $sortMap = [
+            'name' => 'name',
+            'guard' => 'guard_name',
+            'permissions' => 'permissions_count',
+            'created_at' => 'created_at',
+            'updated_at' => 'updated_at',
+        ];
+        $sortBy = $sortMap[$request->input('sort_by', 'name')] ?? 'name';
+        $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+        $deletedFilter = $request->input('deleted');
+
         $roles = Role::query()
+            ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
+            ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
             ->withCount('permissions')
+            ->with('permissions')
             ->when(
                 $request->filled('search'),
                 fn ($q) => $q->where('name', 'like', '%' . $request->input('search') . '%'),
@@ -38,8 +54,8 @@ class RoleController extends Controller
                 $request->filled('guard_name'),
                 fn ($q) => $q->where('guard_name', $request->input('guard_name')),
             )
-            ->orderBy($request->input('sort_by', 'name'), $request->input('sort_dir', 'asc'))
-            ->paginate((int) $request->input('per_page', 15));
+            ->orderBy($sortBy, $sortDir)
+            ->paginate($perPage);
 
         return response()->json($roles);
     }
@@ -69,10 +85,17 @@ class RoleController extends Controller
     /**
      * Show a single role with all its permissions.
      */
-    public function show(Role $role): JsonResponse
+    public function show(Request $request, int|string $role): JsonResponse
     {
+        abort_unless($request->user()?->can('role-view'), 403);
+
+        $role = Role::withTrashed()
+            ->with('permissions')
+            ->withCount('permissions')
+            ->findOrFail($role);
+
         return response()->json([
-            'data' => $role->load('permissions'),
+            'data' => $role,
         ]);
     }
 
@@ -103,15 +126,56 @@ class RoleController extends Controller
     /**
      * Delete a role. Prevents deletion of system-critical roles.
      */
-    public function destroy(Role $role): JsonResponse
+    public function destroy(Request $request, Role $role): JsonResponse
     {
+        abort_unless($request->user()?->can('role-delete'), 403);
+
         $this->guardSystemRole($role);
 
         $name = $role->name;
         $role->delete();
 
         return response()->json([
-            'message' => "Role [{$name}] deleted successfully.",
+            'message' => "Role [{$name}] temporarily deleted successfully.",
+        ]);
+    }
+
+    public function restore(Request $request, int|string $role): JsonResponse
+    {
+        abort_unless($request->user()?->can('role-restore'), 403);
+
+        $role = Role::withTrashed()
+            ->with('permissions')
+            ->findOrFail($role);
+
+        if (! $role->trashed()) {
+            return response()->json([
+                'message' => "Role [{$role->name}] is not deleted.",
+                'data'    => $role,
+            ]);
+        }
+
+        $role->restore();
+        $role->load('permissions');
+
+        return response()->json([
+            'message' => "Role [{$role->name}] restored successfully.",
+            'data'    => $role,
+        ]);
+    }
+
+    public function forceDelete(Request $request, int|string $role): JsonResponse
+    {
+        abort_unless($request->user()?->can('role-permanent-delete'), 403);
+
+        $role = Role::withTrashed()->findOrFail($role);
+        $this->guardSystemRole($role);
+
+        $name = $role->name;
+        $role->forceDelete();
+
+        return response()->json([
+            'message' => "Role [{$name}] permanently deleted successfully.",
         ]);
     }
 

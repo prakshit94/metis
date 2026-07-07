@@ -33,6 +33,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ $current === 'roles-permissions' ? 'active' : '' }}" href="{{ route('roles-permissions') }}">
+                        <i class="bi bi-shield-lock"></i>
+                        <span>Roles & Permissions</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ $current === 'products' ? 'active' : '' }}" href="{{ route('products') }}">
                         <i class="bi bi-box"></i>
                         <span>Products</span>

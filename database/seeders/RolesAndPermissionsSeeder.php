@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use App\Models\Permission;
+use App\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Seeds the default roles and permissions required by the application.
  *
  * Roles:
- *   - Super Admin  → all permissions (bypassed globally via Gate::before)
- *   - Admin        → manage-users, view-audit-logs
- *   - Manager      → view-audit-logs
+ *   - Super Admin  → all operation permissions
+ *   - Admin        → all operation permissions
+ *   - Manager      → view-focused user and audit permissions
  *   - User         → (no direct permissions — limited to own profile)
  *
  * Run via:
@@ -29,9 +29,29 @@ class RolesAndPermissionsSeeder extends Seeder
      * @var list<string>
      */
     private const array PERMISSIONS = [
-        'manage-users',
-        'manage-roles',
-        'view-audit-logs',
+        'user-view',
+        'user-create',
+        'user-edit',
+        'user-delete',
+        'user-restore',
+        'user-permanent-delete',
+        'user-activate',
+        'user-sync-roles',
+        'user-sync-permissions',
+        'user-impersonate',
+        'role-view',
+        'role-create',
+        'role-edit',
+        'role-delete',
+        'role-restore',
+        'role-permanent-delete',
+        'permission-view',
+        'permission-create',
+        'permission-edit',
+        'permission-delete',
+        'permission-restore',
+        'permission-permanent-delete',
+        'audit-log-view',
     ];
 
     /**
@@ -40,9 +60,9 @@ class RolesAndPermissionsSeeder extends Seeder
      * @var array<string, list<string>>
      */
     private const array ROLE_PERMISSIONS = [
-        'Super Admin' => [], // Gate::before bypass — no explicit grants needed
-        'Admin'       => ['manage-users', 'view-audit-logs'],
-        'Manager'     => ['view-audit-logs'],
+        'Super Admin' => self::PERMISSIONS,
+        'Admin'       => self::PERMISSIONS,
+        'Manager'     => ['user-view', 'role-view', 'permission-view', 'audit-log-view'],
         'User'        => [],
     ];
 
@@ -68,9 +88,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'guard_name' => 'web',
             ]);
 
-            if (! empty($permissions)) {
-                $role->syncPermissions($permissions);
-            }
+            $role->syncPermissions($permissions);
 
             $this->command->info("✔ Role [{$roleName}] seeded" . (! empty($permissions) ? ' with: ' . implode(', ', $permissions) : '.'));
         }

@@ -98,15 +98,15 @@
 
                 {{-- Remember Me -------------------------------------------- --}}
                 <div class="mb-4 d-flex align-items-center justify-content-between">
-                    <div class="form-check mb-0">
-                        <input class="form-check-input"
+                    <div class="d-flex align-items-center gap-2 mb-0">
+                        <input class="auth-checkbox"
                                type="checkbox"
                                id="rememberMe"
                                name="remember"
                                value="1"
                                {{ old('remember') ? 'checked' : '' }}
                                x-model="remember">
-                        <label class="form-check-label text-secondary" for="rememberMe">
+                        <label class="text-secondary" for="rememberMe">
                             Remember me
                         </label>
                     </div>

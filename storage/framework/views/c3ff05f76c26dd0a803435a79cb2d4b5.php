@@ -124,8 +124,8 @@ unset($__errorArgs, $__bag); ?>
 
                 
                 <div class="mb-4 d-flex align-items-center justify-content-between">
-                    <div class="form-check mb-0">
-                        <input class="form-check-input"
+                    <div class="d-flex align-items-center gap-2 mb-0">
+                        <input class="auth-checkbox"
                                type="checkbox"
                                id="rememberMe"
                                name="remember"
@@ -133,7 +133,7 @@ unset($__errorArgs, $__bag); ?>
                                <?php echo e(old('remember') ? 'checked' : ''); ?>
 
                                x-model="remember">
-                        <label class="form-check-label text-secondary" for="rememberMe">
+                        <label class="text-secondary" for="rememberMe">
                             Remember me
                         </label>
                     </div>

@@ -33,6 +33,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link <?php echo e($current === 'roles-permissions' ? 'active' : ''); ?>" href="<?php echo e(route('roles-permissions')); ?>">
+                        <i class="bi bi-shield-lock"></i>
+                        <span>Roles & Permissions</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link <?php echo e($current === 'products' ? 'active' : ''); ?>" href="<?php echo e(route('products')); ?>">
                         <i class="bi bi-box"></i>
                         <span>Products</span>

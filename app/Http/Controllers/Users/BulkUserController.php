@@ -27,6 +27,14 @@ class BulkUserController extends Controller
 
         $ids    = $validated['ids'];
         $action = $validated['action'];
+        $ability = match ($action) {
+            'activate', 'deactivate' => 'user-activate',
+            'delete'                 => 'user-delete',
+            'restore'                => 'user-restore',
+            'force-delete'           => 'user-permanent-delete',
+        };
+
+        abort_unless($request->user()?->can($ability), 403);
 
         // Prevent deleting the last Super Admin
         if ($action === 'delete' || $action === 'force-delete') {

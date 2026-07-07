@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\Roles\PermissionController;
+use App\Http\Controllers\Roles\RoleController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Public Auth Routes ───────────────────────────────────────────────────────
@@ -23,6 +25,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/', [PageController::class, 'dashboard'])->name('dashboard');
     Route::get('/analytics', [PageController::class, 'analytics'])->name('analytics');
     Route::get('/users', [PageController::class, 'users'])->name('users');
+    Route::get('/roles-permissions', [PageController::class, 'rolesPermissions'])->name('roles-permissions');
     Route::get('/products', [PageController::class, 'products'])->name('products');
     Route::get('/orders', [PageController::class, 'orders'])->name('orders');
     Route::get('/reports', [PageController::class, 'reports'])->name('reports');
@@ -48,6 +51,51 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     // ─── User Management JSON API ─────────────────────────────────────────────
     Route::prefix('api')->group(function (): void {
+        Route::get('/roles/options', function () {
+            abort_unless(
+                request()->user()?->can('role-view')
+                || request()->user()?->can('user-create')
+                || request()->user()?->can('user-edit')
+                || request()->user()?->can('role-create')
+                || request()->user()?->can('role-edit'),
+                403,
+            );
+
+            return response()->json(\App\Models\Role::query()
+                ->orderBy('name')
+                ->get(['id', 'name', 'guard_name']));
+        })->name('api.roles.options');
+        Route::get('/permissions/options', function () {
+            abort_unless(
+                request()->user()?->can('permission-view')
+                || request()->user()?->can('user-create')
+                || request()->user()?->can('user-edit')
+                || request()->user()?->can('role-create')
+                || request()->user()?->can('role-edit'),
+                403,
+            );
+
+            return response()->json(\App\Models\Permission::orderBy('name')->get(['id', 'name']));
+        })->name('api.permissions.options');
+        Route::patch('/roles/{role}/restore', [RoleController::class, 'restore'])->name('api.roles.restore');
+        Route::delete('/roles/{role}/force', [RoleController::class, 'forceDelete'])->name('api.roles.force-delete');
+        Route::patch('/permissions/{permission}/restore', [PermissionController::class, 'restore'])->name('api.permissions.restore');
+        Route::delete('/permissions/{permission}/force', [PermissionController::class, 'forceDelete'])->name('api.permissions.force-delete');
+        Route::apiResource('/roles', RoleController::class)->names([
+            'index'   => 'api.roles.index',
+            'store'   => 'api.roles.store',
+            'show'    => 'api.roles.show',
+            'update'  => 'api.roles.update',
+            'destroy' => 'api.roles.destroy',
+        ]);
+        Route::apiResource('/permissions', PermissionController::class)->names([
+            'index'   => 'api.permissions.index',
+            'store'   => 'api.permissions.store',
+            'show'    => 'api.permissions.show',
+            'update'  => 'api.permissions.update',
+            'destroy' => 'api.permissions.destroy',
+        ]);
+
         // Bulk action must be defined before the resource to avoid route conflict
         Route::post('/users/bulk-action', \App\Http\Controllers\Users\BulkUserController::class)->name('api.users.bulk');
         Route::patch('/users/{user}/restore', [\App\Http\Controllers\Users\UserController::class, 'restore'])->name('api.users.restore');
@@ -63,10 +111,5 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/users/{user}/sync-roles', [\App\Http\Controllers\Users\UserController::class, 'syncRoles'])->name('api.users.sync-roles');
         Route::post('/users/{user}/sync-permissions', [\App\Http\Controllers\Users\UserController::class, 'syncPermissions'])->name('api.users.sync-permissions');
         Route::get('/users/{user}/login-history', [\App\Http\Controllers\Users\UserController::class, 'loginHistory'])->name('api.users.login-history');
-
-        // Roles list (for dropdowns)
-        Route::get('/roles', function () {
-            return response()->json(\Spatie\Permission\Models\Role::orderBy('name')->get(['id', 'name']));
-        })->name('api.roles.index');
     });
 });

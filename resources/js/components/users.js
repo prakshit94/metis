@@ -94,6 +94,26 @@ function buildFullName(firstName, middleName, lastName) {
     .join(' ');
 }
 
+function formatDate(value) {
+  return value ? new Date(value).toLocaleDateString() : 'N/A';
+}
+
+function formatDateTime(value) {
+  if (!value) return 'N/A';
+
+  return new Date(value).toLocaleString(undefined, {
+    year:   'numeric',
+    month:  'short',
+    day:    'numeric',
+    hour:   'numeric',
+    minute: '2-digit',
+  });
+}
+
+function formatActivityTimestamp(value) {
+  return `Date & time: ${formatDateTime(value)}`;
+}
+
 function getModal(elementOrSelector) {
   const element = typeof elementOrSelector === 'string'
     ? document.querySelector(elementOrSelector)
@@ -218,7 +238,8 @@ document.addEventListener('alpine:init', () => {
 
     async loadRoles() {
       try {
-        this.availableRoles = await apiFetch('/api/roles');
+        this.availableRoles = await apiFetch('/api/roles/options');
+        this.availableRoles = this.availableRoles.data ?? this.availableRoles;
       } catch {
         this.availableRoles = [
           { id: 'admin', name: 'Admin' },
@@ -301,12 +322,9 @@ document.addEventListener('alpine:init', () => {
         is_active:  u.is_active,
         isDeleted:  Boolean(u.deleted_at),
         deleted_at: u.deleted_at ?? null,
-        lastActive: u.updated_at
-          ? new Date(u.updated_at).toLocaleDateString()
-          : 'N/A',
-        joinDate:   u.created_at
-          ? new Date(u.created_at).toLocaleDateString()
-          : 'N/A',
+        lastActive: formatDate(u.updated_at),
+        lastActiveDateTime: formatDateTime(u.updated_at),
+        joinDate:   formatDate(u.created_at),
         avatar: '/assets/images/avatar-placeholder.svg',
       };
     },
@@ -680,7 +698,7 @@ document.addEventListener('alpine:init', () => {
         id:      i + 1,
         user:    u.name,
         action:  u.status === 'active' ? 'logged in' : 'account inactive',
-        time:    u.lastActive,
+        time:    formatActivityTimestamp(u.updated_at),
         type:    u.status === 'active' ? 'login' : 'logout',
         icon:    u.status === 'active' ? 'box-arrow-in-right' : 'box-arrow-right',
         details: `${u.department || 'No department'} · ${u.email}`,
@@ -814,13 +832,12 @@ document.addEventListener('alpine:init', () => {
     editingUserId: null,
     saving:        false,
     roles:         [],
+    rolesLoading:  false,
+    rolesError:    '',
 
     async init() {
       this.resetForm();
-      try {
-        const data = await apiFetch('/api/roles');
-        this.roles = data;
-      } catch { /* roles list optional */ }
+      await this.loadRoles();
 
       // Reset form when modal is hidden
       document.getElementById('userModal')?.addEventListener('hidden.bs.modal', () => {
@@ -828,6 +845,28 @@ document.addEventListener('alpine:init', () => {
         const title = document.querySelector('#userModal .modal-title');
         if (title) title.textContent = 'Add New User';
       });
+    },
+
+    async loadRoles() {
+      this.rolesLoading = true;
+      this.rolesError = '';
+      try {
+        const data = await apiFetch('/api/roles/options');
+        this.roles = data.data ?? data;
+      } catch (err) {
+        try {
+          const data = await apiFetch('/api/roles?per_page=100&deleted=without&sort_by=name&sort_dir=asc');
+          this.roles = data.data ?? data;
+        } catch (fallbackErr) {
+          this.roles = [];
+          this.rolesError = fallbackErr.message || err.message;
+        }
+      } finally {
+        if (this.roles.length > 0 && !this.roles.some(role => role.name === this.form.role)) {
+          this.form.role = this.roles[0].name;
+        }
+        this.rolesLoading = false;
+      }
     },
 
     resetForm() {

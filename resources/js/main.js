@@ -138,6 +138,9 @@ class AdminApp {
       case 'users':
         await this.initUsersPage();
         break;
+      case 'roles-permissions':
+        await this.initRolesPermissionsPage();
+        break;
       case 'analytics':
         await this.initAnalyticsPage();
         break;
@@ -196,6 +199,15 @@ class AdminApp {
       console.log('👥 Users page script loaded successfully');
     } catch (error) {
       console.error('Failed to load users page script:', error);
+    }
+  }
+
+  async initRolesPermissionsPage() {
+    try {
+      await import('./components/roles-permissions.js');
+      console.log('🛡️ Roles & Permissions page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load roles & permissions page script:', error);
     }
   }
 

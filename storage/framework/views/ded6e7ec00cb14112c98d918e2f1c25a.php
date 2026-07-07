@@ -582,14 +582,25 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
-                            <select class="form-select" x-model="form.role" required>
-                                <template x-if="roles.length === 0">
-                                    <option value="User">User</option>
-                                </template>
-                                <template x-for="r in roles" :key="r.id">
-                                    <option :value="r.name" x-text="r.name"></option>
-                                </template>
-                            </select>
+                            <template x-if="rolesLoading">
+                                <div class="border rounded p-2 text-muted small">
+                                    <span class="spinner-border spinner-border-sm me-2"></span>Loading roles...
+                                </div>
+                            </template>
+                            <template x-if="!rolesLoading && rolesError">
+                                <div class="alert alert-warning mb-0 py-2">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <span x-text="`Unable to load roles: ${rolesError}`"></span>
+                                </div>
+                            </template>
+                            <template x-if="!rolesLoading && !rolesError">
+                                <select class="form-select" x-model="form.role" required :disabled="roles.length === 0">
+                                    <option value="" disabled x-show="roles.length === 0">No roles available</option>
+                                    <template x-for="r in roles" :key="r.id">
+                                        <option :value="r.name" x-text="r.name"></option>
+                                    </template>
+                                </select>
+                            </template>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Status</label>

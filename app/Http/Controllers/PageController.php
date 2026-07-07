@@ -26,6 +26,11 @@ class PageController extends Controller
         return view('users');
     }
 
+    public function rolesPermissions()
+    {
+        return view('roles-permissions');
+    }
+
     public function products()
     {
         return view('products');

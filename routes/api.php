@@ -39,18 +39,27 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/revoke-other-tokens', [AuthController::class, 'revokeOtherTokens'])
             ->name('revoke-other-tokens');
 
-        // Impersonation — requires manage-users permission
-        Route::middleware('permission:manage-users')->group(function (): void {
-            Route::post('/impersonate/{user}', [AuthController::class, 'impersonate'])
-                ->name('impersonate');
-        });
+        Route::post('/impersonate/{user}', [AuthController::class, 'impersonate'])
+            ->name('impersonate');
 
         Route::delete('/impersonate', [AuthController::class, 'stopImpersonating'])
             ->name('stop-impersonate');
     });
 
     // ── Roles Management ─────────────────────────────────────────────────────
-    Route::middleware('permission:manage-roles')->group(function (): void {
+    Route::group([], function (): void {
+        Route::patch('roles/{role}/restore', [RoleController::class, 'restore'])
+            ->name('api.roles.restore');
+
+        Route::delete('roles/{role}/force', [RoleController::class, 'forceDelete'])
+            ->name('api.roles.force-delete');
+
+        Route::patch('permissions/{permission}/restore', [PermissionController::class, 'restore'])
+            ->name('api.permissions.restore');
+
+        Route::delete('permissions/{permission}/force', [PermissionController::class, 'forceDelete'])
+            ->name('api.permissions.force-delete');
+
         Route::apiResource('roles', RoleController::class)
             ->names([
                 'index'   => 'api.roles.index',
@@ -71,7 +80,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     });
 
     // ── User Management ──────────────────────────────────────────────────────
-    Route::middleware('permission:manage-users')->group(function (): void {
+    Route::group([], function (): void {
         Route::patch('users/{user}/restore', [UserController::class, 'restore'])
             ->name('api.users.restore');
 
@@ -96,9 +105,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('users/{user}/sync-permissions', [UserController::class, 'syncPermissions'])
             ->name('api.users.sync-permissions');
 
-        Route::middleware('permission:view-audit-logs')->group(function (): void {
-            Route::get('users/{user}/login-history', [UserController::class, 'loginHistory'])
-                ->name('api.users.login-history');
-        });
+        Route::get('users/{user}/login-history', [UserController::class, 'loginHistory'])
+            ->name('api.users.login-history');
     });
 });

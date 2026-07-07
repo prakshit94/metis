@@ -158,14 +158,14 @@ class AuthController extends Controller
      * Generate an impersonation token for the target user.
      *
      * Security guardrails:
-     *  - Requires manage-users permission on the acting user
+     *  - Requires user-impersonate permission on the acting user
      *  - Cannot impersonate another Super Admin
      *  - The action is logged in login_histories as 'impersonated_login'
      *  - The token is short-lived (24 hours)
      */
     public function impersonate(Request $request, User $user): JsonResponse
     {
-        Gate::authorize('manage-users');
+        Gate::authorize('user-impersonate');
 
         /** @var User $actor */
         $actor = $request->user();

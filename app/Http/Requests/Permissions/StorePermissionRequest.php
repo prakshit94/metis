@@ -11,7 +11,7 @@ class StorePermissionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('manage-roles') ?? false;
+        return $this->user()?->can('permission-create') ?? false;
     }
 
     /**

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -26,9 +26,21 @@ class UserManagementApiTest extends TestCase
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        Permission::findOrCreate('manage-users', 'web');
-        Permission::findOrCreate('view-audit-logs', 'web');
-        Role::findOrCreate('Super Admin', 'web');
+        $permissions = [
+            'user-create',
+            'user-view',
+            'user-edit',
+            'user-delete',
+            'user-sync-permissions',
+            'audit-log-view',
+        ];
+
+        foreach ($permissions as $permission) {
+            Permission::findOrCreate($permission, 'web');
+        }
+
+        $superAdminRole = Role::findOrCreate('Super Admin', 'web');
+        $superAdminRole->syncPermissions($permissions);
 
         $admin = $this->createUser('admin@example.com');
         $admin->assignRole('Super Admin');
@@ -99,14 +111,14 @@ class UserManagementApiTest extends TestCase
         $user = $this->createUser('target@example.com');
 
         $response = $this->postJson(route('api.users.sync-permissions', $user), [
-            'permissions' => ['manage-users'],
+            'permissions' => ['user-create'],
         ]);
 
         $response
             ->assertOk()
-            ->assertJsonPath('data.0.name', 'manage-users');
+            ->assertJsonPath('data.0.name', 'user-create');
 
-        $this->assertTrue($user->fresh()->hasDirectPermission('manage-users'));
+        $this->assertTrue($user->fresh()->hasDirectPermission('user-create'));
     }
 
     public function test_bulk_delete_does_not_remove_last_super_admin(): void

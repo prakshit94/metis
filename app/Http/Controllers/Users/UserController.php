@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Hash;
  * Full CRUD for Users, including role/permission syncing, account activation
  * toggle, and login history access.
  *
- * Routes are protected at the route level via:
- *   middleware('permission:manage-users')
+ * Routes are protected by operation-level permissions such as user-view,
+ * user-create, user-edit, user-delete, and user-restore.
  */
 class UserController extends Controller
 {
@@ -27,6 +27,8 @@ class UserController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        abort_unless($request->user()?->can('user-view'), 403);
+
         $sortMap = [
             'name'       => 'name',
             'firstName'  => 'first_name',
@@ -112,8 +114,10 @@ class UserController extends Controller
     /**
      * Show a single user with their roles, permissions, and recent login history.
      */
-    public function show(int|string $user): JsonResponse
+    public function show(Request $request, int|string $user): JsonResponse
     {
+        abort_unless($request->user()?->can('user-view'), 403);
+
         $user = User::withTrashed()
             ->with(['roles', 'permissions'])
             ->findOrFail($user);
@@ -171,8 +175,10 @@ class UserController extends Controller
      * Temporarily delete a user and revoke all their Sanctum tokens.
      * Prevents deletion of the last Super Admin.
      */
-    public function destroy(int|string $user): JsonResponse
+    public function destroy(Request $request, int|string $user): JsonResponse
     {
+        abort_unless($request->user()?->can('user-delete'), 403);
+
         $user = User::withTrashed()
             ->with('roles')
             ->findOrFail($user);
@@ -206,8 +212,10 @@ class UserController extends Controller
     /**
      * Restore a temporarily deleted user.
      */
-    public function restore(int|string $user): JsonResponse
+    public function restore(Request $request, int|string $user): JsonResponse
     {
+        abort_unless($request->user()?->can('user-restore'), 403);
+
         $user = User::withTrashed()
             ->with(['roles', 'permissions'])
             ->findOrFail($user);
@@ -231,8 +239,10 @@ class UserController extends Controller
     /**
      * Permanently delete a user.
      */
-    public function forceDelete(int|string $user): JsonResponse
+    public function forceDelete(Request $request, int|string $user): JsonResponse
     {
+        abort_unless($request->user()?->can('user-permanent-delete'), 403);
+
         $user = User::withTrashed()
             ->with('roles')
             ->findOrFail($user);
@@ -261,8 +271,10 @@ class UserController extends Controller
      * Toggle the user's is_active status.
      * Automatically revokes all tokens when deactivating.
      */
-    public function toggleActive(User $user): JsonResponse
+    public function toggleActive(Request $request, User $user): JsonResponse
     {
+        abort_unless($request->user()?->can('user-activate'), 403);
+
         $newState = ! $user->is_active;
 
         $user->update(['is_active' => $newState]);
@@ -284,6 +296,8 @@ class UserController extends Controller
      */
     public function syncRoles(Request $request, User $user): JsonResponse
     {
+        abort_unless($request->user()?->can('user-sync-roles'), 403);
+
         $request->validate([
             'roles'   => ['required', 'array'],
             'roles.*' => ['string', 'exists:roles,name'],
@@ -305,6 +319,8 @@ class UserController extends Controller
      */
     public function syncPermissions(Request $request, User $user): JsonResponse
     {
+        abort_unless($request->user()?->can('user-sync-permissions'), 403);
+
         $request->validate([
             'permissions'   => ['required', 'array'],
             'permissions.*' => ['string', 'exists:permissions,name'],
@@ -325,6 +341,8 @@ class UserController extends Controller
      */
     public function loginHistory(Request $request, User $user): JsonResponse
     {
+        abort_unless($request->user()?->can('audit-log-view'), 403);
+
         $history = $user->loginHistories()
             ->when(
                 $request->filled('status'),
