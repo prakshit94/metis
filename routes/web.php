@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\Roles\PermissionController;
 use App\Http\Controllers\Roles\RoleController;
+use App\Http\Controllers\Products\ProductController as CatalogProductController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Public Auth Routes ───────────────────────────────────────────────────────
@@ -51,6 +52,21 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     // ─── User Management JSON API ─────────────────────────────────────────────
     Route::prefix('api')->group(function (): void {
+        Route::prefix('products')->name('api.products.')->group(function (): void {
+            Route::get('/', [CatalogProductController::class, 'index'])->name('index');
+            Route::get('/export', [CatalogProductController::class, 'export'])->name('export');
+            Route::post('/import', [CatalogProductController::class, 'import'])->name('import');
+            Route::post('/bulk-status', [CatalogProductController::class, 'bulkStatus'])->name('bulk-status');
+            Route::post('/bulk-delete', [CatalogProductController::class, 'bulkDelete'])->name('bulk-delete');
+            Route::post('/{product}/duplicate', [CatalogProductController::class, 'duplicate'])->name('duplicate');
+            Route::post('/{product}/restore', [CatalogProductController::class, 'restore'])->name('restore');
+            Route::delete('/{product}/force-delete', [CatalogProductController::class, 'forceDelete'])->name('force-delete');
+            Route::get('/{product}', [CatalogProductController::class, 'show'])->name('show');
+            Route::patch('/{product}', [CatalogProductController::class, 'update'])->name('update');
+            Route::delete('/{product}', [CatalogProductController::class, 'destroy'])->name('destroy');
+            Route::post('/', [CatalogProductController::class, 'store'])->name('store');
+        });
+
         Route::get('/roles/options', function () {
             abort_unless(
                 request()->user()?->can('role-view')

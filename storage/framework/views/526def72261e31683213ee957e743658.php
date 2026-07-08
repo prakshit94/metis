@@ -1,9 +1,7 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Product Management'); ?>
+<?php $__env->startSection('page', 'products'); ?>
 
-@section('title', 'Product Management')
-@section('page', 'products')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="product-management" x-data="productTable">
 <!-- Page Header -->
                     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5">
@@ -345,9 +343,9 @@
                         
                     </div> <!-- End Product Management Container -->
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('modals')
+<?php $__env->startPush('modals'); ?>
 <div class="modal fade" id="productModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content" x-data="productForm">
@@ -716,7 +714,9 @@
             </div>
         </div>
     </div>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@push('scripts')
-@endpush
+<?php $__env->startPush('scripts'); ?>
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/ubuntu/metis/resources/views/products.blade.php ENDPATH**/ ?>

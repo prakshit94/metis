@@ -1,11 +1,101 @@
 import Alpine from 'alpinejs';
+import ApexCharts from 'apexcharts';
+import { Modal } from 'bootstrap';
+import Swal from 'sweetalert2';
 import { createSearchComponent } from '../utils/search-component.js';
+
+function getModal(elementOrSelector) {
+  const element = typeof elementOrSelector === 'string'
+    ? document.querySelector(elementOrSelector)
+    : elementOrSelector;
+
+  return element ? Modal.getOrCreateInstance(element) : null;
+}
+
+function getCsrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+}
+
+function downloadBlob(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  URL.revokeObjectURL(link.href);
+  document.body.removeChild(link);
+}
+
+function escapeCsv(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+function parseCsvLine(line) {
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const next = line[i + 1];
+
+    if (char === '"' && inQuotes && next === '"') {
+      current += '"';
+      i++;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      values.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  values.push(current.trim());
+  return values;
+}
+
+function normalizeStatus(status) {
+  const value = String(status ?? '').trim().toLowerCase();
+  if (['published', 'publish', 'active'].includes(value)) return 'published';
+  if (['draft', 'unpublished'].includes(value)) return 'draft';
+  if (['pending', 'review', 'pending review'].includes(value)) return 'pending';
+  return 'draft';
+}
+
+function normalizeCategory(category) {
+  const value = String(category ?? '').trim().toLowerCase();
+  if (value.includes('electronic')) return 'electronics';
+  if (value.includes('cloth')) return 'clothing';
+  if (value.includes('book')) return 'books';
+  if (value.includes('home') || value.includes('garden')) return 'home';
+  return value || 'home';
+}
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleDateString() : 'N/A';
+}
 
 document.addEventListener('alpine:init', () => {
   Alpine.data('productTable', () => ({
     products: [],
     filteredProducts: [],
     selectedProducts: [],
+    editingProductId: null,
+    previewProduct: null,
+    importing: false,
+    options: {
+      categories: [],
+      brands: [],
+      uoms: [],
+      taxRates: [],
+      hsnCodes: [],
+      warehouses: [],
+      attributes: [],
+      statusList: [],
+    },
     currentPage: 1,
     itemsPerPage: 10,
     searchQuery: '',
@@ -14,6 +104,7 @@ document.addEventListener('alpine:init', () => {
     sortField: 'name',
     sortDirection: 'asc',
     isLoading: false,
+    apiBase: '/api/products',
     charts: {},
     _resizeHandler: null,
     chartsInitialized: false,
@@ -21,15 +112,18 @@ document.addEventListener('alpine:init', () => {
     // Statistics
     stats: {
       total: 0,
+      active: 0,
       inStock: 0,
       lowStock: 0,
+      outOfStock: 0,
       totalValue: 0
     },
 
     categoryStats: [],
 
-    init() {
-      this.loadSampleData();
+    async init() {
+      Alpine.store('productTable', this);
+      await this.loadProductsFromApi();
       this.filterProducts();
       this.calculateStats();
       
@@ -41,6 +135,33 @@ document.addEventListener('alpine:init', () => {
 
       const onHide = () => this.destroy();
       window.addEventListener('pagehide', onHide, { once: true });
+    },
+
+    async apiRequest(url, options = {}) {
+      const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+      const response = await fetch(url, {
+        headers: {
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+          ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
+          ...(options.headers || {}),
+        },
+        ...options,
+      });
+
+      if (!response.ok) {
+        let message = 'Request failed.';
+        try {
+          const payload = await response.json();
+          message = payload.message || payload.error || message;
+        } catch (error) {
+          message = response.statusText || message;
+        }
+        throw new Error(message);
+      }
+
+      return response;
     },
 
     destroy() {
@@ -72,327 +193,70 @@ document.addEventListener('alpine:init', () => {
       window.addEventListener('resize', this._resizeHandler);
     },
 
-    loadSampleData() {
-      this.products = [
-        {
-          id: 1,
-          name: 'iPhone 14 Pro',
-          sku: 'IPHONE14-PRO-128',
-          category: 'electronics',
-          price: 999.99,
-          stock: 45,
-          status: 'published',
-          created: '2024-01-15',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Latest iPhone with advanced camera system'
-        },
-        {
-          id: 2,
-          name: 'MacBook Air M2',
-          sku: 'MBA-M2-256',
-          category: 'electronics',
-          price: 1199.99,
-          stock: 23,
-          status: 'published',
-          created: '2024-01-20',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Lightweight laptop with M2 chip'
-        },
-        {
-          id: 3,
-          name: 'Cotton T-Shirt',
-          sku: 'TSHIRT-COT-M',
-          category: 'clothing',
-          price: 24.99,
-          stock: 156,
-          status: 'published',
-          created: '2024-02-01',
-          image: '/assets/images/product-placeholder.svg',
-          description: '100% organic cotton t-shirt'
-        },
-        {
-          id: 4,
-          name: 'JavaScript Guide',
-          sku: 'BOOK-JS-2024',
-          category: 'books',
-          price: 39.99,
-          stock: 8,
-          status: 'published',
-          created: '2024-02-10',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Complete JavaScript programming guide'
-        },
-        {
-          id: 5,
-          name: 'Garden Tool Set',
-          sku: 'GARDEN-TOOLS-SET',
-          category: 'home',
-          price: 89.99,
-          stock: 0,
-          status: 'published',
-          created: '2024-02-15',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Professional garden tool kit'
-        },
-        {
-          id: 6,
-          name: 'Wireless Headphones',
-          sku: 'HEADPHONES-WL-BT',
-          category: 'electronics',
-          price: 149.99,
-          stock: 67,
-          status: 'published',
-          created: '2024-02-20',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Noise-cancelling wireless headphones'
-        },
-        {
-          id: 7,
-          name: 'Denim Jeans',
-          sku: 'JEANS-DENIM-32',
-          category: 'clothing',
-          price: 79.99,
-          stock: 34,
-          status: 'draft',
-          created: '2024-02-25',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Classic fit denim jeans'
-        },
-        {
-          id: 8,
-          name: 'Python Cookbook',
-          sku: 'BOOK-PY-COOK',
-          category: 'books',
-          price: 44.99,
-          stock: 15,
-          status: 'published',
-          created: '2024-03-01',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Advanced Python programming techniques'
-        },
-        {
-          id: 9,
-          name: 'Smart Home Hub',
-          sku: 'SMARTHUB-V2',
-          category: 'electronics',
-          price: 199.99,
-          stock: 12,
-          status: 'published',
-          created: '2024-03-05',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Central hub for smart home devices'
-        },
-        {
-          id: 10,
-          name: 'Kitchen Knife Set',
-          sku: 'KITCHEN-KNIVES-PRO',
-          category: 'home',
-          price: 129.99,
-          stock: 28,
-          status: 'pending',
-          created: '2024-03-10',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Professional chef knife collection'
-        },
-        {
-          id: 11,
-          name: 'Samsung Galaxy S24',
-          sku: 'GALAXY-S24-256',
-          category: 'electronics',
-          price: 899.99,
-          stock: 67,
-          status: 'published',
-          created: '2024-03-12',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Latest Samsung flagship smartphone'
-        },
-        {
-          id: 12,
-          name: 'Yoga Mat Premium',
-          sku: 'YOGA-MAT-PREM',
-          category: 'home',
-          price: 49.99,
-          stock: 156,
-          status: 'published',
-          created: '2024-03-14',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Non-slip premium yoga mat'
-        },
-        {
-          id: 13,
-          name: 'React Handbook',
-          sku: 'BOOK-REACT-2024',
-          category: 'books',
-          price: 54.99,
-          stock: 23,
-          status: 'published',
-          created: '2024-03-16',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Complete React development guide'
-        },
-        {
-          id: 14,
-          name: 'Winter Jacket',
-          sku: 'JACKET-WINTER-L',
-          category: 'clothing',
-          price: 189.99,
-          stock: 12,
-          status: 'published',
-          created: '2024-03-18',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Waterproof winter jacket'
-        },
-        {
-          id: 15,
-          name: 'Gaming Mouse RGB',
-          sku: 'MOUSE-GAMING-RGB',
-          category: 'electronics',
-          price: 79.99,
-          stock: 89,
-          status: 'published',
-          created: '2024-03-20',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'High-precision gaming mouse'
-        },
-        {
-          id: 16,
-          name: 'Coffee Maker Deluxe',
-          sku: 'COFFEE-MAKER-DLX',
-          category: 'home',
-          price: 249.99,
-          stock: 34,
-          status: 'published',
-          created: '2024-03-22',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Programmable drip coffee maker'
-        },
-        {
-          id: 17,
-          name: 'Node.js Complete Guide',
-          sku: 'BOOK-NODEJS-COMP',
-          category: 'books',
-          price: 59.99,
-          stock: 18,
-          status: 'published',
-          created: '2024-03-24',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Master Node.js development'
-        },
-        {
-          id: 18,
-          name: 'Running Shoes',
-          sku: 'SHOES-RUN-42',
-          category: 'clothing',
-          price: 129.99,
-          stock: 0,
-          status: 'published',
-          created: '2024-03-26',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Lightweight running shoes'
-        },
-        {
-          id: 19,
-          name: 'Tablet Pro 12.9"',
-          sku: 'TABLET-PRO-129',
-          category: 'electronics',
-          price: 1099.99,
-          stock: 15,
-          status: 'published',
-          created: '2024-03-28',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Professional tablet with stylus'
-        },
-        {
-          id: 20,
-          name: 'Garden Planter Set',
-          sku: 'PLANTER-SET-3PC',
-          category: 'home',
-          price: 89.99,
-          stock: 45,
-          status: 'published',
-          created: '2024-03-30',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Set of 3 ceramic planters'
-        },
-        {
-          id: 21,
-          name: 'Docker Deep Dive',
-          sku: 'BOOK-DOCKER-DD',
-          category: 'books',
-          price: 49.99,
-          stock: 31,
-          status: 'published',
-          created: '2024-04-01',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Container technology mastery'
-        },
-        {
-          id: 22,
-          name: 'Casual Polo Shirt',
-          sku: 'POLO-CASUAL-M',
-          category: 'clothing',
-          price: 39.99,
-          stock: 78,
-          status: 'published',
-          created: '2024-04-03',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Premium cotton polo shirt'
-        },
-        {
-          id: 23,
-          name: 'Mechanical Keyboard',
-          sku: 'KEYBOARD-MECH-TKL',
-          category: 'electronics',
-          price: 159.99,
-          stock: 24,
-          status: 'published',
-          created: '2024-04-05',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Tenkeyless mechanical keyboard'
-        },
-        {
-          id: 24,
-          name: 'Desk Organizer',
-          sku: 'DESK-ORG-BAMBOO',
-          category: 'home',
-          price: 34.99,
-          stock: 62,
-          status: 'published',
-          created: '2024-04-07',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Bamboo desk organizer'
-        },
-        {
-          id: 25,
-          name: 'AI & Machine Learning',
-          sku: 'BOOK-AI-ML-2024',
-          category: 'books',
-          price: 79.99,
-          stock: 14,
-          status: 'published',
-          created: '2024-04-09',
-          image: '/assets/images/product-placeholder.svg',
-          description: 'Introduction to AI and ML'
+    get nextProductId() {
+      return this.products.length ? Math.max(...this.products.map(product => Number(product.id) || 0)) + 1 : 1;
+    },
+
+    get pageFrom() {
+      if (this.filteredProducts.length === 0) return 0;
+      return (this.currentPage - 1) * this.itemsPerPage + 1;
+    },
+
+    get pageTo() {
+      return Math.min(this.currentPage * this.itemsPerPage, this.filteredProducts.length);
+    },
+
+    async loadProductsFromApi() {
+      this.isLoading = true;
+
+      try {
+        const response = await this.apiRequest(this.apiBase);
+        const payload = await response.json();
+        this.products = Array.isArray(payload.data) ? payload.data : [];
+
+        if (payload.stats) {
+          this.stats = payload.stats;
         }
-      ];
+
+        if (payload.options) {
+          this.options = {
+            ...this.options,
+            ...payload.options,
+          };
+        }
+      } catch (error) {
+        console.error('Failed to load products from API:', error);
+        this.loadSampleData();
+        this.showNotification('Loaded fallback product samples.', 'warning');
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    loadSampleData() {
+      this.products = [];
     },
 
     calculateStats() {
       this.stats.total = this.products.length;
-      this.stats.inStock = this.products.filter(p => p.stock > 20).length;
+      this.stats.active = this.products.filter(p => ['published', 'active'].includes(String(p.status || '').toLowerCase())).length;
+      this.stats.inStock = this.products.filter(p => p.stock > 0).length;
       this.stats.lowStock = this.products.filter(p => p.stock > 0 && p.stock <= 20).length;
+      this.stats.outOfStock = this.products.filter(p => p.stock <= 0).length;
       this.stats.totalValue = this.products.reduce((sum, p) => sum + (p.price * p.stock), 0);
 
       // Calculate category distribution
       const categories = {};
       this.products.forEach(product => {
-        categories[product.category] = (categories[product.category] || 0) + 1;
+        const key = product.category || product.category_label || 'uncategorized';
+        categories[key] = (categories[key] || 0) + 1;
       });
 
+      const total = this.products.length || 1;
       this.categoryStats = Object.entries(categories).map(([name, count]) => ({
         name: name.charAt(0).toUpperCase() + name.slice(1),
         count,
-        percentage: Math.round((count / this.products.length) * 100),
+        percentage: Math.round((count / total) * 100),
         color: this.getCategoryColor(name)
       }));
     },
@@ -402,7 +266,8 @@ document.addEventListener('alpine:init', () => {
         electronics: '#6366f1',
         clothing: '#8b5cf6',
         books: '#06b6d4',
-        home: '#10b981'
+        home: '#10b981',
+        uncategorized: '#6b7280'
       };
       return colors[category] || '#6b7280';
     },
@@ -477,99 +342,218 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    bulkAction(action) {
-      if (this.selectedProducts.length === 0) return;
+    resetProductForm() {
+      const form = Alpine.$data(document.querySelector('[x-data="productForm"]'));
+      if (!form) return;
 
-      const selectedProductObjects = this.products.filter(p => 
-        this.selectedProducts.includes(p.id)
-      );
+      form.resetForm();
 
-      switch (action) {
-        case 'publish':
-          selectedProductObjects.forEach(product => {
-            product.status = 'published';
-          });
-          this.showNotification('Products published successfully!', 'success');
-          break;
-        case 'unpublish':
-          selectedProductObjects.forEach(product => {
-            product.status = 'draft';
-          });
-          this.showNotification('Products unpublished successfully!', 'info');
-          break;
-        case 'delete':
-          if (confirm(`Are you sure you want to delete ${this.selectedProducts.length} product(s)?`)) {
-            this.products = this.products.filter(p => 
-              !this.selectedProducts.includes(p.id)
-            );
-            this.filterProducts();
-            this.calculateStats();
-            this.showNotification('Products deleted successfully!', 'success');
-          }
-          break;
-      }
+      const title = document.querySelector('#productModal .modal-title');
+      if (title) title.textContent = 'Add New Product';
+    },
 
-      this.selectedProducts = [];
+    openCreateProduct() {
+      this.resetProductForm();
+      getModal('#productModal')?.show();
+    },
+
+    _mapProductForForm(product) {
+      return {
+        name: product.name ?? '',
+        sku: product.sku ?? '',
+        category_id: String(product.category_id ?? ''),
+        brand_id: String(product.brand_id ?? ''),
+        uom_id: String(product.uom_id ?? ''),
+        tax_rate_id: String(product.tax_rate_id ?? ''),
+        hsn_code_id: String(product.hsn_code_id ?? ''),
+        default_warehouse_id: String(product.warehouse_id ?? ''),
+        barcode: product.barcode ?? '',
+        weight: product.weight ?? '',
+        purchase_price: String(product.purchase_price ?? ''),
+        mrp: String(product.mrp ?? ''),
+        selling_price: String(product.selling_price ?? product.price ?? ''),
+        stock: String(product.stock_quantity ?? product.stock ?? ''),
+        min_stock_level: String(product.min_stock_level ?? 0),
+        overselling_qty: String(product.overselling_qty ?? 0),
+        default_discount: String(product.default_discount ?? 0),
+        default_discount_type: product.default_discount_type ?? 'percent',
+        allow_overselling: Boolean(product.allow_overselling),
+        manage_stock: product.manage_stock !== undefined ? Boolean(product.manage_stock) : true,
+        batch_tracking: Boolean(product.batch_tracking),
+        expiry_tracking: Boolean(product.expiry_tracking),
+        is_sku_enabled: product.is_sku_enabled !== undefined ? Boolean(product.is_sku_enabled) : true,
+        description: product.description ?? '',
+        status: normalizeStatus(product.status),
+        image: product.image ?? '/assets/images/product-placeholder.svg',
+        application_instructions: product.application_instructions ?? '',
+        grade: product.grade ?? '',
+        attributes: Array.isArray(product.attributes) ? product.attributes.map(attribute => String(attribute.id)) : [],
+      };
+    },
+
+    _findProductIndex(productId) {
+      return this.products.findIndex(product => product.id === productId);
+    },
+
+    _getProductForm() {
+      return Alpine.$data(document.querySelector('[x-data="productForm"]'));
+    },
+
+    handleImageUpload(event) {
+      const file = event?.target?.files?.[0];
+      if (!file) return;
+
+      const form = this._getProductForm();
+      if (!form) return;
+
+      form.form.image = URL.createObjectURL(file);
+      form.form.imageFile = file;
     },
 
     editProduct(product) {
-      console.log('Edit product:', product);
-      this.showNotification('Edit functionality would open here', 'info');
+      const form = this._getProductForm();
+      if (!form) return;
+
+      form.editingProductId = product.id;
+      form.form = this._mapProductForForm(product);
+      form.form.imageFile = null;
+
+      const title = document.querySelector('#productModal .modal-title');
+      if (title) title.textContent = `Edit ${product.name}`;
+
+      getModal('#productModal')?.show();
     },
 
     viewProduct(product) {
-      console.log('View product:', product);
-      this.showNotification('Product details would open here', 'info');
+      this.previewProduct = { ...product };
+      getModal('#productViewModal')?.show();
+    },
+
+    bulkAction(action) {
+      if (this.selectedProducts.length === 0) return;
+
+      if (action === 'delete') {
+        this.deleteProductsByIds(this.selectedProducts);
+        return;
+      }
+
+      const status = action === 'publish' ? 'published' : 'draft';
+      this.apiRequest(`${this.apiBase}/bulk-status`, {
+        method: 'POST',
+        body: JSON.stringify({
+          ids: this.selectedProducts,
+          status,
+        }),
+      })
+        .then(async () => {
+          await this.loadProductsFromApi();
+          this.filterProducts();
+          this.calculateStats();
+          this.selectedProducts = [];
+          this.showNotification('Products updated successfully!', 'success');
+        })
+        .catch((error) => this.showNotification(error.message || 'Failed to update products.', 'danger'));
+    },
+
+    deleteProductsByIds(productIds) {
+      const ids = [...new Set(productIds)];
+      if (ids.length === 0) return;
+
+      const confirmed = window.confirm(`Are you sure you want to delete ${ids.length} product(s)?`);
+      if (!confirmed) return;
+
+      this.apiRequest(`${this.apiBase}/bulk-delete`, {
+        method: 'POST',
+        body: JSON.stringify({ ids }),
+      })
+        .then(async () => {
+          await this.loadProductsFromApi();
+          this.filterProducts();
+          this.calculateStats();
+          this.selectedProducts = this.selectedProducts.filter(id => !ids.includes(id));
+          this.showNotification('Products deleted successfully!', 'success');
+        })
+        .catch((error) => this.showNotification(error.message || 'Failed to delete products.', 'danger'));
     },
 
     duplicateProduct(product) {
-      const newProduct = {
-        ...product,
-        id: Math.max(...this.products.map(p => p.id)) + 1,
-        name: product.name + ' (Copy)',
-        sku: product.sku + '-COPY',
-        status: 'draft',
-        created: new Date().toISOString().split('T')[0]
-      };
-      this.products.unshift(newProduct);
-      this.filterProducts();
-      this.calculateStats();
-      this.showNotification('Product duplicated successfully!', 'success');
+      this.apiRequest(`${this.apiBase}/${product.id}/duplicate`, {
+        method: 'POST',
+      })
+        .then(async () => {
+          await this.loadProductsFromApi();
+          this.filterProducts();
+          this.calculateStats();
+          this.showNotification('Product duplicated successfully!', 'success');
+        })
+        .catch((error) => this.showNotification(error.message || 'Failed to duplicate product.', 'danger'));
     },
 
     deleteProduct(product) {
-      if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
-        this.products = this.products.filter(p => p.id !== product.id);
-        this.filterProducts();
-        this.calculateStats();
-        this.showNotification('Product deleted successfully!', 'success');
-      }
+      this.deleteProductsByIds([product.id]);
     },
 
     exportProducts() {
-      const csvContent = "data:text/csv;charset=utf-8," + 
-        "Name,SKU,Category,Price,Stock,Status,Created\n" +
-        this.filteredProducts.map(p => 
-          `"${p.name}","${p.sku}","${p.category}","${p.price}","${p.stock}","${p.status}","${p.created}"`
-        ).join("\n");
+      const csvContent = [
+        ['Name', 'SKU', 'Category', 'Price', 'Stock', 'Status', 'Created', 'Description'],
+        ...this.filteredProducts.map(product => ([
+          escapeCsv(product.name),
+          escapeCsv(product.sku),
+          escapeCsv(product.category),
+          escapeCsv(product.price),
+          escapeCsv(product.stock),
+          escapeCsv(product.status),
+          escapeCsv(product.created),
+          escapeCsv(product.description),
+        ])),
+      ].map(row => row.join(',')).join('\n');
 
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "products.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      downloadBlob('products.csv', csvContent, 'text/csv;charset=utf-8');
       
       this.showNotification('Products exported successfully!', 'success');
+    },
+
+    async importProducts() {
+      const fileInput = document.getElementById('productImportFile');
+      const file = fileInput?.files?.[0];
+      if (!file) {
+        this.showNotification('Choose a CSV file to import first.', 'warning');
+        return;
+      }
+
+      this.importing = true;
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        await this.apiRequest(`${this.apiBase}/import`, {
+          method: 'POST',
+          body: formData,
+          headers: {},
+        });
+
+        await this.loadProductsFromApi();
+        this.filterProducts();
+        this.calculateStats();
+        this.selectedProducts = [];
+        fileInput.value = '';
+        getModal('#importModal')?.hide();
+        this.showNotification('Products imported successfully.', 'success');
+      } catch (error) {
+        this.showNotification(error.message || 'Failed to import products.', 'danger');
+      } finally {
+        this.importing = false;
+      }
     },
 
     showNotification(message, type = 'info') {
       // Integration with SweetAlert2 or browser notification
       if (typeof Swal !== 'undefined') {
+        const icon = type === 'danger' ? 'error' : type;
         Swal.fire({
           title: message,
-          icon: type === 'success' ? 'success' : type === 'error' ? 'error' : 'info',
+          icon,
           toast: true,
           position: 'top-end',
           showConfirmButton: false,
@@ -756,49 +740,163 @@ document.addEventListener('alpine:init', () => {
 
   // Product form component for modals
   Alpine.data('productForm', () => ({
+    editingProductId: null,
     form: {
       name: '',
       sku: '',
-      category: '',
-      price: '',
+      category_id: '',
+      brand_id: '',
+      uom_id: '',
+      tax_rate_id: '',
+      hsn_code_id: '',
+      default_warehouse_id: '',
+      barcode: '',
+      weight: '',
+      purchase_price: '',
+      mrp: '',
+      selling_price: '',
       stock: '',
+      min_stock_level: 0,
+      overselling_qty: 0,
+      default_discount: 0,
+      default_discount_type: 'percent',
+      allow_overselling: false,
+      manage_stock: true,
+      batch_tracking: false,
+      expiry_tracking: false,
+      is_sku_enabled: true,
       description: '',
-      status: 'draft'
+      application_instructions: '',
+      status: 'draft',
+      grade: '',
+      image: '/assets/images/product-placeholder.svg',
+      imageFile: null,
+      attributes: [],
     },
 
-    saveProduct() {
-      // Validation
-      if (!this.form.name || !this.form.sku || !this.form.category || 
-          !this.form.price || !this.form.stock || !this.form.status) {
-        alert('Please fill in all required fields');
-        return;
-      }
-
-      console.log('Saving product:', this.form);
-      
-      // In a real app, this would make an API call
-      // For now, just show success message
-      if (typeof Swal !== 'undefined') {
-        Swal.fire({
-          title: 'Product Saved!',
-          text: 'The product has been saved successfully',
-          icon: 'success',
-          confirmButtonText: 'OK'
-        });
-      } else {
-        alert('Product saved successfully!');
-      }
-
-      // Reset form
+    resetForm() {
+      this.editingProductId = null;
       this.form = {
         name: '',
         sku: '',
-        category: '',
-        price: '',
+        category_id: '',
+        brand_id: '',
+        uom_id: '',
+        tax_rate_id: '',
+        hsn_code_id: '',
+        default_warehouse_id: '',
+        barcode: '',
+        weight: '',
+        purchase_price: '',
+        mrp: '',
+        selling_price: '',
         stock: '',
+        min_stock_level: 0,
+        overselling_qty: 0,
+        default_discount: 0,
+        default_discount_type: 'percent',
+        allow_overselling: false,
+        manage_stock: true,
+        batch_tracking: false,
+        expiry_tracking: false,
+        is_sku_enabled: true,
         description: '',
-        status: 'draft'
+        application_instructions: '',
+        status: 'draft',
+        grade: '',
+        image: '/assets/images/product-placeholder.svg',
+        imageFile: null,
+        attributes: [],
       };
+    },
+
+    handleImageUpload(event) {
+      const file = event?.target?.files?.[0];
+      if (!file) return;
+
+      this.form.image = URL.createObjectURL(file);
+      this.form.imageFile = file;
+    },
+
+    async saveProduct() {
+      const table = Alpine.store('productTable');
+      if (!table) return;
+
+      if (!this.form.name || !this.form.sku || !this.form.category ||
+          this.form.price === '' || this.form.stock === '' || !this.form.status) {
+        table.showNotification('Please fill in all required fields.', 'warning');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('name', String(this.form.name).trim());
+      formData.append('sku', String(this.form.sku).trim());
+      formData.append('category_id', String(this.form.category_id || ''));
+      if (this.form.brand_id) formData.append('brand_id', String(this.form.brand_id));
+      if (this.form.uom_id) formData.append('uom_id', String(this.form.uom_id));
+      if (this.form.tax_rate_id) formData.append('tax_rate_id', String(this.form.tax_rate_id));
+      if (this.form.hsn_code_id) formData.append('hsn_code_id', String(this.form.hsn_code_id));
+      if (this.form.default_warehouse_id) formData.append('default_warehouse_id', String(this.form.default_warehouse_id));
+      if (this.form.barcode) formData.append('barcode', String(this.form.barcode).trim());
+      if (this.form.weight) formData.append('weight', String(this.form.weight).trim());
+      formData.append('purchase_price', String(Number(this.form.purchase_price || 0)));
+      if (this.form.mrp !== '' && this.form.mrp !== null && this.form.mrp !== undefined) {
+        formData.append('mrp', String(Number(this.form.mrp)));
+      }
+      formData.append('selling_price', String(Number(this.form.selling_price || 0)));
+      formData.append('stock', String(Number(this.form.stock || 0)));
+      formData.append('min_stock_level', String(Number(this.form.min_stock_level || 0)));
+      formData.append('overselling_qty', String(Number(this.form.overselling_qty || 0)));
+      formData.append('default_discount', String(Number(this.form.default_discount || 0)));
+      formData.append('default_discount_type', this.form.default_discount_type || 'percent');
+      formData.append('description', String(this.form.description ?? '').trim());
+      formData.append('status', normalizeStatus(this.form.status));
+      formData.append('allow_overselling', this.form.allow_overselling ? '1' : '0');
+      formData.append('manage_stock', this.form.manage_stock ? '1' : '0');
+      formData.append('batch_tracking', this.form.batch_tracking ? '1' : '0');
+      formData.append('expiry_tracking', this.form.expiry_tracking ? '1' : '0');
+      formData.append('is_sku_enabled', this.form.is_sku_enabled ? '1' : '0');
+      if (this.form.application_instructions) {
+        formData.append('application_instructions', String(this.form.application_instructions).trim());
+      }
+      if (this.form.grade) {
+        formData.append('grade', String(this.form.grade));
+      }
+
+      this.form.attributes.forEach((attributeId) => {
+        formData.append('attributes[]', String(attributeId));
+      });
+
+      if (this.form.imageFile instanceof File) {
+        formData.append('image', this.form.imageFile);
+      }
+
+      try {
+        if (this.editingProductId !== null) {
+          formData.append('_method', 'PATCH');
+          await table.apiRequest(`${table.apiBase}/${this.editingProductId}`, {
+            method: 'POST',
+            body: formData,
+            headers: {},
+          });
+          table.showNotification(`Updated ${String(this.form.name).trim()} successfully.`, 'success');
+        } else {
+          await table.apiRequest(table.apiBase, {
+            method: 'POST',
+            body: formData,
+            headers: {},
+          });
+          table.showNotification(`Created ${String(this.form.name).trim()} successfully.`, 'success');
+        }
+
+        await table.loadProductsFromApi();
+        table.filterProducts();
+        table.calculateStats();
+        this.resetForm();
+        getModal('#productModal')?.hide();
+      } catch (error) {
+        table.showNotification(error.message || 'Failed to save product.', 'danger');
+      }
     }
   }));
 

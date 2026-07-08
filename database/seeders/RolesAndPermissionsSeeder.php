@@ -51,6 +51,14 @@ class RolesAndPermissionsSeeder extends Seeder
         'permission-delete',
         'permission-restore',
         'permission-permanent-delete',
+        'product-view',
+        'product-create',
+        'product-edit',
+        'product-delete',
+        'product-restore',
+        'product-permanent-delete',
+        'product-import',
+        'product-export',
         'audit-log-view',
     ];
 
@@ -62,7 +70,7 @@ class RolesAndPermissionsSeeder extends Seeder
     private const array ROLE_PERMISSIONS = [
         'Super Admin' => self::PERMISSIONS,
         'Admin'       => self::PERMISSIONS,
-        'Manager'     => ['user-view', 'role-view', 'permission-view', 'audit-log-view'],
+        'Manager'     => ['user-view', 'role-view', 'permission-view', 'product-view', 'product-export', 'audit-log-view'],
         'User'        => [],
     ];
 
