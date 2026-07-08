@@ -231,6 +231,12 @@ document.addEventListener('alpine:init', () => {
             ...this.options,
             ...payload.options,
           };
+          try {
+            const form = this._getProductForm();
+            if (form && !form.editingProductId && !form.form.default_warehouse_id && this.options.warehouses && this.options.warehouses.length > 0) {
+              form.form.default_warehouse_id = String(this.options.warehouses[0].id);
+            }
+          } catch (e) {}
         }
       } catch (error) {
         console.error('Failed to load products from API:', error);
@@ -248,7 +254,7 @@ document.addEventListener('alpine:init', () => {
     calculateStats() {
       this.stats.total = this.products.length;
       this.stats.active = this.products.filter(p => ['published', 'active'].includes(String(p.status || '').toLowerCase())).length;
-      this.stats.inStock = this.products.filter(p => p.stock > 0).length;
+      this.stats.inStock = this.products.filter(p => p.stock > 20).length;
       this.stats.lowStock = this.products.filter(p => p.stock > 0 && p.stock <= 20).length;
       this.stats.outOfStock = this.products.filter(p => p.stock <= 0).length;
       this.stats.totalValue = this.products.reduce((sum, p) => sum + (p.price * p.stock), 0);
@@ -267,6 +273,18 @@ document.addEventListener('alpine:init', () => {
         percentage: Math.round((count / total) * 100),
         color: this.getCategoryColor(name)
       }));
+
+      this.updateCategoryChart();
+    },
+
+    updateCategoryChart() {
+      if (this.charts.category && typeof this.charts.category.updateSeries === 'function') {
+        this.charts.category.updateSeries(this.categoryStats.map(cat => cat.count));
+        this.charts.category.updateOptions({
+          labels: this.categoryStats.map(cat => cat.name),
+          colors: this.categoryStats.map(cat => cat.color),
+        });
+      }
     },
 
     getCategoryColor(category) {
@@ -467,9 +485,30 @@ document.addEventListener('alpine:init', () => {
       const ids = [...new Set(productIds)];
       if (ids.length === 0) return;
 
-      const confirmed = window.confirm(`Are you sure you want to delete ${ids.length} product(s)?`);
-      if (!confirmed) return;
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          title: 'Are you sure?',
+          text: `You are about to delete ${ids.length} product(s). This action can be undone from trash.`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#dc3545',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Yes, delete!',
+          cancelButtonText: 'Cancel'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.executeDelete(ids);
+          }
+        });
+      } else {
+        const confirmed = window.confirm(`Are you sure you want to delete ${ids.length} product(s)?`);
+        if (confirmed) {
+          this.executeDelete(ids);
+        }
+      }
+    },
 
+    executeDelete(ids) {
       this.apiRequest(`${this.apiBase}/bulk-delete`, {
         method: 'POST',
         body: JSON.stringify({ ids }),
@@ -535,11 +574,12 @@ document.addEventListener('alpine:init', () => {
         const formData = new FormData();
         formData.append('file', file);
 
-        await this.apiRequest(`${this.apiBase}/import`, {
+        const response = await this.apiRequest(`${this.apiBase}/import`, {
           method: 'POST',
           body: formData,
           headers: {},
         });
+        const resData = await response.json();
 
         await this.loadProductsFromApi();
         this.filterProducts();
@@ -547,7 +587,7 @@ document.addEventListener('alpine:init', () => {
         this.selectedProducts = [];
         fileInput.value = '';
         getModal('#importModal')?.hide();
-        this.showNotification('Products imported successfully.', 'success');
+        this.showNotification(resData.message || 'Products imported successfully.', 'success');
       } catch (error) {
         this.showNotification(error.message || 'Failed to import products.', 'danger');
       } finally {
@@ -828,11 +868,31 @@ document.addEventListener('alpine:init', () => {
         imageFile: null,
         attributes: [],
       };
+
+      const table = Alpine.store('productTable');
+      if (table && table.options.warehouses && table.options.warehouses.length > 0) {
+        this.form.default_warehouse_id = String(table.options.warehouses[0].id);
+      }
     },
 
     handleImageUpload(event) {
       const file = event?.target?.files?.[0];
       if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            title: 'Image too large',
+            text: 'The selected image exceeds the maximum size limit of 2MB.',
+            icon: 'warning',
+            confirmButtonColor: '#3085d6',
+          });
+        } else {
+          alert('The selected image exceeds the maximum size limit of 2MB.');
+        }
+        event.target.value = '';
+        return;
+      }
 
       this.form.image = URL.createObjectURL(file);
       this.form.imageFile = file;
@@ -841,6 +901,12 @@ document.addEventListener('alpine:init', () => {
     async saveProduct() {
       const table = Alpine.store('productTable');
       if (!table) return;
+
+      if (!this.form.is_sku_enabled && !this.form.sku) {
+        const prefix = this.form.name ? String(this.form.name).substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'PROD' : 'PROD';
+        const timestamp = Date.now().toString().slice(-6);
+        this.form.sku = `${prefix}-${timestamp}`;
+      }
 
       if (!this.form.name || !this.form.sku || !this.form.category_id ||
           this.form.selling_price === '' || this.form.stock === '' || !this.form.status) {
@@ -888,6 +954,10 @@ document.addEventListener('alpine:init', () => {
       });
 
       if (this.form.imageFile instanceof File) {
+        if (this.form.imageFile.size > 2 * 1024 * 1024) {
+          table.showNotification('Selected image is too large. Maximum size allowed is 2MB.', 'warning');
+          return;
+        }
         formData.append('image', this.form.imageFile);
       }
 

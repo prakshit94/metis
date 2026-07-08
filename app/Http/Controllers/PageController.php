@@ -41,6 +41,21 @@ class PageController extends Controller
         return view('orders');
     }
 
+    public function stockManagement()
+    {
+        return view('inventory.stock-management');
+    }
+
+    public function stockTransfers()
+    {
+        return view('inventory.stock-transfers');
+    }
+
+    public function inventoryAdjustments()
+    {
+        return view('inventory.adjustments');
+    }
+
     public function reports()
     {
         return view('reports');

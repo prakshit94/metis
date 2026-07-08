@@ -230,6 +230,52 @@ class ProductApiTest extends TestCase
         $this->assertSoftDeleted('products', ['id' => $product2->id]);
     }
 
+    public function test_import_products_with_fallback_and_dynamic_categories(): void
+    {
+        // Ensure a warehouse exists so the fallback can trigger
+        \App\Models\Warehouse::create(['name' => 'First Main Warehouse', 'code' => 'WH01', 'is_active' => true]);
+
+        // CSV data with missing categories and missing default_warehouse_id but having stock
+        $csvContent = "Name,SKU,Category,Selling_Price,Stock\n" .
+                      "Imported Product 1,IMP-001,Newly Created Category,25.50,150\n" .
+                      "Imported Product 2,IMP-002,,19.99,80\n";
+
+        $file = \Illuminate\Http\UploadedFile::fake()->createWithContent('products.csv', $csvContent);
+
+        $response = $this->postJson('/api/products/import', [
+            'file' => $file,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Imported 2 products successfully.');
+
+        // Assert dynamic categories were created correctly
+        $this->assertDatabaseHas('categories', ['name' => 'Newly Created Category', 'slug' => 'newly-created-category']);
+        $this->assertDatabaseHas('categories', ['name' => 'Uncategorized', 'slug' => 'uncategorized']);
+
+        // Assert products were imported
+        $this->assertDatabaseHas('products', [
+            'sku' => 'IMP-001',
+            'name' => 'Imported Product 1',
+            'selling_price' => 25.50,
+        ]);
+
+        $this->assertDatabaseHas('products', [
+            'sku' => 'IMP-002',
+            'name' => 'Imported Product 2',
+            'selling_price' => 19.99,
+        ]);
+
+        // Assert warehouse fallback assigned stock correctly
+        $product1 = Product::where('sku', 'IMP-001')->first();
+        $this->assertNotNull($product1->default_warehouse_id);
+        $this->assertDatabaseHas('stocks', [
+            'product_id' => $product1->id,
+            'warehouse_id' => $product1->default_warehouse_id,
+            'quantity' => 150,
+        ]);
+    }
+
     public function test_user_without_permissions_is_forbidden(): void
     {
         $unauthorizedUser = $this->createUser('guest@example.com');

@@ -44,6 +44,42 @@
                     </a>
                 </li>
 
+                {{-- Inventory Dropdown --}}
+                <li class="nav-item">
+                    <a class="nav-link {{ Str::startsWith($current, 'inventory') ? 'active' : '' }}"
+                       href="#"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#inventorySubmenu"
+                       aria-expanded="{{ Str::startsWith($current, 'inventory') ? 'true' : 'false' }}"
+                       aria-controls="inventorySubmenu">
+                        <i class="bi bi-archive-fill"></i>
+                        <span>Inventory</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse {{ Str::startsWith($current, 'inventory') ? 'show' : '' }}" id="inventorySubmenu">
+                        <ul class="nav nav-submenu">
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'inventory.stock-management' ? 'active' : '' }}" href="{{ route('inventory.stock-management') }}">
+                                    <i class="bi bi-box-seam-fill"></i>
+                                    <span>Stock Levels</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'inventory.stock-transfers' ? 'active' : '' }}" href="{{ route('inventory.stock-transfers') }}">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                    <span>Stock Transfers</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'inventory.adjustments' ? 'active' : '' }}" href="{{ route('inventory.adjustments') }}">
+                                    <i class="bi bi-sliders2"></i>
+                                    <span>Adjustments</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
                 {{-- Catalog Dropdown --}}
                 <li class="nav-item">
                     <a class="nav-link {{ Str::startsWith($current, 'catalog') ? 'active' : '' }}"

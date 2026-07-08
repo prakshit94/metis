@@ -266,6 +266,10 @@ class ProductController extends Controller
                 continue;
             }
 
+            if (count($headers) !== count($row)) {
+                continue;
+            }
+
             $record = array_combine($headers, $row);
             if (! is_array($record)) {
                 continue;
@@ -306,6 +310,15 @@ class ProductController extends Controller
             }
 
             $product = Product::withTrashed()->firstOrNew(['sku' => $payload['sku']]);
+
+            // Fallback to first warehouse if default_warehouse_id is empty but stock is provided
+            if (empty($payload['default_warehouse_id']) && $payload['stock'] > 0) {
+                $firstWarehouse = Warehouse::first();
+                if ($firstWarehouse) {
+                    $payload['default_warehouse_id'] = $firstWarehouse->id;
+                }
+            }
+
             $this->fillProduct($product, $payload, null);
             $product->save();
 
@@ -418,7 +431,7 @@ class ProductController extends Controller
             'is_sku_enabled' => ['nullable', 'boolean'],
             'application_instructions' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'image' => ['nullable', 'image', 'max:4096'],
+            'image' => ['nullable', 'file', 'mimes:jpeg,jpg,png,gif,webp,svg,avif', 'max:2048'],
             'attributes' => ['nullable', 'array'],
             'attributes.*' => ['integer', 'exists:product_attribute_values,id'],
             'overselling_qty' => ['nullable', 'integer', 'min:0'],
@@ -602,17 +615,32 @@ class ProductController extends Controller
     private function resolveCategoryId(mixed $value): ?int
     {
         if ($value === null || $value === '') {
-            return null;
+            $category = Category::firstOrCreate(
+                ['slug' => 'uncategorized'],
+                ['name' => 'Uncategorized']
+            );
+            return $category->id;
         }
 
         if (is_numeric($value)) {
-            return (int) $value;
+            $category = Category::find((int) $value);
+            if ($category) {
+                return $category->id;
+            }
         }
 
-        $slug = Str::slug((string) $value);
-        $category = Category::query()->where('slug', $slug)->first();
+        $name = trim((string) $value);
+        $slug = Str::slug($name);
+        if ($slug === '') {
+            $slug = 'uncategorized';
+            $name = 'Uncategorized';
+        }
+        $category = Category::firstOrCreate(
+            ['slug' => $slug],
+            ['name' => $name]
+        );
 
-        return $category?->id;
+        return $category->id;
     }
 
     private function resolveId(mixed $value): ?int

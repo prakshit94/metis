@@ -37,6 +37,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/warehouses', [\App\Http\Controllers\Catalog\CatalogController::class, 'warehouses'])->name('warehouses');
         Route::get('/attributes', [\App\Http\Controllers\Catalog\CatalogController::class, 'attributes'])->name('attributes');
     });
+    Route::prefix('inventory')->name('inventory.')->group(function (): void {
+        Route::get('/stock-management', [PageController::class, 'stockManagement'])->name('stock-management');
+        Route::get('/stock-transfers', [PageController::class, 'stockTransfers'])->name('stock-transfers');
+        Route::get('/adjustments', [PageController::class, 'inventoryAdjustments'])->name('adjustments');
+    });
     Route::get('/orders', [PageController::class, 'orders'])->name('orders');
     Route::get('/reports', [PageController::class, 'reports'])->name('reports');
     Route::get('/messages', [PageController::class, 'messages'])->name('messages');
@@ -73,6 +78,27 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/attributes/{attribute}/values', [\App\Http\Controllers\Catalog\ProductAttributeController::class, 'storeValue'])->name('api.attributes.values.store');
         Route::patch('/attributes/values/{value}', [\App\Http\Controllers\Catalog\ProductAttributeController::class, 'updateValue'])->name('api.attributes.values.update');
         Route::delete('/attributes/values/{value}', [\App\Http\Controllers\Catalog\ProductAttributeController::class, 'destroyValue'])->name('api.attributes.values.destroy');
+
+        // Inventory API Routes
+        Route::prefix('inventory')->name('api.inventory.')->group(function (): void {
+            Route::get('/stocks', [\App\Http\Controllers\Inventory\StockManagementController::class, 'index'])->name('stocks.index');
+            Route::post('/stocks/set', [\App\Http\Controllers\Inventory\StockManagementController::class, 'setStock'])->name('stocks.set');
+            Route::get('/stocks/show', [\App\Http\Controllers\Inventory\StockManagementController::class, 'show'])->name('stocks.show');
+            Route::get('/stocks/warehouse-options', [\App\Http\Controllers\Inventory\StockManagementController::class, 'warehouseOptions'])->name('stocks.warehouse-options');
+
+            Route::get('/transfers/options', [\App\Http\Controllers\Inventory\StockTransferController::class, 'options'])->name('transfers.options');
+            Route::post('/transfers/bulk-action', [\App\Http\Controllers\Inventory\StockTransferController::class, 'bulkAction'])->name('transfers.bulk-action');
+            Route::post('/transfers/{stockTransfer}/send', [\App\Http\Controllers\Inventory\StockTransferController::class, 'send'])->name('transfers.send');
+            Route::post('/transfers/{stockTransfer}/receive', [\App\Http\Controllers\Inventory\StockTransferController::class, 'receive'])->name('transfers.receive');
+            Route::post('/transfers/{stockTransfer}/cancel', [\App\Http\Controllers\Inventory\StockTransferController::class, 'cancel'])->name('transfers.cancel');
+            Route::apiResource('/transfers', \App\Http\Controllers\Inventory\StockTransferController::class);
+
+            Route::get('/adjustments/options', [\App\Http\Controllers\Inventory\InventoryAdjustmentController::class, 'options'])->name('adjustments.options');
+            Route::post('/adjustments/bulk-action', [\App\Http\Controllers\Inventory\InventoryAdjustmentController::class, 'bulkAction'])->name('adjustments.bulk-action');
+            Route::post('/adjustments/{inventoryAdjustment}/approve', [\App\Http\Controllers\Inventory\InventoryAdjustmentController::class, 'approve'])->name('adjustments.approve');
+            Route::post('/adjustments/{inventoryAdjustment}/reject', [\App\Http\Controllers\Inventory\InventoryAdjustmentController::class, 'reject'])->name('adjustments.reject');
+            Route::apiResource('/adjustments', \App\Http\Controllers\Inventory\InventoryAdjustmentController::class);
+        });
 
         Route::prefix('products')->name('api.products.')->group(function (): void {
             Route::get('/', [CatalogProductController::class, 'index'])->name('index');

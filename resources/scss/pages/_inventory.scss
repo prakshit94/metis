@@ -1,0 +1,86 @@
+// ==========================================================================
+// Inventory Pages Styles
+// ==========================================================================
+
+// Stock Management
+.stock-management {
+  .stats-card {
+    @include stats-card-hover();
+  }
+
+  .stats-icon {
+    @include stats-icon();
+  }
+
+  @include product-status-badges();
+
+  .table {
+    .sortable {
+      cursor: pointer;
+      user-select: none;
+
+      &:hover {
+        background-color: var(--bs-secondary-bg-subtle);
+      }
+    }
+
+    .qty-badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}
+
+// Stock Transfers
+.stock-transfers {
+  .stats-card {
+    @include stats-card-hover();
+  }
+
+  .stats-icon {
+    @include stats-icon();
+  }
+
+  .transfer-no {
+    font-family: monospace;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  .table {
+    .sortable {
+      cursor: pointer;
+      user-select: none;
+
+      &:hover {
+        background-color: var(--bs-secondary-bg-subtle);
+      }
+    }
+  }
+}
+
+// Inventory Adjustments
+.inventory-adjustments {
+  .stats-card {
+    @include stats-card-hover();
+  }
+
+  .stats-icon {
+    @include stats-icon();
+  }
+
+  .table {
+    .sortable {
+      cursor: pointer;
+      user-select: none;
+
+      &:hover {
+        background-color: var(--bs-secondary-bg-subtle);
+      }
+    }
+  }
+}

@@ -157,13 +157,16 @@ class AdminApp {
       case 'forms':
         await this.initFormsPage();
         break;
-            case 'catalog-brands': await this.initCatalogBrands(); break;
+      case 'catalog-brands': await this.initCatalogBrands(); break;
       case 'catalog-categories': await this.initCatalogCategories(); break;
       case 'catalog-uom': await this.initCatalogUom(); break;
       case 'catalog-tax-rates': await this.initCatalogTaxRates(); break;
       case 'catalog-hsn-codes': await this.initCatalogHsnCodes(); break;
       case 'catalog-warehouses': await this.initCatalogWarehouses(); break;
       case 'catalog-attributes': await this.initCatalogAttributes(); break;
+      case 'inventory-stock-management': await this.initInventoryStockManagement(); break;
+      case 'inventory-stock-transfers': await this.initInventoryStockTransfers(); break;
+      case 'inventory-adjustments': await this.initInventoryAdjustments(); break;
       case 'catalog-products':
         await this.initProductsPage();
         break;
@@ -245,6 +248,9 @@ class AdminApp {
   async initCatalogHsnCodes() { try { const m = await import('./components/catalog/hsn-codes.js'); window.Alpine.data('hsnCodesTable', m.default); console.log('Loaded hsn codes'); } catch(e) { console.error(e); } }
   async initCatalogWarehouses() { try { const m = await import('./components/catalog/warehouses.js'); window.Alpine.data('warehousesTable', m.default); console.log('Loaded warehouses'); } catch(e) { console.error(e); } }
   async initCatalogAttributes() { try { const m = await import('./components/catalog/attributes.js'); window.Alpine.data('attributesTable', m.default); console.log('Loaded attributes'); } catch(e) { console.error(e); } }
+  async initInventoryStockManagement() { try { const m = await import('./components/inventory/stock-management.js'); window.Alpine.data('stockManagement', m.default); console.log('Loaded stock management'); } catch(e) { console.error(e); } }
+  async initInventoryStockTransfers() { try { const m = await import('./components/inventory/stock-transfers.js'); window.Alpine.data('stockTransfers', m.default); console.log('Loaded stock transfers'); } catch(e) { console.error(e); } }
+  async initInventoryAdjustments() { try { const m = await import('./components/inventory/adjustments.js'); window.Alpine.data('inventoryAdjustments', m.default); console.log('Loaded inventory adjustments'); } catch(e) { console.error(e); } }
 
   async initProductsPage() {
     try {

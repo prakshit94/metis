@@ -257,55 +257,70 @@
     </div>
 
     <!-- Form Modal -->
+    <!-- Form Modal -->
     <div class="modal fade" id="attributesModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <form @submit.prevent="saveItem">
-                    <div class="modal-header bg-light border-0">
-                        <h5 class="modal-title fw-bold" x-text="isEditing ? 'Edit Attribute' : 'Add Attribute'"></h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <div class="mb-3">
-                            <label class="form-label fw-medium">Attribute Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="form.name" required placeholder="e.g. Color, Size, Material">
-                        </div>
-                        
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-medium">Input Type <span class="text-danger">*</span></label>
-                                <select class="form-select" x-model="form.type" required>
-                                    <option value="text">Text</option>
-                                    <option value="color">Color</option>
-                                    <option value="select">Select</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-medium">Status</label>
-                                <select class="form-select" x-model="form.status">
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
-                        </div>
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" x-text="isEditing ? 'Edit Attribute' : 'Add Attribute'"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <form @submit.prevent="saveItem">
+                        <!-- Card: Attribute Info -->
+                        <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-tags-fill"></i>
+                                    </div>
+                                    <h6 class="card-title mb-0 fw-bold">Attribute Settings</h6>
+                                </div>
+                                
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-medium text-muted small">Attribute Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" x-model="form.name" required placeholder="e.g. Color, Size, Material">
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-medium text-muted small">Input Type <span class="text-danger">*</span></label>
+                                        <select class="form-select" x-model="form.type" required>
+                                            <option value="text">Text</option>
+                                            <option value="color">Color</option>
+                                            <option value="select">Select</option>
+                                        </select>
+                                    </div>
 
-                        <div class="mb-3">
-                            <div class="form-check form-switch p-3 bg-light rounded border">
-                                <input class="form-check-input" type="checkbox" id="isFilterableSwitch" x-model="form.is_filterable" style="margin-left: -1.5em; float: right;">
-                                <label class="form-check-label fw-semibold" for="isFilterableSwitch">Filterable</label>
-                                <div class="form-text text-muted small mt-1">Show this attribute in frontend product filters.</div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-medium text-muted small">Status</label>
+                                        <select class="form-select" x-model="form.status">
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-12 mt-4">
+                                        <div class="p-2 border rounded bg-body-secondary">
+                                            <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
+                                                <label class="form-check-label fw-medium small" for="isFilterableSwitch">Filterable</label>
+                                                <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.is_filterable" id="isFilterableSwitch">
+                                            </div>
+                                        </div>
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Show this attribute in frontend product filters.</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="modal-footer border-0 bg-light">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2" :disabled="saving">
-                            <span x-show="saving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            <i x-show="!saving" class="bi bi-check-lg"></i>
-                            <span x-text="isEditing ? 'Update' : 'Save'"></span>
-                        </button>
-                    </div>
-                </form>
+                        <div class="modal-footer border-top-0 pt-0 px-0">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary px-4" :disabled="saving">
+                                <span x-show="saving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                <span x-text="isEditing ? 'Update Attribute' : 'Save Attribute'"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -314,60 +329,82 @@
     <div class="modal fade" id="valuesModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-light border-0">
+                <div class="modal-header border-bottom-0 pb-0">
                     <h5 class="modal-title fw-bold" x-text="managingValues ? `Manage Values for ${managingValues.name}` : 'Manage Values'"></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <!-- Add Value Form -->
-                    <form @submit.prevent="addValue" class="p-3 bg-light rounded border mb-4">
-                        <div class="row g-2 align-items-end">
-                            <div class="col">
-                                <label class="form-label fw-medium small mb-1">New Value</label>
-                                <input type="text" class="form-control form-control-sm" x-model="newValueForm.value" required placeholder="e.g. Red, XL, Cotton">
-                            </div>
-                            <template x-if="managingValues && managingValues.type === 'color'">
-                                <div class="col-auto" style="width: 80px;">
-                                    <label class="form-label fw-medium small mb-1">Color</label>
-                                    <input type="color" class="form-control form-control-sm form-control-color w-100" x-model="newValueForm.color_code" style="padding: 0.2rem; height: 31px;">
+                <div class="modal-body pt-3">
+                    <!-- Card: Add Value -->
+                    <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-plus-circle-fill"></i>
                                 </div>
-                            </template>
-                            <div class="col-auto">
-                                <button type="submit" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" :disabled="valueSaving">
-                                    <span x-show="valueSaving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    <i x-show="!valueSaving" class="bi bi-plus-lg"></i>Add
-                                </button>
+                                <h6 class="card-title mb-0 fw-bold">Add Attribute Value</h6>
                             </div>
-                        </div>
-                    </form>
 
-                    <!-- Values List -->
-                    <div class="values-list" style="max-height: 250px; overflow-y: auto;">
-                        <template x-if="!managingValues || !managingValues.values || managingValues.values.length === 0">
-                            <div class="text-center py-4 text-muted small">
-                                <i class="bi bi-tag-fill d-block mb-1 fs-4 text-muted" style="opacity: 0.5;"></i>
-                                No values defined yet.
-                            </div>
-                        </template>
-                        <div class="list-group">
-                            <template x-for="val in (managingValues ? managingValues.values : [])" :key="val.id">
-                                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <template x-if="managingValues && managingValues.type === 'color'">
-                                            <div class="rounded-circle border" :style="`background-color: ${val.color_code}; width: 16px; height: 16px;`"></div>
-                                        </template>
-                                        <span class="fw-medium text-dark" x-text="val.value"></span>
+                            <form @submit.prevent="addValue">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col">
+                                        <label class="form-label fw-medium text-muted small mb-1">New Value <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" x-model="newValueForm.value" required placeholder="e.g. Red, XL, Cotton">
                                     </div>
-                                    <button type="button" class="btn btn-link text-danger p-0" @click="deleteValue(val)">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <template x-if="managingValues && managingValues.type === 'color'">
+                                        <div class="col-auto" style="width: 80px;">
+                                            <label class="form-label fw-medium text-muted small mb-1">Color</label>
+                                            <input type="color" class="form-control form-control-sm form-control-color w-100" x-model="newValueForm.color_code" style="padding: 0.2rem; height: 31px;">
+                                        </div>
+                                    </template>
+                                    <div class="col-auto">
+                                        <button type="submit" class="btn btn-sm btn-primary px-3" :disabled="valueSaving" style="height: 31px;">
+                                            <span x-show="valueSaving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                            <span x-text="valueSaving ? 'Adding' : 'Add'"></span>
+                                        </button>
+                                    </div>
                                 </div>
-                            </template>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Card: Values List -->
+                    <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-list-task"></i>
+                                </div>
+                                <h6 class="card-title mb-0 fw-bold">Existing Values</h6>
+                            </div>
+
+                            <div class="values-list" style="max-height: 250px; overflow-y: auto;">
+                                <template x-if="!managingValues || !managingValues.values || managingValues.values.length === 0">
+                                    <div class="text-center py-4 text-muted small">
+                                        <i class="bi bi-tag-fill d-block mb-1 fs-4 text-muted" style="opacity: 0.5;"></i>
+                                        No values defined yet.
+                                    </div>
+                                </template>
+                                <div class="list-group">
+                                    <template x-for="val in (managingValues ? managingValues.values : [])" :key="val.id">
+                                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 bg-body-secondary border-0 mb-2 rounded">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <template x-if="managingValues && managingValues.type === 'color'">
+                                                    <div class="rounded-circle border" :style="`background-color: ${val.color_code}; width: 16px; height: 16px;`"></div>
+                                                </template>
+                                                <span class="fw-medium text-dark small" x-text="val.value"></span>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-link text-danger p-0" @click="deleteValue(val)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 bg-light">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>

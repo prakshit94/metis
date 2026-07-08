@@ -26,7 +26,7 @@
                     <div>
                         <!-- Product Stats Widgets -->
                         <div class="row g-4 g-lg-5 mb-5">
-                            <div class="col-xl-3 col-lg-6">
+                            <div class="col-xl-3 col-lg-6" style="cursor: pointer;" @click="stockFilter = ''; filterProducts()">
                                 <div class="card stats-card">
                                     <div class="card-body p-3 p-lg-4">
                                         <div class="d-flex align-items-center">
@@ -44,7 +44,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-xl-3 col-lg-6">
+                            <div class="col-xl-3 col-lg-6" style="cursor: pointer;" @click="stockFilter = 'in-stock'; filterProducts()">
                                 <div class="card stats-card">
                                     <div class="card-body p-3 p-lg-4">
                                         <div class="d-flex align-items-center">
@@ -62,7 +62,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-xl-3 col-lg-6">
+                            <div class="col-xl-3 col-lg-6" style="cursor: pointer;" @click="stockFilter = 'low-stock'; filterProducts()">
                                 <div class="card stats-card">
                                     <div class="card-body p-3 p-lg-4">
                                         <div class="d-flex align-items-center">
@@ -172,10 +172,14 @@
                                                     @change="filterProducts()"
                                                     style="width: 150px;">
                                                 <option value="">All Categories</option>
-                                                <option value="electronics">Electronics</option>
-                                                <option value="clothing">Clothing</option>
-                                                <option value="books">Books</option>
-                                                <option value="home">Home & Garden</option>
+                                                <template x-for="cat in options.categories" :key="cat.id">
+                                                    <optgroup :label="cat.name">
+                                                        <option :value="cat.slug" x-text="cat.name + ' (Main)'"></option>
+                                                        <template x-for="child in cat.children" :key="child.id">
+                                                            <option :value="child.slug" x-text="'↳ ' + child.name"></option>
+                                                        </template>
+                                                    </optgroup>
+                                                </template>
                                             </select>
                                             
                                             <!-- Stock Filter -->
@@ -265,7 +269,7 @@
                                                     <td>
                                                         <span class="badge bg-light text-dark" x-text="product.category"></span>
                                                     </td>
-                                                    <td x-text="`$${product.price}`"></td>
+                                                    <td x-text="'$' + Number(product.price).toFixed(2)"></td>
                                                     <td>
                                                         <span class="badge stock-badge" 
                                                               :class="{
@@ -372,7 +376,7 @@
                                             <div class="col-md-8">
                                                 <label class="form-label fw-medium text-muted small">SKU <span class="text-danger">*</span></label>
                                                 <div class="input-group">
-                                                    <input type="text" class="form-control" x-model="form.sku" :disabled="!form.is_sku_enabled" required placeholder="SKU Code">
+                                                    <input type="text" class="form-control" x-model="form.sku" :disabled="!form.is_sku_enabled" :required="form.is_sku_enabled" placeholder="SKU Code">
                                                     <div class="input-group-text bg-body-secondary border-start-0">
                                                         <div class="form-check form-switch m-0">
                                                             <input class="form-check-input" type="checkbox" role="switch" x-model="form.is_sku_enabled" id="skuEnabledToggle">

@@ -46,6 +46,42 @@
 
                 
                 <li class="nav-item">
+                    <a class="nav-link <?php echo e(Str::startsWith($current, 'inventory') ? 'active' : ''); ?>"
+                       href="#"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#inventorySubmenu"
+                       aria-expanded="<?php echo e(Str::startsWith($current, 'inventory') ? 'true' : 'false'); ?>"
+                       aria-controls="inventorySubmenu">
+                        <i class="bi bi-archive-fill"></i>
+                        <span>Inventory</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse <?php echo e(Str::startsWith($current, 'inventory') ? 'show' : ''); ?>" id="inventorySubmenu">
+                        <ul class="nav nav-submenu">
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'inventory.stock-management' ? 'active' : ''); ?>" href="<?php echo e(route('inventory.stock-management')); ?>">
+                                    <i class="bi bi-box-seam-fill"></i>
+                                    <span>Stock Levels</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'inventory.stock-transfers' ? 'active' : ''); ?>" href="<?php echo e(route('inventory.stock-transfers')); ?>">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                    <span>Stock Transfers</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'inventory.adjustments' ? 'active' : ''); ?>" href="<?php echo e(route('inventory.adjustments')); ?>">
+                                    <i class="bi bi-sliders2"></i>
+                                    <span>Adjustments</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                
+                <li class="nav-item">
                     <a class="nav-link <?php echo e(Str::startsWith($current, 'catalog') ? 'active' : ''); ?>"
                        href="#"
                        data-bs-toggle="collapse"
