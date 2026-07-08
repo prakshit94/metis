@@ -134,8 +134,10 @@
                                        :checked="selectedItems.length === paginatedItems.length && paginatedItems.length > 0">
                             </th>
                             <th @click="sortBy('id')" class="sortable" style="width: 80px;">ID</th>
-                            <th @click="sortBy('name')" class="sortable">Name / Code</th>
-                            
+                            <th @click="sortBy('name')" class="sortable">Name</th>
+                            <th @click="sortBy('type')" class="sortable">Type</th>
+                            <th>Values</th>
+                            <th @click="sortBy('is_filterable')" class="sortable">Filterable</th>
                             <th @click="sortBy('status')" class="sortable">Status</th>
                             <th style="width: 120px;" class="text-end pe-4">Actions</th>
                         </tr>
@@ -143,7 +145,7 @@
                     <tbody>
                         <template x-if="paginatedItems.length === 0">
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
+                                <td colspan="8" class="text-center py-5 text-muted">
                                     <div x-show="isLoading" class="spinner-border text-primary" role="status"></div>
                                     <div x-show="!isLoading">
                                         <i class="bi bi-inbox fs-2 d-block mb-2"></i>
@@ -163,10 +165,32 @@
                                 </td>
                                 <td class="text-muted" x-text="item.id"></td>
                                 <td>
-                                    <div class="fw-medium text-dark" x-text="item.name || item.code"></div>
-                                    
+                                    <div class="fw-semibold text-dark" x-text="item.name"></div>
                                 </td>
-                                
+                                <td>
+                                    <span class="badge bg-light text-secondary border text-uppercase" x-text="item.type" style="font-size: 0.72rem;"></span>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1" style="max-width: 250px;">
+                                        <template x-for="val in (item.values || []).slice(0, 3)" :key="val.id">
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle" x-text="val.value" style="font-size: 0.7rem;"></span>
+                                        </template>
+                                        <template x-if="item.values && item.values.length > 3">
+                                            <span class="text-muted" style="font-size: 0.7rem;" x-text="`+${item.values.length - 3} more`"></span>
+                                        </template>
+                                        <template x-if="!item.values || item.values.length === 0">
+                                            <span class="text-muted italic" style="font-size: 0.72rem;">No values</span>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge rounded-pill" 
+                                          :class="{
+                                              'bg-success-subtle text-success': item.is_filterable,
+                                              'bg-secondary-subtle text-secondary': !item.is_filterable
+                                          }"
+                                          x-text="item.is_filterable ? 'Yes' : 'No'"></span>
+                                </td>
                                 <td>
                                     <span class="badge rounded-pill" 
                                           :class="{
@@ -181,6 +205,11 @@
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                            <li>
+                                                <a class="dropdown-item d-flex align-items-center gap-2" href="#" @click.prevent="openValueModal(item)">
+                                                    <i class="bi bi-tag text-info"></i> Manage Values
+                                                </a>
+                                            </li>
                                             <li>
                                                 <a class="dropdown-item d-flex align-items-center gap-2" href="#" @click.prevent="editItem(item)">
                                                     <i class="bi bi-pencil text-primary"></i> Edit
@@ -238,19 +267,34 @@
                     </div>
                     <div class="modal-body p-4">
                         <div class="mb-3">
-                            <label class="form-label fw-medium">Name / Code <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="form.name" required>
-                            <div class="form-text">Primary identifier for this attribute.</div>
+                            <label class="form-label fw-medium">Attribute Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" x-model="form.name" required placeholder="e.g. Color, Size, Material">
                         </div>
                         
-                        
-                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Input Type <span class="text-danger">*</span></label>
+                                <select class="form-select" x-model="form.type" required>
+                                    <option value="text">Text</option>
+                                    <option value="color">Color</option>
+                                    <option value="select">Select</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Status</label>
+                                <select class="form-select" x-model="form.status">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
-                            <label class="form-label fw-medium">Status</label>
-                            <select class="form-select" x-model="form.status">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
+                            <div class="form-check form-switch p-3 bg-light rounded border">
+                                <input class="form-check-input" type="checkbox" id="isFilterableSwitch" x-model="form.is_filterable" style="margin-left: -1.5em; float: right;">
+                                <label class="form-check-label fw-semibold" for="isFilterableSwitch">Filterable</label>
+                                <div class="form-text text-muted small mt-1">Show this attribute in frontend product filters.</div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0 bg-light">
@@ -262,6 +306,69 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Values Modal -->
+    <div class="modal fade" id="valuesModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-light border-0">
+                    <h5 class="modal-title fw-bold" x-text="managingValues ? `Manage Values for ${managingValues.name}` : 'Manage Values'"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Add Value Form -->
+                    <form @submit.prevent="addValue" class="p-3 bg-light rounded border mb-4">
+                        <div class="row g-2 align-items-end">
+                            <div class="col">
+                                <label class="form-label fw-medium small mb-1">New Value</label>
+                                <input type="text" class="form-control form-control-sm" x-model="newValueForm.value" required placeholder="e.g. Red, XL, Cotton">
+                            </div>
+                            <template x-if="managingValues && managingValues.type === 'color'">
+                                <div class="col-auto" style="width: 80px;">
+                                    <label class="form-label fw-medium small mb-1">Color</label>
+                                    <input type="color" class="form-control form-control-sm form-control-color w-100" x-model="newValueForm.color_code" style="padding: 0.2rem; height: 31px;">
+                                </div>
+                            </template>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" :disabled="valueSaving">
+                                    <span x-show="valueSaving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    <i x-show="!valueSaving" class="bi bi-plus-lg"></i>Add
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Values List -->
+                    <div class="values-list" style="max-height: 250px; overflow-y: auto;">
+                        <template x-if="!managingValues || !managingValues.values || managingValues.values.length === 0">
+                            <div class="text-center py-4 text-muted small">
+                                <i class="bi bi-tag-fill d-block mb-1 fs-4 text-muted" style="opacity: 0.5;"></i>
+                                No values defined yet.
+                            </div>
+                        </template>
+                        <div class="list-group">
+                            <template x-for="val in (managingValues ? managingValues.values : [])" :key="val.id">
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <template x-if="managingValues && managingValues.type === 'color'">
+                                            <div class="rounded-circle border" :style="`background-color: ${val.color_code}; width: 16px; height: 16px;`"></div>
+                                        </template>
+                                        <span class="fw-medium text-dark" x-text="val.value"></span>
+                                    </div>
+                                    <button type="button" class="btn btn-link text-danger p-0" @click="deleteValue(val)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>

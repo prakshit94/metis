@@ -14,6 +14,13 @@ class Brand extends Model
     protected $fillable = [
         'name',
         'slug',
+        'image',
+        'logo',
         'status',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 }

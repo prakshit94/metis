@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
@@ -15,7 +17,7 @@ class CategoryController extends Controller
     {
         $this->authorize('product-view');
         
-        $query = Category::query();
+        $query = Category::query()->with('parent')->withCount('products');
         
         if ($search = $request->query('search')) {
             $query->where('name', 'like', "%{$search}%");
@@ -24,7 +26,7 @@ class CategoryController extends Controller
         $sortBy = $request->query('sort_by', 'id');
         $sortDir = $request->query('sort_dir', 'desc');
         
-        if (in_array($sortBy, ['id', 'name', 'status'])) {
+        if (in_array($sortBy, ['id', 'name', 'status', 'parent_id', 'is_active'])) {
             $query->orderBy($sortBy, $sortDir);
         }
         
@@ -41,46 +43,41 @@ class CategoryController extends Controller
         $this->authorize('product-create');
         
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:categories,name',
+            'parent_id' => 'nullable',
             'status' => 'required|in:active,inactive',
+            'is_active' => 'nullable',
+            'image' => 'nullable|image|max:2048',
         ]);
         
-        // Handling specific fields for different models
-        if ('Category' === 'Brand' || 'Category' === 'Category' || 'Category' === 'UnitOfMeasure') {
-            $validated['slug'] = \Illuminate\Support\Str::slug($validated['name']);
-        }
+        $validated['slug'] = Str::slug($validated['name']);
         
-        if ('Category' === 'HsnCode') {
-            $validated = $request->validate([
-                'code' => 'required|string|max:255',
-                'description' => 'required|string|max:255',
-            ]);
-        }
-        
-        if ('Category' === 'TaxRate') {
-            $validated['rate'] = $request->input('rate', 0);
-        }
-        
-        if ('Category' === 'UnitOfMeasure') {
-            $validated['short_name'] = $request->input('short_name', substr($validated['name'], 0, 3));
-        }
+        $validated['is_active'] = $request->has('is_active') 
+            ? filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN) 
+            : true;
 
-        if ('Category' === 'Warehouse') {
-            $validated['code'] = $request->input('code', strtoupper(substr($validated['name'], 0, 3)));
+        if ($request->has('parent_id') && ($request->input('parent_id') === '' || $request->input('parent_id') === 'null' || $request->input('parent_id') === null)) {
+            $validated['parent_id'] = null;
+        } elseif ($request->has('parent_id')) {
+            $validated['parent_id'] = (int) $request->input('parent_id');
+        }
+        
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('categories', 'public');
         }
 
         $model = Category::create($validated);
         
         return response()->json([
             'message' => 'Category created successfully.',
-            'data' => $model
+            'data' => $model->load('parent')->loadCount('products')
         ], 201);
     }
 
     public function show(Category $model): JsonResponse
     {
         $this->authorize('product-view');
-        return response()->json(['data' => $model]);
+        return response()->json(['data' => $model->load('parent')->loadCount('products')]);
     }
 
     public function update(Request $request, $id): JsonResponse
@@ -90,40 +87,47 @@ class CategoryController extends Controller
         $model = Category::findOrFail($id);
         
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
+            'name' => 'sometimes|required|string|max:255|unique:categories,name,' . $model->id,
+            'parent_id' => 'nullable',
             'status' => 'sometimes|required|in:active,inactive',
+            'is_active' => 'nullable',
+            'image' => 'nullable|image|max:2048',
         ]);
         
-        if ('Category' === 'Brand' || 'Category' === 'Category' || 'Category' === 'UnitOfMeasure') {
-            if (isset($validated['name'])) {
-                $validated['slug'] = \Illuminate\Support\Str::slug($validated['name']);
+        if (isset($validated['name'])) {
+            $validated['slug'] = Str::slug($validated['name']);
+        }
+        
+        if ($request->has('is_active')) {
+            $validated['is_active'] = filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if ($request->has('parent_id')) {
+            if ($request->input('parent_id') === '' || $request->input('parent_id') === 'null' || $request->input('parent_id') === null) {
+                $validated['parent_id'] = null;
+            } else {
+                $validated['parent_id'] = (int) $request->input('parent_id');
             }
         }
         
-        if ('Category' === 'HsnCode') {
-            $validated = $request->validate([
-                'code' => 'sometimes|required|string|max:255',
-                'description' => 'sometimes|required|string|max:255',
-            ]);
-        }
-
-        if ('Category' === 'TaxRate') {
-            $validated['rate'] = $request->input('rate', $model->rate);
-        }
-        
-        if ('Category' === 'UnitOfMeasure') {
-            $validated['short_name'] = $request->input('short_name', $model->short_name);
-        }
-
-        if ('Category' === 'Warehouse') {
-            $validated['code'] = $request->input('code', $model->code);
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($model->image) {
+                Storage::disk('public')->delete($model->image);
+            }
+            $validated['image'] = $request->file('image')->store('categories', 'public');
+        } elseif ($request->input('clear_image') === '1') {
+            if ($model->image) {
+                Storage::disk('public')->delete($model->image);
+            }
+            $validated['image'] = null;
         }
         
         $model->update($validated);
         
         return response()->json([
             'message' => 'Category updated successfully.',
-            'data' => $model
+            'data' => $model->load('parent')->loadCount('products')
         ]);
     }
 
@@ -131,6 +135,12 @@ class CategoryController extends Controller
     {
         $this->authorize('product-delete');
         $model = Category::findOrFail($id);
+        
+        // Delete image if exists
+        if ($model->image) {
+            Storage::disk('public')->delete($model->image);
+        }
+        
         $model->delete();
         
         return response()->json([

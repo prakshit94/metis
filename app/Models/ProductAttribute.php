@@ -16,6 +16,11 @@ class ProductAttribute extends Model
         'name',
         'type',
         'status',
+        'is_filterable',
+    ];
+
+    protected $casts = [
+        'is_filterable' => 'boolean',
     ];
 
     public function values(): HasMany

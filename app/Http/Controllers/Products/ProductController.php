@@ -27,7 +27,7 @@ class ProductController extends Controller
         abort_unless($request->user()?->can('product-view'), 403);
 
         $products = Product::query()
-            ->with(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])
+            ->with(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'stocks'])
             ->latest()
             ->get()
             ->map(fn (Product $product) => $this->transform($product))
@@ -44,7 +44,7 @@ class ProductController extends Controller
     {
         abort_unless($request->user()?->can('product-view'), 403);
 
-        $product->load(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute']);
+        $product->load(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'stocks']);
 
         return response()->json([
             'data' => $this->transform($product),
@@ -81,9 +81,17 @@ class ProductController extends Controller
         $product->save();
         $this->syncAttributes($product, $data['attributes'] ?? []);
 
+        if ($product->default_warehouse_id && ($data['stock_quantity'] ?? $data['stock'] ?? null) !== null) {
+            app(\App\Services\InventoryService::class)->setStock(
+                $product->id,
+                $product->default_warehouse_id,
+                (float) ($data['stock_quantity'] ?? $data['stock'])
+            );
+        }
+
         return response()->json([
             'message' => 'Product created successfully.',
-            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])),
+            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'stocks'])),
         ], 201);
     }
 
@@ -119,9 +127,17 @@ class ProductController extends Controller
             $this->syncAttributes($product, $data['attributes']);
         }
 
+        if ($product->default_warehouse_id && ($data['stock_quantity'] ?? $data['stock'] ?? null) !== null) {
+            app(\App\Services\InventoryService::class)->setStock(
+                $product->id,
+                $product->default_warehouse_id,
+                (float) ($data['stock_quantity'] ?? $data['stock'])
+            );
+        }
+
         return response()->json([
             'message' => 'Product updated successfully.',
-            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])),
+            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'stocks'])),
         ]);
     }
 
@@ -183,7 +199,7 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product restored successfully.',
-            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])),
+            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'stocks'])),
         ]);
     }
 
@@ -221,7 +237,7 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product duplicated successfully.',
-            'data' => $this->transform($clone->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])),
+            'data' => $this->transform($clone->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'stocks'])),
         ], 201);
     }
 
@@ -292,6 +308,14 @@ class ProductController extends Controller
             $product = Product::withTrashed()->firstOrNew(['sku' => $payload['sku']]);
             $this->fillProduct($product, $payload, null);
             $product->save();
+
+            if ($product->default_warehouse_id && ($payload['stock'] ?? null) !== null) {
+                app(\App\Services\InventoryService::class)->setStock(
+                    $product->id,
+                    $product->default_warehouse_id,
+                    (float) $payload['stock']
+                );
+            }
 
             if ($product->trashed()) {
                 $product->restore();
@@ -473,8 +497,11 @@ class ProductController extends Controller
             'selling_price' => (float) $product->selling_price,
             'purchase_price' => (float) $product->purchase_price,
             'mrp' => (float) $product->mrp,
-            'stock' => (int) $product->stock_quantity,
-            'stock_quantity' => (int) $product->stock_quantity,
+            'stock' => (int) $product->available_stock,
+            'stock_quantity' => (int) $product->total_stock,
+            'available_stock' => (int) $product->available_stock,
+            'reserved_qty' => (int) $product->total_reserved,
+            'dispatched_qty' => (int) $product->total_dispatched,
             'min_stock_level' => (int) $product->min_stock_level,
             'allow_overselling' => (bool) $product->allow_overselling,
             'manage_stock' => (bool) $product->manage_stock,

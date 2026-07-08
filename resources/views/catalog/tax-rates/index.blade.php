@@ -233,42 +233,53 @@
     <div class="modal fade" id="taxRatesModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <form @submit.prevent="saveItem">
-                    <div class="modal-header bg-light border-0">
-                        <h5 class="modal-title fw-bold" x-text="isEditing ? 'Edit Tax Rate' : 'Add Tax Rate'"></h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <div class="mb-3">
-                            <label class="form-label fw-medium">Name / Code <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="form.name" required>
-                            <div class="form-text">Primary identifier for this tax rate.</div>
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" x-text="isEditing ? 'Edit Tax Rate' : 'Add Tax Rate'"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <form @submit.prevent="saveItem">
+                        <!-- Card: Tax Rate Info -->
+                        <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-percent"></i>
+                                    </div>
+                                    <h6 class="card-title mb-0 fw-bold">Tax Rate Details</h6>
+                                </div>
+                                
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-medium text-muted small">Name / Code <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" x-model="form.name" required placeholder="e.g. GST 18%, VAT 5%">
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Primary identifier for this tax rate.</div>
+                                    </div>
+                                    
+                                    <div class="col-12">
+                                        <label class="form-label fw-medium text-muted small">Rate (%) <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" x-model="form.rate" step="0.01" required placeholder="e.g. 18.00">
+                                    </div>
+                    
+                                    <div class="col-12">
+                                        <label class="form-label fw-medium text-muted small">Status</label>
+                                        <select class="form-select" x-model="form.status">
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-medium">Rate (%) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" x-model="form.rate" step="0.01" required>
+                        <div class="modal-footer border-top-0 pt-0 px-0">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary px-4" :disabled="saving">
+                                <span x-show="saving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                <span x-text="isEditing ? 'Update Tax Rate' : 'Save Tax Rate'"></span>
+                            </button>
                         </div>
-        
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-medium">Status</label>
-                            <select class="form-select" x-model="form.status">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-0 bg-light">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2" :disabled="saving">
-                            <span x-show="saving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            <i x-show="!saving" class="bi bi-check-lg"></i>
-                            <span x-text="isEditing ? 'Update' : 'Save'"></span>
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

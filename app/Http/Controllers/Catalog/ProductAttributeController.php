@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Catalog;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProductAttribute;
+use App\Models\ProductAttributeValue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,7 +16,7 @@ class ProductAttributeController extends Controller
     {
         $this->authorize('product-view');
         
-        $query = ProductAttribute::query();
+        $query = ProductAttribute::query()->with('values');
         
         if ($search = $request->query('search')) {
             $query->where('name', 'like', "%{$search}%");
@@ -24,7 +25,7 @@ class ProductAttributeController extends Controller
         $sortBy = $request->query('sort_by', 'id');
         $sortDir = $request->query('sort_dir', 'desc');
         
-        if (in_array($sortBy, ['id', 'name', 'status'])) {
+        if (in_array($sortBy, ['id', 'name', 'status', 'type', 'is_filterable'])) {
             $query->orderBy($sortBy, $sortDir);
         }
         
@@ -41,46 +42,27 @@ class ProductAttributeController extends Controller
         $this->authorize('product-create');
         
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:product_attributes,name',
+            'type' => 'required|string|in:select,color,text',
             'status' => 'required|in:active,inactive',
+            'is_filterable' => 'nullable|boolean',
         ]);
         
-        // Handling specific fields for different models
-        if ('ProductAttribute' === 'Brand' || 'ProductAttribute' === 'Category' || 'ProductAttribute' === 'UnitOfMeasure') {
-            $validated['slug'] = \Illuminate\Support\Str::slug($validated['name']);
-        }
-        
-        if ('ProductAttribute' === 'HsnCode') {
-            $validated = $request->validate([
-                'code' => 'required|string|max:255',
-                'description' => 'required|string|max:255',
-            ]);
-        }
-        
-        if ('ProductAttribute' === 'TaxRate') {
-            $validated['rate'] = $request->input('rate', 0);
-        }
-        
-        if ('ProductAttribute' === 'UnitOfMeasure') {
-            $validated['short_name'] = $request->input('short_name', substr($validated['name'], 0, 3));
-        }
-
-        if ('ProductAttribute' === 'Warehouse') {
-            $validated['code'] = $request->input('code', strtoupper(substr($validated['name'], 0, 3)));
-        }
+        $validated['is_filterable'] = $request->input('is_filterable', true);
 
         $model = ProductAttribute::create($validated);
         
         return response()->json([
-            'message' => 'ProductAttribute created successfully.',
+            'message' => 'Product Attribute created successfully.',
             'data' => $model
         ], 201);
     }
 
-    public function show(ProductAttribute $model): JsonResponse
+    public function show(ProductAttribute $attribute): JsonResponse
     {
         $this->authorize('product-view');
-        return response()->json(['data' => $model]);
+        $attribute->load('values');
+        return response()->json(['data' => $attribute]);
     }
 
     public function update(Request $request, $id): JsonResponse
@@ -90,39 +72,16 @@ class ProductAttributeController extends Controller
         $model = ProductAttribute::findOrFail($id);
         
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
+            'name' => 'sometimes|required|string|max:255|unique:product_attributes,name,' . $model->id,
+            'type' => 'sometimes|required|string|in:select,color,text',
             'status' => 'sometimes|required|in:active,inactive',
+            'is_filterable' => 'nullable|boolean',
         ]);
-        
-        if ('ProductAttribute' === 'Brand' || 'ProductAttribute' === 'Category' || 'ProductAttribute' === 'UnitOfMeasure') {
-            if (isset($validated['name'])) {
-                $validated['slug'] = \Illuminate\Support\Str::slug($validated['name']);
-            }
-        }
-        
-        if ('ProductAttribute' === 'HsnCode') {
-            $validated = $request->validate([
-                'code' => 'sometimes|required|string|max:255',
-                'description' => 'sometimes|required|string|max:255',
-            ]);
-        }
-
-        if ('ProductAttribute' === 'TaxRate') {
-            $validated['rate'] = $request->input('rate', $model->rate);
-        }
-        
-        if ('ProductAttribute' === 'UnitOfMeasure') {
-            $validated['short_name'] = $request->input('short_name', $model->short_name);
-        }
-
-        if ('ProductAttribute' === 'Warehouse') {
-            $validated['code'] = $request->input('code', $model->code);
-        }
         
         $model->update($validated);
         
         return response()->json([
-            'message' => 'ProductAttribute updated successfully.',
+            'message' => 'Product Attribute updated successfully.',
             'data' => $model
         ]);
     }
@@ -134,7 +93,57 @@ class ProductAttributeController extends Controller
         $model->delete();
         
         return response()->json([
-            'message' => 'ProductAttribute deleted successfully.'
+            'message' => 'Product Attribute deleted successfully.'
+        ]);
+    }
+
+    // Value Management
+    public function storeValue(Request $request, ProductAttribute $attribute): JsonResponse
+    {
+        $this->authorize('product-create');
+
+        $data = $request->validate([
+            'value' => 'required|string|max:255',
+            'color_code' => 'nullable|string|max:255',
+            'status' => 'required|in:active,inactive',
+        ]);
+
+        $value = $attribute->values()->create($data);
+
+        return response()->json([
+            'message' => 'Value added successfully.',
+            'data' => $value
+        ], 201);
+    }
+
+    public function updateValue(Request $request, $id): JsonResponse
+    {
+        $this->authorize('product-edit');
+
+        $value = ProductAttributeValue::findOrFail($id);
+
+        $data = $request->validate([
+            'value' => 'sometimes|required|string|max:255',
+            'color_code' => 'nullable|string|max:255',
+            'status' => 'sometimes|required|in:active,inactive',
+        ]);
+
+        $value->update($data);
+
+        return response()->json([
+            'message' => 'Value updated successfully.',
+            'data' => $value
+        ]);
+    }
+
+    public function destroyValue($id): JsonResponse
+    {
+        $this->authorize('product-delete');
+        $value = ProductAttributeValue::findOrFail($id);
+        $value->delete();
+
+        return response()->json([
+            'message' => 'Value deleted successfully.'
         ]);
     }
 }

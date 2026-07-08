@@ -14,8 +14,13 @@ return new class extends Migration
             $table->string('name')->index();
             $table->string('slug')->unique();
             $table->string('status')->default('active')->index();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
-            $table->softDeletes();
+            $table->softDeletes()->index();
+
+            // Optimization for high data load
+            $table->index('created_at');
+            $table->index(['status', 'created_at']);
 
             $table->index(['parent_id', 'status']);
         });

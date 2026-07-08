@@ -115,7 +115,7 @@ class AdminApp {
     });
 
     // Initialize collapse elements (toggle:false — don't auto-open on construction)
-    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(element => {
+    document.querySelectorAll('.collapse').forEach(element => {
       new Collapse(element, { toggle: false });
     });
 

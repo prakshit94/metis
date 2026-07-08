@@ -15,5 +15,11 @@ class TaxRate extends Model
         'name',
         'rate',
         'status',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'rate' => 'float',
+        'is_active' => 'boolean',
     ];
 }

@@ -346,221 +346,333 @@
                     </div> <!-- End Product Management Container -->
     <!-- Modals -->
 <div class="modal fade" id="productModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content" x-data="productForm">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add New Product</h5>
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold">Add New Product</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body pt-3">
                     <form @submit.prevent="saveProduct()">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label">Product Name</label>
-                                <input type="text" class="form-control" x-model="form.name" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">SKU</label>
-                                <input type="text" class="form-control" x-model="form.sku" required>
-                            </div>
-                            <div class="col-md-6 d-flex align-items-end">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" role="switch" x-model="form.is_sku_enabled" id="skuEnabledToggle">
-                                    <label class="form-check-label" for="skuEnabledToggle">SKU enabled</label>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">Category</label>
-                                <select class="form-select" x-model="form.category_id" required>
-                                    <option value="">Select Category</option>
-                                    <template x-for="category in options.categories" :key="category.id">
-                                        <optgroup :label="category.name">
-                                            <option :value="String(category.id)" x-text="category.name + ' (Main)'"></option>
-                                            <template x-for="child in category.children" :key="child.id">
-                                                <option :value="String(child.id)" x-text="'↳ ' + child.name"></option>
-                                            </template>
-                                        </optgroup>
-                                    </template>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Brand</label>
-                                <select class="form-select" x-model="form.brand_id">
-                                    <option value="">No Brand</option>
-                                    <template x-for="brand in options.brands" :key="brand.id">
-                                        <option :value="String(brand.id)" x-text="brand.name"></option>
-                                    </template>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">Unit (UOM)</label>
-                                <select class="form-select" x-model="form.uom_id">
-                                    <option value="">Select Unit</option>
-                                    <template x-for="uom in options.uoms" :key="uom.id">
-                                        <option :value="String(uom.id)" x-text="uom.name + (uom.short_name ? ' (' + uom.short_name + ')' : '')"></option>
-                                    </template>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Tax Rate</label>
-                                <select class="form-select" x-model="form.tax_rate_id">
-                                    <option value="">No Tax</option>
-                                    <template x-for="rate in options.taxRates" :key="rate.id">
-                                        <option :value="String(rate.id)" x-text="rate.name + ' (' + rate.rate + '%)'"></option>
-                                    </template>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">HSN Code</label>
-                                <select class="form-select" x-model="form.hsn_code_id">
-                                    <option value="">No HSN</option>
-                                    <template x-for="hsn in options.hsnCodes" :key="hsn.id">
-                                        <option :value="String(hsn.id)" x-text="hsn.code + (hsn.description ? ' - ' + hsn.description : '')"></option>
-                                    </template>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">Barcode / UPC</label>
-                                <input type="text" class="form-control" x-model="form.barcode" placeholder="Scan barcode">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Weight / Volume</label>
-                                <input type="text" class="form-control" x-model="form.weight" placeholder="e.g. 1kg, 500ml">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Default Warehouse</label>
-                                <select class="form-select" x-model="form.default_warehouse_id">
-                                    <option value="">No Default</option>
-                                    <template x-for="warehouse in options.warehouses" :key="warehouse.id">
-                                        <option :value="String(warehouse.id)" x-text="warehouse.name"></option>
-                                    </template>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">Purchase Price</label>
-                                <input type="number" class="form-control" x-model="form.purchase_price" step="0.01" min="0" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">MRP</label>
-                                <input type="number" class="form-control" x-model="form.mrp" step="0.01" min="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Selling Price</label>
-                                <input type="number" class="form-control" x-model="form.selling_price" step="0.01" min="0" required>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">Default Discount</label>
-                                <input type="number" class="form-control" x-model="form.default_discount" step="0.01" min="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Discount Type</label>
-                                <select class="form-select" x-model="form.default_discount_type">
-                                    <option value="percent">Percent</option>
-                                    <option value="flat">Flat</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Grade</label>
-                                <select class="form-select" x-model="form.grade">
-                                    <option value="">No Grade</option>
-                                    <option value="A">A</option>
-                                    <option value="B">B</option>
-                                    <option value="C">C</option>
-                                    <option value="D">D</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">Stock Quantity</label>
-                                <input type="number" class="form-control" x-model="form.stock" min="0" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Min Stock Level</label>
-                                <input type="number" class="form-control" x-model="form.min_stock_level" min="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Overselling Limit</label>
-                                <input type="number" class="form-control" x-model="form.overselling_qty" min="0" :disabled="!form.allow_overselling">
-                            </div>
-
-                            <div class="col-md-3">
-                                <div class="form-check form-switch mt-4 pt-2">
-                                    <input class="form-check-input" type="checkbox" role="switch" x-model="form.manage_stock" id="manageStockToggle">
-                                    <label class="form-check-label" for="manageStockToggle">Manage stock</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-check form-switch mt-4 pt-2">
-                                    <input class="form-check-input" type="checkbox" role="switch" x-model="form.batch_tracking" id="batchTrackingToggle">
-                                    <label class="form-check-label" for="batchTrackingToggle">Batch tracking</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-check form-switch mt-4 pt-2">
-                                    <input class="form-check-input" type="checkbox" role="switch" x-model="form.expiry_tracking" id="expiryTrackingToggle">
-                                    <label class="form-check-label" for="expiryTrackingToggle">Expiry tracking</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-check form-switch mt-4 pt-2">
-                                    <input class="form-check-input" type="checkbox" role="switch" x-model="form.allow_overselling" id="allowOversellToggle">
-                                    <label class="form-check-label" for="allowOversellToggle">Allow overselling</label>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">Status</label>
-                                <select class="form-select" x-model="form.status" required>
-                                    <option value="">Select Status</option>
-                                    <template x-for="status in options.statusList" :key="status.value">
-                                        <option :value="status.value" x-text="status.label"></option>
-                                    </template>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Product Attributes</label>
-                                <div class="border rounded p-3">
-                                    <template x-for="attribute in options.attributes" :key="attribute.id">
-                                        <div class="mb-3">
-                                            <div class="fw-semibold mb-2" x-text="attribute.name"></div>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                <template x-for="value in attribute.values" :key="value.id">
-                                                    <label class="form-check form-check-inline m-0">
-                                                        <input class="form-check-input me-1" type="checkbox" :value="String(value.id)" x-model="form.attributes">
-                                                        <span class="form-check-label" x-text="value.value"></span>
-                                                    </label>
-                                                </template>
+                        <div class="row g-4">
+                            <!-- Left Column (General Info, Pricing, Descriptions) -->
+                            <div class="col-lg-8">
+                                <!-- Card 1: General Info -->
+                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-info-circle-fill"></i>
+                                            </div>
+                                            <h6 class="card-title mb-0 fw-bold">General Information</h6>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label fw-medium text-muted small">Product Name <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" x-model="form.name" required placeholder="e.g. Wireless Noise Cancelling Headphones">
+                                            </div>
+                                            <div class="col-md-8">
+                                                <label class="form-label fw-medium text-muted small">SKU <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" x-model="form.sku" :disabled="!form.is_sku_enabled" required placeholder="SKU Code">
+                                                    <div class="input-group-text bg-body-secondary border-start-0">
+                                                        <div class="form-check form-switch m-0">
+                                                            <input class="form-check-input" type="checkbox" role="switch" x-model="form.is_sku_enabled" id="skuEnabledToggle">
+                                                            <label class="form-check-label small fw-medium ms-1" for="skuEnabledToggle">Enabled</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-medium text-muted small">Barcode / UPC</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-body-secondary"><i class="bi bi-upc-scan"></i></span>
+                                                    <input type="text" class="form-control" x-model="form.barcode" placeholder="Scan or enter barcode">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Category <span class="text-danger">*</span></label>
+                                                <select class="form-select" x-model="form.category_id" required>
+                                                    <option value="">Select Category</option>
+                                                    <template x-for="category in options.categories" :key="category.id">
+                                                        <optgroup :label="category.name">
+                                                            <option :value="String(category.id)" x-text="category.name + ' (Main)'"></option>
+                                                            <template x-for="child in category.children" :key="child.id">
+                                                                <option :value="String(child.id)" x-text="'↳ ' + child.name"></option>
+                                                            </template>
+                                                        </optgroup>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Brand</label>
+                                                <select class="form-select" x-model="form.brand_id">
+                                                    <option value="">No Brand</option>
+                                                    <template x-for="brand in options.brands" :key="brand.id">
+                                                        <option :value="String(brand.id)" x-text="brand.name"></option>
+                                                    </template>
+                                                </select>
                                             </div>
                                         </div>
-                                    </template>
+                                    </div>
+                                </div>
+
+                                <!-- Card 2: Pricing & Discount -->
+                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-currency-dollar"></i>
+                                            </div>
+                                            <h6 class="card-title mb-0 fw-bold">Pricing & Taxation</h6>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-medium text-muted small">Purchase Price <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-body-secondary">$</span>
+                                                    <input type="number" class="form-control" x-model="form.purchase_price" step="0.01" min="0" required placeholder="0.00">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-medium text-muted small">MRP</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-body-secondary">$</span>
+                                                    <input type="number" class="form-control" x-model="form.mrp" step="0.01" min="0" placeholder="0.00">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-medium text-muted small">Selling Price <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-body-secondary">$</span>
+                                                    <input type="number" class="form-control" x-model="form.selling_price" step="0.01" min="0" required placeholder="0.00">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Default Discount</label>
+                                                <input type="number" class="form-control" x-model="form.default_discount" step="0.01" min="0" placeholder="0.00">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Discount Type</label>
+                                                <select class="form-select" x-model="form.default_discount_type">
+                                                    <option value="percent">Percent (%)</option>
+                                                    <option value="flat">Flat ($)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Tax Rate</label>
+                                                <select class="form-select" x-model="form.tax_rate_id">
+                                                    <option value="">No Tax</option>
+                                                    <template x-for="rate in options.taxRates" :key="rate.id">
+                                                        <option :value="String(rate.id)" x-text="rate.name + ' (' + rate.rate + '%)'"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">HSN Code</label>
+                                                <select class="form-select" x-model="form.hsn_code_id">
+                                                    <option value="">No HSN</option>
+                                                    <template x-for="hsn in options.hsnCodes" :key="hsn.id">
+                                                        <option :value="String(hsn.id)" x-text="hsn.code + (hsn.description ? ' - ' + hsn.description : '')"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card 3: Descriptions -->
+                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-text-left"></i>
+                                            </div>
+                                            <h6 class="card-title mb-0 fw-bold">Detailed Descriptions</h6>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label fw-medium text-muted small">Product Description</label>
+                                                <textarea class="form-control" x-model="form.description" rows="3" placeholder="Enter detailed product description..."></textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-medium text-muted small">Application Instructions</label>
+                                                <textarea class="form-control" x-model="form.application_instructions" rows="3" placeholder="Enter instructions for use/application..."></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="col-12">
-                                <label class="form-label">Application Instructions</label>
-                                <textarea class="form-control" x-model="form.application_instructions" rows="3"></textarea>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Description</label>
-                                <textarea class="form-control" x-model="form.description" rows="3"></textarea>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Product Image</label>
-                                <input type="file" class="form-control" accept="image/*" @change="handleImageUpload($event)">
-                                <div class="mt-2 d-flex align-items-center gap-3" x-show="form.image">
-                                    <img :src="form.image" alt="Product preview" class="rounded border" style="width: 72px; height: 72px; object-fit: cover;">
-                                    <small class="text-muted">Preview updates when a file is selected.</small>
+                            <!-- Right Column (Media, Inventory, Toggles, Attributes) -->
+                            <div class="col-lg-4">
+                                <!-- Card 4: Status & Media -->
+                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-image"></i>
+                                            </div>
+                                            <h6 class="card-title mb-0 fw-bold">Status & Media</h6>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label fw-medium text-muted small">Product Status <span class="text-danger">*</span></label>
+                                                <select class="form-select" x-model="form.status" required>
+                                                    <option value="">Select Status</option>
+                                                    <template x-for="status in options.statusList" :key="status.value">
+                                                        <option :value="status.value" x-text="status.label"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-medium text-muted small">Product Image</label>
+                                                <div class="border border-dashed rounded p-3 text-center bg-body-secondary d-flex flex-column align-items-center justify-content-center" style="min-height: 150px; border-style: dashed !important;">
+                                                    <div class="mb-2">
+                                                        <template x-if="form.image">
+                                                            <img :src="form.image" alt="Preview" class="rounded border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                                                        </template>
+                                                        <template x-if="!form.image">
+                                                            <i class="bi bi-cloud-arrow-up fs-2 text-muted"></i>
+                                                        </template>
+                                                    </div>
+                                                    <input type="file" class="form-control form-control-sm" accept="image/*" @change="handleImageUpload($event)">
+                                                    <small class="text-muted mt-1" style="font-size: 0.7rem;">Click to upload image</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card 5: Inventory & Logistics -->
+                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-box-seam"></i>
+                                            </div>
+                                            <h6 class="card-title mb-0 fw-bold">Inventory & Logistics</h6>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Stock Quantity <span class="text-danger">*</span></label>
+                                                <input type="number" class="form-control" x-model="form.stock" min="0" required placeholder="0">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Min Stock Level</label>
+                                                <input type="number" class="form-control" x-model="form.min_stock_level" min="0" placeholder="0">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Unit (UOM)</label>
+                                                <select class="form-select" x-model="form.uom_id">
+                                                    <option value="">Select Unit</option>
+                                                    <template x-for="uom in options.uoms" :key="uom.id">
+                                                        <option :value="String(uom.id)" x-text="uom.name + (uom.short_name ? ' (' + uom.short_name + ')' : '')"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Warehouse</label>
+                                                <select class="form-select" x-model="form.default_warehouse_id">
+                                                    <option value="">No Default</option>
+                                                    <template x-for="warehouse in options.warehouses" :key="warehouse.id">
+                                                        <option :value="String(warehouse.id)" x-text="warehouse.name"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Weight / Volume</label>
+                                                <input type="text" class="form-control" x-model="form.weight" placeholder="e.g. 1kg, 500ml">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Grade</label>
+                                                <select class="form-select" x-model="form.grade">
+                                                    <option value="">No Grade</option>
+                                                    <option value="A">A</option>
+                                                    <option value="B">B</option>
+                                                    <option value="C">C</option>
+                                                    <option value="D">D</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card 6: Tracking Parameters -->
+                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-purple bg-opacity-10 text-purple rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-sliders"></i>
+                                            </div>
+                                            <h6 class="card-title mb-0 fw-bold">Tracking Settings</h6>
+                                        </div>
+                                        <div class="d-flex flex-column gap-2 mb-3">
+                                            <div class="p-2 border rounded bg-body-secondary">
+                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
+                                                    <label class="form-check-label fw-medium small" for="manageStockToggle">Manage stock</label>
+                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.manage_stock" id="manageStockToggle">
+                                                </div>
+                                            </div>
+                                            <div class="p-2 border rounded bg-body-secondary">
+                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
+                                                    <label class="form-check-label fw-medium small" for="batchTrackingToggle">Batch tracking</label>
+                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.batch_tracking" id="batchTrackingToggle">
+                                                </div>
+                                            </div>
+                                            <div class="p-2 border rounded bg-body-secondary">
+                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
+                                                    <label class="form-check-label fw-medium small" for="expiryTrackingToggle">Expiry tracking</label>
+                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.expiry_tracking" id="expiryTrackingToggle">
+                                                </div>
+                                            </div>
+                                            <div class="p-2 border rounded bg-body-secondary">
+                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
+                                                    <label class="form-check-label fw-medium small" for="allowOversellToggle">Allow overselling</label>
+                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.allow_overselling" id="allowOversellToggle">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12" x-show="form.allow_overselling" x-transition>
+                                            <label class="form-label fw-medium text-muted small">Overselling Limit Quantity</label>
+                                            <input type="number" class="form-control" x-model="form.overselling_qty" min="0" placeholder="0">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card 7: Attributes -->
+                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-teal bg-opacity-10 text-teal rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-tags"></i>
+                                            </div>
+                                            <h6 class="card-title mb-0 fw-bold">Product Attributes</h6>
+                                        </div>
+                                        <div class="border rounded p-3 bg-body-secondary">
+                                            <template x-for="attribute in options.attributes" :key="attribute.id">
+                                                <div class="mb-3">
+                                                    <div class="fw-bold small mb-2 text-primary text-uppercase" x-text="attribute.name" style="font-size: 0.75rem; letter-spacing: 0.5px;"></div>
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        <template x-for="value in attribute.values" :key="value.id">
+                                                            <label class="btn btn-xs py-1 px-2 border rounded-pill text-nowrap d-flex align-items-center gap-1"
+                                                                   :class="form.attributes.includes(String(value.id)) ? 'btn-primary border-primary' : 'btn-outline-secondary bg-body'"
+                                                                   style="font-size: 0.75rem; cursor: pointer;">
+                                                                <input type="checkbox" class="d-none" :value="String(value.id)" x-model="form.attributes">
+                                                                <span x-text="value.value"></span>
+                                                            </label>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Save Product</button>
+                        <div class="modal-footer border-top-0 pt-0">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary px-4">Save Product</button>
                         </div>
                     </form>
                 </div>

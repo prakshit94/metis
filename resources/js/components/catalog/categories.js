@@ -65,6 +65,8 @@ export default () => {
         isLoading: false,
         saving: false,
         isEditing: false,
+        imagePreview: null,
+        clearImageFlag: false,
 
         apiBase: '/api/categories',
         modalInstance: null,
@@ -72,11 +74,10 @@ export default () => {
         form: {
             id: null,
             name: '',
-            code: '',
-            description: '',
-            rate: 0,
-            short_name: '',
-            status: 'active'
+            parent_id: '',
+            status: 'active',
+            is_active: true,
+            image: null
         },
 
         init() {
@@ -94,14 +95,21 @@ export default () => {
 
         async apiRequest(url, options = {}) {
             const { headers, ...otherOptions } = options;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+            
+            const reqHeaders = {
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                ...(headers || {})
+            };
+
+            if (options.body && !(options.body instanceof FormData)) {
+                reqHeaders['Content-Type'] = 'application/json';
+            }
+
             const response = await fetch(url, {
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    ...(headers || {})
-                },
+                headers: reqHeaders,
                 ...otherOptions,
             });
 
@@ -119,7 +127,6 @@ export default () => {
         async loadData() {
             this.isLoading = true;
             try {
-                // Using pagination limit 1000 for client side processing like products page
                 const payload = await this.apiRequest(`${this.apiBase}?per_page=1000`);
                 this.items = Array.isArray(payload.data) ? payload.data : [];
                 this.filterData();
@@ -142,8 +149,7 @@ export default () => {
                 const searchTerms = this.searchQuery.toLowerCase();
                 const matchesSearch = !this.searchQuery ||
                     (item.name || '').toLowerCase().includes(searchTerms) ||
-                    (item.code || '').toLowerCase().includes(searchTerms) ||
-                    (item.description || '').toLowerCase().includes(searchTerms);
+                    (item.parent && (item.parent.name || '')).toLowerCase().includes(searchTerms);
 
                 const matchesStatus = !this.statusFilter || item.status === this.statusFilter;
 
@@ -161,7 +167,7 @@ export default () => {
                 let aVal = a[this.sortField] || '';
                 let bVal = b[this.sortField] || '';
 
-                if (this.sortField === 'id' || this.sortField === 'rate') {
+                if (this.sortField === 'id') {
                     aVal = parseFloat(aVal) || 0;
                     bVal = parseFloat(bVal) || 0;
                 } else {
@@ -247,15 +253,18 @@ export default () => {
 
         resetForm() {
             this.isEditing = false;
+            this.imagePreview = null;
+            this.clearImageFlag = false;
             this.form = {
                 id: null,
                 name: '',
-                code: '',
-                description: '',
-                rate: 0,
-                short_name: '',
-                status: 'active'
+                parent_id: '',
+                status: 'active',
+                is_active: true,
+                image: null
             };
+            const fileInput = document.getElementById('categoryImageInput');
+            if (fileInput) fileInput.value = '';
         },
 
         openCreateModal() {
@@ -265,28 +274,70 @@ export default () => {
 
         editItem(item) {
             this.isEditing = true;
-            this.form = { ...item };
-            this.form.name = item.name || item.code || '';
+            this.imagePreview = null;
+            this.clearImageFlag = false;
+            this.form = {
+                id: item.id,
+                name: item.name || '',
+                parent_id: item.parent_id || '',
+                status: item.status || 'active',
+                is_active: item.is_active !== undefined ? !!item.is_active : true,
+                image: item.image || null
+            };
+            const fileInput = document.getElementById('categoryImageInput');
+            if (fileInput) fileInput.value = '';
             this.modalInstance?.show();
+        },
+
+        onFileChange(e) {
+            const file = e.target.files[0];
+            if (file) {
+                this.imagePreview = URL.createObjectURL(file);
+                this.clearImageFlag = false;
+            }
+        },
+
+        clearImage() {
+            this.imagePreview = null;
+            this.form.image = null;
+            this.clearImageFlag = true;
+            const fileInput = document.getElementById('categoryImageInput');
+            if (fileInput) fileInput.value = '';
+        },
+
+        get parentCategories() {
+            return this.items.filter(item => !this.form.id || item.id !== this.form.id);
         },
 
         async saveItem() {
             this.saving = true;
             try {
-                const url = this.isEditing ? `${this.apiBase}/${this.form.id}` : this.apiBase;
-                const method = this.isEditing ? 'PUT' : 'POST';
+                const formData = new FormData();
+                if (this.form.id) {
+                    formData.append('_method', 'PUT');
+                }
+                formData.append('name', this.form.name);
+                formData.append('parent_id', this.form.parent_id ? String(this.form.parent_id) : '');
+                formData.append('status', this.form.status);
+                formData.append('is_active', this.form.is_active ? '1' : '0');
 
-                // Map name to code for models that use code
-                if (this.apiBase === '/api/hsn-codes' || this.apiBase === '/api/warehouses') {
-                    this.form.code = this.form.name;
+                if (this.clearImageFlag) {
+                    formData.append('clear_image', '1');
                 }
 
+                const fileInput = document.getElementById('categoryImageInput');
+                if (fileInput && fileInput.files[0]) {
+                    formData.append('image', fileInput.files[0]);
+                }
+
+                const url = this.form.id ? `${this.apiBase}/${this.form.id}` : this.apiBase;
+
                 await this.apiRequest(url, {
-                    method,
-                    body: JSON.stringify(this.form)
+                    method: 'POST',
+                    body: formData
                 });
 
-                showToast(`Successfully ${this.isEditing ? 'updated' : 'created'} item.`, 'success');
+                showToast(`Successfully ${this.isEditing ? 'updated' : 'created'} category.`, 'success');
                 this.modalInstance?.hide();
                 await this.loadData();
             } catch (error) {
@@ -297,16 +348,15 @@ export default () => {
         },
 
         async deleteItem(item) {
-            const name = item.name || item.code;
             const confirmed = await confirmDelete({
-                title: 'Delete Item?',
-                text: `Are you sure you want to delete ${name}?`
+                title: 'Delete Category?',
+                text: `Are you sure you want to delete "${item.name}"?`
             });
             if (!confirmed) return;
 
             try {
                 await this.apiRequest(`${this.apiBase}/${item.id}`, { method: 'DELETE' });
-                showToast('Successfully deleted item.', 'success');
+                showToast('Category deleted successfully.', 'success');
                 await this.loadData();
             } catch (error) {
                 showToast(error.message, 'error');
@@ -320,21 +370,23 @@ export default () => {
                 if (action === 'delete') {
                     const confirmed = await confirmDelete({
                         title: 'Delete Selected?',
-                        text: `Are you sure you want to delete ${this.selectedItems.length} items?`
+                        text: `Are you sure you want to delete ${this.selectedItems.length} categories?`
                     });
                     if (!confirmed) return;
 
-                    // Fallback loop if backend doesn't support bulk delete
                     for (const id of this.selectedItems) {
                         await this.apiRequest(`${this.apiBase}/${id}`, { method: 'DELETE' });
                     }
                 } else {
-                    // Fallback loop for status updates
                     const status = action;
                     for (const id of this.selectedItems) {
+                        const formData = new FormData();
+                        formData.append('_method', 'PUT');
+                        formData.append('status', status);
+
                         await this.apiRequest(`${this.apiBase}/${id}`, {
-                            method: 'PUT',
-                            body: JSON.stringify({ status })
+                            method: 'POST',
+                            body: formData
                         });
                     }
                 }
@@ -353,13 +405,15 @@ export default () => {
                 return;
             }
 
-            const headers = ['ID', 'Name/Code', 'Status', 'Created At'];
+            const headers = ['ID', 'Name', 'Slug', 'Parent ID', 'Status', 'Created At'];
             const csvRows = [headers.join(',')];
 
             this.filteredItems.forEach(item => {
                 const values = [
                     item.id,
-                    `"${(item.name || item.code || '').replace(/"/g, '""')}"`,
+                    `"${(item.name || '').replace(/"/g, '""')}"`,
+                    `"${(item.slug || '').replace(/"/g, '""')}"`,
+                    item.parent_id || '',
                     item.status,
                     item.created_at || ''
                 ];

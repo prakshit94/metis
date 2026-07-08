@@ -9,17 +9,27 @@
   right: 0;
   z-index: $zindex-fixed;
   height: var(--header-height);
+}
 
-  .navbar {
-    height: 100%;
-    border-bottom: 1px solid var(--bs-border-color);
-    backdrop-filter: blur(8px);
-  }
+.admin-navbar {
+  height: 100%;
+  background-color: var(--bs-body-bg);
+  border-bottom: 1px solid var(--bs-border-color);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  // Slight glass effect — visible in dark mode
+  background-color: rgba(var(--bs-body-bg-rgb, 255 255 255), 0.92);
+}
 
-  // Force header dropdowns to always overlay (not inline).
-  // Bootstrap's navbar-expand-lg sets .dropdown-menu to position:static
-  // below the lg breakpoint, which pushes layout instead of overlaying.
-  .navbar-nav .dropdown-menu {
-    position: absolute;
-  }
-} 
+.admin-navbar-inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 0.5rem;
+  padding-inline: 1.25rem;
+}
+
+// Force header dropdowns to overlay (not inline)
+.admin-navbar .dropdown-menu {
+  position: absolute;
+}

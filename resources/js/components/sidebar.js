@@ -77,6 +77,24 @@ export class SidebarManager {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => this.handleResize(), RESIZE_DEBOUNCE_MS);
     });
+
+    // If sidebar is collapsed on desktop, clicking a submenu trigger expands it first
+    this.sidebar.addEventListener('click', (e) => {
+      const toggleButton = e.target.closest('[data-bs-toggle="collapse"]');
+      if (toggleButton && !this.isMobile && this.wrapper.classList.contains('sidebar-collapsed')) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.expandDesktop();
+
+        const targetId = toggleButton.getAttribute('data-bs-target');
+        const targetElement = document.querySelector(targetId);
+        if (targetElement && window.bootstrap && window.bootstrap.Collapse) {
+          const bsCollapse = window.bootstrap.Collapse.getInstance(targetElement) || new window.bootstrap.Collapse(targetElement);
+          bsCollapse.show();
+        }
+      }
+    });
   }
 
   toggle() {

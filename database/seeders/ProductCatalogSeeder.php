@@ -131,7 +131,7 @@ class ProductCatalogSeeder extends Seeder
             $hsn = $hsnCodes[$index % $hsnCodes->count()];
             $warehouse = $warehouses[0];
 
-            Product::firstOrCreate(
+            $product = Product::firstOrCreate(
                 ['sku' => $example['sku']],
                 [
                     'name' => $example['name'],
@@ -159,6 +159,10 @@ class ProductCatalogSeeder extends Seeder
                     'default_discount_type' => 'percent',
                 ],
             );
+
+            if ($product->default_warehouse_id) {
+                app(\App\Services\InventoryService::class)->setStock($product->id, $product->default_warehouse_id, (float) $example['stock']);
+            }
         }
     }
 }

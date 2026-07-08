@@ -1,125 +1,220 @@
 <!-- Header -->
-<header class="admin-header">
-    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
-        <div class="container-fluid">
-            <!-- Logo/Brand -->
-            <a class="navbar-brand d-flex align-items-center" href="{{ route('dashboard') }}">
-                <img src="/assets/images/logo.svg" alt="Logo" height="32" class="d-inline-block align-text-top me-2">
-                <span class="h4 mb-0 fw-bold text-primary-emphasis">Metis</span>
+<header class="admin-header" role="banner">
+    <nav class="navbar admin-navbar" aria-label="Main navigation">
+        <div class="container-fluid admin-navbar-inner">
+
+            {{-- ── BRAND ────────────────────────────────────────── --}}
+            <a class="admin-brand" href="{{ route('dashboard') }}" aria-label="Metis Admin — go to dashboard">
+                <img src="/assets/images/logo.svg" alt="" width="32" height="32" aria-hidden="true">
+                <span class="admin-brand-name">Metis</span>
+                <span class="admin-brand-badge">Admin</span>
             </a>
 
-            <!-- Sidebar Toggle -->
-            <button class="hamburger-menu" type="button" data-sidebar-toggle aria-label="Toggle sidebar" aria-controls="admin-sidebar" aria-expanded="false">
-                <i class="bi bi-list"></i>
+            {{-- ── SIDEBAR TOGGLE ───────────────────────────────── --}}
+            <button class="hamburger-menu"
+                    type="button"
+                    data-sidebar-toggle
+                    aria-label="Toggle sidebar"
+                    aria-controls="admin-sidebar"
+                    aria-expanded="false">
+                <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i>
             </button>
 
-            <!-- Search Bar with Alpine.js -->
-            <div class="search-container flex-grow-1 mx-4" x-data="searchComponent">
-                <div class="position-relative">
+            {{-- ── SEARCH ───────────────────────────────────────── --}}
+            <div class="header-search-wrapper flex-grow-1" x-data="searchComponent">
+                <div class="header-search position-relative">
+                    <i class="bi bi-search header-search-icon" aria-hidden="true"></i>
                     <input type="search"
-                           class="form-control"
-                           placeholder="Search... (Ctrl+K)"
+                           class="header-search-input"
+                           placeholder="Search pages, users, orders…"
                            x-model="query"
                            @input="search()"
+                           @keydown.ctrl.k.prevent.window="$el.focus()"
                            data-search-input
-                           aria-label="Search">
-                    <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
+                           aria-label="Search"
+                           autocomplete="off">
+                    <kbd class="header-search-kbd d-none d-lg-flex">Ctrl K</kbd>
 
-                    <!-- Search Results Dropdown -->
+                    {{-- Results Dropdown --}}
                     <div x-show="results.length > 0"
-                         x-transition:enter="transition ease-out duration-100"
-                         x-transition:enter-start="opacity-0 scale-95"
-                         x-transition:enter-end="opacity-100 scale-100"
-                         class="position-absolute top-100 start-0 w-100 bg-white border rounded-2 shadow-lg mt-1 z-3">
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 translate-y-1"
+                         class="header-search-results">
                         <template x-for="result in results" :key="result.title">
-                            <a :href="result.url" class="d-block px-3 py-2 text-decoration-none text-dark border-bottom">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-file-text me-2 text-muted"></i>
-                                    <span x-text="result.title"></span>
-                                    <small class="ms-auto text-muted" x-text="result.type"></small>
-                                </div>
+                            <a :href="result.url" class="header-search-result-item">
+                                <span class="header-search-result-icon">
+                                    <i class="bi bi-file-text"></i>
+                                </span>
+                                <span class="header-search-result-title" x-text="result.title"></span>
+                                <span class="header-search-result-type" x-text="result.type"></span>
                             </a>
                         </template>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Side Icons -->
-            <div class="navbar-nav flex-row">
-                <!-- Theme Toggle with Alpine.js -->
+            {{-- ── RIGHT ACTIONS ─────────────────────────────────── --}}
+            <div class="header-actions">
+
+                {{-- Theme Toggle --}}
                 <div x-data="themeSwitch">
-                    <button class="btn btn-outline-secondary me-2"
+                    <button class="header-action-btn"
                             type="button"
                             @click="toggle()"
                             data-bs-toggle="tooltip"
                             data-bs-placement="bottom"
-                            title="Toggle theme">
-                        <i class="bi bi-sun-fill" x-show="currentTheme === 'light'"></i>
-                        <i class="bi bi-moon-fill" x-show="currentTheme === 'dark'"></i>
+                            :title="currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+                            aria-label="Toggle theme">
+                        <i class="bi bi-sun-fill" x-show="currentTheme === 'light'" aria-hidden="true"></i>
+                        <i class="bi bi-moon-stars-fill" x-show="currentTheme === 'dark'" aria-hidden="true"></i>
                     </button>
                 </div>
 
-                <!-- Fullscreen Toggle -->
-                <button class="btn btn-outline-secondary me-2 d-none d-md-inline-block"
+                {{-- Fullscreen Toggle --}}
+                <button class="header-action-btn d-none d-md-flex"
                         type="button"
                         data-fullscreen-toggle
                         data-bs-toggle="tooltip"
                         data-bs-placement="bottom"
-                        title="Toggle fullscreen">
-                    <i class="bi bi-arrows-fullscreen icon-hover"></i>
+                        title="Toggle fullscreen"
+                        aria-label="Toggle fullscreen">
+                    <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
                 </button>
 
-                <!-- Notifications -->
-                <div class="dropdown me-2">
-                    <button class="btn btn-outline-secondary position-relative"
+                {{-- Notifications --}}
+                <div class="dropdown" id="notifications-dropdown">
+                    <button class="header-action-btn header-action-btn--notify position-relative"
                             type="button"
+                            id="notificationsMenuBtn"
                             data-bs-toggle="dropdown"
-                            aria-expanded="false">
-                        <i class="bi bi-bell"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            3
-                        </span>
+                            data-bs-auto-close="outside"
+                            aria-expanded="false"
+                            aria-label="Notifications (3 unread)">
+                        <i class="bi bi-bell-fill" aria-hidden="true"></i>
+                        <span class="header-notify-dot" aria-hidden="true">3</span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><h6 class="dropdown-header">Notifications</h6></li>
-                        <li><a class="dropdown-item" href="#">New user registered</a></li>
-                        <li><a class="dropdown-item" href="#">Server status update</a></li>
-                        <li><a class="dropdown-item" href="#">New message received</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-center" href="#">View all notifications</a></li>
-                    </ul>
+                    <div class="dropdown-menu dropdown-menu-end header-notify-panel"
+                         aria-labelledby="notificationsMenuBtn"
+                         role="dialog"
+                         aria-label="Notifications">
+                        <div class="header-notify-header">
+                            <span class="header-notify-title">Notifications</span>
+                            <span class="badge bg-danger rounded-pill">3 new</span>
+                        </div>
+                        <div class="header-notify-list">
+                            <a class="header-notify-item" href="#">
+                                <span class="header-notify-avatar header-notify-avatar--success">
+                                    <i class="bi bi-person-plus-fill"></i>
+                                </span>
+                                <span class="header-notify-body">
+                                    <span class="header-notify-msg">New user registered</span>
+                                    <span class="header-notify-time">2 min ago</span>
+                                </span>
+                                <span class="header-notify-unread-dot"></span>
+                            </a>
+                            <a class="header-notify-item" href="#">
+                                <span class="header-notify-avatar header-notify-avatar--warning">
+                                    <i class="bi bi-hdd-fill"></i>
+                                </span>
+                                <span class="header-notify-body">
+                                    <span class="header-notify-msg">Server disk usage at 85%</span>
+                                    <span class="header-notify-time">18 min ago</span>
+                                </span>
+                                <span class="header-notify-unread-dot"></span>
+                            </a>
+                            <a class="header-notify-item" href="#">
+                                <span class="header-notify-avatar header-notify-avatar--info">
+                                    <i class="bi bi-chat-dots-fill"></i>
+                                </span>
+                                <span class="header-notify-body">
+                                    <span class="header-notify-msg">New message from support</span>
+                                    <span class="header-notify-time">1 hr ago</span>
+                                </span>
+                                <span class="header-notify-unread-dot"></span>
+                            </a>
+                        </div>
+                        <div class="header-notify-footer">
+                            <a href="{{ route('messages') }}" class="header-notify-view-all">
+                                <i class="bi bi-collection-fill me-1"></i>
+                                View all notifications
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Vertical Divider -->
-                <div class="vr mx-2 d-none d-md-block"></div>
+                {{-- Divider --}}
+                <div class="header-divider" aria-hidden="true"></div>
 
-                <!-- User Menu -->
-                <div class="dropdown">
-                    <button class="btn btn-outline-secondary d-flex align-items-center"
+                {{-- User Menu --}}
+                <div class="dropdown" id="user-menu-dropdown">
+                    <button class="header-user-btn"
                             type="button"
+                            id="userMenuBtn"
                             data-bs-toggle="dropdown"
-                            aria-expanded="false">
+                            aria-expanded="false"
+                            aria-label="User menu">
                         <img src="/assets/images/avatar-placeholder.svg"
-                             alt="User Avatar"
-                             width="24"
-                             height="24"
-                             class="rounded-circle me-2">
-                        <span class="d-none d-md-inline">{{ Auth::user()?->name ?? 'User' }}</span>
-                        <i class="bi bi-chevron-down ms-1"></i>
+                             alt="{{ Auth::user()?->name ?? 'User' }}"
+                             width="34"
+                             height="34"
+                             class="header-user-avatar">
+                        <span class="header-user-info d-none d-lg-flex">
+                            <span class="header-user-name">{{ Auth::user()?->name ?? 'User' }}</span>
+                            <span class="header-user-role">Administrator</span>
+                        </span>
+                        <i class="bi bi-chevron-down header-user-chevron d-none d-lg-inline" aria-hidden="true"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
-                        <li><a class="dropdown-item" href="{{ route('settings') }}"><i class="bi bi-gear me-2"></i>Settings</a></li>
-                        <li><hr class="dropdown-divider"></li>
+                    <ul class="dropdown-menu dropdown-menu-end header-user-menu"
+                        aria-labelledby="userMenuBtn">
+                        {{-- User info card --}}
+                        <li class="header-user-menu-info">
+                            <img src="/assets/images/avatar-placeholder.svg"
+                                 alt="{{ Auth::user()?->name ?? 'User' }}"
+                                 width="40" height="40"
+                                 class="header-user-menu-avatar">
+                            <div>
+                                <div class="header-user-menu-name">{{ Auth::user()?->name ?? 'User' }}</div>
+                                <div class="header-user-menu-email">{{ Auth::user()?->email ?? '' }}</div>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li>
+                            <a class="dropdown-item header-user-menu-item" href="#">
+                                <i class="bi bi-person-fill"></i>
+                                <span>My Profile</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item header-user-menu-item" href="{{ route('settings') }}">
+                                <i class="bi bi-gear-fill"></i>
+                                <span>Settings</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item header-user-menu-item" href="{{ route('security') }}">
+                                <i class="bi bi-shield-fill-check"></i>
+                                <span>Security</span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
                         <li>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
+                                <button type="submit" class="dropdown-item header-user-menu-item header-user-menu-item--danger">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                    <span>Sign Out</span>
+                                </button>
                             </form>
                         </li>
                     </ul>
                 </div>
-            </div>
+
+            </div>{{-- /.header-actions --}}
+
         </div>
     </nav>
 </header>

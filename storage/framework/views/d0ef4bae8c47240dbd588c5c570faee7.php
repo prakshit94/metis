@@ -26,7 +26,7 @@
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
-                            <i class="bi bi-collection"></i>
+                            <i class="bi bi-folder"></i>
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Total Categories</p>
@@ -129,13 +129,14 @@
                         <tr>
                             <th style="width: 40px;" class="ps-4">
                                 <input type="checkbox" 
-                                       class="form-check-input" 
+                                       class="user-select-checkbox" 
                                        @change="$event.isTrusted && toggleAll($event.target.checked)"
                                        :checked="selectedItems.length === paginatedItems.length && paginatedItems.length > 0">
                             </th>
                             <th @click="sortBy('id')" class="sortable" style="width: 80px;">ID</th>
-                            <th @click="sortBy('name')" class="sortable">Name / Code</th>
-                            
+                            <th @click="sortBy('name')" class="sortable">Category Name</th>
+                            <th>Parent Category</th>
+                            <th class="text-center">Products</th>
                             <th @click="sortBy('status')" class="sortable">Status</th>
                             <th style="width: 120px;" class="text-end pe-4">Actions</th>
                         </tr>
@@ -143,7 +144,7 @@
                     <tbody>
                         <template x-if="paginatedItems.length === 0">
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
+                                <td colspan="7" class="text-center py-5 text-muted">
                                     <div x-show="isLoading" class="spinner-border text-primary" role="status"></div>
                                     <div x-show="!isLoading">
                                         <i class="bi bi-inbox fs-2 d-block mb-2"></i>
@@ -156,17 +157,31 @@
                             <tr>
                                 <td class="ps-4">
                                     <input type="checkbox" 
-                                           class="form-check-input" 
+                                           class="user-select-checkbox" 
                                            :value="item.id"
                                            :checked="selectedItems.includes(item.id)"
                                            @change="toggleItem(item.id)">
                                 </td>
                                 <td class="text-muted" x-text="item.id"></td>
                                 <td>
-                                    <div class="fw-medium text-dark" x-text="item.name || item.code"></div>
-                                    
+                                    <div class="d-flex align-items-center gap-3">
+                                        <template x-if="item.image">
+                                            <img :src="`/storage/${item.image}`" class="rounded object-cover border" style="width: 32px; height: 32px;">
+                                        </template>
+                                        <template x-if="!item.image">
+                                            <div class="rounded bg-light text-secondary border d-flex align-items-center justify-center" style="width: 32px; height: 32px;">
+                                                <i class="bi bi-folder"></i>
+                                            </div>
+                                        </template>
+                                        <div class="fw-semibold text-dark" x-text="item.name"></div>
+                                    </div>
                                 </td>
-                                
+                                <td>
+                                    <span class="text-muted small" x-text="item.parent ? item.parent.name : '-'"></span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" x-text="item.products_count || 0"></span>
+                                </td>
                                 <td>
                                     <span class="badge rounded-pill" 
                                           :class="{
@@ -177,7 +192,7 @@
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-icon btn-light rounded-circle" type="button" data-bs-toggle="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
@@ -231,37 +246,103 @@
     <div class="modal fade" id="categoriesModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <form @submit.prevent="saveItem">
-                    <div class="modal-header bg-light border-0">
-                        <h5 class="modal-title fw-bold" x-text="isEditing ? 'Edit Category' : 'Add Category'"></h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <div class="mb-3">
-                            <label class="form-label fw-medium">Name / Code <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="form.name" required>
-                            <div class="form-text">Primary identifier for this category.</div>
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" x-text="isEditing ? 'Edit Category' : 'Add Category'"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <form @submit.prevent="saveItem" enctype="multipart/form-data">
+                        <!-- Card 1: Category Info -->
+                        <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-folder-fill"></i>
+                                    </div>
+                                    <h6 class="card-title mb-0 fw-bold">General Information</h6>
+                                </div>
+                                
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-medium text-muted small">Category Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" x-model="form.name" required placeholder="e.g. Smartphones, T-Shirts">
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-medium text-muted small">Parent Category</label>
+                                        <select class="form-select" x-model="form.parent_id">
+                                            <option value="">None (Root Category)</option>
+                                            <template x-for="cat in parentCategories" :key="cat.id">
+                                                <option :value="String(cat.id)" x-text="cat.name" :selected="cat.id == form.parent_id"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-medium text-muted small">Status</label>
+                                        <select class="form-select" x-model="form.status">
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        
-                        
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-medium">Status</label>
-                            <select class="form-select" x-model="form.status">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
+
+                        <!-- Card 2: Media & Settings -->
+                        <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-image-fill"></i>
+                                    </div>
+                                    <h6 class="card-title mb-0 fw-bold">Media & Settings</h6>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-medium text-muted small">Category Image</label>
+                                        <div class="border border-dashed rounded p-3 text-center bg-body-secondary d-flex flex-column align-items-center justify-content-center" style="min-height: 120px; border-style: dashed !important;">
+                                            <div class="mb-2">
+                                                <template x-if="imagePreview || form.image">
+                                                    <div class="position-relative d-inline-block">
+                                                        <img :src="imagePreview || `/storage/${form.image}`" alt="Preview" class="rounded border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-0 translate-middle rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;" @click="clearImage()">
+                                                            <i class="bi bi-x" style="font-size: 14px; line-height: 1;"></i>
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                                <template x-if="!imagePreview && !form.image">
+                                                    <i class="bi bi-cloud-arrow-up fs-2 text-muted"></i>
+                                                </template>
+                                            </div>
+                                            <input type="file" class="form-control form-control-sm" id="categoryImageInput" accept="image/*" @change="onFileChange($event)">
+                                            <small class="text-muted mt-1" style="font-size: 0.7rem;">JPEG/PNG/WebP, max 2MB</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="p-2 border rounded bg-body-secondary">
+                                            <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
+                                                <label class="form-check-label fw-medium small" for="isActiveSwitch">Active Flag</label>
+                                                <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.is_active" id="isActiveSwitch">
+                                            </div>
+                                        </div>
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Determine if the category is visible in active list.</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="modal-footer border-0 bg-light">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2" :disabled="saving">
-                            <span x-show="saving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            <i x-show="!saving" class="bi bi-check-lg"></i>
-                            <span x-text="isEditing ? 'Update' : 'Save'"></span>
-                        </button>
-                    </div>
-                </form>
+
+                        <div class="modal-footer border-top-0 pt-0 px-0">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary px-4" :disabled="saving">
+                                <span x-show="saving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                <span x-text="isEditing ? 'Update Category' : 'Save Category'"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

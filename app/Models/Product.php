@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
@@ -100,6 +101,60 @@ class Product extends Model
             'product_id',
             'attribute_value_id',
         );
+    }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(Stock::class);
+    }
+
+    public function stockReservations(): HasMany
+    {
+        return $this->hasMany(StockReservation::class);
+    }
+
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    // ─── Computed Attributes ───────────────────────────────────────────────
+
+    /**
+     * Total physical on-hand qty across all warehouses.
+     */
+    public function getTotalStockAttribute(): float
+    {
+        return (float) $this->stocks()->sum('quantity');
+    }
+
+    /**
+     * Total reserved qty across all warehouses (held for confirmed orders).
+     */
+    public function getTotalReservedAttribute(): float
+    {
+        return (float) $this->stocks()->sum('reserved_qty');
+    }
+
+    /**
+     * Running dispatch total across all warehouses.
+     */
+    public function getTotalDispatchedAttribute(): float
+    {
+        return (float) $this->stocks()->sum('dispatched_qty');
+    }
+
+    /**
+     * Net available = total_stock − total_reserved.
+     */
+    public function getAvailableStockAttribute(): float
+    {
+        return max(0.0, $this->total_stock - $this->total_reserved);
     }
 
     public function getImageUrlAttribute(): ?string

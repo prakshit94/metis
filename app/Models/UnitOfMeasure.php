@@ -17,6 +17,12 @@ class UnitOfMeasure extends Model
         'name',
         'short_name',
         'slug',
+        'code',
+        'is_base_unit',
         'status',
+    ];
+
+    protected $casts = [
+        'is_base_unit' => 'boolean',
     ];
 }

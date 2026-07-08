@@ -68,16 +68,23 @@ export default () => {
 
         apiBase: '/api/attributes',
         modalInstance: null,
+        valuesModalInstance: null,
 
         form: {
             id: null,
             name: '',
-            code: '',
-            description: '',
-            rate: 0,
-            short_name: '',
+            type: 'select',
+            status: 'active',
+            is_filterable: true
+        },
+
+        managingValues: null,
+        newValueForm: {
+            value: '',
+            color_code: '#000000',
             status: 'active'
         },
+        valueSaving: false,
 
         init() {
             this.loadData();
@@ -87,6 +94,14 @@ export default () => {
                 this.modalInstance = Modal.getOrCreateInstance(modalEl);
                 modalEl.addEventListener('hidden.bs.modal', () => {
                     this.resetForm();
+                });
+            }
+
+            const valuesModalEl = document.getElementById('valuesModal');
+            if (valuesModalEl) {
+                this.valuesModalInstance = Modal.getOrCreateInstance(valuesModalEl);
+                valuesModalEl.addEventListener('hidden.bs.modal', () => {
+                    this.resetValueForm();
                 });
             }
         },
@@ -140,8 +155,7 @@ export default () => {
                 const searchTerms = this.searchQuery.toLowerCase();
                 const matchesSearch = !this.searchQuery ||
                     (item.name || '').toLowerCase().includes(searchTerms) ||
-                    (item.code || '').toLowerCase().includes(searchTerms) ||
-                    (item.description || '').toLowerCase().includes(searchTerms);
+                    (item.type || '').toLowerCase().includes(searchTerms);
 
                 const matchesStatus = !this.statusFilter || item.status === this.statusFilter;
                 return matchesSearch && matchesStatus;
@@ -158,9 +172,12 @@ export default () => {
                 let aVal = a[this.sortField] || '';
                 let bVal = b[this.sortField] || '';
 
-                if (this.sortField === 'id' || this.sortField === 'rate') {
+                if (this.sortField === 'id') {
                     aVal = parseFloat(aVal) || 0;
                     bVal = parseFloat(bVal) || 0;
+                } else if (this.sortField === 'is_filterable') {
+                    aVal = aVal ? 1 : 0;
+                    bVal = bVal ? 1 : 0;
                 } else {
                     aVal = String(aVal).toLowerCase();
                     bVal = String(bVal).toLowerCase();
@@ -247,11 +264,9 @@ export default () => {
             this.form = {
                 id: null,
                 name: '',
-                code: '',
-                description: '',
-                rate: 0,
-                short_name: '',
-                status: 'active'
+                type: 'select',
+                status: 'active',
+                is_filterable: true
             };
         },
 
@@ -262,8 +277,13 @@ export default () => {
 
         editItem(item) {
             this.isEditing = true;
-            this.form = { ...item };
-            this.form.name = item.name || item.code || '';
+            this.form = {
+                id: item.id,
+                name: item.name || '',
+                type: item.type || 'select',
+                status: item.status || 'active',
+                is_filterable: item.is_filterable !== undefined ? !!item.is_filterable : true
+            };
             this.modalInstance?.show();
         },
 
@@ -289,7 +309,7 @@ export default () => {
         },
 
         async deleteItem(item) {
-            const name = item.name || item.code;
+            const name = item.name;
             const confirmed = await confirmDelete({
                 title: 'Delete Attribute?',
                 text: `Are you sure you want to delete "${name}"?`
@@ -343,15 +363,15 @@ export default () => {
                 return;
             }
 
-            const headers = ['ID', 'Name', 'Code', 'Description', 'Status', 'Created At'];
+            const headers = ['ID', 'Name', 'Type', 'Filterable', 'Status', 'Created At'];
             const csvRows = [headers.join(',')];
 
             this.filteredItems.forEach(item => {
                 const values = [
                     item.id,
                     `"${(item.name || '').replace(/"/g, '""')}"`,
-                    `"${(item.code || '').replace(/"/g, '""')}"`,
-                    `"${(item.description || '').replace(/"/g, '""')}"`,
+                    `"${(item.type || '').replace(/"/g, '""')}"`,
+                    item.is_filterable ? 'Yes' : 'No',
                     item.status,
                     item.created_at || ''
                 ];
@@ -365,6 +385,75 @@ export default () => {
             a.setAttribute('download', 'attributes_export.csv');
             a.click();
             URL.revokeObjectURL(url);
+        },
+
+        resetValueForm() {
+            this.newValueForm = {
+                value: '',
+                color_code: '#000000',
+                status: 'active'
+            };
+            this.valueSaving = false;
+        },
+
+        openValueModal(item) {
+            this.managingValues = item;
+            this.resetValueForm();
+            this.valuesModalInstance?.show();
+        },
+
+        async addValue() {
+            if (!this.newValueForm.value.trim()) {
+                showToast('Please enter a value.', 'warning');
+                return;
+            }
+            this.valueSaving = true;
+            try {
+                const response = await this.apiRequest(`${this.apiBase}/${this.managingValues.id}/values`, {
+                    method: 'POST',
+                    body: JSON.stringify(this.newValueForm)
+                });
+                
+                if (!this.managingValues.values) {
+                    this.managingValues.values = [];
+                }
+                this.managingValues.values.push(response.data);
+                showToast('Value added successfully.', 'success');
+                this.resetValueForm();
+                await this.loadData();
+                
+                // Find the updated item in our items and refresh managingValues
+                const updatedItem = this.items.find(i => i.id === this.managingValues.id);
+                if (updatedItem) {
+                    this.managingValues = updatedItem;
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                this.valueSaving = false;
+            }
+        },
+
+        async deleteValue(val) {
+            const confirmed = await confirmDelete({
+                title: 'Remove Value?',
+                text: `Are you sure you want to remove value "${val.value}"?`
+            });
+            if (!confirmed) return;
+
+            try {
+                await this.apiRequest(`${this.apiBase}/values/${val.id}`, { method: 'DELETE' });
+                showToast('Value deleted successfully.', 'success');
+                await this.loadData();
+                
+                // Refresh managingValues from loaded items
+                const updatedItem = this.items.find(i => i.id === this.managingValues.id);
+                if (updatedItem) {
+                    this.managingValues = updatedItem;
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
         }
     };
 

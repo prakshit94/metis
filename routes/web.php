@@ -70,6 +70,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::apiResource('/hsn-codes', \App\Http\Controllers\Catalog\HsnCodeController::class);
         Route::apiResource('/warehouses', \App\Http\Controllers\Catalog\WarehouseController::class);
         Route::apiResource('/attributes', \App\Http\Controllers\Catalog\ProductAttributeController::class);
+        Route::post('/attributes/{attribute}/values', [\App\Http\Controllers\Catalog\ProductAttributeController::class, 'storeValue'])->name('api.attributes.values.store');
+        Route::patch('/attributes/values/{value}', [\App\Http\Controllers\Catalog\ProductAttributeController::class, 'updateValue'])->name('api.attributes.values.update');
+        Route::delete('/attributes/values/{value}', [\App\Http\Controllers\Catalog\ProductAttributeController::class, 'destroyValue'])->name('api.attributes.values.destroy');
 
         Route::prefix('products')->name('api.products.')->group(function (): void {
             Route::get('/', [CatalogProductController::class, 'index'])->name('index');
