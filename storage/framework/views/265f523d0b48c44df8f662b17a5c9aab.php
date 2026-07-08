@@ -39,11 +39,65 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo e($current === 'products' ? 'active' : ''); ?>" href="<?php echo e(route('products')); ?>">
-                        <i class="bi bi-box"></i>
-                        <span>Products</span>
+                    <a class="nav-link <?php echo e(Str::startsWith($current, 'catalog') ? 'active' : ''); ?>" href="#" data-bs-toggle="collapse" data-bs-target="#catalogSubmenu" aria-expanded="false">
+                        <i class="bi bi-shop-window"></i>
+                        <span>Catalog</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
+                    <div class="collapse <?php echo e(Str::startsWith($current, 'catalog') ? 'show' : ''); ?>" id="catalogSubmenu">
+                        <ul class="nav nav-submenu">
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'catalog.products' ? 'active' : ''); ?>" href="<?php echo e(route('catalog.products')); ?>">
+                                    <i class="bi bi-box"></i>
+                                    <span>Products</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'catalog.categories' ? 'active' : ''); ?>" href="<?php echo e(route('catalog.categories')); ?>">
+                                    <i class="bi bi-tags"></i>
+                                    <span>Categories</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'catalog.brands' ? 'active' : ''); ?>" href="<?php echo e(route('catalog.brands')); ?>">
+                                    <i class="bi bi-award"></i>
+                                    <span>Brands</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'catalog.uom' ? 'active' : ''); ?>" href="<?php echo e(route('catalog.uom')); ?>">
+                                    <i class="bi bi-rulers"></i>
+                                    <span>Units of Measure</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'catalog.tax-rates' ? 'active' : ''); ?>" href="<?php echo e(route('catalog.tax-rates')); ?>">
+                                    <i class="bi bi-percent"></i>
+                                    <span>Tax Rates</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'catalog.hsn-codes' ? 'active' : ''); ?>" href="<?php echo e(route('catalog.hsn-codes')); ?>">
+                                    <i class="bi bi-upc-scan"></i>
+                                    <span>HSN Codes</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'catalog.warehouses' ? 'active' : ''); ?>" href="<?php echo e(route('catalog.warehouses')); ?>">
+                                    <i class="bi bi-building"></i>
+                                    <span>Warehouses</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'catalog.attributes' ? 'active' : ''); ?>" href="<?php echo e(route('catalog.attributes')); ?>">
+                                    <i class="bi bi-sliders"></i>
+                                    <span>Attributes</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link <?php echo e($current === 'orders' ? 'active' : ''); ?>" href="<?php echo e(route('orders')); ?>">
                         <i class="bi bi-bag-check"></i>

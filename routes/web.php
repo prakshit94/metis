@@ -27,7 +27,16 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/analytics', [PageController::class, 'analytics'])->name('analytics');
     Route::get('/users', [PageController::class, 'users'])->name('users');
     Route::get('/roles-permissions', [PageController::class, 'rolesPermissions'])->name('roles-permissions');
-    Route::get('/products', [PageController::class, 'products'])->name('products');
+    Route::prefix('catalog')->name('catalog.')->group(function (): void {
+        Route::get('/products', [\App\Http\Controllers\Catalog\CatalogController::class, 'products'])->name('products');
+        Route::get('/brands', [\App\Http\Controllers\Catalog\CatalogController::class, 'brands'])->name('brands');
+        Route::get('/categories', [\App\Http\Controllers\Catalog\CatalogController::class, 'categories'])->name('categories');
+        Route::get('/uom', [\App\Http\Controllers\Catalog\CatalogController::class, 'uom'])->name('uom');
+        Route::get('/tax-rates', [\App\Http\Controllers\Catalog\CatalogController::class, 'taxRates'])->name('tax-rates');
+        Route::get('/hsn-codes', [\App\Http\Controllers\Catalog\CatalogController::class, 'hsnCodes'])->name('hsn-codes');
+        Route::get('/warehouses', [\App\Http\Controllers\Catalog\CatalogController::class, 'warehouses'])->name('warehouses');
+        Route::get('/attributes', [\App\Http\Controllers\Catalog\CatalogController::class, 'attributes'])->name('attributes');
+    });
     Route::get('/orders', [PageController::class, 'orders'])->name('orders');
     Route::get('/reports', [PageController::class, 'reports'])->name('reports');
     Route::get('/messages', [PageController::class, 'messages'])->name('messages');
@@ -52,6 +61,16 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     // ─── User Management JSON API ─────────────────────────────────────────────
     Route::prefix('api')->group(function (): void {
+        
+        // Catalog API Routes
+        Route::apiResource('/brands', \App\Http\Controllers\Catalog\BrandController::class);
+        Route::apiResource('/categories', \App\Http\Controllers\Catalog\CategoryController::class);
+        Route::apiResource('/uom', \App\Http\Controllers\Catalog\UnitOfMeasureController::class);
+        Route::apiResource('/tax-rates', \App\Http\Controllers\Catalog\TaxRateController::class);
+        Route::apiResource('/hsn-codes', \App\Http\Controllers\Catalog\HsnCodeController::class);
+        Route::apiResource('/warehouses', \App\Http\Controllers\Catalog\WarehouseController::class);
+        Route::apiResource('/attributes', \App\Http\Controllers\Catalog\ProductAttributeController::class);
+
         Route::prefix('products')->name('api.products.')->group(function (): void {
             Route::get('/', [CatalogProductController::class, 'index'])->name('index');
             Route::get('/export', [CatalogProductController::class, 'export'])->name('export');

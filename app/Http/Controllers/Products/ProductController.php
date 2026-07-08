@@ -56,7 +56,25 @@ class ProductController extends Controller
     {
         abort_unless($request->user()?->can('product-create'), 403);
 
-        $data = $this->validatePayload($request);
+        \Log::info('Product store attempt:', [
+            'inputs' => $request->all(),
+            'has_image' => $request->hasFile('image'),
+            'image_file' => $request->file('image') ? [
+                'name' => $request->file('image')->getClientOriginalName(),
+                'error' => $request->file('image')->getError(),
+                'is_valid' => $request->file('image')->isValid(),
+                'path' => $request->file('image')->getPathname(),
+                'size' => $request->file('image')->isValid() ? $request->file('image')->getSize() : null,
+                'mime' => $request->file('image')->isValid() ? $request->file('image')->getMimeType() : null,
+            ] : null,
+        ]);
+
+        try {
+            $data = $this->validatePayload($request);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed:', $e->errors());
+            throw $e;
+        }
 
         $product = new Product();
         $this->fillProduct($product, $data, $request);
@@ -73,7 +91,27 @@ class ProductController extends Controller
     {
         abort_unless($request->user()?->can('product-edit'), 403);
 
-        $data = $this->validatePayload($request, $product);
+        \Log::info('Product update attempt:', [
+            'id' => $product->id,
+            'inputs' => $request->all(),
+            'has_image' => $request->hasFile('image'),
+            'image_file' => $request->file('image') ? [
+                'name' => $request->file('image')->getClientOriginalName(),
+                'error' => $request->file('image')->getError(),
+                'is_valid' => $request->file('image')->isValid(),
+                'path' => $request->file('image')->getPathname(),
+                'size' => $request->file('image')->isValid() ? $request->file('image')->getSize() : null,
+                'mime' => $request->file('image')->isValid() ? $request->file('image')->getMimeType() : null,
+            ] : null,
+        ]);
+
+        try {
+            $data = $this->validatePayload($request, $product);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed:', $e->errors());
+            throw $e;
+        }
+
         $this->fillProduct($product, $data, $request);
         $product->save();
 
@@ -345,12 +383,15 @@ class ProductController extends Controller
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'mrp' => ['nullable', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
+            'stock' => ['nullable', 'integer', 'min:0'],
+            'stock_quantity' => ['nullable', 'integer', 'min:0'],
             'min_stock_level' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', 'in:active,draft,out_of_stock,published,pending'],
             'allow_overselling' => ['nullable', 'boolean'],
             'manage_stock' => ['nullable', 'boolean'],
             'batch_tracking' => ['nullable', 'boolean'],
             'expiry_tracking' => ['nullable', 'boolean'],
+            'is_sku_enabled' => ['nullable', 'boolean'],
             'application_instructions' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'max:4096'],

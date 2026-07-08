@@ -139,24 +139,32 @@ document.addEventListener('alpine:init', () => {
 
     async apiRequest(url, options = {}) {
       const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+      const { headers, ...otherOptions } = options;
       const response = await fetch(url, {
         headers: {
           'X-CSRF-TOKEN': getCsrfToken(),
           'X-Requested-With': 'XMLHttpRequest',
           'Accept': 'application/json',
           ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
-          ...(options.headers || {}),
+          ...(headers || {}),
         },
-        ...options,
+        ...otherOptions,
       });
 
       if (!response.ok) {
         let message = 'Request failed.';
-        try {
-          const payload = await response.json();
-          message = payload.message || payload.error || message;
-        } catch (error) {
-          message = response.statusText || message;
+        if (response.status === 419) {
+          message = 'Your session has expired. Please refresh the page and try again.';
+        } else {
+          try {
+            const payload = await response.json();
+            message = payload.message || payload.error || message;
+          } catch (error) {
+            message = response.statusText || message;
+          }
+        }
+        if (message === 'unknown status' || !message) {
+          message = 'A server error occurred (Status: ' + response.status + ').';
         }
         throw new Error(message);
       }
@@ -741,6 +749,18 @@ document.addEventListener('alpine:init', () => {
   // Product form component for modals
   Alpine.data('productForm', () => ({
     editingProductId: null,
+    get options() {
+      return Alpine.store('productTable')?.options || {
+        categories: [],
+        brands: [],
+        uoms: [],
+        taxRates: [],
+        hsnCodes: [],
+        warehouses: [],
+        attributes: [],
+        statusList: [],
+      };
+    },
     form: {
       name: '',
       sku: '',
@@ -822,8 +842,8 @@ document.addEventListener('alpine:init', () => {
       const table = Alpine.store('productTable');
       if (!table) return;
 
-      if (!this.form.name || !this.form.sku || !this.form.category ||
-          this.form.price === '' || this.form.stock === '' || !this.form.status) {
+      if (!this.form.name || !this.form.sku || !this.form.category_id ||
+          this.form.selling_price === '' || this.form.stock === '' || !this.form.status) {
         table.showNotification('Please fill in all required fields.', 'warning');
         return;
       }

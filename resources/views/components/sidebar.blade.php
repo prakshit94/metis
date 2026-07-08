@@ -39,11 +39,65 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ $current === 'products' ? 'active' : '' }}" href="{{ route('products') }}">
-                        <i class="bi bi-box"></i>
-                        <span>Products</span>
+                    <a class="nav-link {{ Str::startsWith($current, 'catalog') ? 'active' : '' }}" href="#" data-bs-toggle="collapse" data-bs-target="#catalogSubmenu" aria-expanded="false">
+                        <i class="bi bi-shop-window"></i>
+                        <span>Catalog</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
+                    <div class="collapse {{ Str::startsWith($current, 'catalog') ? 'show' : '' }}" id="catalogSubmenu">
+                        <ul class="nav nav-submenu">
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.products' ? 'active' : '' }}" href="{{ route('catalog.products') }}">
+                                    <i class="bi bi-box"></i>
+                                    <span>Products</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.categories' ? 'active' : '' }}" href="{{ route('catalog.categories') }}">
+                                    <i class="bi bi-tags"></i>
+                                    <span>Categories</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.brands' ? 'active' : '' }}" href="{{ route('catalog.brands') }}">
+                                    <i class="bi bi-award"></i>
+                                    <span>Brands</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.uom' ? 'active' : '' }}" href="{{ route('catalog.uom') }}">
+                                    <i class="bi bi-rulers"></i>
+                                    <span>Units of Measure</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.tax-rates' ? 'active' : '' }}" href="{{ route('catalog.tax-rates') }}">
+                                    <i class="bi bi-percent"></i>
+                                    <span>Tax Rates</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.hsn-codes' ? 'active' : '' }}" href="{{ route('catalog.hsn-codes') }}">
+                                    <i class="bi bi-upc-scan"></i>
+                                    <span>HSN Codes</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.warehouses' ? 'active' : '' }}" href="{{ route('catalog.warehouses') }}">
+                                    <i class="bi bi-building"></i>
+                                    <span>Warehouses</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.attributes' ? 'active' : '' }}" href="{{ route('catalog.attributes') }}">
+                                    <i class="bi bi-sliders"></i>
+                                    <span>Attributes</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link {{ $current === 'orders' ? 'active' : '' }}" href="{{ route('orders') }}">
                         <i class="bi bi-bag-check"></i>

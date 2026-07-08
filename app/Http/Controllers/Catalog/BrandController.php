@@ -6,136 +6,135 @@ namespace App\Http\Controllers\Catalog;
 
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Illuminate\View\View;
 
 class BrandController extends Controller
 {
-    public function index(Request $request): View|\Illuminate\Http\JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $search = trim((string) $request->string('search'));
-        $perPage = (int) $request->integer('perPage', 12) ?: 12;
+        $this->authorize('product-view');
+        
+        $query = Brand::query();
+        
+        if ($search = $request->query('search')) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+        
+        $sortBy = $request->query('sort_by', 'id');
+        $sortDir = $request->query('sort_dir', 'desc');
+        
+        if (in_array($sortBy, ['id', 'name', 'status'])) {
+            $query->orderBy($sortBy, $sortDir);
+        }
+        
+        $perPage = (int) $request->query('per_page', 10);
+        $perPage = min(max($perPage, 1), 1000);
+        
+        $paginator = $query->paginate($perPage);
+        
+        return response()->json($paginator);
+    }
 
-        $query = Brand::query()
-            ->when($search !== '', function ($query) use ($search): void {
-                $query->where(function ($subQuery) use ($search): void {
-                    $subQuery->where('name', 'like', "%{$search}%")
-                        ->orWhere('slug', 'like', "%{$search}%");
-                });
-            })
-            ->orderBy('name');
+    public function store(Request $request): JsonResponse
+    {
+        $this->authorize('product-create');
+        
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'status' => 'required|in:active,inactive',
+        ]);
+        
+        // Handling specific fields for different models
+        if ('Brand' === 'Brand' || 'Brand' === 'Category' || 'Brand' === 'UnitOfMeasure') {
+            $validated['slug'] = \Illuminate\Support\Str::slug($validated['name']);
+        }
+        
+        if ('Brand' === 'HsnCode') {
+            $validated = $request->validate([
+                'code' => 'required|string|max:255',
+                'description' => 'required|string|max:255',
+            ]);
+        }
+        
+        if ('Brand' === 'TaxRate') {
+            $validated['rate'] = $request->input('rate', 0);
+        }
+        
+        if ('Brand' === 'UnitOfMeasure') {
+            $validated['short_name'] = $request->input('short_name', substr($validated['name'], 0, 3));
+        }
 
-        $brands = $query->paginate($perPage)->withQueryString();
-        $stats = $this->stats();
+        if ('Brand' === 'Warehouse') {
+            $validated['code'] = $request->input('code', strtoupper(substr($validated['name'], 0, 3)));
+        }
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'table' => view('brands.partials.table', compact('brands'))->render(),
-                'stats' => $stats,
+        $model = Brand::create($validated);
+        
+        return response()->json([
+            'message' => 'Brand created successfully.',
+            'data' => $model
+        ], 201);
+    }
+
+    public function show(Brand $model): JsonResponse
+    {
+        $this->authorize('product-view');
+        return response()->json(['data' => $model]);
+    }
+
+    public function update(Request $request, $id): JsonResponse
+    {
+        $this->authorize('product-edit');
+        
+        $model = Brand::findOrFail($id);
+        
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'status' => 'sometimes|required|in:active,inactive',
+        ]);
+        
+        if ('Brand' === 'Brand' || 'Brand' === 'Category' || 'Brand' === 'UnitOfMeasure') {
+            if (isset($validated['name'])) {
+                $validated['slug'] = \Illuminate\Support\Str::slug($validated['name']);
+            }
+        }
+        
+        if ('Brand' === 'HsnCode') {
+            $validated = $request->validate([
+                'code' => 'sometimes|required|string|max:255',
+                'description' => 'sometimes|required|string|max:255',
             ]);
         }
 
-        return view('brands.index', compact('brands', 'stats'));
-    }
-
-    public function store(Request $request): RedirectResponse
-    {
-        $data = $this->validateRequest($request);
-
-        $brand = new Brand();
-        $brand->fill([
-            'name' => $data['name'],
-            'status' => $data['status'],
-            'slug' => Str::slug($data['name']) ?: Str::slug($data['name'] . '-' . Str::random(6)),
-        ]);
-
-        if ($request->hasFile('image')) {
-            $brand->image = $request->file('image')->store('brands', 'public');
+        if ('Brand' === 'TaxRate') {
+            $validated['rate'] = $request->input('rate', $model->rate);
+        }
+        
+        if ('Brand' === 'UnitOfMeasure') {
+            $validated['short_name'] = $request->input('short_name', $model->short_name);
         }
 
-        $brand->save();
-
-        return back()->with('success', 'Brand created successfully.');
-    }
-
-    public function update(Request $request, Brand $brand): RedirectResponse
-    {
-        $data = $this->validateRequest($request, $brand->id);
-
-        $brand->fill([
-            'name' => $data['name'],
-            'status' => $data['status'],
-            'slug' => Str::slug($data['name']) ?: Str::slug($data['name'] . '-' . $brand->id),
-        ]);
-
-        if ($request->hasFile('image')) {
-            if ($brand->image) {
-                Storage::disk('public')->delete($brand->image);
-            }
-
-            $brand->image = $request->file('image')->store('brands', 'public');
+        if ('Brand' === 'Warehouse') {
+            $validated['code'] = $request->input('code', $model->code);
         }
-
-        $brand->save();
-
-        return back()->with('success', 'Brand updated successfully.');
-    }
-
-    public function destroy(Brand $brand): RedirectResponse
-    {
-        if ($brand->image) {
-            Storage::disk('public')->delete($brand->image);
-        }
-
-        $brand->delete();
-
-        return back()->with('success', 'Brand deleted successfully.');
-    }
-
-    public function bulkDelete(Request $request): RedirectResponse
-    {
-        $ids = collect(json_decode((string) $request->input('ids', '[]'), true))
-            ->filter()
-            ->map(fn ($id) => (int) $id)
-            ->values();
-
-        if ($ids->isEmpty()) {
-            return back()->with('error', 'No brands selected.');
-        }
-
-        Brand::query()
-            ->whereIn('id', $ids)
-            ->get()
-            ->each(function (Brand $brand): void {
-                if ($brand->image) {
-                    Storage::disk('public')->delete($brand->image);
-                }
-                $brand->delete();
-            });
-
-        return back()->with('success', 'Selected brands deleted.');
-    }
-
-    private function validateRequest(Request $request, ?int $ignoreId = null): array
-    {
-        return $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'status' => ['required', 'in:active,inactive'],
-            'image' => ['nullable', 'image', 'max:4096'],
+        
+        $model->update($validated);
+        
+        return response()->json([
+            'message' => 'Brand updated successfully.',
+            'data' => $model
         ]);
     }
 
-    private function stats(): array
+    public function destroy($id): JsonResponse
     {
-        $brands = Brand::query()->withTrashed()->get();
-
-        return [
-            'total' => $brands->count(),
-            'active' => $brands->whereNull('deleted_at')->where('status', 'active')->count(),
-            'inactive' => $brands->whereNull('deleted_at')->where('status', 'inactive')->count(),
-        ];
+        $this->authorize('product-delete');
+        $model = Brand::findOrFail($id);
+        $model->delete();
+        
+        return response()->json([
+            'message' => 'Brand deleted successfully.'
+        ]);
     }
 }

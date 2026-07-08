@@ -18,7 +18,7 @@
     "isDynamicEntry": true
   },
   "resources/js/components/analytics.js": {
-    "file": "assets/analytics-DMh6qYtm.js",
+    "file": "assets/analytics-003CQikB.js",
     "name": "analytics",
     "src": "resources/js/components/analytics.js",
     "isDynamicEntry": true,
@@ -34,7 +34,7 @@
     ]
   },
   "resources/js/components/calendar.js": {
-    "file": "assets/calendar-U2cGNjK9.js",
+    "file": "assets/calendar-Be9G16VQ.js",
     "name": "calendar",
     "src": "resources/js/components/calendar.js",
     "isDynamicEntry": true,
@@ -49,8 +49,120 @@
       "assets/bootstrap-icons-BeopsB42.woff"
     ]
   },
+  "resources/js/components/catalog/attributes.js": {
+    "file": "assets/attributes-DARGgCXS.js",
+    "name": "attributes",
+    "src": "resources/js/components/catalog/attributes.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CPd_5XR2.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/brands.js": {
+    "file": "assets/brands-nA_tmeRG.js",
+    "name": "brands",
+    "src": "resources/js/components/catalog/brands.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CPd_5XR2.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/categories.js": {
+    "file": "assets/categories-C2rYRyxv.js",
+    "name": "categories",
+    "src": "resources/js/components/catalog/categories.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CPd_5XR2.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/hsn-codes.js": {
+    "file": "assets/hsn-codes-Bhf02TdH.js",
+    "name": "hsn-codes",
+    "src": "resources/js/components/catalog/hsn-codes.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CPd_5XR2.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/tax-rates.js": {
+    "file": "assets/tax-rates-69IS15Fx.js",
+    "name": "tax-rates",
+    "src": "resources/js/components/catalog/tax-rates.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CPd_5XR2.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/uom.js": {
+    "file": "assets/uom-CHePyu8S.js",
+    "name": "uom",
+    "src": "resources/js/components/catalog/uom.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CPd_5XR2.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/warehouses.js": {
+    "file": "assets/warehouses-B7u28r3W.js",
+    "name": "warehouses",
+    "src": "resources/js/components/catalog/warehouses.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CPd_5XR2.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
   "resources/js/components/elements.js": {
-    "file": "assets/elements-Czw2NC9o.js",
+    "file": "assets/elements-B-nq6fTX.js",
     "name": "elements",
     "src": "resources/js/components/elements.js",
     "isDynamicEntry": true,
@@ -66,7 +178,7 @@
     ]
   },
   "resources/js/components/files.js": {
-    "file": "assets/files-BNa_71nu.js",
+    "file": "assets/files-CDojHF7l.js",
     "name": "files",
     "src": "resources/js/components/files.js",
     "isDynamicEntry": true,
@@ -82,7 +194,7 @@
     ]
   },
   "resources/js/components/forms.js": {
-    "file": "assets/forms-HDs9zgzc.js",
+    "file": "assets/forms-8oxuXwCg.js",
     "name": "forms",
     "src": "resources/js/components/forms.js",
     "isDynamicEntry": true,
@@ -98,7 +210,7 @@
     ]
   },
   "resources/js/components/help.js": {
-    "file": "assets/help-CAksemr4.js",
+    "file": "assets/help-D6e2zGv6.js",
     "name": "help",
     "src": "resources/js/components/help.js",
     "isDynamicEntry": true,
@@ -114,7 +226,7 @@
     ]
   },
   "resources/js/components/messages.js": {
-    "file": "assets/messages-Yy8IX7Eu.js",
+    "file": "assets/messages-cRSlHU63.js",
     "name": "messages",
     "src": "resources/js/components/messages.js",
     "isDynamicEntry": true,
@@ -130,7 +242,7 @@
     ]
   },
   "resources/js/components/orders.js": {
-    "file": "assets/orders-B4fKIfYN.js",
+    "file": "assets/orders-DU3eWvI3.js",
     "name": "orders",
     "src": "resources/js/components/orders.js",
     "isDynamicEntry": true,
@@ -146,7 +258,7 @@
     ]
   },
   "resources/js/components/products.js": {
-    "file": "assets/products-A4H9U59T.js",
+    "file": "assets/products-CWUWDJvU.js",
     "name": "products",
     "src": "resources/js/components/products.js",
     "isDynamicEntry": true,
@@ -162,7 +274,7 @@
     ]
   },
   "resources/js/components/reports.js": {
-    "file": "assets/reports-BaRErQsI.js",
+    "file": "assets/reports-lw9qsMSJ.js",
     "name": "reports",
     "src": "resources/js/components/reports.js",
     "isDynamicEntry": true,
@@ -178,7 +290,7 @@
     ]
   },
   "resources/js/components/roles-permissions.js": {
-    "file": "assets/roles-permissions-yZX8WkZ8.js",
+    "file": "assets/roles-permissions-C5i_MDbH.js",
     "name": "roles-permissions",
     "src": "resources/js/components/roles-permissions.js",
     "isDynamicEntry": true,
@@ -194,7 +306,7 @@
     ]
   },
   "resources/js/components/security.js": {
-    "file": "assets/security-B2Y9C1yq.js",
+    "file": "assets/security-CUETZ1sL.js",
     "name": "security",
     "src": "resources/js/components/security.js",
     "isDynamicEntry": true,
@@ -210,7 +322,7 @@
     ]
   },
   "resources/js/components/settings.js": {
-    "file": "assets/settings-DgQuSQBl.js",
+    "file": "assets/settings-DHGuonhR.js",
     "name": "settings",
     "src": "resources/js/components/settings.js",
     "isDynamicEntry": true,
@@ -226,7 +338,7 @@
     ]
   },
   "resources/js/components/users.js": {
-    "file": "assets/users-CqUHCjjF.js",
+    "file": "assets/users-DMgxoC1c.js",
     "name": "users",
     "src": "resources/js/components/users.js",
     "isDynamicEntry": true,
@@ -242,7 +354,7 @@
     ]
   },
   "resources/js/main.js": {
-    "file": "assets/main-Cp0KHK0O.js",
+    "file": "assets/main-C0ghpYEX.js",
     "name": "main",
     "src": "resources/js/main.js",
     "isEntry": true,
@@ -252,6 +364,13 @@
       "resources/js/components/users.js",
       "resources/js/components/roles-permissions.js",
       "resources/js/components/analytics.js",
+      "resources/js/components/catalog/brands.js",
+      "resources/js/components/catalog/categories.js",
+      "resources/js/components/catalog/uom.js",
+      "resources/js/components/catalog/tax-rates.js",
+      "resources/js/components/catalog/hsn-codes.js",
+      "resources/js/components/catalog/warehouses.js",
+      "resources/js/components/catalog/attributes.js",
       "resources/js/components/products.js",
       "resources/js/components/orders.js",
       "resources/js/components/reports.js",

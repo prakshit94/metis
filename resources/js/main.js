@@ -13,6 +13,15 @@ import {
   Tooltip,
 } from 'bootstrap';
 
+window.bootstrap = {
+  Collapse,
+  Dropdown,
+  Modal,
+  Tab,
+  Toast,
+  Tooltip,
+};
+
 // Import our custom modules
 import { ThemeManager } from './utils/theme-manager.js';
 import { DashboardManager } from './components/dashboard.js';
@@ -23,6 +32,7 @@ import { createSearchComponent } from './utils/search-component.js';
 
 // Import Alpine.js for reactive components
 import Alpine from 'alpinejs';
+window.Alpine = Alpine;
 
 // Import styles (Bootstrap Icons are included in SCSS)
 import '../scss/main.scss';
@@ -147,7 +157,14 @@ class AdminApp {
       case 'forms':
         await this.initFormsPage();
         break;
-      case 'products':
+            case 'catalog-brands': await this.initCatalogBrands(); break;
+      case 'catalog-categories': await this.initCatalogCategories(); break;
+      case 'catalog-uom': await this.initCatalogUom(); break;
+      case 'catalog-tax-rates': await this.initCatalogTaxRates(); break;
+      case 'catalog-hsn-codes': await this.initCatalogHsnCodes(); break;
+      case 'catalog-warehouses': await this.initCatalogWarehouses(); break;
+      case 'catalog-attributes': await this.initCatalogAttributes(); break;
+      case 'catalog-products':
         await this.initProductsPage();
         break;
       case 'orders':
@@ -219,6 +236,15 @@ class AdminApp {
       console.error('Failed to load analytics page script:', error);
     }
   }
+
+
+  async initCatalogBrands() { try { const m = await import('./components/catalog/brands.js'); window.Alpine.data('brandsTable', m.default); console.log('Loaded brands'); } catch(e) { console.error(e); } }
+  async initCatalogCategories() { try { const m = await import('./components/catalog/categories.js'); window.Alpine.data('categoriesTable', m.default); console.log('Loaded categories'); } catch(e) { console.error(e); } }
+  async initCatalogUom() { try { const m = await import('./components/catalog/uom.js'); window.Alpine.data('uomTable', m.default); console.log('Loaded uom'); } catch(e) { console.error(e); } }
+  async initCatalogTaxRates() { try { const m = await import('./components/catalog/tax-rates.js'); window.Alpine.data('taxRatesTable', m.default); console.log('Loaded tax rates'); } catch(e) { console.error(e); } }
+  async initCatalogHsnCodes() { try { const m = await import('./components/catalog/hsn-codes.js'); window.Alpine.data('hsnCodesTable', m.default); console.log('Loaded hsn codes'); } catch(e) { console.error(e); } }
+  async initCatalogWarehouses() { try { const m = await import('./components/catalog/warehouses.js'); window.Alpine.data('warehousesTable', m.default); console.log('Loaded warehouses'); } catch(e) { console.error(e); } }
+  async initCatalogAttributes() { try { const m = await import('./components/catalog/attributes.js'); window.Alpine.data('attributesTable', m.default); console.log('Loaded attributes'); } catch(e) { console.error(e); } }
 
   async initProductsPage() {
     try {
