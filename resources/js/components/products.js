@@ -318,6 +318,13 @@ document.addEventListener('alpine:init', () => {
       this.currentPage = 1;
     },
 
+    resetFilters() {
+      this.searchQuery = '';
+      this.categoryFilter = '';
+      this.stockFilter = '';
+      this.filterProducts();
+    },
+
     sortProducts() {
       this.filteredProducts.sort((a, b) => {
         let aVal = a[this.sortField];

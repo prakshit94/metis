@@ -148,6 +148,12 @@ class AdminApp {
       case 'users':
         await this.initUsersPage();
         break;
+      case 'customers':
+        await this.initCustomersPage();
+        break;
+      case 'villages':
+        await this.initVillagesPage();
+        break;
       case 'roles-permissions':
         await this.initRolesPermissionsPage();
         break;
@@ -219,6 +225,24 @@ class AdminApp {
       console.log('👥 Users page script loaded successfully');
     } catch (error) {
       console.error('Failed to load users page script:', error);
+    }
+  }
+
+  async initCustomersPage() {
+    try {
+      await import('./components/customers.js');
+      console.log('👥 Customers page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load customers page script:', error);
+    }
+  }
+
+  async initVillagesPage() {
+    try {
+      await import('./components/villages.js');
+      console.log('🏡 Villages page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load villages page script:', error);
     }
   }
 

@@ -43,6 +43,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/adjustments', [PageController::class, 'inventoryAdjustments'])->name('adjustments');
     });
     Route::get('/orders', [PageController::class, 'orders'])->name('orders');
+    Route::get('/customers', [PageController::class, 'customers'])->name('customers');
+    Route::get('/villages', [PageController::class, 'villages'])->name('villages');
     Route::get('/reports', [PageController::class, 'reports'])->name('reports');
     Route::get('/messages', [PageController::class, 'messages'])->name('messages');
     Route::get('/calendar', [PageController::class, 'calendar'])->name('calendar');
@@ -175,5 +177,36 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/users/{user}/sync-roles', [\App\Http\Controllers\Users\UserController::class, 'syncRoles'])->name('api.users.sync-roles');
         Route::post('/users/{user}/sync-permissions', [\App\Http\Controllers\Users\UserController::class, 'syncPermissions'])->name('api.users.sync-permissions');
         Route::get('/users/{user}/login-history', [\App\Http\Controllers\Users\UserController::class, 'loginHistory'])->name('api.users.login-history');
+
+        // Customers API Routes
+        Route::post('/customers/bulk-action', [\App\Http\Controllers\Customers\CustomerController::class, 'bulkAction'])->name('api.customers.bulk');
+        Route::patch('/customers/{customer}/restore', [\App\Http\Controllers\Customers\CustomerController::class, 'restore'])->name('api.customers.restore');
+        Route::delete('/customers/{customer}/force', [\App\Http\Controllers\Customers\CustomerController::class, 'forceDelete'])->name('api.customers.force-delete');
+        Route::patch('/customers/{customer}/toggle-active', [\App\Http\Controllers\Customers\CustomerController::class, 'toggleActive'])->name('api.customers.toggle-active');
+        Route::apiResource('/customers', \App\Http\Controllers\Customers\CustomerController::class)->names([
+            'index'   => 'api.customers.index',
+            'store'   => 'api.customers.store',
+            'show'    => 'api.customers.show',
+            'update'  => 'api.customers.update',
+            'destroy' => 'api.customers.destroy',
+        ]);
+        Route::apiResource('/customers.addresses', \App\Http\Controllers\Customers\CustomerAddressController::class)->names([
+            'store'   => 'api.customers.addresses.store',
+            'update'  => 'api.customers.addresses.update',
+            'destroy' => 'api.customers.addresses.destroy',
+        ])->only(['store', 'update', 'destroy']);
+
+        // Villages API Routes
+        Route::post('/villages/bulk-action', [\App\Http\Controllers\Villages\VillageController::class, 'bulkAction'])->name('api.villages.bulk');
+        Route::get('/villages/services-options', [\App\Http\Controllers\Villages\VillageController::class, 'servicesOptions'])->name('api.villages.services-options');
+        Route::get('/villages/search', [\App\Http\Controllers\Villages\VillageController::class, 'search'])->name('api.villages.search');
+        Route::post('/villages/import', [\App\Http\Controllers\Villages\VillageController::class, 'import'])->name('api.villages.import');
+        Route::apiResource('/villages', \App\Http\Controllers\Villages\VillageController::class)->names([
+            'index'   => 'api.villages.index',
+            'store'   => 'api.villages.store',
+            'show'    => 'api.villages.show',
+            'update'  => 'api.villages.update',
+            'destroy' => 'api.villages.destroy',
+        ]);
     });
 });

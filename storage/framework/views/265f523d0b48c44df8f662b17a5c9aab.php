@@ -163,6 +163,18 @@
                         <span>Roles &amp; Permissions</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo e($current === 'customers' ? 'active' : ''); ?>" href="<?php echo e(route('customers')); ?>">
+                        <i class="bi bi-person-lines-fill"></i>
+                        <span>Customers</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo e($current === 'villages' ? 'active' : ''); ?>" href="<?php echo e(route('villages')); ?>">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <span>Villages</span>
+                    </a>
+                </li>
 
                 
                 <li class="nav-item sidebar-section-label mt-3">

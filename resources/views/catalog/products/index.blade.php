@@ -156,7 +156,7 @@
                                         <h2 class="h5 card-title mb-0">Product Catalog</h2>
                                     </div>
                                     <div class="col-auto">
-                                        <div class="d-flex gap-2">
+                                        <div class="d-flex flex-wrap gap-2 justify-content-end">
                                             <!-- Search -->
                                             <div class="position-relative">
                                                 <input type="search" 
@@ -164,7 +164,7 @@
                                                        placeholder="Search products..."
                                                        x-model="searchQuery"
                                                        @input="filterProducts()"
-                                                       style="width: 200px;">
+                                                       style="width: 200px; padding-right: 30px;">
                                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                                             </div>
                                             
@@ -194,6 +194,21 @@
                                                 <option value="low-stock">Low Stock</option>
                                                 <option value="out-of-stock">Out of Stock</option>
                                             </select>
+
+                                            <!-- Items Per Page -->
+                                            <select class="form-select form-select-sm"
+                                                    x-model.number="itemsPerPage"
+                                                    @change="filterProducts()"
+                                                    style="width: 120px;">
+                                                <option value="10">10 / page</option>
+                                                <option value="25">25 / page</option>
+                                                <option value="50">50 / page</option>
+                                                <option value="100">100 / page</option>
+                                            </select>
+                                            
+                                            <button class="btn btn-sm btn-outline-secondary" type="button" @click="resetFilters()">
+                                                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                                            </button>
                                         </div>
                                     </div>
                                 </div>

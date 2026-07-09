@@ -3,7 +3,9 @@
 // ==========================================================================
 
 // User management specific styles
-.user-management {
+.user-management,
+.customer-management,
+.village-management {
   .stats-card {
     @include stats-card-hover();
   }

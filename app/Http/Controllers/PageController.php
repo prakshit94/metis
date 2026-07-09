@@ -26,6 +26,16 @@ class PageController extends Controller
         return view('users');
     }
 
+    public function customers()
+    {
+        return view('customers');
+    }
+
+    public function villages()
+    {
+        return view('villages');
+    }
+
     public function rolesPermissions()
     {
         return view('roles-permissions');
