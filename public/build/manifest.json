@@ -18,7 +18,7 @@
     "isDynamicEntry": true
   },
   "resources/js/components/analytics.js": {
-    "file": "assets/analytics-Df7lar_r.js",
+    "file": "assets/analytics-CJgscJWF.js",
     "name": "analytics",
     "src": "resources/js/components/analytics.js",
     "isDynamicEntry": true,
@@ -26,7 +26,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -34,7 +34,7 @@
     ]
   },
   "resources/js/components/calendar.js": {
-    "file": "assets/calendar-BKNg5sJg.js",
+    "file": "assets/calendar-Bf9BIeZA.js",
     "name": "calendar",
     "src": "resources/js/components/calendar.js",
     "isDynamicEntry": true,
@@ -42,7 +42,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -50,7 +50,7 @@
     ]
   },
   "resources/js/components/catalog/attributes.js": {
-    "file": "assets/attributes-y5rjbY7R.js",
+    "file": "assets/attributes-Bh6U0sCg.js",
     "name": "attributes",
     "src": "resources/js/components/catalog/attributes.js",
     "isDynamicEntry": true,
@@ -58,7 +58,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -66,7 +66,7 @@
     ]
   },
   "resources/js/components/catalog/brands.js": {
-    "file": "assets/brands-CAKtlD5l.js",
+    "file": "assets/brands-BrpqGG6Q.js",
     "name": "brands",
     "src": "resources/js/components/catalog/brands.js",
     "isDynamicEntry": true,
@@ -74,7 +74,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -82,7 +82,7 @@
     ]
   },
   "resources/js/components/catalog/categories.js": {
-    "file": "assets/categories-BqNSbsia.js",
+    "file": "assets/categories-DPL14G6N.js",
     "name": "categories",
     "src": "resources/js/components/catalog/categories.js",
     "isDynamicEntry": true,
@@ -90,7 +90,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -98,7 +98,7 @@
     ]
   },
   "resources/js/components/catalog/hsn-codes.js": {
-    "file": "assets/hsn-codes-CK2lblt6.js",
+    "file": "assets/hsn-codes-CechSjN3.js",
     "name": "hsn-codes",
     "src": "resources/js/components/catalog/hsn-codes.js",
     "isDynamicEntry": true,
@@ -106,7 +106,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -114,7 +114,7 @@
     ]
   },
   "resources/js/components/catalog/tax-rates.js": {
-    "file": "assets/tax-rates-C2VCPVcR.js",
+    "file": "assets/tax-rates-CyeCfx_n.js",
     "name": "tax-rates",
     "src": "resources/js/components/catalog/tax-rates.js",
     "isDynamicEntry": true,
@@ -122,7 +122,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -130,7 +130,7 @@
     ]
   },
   "resources/js/components/catalog/uom.js": {
-    "file": "assets/uom-B2I1lLg4.js",
+    "file": "assets/uom-BqwguPYS.js",
     "name": "uom",
     "src": "resources/js/components/catalog/uom.js",
     "isDynamicEntry": true,
@@ -138,7 +138,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -146,7 +146,7 @@
     ]
   },
   "resources/js/components/catalog/warehouses.js": {
-    "file": "assets/warehouses-Dd-wO3N9.js",
+    "file": "assets/warehouses-VKn1IRuZ.js",
     "name": "warehouses",
     "src": "resources/js/components/catalog/warehouses.js",
     "isDynamicEntry": true,
@@ -154,7 +154,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -162,7 +162,7 @@
     ]
   },
   "resources/js/components/customers.js": {
-    "file": "assets/customers-BdCVUjw-.js",
+    "file": "assets/customers-BMzAD7zt.js",
     "name": "customers",
     "src": "resources/js/components/customers.js",
     "isDynamicEntry": true,
@@ -170,7 +170,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -178,7 +178,7 @@
     ]
   },
   "resources/js/components/elements.js": {
-    "file": "assets/elements-BBWD_9mm.js",
+    "file": "assets/elements-Cz6DlZGf.js",
     "name": "elements",
     "src": "resources/js/components/elements.js",
     "isDynamicEntry": true,
@@ -186,7 +186,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -194,7 +194,7 @@
     ]
   },
   "resources/js/components/files.js": {
-    "file": "assets/files-DlMFKldg.js",
+    "file": "assets/files-BECT_PD4.js",
     "name": "files",
     "src": "resources/js/components/files.js",
     "isDynamicEntry": true,
@@ -202,7 +202,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -210,7 +210,7 @@
     ]
   },
   "resources/js/components/forms.js": {
-    "file": "assets/forms-CQGaoipd.js",
+    "file": "assets/forms-oVk5tymk.js",
     "name": "forms",
     "src": "resources/js/components/forms.js",
     "isDynamicEntry": true,
@@ -218,7 +218,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -226,7 +226,7 @@
     ]
   },
   "resources/js/components/help.js": {
-    "file": "assets/help-Db88_sSp.js",
+    "file": "assets/help-Cx9bEvm2.js",
     "name": "help",
     "src": "resources/js/components/help.js",
     "isDynamicEntry": true,
@@ -234,7 +234,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -242,7 +242,7 @@
     ]
   },
   "resources/js/components/inventory/adjustments.js": {
-    "file": "assets/adjustments-Camv03qm.js",
+    "file": "assets/adjustments-ChnZbn9f.js",
     "name": "adjustments",
     "src": "resources/js/components/inventory/adjustments.js",
     "isDynamicEntry": true,
@@ -250,7 +250,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -258,7 +258,7 @@
     ]
   },
   "resources/js/components/inventory/stock-management.js": {
-    "file": "assets/stock-management-FXGxd4wh.js",
+    "file": "assets/stock-management-Buip5M5e.js",
     "name": "stock-management",
     "src": "resources/js/components/inventory/stock-management.js",
     "isDynamicEntry": true,
@@ -266,7 +266,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -274,7 +274,7 @@
     ]
   },
   "resources/js/components/inventory/stock-transfers.js": {
-    "file": "assets/stock-transfers-B9ywATm6.js",
+    "file": "assets/stock-transfers-DG1MyMPy.js",
     "name": "stock-transfers",
     "src": "resources/js/components/inventory/stock-transfers.js",
     "isDynamicEntry": true,
@@ -282,7 +282,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -290,7 +290,7 @@
     ]
   },
   "resources/js/components/messages.js": {
-    "file": "assets/messages-BfowCh63.js",
+    "file": "assets/messages-CuzkaGtq.js",
     "name": "messages",
     "src": "resources/js/components/messages.js",
     "isDynamicEntry": true,
@@ -298,7 +298,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -306,7 +306,7 @@
     ]
   },
   "resources/js/components/orders.js": {
-    "file": "assets/orders-C7TiUK7-.js",
+    "file": "assets/orders-B5-kyAMg.js",
     "name": "orders",
     "src": "resources/js/components/orders.js",
     "isDynamicEntry": true,
@@ -314,7 +314,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -322,7 +322,7 @@
     ]
   },
   "resources/js/components/products.js": {
-    "file": "assets/products-DiuFVG62.js",
+    "file": "assets/products-DIOuEc_E.js",
     "name": "products",
     "src": "resources/js/components/products.js",
     "isDynamicEntry": true,
@@ -330,7 +330,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -338,7 +338,7 @@
     ]
   },
   "resources/js/components/reports.js": {
-    "file": "assets/reports-BtoF-pbr.js",
+    "file": "assets/reports-CwM_JLhd.js",
     "name": "reports",
     "src": "resources/js/components/reports.js",
     "isDynamicEntry": true,
@@ -346,7 +346,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -354,7 +354,7 @@
     ]
   },
   "resources/js/components/roles-permissions.js": {
-    "file": "assets/roles-permissions-CFyttXhZ.js",
+    "file": "assets/roles-permissions-Chs4AoRx.js",
     "name": "roles-permissions",
     "src": "resources/js/components/roles-permissions.js",
     "isDynamicEntry": true,
@@ -362,7 +362,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -370,7 +370,7 @@
     ]
   },
   "resources/js/components/security.js": {
-    "file": "assets/security-BpJWASik.js",
+    "file": "assets/security-BG-mR5Un.js",
     "name": "security",
     "src": "resources/js/components/security.js",
     "isDynamicEntry": true,
@@ -378,7 +378,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -386,7 +386,7 @@
     ]
   },
   "resources/js/components/settings.js": {
-    "file": "assets/settings-C6wC2q2P.js",
+    "file": "assets/settings-BS6rOIdP.js",
     "name": "settings",
     "src": "resources/js/components/settings.js",
     "isDynamicEntry": true,
@@ -394,7 +394,39 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/shipping/services.js": {
+    "file": "assets/services-Bm4qmA5O.js",
+    "name": "services",
+    "src": "resources/js/components/shipping/services.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-ciso1BhA.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/shipping/shipments.js": {
+    "file": "assets/shipments-DnyqQVV1.js",
+    "name": "shipments",
+    "src": "resources/js/components/shipping/shipments.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -402,7 +434,7 @@
     ]
   },
   "resources/js/components/users.js": {
-    "file": "assets/users-B0M4C9H2.js",
+    "file": "assets/users-DmUZjMvl.js",
     "name": "users",
     "src": "resources/js/components/users.js",
     "isDynamicEntry": true,
@@ -410,7 +442,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -418,7 +450,7 @@
     ]
   },
   "resources/js/components/villages.js": {
-    "file": "assets/villages-Bku9NoR8.js",
+    "file": "assets/villages-CmLA_Q1o.js",
     "name": "villages",
     "src": "resources/js/components/villages.js",
     "isDynamicEntry": true,
@@ -426,7 +458,7 @@
       "resources/js/main.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -434,7 +466,7 @@
     ]
   },
   "resources/js/main.js": {
-    "file": "assets/main-D01IF6_u.js",
+    "file": "assets/main-C3NHo3Ub.js",
     "name": "main",
     "src": "resources/js/main.js",
     "isEntry": true,
@@ -465,10 +497,12 @@
       "resources/js/components/security.js",
       "resources/js/components/files.js",
       "resources/js/components/help.js",
-      "resources/js/components/elements.js"
+      "resources/js/components/elements.js",
+      "resources/js/components/shipping/shipments.js",
+      "resources/js/components/shipping/services.js"
     ],
     "css": [
-      "assets/main-DmU2PVMl.css"
+      "assets/main-ciso1BhA.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
@@ -476,7 +510,7 @@
     ]
   },
   "resources/scss/main.scss": {
-    "file": "assets/main-DmU2PVMl.css",
+    "file": "assets/main-ciso1BhA.css",
     "src": "resources/scss/main.scss",
     "isEntry": true
   }

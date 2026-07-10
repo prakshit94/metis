@@ -399,10 +399,6 @@
             </div>
         </div>
     </div>
-</div>
-<?php $__env->stopSection(); ?>
-
-<?php $__env->startPush('modals'); ?>
 
 <div class="modal fade" id="villageModal" tabindex="-1" aria-labelledby="villageModalLabel">
     <div class="modal-dialog modal-dialog-scrollable">
@@ -594,7 +590,8 @@
         </div>
     </div>
 </div>
-<?php $__env->stopPush(); ?>
+</div>
+<?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
 <!-- Loaded via main.js or separate scripts -->

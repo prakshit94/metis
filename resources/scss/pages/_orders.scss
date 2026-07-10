@@ -249,4 +249,15 @@
       }
     }
   }
+
+  // Selected row state
+  .table {
+    tr.selected {
+      background-color: var(--bs-primary-bg-subtle) !important;
+      
+      td {
+        background-color: var(--bs-primary-bg-subtle) !important;
+      }
+    }
+  }
 }

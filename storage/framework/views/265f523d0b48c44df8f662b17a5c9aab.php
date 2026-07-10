@@ -46,6 +46,36 @@
 
                 
                 <li class="nav-item">
+                    <a class="nav-link <?php echo e(Str::startsWith($current, 'shipping') ? 'active' : ''); ?>"
+                       href="#"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#shippingSubmenu"
+                       aria-expanded="<?php echo e(Str::startsWith($current, 'shipping') ? 'true' : 'false'); ?>"
+                       aria-controls="shippingSubmenu">
+                        <i class="bi bi-truck"></i>
+                        <span>Shipping &amp; Logistics</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse <?php echo e(Str::startsWith($current, 'shipping') ? 'show' : ''); ?>" id="shippingSubmenu">
+                        <ul class="nav nav-submenu">
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'shipping.shipments' ? 'active' : ''); ?>" href="<?php echo e(route('shipping.shipments')); ?>">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                    <span>Shipments &amp; Tracking</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'shipping.services' ? 'active' : ''); ?>" href="<?php echo e(route('shipping.services')); ?>">
+                                    <i class="bi bi-gear-wide-connected"></i>
+                                    <span>Shipping Services</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                
+                <li class="nav-item">
                     <a class="nav-link <?php echo e(Str::startsWith($current, 'inventory') ? 'active' : ''); ?>"
                        href="#"
                        data-bs-toggle="collapse"

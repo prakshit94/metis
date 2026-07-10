@@ -38,6 +38,7 @@ class StockManagementController extends Controller
         }
 
         if ($warehouseId = $request->query('warehouse_id')) {
+            $this->inventoryService->ensureWarehouseStockCoverage((int) $warehouseId);
             $query->where('warehouse_id', $warehouseId);
         }
 
@@ -54,7 +55,9 @@ class StockManagementController extends Controller
         $sortBy  = $request->query('sort_by', 'id');
         $sortDir = $request->query('sort_dir', 'desc');
 
-        if (in_array($sortBy, ['id', 'quantity', 'reserved_qty', 'in_transit_qty'])) {
+        if ($sortBy === 'available') {
+            $query->orderByRaw('(quantity - reserved_qty) ' . $sortDir);
+        } elseif (in_array($sortBy, ['id', 'product_id', 'warehouse_id', 'quantity', 'reserved_qty', 'dispatched_qty', 'in_transit_qty'])) {
             $query->orderBy($sortBy, $sortDir);
         }
 

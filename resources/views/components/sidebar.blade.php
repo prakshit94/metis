@@ -44,6 +44,36 @@
                     </a>
                 </li>
 
+                {{-- Shipping & Logistics Dropdown --}}
+                <li class="nav-item">
+                    <a class="nav-link {{ Str::startsWith($current, 'shipping') ? 'active' : '' }}"
+                       href="#"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#shippingSubmenu"
+                       aria-expanded="{{ Str::startsWith($current, 'shipping') ? 'true' : 'false' }}"
+                       aria-controls="shippingSubmenu">
+                        <i class="bi bi-truck"></i>
+                        <span>Shipping &amp; Logistics</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse {{ Str::startsWith($current, 'shipping') ? 'show' : '' }}" id="shippingSubmenu">
+                        <ul class="nav nav-submenu">
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'shipping.shipments' ? 'active' : '' }}" href="{{ route('shipping.shipments') }}">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                    <span>Shipments &amp; Tracking</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'shipping.services' ? 'active' : '' }}" href="{{ route('shipping.services') }}">
+                                    <i class="bi bi-gear-wide-connected"></i>
+                                    <span>Shipping Services</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
                 {{-- Inventory Dropdown --}}
                 <li class="nav-item">
                     <a class="nav-link {{ Str::startsWith($current, 'inventory') ? 'active' : '' }}"

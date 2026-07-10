@@ -1,19 +1,105 @@
 import Alpine from 'alpinejs';
+import ApexCharts from 'apexcharts';
+import { Modal } from 'bootstrap';
+import Swal from 'sweetalert2';
 import { createSearchComponent } from '../utils/search-component.js';
+
+// ─── CSRF helper ─────────────────────────────────────────────────────────────
+function getCsrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+}
+
+// ─── API fetch helper ────────────────────────────────────────────────────────
+async function apiFetch(url, options = {}) {
+  const { headers, ...otherOptions } = options;
+  const res = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-CSRF-TOKEN': getCsrfToken(),
+      ...(headers || {}),
+    },
+    ...otherOptions,
+  });
+
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : {};
+
+  if (!res.ok) {
+    const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
+    const message = validation || data?.message || data?.error || 'Request failed';
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+// ─── Modal helper ────────────────────────────────────────────────────────────
+function getModal(elementOrSelector) {
+  const element = typeof elementOrSelector === 'string'
+    ? document.querySelector(elementOrSelector)
+    : elementOrSelector;
+
+  return element ? Modal.getOrCreateInstance(element) : null;
+}
+
+// ─── Toast helper ─────────────────────────────────────────────────────────────
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const id = 'toast-' + Date.now();
+  const iconMap = {
+    success: 'bi-check-circle-fill',
+    danger:  'bi-x-circle-fill',
+    warning: 'bi-exclamation-triangle-fill',
+    info:    'bi-info-circle-fill',
+  };
+
+  const el = document.createElement('div');
+  el.id = id;
+  el.className = `toast align-items-center text-bg-${type} border-0 show mb-2`;
+  el.setAttribute('role', 'alert');
+  el.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="bi ${iconMap[type] ?? 'bi-info-circle-fill'} me-2"></i><span></span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>`;
+  el.querySelector('.toast-body span').textContent = message;
+
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
 
 document.addEventListener('alpine:init', () => {
   Alpine.data('orderTable', () => ({
     orders: [],
-    filteredOrders: [],
     selectedOrders: [],
     currentPage: 1,
-    itemsPerPage: 10,
+    totalPages: 1,
+    totalOrders: 0,
+    itemsPerPage: 15,
+    
+    // Filters state
     searchQuery: '',
     statusFilter: '',
     dateFilter: '',
-    sortField: 'orderNumber',
+    productFilter: '',
+    fulfillmentFilter: '',
+    stateFilter: '',
+    districtFilter: '',
+    talukaFilter: '',
+    villageFilter: '',
+    carrierFilter: '',
+    fromDate: '',
+    toDate: '',
+    sortField: 'id',
     sortDirection: 'desc',
     isLoading: false,
+    
+    // ApexCharts settings
     charts: {},
     _resizeHandler: null,
     chartsInitialized: false,
@@ -21,17 +107,51 @@ document.addEventListener('alpine:init', () => {
     // Statistics
     stats: {
       total: 0,
+      future_order: 0,
+      future_order_amount: 0,
       pending: 0,
-      shipped: 0,
+      pending_amount: 0,
+      confirmed: 0,
+      confirmed_amount: 0,
+      processing: 0,
+      processing_amount: 0,
+      ready_to_ship: 0,
+      ready_to_ship_amount: 0,
+      dispatched: 0,
+      dispatched_amount: 0,
+      delivered: 0,
+      delivered_amount: 0,
+      cancelled: 0,
+      cancelled_amount: 0,
       revenue: 0
     },
 
     statusStats: [],
 
+    // Dropdown lists
+    productsList: [],
+    statesList: [],
+    districtsList: [],
+    talukasList: [],
+    villagesList: [],
+    carriersList: [],
+    allowedFilterStatuses: [],
+
+    // Modal data state
+    selectedOrder: null,
+    shipOrderId: '',
+    shipOrderNo: '',
+    shipCarrierName: '',
+    shipTrackingNo: '',
+    verifyOutcome: '',
+    verifyRemark: '',
+    verifyFollowUp: '',
+    isBulkVerification: false,
+    importRows: [],
+    importing: false,
+
     init() {
-      this.loadSampleData();
-      this.filterOrders();
-      this.calculateStats();
+      this.loadOrders();
       
       // Delay chart initialization to ensure DOM is fully ready
       setTimeout(() => {
@@ -72,453 +192,307 @@ document.addEventListener('alpine:init', () => {
       window.addEventListener('resize', this._resizeHandler);
     },
 
-    loadSampleData() {
-      this.orders = [
-        {
-          id: 1,
-          orderNumber: 'ORD-2025-001',
-          customer: {
-            name: 'John Smith',
-            email: 'john@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'iPhone 14 Pro', quantity: 1, price: 999.99 }
-          ],
-          itemCount: 1,
-          total: 999.99,
-          status: 'pending',
-          orderDate: '2025-01-15',
-          shippingAddress: '123 Main St, City, State 12345'
-        },
-        {
-          id: 2,
-          orderNumber: 'ORD-2025-002',
-          customer: {
-            name: 'Sarah Johnson',
-            email: 'sarah@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'MacBook Air M2', quantity: 1, price: 1199.99 },
-            { name: 'Wireless Mouse', quantity: 1, price: 49.99 }
-          ],
-          itemCount: 2,
-          total: 1249.98,
-          status: 'processing',
-          orderDate: '2025-01-14',
-          shippingAddress: '456 Oak Ave, City, State 67890'
-        },
-        {
-          id: 3,
-          orderNumber: 'ORD-2025-003',
-          customer: {
-            name: 'Mike Davis',
-            email: 'mike@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Cotton T-Shirt', quantity: 3, price: 24.99 }
-          ],
-          itemCount: 3,
-          total: 74.97,
-          status: 'shipped',
-          orderDate: '2025-01-13',
-          shippingAddress: '789 Pine St, City, State 54321'
-        },
-        {
-          id: 4,
-          orderNumber: 'ORD-2025-004',
-          customer: {
-            name: 'Emily Brown',
-            email: 'emily@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'JavaScript Guide', quantity: 1, price: 39.99 },
-            { name: 'Python Cookbook', quantity: 1, price: 44.99 }
-          ],
-          itemCount: 2,
-          total: 84.98,
-          status: 'delivered',
-          orderDate: '2025-01-12',
-          shippingAddress: '321 Elm St, City, State 13579'
-        },
-        {
-          id: 5,
-          orderNumber: 'ORD-2025-005',
-          customer: {
-            name: 'David Wilson',
-            email: 'david@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Wireless Headphones', quantity: 1, price: 149.99 }
-          ],
-          itemCount: 1,
-          total: 149.99,
-          status: 'cancelled',
-          orderDate: '2025-01-11',
-          shippingAddress: '654 Maple Dr, City, State 24680'
-        },
-        {
-          id: 6,
-          orderNumber: 'ORD-2025-006',
-          customer: {
-            name: 'Lisa Anderson',
-            email: 'lisa@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Smart Home Hub', quantity: 1, price: 199.99 },
-            { name: 'Smart Bulbs', quantity: 4, price: 19.99 }
-          ],
-          itemCount: 5,
-          total: 279.95,
-          status: 'processing',
-          orderDate: '2025-01-10',
-          shippingAddress: '987 Cedar Ln, City, State 97531'
-        },
-        {
-          id: 7,
-          orderNumber: 'ORD-2025-007',
-          customer: {
-            name: 'Robert Martinez',
-            email: 'robert@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Samsung Galaxy S24', quantity: 1, price: 899.99 }
-          ],
-          itemCount: 1,
-          total: 899.99,
-          status: 'pending',
-          orderDate: '2025-01-09',
-          shippingAddress: '456 Valley Rd, City, State 11223'
-        },
-        {
-          id: 8,
-          orderNumber: 'ORD-2025-008',
-          customer: {
-            name: 'Jennifer Taylor',
-            email: 'jennifer@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Yoga Mat Premium', quantity: 2, price: 49.99 },
-            { name: 'Winter Jacket', quantity: 1, price: 189.99 }
-          ],
-          itemCount: 3,
-          total: 289.97,
-          status: 'shipped',
-          orderDate: '2025-01-08',
-          shippingAddress: '789 Mountain View Dr, City, State 44556'
-        },
-        {
-          id: 9,
-          orderNumber: 'ORD-2025-009',
-          customer: {
-            name: 'Christopher Lee',
-            email: 'chris@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'React Handbook', quantity: 1, price: 54.99 },
-            { name: 'Node.js Complete Guide', quantity: 1, price: 59.99 },
-            { name: 'Docker Deep Dive', quantity: 1, price: 49.99 }
-          ],
-          itemCount: 3,
-          total: 164.97,
-          status: 'delivered',
-          orderDate: '2025-01-07',
-          shippingAddress: '123 Tech Street, City, State 77889'
-        },
-        {
-          id: 10,
-          orderNumber: 'ORD-2025-010',
-          customer: {
-            name: 'Amanda Clark',
-            email: 'amanda@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Gaming Mouse RGB', quantity: 1, price: 79.99 },
-            { name: 'Mechanical Keyboard', quantity: 1, price: 159.99 }
-          ],
-          itemCount: 2,
-          total: 239.98,
-          status: 'processing',
-          orderDate: '2025-01-06',
-          shippingAddress: '321 Gaming Ave, City, State 99001'
-        },
-        {
-          id: 11,
-          orderNumber: 'ORD-2025-011',
-          customer: {
-            name: 'Daniel Rodriguez',
-            email: 'daniel@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Coffee Maker Deluxe', quantity: 1, price: 249.99 }
-          ],
-          itemCount: 1,
-          total: 249.99,
-          status: 'pending',
-          orderDate: '2025-01-05',
-          shippingAddress: '654 Coffee St, City, State 33445'
-        },
-        {
-          id: 12,
-          orderNumber: 'ORD-2025-012',
-          customer: {
-            name: 'Michelle White',
-            email: 'michelle@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Running Shoes', quantity: 1, price: 129.99 },
-            { name: 'Casual Polo Shirt', quantity: 2, price: 39.99 }
-          ],
-          itemCount: 3,
-          total: 209.97,
-          status: 'shipped',
-          orderDate: '2025-01-04',
-          shippingAddress: '987 Sports Blvd, City, State 55667'
-        },
-        {
-          id: 13,
-          orderNumber: 'ORD-2025-013',
-          customer: {
-            name: 'Kevin Thompson',
-            email: 'kevin@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Tablet Pro 12.9"', quantity: 1, price: 1099.99 }
-          ],
-          itemCount: 1,
-          total: 1099.99,
-          status: 'delivered',
-          orderDate: '2025-01-03',
-          shippingAddress: '147 Tech Plaza, City, State 88990'
-        },
-        {
-          id: 14,
-          orderNumber: 'ORD-2025-014',
-          customer: {
-            name: 'Rachel Garcia',
-            email: 'rachel@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Garden Planter Set', quantity: 1, price: 89.99 },
-            { name: 'Desk Organizer', quantity: 2, price: 34.99 }
-          ],
-          itemCount: 3,
-          total: 159.97,
-          status: 'processing',
-          orderDate: '2025-01-02',
-          shippingAddress: '258 Garden Way, City, State 22334'
-        },
-        {
-          id: 15,
-          orderNumber: 'ORD-2025-015',
-          customer: {
-            name: 'Steven Hall',
-            email: 'steven@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'AI & Machine Learning', quantity: 1, price: 79.99 }
-          ],
-          itemCount: 1,
-          total: 79.99,
-          status: 'pending',
-          orderDate: '2025-01-01',
-          shippingAddress: '369 Learning Lane, City, State 66778'
-        },
-        {
-          id: 16,
-          orderNumber: 'ORD-2024-050',
-          customer: {
-            name: 'Nicole Allen',
-            email: 'nicole@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Wireless Headphones', quantity: 2, price: 149.99 }
-          ],
-          itemCount: 2,
-          total: 299.98,
-          status: 'delivered',
-          orderDate: '2024-12-30',
-          shippingAddress: '741 Audio Street, City, State 99887'
-        },
-        {
-          id: 17,
-          orderNumber: 'ORD-2024-049',
-          customer: {
-            name: 'Anthony Young',
-            email: 'anthony@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Cotton T-Shirt', quantity: 5, price: 24.99 }
-          ],
-          itemCount: 5,
-          total: 124.95,
-          status: 'shipped',
-          orderDate: '2024-12-29',
-          shippingAddress: '852 Fashion Ave, City, State 11229'
-        },
-        {
-          id: 18,
-          orderNumber: 'ORD-2024-048',
-          customer: {
-            name: 'Patricia King',
-            email: 'patricia@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Kitchen Knife Set', quantity: 1, price: 129.99 },
-            { name: 'Coffee Maker Deluxe', quantity: 1, price: 249.99 }
-          ],
-          itemCount: 2,
-          total: 379.98,
-          status: 'processing',
-          orderDate: '2024-12-28',
-          shippingAddress: '963 Kitchen Rd, City, State 44556'
-        },
-        {
-          id: 19,
-          orderNumber: 'ORD-2024-047',
-          customer: {
-            name: 'Joshua Wright',
-            email: 'joshua@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'Smart Home Hub', quantity: 1, price: 199.99 },
-            { name: 'Gaming Mouse RGB', quantity: 1, price: 79.99 }
-          ],
-          itemCount: 2,
-          total: 279.98,
-          status: 'cancelled',
-          orderDate: '2024-12-27',
-          shippingAddress: '147 Smart Home Dr, City, State 77889'
-        },
-        {
-          id: 20,
-          orderNumber: 'ORD-2024-046',
-          customer: {
-            name: 'Laura Lopez',
-            email: 'laura@example.com',
-            avatar: '/assets/images/avatar-placeholder.svg'
-          },
-          items: [
-            { name: 'MacBook Air M2', quantity: 1, price: 1199.99 }
-          ],
-          itemCount: 1,
-          total: 1199.99,
-          status: 'delivered',
-          orderDate: '2024-12-26',
-          shippingAddress: '456 Tech Center, City, State 33221'
+    loadOrders() {
+      this.isLoading = true;
+      const params = new URLSearchParams();
+      
+      if (this.searchQuery) params.append('search', this.searchQuery);
+      if (this.statusFilter) params.append('status', this.statusFilter);
+      if (this.productFilter) params.append('product', this.productFilter);
+      if (this.fulfillmentFilter) params.append('fulfillment', this.fulfillmentFilter);
+      if (this.stateFilter) params.append('state', this.stateFilter);
+      if (this.districtFilter) params.append('district', this.districtFilter);
+      if (this.talukaFilter) params.append('taluka', this.talukaFilter);
+      if (this.villageFilter) params.append('village', this.villageFilter);
+      if (this.carrierFilter) params.append('carrier', this.carrierFilter);
+      
+      // Handle Date selection
+      let activeFromDate = this.fromDate;
+      let activeToDate = this.toDate;
+      
+      if (this.dateFilter) {
+        const today = new Date();
+        const formatDate = (date) => date.toISOString().split('T')[0];
+        
+        if (this.dateFilter === 'today') {
+          activeFromDate = formatDate(today);
+          activeToDate = formatDate(today);
+        } else if (this.dateFilter === 'week') {
+          const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+          activeFromDate = formatDate(weekAgo);
+          activeToDate = formatDate(today);
+        } else if (this.dateFilter === 'month') {
+          const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+          activeFromDate = formatDate(monthAgo);
+          activeToDate = formatDate(today);
         }
-      ];
+      }
+      
+      if (activeFromDate) params.append('from_date', activeFromDate);
+      if (activeToDate) params.append('to_date', activeToDate);
+      
+      params.append('limit', this.itemsPerPage);
+      params.append('page', this.currentPage);
+      params.append('sort_field', this.sortField);
+      params.append('sort_direction', this.sortDirection);
+
+      apiFetch(`/orders?${params.toString()}`)
+        .then(data => {
+          this.orders = (data.orders.data || []).map(o => this.mapOrder(o));
+          this.currentPage = data.orders.current_page || 1;
+          this.totalPages = data.orders.last_page || 1;
+          this.totalOrders = data.orders.total || 0;
+          
+          if (data.stats) {
+            this.stats = {
+              total: data.stats.total,
+              future_order: data.stats.future_order,
+              future_order_amount: data.stats.future_order_amount,
+              pending: data.stats.pending,
+              pending_amount: data.stats.pending_amount,
+              confirmed: data.stats.confirmed,
+              confirmed_amount: data.stats.confirmed_amount,
+              processing: data.stats.processing,
+              processing_amount: data.stats.processing_amount,
+              ready_to_ship: data.stats.ready_to_ship,
+              ready_to_ship_amount: data.stats.ready_to_ship_amount,
+              dispatched: data.stats.dispatched,
+              dispatched_amount: data.stats.dispatched_amount,
+              delivered: data.stats.delivered,
+              delivered_amount: data.stats.delivered_amount,
+              cancelled: data.stats.cancelled,
+              cancelled_amount: data.stats.cancelled_amount,
+              revenue: data.stats.total_amount
+            };
+
+            this.statusStats = [
+              { name: 'Future', count: this.stats.future_order, percentage: this.stats.total ? Math.round((this.stats.future_order / this.stats.total) * 100) : 0, color: '#a855f7' },
+              { name: 'Pending', count: this.stats.pending, percentage: this.stats.total ? Math.round((this.stats.pending / this.stats.total) * 100) : 0, color: '#f97316' },
+              { name: 'Confirmed', count: this.stats.confirmed, percentage: this.stats.total ? Math.round((this.stats.confirmed / this.stats.total) * 100) : 0, color: '#0ea5e9' },
+              { name: 'Processing', count: this.stats.processing, percentage: this.stats.total ? Math.round((this.stats.processing / this.stats.total) * 100) : 0, color: '#3b82f6' },
+              { name: 'Ready to Ship', count: this.stats.ready_to_ship, percentage: this.stats.total ? Math.round((this.stats.ready_to_ship / this.stats.total) * 100) : 0, color: '#6366f1' },
+              { name: 'Dispatched', count: this.stats.dispatched, percentage: this.stats.total ? Math.round((this.stats.dispatched / this.stats.total) * 100) : 0, color: '#14b8a6' },
+              { name: 'Delivered', count: this.stats.delivered, percentage: this.stats.total ? Math.round((this.stats.delivered / this.stats.total) * 100) : 0, color: '#10b981' },
+              { name: 'Cancelled', count: this.stats.cancelled, percentage: this.stats.total ? Math.round((this.stats.cancelled / this.stats.total) * 100) : 0, color: '#ef4444' }
+            ].filter(stat => stat.count > 0);
+
+            this.initCharts();
+          }
+
+          if (data.districts) this.districtsList = data.districts;
+          if (data.talukas) this.talukasList = data.talukas;
+          if (data.villages) this.villagesList = data.villages;
+          if (data.allowed_filter_statuses) this.allowedFilterStatuses = data.allowed_filter_statuses;
+          if (data.carriers && data.carriers.length) this.carriersList = data.carriers;
+        })
+        .catch(err => {
+          showToast(err.message, 'danger');
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
-    calculateStats() {
-      this.stats.total = this.orders.length;
-      this.stats.pending = this.orders.filter(o => o.status === 'pending').length;
-      this.stats.shipped = this.orders.filter(o => o.status === 'shipped').length;
-      this.stats.revenue = this.orders
-        .filter(o => o.status !== 'cancelled')
-        .reduce((sum, o) => sum + o.total, 0);
+    mapOrder(o) {
+      const formatAddress = (address) => {
+        if (!address) return null;
 
-      // Calculate status distribution
-      const statuses = {};
-      this.orders.forEach(order => {
-        statuses[order.status] = (statuses[order.status] || 0) + 1;
-      });
+        const village = address.village || null;
+        const parts = [
+          address.label,
+          address.address_line_1,
+          address.address_line_2,
+          village?.village_name,
+          village?.taluka_name,
+          village?.district_name,
+          address.city,
+          address.state,
+          address.pincode,
+        ].filter(Boolean);
 
-      this.statusStats = Object.entries(statuses).map(([name, count]) => ({
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        count,
-        percentage: Math.round((count / this.orders.length) * 100),
-        color: this.getStatusColor(name)
-      }));
+        return {
+          id: address.id,
+          label: address.label || '',
+          line1: address.address_line_1 || '',
+          line2: address.address_line_2 || '',
+          city: address.city || '',
+          state: address.state || '',
+          pincode: address.pincode || '',
+          country: address.country || 'India',
+          village: village ? {
+            name: village.village_name || '',
+            taluka: village.taluka_name || '',
+            district: village.district_name || '',
+            state: village.state_name || '',
+            postOffice: village.post_so_name || '',
+          } : null,
+          formatted: parts.join(', ') || 'N/A',
+          raw: address,
+        };
+      };
+
+      const formatMoney = (value) => {
+        const amount = Number.parseFloat(value ?? 0);
+        return Number.isFinite(amount) ? amount : 0;
+      };
+
+      const shipment = Array.isArray(o.shipments) && o.shipments.length ? o.shipments[0] : null;
+      const invoice = o.invoice || null;
+      const invoicePayments = invoice && Array.isArray(invoice.payments) ? invoice.payments : [];
+      const paidAmount = invoicePayments
+        .filter(payment => payment.status === 'completed')
+        .reduce((sum, payment) => sum + formatMoney(payment.amount || 0), 0);
+      const netAmount = formatMoney(invoice ? (invoice.net_amount ?? 0) : 0);
+      const payments = Array.isArray(o.payments) ? o.payments : [];
+
+      return {
+        id: o.id,
+        orderNumber: o.order_no,
+        type: o.type || 'sale',
+        orderDate: o.order_date,
+        customer: {
+          name: o.party ? `${o.party.firstname} ${o.party.lastname}` : 'N/A',
+          email: o.party ? o.party.email : 'N/A',
+          avatar: o.party && o.party.avatar ? o.party.avatar : '/assets/images/avatar-placeholder.svg',
+          phone: o.party ? o.party.phone : ''
+        },
+        warehouse: o.warehouse ? {
+          name: o.warehouse.name || o.warehouse.company_name || 'N/A',
+          phone: o.warehouse.phone || 'N/A',
+          gstin: o.warehouse.gstin || 'N/A',
+          address: [
+            o.warehouse.address_line_1,
+            o.warehouse.address_line_2,
+            o.warehouse.city,
+            o.warehouse.state,
+            o.warehouse.pincode,
+          ].filter(Boolean).join(', ') || 'N/A',
+        } : null,
+        shippingAddress: formatAddress(o.shippingAddress),
+        billingAddress: formatAddress(o.billingAddress),
+        invoice: invoice ? {
+          number: invoice.invoice_no || 'N/A',
+          date: invoice.invoice_date || null,
+          status: invoice.status || 'N/A',
+          total: formatMoney(invoice.total_amount ?? invoice.total_amount),
+          tax: formatMoney(invoice.tax_amount ?? 0),
+          net: netAmount,
+          paid: paidAmount,
+          due: Math.max(0, netAmount - paidAmount),
+          paymentCount: invoicePayments.length,
+        } : null,
+        shipment: shipment ? {
+          no: shipment.shipment_no || 'N/A',
+          carrier: shipment.carrier_name || 'N/A',
+          trackingNo: shipment.tracking_no || 'N/A',
+          status: shipment.status || 'N/A',
+          shippedAt: shipment.shipped_at || null,
+          deliveredAt: shipment.delivered_at || null,
+          events: Array.isArray(shipment.events) ? shipment.events : [],
+        } : null,
+        payments: payments.map(payment => ({
+          id: payment.id,
+          no: payment.payment_no || 'N/A',
+          amount: formatMoney(payment.amount || 0),
+          method: payment.payment_method || 'N/A',
+          status: payment.status || 'N/A',
+          date: payment.payment_date || null,
+          transactionId: payment.transaction_id || 'N/A',
+        })),
+        items: (o.items || []).map(item => ({
+          name: item.product ? item.product.name : 'Unknown Product',
+          sku: item.product ? item.product.sku || '' : '',
+          quantity: item.quantity,
+          price: item.unit_price,
+          discount: item.discount_amount || 0,
+          tax: item.tax_amount || 0,
+          net: item.net_amount || 0
+        })),
+        itemCount: o.items_count || (o.items ? o.items.length : 0),
+        total: formatMoney(o.net_amount),
+        subtotal: formatMoney(o.total_amount),
+        taxTotal: formatMoney(o.tax_amount),
+        discountTotal: formatMoney(o.discount_amount),
+        status: o.status,
+        paymentMethod: o.payment_method || 'N/A',
+        couponCode: o.coupon_code || '',
+        isDraft: Boolean(o.is_draft),
+        futureOrderDate: o.future_order_date || null,
+        createdBy: o.creator ? `${o.creator.name || ''}`.trim() : 'N/A',
+        updatedBy: o.updater ? `${o.updater.name || ''}`.trim() : 'N/A',
+        verificationLogs: Array.isArray(o.verification_logs) ? o.verification_logs : [],
+        original: o
+      };
+    },
+
+    formatCurrency(value) {
+      const amount = Number.parseFloat(value ?? 0);
+      return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
+    },
+
+    formatDateTime(value) {
+      if (!value) return 'N/A';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleString();
+    },
+
+    formatDate(value) {
+      if (!value) return 'N/A';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
     },
 
     getStatusColor(status) {
       const colors = {
-        pending: '#ffc107',
-        processing: '#0d6efd',
-        shipped: '#17a2b8',
-        delivered: '#28a745',
-        cancelled: '#dc3545'
+        future_order: '#a855f7',
+        pending: '#f97316',
+        confirmed: '#0ea5e9',
+        processing: '#3b82f6',
+        ready_to_ship: '#6366f1',
+        dispatched: '#14b8a6',
+        shipped: '#14b8a6',
+        delivered: '#10b981',
+        cancelled: '#ef4444'
       };
       return colors[status] || '#6c757d';
     },
 
     filterOrders() {
-      this.filteredOrders = this.orders.filter(order => {
-        const matchesSearch = !this.searchQuery || 
-          order.orderNumber.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          order.customer.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          order.customer.email.toLowerCase().includes(this.searchQuery.toLowerCase());
-        
-        const matchesStatus = !this.statusFilter || order.status === this.statusFilter;
-        
-        const matchesDate = !this.dateFilter || this.matchesDateFilter(order.orderDate);
-
-        return matchesSearch && matchesStatus && matchesDate;
-      });
-
-      this.sortOrders();
       this.currentPage = 1;
+      this.loadOrders();
     },
 
-    matchesDateFilter(orderDate) {
-      const today = new Date();
-      const orderDateObj = new Date(orderDate);
-      
-      switch (this.dateFilter) {
-        case 'today':
-          return orderDateObj.toDateString() === today.toDateString();
-        case 'week':
-          const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-          return orderDateObj >= weekAgo;
-        case 'month':
-          const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-          return orderDateObj >= monthAgo;
-        default:
-          return true;
-      }
+    clearFilters() {
+      this.searchQuery = '';
+      this.statusFilter = '';
+      this.dateFilter = '';
+      this.productFilter = '';
+      this.fulfillmentFilter = '';
+      this.stateFilter = '';
+      this.districtFilter = '';
+      this.talukaFilter = '';
+      this.villageFilter = '';
+      this.carrierFilter = '';
+      this.fromDate = '';
+      this.toDate = '';
+      this.sortField = 'id';
+      this.sortDirection = 'desc';
+      this.currentPage = 1;
+      this.loadOrders();
     },
 
-    sortOrders() {
-      this.filteredOrders.sort((a, b) => {
-        let aVal = a[this.sortField];
-        let bVal = b[this.sortField];
-
-        if (this.sortField === 'total') {
-          aVal = parseFloat(aVal);
-          bVal = parseFloat(bVal);
-        } else if (this.sortField === 'orderDate') {
-          aVal = new Date(aVal);
-          bVal = new Date(bVal);
-        } else {
-          aVal = aVal.toString().toLowerCase();
-          bVal = bVal.toString().toLowerCase();
-        }
-
-        if (this.sortDirection === 'asc') {
-          return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-        } else {
-          return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
-        }
-      });
+    hasActiveAdvancedFilters() {
+      return Boolean(
+        this.productFilter ||
+        this.fulfillmentFilter ||
+        this.carrierFilter ||
+        this.fromDate ||
+        this.toDate ||
+        this.stateFilter ||
+        this.districtFilter ||
+        this.talukaFilter ||
+        this.villageFilter
+      );
     },
 
     sortBy(field) {
@@ -526,14 +500,15 @@ document.addEventListener('alpine:init', () => {
         this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
       } else {
         this.sortField = field;
-        this.sortDirection = 'asc';
+        this.sortDirection = 'desc';
       }
-      this.filterOrders();
+      this.currentPage = 1;
+      this.loadOrders();
     },
 
     toggleAll(checked) {
       if (checked) {
-        this.selectedOrders = this.filteredOrders.map(o => o.id);
+        this.selectedOrders = this.orders.map(o => o.id);
       } else {
         this.selectedOrders = [];
       }
@@ -547,104 +522,448 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    bulkAction(action) {
-      if (this.selectedOrders.length === 0) return;
+    // ─── Lifecycle Actions ───────────────────────────────────────────────────
+    
+    async confirmOrder(order) {
+      const confirmed = await Swal.fire({
+        title: 'Confirm Order?',
+        text: `Are you sure you want to confirm order ${order.orderNumber}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, confirm',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-3 shadow-lg',
+          title: 'fs-4 fw-bold'
+        },
+        buttonsStyling: false
+      });
+      if (!confirmed.isConfirmed) return;
 
-      const selectedOrderObjects = this.orders.filter(o => 
-        this.selectedOrders.includes(o.id)
-      );
-
-      switch (action) {
-        case 'processing':
-          selectedOrderObjects.forEach(order => {
-            if (order.status === 'pending') {
-              order.status = 'processing';
-            }
-          });
-          this.showNotification('Orders marked as processing!', 'success');
-          break;
-        case 'shipped':
-          selectedOrderObjects.forEach(order => {
-            if (order.status === 'processing') {
-              order.status = 'shipped';
-            }
-          });
-          this.showNotification('Orders marked as shipped!', 'success');
-          break;
-        case 'delivered':
-          selectedOrderObjects.forEach(order => {
-            if (order.status === 'shipped') {
-              order.status = 'delivered';
-            }
-          });
-          this.showNotification('Orders marked as delivered!', 'success');
-          break;
+      try {
+        const res = await apiFetch(`/orders/${order.id}/confirm`, { method: 'POST' });
+        showToast(res.message || 'Order confirmed successfully.');
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
       }
+    },
 
-      this.selectedOrders = [];
-      this.calculateStats();
+    async processOrder(order) {
+      const confirmed = await Swal.fire({
+        title: 'Process Order?',
+        text: `Are you sure you want to mark order ${order.orderNumber} as processing?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, process',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-3 shadow-lg',
+          title: 'fs-4 fw-bold'
+        },
+        buttonsStyling: false
+      });
+      if (!confirmed.isConfirmed) return;
+
+      try {
+        const res = await apiFetch(`/orders/${order.id}/processing`, { method: 'POST' });
+        showToast(res.message || 'Order moved to processing.');
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
+    openShipModal(order) {
+      this.shipOrderId = order.id;
+      this.shipOrderNo = order.orderNumber;
+      this.shipCarrierName = '';
+      this.shipTrackingNo = '';
+      if (!this.carriersList || !this.carriersList.length) {
+        this.carriersList = ['BlueDart', 'Delhivery', 'DTDC', 'Ecom Express', 'FedEx', 'India Post', 'Shadowfax', 'XpressBees', 'DHL'];
+      }
+      getModal('#createShipmentModal')?.show();
+    },
+
+    async shipOrder() {
+      if (!this.shipCarrierName) {
+        showToast('Please select a Carrier name.', 'warning');
+        return;
+      }
+      if (!this.shipTrackingNo || !this.shipTrackingNo.trim()) {
+        showToast('Please enter a Tracking Number.', 'warning');
+        return;
+      }
+      try {
+        const res = await apiFetch(`/orders/${this.shipOrderId}/ship`, {
+          method: 'POST',
+          body: JSON.stringify({
+            carrier_name: this.shipCarrierName,
+            tracking_no: this.shipTrackingNo
+          })
+        });
+        showToast(res.message || 'Order marked as ready to ship.');
+        getModal('#createShipmentModal')?.hide();
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
+    async dispatchOrder(order) {
+      const confirmed = await Swal.fire({
+        title: 'Dispatch Order?',
+        text: `Mark order ${order.orderNumber} as dispatched?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, dispatch',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-3 shadow-lg',
+          title: 'fs-4 fw-bold'
+        },
+        buttonsStyling: false
+      });
+      if (!confirmed.isConfirmed) return;
+
+      try {
+        const res = await apiFetch(`/orders/${order.id}/dispatch`, { method: 'POST' });
+        showToast(res.message || 'Order marked as dispatched.');
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
+    async deliverOrder(order) {
+      const confirmed = await Swal.fire({
+        title: 'Deliver Order?',
+        text: `Mark order ${order.orderNumber} as delivered?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delivered',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-3 shadow-lg',
+          title: 'fs-4 fw-bold'
+        },
+        buttonsStyling: false
+      });
+      if (!confirmed.isConfirmed) return;
+
+      try {
+        const res = await apiFetch(`/orders/${order.id}/deliver`, { method: 'POST' });
+        showToast(res.message || 'Order marked as delivered.');
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
+    async returnOrder(order) {
+      const confirmed = await Swal.fire({
+        title: 'Return Order?',
+        text: `Mark order ${order.orderNumber} as returned? This will restock physical inventory.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, return order',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-warning me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-3 shadow-lg',
+          title: 'fs-4 fw-bold'
+        },
+        buttonsStyling: false
+      });
+      if (!confirmed.isConfirmed) return;
+
+      try {
+        const res = await apiFetch(`/orders/${order.id}/return`, { method: 'POST' });
+        showToast(res.message || 'Order marked as returned.');
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
+    async cancelOrder(order) {
+      const confirmed = await Swal.fire({
+        title: 'Cancel Order?',
+        text: `Are you sure you want to cancel order ${order.orderNumber}? This will release inventory.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, cancel it',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-danger me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-3 shadow-lg',
+          title: 'fs-4 fw-bold'
+        },
+        buttonsStyling: false
+      });
+      if (!confirmed.isConfirmed) return;
+
+      try {
+        const res = await apiFetch(`/orders/${order.id}/cancel`, { method: 'POST' });
+        showToast(res.message || 'Order cancelled successfully.');
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
+    async revertStatus(order) {
+      const { value: status } = await Swal.fire({
+        title: 'Revert Order Status',
+        input: 'select',
+        inputOptions: {
+          pending: 'Pending',
+          confirmed: 'Confirmed',
+          processing: 'Processing',
+          ready_to_ship: 'Ready to Ship',
+          dispatched: 'Dispatched'
+        },
+        inputPlaceholder: 'Select status to revert to...',
+        showCancelButton: true,
+        confirmButtonText: 'Revert',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-3 shadow-lg',
+          title: 'fs-4 fw-bold',
+          input: 'form-select'
+        },
+        buttonsStyling: false,
+        inputValidator: (value) => {
+          return new Promise((resolve) => {
+            if (value) {
+              resolve();
+            } else {
+              resolve('You need to select a status.');
+            }
+          });
+        }
+      });
+
+      if (!status) return;
+
+      try {
+        const res = await apiFetch(`/orders/${order.id}/revert-status`, {
+          method: 'POST',
+          body: JSON.stringify({ status })
+        });
+        showToast(res.message || 'Order status reverted.');
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
     },
 
     viewOrder(order) {
-      console.log('View order:', order);
-      this.showNotification('Order details would open here', 'info');
-    },
-
-    trackOrder(order) {
-      console.log('Track order:', order);
-      this.showNotification('Order tracking would open here', 'info');
+      this.selectedOrder = order;
+      getModal('#orderDetailModal')?.show();
     },
 
     printInvoice(order) {
-      console.log('Print invoice for order:', order);
-      this.showNotification('Invoice would be generated and printed', 'info');
+      window.open(`/orders/${order.id}/invoice-pdf`, '_blank');
     },
 
-    cancelOrder(order) {
-      if (confirm(`Are you sure you want to cancel order ${order.orderNumber}?`)) {
-        order.status = 'cancelled';
-        this.calculateStats();
-        this.showNotification('Order cancelled successfully!', 'success');
+    printCOD(order) {
+      window.open(`/orders/${order.id}/cod-pdf`, '_blank');
+    },
+
+    printReceipt(order) {
+      window.open(`/orders/${order.id}/receipt`, '_blank');
+    },
+
+    // ─── Verification Logs ───────────────────────────────────────────────────
+    
+    openVerificationModal(order) {
+      this.selectedOrder = order;
+      this.isBulkVerification = false;
+      this.verifyOutcome = '';
+      this.verifyRemark = '';
+      this.verifyFollowUp = '';
+      getModal('#verificationModal')?.show();
+    },
+
+    openBulkVerificationModal() {
+      if (this.selectedOrders.length === 0) return;
+      this.isBulkVerification = true;
+      this.verifyOutcome = '';
+      this.verifyRemark = '';
+      this.verifyFollowUp = '';
+      getModal('#verificationModal')?.show();
+    },
+
+    async saveVerificationLog() {
+      if (!this.verifyOutcome) {
+        showToast('Please select a Call Outcome.', 'warning');
+        return;
       }
+
+      try {
+        let res;
+        if (this.isBulkVerification) {
+          res = await apiFetch('/orders/bulk-verification', {
+            method: 'POST',
+            body: JSON.stringify({
+              order_ids: this.selectedOrders,
+              outcome: this.verifyOutcome,
+              remark: this.verifyRemark,
+              follow_up_at: this.verifyFollowUp || null
+            })
+          });
+          this.selectedOrders = [];
+        } else {
+          res = await apiFetch(`/orders/${this.selectedOrder.id}/verification`, {
+            method: 'POST',
+            body: JSON.stringify({
+              outcome: this.verifyOutcome,
+              remark: this.verifyRemark,
+              follow_up_at: this.verifyFollowUp || null
+            })
+          });
+        }
+
+        showToast(res.message || 'Verification log saved successfully.');
+        getModal('#verificationModal')?.hide();
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
+    // ─── Bulk Actions ────────────────────────────────────────────────────────
+    
+    async bulkUpdateStatus(status) {
+      if (this.selectedOrders.length === 0) return;
+
+      const confirmed = await Swal.fire({
+        title: 'Bulk Update Status',
+        text: `Update status of ${this.selectedOrders.length} order(s) to "${status.replace(/_/g, ' ')}"?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, update',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-3 shadow-lg',
+          title: 'fs-4 fw-bold'
+        },
+        buttonsStyling: false
+      });
+      if (!confirmed.isConfirmed) return;
+
+      try {
+        const res = await apiFetch('/orders/bulk-status', {
+          method: 'POST',
+          body: JSON.stringify({
+            order_ids: this.selectedOrders,
+            status: status
+          })
+        });
+        showToast(res.message || 'Bulk status update completed.');
+        this.selectedOrders = [];
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
+    bulkPrint(type) {
+      if (this.selectedOrders.length === 0) return;
+      window.open(`/orders/bulk-print?order_ids=${this.selectedOrders.join(',')}&type=${type}`, '_blank');
+      this.selectedOrders = [];
     },
 
     exportOrders() {
-      const csvContent = "data:text/csv;charset=utf-8," + 
-        "Order Number,Customer,Email,Items,Total,Status,Date\n" +
-        this.filteredOrders.map(o => 
-          `"${o.orderNumber}","${o.customer.name}","${o.customer.email}","${o.itemCount}","${o.total}","${o.status}","${o.orderDate}"`
-        ).join("\n");
-
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "orders.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      this.showNotification('Orders exported successfully!', 'success');
+      window.open(`/orders/export?${new URLSearchParams({
+        search: this.searchQuery,
+        status: this.statusFilter,
+        product: this.productFilter,
+        fulfillment: this.fulfillmentFilter,
+        state: this.stateFilter,
+        district: this.districtFilter,
+        taluka: this.talukaFilter,
+        village: this.villageFilter,
+        carrier: this.carrierFilter,
+        from_date: this.fromDate,
+        to_date: this.toDate
+      }).toString()}`, '_blank');
     },
 
-    showNotification(message, type = 'info') {
-      if (typeof Swal !== 'undefined') {
-        Swal.fire({
-          title: message,
-          icon: type === 'success' ? 'success' : type === 'error' ? 'error' : 'info',
-          toast: true,
-          position: 'top-end',
-          showConfirmButton: false,
-          timer: 3000
+    // ─── CSV Import Preview & Confirm ────────────────────────────────────────
+    
+    async handleImportFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      this.importing = true;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('preview', '1');
+
+      try {
+        const res = await fetch('/orders/import', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken()
+          }
         });
-      } else {
-        alert(message);
+
+        const data = await res.json();
+        if (data.preview) {
+          this.importRows = data.preview;
+          getModal('#importPreviewModal')?.show();
+        } else if (data.error) {
+          showToast(data.error, 'danger');
+        }
+      } catch (err) {
+        showToast('Error uploading CSV preview.', 'danger');
+      } finally {
+        this.importing = false;
       }
     },
 
+    confirmImport() {
+      document.getElementById('import-form').submit();
+    },
+
+    cancelImport() {
+      document.getElementById('import-form').reset();
+      this.importRows = [];
+      getModal('#importPreviewModal')?.hide();
+    },
+
+    // ─── Charts Rendering ────────────────────────────────────────────────────
+    
     initCharts() {
-      // Prevent multiple chart initializations
-      if (this.chartsInitialized) return;
-      
+      if (this.chartsInitialized) {
+        if (this.charts.status) {
+          this.charts.status.updateSeries(this.statusStats.map(stat => stat.count));
+          this.charts.status.updateOptions({
+            labels: this.statusStats.map(stat => stat.name),
+            colors: this.statusStats.map(stat => stat.color)
+          });
+        }
+        return;
+      }
+
       this.initOrderTrendsChart();
       this.initStatusChart();
       this.chartsInitialized = true;
@@ -652,12 +971,8 @@ document.addEventListener('alpine:init', () => {
 
     initOrderTrendsChart() {
       const chartElement = document.getElementById('orderTrendsChart');
-      if (!chartElement) {
-        console.warn('Order trends chart element not found');
-        return;
-      }
+      if (!chartElement) return;
 
-      // Clear any existing chart content
       chartElement.innerHTML = '';
 
       try {
@@ -691,24 +1006,16 @@ document.addEventListener('alpine:init', () => {
             categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
           },
           yaxis: [{
-            title: {
-              text: 'Orders'
-            }
+            title: { text: 'Orders' }
           }, {
             opposite: true,
-            title: {
-              text: 'Revenue ($)'
-            }
+            title: { text: 'Revenue ($)' }
           }],
           tooltip: {
             y: [{
-              formatter: function (val) {
-                return val + " orders"
-              }
+              formatter: (val) => val + " orders"
             }, {
-              formatter: function (val) {
-                return "$" + val
-              }
+              formatter: (val) => "$" + val
             }]
           }
         };
@@ -722,12 +1029,8 @@ document.addEventListener('alpine:init', () => {
 
     initStatusChart() {
       const chartElement = document.getElementById('statusChart');
-      if (!chartElement) {
-        console.warn('Status chart element not found');
-        return;
-      }
+      if (!chartElement) return;
 
-      // Clear any existing chart content
       chartElement.innerHTML = '';
 
       try {
@@ -741,19 +1044,13 @@ document.addEventListener('alpine:init', () => {
           colors: this.statusStats.map(stat => stat.color),
           plotOptions: {
             pie: {
-              donut: {
-                size: '70%'
-              }
+              donut: { size: '70%' }
             }
           },
-          legend: {
-            show: false
-          },
+          legend: { show: false },
           tooltip: {
             y: {
-              formatter: function (val) {
-                return val + " orders"
-              }
+              formatter: (val) => val + " orders"
             }
           }
         };
@@ -765,46 +1062,29 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    get paginatedOrders() {
-      const start = (this.currentPage - 1) * this.itemsPerPage;
-      const end = start + this.itemsPerPage;
-      return this.filteredOrders.slice(start, end);
-    },
-
-    get totalPages() {
-      return Math.ceil(this.filteredOrders.length / this.itemsPerPage);
-    },
-
     get visiblePages() {
       if (this.totalPages <= 1) return [1];
 
       const pages = [];
-
-      // Always show first page
       pages.push(1);
       
       if (this.totalPages <= 7) {
-        // If total pages is small, show all
         for (let i = 2; i <= this.totalPages; i++) {
           pages.push(i);
         }
       } else {
-        // Complex pagination logic
         if (this.currentPage <= 4) {
-          // Near the beginning
           for (let i = 2; i <= 5; i++) {
             pages.push(i);
           }
           pages.push('...');
           pages.push(this.totalPages);
         } else if (this.currentPage >= this.totalPages - 3) {
-          // Near the end
           pages.push('...');
           for (let i = this.totalPages - 4; i <= this.totalPages; i++) {
             pages.push(i);
           }
         } else {
-          // In the middle
           pages.push('...');
           for (let i = this.currentPage - 1; i <= this.currentPage + 1; i++) {
             pages.push(i);
@@ -813,33 +1093,17 @@ document.addEventListener('alpine:init', () => {
           pages.push(this.totalPages);
         }
       }
-      
       return pages;
     },
 
     goToPage(page) {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page;
+        this.loadOrders();
       }
     }
   }));
 
-  // Search component for header
+  // Shared navbar search
   Alpine.data('searchComponent', createSearchComponent({ getResults: () => [] }));
-
-  // Theme switch component
-  Alpine.data('themeSwitch', () => ({
-    currentTheme: 'light',
-
-    init() {
-      this.currentTheme = localStorage.getItem('theme') || 'light';
-      document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
-    },
-
-    toggle() {
-      this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
-      localStorage.setItem('theme', this.currentTheme);
-    }
-  }));
 });

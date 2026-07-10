@@ -536,10 +536,6 @@
                         </div>
                         
                     </div> <!-- End Users Management Container -->
-</div>
-@endsection
-
-@push('modals')
 
 {{-- ═══════════════════════ Add / Edit User Modal ═══════════════════════════ --}}
 <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel">
@@ -848,8 +844,8 @@
         </div>
     </div>
 </div>
-
-@endpush
+</div>
+@endsection
 
 @push('scripts')
 @endpush

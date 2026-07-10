@@ -162,9 +162,12 @@ export default () => ({
                 exportItems = await this.fetchAllFiltered();
             }
 
-            const headers = ['Product Name', 'SKU', 'Warehouse', 'Quantity', 'Alert Level', 'Status'];
+            const headers = ['Product Name', 'SKU', 'Warehouse', 'Quantity', 'Reserved', 'Dispatched', 'In Transit', 'Alert Level', 'Status'];
             const rows = exportItems.map(item => {
                 const qty = parseFloat(item.quantity || 0);
+                const reserved = parseFloat(item.reserved_qty || 0);
+                const dispatched = parseFloat(item.dispatched_qty || 0);
+                const inTransit = parseFloat(item.in_transit_qty || 0);
                 const alert = parseFloat(item.product?.alert_quantity || 0);
                 let status = 'In Stock';
                 if (qty <= 0) status = 'Out of Stock';
@@ -175,6 +178,9 @@ export default () => ({
                     item.product?.sku || '',
                     item.warehouse?.name || '',
                     qty,
+                    reserved,
+                    dispatched,
+                    inTransit,
                     alert,
                     status
                 ];

@@ -145,4 +145,14 @@ class PageController extends Controller
     {
         return view('elements.tables');
     }
+
+    public function shipments()
+    {
+        return view('shipping.shipments');
+    }
+
+    public function shippingServices()
+    {
+        return view('shipping.services');
+    }
 }

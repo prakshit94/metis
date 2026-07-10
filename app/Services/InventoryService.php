@@ -66,11 +66,15 @@ class InventoryService
             return $stock;
         }
 
-        // Create a brand-new row if it doesn't exist yet
+        $product = Product::find($productId);
+
+        // Create a brand-new row if it doesn't exist yet.
+        // Fall back to the legacy product stock value so older records can be reserved
+        // even when the dedicated stocks table has not been initialized yet.
         return Stock::create([
             'warehouse_id'   => $warehouseId,
             'product_id'     => $productId,
-            'quantity'       => 0,
+            'quantity'       => max(0.0, (float) ($product?->stock_quantity ?? 0)),
             'reserved_qty'   => 0,
             'committed_qty'  => 0,
             'in_transit_qty' => 0,
@@ -138,6 +142,53 @@ class InventoryService
         if ($newStatus !== $product->status) {
             $product->update(['status' => $newStatus]);
         }
+    }
+
+    /**
+     * Update in-transit quantity for a product/warehouse pair.
+     */
+    private function adjustInTransitQuantity(int $productId, int $warehouseId, float $quantityDelta): Stock
+    {
+        $stock = $this->getStockForUpdate($productId, $warehouseId);
+        $stock->in_transit_qty = max(0.0, (float) $stock->in_transit_qty + $quantityDelta);
+        $stock->save();
+
+        return $stock->refresh();
+    }
+
+    /**
+     * Ensure a warehouse has a visible stock row for every non-draft product.
+     * This keeps the stock-management screen usable even before stock is assigned.
+     */
+    public function ensureWarehouseStockCoverage(int $warehouseId): void
+    {
+        DB::transaction(function () use ($warehouseId) {
+            $productIds = Product::where('status', '!=', 'draft')->pluck('id');
+
+            foreach ($productIds as $productId) {
+                $existing = Stock::withTrashed()
+                    ->where('product_id', $productId)
+                    ->where('warehouse_id', $warehouseId)
+                    ->first();
+
+                if ($existing) {
+                    if ($existing->trashed()) {
+                        $existing->restore();
+                    }
+                    continue;
+                }
+
+                Stock::create([
+                    'product_id'     => $productId,
+                    'warehouse_id'   => $warehouseId,
+                    'quantity'       => 0,
+                    'reserved_qty'   => 0,
+                    'dispatched_qty' => 0,
+                    'committed_qty'  => 0,
+                    'in_transit_qty' => 0,
+                ]);
+            }
+        });
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -637,6 +688,37 @@ class InventoryService
     }
 
     /**
+     * Mark a stock transfer as sent and move the transferred quantity into transit.
+     */
+    public function sendTransfer(StockTransfer $transfer): void
+    {
+        DB::transaction(function () use ($transfer) {
+            $transfer = StockTransfer::with('items')
+                ->lockForUpdate()
+                ->findOrFail($transfer->id);
+
+            if ($transfer->status !== 'draft') {
+                throw ValidationException::withMessages([
+                    'status' => 'Only draft transfers can be sent.',
+                ]);
+            }
+
+            foreach ($transfer->items as $item) {
+                $this->adjustInTransitQuantity(
+                    (int) $item->product_id,
+                    (int) $transfer->from_warehouse_id,
+                    (float) $item->quantity
+                );
+            }
+
+            $transfer->update([
+                'status'  => 'sent',
+                'sent_at' => now(),
+            ]);
+        });
+    }
+
+    /**
      * Receive a stock transfer.
      */
     public function receiveTransfer(StockTransfer $transfer): void
@@ -653,6 +735,12 @@ class InventoryService
             }
 
             foreach ($transfer->items as $item) {
+                $this->adjustInTransitQuantity(
+                    (int) $item->product_id,
+                    (int) $transfer->from_warehouse_id,
+                    -((float) $item->quantity)
+                );
+
                 $this->_executeTransfer(
                     (int) $item->product_id,
                     (int) $transfer->from_warehouse_id,
@@ -688,6 +776,14 @@ class InventoryService
                 throw ValidationException::withMessages([
                     'status' => 'Only draft or sent transfers can be cancelled.',
                 ]);
+            }
+
+            foreach ($transfer->items as $item) {
+                $this->adjustInTransitQuantity(
+                    (int) $item->product_id,
+                    (int) $transfer->from_warehouse_id,
+                    -((float) $item->quantity)
+                );
             }
 
             $transfer->update(['status' => 'cancelled']);
@@ -800,6 +896,21 @@ class InventoryService
             }
 
             $order->update(['status' => $revertToStatus, 'updated_by' => auth()->id()]);
+
+            $shipment = $order->shipments()->first();
+            if ($shipment) {
+                if ($revertToStatus === 'ready_to_ship') {
+                    $shipment->update([
+                        'status' => 'pending',
+                        'shipped_at' => null,
+                    ]);
+                } else {
+                    $shipment->update([
+                        'status' => 'pending',
+                        'shipped_at' => null,
+                    ]);
+                }
+            }
         });
     }
 
@@ -811,13 +922,27 @@ class InventoryService
         DB::transaction(function () use ($order, $carrierName, $trackingNo) {
             $order = Order::lockForUpdate()->findOrFail($order->id);
 
-            if (!in_array($order->status, ['confirmed', 'processing'])) {
+            if ($order->status !== 'processing') {
                 throw ValidationException::withMessages([
-                    'status' => 'Only confirmed or processing orders can be marked as ready to ship.',
+                    'status' => 'Only processing orders can be marked as ready to ship.',
                 ]);
             }
 
             $order->update(['status' => 'ready_to_ship', 'updated_by' => auth()->id()]);
+
+            $shipment = $order->shipments()->first();
+            if (!$shipment) {
+                $shipment = new \App\Models\Shipment([
+                    'shipment_no' => \App\Models\Shipment::generateShipmentNo(),
+                    'order_id' => $order->id,
+                ]);
+            }
+            $shipment->fill([
+                'carrier_name' => $carrierName,
+                'tracking_no' => $trackingNo,
+                'status' => 'pending',
+            ]);
+            $shipment->save();
         });
     }
 
@@ -888,6 +1013,14 @@ class InventoryService
 
             $order->update(['status' => 'dispatched', 'updated_by' => auth()->id()]);
 
+            $shipment = $order->shipments()->first();
+            if ($shipment) {
+                $shipment->update([
+                    'status' => 'in_transit',
+                    'shipped_at' => now(),
+                ]);
+            }
+
             foreach ($order->items as $item) {
                 $this->syncProductStatus((int) $item->product_id);
             }
@@ -919,6 +1052,14 @@ class InventoryService
             }
 
             $order->update(['status' => 'delivered', 'updated_by' => auth()->id()]);
+
+            $shipment = $order->shipments()->first();
+            if ($shipment) {
+                $shipment->update([
+                    'status' => 'delivered',
+                    'delivered_at' => now(),
+                ]);
+            }
         });
     }
 
@@ -952,6 +1093,57 @@ class InventoryService
             }
 
             $order->update(['status' => 'dispatched', 'updated_by' => auth()->id()]);
+
+            $shipment = $order->shipments()->first();
+            if ($shipment) {
+                $shipment->update([
+                    'status' => 'in_transit',
+                    'delivered_at' => null,
+                ]);
+            }
+        });
+    }
+
+    /**
+     * Return a delivered or dispatched order.
+     */
+    public function returnOrder(Order $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $order = Order::with(['items'])->lockForUpdate()->findOrFail($order->id);
+
+            if (!in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Only delivered or dispatched orders can be marked as returned.',
+                ]);
+            }
+
+            if ($order->type === 'sale' && $order->warehouse_id) {
+                foreach ($order->items as $item) {
+                    $productId   = (int) $item->product_id;
+                    $warehouseId = (int) $order->warehouse_id;
+                    $qty         = (float) $item->quantity;
+
+                    $stock = $this->getStockForUpdate($productId, $warehouseId);
+                    $stock->quantity = (float) $stock->quantity + $qty;
+                    if (in_array($order->status, Order::inTransitStatuses(), true)) {
+                        $stock->dispatched_qty = max(0.0, (float) $stock->dispatched_qty - $qty);
+                    }
+                    $stock->save();
+
+                    $this->logMovement($productId, $warehouseId, $qty, 'in', Order::class, $order->id);
+                    $this->syncProductStatus($productId);
+                }
+            }
+
+            $order->update(['status' => 'returned', 'updated_by' => auth()->id()]);
+
+            $shipment = $order->shipments()->first();
+            if ($shipment) {
+                $shipment->update([
+                    'status' => 'returned',
+                ]);
+            }
         });
     }
 }

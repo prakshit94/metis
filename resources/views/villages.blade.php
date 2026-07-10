@@ -401,10 +401,6 @@
             </div>
         </div>
     </div>
-</div>
-@endsection
-
-@push('modals')
 {{-- ═══════════════════════ Add / Edit Village Modal ═══════════════════════════ --}}
 <div class="modal fade" id="villageModal" tabindex="-1" aria-labelledby="villageModalLabel">
     <div class="modal-dialog modal-dialog-scrollable">
@@ -596,7 +592,8 @@
         </div>
     </div>
 </div>
-@endpush
+</div>
+@endsection
 
 @push('scripts')
 <!-- Loaded via main.js or separate scripts -->

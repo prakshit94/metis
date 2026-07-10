@@ -129,7 +129,9 @@ $bi-font-path: '~bootstrap-icons/font/fonts' !default;
 .bi-funnel::before { content: "\f3e1"; }
 .bi-gear::before { content: "\f3e5"; }
 .bi-gear-fill::before { content: "\f3e2"; }
+.bi-gear-wide-connected::before { content: "\f3e3"; }
 .bi-geo-alt::before { content: "\f3e8"; }
+.bi-geo-alt-fill::before { content: "\f3e7"; }
 .bi-graph-up::before { content: "\f3f2"; }
 .bi-graph-up-arrow::before { content: "\f673"; }
 .bi-grid::before { content: "\f3fc"; }
@@ -179,6 +181,7 @@ $bi-font-path: '~bootstrap-icons/font/fonts' !default;
 .bi-person-circle::before { content: "\f4d7"; }
 .bi-person-dash::before { content: "\f4d9"; }
 .bi-person-fill::before { content: "\f4da"; }
+.bi-person-lines-fill::before { content: "\f4db"; }
 .bi-person-plus::before { content: "\f4dd"; }
 .bi-person-plus-fill::before { content: "\f4dc"; }
 .bi-phone::before { content: "\f4e7"; }

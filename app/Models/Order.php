@@ -56,7 +56,7 @@ class Order extends Model
 
     protected $fillable = [
         'order_no', 'type', 'party_id', 'order_date', 'total_amount', 
-        'tax_amount', 'discount_amount', 'net_amount', 'status', 'warehouse_id',
+        'tax_amount', 'discount_amount', 'coupon_code', 'net_amount', 'status', 'warehouse_id',
         'shipping_address_id', 'billing_address_id', 'billing_address', 'shipping_address',
         'is_draft', 'future_order_date', 'created_by', 'updated_by'
     ];
@@ -70,9 +70,24 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function party(): BelongsTo
+    {
+        return $this->belongsTo(Party::class, 'party_id');
+    }
+
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function shippingAddress(): BelongsTo
+    {
+        return $this->belongsTo(PartyAddress::class, 'shipping_address_id');
+    }
+
+    public function billingAddress(): BelongsTo
+    {
+        return $this->belongsTo(PartyAddress::class, 'billing_address_id');
     }
 
     public function creator(): BelongsTo
@@ -83,5 +98,30 @@ class Order extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function invoice(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Invoice::class)->latestOfMany();
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function verificationLogs(): HasMany
+    {
+        return $this->hasMany(OrderVerificationLog::class)->latest();
     }
 }

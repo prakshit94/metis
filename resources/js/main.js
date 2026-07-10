@@ -197,6 +197,12 @@ class AdminApp {
       case 'files':
         await this.initFilesPage();
         break;
+      case 'shipping-shipments':
+        await this.initShippingShipmentsPage();
+        break;
+      case 'shipping-services':
+        await this.initShippingServicesPage();
+        break;
       case 'help':
         await this.initHelpPage();
         break;
@@ -363,6 +369,26 @@ class AdminApp {
       console.log('🧩 Elements page script loaded successfully');
     } catch (error) {
       console.error('Failed to load elements page script:', error);
+    }
+  }
+
+  async initShippingShipmentsPage() {
+    try {
+      const m = await import('./components/shipping/shipments.js');
+      window.Alpine.data('shipmentsTable', m.default);
+      console.log('🚚 Shipments page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load shipments page script:', error);
+    }
+  }
+
+  async initShippingServicesPage() {
+    try {
+      const m = await import('./components/shipping/services.js');
+      window.Alpine.data('shippingServices', m.default);
+      console.log('⚙️ Shipping Services page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load shipping services page script:', error);
     }
   }
 

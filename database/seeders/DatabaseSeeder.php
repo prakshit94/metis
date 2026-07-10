@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             ProductCatalogSeeder::class,
             VillageSeeder::class,
             PartyDataSeeder::class,
+            OrderSeeder::class,
         ]);
     }
 }

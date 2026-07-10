@@ -42,9 +42,31 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/stock-transfers', [PageController::class, 'stockTransfers'])->name('stock-transfers');
         Route::get('/adjustments', [PageController::class, 'inventoryAdjustments'])->name('adjustments');
     });
-    Route::get('/orders', [PageController::class, 'orders'])->name('orders');
+    Route::post('orders/bulk-status', [\App\Http\Controllers\Orders\OrderController::class, 'bulkStatus'])->name('orders.bulk-status');
+    Route::post('orders/bulk-verification', [\App\Http\Controllers\Orders\OrderController::class, 'bulkStoreVerification'])->name('orders.bulk-verification');
+    Route::get('orders/bulk-print', [\App\Http\Controllers\Orders\OrderController::class, 'bulkPrint'])->name('orders.bulk-print');
+    Route::get('orders/export', [\App\Http\Controllers\Orders\OrderController::class, 'bulkExport'])->name('orders.export');
+    Route::post('orders/import', [\App\Http\Controllers\Orders\OrderController::class, 'bulkImport'])->name('orders.import');
+    Route::get('orders/import-template', [\App\Http\Controllers\Orders\OrderController::class, 'bulkImportTemplate'])->name('orders.import-template');
+    Route::get('orders/{order}/invoice-pdf', [\App\Http\Controllers\Orders\OrderController::class, 'downloadInvoice'])->name('orders.invoice-pdf');
+    Route::post('orders/{order}/generate-invoice', [\App\Http\Controllers\Orders\OrderController::class, 'generateInvoice'])->name('orders.generate-invoice');
+    Route::get('orders/{order}/cod-pdf', [\App\Http\Controllers\Orders\OrderController::class, 'downloadReceipt'])->name('orders.cod-pdf');
+    Route::post('orders/{order}/confirm', [\App\Http\Controllers\Orders\OrderController::class, 'confirm'])->name('orders.confirm');
+    Route::post('orders/{order}/ship', [\App\Http\Controllers\Orders\OrderController::class, 'ship'])->name('orders.ship');
+    Route::post('orders/{order}/dispatch', [\App\Http\Controllers\Orders\OrderController::class, 'dispatch'])->name('orders.dispatch');
+    Route::post('orders/{order}/processing', [\App\Http\Controllers\Orders\OrderController::class, 'markProcessing'])->name('orders.processing');
+    Route::post('orders/{order}/deliver', [\App\Http\Controllers\Orders\OrderController::class, 'markDelivered'])->name('orders.deliver');
+    Route::post('orders/{order}/cancel', [\App\Http\Controllers\Orders\OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('orders/{order}/return', [\App\Http\Controllers\Orders\OrderController::class, 'markReturned'])->name('orders.return');
+    Route::post('orders/{order}/revert-status', [\App\Http\Controllers\Orders\OrderController::class, 'revertStatus'])->name('orders.revert-status');
+    Route::get('orders/{order}/receipt', [\App\Http\Controllers\Orders\OrderController::class, 'receipt'])->name('orders.receipt');
+    Route::post('orders/{order}/verification', [\App\Http\Controllers\Orders\OrderController::class, 'storeVerification'])->name('orders.verification.store');
+    Route::get('/orders', [\App\Http\Controllers\Orders\OrderController::class, 'index'])->name('orders');
+    Route::resource('orders', \App\Http\Controllers\Orders\OrderController::class)->except(['index']);
     Route::get('/customers', [PageController::class, 'customers'])->name('customers');
     Route::get('/villages', [PageController::class, 'villages'])->name('villages');
+    Route::get('/shipping/shipments', [PageController::class, 'shipments'])->name('shipping.shipments');
+    Route::get('/shipping/services', [PageController::class, 'shippingServices'])->name('shipping.services');
     Route::get('/reports', [PageController::class, 'reports'])->name('reports');
     Route::get('/messages', [PageController::class, 'messages'])->name('messages');
     Route::get('/calendar', [PageController::class, 'calendar'])->name('calendar');
@@ -208,5 +230,19 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'update'  => 'api.villages.update',
             'destroy' => 'api.villages.destroy',
         ]);
+
+        // Shipping & Tracking API
+        Route::prefix('shipping')->name('api.shipping.')->group(function (): void {
+            Route::get('/shipments', [\App\Http\Controllers\Shipping\ShippingController::class, 'shipmentsIndex'])->name('shipments.index');
+            Route::post('/shipments/{shipment}/status', [\App\Http\Controllers\Shipping\ShippingController::class, 'updateShipmentStatus'])->name('shipments.status');
+            Route::get('/shipments/{shipment}/tracking', [\App\Http\Controllers\Shipping\ShippingController::class, 'trackingEvents'])->name('shipments.tracking');
+            Route::post('/shipments/{shipment}/tracking-event', [\App\Http\Controllers\Shipping\ShippingController::class, 'addTrackingEvent'])->name('shipments.add-tracking-event');
+
+            Route::get('/services', [\App\Http\Controllers\Shipping\ShippingController::class, 'servicesIndex'])->name('services.index');
+            Route::post('/services', [\App\Http\Controllers\Shipping\ShippingController::class, 'storeService'])->name('services.store');
+            Route::patch('/services/{service}', [\App\Http\Controllers\Shipping\ShippingController::class, 'updateService'])->name('services.update');
+            Route::post('/services/{service}/toggle', [\App\Http\Controllers\Shipping\ShippingController::class, 'toggleService'])->name('services.toggle');
+            Route::delete('/services/{service}', [\App\Http\Controllers\Shipping\ShippingController::class, 'destroyService'])->name('services.delete');
+        });
     });
 });

@@ -190,13 +190,7 @@ class StockTransferController extends Controller
             foreach ($transfers as $transfer) {
                 try {
                     if ($action === 'send') {
-                        if ($transfer->status !== 'draft') {
-                            throw new \Exception("Only draft transfers can be sent.");
-                        }
-                        $transfer->update([
-                            'status'  => 'sent',
-                            'sent_at' => now(),
-                        ]);
+                        $this->inventoryService->sendTransfer($transfer);
                     } elseif ($action === 'receive') {
                         $this->inventoryService->receiveTransfer($transfer);
                     } elseif ($action === 'cancel') {
@@ -234,15 +228,14 @@ class StockTransferController extends Controller
     public function send(StockTransfer $stockTransfer): JsonResponse
     {
         $this->authorize('product-edit');
-
-        if ($stockTransfer->status !== 'draft') {
-            return response()->json(['message' => 'Only draft transfers can be sent.'], 422);
+        try {
+            $this->inventoryService->sendTransfer($stockTransfer);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => collect($e->errors())->flatten()->first(),
+                'errors'  => $e->errors(),
+            ], 422);
         }
-
-        $stockTransfer->update([
-            'status'  => 'sent',
-            'sent_at' => now(),
-        ]);
 
         return response()->json([
             'message' => 'Transfer marked as sent.',

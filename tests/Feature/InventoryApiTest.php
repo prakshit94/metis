@@ -134,6 +134,11 @@ class InventoryApiTest extends TestCase
             'id' => $transfer->id,
             'status' => 'sent',
         ]);
+        $this->assertDatabaseHas('stocks', [
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse1->id,
+            'in_transit_qty' => 10.00,
+        ]);
     }
 
     public function test_receive_commits_stock_movement(): void
@@ -160,6 +165,7 @@ class InventoryApiTest extends TestCase
             'product_id' => $this->product->id,
             'warehouse_id' => $this->warehouse1->id,
             'quantity' => 80.00,
+            'in_transit_qty' => 0.00,
         ]);
 
         // Secondary should be 50 + 20 = 70.
@@ -193,6 +199,11 @@ class InventoryApiTest extends TestCase
             'id' => $transfer->id,
             'status' => 'cancelled',
         ]);
+        $this->assertDatabaseHas('stocks', [
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse1->id,
+            'in_transit_qty' => 0.00,
+        ]);
     }
 
     public function test_bulk_action_for_transfers(): void
@@ -223,6 +234,11 @@ class InventoryApiTest extends TestCase
 
         $this->assertDatabaseHas('stock_transfers', ['id' => $transfer1->id, 'status' => 'sent']);
         $this->assertDatabaseHas('stock_transfers', ['id' => $transfer2->id, 'status' => 'sent']);
+        $this->assertDatabaseHas('stocks', [
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse1->id,
+            'in_transit_qty' => 10.00,
+        ]);
 
         // Test Bulk Receive
         $response = $this->postJson('/api/inventory/transfers/bulk-action', [
@@ -234,6 +250,32 @@ class InventoryApiTest extends TestCase
 
         $this->assertDatabaseHas('stock_transfers', ['id' => $transfer1->id, 'status' => 'received']);
         $this->assertDatabaseHas('stock_transfers', ['id' => $transfer2->id, 'status' => 'received']);
+        $this->assertDatabaseHas('stocks', [
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse1->id,
+            'in_transit_qty' => 0.00,
+        ]);
+    }
+
+    public function test_stock_management_populates_empty_warehouse_with_placeholder_rows(): void
+    {
+        Stock::where('warehouse_id', $this->warehouse2->id)->delete();
+
+        $response = $this->getJson('/api/inventory/stocks?warehouse_id=' . $this->warehouse2->id);
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.warehouse_id', $this->warehouse2->id);
+        $response->assertJsonPath('data.0.product_id', $this->product->id);
+        $response->assertJsonPath('data.0.quantity', 0);
+        $response->assertJsonPath('data.0.in_transit_qty', 0);
+
+        $this->assertDatabaseHas('stocks', [
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse2->id,
+            'quantity' => 0.00,
+            'in_transit_qty' => 0.00,
+        ]);
     }
 
     // ── Inventory Adjustments Tests ───────────────────────────────────
