@@ -57,12 +57,16 @@ class InventoryService
         // Merge duplicates first (within the same transaction)
         $this->mergeDuplicateStocks($productId, $warehouseId);
 
-        $stock = Stock::where('warehouse_id', $warehouseId)
+        $stock = Stock::withTrashed()
+            ->where('warehouse_id', $warehouseId)
             ->where('product_id', $productId)
             ->lockForUpdate()
             ->first();
 
         if ($stock) {
+            if ($stock->trashed()) {
+                $stock->restore();
+            }
             return $stock;
         }
 
@@ -76,6 +80,7 @@ class InventoryService
             'product_id'     => $productId,
             'quantity'       => max(0.0, (float) ($product?->stock_quantity ?? 0)),
             'reserved_qty'   => 0,
+            'dispatched_qty' => 0,
             'committed_qty'  => 0,
             'in_transit_qty' => 0,
         ]);

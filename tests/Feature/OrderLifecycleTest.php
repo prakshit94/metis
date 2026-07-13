@@ -16,7 +16,7 @@ use App\Models\StockMovement;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Warehouse;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Spatie\Permission\PermissionRegistrar;
@@ -24,7 +24,7 @@ use Tests\TestCase;
 
 class OrderLifecycleTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected User $admin;
     protected Warehouse $warehouse;
@@ -193,7 +193,7 @@ class OrderLifecycleTest extends TestCase
         ]);
         $this->assertDatabaseHas('shipments', [
             'order_id' => $order->id,
-            'status' => 'shipped',
+            'status' => 'in_transit',
         ]);
         $this->assertDatabaseHas('stock_movements', [
             'product_id' => $this->product->id,
@@ -283,7 +283,7 @@ class OrderLifecycleTest extends TestCase
         ]);
         $this->assertDatabaseHas('shipments', [
             'order_id' => $order->id,
-            'status' => 'failed',
+            'status' => 'returned',
         ]);
     }
 
@@ -378,7 +378,7 @@ class OrderLifecycleTest extends TestCase
 
         Stock::where('product_id', $this->product->id)
             ->where('warehouse_id', $this->warehouse->id)
-            ->delete();
+            ->forceDelete();
 
         $order = $this->createPendingOrder(3.0);
 

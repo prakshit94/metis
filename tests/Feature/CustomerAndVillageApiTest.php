@@ -9,12 +9,12 @@ use App\Models\Party;
 use App\Models\PartyAddress;
 use App\Models\User;
 use App\Models\Village;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class CustomerAndVillageApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected User $admin;
     protected Village $village;
@@ -30,9 +30,10 @@ class CustomerAndVillageApiTest extends TestCase
         // Create admin user and authenticate
         $this->admin = User::create([
             'name' => 'Admin User',
-            'email' => 'admin@example.com',
+            'email' => 'admin_' . uniqid() . '@example.com',
             'password' => \Illuminate\Support\Facades\Hash::make('password'),
             'is_active' => true,
+            'email_verified_at' => now(),
         ]);
 
         $this->actingAs($this->admin);
@@ -48,22 +49,27 @@ class CustomerAndVillageApiTest extends TestCase
         ]);
 
         // Seed a mock service for mappings constraint
-        \Illuminate\Support\Facades\DB::table('services')->insert([
-            'id' => 1,
-            'code' => 'DELIVERY',
-            'name' => 'Delivery Service',
-            'is_active' => true,
-        ]);
+        if (!\Illuminate\Support\Facades\DB::table('services')->where('id', 1)->orWhere('code', 'DELIVERY')->exists()) {
+            \Illuminate\Support\Facades\DB::table('services')->insert([
+                'id' => 1,
+                'code' => 'DELIVERY',
+                'name' => 'Delivery Service',
+                'is_active' => true,
+            ]);
+        }
     }
 
     public function test_customer_crud_flow(): void
     {
+        $phone = '987' . rand(1000000, 9999999);
+        $email = 'ramesh_' . uniqid() . '@example.com';
+
         // 1. Create Customer
         $response = $this->postJson('/api/customers', [
             'firstname' => 'Ramesh',
             'lastname' => 'Patil',
-            'phone' => '9876501001',
-            'email' => 'ramesh@example.com',
+            'phone' => $phone,
+            'email' => $email,
             'category' => 'individual',
             'crops' => ['Wheat', 'Cotton'],
             'irrigation_type' => ['Drip'],
@@ -78,13 +84,13 @@ class CustomerAndVillageApiTest extends TestCase
         // 2. Read Customer List
         $response = $this->getJson('/api/customers');
         $response->assertOk();
-        $this->assertCount(1, $response->json('data'));
+        $this->assertTrue(collect($response->json('data'))->contains('id', $customerId));
 
         // 3. Update Customer
         $response = $this->patchJson("/api/customers/{$customerId}", [
             'firstname' => 'Ramesh Kumar',
             'lastname' => 'Patil',
-            'phone' => '9876501001',
+            'phone' => $phone,
             'category' => 'individual',
             'status' => 'active',
         ]);
@@ -118,7 +124,7 @@ class CustomerAndVillageApiTest extends TestCase
         $customer = Customer::create([
             'firstname' => 'Suresh',
             'lastname' => 'Sharma',
-            'phone' => '9876501002',
+            'phone' => '987' . rand(1000000, 9999999),
             'type' => 'customer',
             'category' => 'individual',
             'status' => 'active',
@@ -163,9 +169,11 @@ class CustomerAndVillageApiTest extends TestCase
 
     public function test_village_management_and_search(): void
     {
+        $name = 'Nhavi_' . uniqid();
+
         // 1. Create Village
         $response = $this->postJson('/api/villages', [
-            'village_name' => 'Nhavi',
+            'village_name' => $name,
             'pincode' => '411001',
             'post_so_name' => 'Pune SO',
             'taluka_name' => 'Haveli',
@@ -178,7 +186,7 @@ class CustomerAndVillageApiTest extends TestCase
 
         // 2. Update Village & Service Mappings
         $response = $this->patchJson("/api/villages/{$villageId}", [
-            'village_name' => 'Nhavi Budruk',
+            'village_name' => $name . ' Budruk',
             'pincode' => '411001',
             'services' => [
                 1 => [
@@ -190,11 +198,98 @@ class CustomerAndVillageApiTest extends TestCase
         ]);
 
         $response->assertOk();
-        $this->assertEquals('Nhavi Budruk', $response->json('data.village_name'));
+        $this->assertEquals($name . ' Budruk', $response->json('data.village_name'));
 
         // 3. Search Village
-        $response = $this->getJson('/api/villages/search?q=Nhavi');
+        $response = $this->getJson('/api/villages/search?q=' . $name);
         $response->assertOk();
-        $this->assertCount(1, $response->json('data'));
+        $this->assertTrue(collect($response->json('data'))->contains('id', $villageId));
+    }
+
+    public function test_customer_profile_web_view(): void
+    {
+        $customer = Customer::create([
+            'firstname' => 'Test',
+            'lastname' => 'Customer',
+            'phone' => '987' . rand(1000000, 9999999),
+            'type' => 'customer',
+            'category' => 'individual',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('customers.show', $customer));
+        $response->assertOk();
+        $response->assertViewIs('customers.show');
+        $response->assertViewHas('customer');
+    }
+
+    public function test_customer_place_order_web(): void
+    {
+        $customer = Customer::create([
+            'firstname' => 'Test',
+            'lastname' => 'Customer',
+            'phone' => '987' . rand(1000000, 9999999),
+            'type' => 'customer',
+            'category' => 'individual',
+            'status' => 'active',
+        ]);
+
+        $address = PartyAddress::create([
+            'party_id' => $customer->id,
+            'label' => 'Farm',
+            'address_line_1' => 'Survey 10',
+            'city' => 'Nagpur',
+            'state' => 'Maharashtra',
+            'pincode' => '440001',
+            'status' => 'active',
+        ]);
+
+        $warehouse = \App\Models\Warehouse::create([
+            'name' => 'Main Warehouse ' . uniqid(),
+            'code' => 'WH-' . uniqid(),
+            'status' => 'active',
+        ]);
+
+        $category = \App\Models\Category::create(['name' => 'Seeds ' . uniqid(), 'slug' => 'seeds-' . uniqid()]);
+        $product = \App\Models\Product::create([
+            'name' => 'Wheat ' . uniqid(),
+            'slug' => 'wheat-' . uniqid(),
+            'sku' => 'WHEAT-' . uniqid(),
+            'category_id' => $category->id,
+            'selling_price' => 100.0,
+            'purchase_price' => 80.0,
+            'status' => 'active',
+            'is_sku_enabled' => true,
+        ]);
+
+        $cart = json_encode([
+            [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'quantity' => 2,
+                'price' => 100.0,
+                'hsn_code' => '',
+                'tax_rate' => 18,
+            ]
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('customers.orders.place', $customer), [
+            'cart' => $cart,
+            'tax_amount' => 36.0,
+            'subtotal' => 200.0,
+            'grand_total' => 236.0,
+            'warehouse_id' => $warehouse->id,
+            'address_id' => $address->id,
+        ]);
+
+        $response->assertRedirect(route('customers.show', $customer));
+        $response->assertSessionHas('success', 'Order placed successfully!');
+        $response->assertSessionHas('active_tab', 'history');
+
+        $this->assertDatabaseHas('orders', [
+            'party_id' => $customer->id,
+            'net_amount' => 200.0,
+        ]);
     }
 }

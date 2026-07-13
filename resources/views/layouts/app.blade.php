@@ -61,13 +61,15 @@
         @include('components.header')
 
         <!-- Sidebar -->
-        @include('components.sidebar')
+        @if(!isset($hideSidebar) || !$hideSidebar)
+            @include('components.sidebar')
+        @endif
 
         <!-- Sidebar Backdrop (mobile overlay) -->
         <div class="sidebar-backdrop" aria-hidden="true"></div>
 
         <!-- Main Content -->
-        <main id="main-content" class="admin-main">
+        <main id="main-content" class="admin-main" style="{{ (isset($hideSidebar) && $hideSidebar) ? 'margin-left: 0;' : '' }}">
             <div class="container-fluid p-4 p-lg-5">
                 @yield('content')
             </div>

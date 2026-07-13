@@ -136,6 +136,10 @@ class OrderService
                 'net_amount'      => $data['net_amount'] ?? max(0, $itemsTotal - $discount + $taxAmount),
             ]);
 
+            if ($order->coupon_code) {
+                \App\Models\Coupon::where('code', $order->coupon_code)->increment('used_count');
+            }
+
             return $order->refresh();
         });
     }
@@ -376,10 +380,6 @@ class OrderService
                 'is_draft'            => $data['is_draft'] ?? false,
                 'future_order_date'   => $data['future_order_date'] ?? null,
             ]);
-
-            if ($calc['coupon_code']) {
-                \App\Models\Coupon::where('code', $calc['coupon_code'])->increment('used_count');
-            }
 
             return $order;
         });

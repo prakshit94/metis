@@ -64,6 +64,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/orders', [\App\Http\Controllers\Orders\OrderController::class, 'index'])->name('orders');
     Route::resource('orders', \App\Http\Controllers\Orders\OrderController::class)->except(['index']);
     Route::get('/customers', [PageController::class, 'customers'])->name('customers');
+    Route::get('/customers/search-by-phone', [\App\Http\Controllers\Customers\CustomerController::class, 'searchByPhone'])->name('customers.search-by-phone');
+    Route::get('/customers/{customer}', [\App\Http\Controllers\Customers\CustomerController::class, 'show'])->name('customers.show');
+    Route::post('/customers/{customer}/orders/place', [\App\Http\Controllers\Customers\CustomerController::class, 'placeOrder'])->name('customers.orders.place');
     Route::get('/villages', [PageController::class, 'villages'])->name('villages');
     Route::get('/shipping/shipments', [PageController::class, 'shipments'])->name('shipping.shipments');
     Route::get('/shipping/services', [PageController::class, 'shippingServices'])->name('shipping.services');
@@ -76,6 +79,28 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/security', [PageController::class, 'security'])->name('security');
     Route::get('/help', [PageController::class, 'help'])->name('help');
 
+    // ─── Promotions ──────────────────────────────────────────────────────────
+    Route::get('/promotions/coupons', [\App\Http\Controllers\Orders\PromotionsController::class, 'coupons'])->name('promotions.coupons');
+    Route::get('/promotions/offers', [\App\Http\Controllers\Orders\PromotionsController::class, 'offers'])->name('promotions.offers');
+
+    // Promotions JSON API
+    Route::prefix('api/promotions')->name('api.promotions.')->group(function (): void {
+        // Coupons
+        Route::get('/coupons', [\App\Http\Controllers\Orders\PromotionsController::class, 'couponsIndex'])->name('coupons.index');
+        Route::post('/coupons', [\App\Http\Controllers\Orders\PromotionsController::class, 'couponsStore'])->name('coupons.store');
+        Route::patch('/coupons/{coupon}', [\App\Http\Controllers\Orders\PromotionsController::class, 'couponsUpdate'])->name('coupons.update');
+        Route::delete('/coupons/{coupon}', [\App\Http\Controllers\Orders\PromotionsController::class, 'couponsDestroy'])->name('coupons.destroy');
+        Route::patch('/coupons/{coupon}/toggle', [\App\Http\Controllers\Orders\PromotionsController::class, 'couponsToggle'])->name('coupons.toggle');
+        Route::post('/coupons/bulk-action', [\App\Http\Controllers\Orders\PromotionsController::class, 'couponsBulk'])->name('coupons.bulk');
+        // Offers
+        Route::get('/offers', [\App\Http\Controllers\Orders\PromotionsController::class, 'offersIndex'])->name('offers.index');
+        Route::post('/offers', [\App\Http\Controllers\Orders\PromotionsController::class, 'offersStore'])->name('offers.store');
+        Route::patch('/offers/{offer}', [\App\Http\Controllers\Orders\PromotionsController::class, 'offersUpdate'])->name('offers.update');
+        Route::delete('/offers/{offer}', [\App\Http\Controllers\Orders\PromotionsController::class, 'offersDestroy'])->name('offers.destroy');
+        Route::patch('/offers/{offer}/toggle', [\App\Http\Controllers\Orders\PromotionsController::class, 'offersToggle'])->name('offers.toggle');
+        Route::post('/offers/bulk-action', [\App\Http\Controllers\Orders\PromotionsController::class, 'offersBulk'])->name('offers.bulk');
+    });
+
     // Elements sub-section
     Route::prefix('elements')->group(function (): void {
         Route::get('/', [PageController::class, 'elementsOverview'])->name('elements');
@@ -87,6 +112,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/modals', [PageController::class, 'elementsModals'])->name('elements-modals');
         Route::get('/tables', [PageController::class, 'elementsTables'])->name('elements-tables');
     });
+
+    // ─── Order Creation Helper Endpoints ─────────────────────────────────────
+    Route::get('/products-search-api', [\App\Http\Controllers\Products\ProductController::class, 'searchApi'])
+        ->name('products.search.api')
+        ->middleware('permission:orders.create');
+    Route::post('/coupons/validate', [\App\Http\Controllers\Orders\CouponController::class, 'validateApi'])
+        ->name('coupons.validate')
+        ->middleware('permission:orders.create');
 
     // ─── User Management JSON API ─────────────────────────────────────────────
     Route::prefix('api')->group(function (): void {

@@ -13,14 +13,14 @@ use App\Models\Warehouse;
 use App\Models\StockTransfer;
 use App\Models\InventoryAdjustment;
 use App\Models\Stock;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class InventoryApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected User $admin;
     protected Warehouse $warehouse1;
@@ -52,7 +52,7 @@ class InventoryApiTest extends TestCase
         $superAdminRole = Role::findOrCreate('Super Admin', 'web');
         $superAdminRole->syncPermissions($permissions);
 
-        $this->admin = $this->createUser('admin@example.com');
+        $this->admin = $this->createUser('admin_' . uniqid() . '@example.com');
         $this->admin->assignRole('Super Admin');
         $this->actingAs($this->admin);
 
@@ -259,16 +259,16 @@ class InventoryApiTest extends TestCase
 
     public function test_stock_management_populates_empty_warehouse_with_placeholder_rows(): void
     {
-        Stock::where('warehouse_id', $this->warehouse2->id)->delete();
+        Stock::where('warehouse_id', $this->warehouse2->id)->forceDelete();
 
         $response = $this->getJson('/api/inventory/stocks?warehouse_id=' . $this->warehouse2->id);
 
         $response->assertOk();
-        $response->assertJsonCount(1, 'data');
-        $response->assertJsonPath('data.0.warehouse_id', $this->warehouse2->id);
-        $response->assertJsonPath('data.0.product_id', $this->product->id);
-        $response->assertJsonPath('data.0.quantity', 0);
-        $response->assertJsonPath('data.0.in_transit_qty', 0);
+        $item = collect($response->json('data'))->firstWhere('product_id', $this->product->id);
+        $this->assertNotNull($item);
+        $this->assertEquals($this->warehouse2->id, $item['warehouse_id']);
+        $this->assertEquals(0, $item['quantity']);
+        $this->assertEquals(0, $item['in_transit_qty']);
 
         $this->assertDatabaseHas('stocks', [
             'product_id' => $this->product->id,

@@ -302,7 +302,7 @@
                                     <div class="d-flex align-items-center">
                                         <div class="avatar bg-primary bg-opacity-10 text-primary rounded-circle me-3 d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px;" x-text="c.initials"></div>
                                         <div>
-                                            <span class="fw-semibold text-body" x-text="c.name"></span>
+                                            <a :href="'/customers/' + c.id" class="fw-semibold text-body text-decoration-none hover-primary" x-text="c.name"></a>
                                             <div class="small text-muted" x-text="c.email || 'No email'"></div>
                                         </div>
                                     </div>
@@ -338,7 +338,7 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li>
-                                                <a class="dropdown-item" href="#" @click.prevent="viewCustomer(c)">
+                                                <a class="dropdown-item" :href="'/customers/' + c.id">
                                                     <i class="bi bi-eye me-2"></i>View Profile
                                                 </a>
                                             </li>
@@ -966,32 +966,65 @@
                                 <input type="text" class="form-control form-control-sm" x-model="addressForm.address_line_2" placeholder="Sub-locality, Area (Optional)">
                             </div>
 
-                            <!-- Address details inputs -->
-                            <input type="hidden" x-model="addressForm.village_id">
-                            <div class="col-md-6">
-                                <label class="form-label small fw-semibold">Village</label>
-                                <input type="text" class="form-control form-control-sm" x-model="addressForm.village_name" placeholder="Village name">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-semibold">Post Office</label>
-                                <input type="text" class="form-control form-control-sm" x-model="addressForm.post_so_name" placeholder="Post Office">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-semibold">Taluka</label>
-                                <input type="text" class="form-control form-control-sm" x-model="addressForm.taluka_name" placeholder="Taluka">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-semibold">City/District</label>
-                                <input type="text" class="form-control form-control-sm" x-model="addressForm.city" placeholder="City" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-semibold">State</label>
-                                <input type="text" class="form-control form-control-sm" x-model="addressForm.state" placeholder="State" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-semibold">Pincode</label>
-                                <input type="text" class="form-control form-control-sm" x-model="addressForm.pincode" placeholder="Pincode" required>
-                            </div>
+                            <!-- Selected Village Details -->
+                            <template x-if="addressForm.village_name">
+                                <div class="col-12">
+                                    <div class="card bg-light border-0">
+                                        <div class="card-body p-3">
+                                            <div class="row g-2">
+                                                <div class="col-md-4">
+                                                    <label class="form-label small text-muted mb-0">Village</label>
+                                                    <div class="fw-semibold text-truncate small" x-text="addressForm.village_name || '—'"></div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small text-muted mb-0">Post Office</label>
+                                                    <div class="text-truncate small" x-text="addressForm.post_so_name || '—'"></div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small text-muted mb-0">Taluka</label>
+                                                    <div class="text-truncate small" x-text="addressForm.taluka_name || '—'"></div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small text-muted mb-0">District</label>
+                                                    <div class="text-truncate small" x-text="addressForm.district_name || '—'"></div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small text-muted mb-0">State</label>
+                                                    <div class="text-truncate small" x-text="addressForm.state_name || '—'"></div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small text-muted mb-0">Pincode</label>
+                                                    <div class="fw-bold small" x-text="addressForm.pincode || '—'"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" x-model="addressForm.village_id">
+                                    <input type="hidden" x-model="addressForm.city">
+                                    <input type="hidden" x-model="addressForm.state">
+                                    <input type="hidden" x-model="addressForm.pincode">
+                                </div>
+                            </template>
+
+                            <!-- Manual Input Fields (no village selected) -->
+                            <template x-if="!addressForm.village_name">
+                                <div class="col-12">
+                                    <div class="row g-2">
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-semibold">City</label>
+                                            <input type="text" class="form-control form-control-sm" x-model="addressForm.city" placeholder="City" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-semibold">State</label>
+                                            <input type="text" class="form-control form-control-sm" x-model="addressForm.state" placeholder="State" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-semibold">Pincode</label>
+                                            <input type="text" class="form-control form-control-sm" x-model="addressForm.pincode" placeholder="Pincode" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
 
                             <div class="col-12">
                                 <div class="form-check mt-1">

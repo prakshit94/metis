@@ -951,3 +951,141 @@
     max-width: 240px;
   }
 }
+
+// ==========================================================================
+// Modern Metis Header Updates (Language, Apps Grid, Cart, Tabbed Notifications)
+// ==========================================================================
+
+// Web Apps Dropdown Panel & Grid
+.header-apps-panel {
+  width: 320px !important;
+  border-radius: 0.875rem;
+  border: 1px solid var(--bs-border-color);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.dropdown-icon-item {
+  display: block;
+  text-align: center;
+  padding: 12px 10px;
+  border-radius: 6px;
+  color: var(--bs-body-color) !important;
+  border: 1px solid transparent;
+  text-decoration: none !important;
+  transition: all 0.15s ease-in-out;
+
+  img {
+    display: block;
+    margin: 0 auto 6px;
+    height: 24px;
+    width: auto;
+  }
+
+  span {
+    display: block;
+    font-size: 11px;
+    margin-top: 6px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    background-color: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+  }
+}
+
+// Shopping Cart Panel & Items
+.header-cart-panel {
+  width: 360px !important;
+  border-radius: 0.875rem;
+  border: 1px solid var(--bs-border-color);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.dropdown-item-cart {
+  transition: background-color 0.12s ease;
+  
+  &:hover {
+    background-color: var(--bs-secondary-bg);
+  }
+
+  .remove-item-btn {
+    border: none;
+    background: transparent;
+    color: var(--bs-secondary-color);
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background-color: rgba(var(--bs-danger-rgb), 0.1);
+      color: var(--bs-danger);
+    }
+  }
+}
+
+// Notification Tabs Custom Styling
+.header-notify-panel {
+  .nav-tabs-custom {
+    .nav-link {
+      opacity: 0.75;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      border: none !important;
+      border-bottom: 2px solid transparent !important;
+      border-radius: 0 !important;
+
+      &:hover {
+        opacity: 0.95;
+        background: transparent !important;
+      }
+
+      &.active {
+        opacity: 1;
+        font-weight: 600;
+        color: #fff !important;
+        background: transparent !important;
+        border-bottom-color: #fff !important;
+      }
+    }
+  }
+
+  .header-notify-avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+
+    &--success { background: rgba(var(--bs-success-rgb), 0.12); color: var(--bs-success); }
+    &--warning { background: rgba(var(--bs-warning-rgb), 0.12); color: var(--bs-warning); }
+    &--info    { background: rgba(var(--bs-info-rgb),    0.12); color: var(--bs-info);    }
+    &--danger  { background: rgba(var(--bs-danger-rgb),  0.12); color: var(--bs-danger);  }
+  }
+}
+
+// Font sizes utility fallback if needed
+.fs-9 { font-size: 0.5625rem !important; }
+.fs-11 { font-size: 0.6875rem !important; }
+.fs-13 { font-size: 0.8125rem !important; }
+.fs-15 { font-size: 0.9375rem !important; }
+
+// Subtle color backgrounds
+.bg-warning-subtle {
+  background-color: rgba(var(--bs-warning-rgb), 0.15) !important;
+}
+.bg-success-subtle {
+  background-color: rgba(var(--bs-success-rgb), 0.15) !important;
+}
+.bg-info-subtle {
+  background-color: rgba(var(--bs-info-rgb), 0.15) !important;
+}
+

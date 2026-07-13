@@ -311,10 +311,15 @@ class OrderController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $warehouses = Warehouse::orderBy('name')->get();
-        $parties = Party::orderBy('firstname')->get();
-        $products = Product::orderBy('name')->get();
-        return view('orders.create', compact('warehouses', 'parties', 'products'));
+        $warehouses   = Warehouse::orderBy('name')->get();
+        $parties      = Party::orderBy('firstname')->get();
+        $activeOffers = \App\Models\Offer::active()->get();
+        $categories   = \App\Models\Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
+
+        $hideSidebar = true;
+        $lockSearch = true;
+
+        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'categories', 'hideSidebar', 'lockSearch'));
     }
 
     public function store(Request $request, OrderService $orderService)
@@ -335,6 +340,11 @@ class OrderController extends Controller implements HasMiddleware
             'items.*.total_amount' => 'nullable|numeric|min:0',
             'is_draft' => 'nullable|boolean',
             'future_order_date' => 'nullable|date',
+            'coupon_code' => 'nullable|string',
+            'total_amount' => 'nullable|numeric',
+            'tax_amount' => 'nullable|numeric',
+            'discount_amount' => 'nullable|numeric',
+            'net_amount' => 'nullable|numeric',
         ]);
 
         $order = $orderService->createOrder($validated);
@@ -347,7 +357,7 @@ class OrderController extends Controller implements HasMiddleware
             ]);
         }
 
-        return redirect()->route('orders.index')->with('success', 'Order created successfully.');
+        return redirect()->route('orders')->with('success', 'Order created successfully.');
     }
 
     public function edit(Order $order)
@@ -382,7 +392,7 @@ class OrderController extends Controller implements HasMiddleware
             ]);
         }
 
-        return view('orders.show', compact('order', 'outcomes'));
+        return redirect()->route('orders');
     }
 
     public function storeVerification(Request $request, string $id, InventoryService $inventoryService, OrderService $orderService)
@@ -744,7 +754,7 @@ class OrderController extends Controller implements HasMiddleware
             return response()->json(['success' => true, 'message' => 'Order deleted successfully.']);
         }
 
-        return redirect()->route('orders.index')->with('success', 'Order deleted successfully.');
+        return redirect()->route('orders')->with('success', 'Order deleted successfully.');
     }
 
     public function downloadInvoice(string $id, InvoiceService $invoiceService)

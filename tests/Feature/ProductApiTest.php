@@ -9,14 +9,14 @@ use App\Models\Permission;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ProductApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected function setUp(): void
     {
@@ -46,7 +46,7 @@ class ProductApiTest extends TestCase
         $superAdminRole = Role::findOrCreate('Super Admin', 'web');
         $superAdminRole->syncPermissions($permissions);
 
-        $admin = $this->createUser('admin@example.com');
+        $admin = $this->createUser('admin_' . uniqid() . '@example.com');
         $admin->assignRole('Super Admin');
 
         $this->actingAs($admin);

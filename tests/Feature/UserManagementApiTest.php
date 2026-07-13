@@ -7,14 +7,14 @@ namespace Tests\Feature;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class UserManagementApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected function setUp(): void
     {
@@ -42,7 +42,7 @@ class UserManagementApiTest extends TestCase
         $superAdminRole = Role::findOrCreate('Super Admin', 'web');
         $superAdminRole->syncPermissions($permissions);
 
-        $admin = $this->createUser('admin@example.com');
+        $admin = $this->createUser('admin_' . uniqid() . '@example.com');
         $admin->assignRole('Super Admin');
 
         $this->actingAs($admin);
@@ -123,18 +123,21 @@ class UserManagementApiTest extends TestCase
 
     public function test_bulk_delete_does_not_remove_last_super_admin(): void
     {
-        $superAdmin = User::role('Super Admin')->firstOrFail();
+        $superAdmins = User::role('Super Admin')->get();
+        $superAdminIds = $superAdmins->pluck('id')->toArray();
 
         $response = $this->postJson(route('api.users.bulk'), [
             'action' => 'delete',
-            'ids' => [$superAdmin->id],
+            'ids' => $superAdminIds,
         ]);
 
         $response
             ->assertForbidden()
             ->assertJsonPath('message', 'Cannot delete the last Super Admin user.');
 
-        $this->assertDatabaseHas('users', ['id' => $superAdmin->id]);
+        foreach ($superAdmins as $superAdmin) {
+            $this->assertDatabaseHas('users', ['id' => $superAdmin->id]);
+        }
     }
 
     /**

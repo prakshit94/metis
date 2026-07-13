@@ -153,6 +153,14 @@ document.addEventListener('alpine:init', () => {
     init() {
       this.loadOrders();
       
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('success')) {
+        showToast(params.get('success'));
+        params.delete('success');
+        const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.history.replaceState({}, document.title, newUrl);
+      }
+
       // Delay chart initialization to ensure DOM is fully ready
       setTimeout(() => {
         this.initCharts();

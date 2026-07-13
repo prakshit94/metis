@@ -1,220 +1,502 @@
 <!-- Header -->
-<header class="admin-header" role="banner">
-    <nav class="navbar admin-navbar" aria-label="Main navigation">
-        <div class="container-fluid admin-navbar-inner">
+<header class="admin-header bg-body border-bottom shadow-sm sticky-top" role="banner" style="z-index: 1030; min-height: 70px;">
+    <nav class="navbar navbar-expand h-100 py-0" aria-label="Main navigation">
+        <div class="container-fluid align-items-center h-100 px-3 px-md-4 gap-3">
 
             {{-- ── BRAND ────────────────────────────────────────── --}}
-            <a class="admin-brand" href="{{ route('dashboard') }}" aria-label="Metis Admin — go to dashboard">
-                <img src="/assets/images/logo.svg" alt="" width="32" height="32" aria-hidden="true">
-                <span class="admin-brand-name">Metis</span>
-                <span class="admin-brand-badge">Admin</span>
+            <a class="navbar-brand d-flex align-items-center gap-2 me-auto me-lg-4" href="{{ route('dashboard') }}" aria-label="Metis Admin — go to dashboard">
+                <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <img src="/assets/images/logo.svg" alt="" width="24" height="24" aria-hidden="true">
+                </div>
+                <div class="d-none d-sm-flex flex-column lh-1">
+                    <span class="fw-bold text-body fs-5 tracking-tight">Metis</span>
+                    <span class="text-primary fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 2px;">Admin</span>
+                </div>
             </a>
 
             {{-- ── SIDEBAR TOGGLE ───────────────────────────────── --}}
-            <button class="hamburger-menu"
+            @if(!isset($hideSidebar) || !$hideSidebar)
+            <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary"
+                    style="width: 40px; height: 40px;"
                     type="button"
                     data-sidebar-toggle
                     aria-label="Toggle sidebar"
                     aria-controls="admin-sidebar"
                     aria-expanded="false">
-                <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i>
+                <i class="bi bi-list fs-4" aria-hidden="true"></i>
             </button>
+            @endif
 
             {{-- ── SEARCH ───────────────────────────────────────── --}}
-            <div class="header-search-wrapper flex-grow-1" x-data="searchComponent">
-                <div class="header-search position-relative">
-                    <i class="bi bi-search header-search-icon" aria-hidden="true"></i>
-                    <input type="search"
-                           class="header-search-input"
-                           placeholder="Search pages, users, orders…"
-                           x-model="query"
-                           @input="search()"
-                           @keydown.ctrl.k.prevent.window="$el.focus()"
-                           data-search-input
-                           aria-label="Search"
-                           autocomplete="off">
-                    <kbd class="header-search-kbd d-none d-lg-flex">Ctrl K</kbd>
-
-                    {{-- Results Dropdown --}}
-                    <div x-show="results.length > 0"
-                         x-transition:enter="transition ease-out duration-150"
-                         x-transition:enter-start="opacity-0 translate-y-1"
-                         x-transition:enter-end="opacity-100 translate-y-0"
-                         x-transition:leave="transition ease-in duration-100"
-                         x-transition:leave-start="opacity-100 translate-y-0"
-                         x-transition:leave-end="opacity-0 translate-y-1"
-                         class="header-search-results">
-                        <template x-for="result in results" :key="result.title">
-                            <a :href="result.url" class="header-search-result-item">
-                                <span class="header-search-result-icon">
-                                    <i class="bi bi-file-text"></i>
-                                </span>
-                                <span class="header-search-result-title" x-text="result.title"></span>
-                                <span class="header-search-result-type" x-text="result.type"></span>
-                            </a>
-                        </template>
+            @if(isset($lockSearch) && $lockSearch)
+            {{-- Locked read-only customer display on order creation page --}}
+            <div class="w-100 d-none d-md-flex align-items-center ms-auto" style="max-width: 500px;">
+                <div class="position-relative d-flex align-items-center w-100">
+                    <div class="position-absolute start-0 ps-3 text-muted d-flex align-items-center" style="z-index: 10;">
+                        <i class="bi bi-person-lock fs-5 text-primary" aria-hidden="true"></i>
+                    </div>
+                    <div class="form-control form-control-lg bg-body-secondary border-0 rounded-pill shadow-none fw-semibold pe-4 w-100 d-flex align-items-center"
+                         style="font-size: 14px; letter-spacing: 0.5px; padding-left: 3rem !important; cursor: not-allowed; opacity: 0.75;">
+                        <span class="text-muted">Customer session locked</span>
+                        <span class="badge bg-warning text-dark ms-auto rounded-pill" style="font-size: 10px;">LOCKED</span>
                     </div>
                 </div>
             </div>
+            @else
+            <div class="w-100 max-w-md d-none d-md-block ms-auto" x-data="customerSearchApp()" style="max-width: 500px;">
+                <div class="position-relative d-flex align-items-center">
+                    <div class="position-absolute start-0 ps-3 text-muted d-flex align-items-center" style="z-index: 10;">
+                        <i class="bi bi-search fs-5" aria-hidden="true" x-show="!isLoading"></i>
+                        <span x-show="isLoading" class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true" style="display: none;"></span>
+                    </div>
+                    
+                    <input type="search"
+                           class="form-control form-control-lg bg-body-secondary border-0 rounded-pill shadow-none fw-semibold pe-4 w-100"
+                           style="font-size: 14px; letter-spacing: 0.5px; padding-left: 3rem !important;"
+                           placeholder="Enter 10-digit mobile number & press Enter..."
+                           x-model="searchPhone"
+                           @keydown.enter.prevent="searchCustomer()"
+                           maxlength="10"
+                           aria-label="Search Customer">
+                           
+                    <div class="position-absolute end-0 pe-2 d-flex align-items-center" style="z-index: 10;" x-show="searchPhone.length > 0" x-cloak>
+                        <button type="button" class="btn btn-sm btn-link text-muted p-1 text-decoration-none" @click="searchPhone = ''">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </button>
+                    </div>
+
+                    <div x-show="errorMsg" x-cloak class="position-absolute top-100 start-0 w-100 mt-2 text-danger small fw-bold bg-body p-3 rounded-4 shadow-lg border border-danger border-opacity-25" style="z-index: 1000;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span x-text="errorMsg"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             {{-- ── RIGHT ACTIONS ─────────────────────────────────── --}}
-            <div class="header-actions">
+            <div class="d-flex align-items-center gap-2 gap-sm-3 ms-auto ms-md-3 h-100">
+
+                {{-- Web Apps Dropdown --}}
+                <div class="dropdown h-100 d-flex align-items-center">
+                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
+                            style="width: 40px; height: 40px;"
+                            type="button"
+                            id="webAppsMenuBtn"
+                            data-bs-toggle="dropdown"
+                            data-bs-display="static"
+                            aria-expanded="false"
+                            aria-label="Web apps">
+                        <i class="bi bi-grid-3x3-gap-fill fs-5" aria-hidden="true"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="webAppsMenuBtn" style="width: 320px;">
+                        <div class="p-3 border-bottom bg-body-secondary bg-opacity-50 rounded-top-4">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <h6 class="m-0 fw-bold text-body text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Web Apps</h6>
+                                </div>
+                                <div class="col-auto">
+                                    <a href="#!" class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" style="font-size: 11px;">View All</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3">
+                            <div class="row g-3 text-center">
+                                <div class="col-4">
+                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
+                                        <img src="{{ asset('assets/images/github.png') }}" alt="Github" height="24">
+                                        <span class="fw-semibold text-muted" style="font-size: 11px;">GitHub</span>
+                                    </a>
+                                </div>
+                                <div class="col-4">
+                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
+                                        <img src="{{ asset('assets/images/bitbucket.png') }}" alt="Bitbucket" height="24">
+                                        <span class="fw-semibold text-muted" style="font-size: 11px;">Bitbucket</span>
+                                    </a>
+                                </div>
+                                <div class="col-4">
+                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
+                                        <img src="{{ asset('assets/images/dribbble.png') }}" alt="Dribbble" height="24">
+                                        <span class="fw-semibold text-muted" style="font-size: 11px;">Dribbble</span>
+                                    </a>
+                                </div>
+                                <div class="col-4">
+                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
+                                        <img src="{{ asset('assets/images/dropbox.png') }}" alt="Dropbox" height="24">
+                                        <span class="fw-semibold text-muted" style="font-size: 11px;">Dropbox</span>
+                                    </a>
+                                </div>
+                                <div class="col-4">
+                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
+                                        <img src="{{ asset('assets/images/mail_chimp.png') }}" alt="Mail Chimp" height="24">
+                                        <span class="fw-semibold text-muted" style="font-size: 11px;">Mail Chimp</span>
+                                    </a>
+                                </div>
+                                <div class="col-4">
+                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
+                                        <img src="{{ asset('assets/images/slack.png') }}" alt="Slack" height="24">
+                                        <span class="fw-semibold text-muted" style="font-size: 11px;">Slack</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Shopping Cart Dropdown --}}
+                <div class="dropdown h-100 d-flex align-items-center" x-data="headerCart">
+                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
+                            style="width: 40px; height: 40px;"
+                            type="button"
+                            id="cartMenuBtn"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            data-bs-display="static"
+                            aria-expanded="false"
+                            aria-label="Shopping cart">
+                        <i class="bi bi-bag-fill fs-5" aria-hidden="true"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary border border-2 border-body" style="font-size: 9px; margin-top: 6px; margin-left: -10px;" x-text="items.length" x-show="items.length > 0" x-cloak></span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="cartMenuBtn" style="width: 350px;">
+                        <div class="p-3 border-bottom bg-body-secondary bg-opacity-50 rounded-top-4">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <h6 class="m-0 fw-bold text-body text-uppercase" style="font-size: 11px; letter-spacing: 1px;">My Cart</h6>
+                                </div>
+                                <div class="col-auto">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill fw-bold" style="font-size: 10px;"><span x-text="items.length"></span> Items</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="max-height: 320px; overflow-y: auto;" class="custom-scrollbar">
+                            <template x-if="items.length === 0">
+                                <div class="p-5 text-center d-flex flex-column align-items-center opacity-75">
+                                    <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                                        <i class="bi bi-bag-x fs-2"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-body mb-1">Your cart is empty</h6>
+                                    <p class="text-muted small mb-0">Browse products to add items</p>
+                                </div>
+                            </template>
+                            <div x-show="items.length > 0" x-cloak>
+                                <template x-for="(item, idx) in items" :key="item.id">
+                                    <div class="d-flex align-items-center px-3 py-3 border-bottom position-relative hover-bg-secondary transition-all">
+                                        <div class="bg-body-secondary border rounded-3 d-flex align-items-center justify-content-center overflow-hidden me-3 flex-shrink-0" style="width: 48px; height: 48px;">
+                                            <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-cover" alt="Product" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0">
+                                            <h6 class="mb-1 fw-bold text-body text-truncate fs-6" x-text="item.name"></h6>
+                                            <p class="mb-0 text-muted fw-semibold" style="font-size: 11px;">Qty: <span x-text="item.quantity"></span> × ₹<span x-text="parseFloat(item.price).toFixed(2)"></span></p>
+                                        </div>
+                                        <div class="text-end ms-2">
+                                            <h6 class="mb-1 fw-black text-success" x-text="'₹' + (item.quantity * parseFloat(item.price)).toFixed(2)"></h6>
+                                            <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" style="font-size: 11px;" @click="removeItem(idx)">Remove</button>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="p-3 border-top bg-body-secondary bg-opacity-50 rounded-bottom-4" x-show="items.length > 0" x-cloak>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="m-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Gross Subtotal</h6>
+                                <h5 class="m-0 fw-black text-primary" x-text="'₹' + total.toFixed(2)"></h5>
+                            </div>
+                            <a href="{{ route('orders.create') }}" class="btn btn-primary w-100 rounded-pill fw-bold text-uppercase shadow-sm d-flex align-items-center justify-content-center gap-2" style="font-size: 11px; letter-spacing: 1px;">
+                                <i class="bi bi-cart-check"></i> Go to Checkout
+                            </a>
+                        </div>
+                    </div>
+                </div>
 
                 {{-- Theme Toggle --}}
-                <div x-data="themeSwitch">
-                    <button class="header-action-btn"
+                <div x-data="themeSwitch" class="h-100 d-flex align-items-center d-none d-md-flex">
+                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
+                            style="width: 40px; height: 40px;"
                             type="button"
                             @click="toggle()"
                             data-bs-toggle="tooltip"
                             data-bs-placement="bottom"
                             :title="currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
                             aria-label="Toggle theme">
-                        <i class="bi bi-sun-fill" x-show="currentTheme === 'light'" aria-hidden="true"></i>
-                        <i class="bi bi-moon-stars-fill" x-show="currentTheme === 'dark'" aria-hidden="true"></i>
+                        <i class="bi bi-sun-fill fs-5 text-warning" x-show="currentTheme === 'light'" aria-hidden="true"></i>
+                        <i class="bi bi-moon-stars-fill fs-5 text-primary" x-show="currentTheme === 'dark'" aria-hidden="true" x-cloak></i>
                     </button>
                 </div>
 
                 {{-- Fullscreen Toggle --}}
-                <button class="header-action-btn d-none d-md-flex"
+                <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all d-none d-lg-flex"
+                        style="width: 40px; height: 40px;"
                         type="button"
                         data-fullscreen-toggle
                         data-bs-toggle="tooltip"
                         data-bs-placement="bottom"
                         title="Toggle fullscreen"
                         aria-label="Toggle fullscreen">
-                    <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
+                    <i class="bi bi-arrows-fullscreen fs-5" aria-hidden="true"></i>
                 </button>
 
-                {{-- Notifications --}}
-                <div class="dropdown" id="notifications-dropdown">
-                    <button class="header-action-btn header-action-btn--notify position-relative"
+                {{-- Notifications Dropdown --}}
+                <div class="dropdown h-100 d-flex align-items-center">
+                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
+                            style="width: 40px; height: 40px;"
                             type="button"
                             id="notificationsMenuBtn"
                             data-bs-toggle="dropdown"
                             data-bs-auto-close="outside"
+                            data-bs-display="static"
                             aria-expanded="false"
-                            aria-label="Notifications (3 unread)">
-                        <i class="bi bi-bell-fill" aria-hidden="true"></i>
-                        <span class="header-notify-dot" aria-hidden="true">3</span>
+                            aria-label="Notifications">
+                        <i class="bi bi-bell-fill fs-5" aria-hidden="true"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body" style="font-size: 9px; margin-top: 6px; margin-left: -10px;">4</span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-end header-notify-panel"
+                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3"
                          aria-labelledby="notificationsMenuBtn"
-                         role="dialog"
-                         aria-label="Notifications">
-                        <div class="header-notify-header">
-                            <span class="header-notify-title">Notifications</span>
-                            <span class="badge bg-danger rounded-pill">3 new</span>
+                         style="width: 340px;">
+                        <div class="bg-primary rounded-top-4 p-3 text-white">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h6 class="m-0 fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Notifications</h6>
+                                <span class="badge bg-body text-primary rounded-pill fw-bold" style="font-size: 10px;">4 New</span>
+                            </div>
+                            <ul class="nav nav-tabs nav-tabs-custom border-bottom-0" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#all-noti-tab" type="button" role="tab" aria-controls="all-noti-tab" aria-selected="true" style="opacity: 0.8;">
+                                        All (4)
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#messages-noti-tab" type="button" role="tab" aria-controls="messages-noti-tab" aria-selected="false" style="opacity: 0.8;">
+                                        Messages
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#alerts-noti-tab" type="button" role="tab" aria-controls="alerts-noti-tab" aria-selected="false" style="opacity: 0.8;">
+                                        Alerts
+                                    </button>
+                                </li>
+                            </ul>
                         </div>
-                        <div class="header-notify-list">
-                            <a class="header-notify-item" href="#">
-                                <span class="header-notify-avatar header-notify-avatar--success">
-                                    <i class="bi bi-person-plus-fill"></i>
-                                </span>
-                                <span class="header-notify-body">
-                                    <span class="header-notify-msg">New user registered</span>
-                                    <span class="header-notify-time">2 min ago</span>
-                                </span>
-                                <span class="header-notify-unread-dot"></span>
-                            </a>
-                            <a class="header-notify-item" href="#">
-                                <span class="header-notify-avatar header-notify-avatar--warning">
-                                    <i class="bi bi-hdd-fill"></i>
-                                </span>
-                                <span class="header-notify-body">
-                                    <span class="header-notify-msg">Server disk usage at 85%</span>
-                                    <span class="header-notify-time">18 min ago</span>
-                                </span>
-                                <span class="header-notify-unread-dot"></span>
-                            </a>
-                            <a class="header-notify-item" href="#">
-                                <span class="header-notify-avatar header-notify-avatar--info">
-                                    <i class="bi bi-chat-dots-fill"></i>
-                                </span>
-                                <span class="header-notify-body">
-                                    <span class="header-notify-msg">New message from support</span>
-                                    <span class="header-notify-time">1 hr ago</span>
-                                </span>
-                                <span class="header-notify-unread-dot"></span>
-                            </a>
-                        </div>
-                        <div class="header-notify-footer">
-                            <a href="{{ route('messages') }}" class="header-notify-view-all">
-                                <i class="bi bi-collection-fill me-1"></i>
-                                View all notifications
-                            </a>
+
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="all-noti-tab" role="tabpanel">
+                                <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary" href="#">
+                                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-award-fill fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <p class="mb-1 fw-semibold text-body fs-13">Your <b>Elite</b> author reward is ready!</p>
+                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> Just 30 sec ago</p>
+                                        </div>
+                                    </a>
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary" href="#">
+                                        <img src="{{ asset('assets/images/users/avatar-2.jpg') }}" class="rounded-circle flex-shrink-0 object-fit-cover" alt="Angela Bernier" width="40" height="40">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold text-body fs-13">Angela Bernier</h6>
+                                            <p class="mb-1 text-muted fs-13">Answered your comment on the graph.</p>
+                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> 48 min ago</p>
+                                        </div>
+                                    </a>
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary" href="#">
+                                        <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-chat-left-dots-fill fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <p class="mb-1 fw-semibold text-body fs-13">You have received <b>20</b> new messages.</p>
+                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> 2 hrs ago</p>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="p-2 text-center bg-body-secondary bg-opacity-50 rounded-bottom-4">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All Notifications <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="messages-noti-tab" role="tabpanel">
+                                <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
+                                     <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary" href="#">
+                                        <img src="{{ asset('assets/images/users/avatar-3.jpg') }}" class="rounded-circle flex-shrink-0 object-fit-cover" alt="James" width="40" height="40">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold text-body fs-13">James Lemire</h6>
+                                            <p class="mb-1 text-muted fs-13">We talked about a project on linkedin.</p>
+                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> 30 min ago</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade p-5 text-center" id="alerts-noti-tab" role="tabpanel">
+                                <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
+                                    <i class="bi bi-bell-slash fs-2"></i>
+                                </div>
+                                <h6 class="fw-bold text-muted mb-0">No new alerts yet!</h6>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {{-- Divider --}}
-                <div class="header-divider" aria-hidden="true"></div>
+                <div class="vr mx-1 d-none d-md-block opacity-25"></div>
 
                 {{-- User Menu --}}
-                <div class="dropdown" id="user-menu-dropdown">
-                    <button class="header-user-btn"
+                <div class="dropdown h-100 d-flex align-items-center">
+                    <button class="btn btn-body-secondary p-1 pe-md-3 d-flex align-items-center gap-2 rounded-pill shadow-none border-0 transition-all hover-bg-secondary"
                             type="button"
                             id="userMenuBtn"
                             data-bs-toggle="dropdown"
+                            data-bs-display="static"
                             aria-expanded="false"
                             aria-label="User menu">
-                        <img src="/assets/images/avatar-placeholder.svg"
+                        <img src="{{ asset('assets/images/avatar-1.jpg') }}"
                              alt="{{ Auth::user()?->name ?? 'User' }}"
-                             width="34"
-                             height="34"
-                             class="header-user-avatar">
-                        <span class="header-user-info d-none d-lg-flex">
-                            <span class="header-user-name">{{ Auth::user()?->name ?? 'User' }}</span>
-                            <span class="header-user-role">Administrator</span>
+                             width="36"
+                             height="36"
+                             class="rounded-circle object-fit-cover border border-2 border-body shadow-sm">
+                        <span class="d-none d-md-flex flex-column text-start ms-1 lh-1">
+                            <span class="fw-bold text-body" style="font-size: 13px;">{{ Auth::user()?->name ?? 'User' }}</span>
+                            <span class="text-muted fw-semibold" style="font-size: 10px;">Developer</span>
                         </span>
-                        <i class="bi bi-chevron-down header-user-chevron d-none d-lg-inline" aria-hidden="true"></i>
+                        <i class="bi bi-chevron-down text-muted ms-1 d-none d-md-inline" style="font-size: 12px;"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end header-user-menu"
-                        aria-labelledby="userMenuBtn">
-                        {{-- User info card --}}
-                        <li class="header-user-menu-info">
-                            <img src="/assets/images/avatar-placeholder.svg"
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-3 py-2"
+                        aria-labelledby="userMenuBtn" style="min-width: 240px;">
+                        
+                        <li class="px-4 py-3 d-flex align-items-center gap-3 border-bottom mb-2">
+                            <img src="{{ asset('assets/images/avatar-1.jpg') }}"
                                  alt="{{ Auth::user()?->name ?? 'User' }}"
-                                 width="40" height="40"
-                                 class="header-user-menu-avatar">
-                            <div>
-                                <div class="header-user-menu-name">{{ Auth::user()?->name ?? 'User' }}</div>
-                                <div class="header-user-menu-email">{{ Auth::user()?->email ?? '' }}</div>
+                                 width="48" height="48"
+                                 class="rounded-circle object-fit-cover shadow-sm">
+                            <div class="min-w-0">
+                                <h6 class="mb-1 fw-bold text-body text-truncate">{{ Auth::user()?->name ?? 'User' }}</h6>
+                                <p class="mb-0 text-muted small text-truncate">{{ Auth::user()?->email ?? 'admin@example.com' }}</p>
                             </div>
                         </li>
-                        <li><hr class="dropdown-divider my-1"></li>
+                        
                         <li>
-                            <a class="dropdown-item header-user-menu-item" href="#">
-                                <i class="bi bi-person-fill"></i>
-                                <span>My Profile</span>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
+                                <i class="bi bi-person text-muted fs-5"></i> Profile
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item header-user-menu-item" href="{{ route('settings') }}">
-                                <i class="bi bi-gear-fill"></i>
-                                <span>Settings</span>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
+                                <i class="bi bi-life-preserver text-muted fs-5"></i> Help Center
+                            </a>
+                        </li>
+                        
+                        <li><hr class="dropdown-divider opacity-10 my-2"></li>
+                        
+                        <li>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
+                                <i class="bi bi-wallet2 text-muted fs-5"></i> 
+                                <span>Balance : <span class="fw-bold text-success">$5971.67</span></span>
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item header-user-menu-item" href="{{ route('security') }}">
-                                <i class="bi bi-shield-fill-check"></i>
-                                <span>Security</span>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary justify-content-between" href="{{ route('settings') }}">
+                                <div class="d-flex align-items-center gap-3">
+                                    <i class="bi bi-gear text-muted fs-5"></i> Settings
+                                </div>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill fw-bold" style="font-size: 9px;">New</span>
                             </a>
                         </li>
-                        <li><hr class="dropdown-divider my-1"></li>
+                        
+                        <li><hr class="dropdown-divider opacity-10 my-2"></li>
+                        
                         <li>
-                            <form method="POST" action="{{ route('logout') }}">
+                            <form method="POST" action="{{ route('logout') }}" class="m-0">
                                 @csrf
-                                <button type="submit" class="dropdown-item header-user-menu-item header-user-menu-item--danger">
-                                    <i class="bi bi-box-arrow-right"></i>
-                                    <span>Sign Out</span>
+                                <button type="submit" class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-danger fw-bold hover-bg-danger-subtle">
+                                    <i class="bi bi-box-arrow-right fs-5"></i> Logout
                                 </button>
                             </form>
                         </li>
                     </ul>
                 </div>
 
-            </div>{{-- /.header-actions --}}
-
+            </div>{{-- /.d-flex ms-auto --}}
         </div>
     </nav>
 </header>
+
+<x-add-customer-modal />
+
+<style>
+.hover-bg-secondary:hover { background-color: var(--bs-secondary-bg) !important; }
+.hover-bg-danger-subtle:hover { background-color: rgba(var(--bs-danger-rgb), 0.1) !important; }
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--bs-body-color-rgb), 0.1); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(var(--bs-body-color-rgb), 0.2); }
+
+/* Fix Nav Tab Active States in dropdown */
+.nav-tabs-custom .nav-link.active {
+    opacity: 1 !important;
+    border-bottom: 2px solid white !important;
+}
+</style>
+
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('headerCart', () => ({
+        items: [],
+        init() {
+            this.loadCart();
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'metis_create_order_cart') this.loadCart();
+            });
+            window.addEventListener('cart-updated', () => this.loadCart());
+        },
+        loadCart() {
+            try {
+                this.items = JSON.parse(localStorage.getItem('metis_create_order_cart')) || [];
+            } catch (e) {
+                this.items = [];
+            }
+        },
+        removeItem(index) {
+            this.items.splice(index, 1);
+            localStorage.setItem('metis_create_order_cart', JSON.stringify(this.items));
+            window.dispatchEvent(new CustomEvent('cart-updated'));
+        },
+        get total() {
+            return this.items.reduce((sum, item) => sum + (item.quantity * parseFloat(item.price)), 0);
+        }
+    }));
+
+    window.customerSearchApp = function() {
+        return {
+            searchPhone: '',
+            isLoading: false,
+            errorMsg: '',
+            searchCustomer() {
+                this.searchPhone = this.searchPhone.replace(/\D/g, '');
+                if (this.searchPhone.length !== 10) {
+                    this.errorMsg = 'Please enter exactly 10 digits.';
+                    setTimeout(() => { this.errorMsg = ''; }, 3000);
+                    return;
+                }
+                
+                this.errorMsg = '';
+                this.isLoading = true;
+                
+                fetch(`/customers/search-by-phone?phone=${this.searchPhone}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        this.isLoading = false;
+                        if (data.found && data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            window.globalSearchPhone = this.searchPhone;
+                            window.dispatchEvent(new CustomEvent('open-add-customer-modal', { detail: { phone: this.searchPhone } }));
+                        }
+                    })
+                    .catch(err => {
+                        this.isLoading = false;
+                        this.errorMsg = 'Error searching customer. Please try again.';
+                        setTimeout(() => { this.errorMsg = ''; }, 3000);
+                    });
+            }
+        };
+    };
+});
+</script>
+@endpush

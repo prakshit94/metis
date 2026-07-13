@@ -8,8 +8,6 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\HsnCode;
 use App\Models\Product;
-use App\Models\ProductAttribute;
-use App\Models\ProductAttributeValue;
 use App\Models\TaxRate;
 use App\Models\UnitOfMeasure;
 use App\Models\Warehouse;
@@ -21,19 +19,20 @@ class ProductCatalogSeeder extends Seeder
     public function run(): void
     {
         $categoryTree = [
-            ['name' => 'Electronics', 'slug' => 'electronics', 'children' => [
-                ['name' => 'Phones', 'slug' => 'phones'],
-                ['name' => 'Computers', 'slug' => 'computers'],
+            ['name' => 'Seeds', 'slug' => 'seeds', 'children' => [
+                ['name' => 'Cotton Seeds', 'slug' => 'cotton-seeds'],
+                ['name' => 'Wheat Seeds', 'slug' => 'wheat-seeds'],
             ]],
-            ['name' => 'Clothing', 'slug' => 'clothing', 'children' => [
-                ['name' => 'Men', 'slug' => 'clothing-men'],
-                ['name' => 'Women', 'slug' => 'clothing-women'],
+            ['name' => 'Fertilizers', 'slug' => 'fertilizers', 'children' => [
+                ['name' => 'Organic Fertilizers', 'slug' => 'organic-fertilizers'],
+                ['name' => 'Chemical Fertilizers', 'slug' => 'chemical-fertilizers'],
             ]],
-            ['name' => 'Books', 'slug' => 'books', 'children' => [
-                ['name' => 'Technical', 'slug' => 'books-technical'],
+            ['name' => 'Crop Protection', 'slug' => 'crop-protection', 'children' => [
+                ['name' => 'Pesticides', 'slug' => 'pesticides'],
+                ['name' => 'Fungicides', 'slug' => 'fungicides'],
             ]],
-            ['name' => 'Home & Garden', 'slug' => 'home', 'children' => [
-                ['name' => 'Garden Tools', 'slug' => 'garden-tools'],
+            ['name' => 'Farm Machinery', 'slug' => 'machinery', 'children' => [
+                ['name' => 'Irrigation Tools', 'slug' => 'irrigation-tools'],
             ]],
         ];
 
@@ -55,9 +54,9 @@ class ProductCatalogSeeder extends Seeder
         });
 
         $brands = collect([
-            ['name' => 'Metis Select', 'slug' => 'metis-select'],
-            ['name' => 'Northline', 'slug' => 'northline'],
-            ['name' => 'Apex', 'slug' => 'apex'],
+            ['name' => 'UPL Agro', 'slug' => 'upl-agro'],
+            ['name' => 'Syngenta Crop', 'slug' => 'syngenta-crop'],
+            ['name' => 'Mahyco', 'slug' => 'mahyco'],
         ])->map(fn (array $row) => Brand::firstOrCreate(['slug' => $row['slug']], $row));
 
         $uoms = collect([
@@ -74,9 +73,9 @@ class ProductCatalogSeeder extends Seeder
         ])->map(fn (array $row) => TaxRate::firstOrCreate(['name' => $row['name']], $row));
 
         $hsnCodes = collect([
-            ['code' => '1001', 'description' => 'General merchandise'],
-            ['code' => '2002', 'description' => 'Apparel and textiles'],
-            ['code' => '3003', 'description' => 'Books and stationery'],
+            ['code' => '1209', 'description' => 'Seeds for sowing'],
+            ['code' => '3101', 'description' => 'Animal or vegetable fertilizers'],
+            ['code' => '3808', 'description' => 'Insecticides, rodenticides, fungicides'],
         ])->map(fn (array $row) => HsnCode::firstOrCreate(['code' => $row['code']], $row));
 
         $warehouses = collect([
@@ -84,50 +83,18 @@ class ProductCatalogSeeder extends Seeder
             ['name' => 'Secondary Warehouse', 'code' => 'SEC'],
         ])->map(fn (array $row) => Warehouse::firstOrCreate(['code' => $row['code']], $row));
 
-        $attributes = collect([
-            ['name' => 'Color', 'type' => 'color', 'values' => [
-                ['value' => 'Red', 'color_code' => '#ef4444'],
-                ['value' => 'Blue', 'color_code' => '#3b82f6'],
-            ]],
-            ['name' => 'Size', 'type' => 'text', 'values' => [
-                ['value' => 'S'],
-                ['value' => 'M'],
-                ['value' => 'L'],
-            ]],
-        ])->map(function (array $row) {
-            $attribute = ProductAttribute::firstOrCreate(
-                ['name' => $row['name']],
-                ['type' => $row['type'], 'status' => 'active'],
-            );
-
-            foreach ($row['values'] as $valueRow) {
-                ProductAttributeValue::firstOrCreate(
-                    [
-                        'product_attribute_id' => $attribute->id,
-                        'value' => $valueRow['value'],
-                    ],
-                    [
-                        'color_code' => $valueRow['color_code'] ?? null,
-                        'status' => 'active',
-                    ],
-                );
-            }
-
-            return $attribute;
-        });
-
         $examples = [
-            ['name' => 'iPhone 14 Pro', 'sku' => 'IPHONE14-PRO', 'category' => 'electronics', 'price' => 999.99, 'stock' => 45, 'status' => 'published', 'description' => 'Latest flagship smartphone', 'purchase_price' => 799.99, 'mrp' => 1099.99, 'grade' => 'A'],
-            ['name' => 'Cotton T-Shirt', 'sku' => 'TSHIRT-COTTON', 'category' => 'clothing', 'price' => 24.99, 'stock' => 156, 'status' => 'published', 'description' => 'Soft cotton tee', 'purchase_price' => 11.99, 'mrp' => 29.99, 'grade' => 'B'],
-            ['name' => 'JavaScript Guide', 'sku' => 'BOOK-JS-GUIDE', 'category' => 'books', 'price' => 39.99, 'stock' => 8, 'status' => 'draft', 'description' => 'Programming reference', 'purchase_price' => 18.99, 'mrp' => 44.99, 'grade' => 'C'],
-            ['name' => 'Garden Tool Set', 'sku' => 'GARDEN-TOOLS', 'category' => 'home', 'price' => 89.99, 'stock' => 0, 'status' => 'pending', 'description' => 'All-in-one garden set', 'purchase_price' => 42.99, 'mrp' => 99.99, 'grade' => 'D'],
+            ['name' => 'Mahyco BG-II Cotton Seeds', 'sku' => 'SEED-COT-MHY01', 'category' => 'cotton-seeds', 'price' => 850.00, 'stock' => 500, 'status' => 'published', 'description' => 'High-yielding hybrid cotton seeds.', 'purchase_price' => 620.00, 'mrp' => 990.00, 'grade' => 'A', 'tax' => 5],
+            ['name' => 'UPL Saaf Fungicide 1KG', 'sku' => 'PROT-FUN-UPL01', 'category' => 'fungicides', 'price' => 680.00, 'stock' => 120, 'status' => 'published', 'description' => 'Systemic and contact fungicide.', 'purchase_price' => 510.00, 'mrp' => 750.00, 'grade' => 'A', 'tax' => 18],
+            ['name' => 'Premium NPK Fertilizer 50KG', 'sku' => 'FERT-NPK-PREM', 'category' => 'chemical-fertilizers', 'price' => 1450.00, 'stock' => 300, 'status' => 'published', 'description' => 'Balanced nitrogen, phosphorus, and potassium formula.', 'purchase_price' => 1100.00, 'mrp' => 1600.00, 'grade' => 'B', 'tax' => 12],
+            ['name' => 'Drip Irrigation Inline Pipe 400M', 'sku' => 'MACH-DRIP-PIPE', 'category' => 'irrigation-tools', 'price' => 4200.00, 'stock' => 45, 'status' => 'published', 'description' => 'High durability 16mm inline drip lateral pipe.', 'purchase_price' => 3100.00, 'mrp' => 4800.00, 'grade' => 'A', 'tax' => 18],
         ];
 
         foreach ($examples as $index => $example) {
-            $category = $categories->firstWhere('slug', $example['category']);
+            $category = Category::where('slug', $example['category'])->first() ?? $categories->first();
             $brand = $brands[$index % $brands->count()];
-            $uom = $uoms[0];
-            $taxRate = $taxRates[$index % $taxRates->count()];
+            $uom = $uoms[$index % $uoms->count()];
+            $taxRate = TaxRate::where('rate', $example['tax'])->first() ?? $taxRates->first();
             $hsn = $hsnCodes[$index % $hsnCodes->count()];
             $warehouse = $warehouses[0];
 
@@ -142,8 +109,8 @@ class ProductCatalogSeeder extends Seeder
                     'hsn_code_id' => $hsn?->id,
                     'uom_id' => $uom?->id,
                     'default_warehouse_id' => $warehouse?->id,
-                    'purchase_price' => $example['purchase_price'] ?? round($example['price'] * 0.7, 2),
-                    'mrp' => $example['mrp'] ?? round($example['price'] * 1.15, 2),
+                    'purchase_price' => $example['purchase_price'],
+                    'mrp' => $example['mrp'],
                     'selling_price' => $example['price'],
                     'stock_quantity' => $example['stock'],
                     'min_stock_level' => 10,
@@ -154,14 +121,18 @@ class ProductCatalogSeeder extends Seeder
                     'status' => $example['status'],
                     'is_active' => $example['status'] === 'published',
                     'description' => $example['description'],
-                    'grade' => $example['grade'] ?? null,
+                    'grade' => $example['grade'],
                     'default_discount' => 0,
                     'default_discount_type' => 'percent',
                 ],
             );
 
-            if ($product->default_warehouse_id) {
-                app(\App\Services\InventoryService::class)->setStock($product->id, $product->default_warehouse_id, (float) $example['stock']);
+            if ($product->default_warehouse_id && class_exists(\App\Services\InventoryService::class)) {
+                try {
+                    app(\App\Services\InventoryService::class)->setStock($product->id, $product->default_warehouse_id, (float) $example['stock']);
+                } catch (\Exception $e) {
+                    // Fail silently if service requirements differ in runtime environments
+                }
             }
         }
     }

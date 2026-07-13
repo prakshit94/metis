@@ -216,6 +216,140 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Live search API for order creation workflow.
+     * Returns paginated products with stock/discount info for Alpine.js cart.
+     */
+    public function searchApi(Request $request): JsonResponse
+    {
+        $query = Product::with(['category', 'brand', 'taxRate'])
+            ->withSum('stocks', 'quantity')
+            ->withSum('stocks', 'reserved_qty')
+            ->withSum('stocks', 'dispatched_qty')
+            ->withSum(['orderItems as pending_orders_qty' => function ($q) use ($request) {
+                $q->whereHas('order', function ($o) use ($request) {
+                    $o->where('status', 'pending')
+                      ->where(function ($query) {
+                          $query->where('is_draft', false)->orWhereNull('is_draft');
+                      });
+                    if ($request->filled('exclude_order_id')) {
+                        $o->where('id', '!=', $request->exclude_order_id);
+                    }
+                });
+            }], 'quantity');
+
+        // Status filter — only active by default
+        $statusFilter = $request->input('status', 'published');
+        if ($statusFilter !== 'all') {
+            $dbStatus = $statusFilter === 'active' ? 'published' : $statusFilter;
+            $query->where('status', $dbStatus);
+        }
+
+        // SKU Enabled filter
+        if ($request->input('include_disabled') !== 'true') {
+            $query->where('is_sku_enabled', true);
+        }
+
+        // Text search
+        if ($request->filled('q')) {
+            $s = $request->q;
+            $query->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%$s%")
+                  ->orWhere('sku', 'like', "%$s%")
+                  ->orWhere('barcode', 'like', "%$s%");
+            });
+        }
+
+        // Stock availability filter
+        $stockFilter = $request->input('stock', '');
+        $bindings = [];
+        $excludeSql = '';
+        if ($request->filled('exclude_order_id')) {
+            $excludeSql = ' AND orders.id != ?';
+            $bindings[] = (int) $request->exclude_order_id;
+        }
+
+        if ($stockFilter === 'available') {
+            $query->where(function ($q) use ($excludeSql, $bindings) {
+                $q->whereRaw(
+                    '(IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = products.id AND stocks.deleted_at IS NULL), 0) - IFNULL((SELECT SUM(quantity) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status = \'pending\' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) AND orders.deleted_at IS NULL' . $excludeSql . '), 0)) > 0',
+                    $bindings
+                )->orWhere('allow_overselling', true);
+            });
+        } elseif ($stockFilter === 'out_of_stock') {
+            $query->where(function ($q) use ($excludeSql, $bindings) {
+                $q->whereRaw(
+                    '(IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = products.id AND stocks.deleted_at IS NULL), 0) - IFNULL((SELECT SUM(quantity) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status = \'pending\' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) AND orders.deleted_at IS NULL' . $excludeSql . '), 0)) <= 0',
+                    $bindings
+                )->where('allow_overselling', false);
+            });
+        }
+
+        // Category filter
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        $perPage   = min((int) $request->input('perPage', 15), 100);
+        $paginator = $query->latest()->paginate($perPage)->withQueryString();
+
+        $data = $paginator->through(function ($p) {
+            $totalQty      = (float) ($p->stocks_sum_quantity ?? 0);
+            $reservedQty   = (float) ($p->stocks_sum_reserved_qty ?? 0);
+            $dispatchedQty = (float) ($p->stocks_sum_dispatched_qty ?? 0);
+            $pendingQty    = (float) ($p->pending_orders_qty ?? 0);
+
+            $rawAvailable = $totalQty - $reservedQty - $pendingQty;
+            $netAvailable = max(0.0, $rawAvailable);
+
+            if ($p->allow_overselling) {
+                $maxAllowedQty = max(0.0, $rawAvailable + (float) ($p->overselling_qty ?: 999));
+            } else {
+                $maxAllowedQty = $netAvailable;
+            }
+
+            return [
+                'id'                   => $p->id,
+                'name'                 => $p->name,
+                'sku'                  => $p->sku,
+                'barcode'              => $p->barcode,
+                'selling_price'        => (float) $p->selling_price,
+                'purchase_price'       => (float) $p->purchase_price,
+                'mrp'                  => (float) $p->mrp,
+                'image_url'            => $p->image_path ? asset('storage/' . $p->image_path) : null,
+                'stock_qty'            => $totalQty,
+                'reserved_qty'         => $reservedQty,
+                'pending_qty'          => $pendingQty,
+                'dispatched_qty'       => $dispatchedQty,
+                'available_stock'      => $maxAllowedQty,
+                'physical_available'   => $netAvailable,
+                'overselling_qty'      => (int) ($p->overselling_qty ?? 0),
+                'allow_overselling'    => (bool) $p->allow_overselling,
+                'status'               => $p->status,
+                'category'             => $p->category?->name,
+                'category_id'          => $p->category_id,
+                'brand'                => $p->brand?->name,
+                'tax_rate'             => (float) ($p->taxRate?->rate ?? 0),
+                'tax_label'            => $p->taxRate?->name,
+                'min_stock_level'      => $p->min_stock_level ?? 0,
+                'weight'               => $p->weight,
+                'is_sku_enabled'       => (bool) $p->is_sku_enabled,
+                'default_discount'     => (float) ($p->default_discount ?? 0),
+                'default_discount_type' => $p->default_discount_type ?? 'percent',
+            ];
+        });
+
+        return response()->json([
+            'data'         => $data->items(),
+            'current_page' => $paginator->currentPage(),
+            'last_page'    => $paginator->lastPage(),
+            'per_page'     => $paginator->perPage(),
+            'total'        => $paginator->total(),
+            'from'         => $paginator->firstItem(),
+            'to'           => $paginator->lastItem(),
+        ]);
+    }
+
     public function duplicate(Request $request, Product $product): JsonResponse
     {
         abort_unless($request->user()?->can('product-create'), 403);

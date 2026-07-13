@@ -534,10 +534,6 @@
                         </div>
                         
                     </div> <!-- End Users Management Container -->
-</div>
-<?php $__env->stopSection(); ?>
-
-<?php $__env->startPush('modals'); ?>
 
 
 <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel">
@@ -846,8 +842,8 @@
         </div>
     </div>
 </div>
-
-<?php $__env->stopPush(); ?>
+</div>
+<?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
 <?php $__env->stopPush(); ?>

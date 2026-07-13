@@ -6,6 +6,9 @@ namespace App\Http\Controllers\Customers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\Party;
+use App\Models\Order;
+use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -62,6 +65,33 @@ class CustomerController extends Controller
             ->paginate($perPage);
 
         return response()->json($customers);
+    }
+
+    /**
+     * Search customer by phone number.
+     */
+    public function searchByPhone(Request $request): JsonResponse
+    {
+        $phone = $request->input('phone');
+        if (!$phone) {
+            return response()->json(['found' => false]);
+        }
+
+        $phone = preg_replace('/\D/', '', $phone);
+        if (strlen($phone) > 10) {
+            $phone = substr($phone, -10);
+        }
+
+        $customer = Customer::where('phone', $phone)->first();
+        
+        if ($customer) {
+            return response()->json([
+                'found' => true,
+                'redirect' => route('orders.create', ['customer_id' => $customer->id])
+            ]);
+        }
+
+        return response()->json(['found' => false]);
     }
 
     /**
@@ -142,15 +172,34 @@ class CustomerController extends Controller
     /**
      * Show a customer.
      */
-    public function show(Request $request, int|string $customer): JsonResponse
+    public function show(Request $request, int|string $customer)
     {
         $customer = Customer::withTrashed()
-            ->with(['addresses.village'])
+            ->with(['addresses.village.services', 'orders' => function($q) {
+                $q->latest()->limit(5);
+            }])
             ->findOrFail($customer);
 
-        return response()->json([
-            'data' => $customer,
-        ]);
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'data' => $customer,
+            ]);
+        }
+
+        $categories = \Illuminate\Support\Facades\Cache::remember('categories_parent_null', 600, fn() => \App\Models\Category::whereNull('parent_id')->get());
+        $warehouses = \Illuminate\Support\Facades\Cache::remember('warehouses_active_village', 600, fn() => \App\Models\Warehouse::with('village')->where('status', 'active')->get());
+        $activeOffers = \Illuminate\Support\Facades\Cache::remember('active_offers_with_product', 600, fn() => \App\Models\Offer::active()
+            ->with('product:id,name,sku')
+            ->orderByDesc('priority')
+            ->orderBy('id')
+            ->get());
+        
+        // Static fallbacks for agricultures parameters
+        $crops = collect(['Wheat', 'Rice', 'Cotton', 'Sugarcane', 'Maize', 'Soybean', 'Gram', 'Mustard', 'Bajra', 'Jowar'])->map(fn($name) => (object) ['name' => $name]);
+        $irrigationTypes = collect(['Drip', 'Sprinkler', 'Canal', 'Tube Well', 'Rainfed', 'River Pump'])->map(fn($name) => (object) ['name' => $name]);
+        $landUnits = collect(['Acre', 'Hectare', 'Bigha', 'Guntha', 'Kanal', 'Marla'])->map(fn($name) => (object) ['name' => $name]);
+
+        return view('customers.show', compact('customer', 'categories', 'warehouses', 'activeOffers', 'crops', 'irrigationTypes', 'landUnits'));
     }
 
     /**
@@ -208,6 +257,8 @@ class CustomerController extends Controller
         if ($request->user()) {
             $validated['updated_by'] = $request->user()->id;
         }
+
+        $validated['land_unit'] = $validated['land_unit'] ?? 'acre';
 
         $customer->update($validated);
 
@@ -353,5 +404,60 @@ class CustomerController extends Controller
             'is_active' => $isActive,
             'ids'       => $ids,
         ]);
+    }
+
+    /**
+     * Place order from customer profile page.
+     */
+    public function placeOrder(Request $request, Customer $customer, OrderService $orderService)
+    {
+        try {
+            $data = $request->validate([
+                'order_id'              => [
+                    'nullable',
+                    \Illuminate\Validation\Rule::exists('orders', 'id')->where('party_id', $customer->id)
+                ],
+                'cart'                  => 'required|string',
+                'applied_offer_id'      => 'nullable|exists:offers,id',
+                'order_discount_amount' => 'nullable|numeric',
+                'coupon_code'           => 'nullable|string',
+                'coupon_discount'       => 'nullable|numeric',
+                'tax_amount'            => 'required|numeric',
+                'subtotal'              => 'required|numeric',
+                'grand_total'           => 'required|numeric',
+                'warehouse_id'          => 'required|exists:warehouses,id',
+                'address_id'            => [
+                    'required',
+                    \Illuminate\Validation\Rule::exists('party_addresses', 'id')->where('party_id', $customer->id),
+                ],
+                'billing_address_id'    => [
+                    'nullable',
+                    \Illuminate\Validation\Rule::exists('party_addresses', 'id')->where('party_id', $customer->id),
+                ],
+                'is_draft'              => 'nullable|boolean',
+                'future_order_date'     => 'required_if:is_draft,1|nullable|date_format:Y-m-d',
+            ]);
+
+            // Map Customer to Party
+            $party = \App\Models\Party::findOrFail($customer->id);
+
+            if (!empty($data['order_id'])) {
+                $order = Order::where('party_id', $customer->id)->findOrFail($data['order_id']);
+                $orderService->updateCustomerOrder($order, $data);
+                $msg = 'Order updated successfully!';
+            } else {
+                $order = $orderService->placeCustomerOrder($party, $data);
+                $msg   = 'Order placed successfully!';
+            }
+
+            return redirect()->route('customers.show', $customer)
+                ->with('success', $msg)
+                ->with('active_tab', 'history');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $firstError = collect($e->errors())->flatten()->first() ?? $e->getMessage();
+            return back()->with('error', $firstError);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to process order: ' . $e->getMessage());
+        }
     }
 }

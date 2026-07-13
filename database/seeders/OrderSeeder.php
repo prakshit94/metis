@@ -26,7 +26,7 @@ class OrderSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Create Coupons
+        // 1. Setup Active Coupons
         $coupons = [
             [
                 'code' => 'WELCOME10',
@@ -39,7 +39,7 @@ class OrderSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'code' => 'SAVE50',
+                'code' => 'AGRISAVE50',
                 'type' => 'fixed',
                 'value' => 50.00,
                 'min_spend' => 200.00,
@@ -55,8 +55,8 @@ class OrderSeeder extends Seeder
         }
 
         // 2. Fetch dependencies
-        $parties = Party::all();
-        $products = Product::all();
+        $parties = Party::where('type', 'customer')->get();
+        $products = Product::with('taxRate')->get();
         $warehouses = Warehouse::all();
         $user = User::first() ?? User::factory()->create();
 
@@ -64,51 +64,25 @@ class OrderSeeder extends Seeder
             return;
         }
 
-        // Create a test BOGO offer for the first product
-        $firstProduct = $products->first();
-        Offer::firstOrCreate(
-            ['name' => 'BOGO First Product'],
-            [
-                'type' => 'bogo',
-                'discount_type' => null,
-                'value' => 0.00,
-                'min_spend' => 0.00,
-                'product_id' => $firstProduct->id,
-                'buy_qty' => 1,
-                'get_qty' => 1,
-                'starts_at' => Carbon::now()->subDays(5),
-                'ends_at' => Carbon::now()->addMonths(2),
-                'priority' => 1,
-                'is_active' => true,
-            ]
-        );
-
-        $statuses = [
-            'pending',
-            'confirmed',
-            'processing',
-            'ready_to_ship',
-            'dispatched',
-            'shipped',
-            'delivered',
-            'cancelled',
-            'returned',
-        ];
-
+        // Create standard operational workflow statuses
+        $statuses = ['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'cancelled', 'returned'];
         $carriers = ['FedEx', 'DHL', 'UPS', 'BlueDart', 'Delhivery'];
 
+        $orderCounter = Order::max('id') ?? 0;
+        $shipmentCounter = Shipment::max('id') ?? 0;
+        $year = now()->format('Y');
+
         foreach ($statuses as $index => $status) {
-            // Seed 2 orders for each status
             for ($i = 1; $i <= 2; $i++) {
+                $orderCounter++;
                 $party = $parties->random();
                 $warehouse = $warehouses->random();
                 $address = DB::table('party_addresses')->where('party_id', $party->id)->first();
                 $orderDate = Carbon::now()->subDays(20 - $index * 2)->subHours(rand(1, 12));
-
-                $orderNo = 'ORD-' . strtoupper(Str::random(8));
+                $couponCode = rand(0, 1) ? 'WELCOME10' : null;
 
                 $order = Order::create([
-                    'order_no' => $orderNo,
+                    'order_no' => 'ORD-' . $year . '-' . str_pad((string) $orderCounter, 5, '0', STR_PAD_LEFT),
                     'type' => 'sale',
                     'party_id' => $party->id,
                     'order_date' => $orderDate,
@@ -117,45 +91,50 @@ class OrderSeeder extends Seeder
                     'warehouse_id' => $warehouse->id,
                     'shipping_address_id' => $address?->id,
                     'billing_address_id' => $address?->id,
-                    'shipping_address' => $address ? "{$address->address_line_1}, {$address->city}, {$address->state} - {$address->pincode}" : 'Test Shipping Address',
-                    'billing_address' => $address ? "{$address->address_line_1}, {$address->city}, {$address->state} - {$address->pincode}" : 'Test Billing Address',
+                    'shipping_address' => $address ? "{$address->address_line_1}, {$address->city}, {$address->state} - {$address->pincode}" : 'Default Shipping Address',
+                    'billing_address' => $address ? "{$address->address_line_1}, {$address->city}, {$address->state} - {$address->pincode}" : 'Default Billing Address',
                     'created_by' => $user->id,
                     'updated_by' => $user->id,
-                    'coupon_code' => rand(0, 1) ? 'WELCOME10' : null,
+                    'coupon_code' => $couponCode,
                 ]);
 
-                // Create Order Items
                 $itemCount = rand(1, 3);
                 $selectedProducts = $products->random(min($itemCount, $products->count()));
-                $totalAmount = 0;
-                $taxAmount = 0;
-                $discountAmount = 0;
+                
+                $totalAmount = 0.00;
+                $taxAmount = 0.00;
+                $discountAmount = 0.00;
 
                 foreach ($selectedProducts as $prod) {
-                    $qty = (float) rand(1, 5);
+                    $qty = (float) rand(1, 4);
                     $price = (float) $prod->selling_price;
-                    $taxRate = 18.00; // 18% GST
-                    $itemTax = ($price * $qty) * ($taxRate / 100);
-                    $itemDiscount = $order->coupon_code ? ($price * $qty) * 0.10 : 0;
-                    $itemTotal = ($price * $qty) + $itemTax - $itemDiscount;
+                    
+                    // Dynamic Tax Assignment extraction 
+                    $taxRatePercentage = $prod->taxRate ? (float) $prod->taxRate->rate : 18.00;
+                    
+                    $subTotal = $price * $qty;
+                    $itemDiscount = $couponCode ? round($subTotal * 0.10, 2) : 0.00;
+                    $taxableAmount = $subTotal - $itemDiscount;
+                    $itemTax = round($taxableAmount * ($taxRatePercentage / 100), 2);
+                    $itemTotal = $taxableAmount + $itemTax;
 
                     OrderItem::create([
                         'order_id' => $order->id,
                         'product_id' => $prod->id,
                         'quantity' => $qty,
                         'unit_price' => $price,
-                        'tax_rate' => $taxRate,
+                        'tax_rate' => $taxRatePercentage,
                         'tax_amount' => $itemTax,
                         'discount_amount' => $itemDiscount,
                         'total_amount' => $itemTotal,
                     ]);
 
-                    $totalAmount += ($price * $qty);
+                    $totalAmount += $subTotal;
                     $taxAmount += $itemTax;
                     $discountAmount += $itemDiscount;
                 }
 
-                $netAmount = $totalAmount + $taxAmount - $discountAmount;
+                $netAmount = ($totalAmount - $discountAmount) + $taxAmount;
 
                 $order->update([
                     'total_amount' => $totalAmount,
@@ -164,9 +143,10 @@ class OrderSeeder extends Seeder
                     'net_amount' => $netAmount,
                 ]);
 
-                // 3. Create Invoices (for confirmed and later orders)
+                // 3. Invoice Execution
                 if (in_array($status, ['confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'])) {
                     $invoiceStatus = ($status === 'delivered') ? 'paid' : (rand(0, 1) ? 'unpaid' : 'partially_paid');
+                    
                     $invoice = Invoice::create([
                         'invoice_no' => 'INV-' . strtoupper(Str::random(8)),
                         'order_id' => $order->id,
@@ -177,13 +157,13 @@ class OrderSeeder extends Seeder
                         'status' => $invoiceStatus,
                     ]);
 
-                    // 4. Create Payments
+                    // 4. Record Safe Ledger Transaction Payments
                     if ($invoiceStatus === 'paid' || $invoiceStatus === 'partially_paid') {
                         Payment::create([
                             'payment_no' => 'PAY-' . strtoupper(Str::random(8)),
                             'invoice_id' => $invoice->id,
                             'order_id' => $order->id,
-                            'amount' => $invoiceStatus === 'paid' ? $netAmount : ($netAmount / 2),
+                            'amount' => $invoiceStatus === 'paid' ? $netAmount : round($netAmount / 2, 2),
                             'payment_method' => 'bank_transfer',
                             'transaction_id' => 'TXN' . rand(10000000, 99999999),
                             'payment_date' => $orderDate->copy()->addHours(1),
@@ -192,7 +172,7 @@ class OrderSeeder extends Seeder
                     }
                 }
 
-                // 5. Create Shipments (for ready_to_ship and later orders)
+                // 5. Build Logistics & Shipping Events
                 if (in_array($status, ['ready_to_ship', 'dispatched', 'shipped', 'delivered'])) {
                     $shipmentStatus = match ($status) {
                         'ready_to_ship' => 'pending',
@@ -201,8 +181,9 @@ class OrderSeeder extends Seeder
                         default => 'pending',
                     };
 
+                    $shipmentCounter++;
                     $shipment = Shipment::create([
-                        'shipment_no' => 'SHP-' . strtoupper(Str::random(8)),
+                        'shipment_no' => 'SHP-' . $year . '-' . str_pad((string) $shipmentCounter, 5, '0', STR_PAD_LEFT),
                         'order_id' => $order->id,
                         'carrier_name' => $carriers[rand(0, count($carriers) - 1)],
                         'tracking_no' => 'TRK' . rand(100000000, 999999999),
@@ -211,14 +192,14 @@ class OrderSeeder extends Seeder
                         'delivered_at' => $status === 'delivered' ? $orderDate->copy()->addDays(3) : null,
                     ]);
 
-                    // 6. Create Tracking Events
+                    // Tracking events
                     if (in_array($status, ['dispatched', 'shipped', 'delivered'])) {
                         ShipmentTrackingEvent::create([
                             'shipment_id' => $shipment->id,
                             'event_name' => 'Manifest Created',
-                            'location' => 'Main Hub',
-                            'description' => 'Shipment information sent to carrier.',
-                            'occurred_at' => $orderDate->copy()->addDays(1)->addMinutes(10),
+                            'location' => 'Main Logistics Hub',
+                            'description' => 'Shipment packaging processed and routing assigned.',
+                            'occurred_at' => $orderDate->copy()->addDays(1)->addMinutes(15),
                         ]);
 
                         if ($status === 'delivered') {
@@ -226,19 +207,19 @@ class OrderSeeder extends Seeder
                                 'shipment_id' => $shipment->id,
                                 'event_name' => 'Delivered',
                                 'location' => $party->city,
-                                'description' => 'Parcel delivered to customer.',
+                                'description' => 'Consignment handed over to customer.',
                                 'occurred_at' => $orderDate->copy()->addDays(3),
                             ]);
                         }
                     }
                 }
 
-                // 7. Create Verification Logs
+                // 6. Append Logs
                 if (rand(0, 1)) {
                     OrderVerificationLog::create([
                         'order_id' => $order->id,
                         'outcome' => 'customer_confirmed',
-                        'remark' => 'Customer confirmed delivery address and quantities.',
+                        'remark' => 'Verification checkpoint cleared via phone call.',
                         'follow_up_at' => null,
                         'created_by' => $user->id,
                     ]);

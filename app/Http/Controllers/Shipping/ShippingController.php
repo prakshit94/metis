@@ -29,7 +29,7 @@ class ShippingController extends Controller
                   ->orWhere('tracking_no', 'like', "%{$search}%")
                   ->orWhere('carrier_name', 'like', "%{$search}%")
                   ->orWhereHas('order', function ($oq) use ($search) {
-                      $oq->where('order_number', 'like', "%{$search}%");
+                      $oq->where('order_no', 'like', "%{$search}%");
                   });
             });
         }

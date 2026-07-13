@@ -177,6 +177,36 @@
                 </li>
 
                 
+                <li class="nav-item">
+                    <a class="nav-link <?php echo e(Str::startsWith($current, 'promotions') ? 'active' : ''); ?>"
+                       href="#"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#promotionsSubmenu"
+                       aria-expanded="<?php echo e(Str::startsWith($current, 'promotions') ? 'true' : 'false'); ?>"
+                       aria-controls="promotionsSubmenu">
+                        <i class="bi bi-gift-fill"></i>
+                        <span>Promotions</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse <?php echo e(Str::startsWith($current, 'promotions') ? 'show' : ''); ?>" id="promotionsSubmenu">
+                        <ul class="nav nav-submenu">
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'promotions.coupons' ? 'active' : ''); ?>" href="<?php echo e(route('promotions.coupons')); ?>">
+                                    <i class="bi bi-ticket-perforated-fill"></i>
+                                    <span>Coupon Codes</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'promotions.offers' ? 'active' : ''); ?>" href="<?php echo e(route('promotions.offers')); ?>">
+                                    <i class="bi bi-star-fill"></i>
+                                    <span>Offers &amp; Deals</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">People</small>
                 </li>
@@ -324,6 +354,12 @@
                     <a class="nav-link <?php echo e($current === 'security' ? 'active' : ''); ?>" href="<?php echo e(route('security')); ?>">
                         <i class="bi bi-shield-fill-check"></i>
                         <span>Security</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/docs/api" target="_blank">
+                        <i class="bi bi-file-earmark-code-fill"></i>
+                        <span>API Documentation</span>
                     </a>
                 </li>
                 <li class="nav-item">

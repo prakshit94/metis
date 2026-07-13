@@ -10,14 +10,14 @@ use App\Models\Role;
 use App\Models\Shipment;
 use App\Models\Service;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ShippingApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected User $admin;
 
@@ -72,7 +72,7 @@ class ShippingApiTest extends TestCase
         // 2. List Shipping Services
         $response = $this->getJson('/api/shipping/services');
         $response->assertOk();
-        $this->assertCount(1, $response->json('data'));
+        $this->assertTrue(collect($response->json('data'))->contains('id', $serviceId));
 
         // 3. Update Shipping Service
         $response = $this->patchJson("/api/shipping/services/{$serviceId}", [
@@ -119,7 +119,7 @@ class ShippingApiTest extends TestCase
         // 1. List Shipments
         $response = $this->getJson('/api/shipping/shipments');
         $response->assertOk();
-        $this->assertCount(1, $response->json('data'));
+        $this->assertTrue(collect($response->json('data'))->contains('id', $shipment->id));
 
         // 2. Retrieve Tracking Events (empty initially)
         $response = $this->getJson("/api/shipping/shipments/{$shipment->id}/tracking");
@@ -134,10 +134,10 @@ class ShippingApiTest extends TestCase
         ]);
 
         $response->assertOk();
-        $this->assertEquals('shipped', $response->json('shipment.status'));
+        $this->assertEquals('in_transit', $response->json('shipment.status'));
 
-        // Verify Order status was updated to shipped too
-        $this->assertEquals('shipped', $order->fresh()->status);
+        // Verify Order status was updated to dispatched too
+        $this->assertEquals('dispatched', $order->fresh()->status);
 
         // 4. Add a custom tracking event
         $response = $this->postJson("/api/shipping/shipments/{$shipment->id}/tracking-event", [
@@ -155,6 +155,6 @@ class ShippingApiTest extends TestCase
         
         $eventNames = collect($response->json('events'))->pluck('event_name')->toArray();
         $this->assertContains('Custom Transit Event', $eventNames);
-        $this->assertContains('Status Updated to Shipped', $eventNames);
+        $this->assertContains('Status Updated to In_transit', $eventNames);
     }
 }

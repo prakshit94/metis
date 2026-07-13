@@ -61,13 +61,15 @@
         <?php echo $__env->make('components.header', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
         <!-- Sidebar -->
-        <?php echo $__env->make('components.sidebar', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+        <?php if(!isset($hideSidebar) || !$hideSidebar): ?>
+            <?php echo $__env->make('components.sidebar', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+        <?php endif; ?>
 
         <!-- Sidebar Backdrop (mobile overlay) -->
         <div class="sidebar-backdrop" aria-hidden="true"></div>
 
         <!-- Main Content -->
-        <main id="main-content" class="admin-main">
+        <main id="main-content" class="admin-main" style="<?php echo e((isset($hideSidebar) && $hideSidebar) ? 'margin-left: 0;' : ''); ?>">
             <div class="container-fluid p-4 p-lg-5">
                 <?php echo $__env->yieldContent('content'); ?>
             </div>

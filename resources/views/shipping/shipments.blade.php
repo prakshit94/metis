@@ -182,7 +182,7 @@
                         <template x-for="item in items" :key="item.id">
                             <tr>
                                 <td class="ps-4 fw-medium text-dark" x-text="item.shipment_no"></td>
-                                <td class="fw-semibold text-secondary" x-text="item.order ? item.order.order_number : ('Order #' + item.order_id)"></td>
+                                <td class="fw-semibold text-secondary" x-text="item.order ? item.order.order_no : ('ORD-' + item.order_id)"></td>
                                 <td x-text="item.carrier_name || '-'"></td>
                                 <td class="font-monospace" x-text="item.tracking_no || '-'"></td>
                                 <td>
