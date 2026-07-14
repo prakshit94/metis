@@ -426,7 +426,11 @@ document.addEventListener('alpine:init', () => {
         couponCode: o.coupon_code || '',
         isDraft: Boolean(o.is_draft),
         futureOrderDate: o.future_order_date || null,
-        createdBy: o.creator ? `${o.creator.name || ''}`.trim() : 'N/A',
+        createdBy: {
+          name: o.creator ? (o.creator.name || '').trim() : 'N/A',
+          email: o.creator ? (o.creator.email || '') : '',
+          avatar: o.creator && o.creator.avatar ? o.creator.avatar : '/assets/images/avatar-placeholder.svg',
+        },
         updatedBy: o.updater ? `${o.updater.name || ''}`.trim() : 'N/A',
         verificationLogs: Array.isArray(o.verification_logs) ? o.verification_logs : [],
         original: o
@@ -528,6 +532,48 @@ document.addEventListener('alpine:init', () => {
       } else {
         this.selectedOrders = [...this.selectedOrders, orderId];
       }
+    },
+
+    // ─── Bulk Actions Lifecycle Visibility ──────────────────────────────────
+
+    /**
+     * Returns an object of flags indicating which bulk action buttons should
+     * be shown based on the lifecycle statuses of the currently selected orders.
+     * Only shows the next valid transition for each status present in selection.
+     */
+    get bulkAvailableActions() {
+      if (this.selectedOrders.length === 0) {
+        return {
+          canConfirm: false,
+          canProcess: false,
+          canReadyToShip: false,
+          canDispatch: false,
+          canDeliver: false,
+          canCancel: false,
+        };
+      }
+
+      // Build a Set of statuses for all selected orders
+      const selectedOrderObjs = this.orders.filter(o => this.selectedOrders.includes(o.id));
+      const statuses = new Set(selectedOrderObjs.map(o => o.status));
+
+      // Cancellable statuses
+      const cancellableStatuses = ['pending', 'confirmed', 'processing', 'ready_to_ship'];
+
+      return {
+        // Pending → Confirmed
+        canConfirm: statuses.has('pending'),
+        // Confirmed → Processing
+        canProcess: statuses.has('confirmed'),
+        // Processing → Ready to Ship
+        canReadyToShip: statuses.has('processing'),
+        // Ready to Ship → Dispatched
+        canDispatch: statuses.has('ready_to_ship'),
+        // Dispatched/Shipped → Delivered
+        canDeliver: statuses.has('dispatched') || statuses.has('shipped'),
+        // Cancel (any order that is still active)
+        canCancel: [...statuses].some(s => cancellableStatuses.includes(s)),
+      };
     },
 
     // ─── Lifecycle Actions ───────────────────────────────────────────────────

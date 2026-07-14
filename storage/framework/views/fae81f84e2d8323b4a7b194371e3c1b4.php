@@ -42,22 +42,22 @@
 <?php $__env->stopPush(); ?>
 
 <?php $__env->startSection('content'); ?>
-<div class="container-fluid p-4" x-data="createOrderApp()">
+<div class="container-fluid p-4 bg-light bg-gradient" style="min-height: 100vh;" x-data="createOrderApp()">
     
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-0 fw-bold"><i class="bi bi-cart-check-fill me-2 text-primary"></i>Create New Order</h1>
-            <p class="text-muted mb-0 small">Search products, build cart, select customer and place order</p>
+            <h1 class="h3 mb-0 fw-bold text-dark"><i class="bi bi-cart-check-fill me-2 text-primary" style="filter: drop-shadow(0 2px 4px rgba(var(--bs-primary-rgb), 0.4));"></i>Create New Order</h1>
+            <p class="text-muted mb-0 small mt-1">Search products, build cart, select customer and place order</p>
         </div>
-        <a href="<?php echo e(route('orders')); ?>" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Back to Orders
+        <a href="<?php echo e(route('orders')); ?>" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm hover-shadow transition-all">
+            <i class="bi bi-arrow-left me-2"></i> Back to Orders
         </a>
     </div>
 
     
     <?php if(session('error')): ?>
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="bi bi-exclamation-circle me-2"></i><?php echo e(session('error')); ?>
+    <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm border-0 bg-danger bg-opacity-10 text-danger-emphasis">
+        <i class="bi bi-exclamation-circle-fill me-2"></i><?php echo e(session('error')); ?>
 
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
@@ -70,8 +70,8 @@
             
             <div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden">
                 <div class="card-header bg-primary bg-opacity-10 border-bottom-0 py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-person-badge me-2"></i>Customer & Order Details</h5>
-                    <div x-show="customerDetails" class="badge bg-primary rounded-pill px-3 py-2" x-cloak>
+                    <h5 class="mb-0 fw-bold text-primary-emphasis fs-5"><i class="bi bi-person-badge me-2 text-primary"></i>Customer & Order Details</h5>
+                    <div x-show="customerDetails" class="badge bg-primary bg-opacity-25 text-primary-emphasis rounded-pill px-3 py-2 fw-medium shadow-sm transition-all" x-cloak>
                         <i class="bi bi-check-circle-fill me-1"></i> Customer Selected
                     </div>
                 </div>
@@ -80,9 +80,9 @@
                     <div class="row g-4 mb-4">
                         <div class="col-md-6">
                            <label class="form-label fw-bold small text-uppercase text-muted"><i class="bi bi-person me-1"></i>Customer <span class="text-danger">*</span></label>
-                           <div class="form-control bg-body-secondary fw-bold" style="height: 38px; display: flex; align-items: center;">
+                           <div class="form-control bg-body-secondary fw-bold rounded-3 shadow-sm border-0 d-flex align-items-center" style="height: 42px;">
                                <template x-if="customerDetails">
-                                   <span x-text="`${customerDetails.firstname || ''} ${customerDetails.middlename ? customerDetails.middlename + ' ' : ''}${customerDetails.lastname || ''}`.replace(/\s+/g, ' ').trim()"></span>
+                                   <span class="text-body" x-text="`${customerDetails.firstname || ''} ${customerDetails.middlename ? customerDetails.middlename + ' ' : ''}${customerDetails.lastname || ''}`.replace(/\s+/g, ' ').trim()"></span>
                                </template>
                                <template x-if="!customerDetails">
                                    <span class="text-muted fw-normal">Loading customer details...</span>
@@ -91,7 +91,7 @@
                         </div>
                         <div class="col-md-6">
                            <label class="form-label fw-bold small text-uppercase text-muted"><i class="bi bi-shop me-1"></i>Warehouse <span class="text-danger">*</span></label>
-                           <select class="form-select" x-model="warehouseId">
+                           <select class="form-select fw-bold rounded-3 shadow-sm border-0 bg-body-secondary" style="height: 42px;" x-model="warehouseId">
                                <option value="">Select Warehouse</option>
                                <?php $__currentLoopData = $warehouses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $w): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                <option value="<?php echo e($w->id); ?>"><?php echo e($w->name); ?></option>
@@ -100,65 +100,67 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold small text-uppercase text-muted">Future Order?</label>
-                            <div class="form-check form-switch mt-1">
-                                <input class="form-check-input" type="checkbox" id="isDraft" x-model="isDraft">
-                                <label class="form-check-label small" for="isDraft">Schedule for future</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="isDraft" x-model="isDraft" style="cursor: pointer;">
+                                <label class="form-check-label small fw-medium" for="isDraft" style="cursor: pointer;">Schedule for future</label>
                             </div>
-                            <input x-show="isDraft" x-cloak type="date" class="form-control mt-2 form-control-sm" x-model="futureOrderDate" placeholder="Future date">
+                            <div x-show="isDraft" x-cloak class="mt-2 transition-all">
+                                <input type="date" class="form-control form-control-sm rounded-3 shadow-sm border-0 bg-body-secondary fw-bold" style="height: 38px;" x-model="futureOrderDate" placeholder="Future date">
+                            </div>
                         </div>
                     </div>
 
                     
-                    <div x-show="customerDetails" x-cloak class="pt-2 border-top transition-all">
-                        <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
-                            <h6 class="fw-bold mb-0 text-body"><i class="bi bi-person-lines-fill me-2 text-secondary"></i>Customer Profile</h6>
-                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" @click="$dispatch('open-add-customer-modal', {customer: customerDetails})">
-                                <i class="bi bi-pencil-square me-1"></i>Edit Profile
+                    <div x-show="customerDetails" x-cloak class="pt-3 border-top transition-all">
+                        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                            <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-person-lines-fill me-2 text-secondary"></i>Customer Profile</h6>
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4 shadow-sm hover-shadow transition-all" @click="$dispatch('open-add-customer-modal', {customer: customerDetails})">
+                                <i class="bi bi-pencil-square me-2"></i>Edit Profile
                             </button>
                         </div>
 
-                        <div class="row g-3">
+                        <div class="row g-4">
                             
                             <div class="col-lg-4">
-                                <div class="bg-body-secondary rounded-4 p-3 h-100 border border-secondary border-opacity-10">
-                                    <div class="d-flex align-items-center gap-3 mb-3">
-                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 50px; height: 50px;" x-text="customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
+                                <div class="bg-body-secondary rounded-4 p-4 h-100 border border-secondary border-opacity-10 transition-all hover-shadow" style="transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="d-flex align-items-center gap-3 mb-4">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold fs-3 shadow-sm" style="width: 56px; height: 56px;" x-text="customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
                                         <div>
-                                            <h6 class="mb-0 fw-bold fs-5" x-text="`${customerDetails.firstname || ''} ${customerDetails.middlename ? customerDetails.middlename + ' ' : ''}${customerDetails.lastname || ''}`.replace(/\s+/g, ' ').trim()"></h6>
-                                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill mt-1" x-text="customerDetails.status || 'Active'"></span>
+                                            <h6 class="mb-0 fw-bold fs-5 text-body" x-text="`${customerDetails.firstname || ''} ${customerDetails.middlename ? customerDetails.middlename + ' ' : ''}${customerDetails.lastname || ''}`.replace(/\s+/g, ' ').trim()"></h6>
+                                            <span class="badge bg-success bg-opacity-25 text-success-emphasis rounded-pill mt-2 px-3 py-1 shadow-sm fw-medium" x-text="customerDetails.status || 'Active'"></span>
                                         </div>
                                     </div>
                                     <ul class="list-unstyled mb-0 small">
-                                        <li class="mb-2"><i class="bi bi-telephone text-muted me-2"></i><span class="fw-medium" x-text="customerDetails.phone || 'N/A'"></span></li>
-                                        <li class="mb-2"><i class="bi bi-envelope text-muted me-2"></i><span class="fw-medium text-break" x-text="customerDetails.email || 'N/A'"></span></li>
-                                        <li class="mb-2" x-show="customerDetails.company_name"><i class="bi bi-building text-muted me-2"></i><span class="fw-medium" x-text="customerDetails.company_name"></span></li>
-                                        <li x-show="customerDetails.gst_no"><i class="bi bi-receipt text-muted me-2"></i>GST: <span class="fw-medium text-uppercase" x-text="customerDetails.gst_no"></span></li>
+                                        <li class="mb-3 d-flex align-items-center gap-2"><i class="bi bi-telephone text-muted fs-6"></i><span class="fw-medium text-body" x-text="customerDetails.phone || 'N/A'"></span></li>
+                                        <li class="mb-3 d-flex align-items-center gap-2"><i class="bi bi-envelope text-muted fs-6"></i><span class="fw-medium text-body text-break" x-text="customerDetails.email || 'N/A'"></span></li>
+                                        <li class="mb-3 d-flex align-items-center gap-2" x-show="customerDetails.company_name"><i class="bi bi-building text-muted fs-6"></i><span class="fw-medium text-body" x-text="customerDetails.company_name"></span></li>
+                                        <li class="d-flex align-items-center gap-2" x-show="customerDetails.gst_no"><i class="bi bi-receipt text-muted fs-6"></i>GST: <span class="fw-medium text-body text-uppercase" x-text="customerDetails.gst_no"></span></li>
                                     </ul>
                                 </div>
                             </div>
                             
                             
                             <div class="col-lg-4">
-                                <div class="bg-warning bg-opacity-10 rounded-4 p-3 h-100 border border-warning border-opacity-25">
-                                    <h6 class="fw-bold mb-3 text-warning-emphasis"><i class="bi bi-sun me-2"></i>Agriculture Profile</h6>
-                                    <div class="row g-2 small">
+                                <div class="bg-warning bg-opacity-10 rounded-4 p-4 h-100 border border-warning border-opacity-25 transition-all hover-shadow" style="transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <h6 class="fw-bold mb-4 text-warning-emphasis fs-6"><i class="bi bi-sun me-2"></i>Agriculture Profile</h6>
+                                    <div class="row g-3 small">
                                         <div class="col-6">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Land Area</div>
-                                            <div class="fw-bold fs-6 text-body"><span x-text="customerDetails.land_area || '0'"></span> <span class="fs-6 fw-medium text-muted" x-text="customerDetails.land_unit || ''"></span></div>
+                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Land Area</div>
+                                            <div class="fw-black fs-5 text-body"><span x-text="customerDetails.land_area || '0'"></span> <span class="fs-6 fw-medium text-muted" x-text="customerDetails.land_unit || ''"></span></div>
                                         </div>
-                                        <div class="col-12 mt-2" x-show="customerDetails.crops && customerDetails.crops.length > 0">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Major Crops</div>
-                                            <div class="d-flex flex-wrap gap-1">
+                                        <div class="col-12 mt-3" x-show="customerDetails.crops && customerDetails.crops.length > 0">
+                                            <div class="text-muted mb-2" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Major Crops</div>
+                                            <div class="d-flex flex-wrap gap-2">
                                                 <template x-for="crop in customerDetails.crops">
-                                                    <span class="badge bg-success bg-opacity-25 text-success-emphasis rounded-pill" x-text="crop"></span>
+                                                    <span class="badge bg-success bg-opacity-25 text-success-emphasis rounded-pill px-2 py-1 shadow-sm fw-medium" x-text="crop"></span>
                                                 </template>
                                             </div>
                                         </div>
-                                        <div class="col-12 mt-2" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Irrigation</div>
-                                            <div class="d-flex flex-wrap gap-1">
+                                        <div class="col-12 mt-3" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
+                                            <div class="text-muted mb-2" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Irrigation</div>
+                                            <div class="d-flex flex-wrap gap-2">
                                                 <template x-for="type in customerDetails.irrigation_type">
-                                                    <span class="badge bg-info bg-opacity-25 text-info-emphasis rounded-pill" x-text="type"></span>
+                                                    <span class="badge bg-info bg-opacity-25 text-info-emphasis rounded-pill px-2 py-1 shadow-sm fw-medium" x-text="type"></span>
                                                 </template>
                                             </div>
                                         </div>
@@ -168,24 +170,24 @@
 
                             
                             <div class="col-lg-4">
-                                <div class="bg-danger bg-opacity-10 rounded-4 p-3 h-100 border border-danger border-opacity-25">
-                                    <h6 class="fw-bold mb-3 text-danger-emphasis"><i class="bi bi-wallet2 me-2"></i>Financial Terms</h6>
-                                    <div class="row g-2 small">
+                                <div class="bg-danger bg-opacity-10 rounded-4 p-4 h-100 border border-danger border-opacity-25 transition-all hover-shadow" style="transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <h6 class="fw-bold mb-4 text-danger-emphasis fs-6"><i class="bi bi-wallet2 me-2"></i>Financial Terms</h6>
+                                    <div class="row g-3 small">
                                         <div class="col-6">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Credit Limit</div>
-                                            <div class="fw-bold fs-5 text-body">₹<span x-text="Number(customerDetails.credit_limit || 0).toFixed(2)"></span></div>
+                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Credit Limit</div>
+                                            <div class="fw-black fs-5 text-body">₹<span x-text="Number(customerDetails.credit_limit || 0).toFixed(2)"></span></div>
                                         </div>
                                         <div class="col-6">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Current Balance</div>
-                                            <div class="fw-bold fs-5" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">₹<span x-text="Number(customerDetails.outstanding_balance || 0).toFixed(2)"></span></div>
+                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Current Balance</div>
+                                            <div class="fw-black fs-5" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">₹<span x-text="Number(customerDetails.outstanding_balance || 0).toFixed(2)"></span></div>
                                         </div>
-                                        <div class="col-6 mt-2">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Credit Days</div>
-                                            <div class="fw-bold text-body"><span x-text="customerDetails.credit_days || '0'"></span> Days</div>
+                                        <div class="col-6 mt-3">
+                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Credit Days</div>
+                                            <div class="fw-bold text-body fs-6"><span x-text="customerDetails.credit_days || '0'"></span> Days</div>
                                         </div>
-                                        <div class="col-6 mt-2" x-show="customerDetails.credit_valid_till">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Valid Till</div>
-                                            <div class="fw-bold text-body" x-text="new Date(customerDetails.credit_valid_till).toLocaleDateString()"></div>
+                                        <div class="col-6 mt-3" x-show="customerDetails.credit_valid_till">
+                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Valid Till</div>
+                                            <div class="fw-bold text-body fs-6" x-text="new Date(customerDetails.credit_valid_till).toLocaleDateString()"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -194,36 +196,36 @@
                     </div>
 
                     
-                    <div x-show="partyId" x-cloak class="mt-4 pt-3 border-top">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold mb-0 text-body"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Shipping Addresses</h6>
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" @click="$dispatch('open-address-modal', {customerId: partyId})">
-                                <i class="bi bi-plus-lg me-1"></i>New Address
+                    <div x-show="partyId" x-cloak class="mt-4 pt-4 border-top transition-all">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Shipping Addresses</h6>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 shadow-sm hover-shadow transition-all" @click="$dispatch('open-address-modal', {customerId: partyId})">
+                                <i class="bi bi-plus-lg me-2"></i>New Address
                             </button>
                         </div>
                         
-                        <div class="row g-3">
+                        <div class="row g-4">
                             <template x-for="addr in addresses" :key="addr.id">
                                     <div class="col-md-6 col-lg-4">
                                         <div class="w-100 h-100 cursor-pointer" style="display:block;" @click="shippingAddressId = addr.id">
-                                            <div class="card h-100 border-2 rounded-4 transition-all" :class="shippingAddressId == addr.id ? 'border-primary bg-primary bg-opacity-10 shadow-sm' : 'border-secondary border-opacity-25 hover-shadow'">
-                                                <div class="card-body p-3">
-                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div class="card h-100 border-2 rounded-4 transition-all" :class="shippingAddressId == addr.id ? 'border-primary bg-primary bg-opacity-10 shadow-md' : 'border-secondary border-opacity-10 bg-body-tertiary hover-shadow'" style="transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                                <div class="card-body p-4 position-relative">
+                                                    <div class="d-flex justify-content-between align-items-start mb-3">
                                                         <div>
-                                                            <span class="badge bg-secondary rounded-pill me-1" x-text="addr.label || 'Address'"></span>
-                                                            <span x-show="addr.is_default" class="badge bg-success rounded-pill"><i class="bi bi-star-fill me-1"></i>Default</span>
+                                                            <span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis rounded-pill me-2 px-3 py-1 shadow-sm fw-medium" x-text="addr.label || 'Address'"></span>
+                                                            <span x-show="addr.is_default" class="badge bg-success bg-opacity-25 text-success-emphasis rounded-pill px-3 py-1 shadow-sm fw-medium"><i class="bi bi-star-fill me-1"></i>Default</span>
                                                         </div>
-                                                        <button type="button" class="btn btn-light btn-sm rounded shadow-sm position-absolute" style="top: 12px; right: 12px; z-index: 20; border: 1px solid #dee2e6;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
+                                                        <button type="button" class="btn btn-light btn-sm rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 16px; right: 16px; width: 32px; height: 32px; z-index: 20; border: 1px solid rgba(0,0,0,0.05);" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
                                                             <i class="bi bi-pencil text-primary"></i>
                                                         </button>
                                                     </div>
-                                                    <p class="mb-1 small fw-medium text-body" x-text="addr.address_line_1"></p>
-                                                    <p class="mb-1 small text-muted" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
-                                                    <p class="mb-1 small text-muted" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
-                                                    <p class="mb-0 small text-muted">
+                                                    <p class="mb-2 small fw-bold text-body fs-6" x-text="addr.address_line_1"></p>
+                                                    <p class="mb-2 small text-muted" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
+                                                    <p class="mb-2 small text-muted" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
+                                                    <p class="mb-0 small text-muted fw-medium">
                                                         <span x-show="addr.city" x-text="addr.city + ', '"></span>
                                                         <span x-show="addr.state" x-text="addr.state"></span>
-                                                        <span x-show="addr.pincode" x-text="'- ' + addr.pincode"></span>
+                                                        <span class="text-body" x-show="addr.pincode" x-text="'- ' + addr.pincode"></span>
                                                     </p>
                                                 </div>
                                             </div>
@@ -232,11 +234,13 @@
                             </template>
                             <template x-if="addresses.length === 0">
                                 <div class="col-12">
-                                    <div class="alert alert-light border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0">
-                                        <i class="bi bi-info-circle text-muted fs-4 me-3"></i>
+                                    <div class="alert alert-light border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0 p-4 shadow-sm bg-body-tertiary">
+                                        <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-4" style="width: 50px; height: 50px;">
+                                            <i class="bi bi-info-circle text-muted fs-4"></i>
+                                        </div>
                                         <div>
-                                            <p class="mb-0 fw-medium">No addresses found.</p>
-                                            <p class="mb-0 small text-muted">Please add an address to continue with the order.</p>
+                                            <p class="mb-1 fw-bold fs-6 text-body">No addresses found.</p>
+                                            <p class="mb-0 small text-muted">Please add a shipping address to continue with your order.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -244,57 +248,57 @@
                         </div>
 
                         
-                        <div class="mt-3 form-check form-switch cursor-pointer">
-                            <input class="form-check-input" type="checkbox" id="sameAsShippingToggle" x-model="sameAsShipping" style="cursor: pointer;">
-                            <label class="form-check-label small fw-bold text-muted text-uppercase" for="sameAsShippingToggle" style="cursor: pointer; font-size: 11px; letter-spacing: 0.5px;">Billing address same as Shipping address</label>
+                        <div class="mt-4 form-check form-switch cursor-pointer d-flex align-items-center gap-2">
+                            <input class="form-check-input mt-0" type="checkbox" id="sameAsShippingToggle" x-model="sameAsShipping" style="cursor: pointer; width: 40px; height: 20px;">
+                            <label class="form-check-label small fw-bold text-muted text-uppercase mt-1" for="sameAsShippingToggle" style="cursor: pointer; font-size: 11px; letter-spacing: 1px;">Billing address same as Shipping address</label>
                         </div>
 
                         
-                        <div x-show="!sameAsShipping" x-cloak class="mt-4 pt-3 border-top">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="fw-bold mb-0 text-body"><i class="bi bi-receipt me-2 text-primary"></i>Billing Addresses</h6>
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" @click="$dispatch('open-address-modal', {customerId: partyId})">
-                                    <i class="bi bi-plus-lg me-1"></i>New Address
+                        <div x-show="!sameAsShipping" x-cloak class="mt-4 pt-4 border-top transition-all">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-receipt me-2 text-primary"></i>Billing Addresses</h6>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 shadow-sm hover-shadow transition-all" @click="$dispatch('open-address-modal', {customerId: partyId})">
+                                    <i class="bi bi-plus-lg me-2"></i>New Address
                                 </button>
                             </div>
                             
-                            <div class="row g-3">
+                            <div class="row g-4">
                                 <template x-for="addr in addresses" :key="addr.id">
                                     <div class="col-md-6 col-lg-4">
-
                                         <div class="w-100 h-100 cursor-pointer" style="display:block;" @click="billingAddressId = addr.id">
-                                            <div class="card h-100 border-2 rounded-4 transition-all" :class="billingAddressId == addr.id ? 'border-primary bg-primary bg-opacity-10 shadow-sm' : 'border-secondary border-opacity-25 hover-shadow'">
-                                                <div class="card-body p-3">
-                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div class="card h-100 border-2 rounded-4 transition-all" :class="billingAddressId == addr.id ? 'border-primary bg-primary bg-opacity-10 shadow-md' : 'border-secondary border-opacity-10 bg-body-tertiary hover-shadow'" style="transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                                <div class="card-body p-4 position-relative">
+                                                    <div class="d-flex justify-content-between align-items-start mb-3">
                                                         <div>
-                                                            <span class="badge bg-secondary rounded-pill me-1" x-text="addr.label || 'Address'"></span>
-                                                            <span x-show="addr.is_default" class="badge bg-success rounded-pill"><i class="bi bi-star-fill me-1"></i>Default</span>
+                                                            <span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis rounded-pill me-2 px-3 py-1 shadow-sm fw-medium" x-text="addr.label || 'Address'"></span>
+                                                            <span x-show="addr.is_default" class="badge bg-success bg-opacity-25 text-success-emphasis rounded-pill px-3 py-1 shadow-sm fw-medium"><i class="bi bi-star-fill me-1"></i>Default</span>
                                                         </div>
-                                                        <button type="button" class="btn btn-light btn-sm rounded shadow-sm position-absolute" style="top: 12px; right: 12px; z-index: 20; border: 1px solid #dee2e6;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
+                                                        <button type="button" class="btn btn-light btn-sm rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 16px; right: 16px; width: 32px; height: 32px; z-index: 20; border: 1px solid rgba(0,0,0,0.05);" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
                                                             <i class="bi bi-pencil text-primary"></i>
                                                         </button>
                                                     </div>
-                                                    <p class="mb-1 small fw-medium text-body" x-text="addr.address_line_1"></p>
-                                                    <p class="mb-1 small text-muted" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
-                                                    <p class="mb-1 small text-muted" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
-                                                    <p class="mb-0 small text-muted">
+                                                    <p class="mb-2 small fw-bold text-body fs-6" x-text="addr.address_line_1"></p>
+                                                    <p class="mb-2 small text-muted" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
+                                                    <p class="mb-2 small text-muted" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
+                                                    <p class="mb-0 small text-muted fw-medium">
                                                         <span x-show="addr.city" x-text="addr.city + ', '"></span>
                                                         <span x-show="addr.state" x-text="addr.state"></span>
-                                                        <span x-show="addr.pincode" x-text="'- ' + addr.pincode"></span>
+                                                        <span class="text-body" x-show="addr.pincode" x-text="'- ' + addr.pincode"></span>
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    </div>
                                 </template>
                                 <template x-if="addresses.length === 0">
                                     <div class="col-12">
-                                        <div class="alert alert-light border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0">
-                                            <i class="bi bi-info-circle text-muted fs-4 me-3"></i>
+                                        <div class="alert alert-light border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0 p-4 shadow-sm bg-body-tertiary">
+                                            <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-4" style="width: 50px; height: 50px;">
+                                                <i class="bi bi-info-circle text-muted fs-4"></i>
+                                            </div>
                                             <div>
-                                                <p class="mb-0 fw-medium">No addresses found.</p>
-                                                <p class="mb-0 small text-muted">Please add an address to continue with the order.</p>
+                                                <p class="mb-1 fw-bold fs-6 text-body">No addresses found.</p>
+                                                <p class="mb-0 small text-muted">Please add a billing address to continue with your order.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -306,10 +310,10 @@
             </div>
 
             
-            <div class="card mb-4">
-                <div class="card-header bg-transparent border-bottom py-3">
+            <div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-info bg-opacity-10 border-bottom-0 py-3">
                     <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
-                        <span class="fw-bold"><i class="bi bi-search me-2 text-primary"></i>Product Catalog</span>
+                        <span class="fw-bold text-info-emphasis fs-5"><i class="bi bi-search me-2 text-info"></i>Product Catalog</span>
                         <div class="d-flex flex-wrap gap-2 flex-grow-1 justify-content-md-end">
                             <div class="btn-group" role="group">
                                 <button type="button" class="btn btn-sm" :class="viewMode === 'grid' ? 'btn-primary' : 'btn-outline-primary'" @click="viewMode = 'grid'" title="Grid View"><i class="bi bi-grid"></i></button>
@@ -351,29 +355,40 @@
                         <div class="row g-3" x-show="viewMode === 'grid'">
                             <template x-for="p in products" :key="p.id">
                                 <div class="col-sm-6 col-md-4">
-                                    <div class="card border h-100" :class="{'border-primary bg-primary bg-opacity-5': isInCart(p.id)}">
+                                    <div class="card border-0 shadow-sm h-100 rounded-4 transition-all hover-shadow" :class="{'border-primary bg-primary bg-opacity-10 border-2': isInCart(p.id), 'bg-body': !isInCart(p.id)}" style="transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
                                         <div class="card-body p-3">
-                                            <div class="d-flex gap-2 mb-2">
-                                                <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded border bg-body-tertiary" style="width:48px;height:48px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                            <div class="d-flex gap-3 mb-3">
+                                                <div class="position-relative">
+                                                    <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded-3 border bg-white shadow-sm" style="width:60px;height:60px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                    <div x-show="isInCart(p.id)" class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle text-white d-flex align-items-center justify-content-center shadow" style="width: 20px; height: 20px; font-size: 10px;">
+                                                        <i class="bi bi-check"></i>
+                                                    </div>
+                                                </div>
                                                 <div class="flex-grow-1" style="min-width: 0;">
-                                                    <div class="fw-semibold small text-truncate" :title="p.name" x-text="p.name"></div>
-                                                    <div class="text-muted text-truncate" style="font-size:11px" x-text="p.sku"></div>
+                                                    <div class="fw-bold text-truncate text-body" :title="p.name" x-text="p.name"></div>
+                                                    <div class="text-muted text-truncate font-monospace mt-1" style="font-size:11px; letter-spacing: 0.5px;" x-text="p.sku"></div>
                                                 </div>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <span class="fw-bold text-primary" x-text="'₹' + parseFloat(p.selling_price).toFixed(2)"></span>
-                                                <span class="badge" :class="p.available_stock > 10 ? 'bg-success' : (p.available_stock > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + p.available_stock"></span>
+                                            <div class="d-flex justify-content-between align-items-center mb-3 px-2 py-1 bg-body-secondary rounded-3">
+                                                <span class="fw-black text-primary fs-5" x-text="'₹' + parseFloat(p.selling_price).toFixed(2)"></span>
+                                                <span class="badge rounded-pill fw-medium" :class="p.available_stock > 10 ? 'bg-success bg-opacity-25 text-success-emphasis' : (p.available_stock > 0 ? 'bg-warning bg-opacity-25 text-warning-emphasis' : 'bg-danger bg-opacity-25 text-danger-emphasis')" x-text="'Stock: ' + p.available_stock"></span>
                                             </div>
-                                            <div class="row g-1 mb-2">
+                                            <div class="row g-2">
                                                 <div class="col-5">
-                                                    <input type="number" class="form-control form-control-sm text-center" x-model.number="p._qty" min="1" :max="p.available_stock || 9999" placeholder="Qty">
+                                                    <div class="form-floating">
+                                                        <input type="number" class="form-control form-control-sm text-center fw-bold" style="height: 42px; min-height: 42px;" x-model.number="p._qty" min="1" :max="p.available_stock || 9999" placeholder="Qty">
+                                                        <label class="text-muted" style="padding-top: 0.5rem; padding-bottom: 0.5rem; font-size: 0.75rem;">Qty</label>
+                                                    </div>
                                                 </div>
                                                 <div class="col-4">
-                                                    <input type="number" class="form-control form-control-sm text-center" x-model.number="p._disc" min="0" placeholder="Disc%">
+                                                    <div class="form-floating">
+                                                        <input type="number" class="form-control form-control-sm text-center fw-bold text-success" style="height: 42px; min-height: 42px;" x-model.number="p._disc" min="0" placeholder="Disc%">
+                                                        <label class="text-muted" style="padding-top: 0.5rem; padding-bottom: 0.5rem; font-size: 0.75rem;">Disc%</label>
+                                                    </div>
                                                 </div>
                                                 <div class="col-3">
-                                                    <button class="btn btn-sm w-100" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" title="Add to cart">
-                                                        <i class="bi" :class="isInCart(p.id) ? 'bi-plus-circle-fill' : 'bi-cart-plus'"></i>
+                                                    <button class="btn btn-sm w-100 h-100 rounded-3 shadow-sm d-flex align-items-center justify-content-center transition-all" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" title="Add to cart">
+                                                        <i class="bi fs-5" :class="isInCart(p.id) ? 'bi-plus-circle-fill' : 'bi-cart-plus'"></i>
                                                     </button>
                                                 </div>
                                             </div>
@@ -441,13 +456,13 @@
             </div>
 
             
-            <div class="row align-items-center gy-3 mb-3 mt-1">
+            <div class="row align-items-center gy-3 mb-4 mt-2">
                 <div class="col-sm">
-                    <h5 class="fs-15 mb-0 fw-bold"><i class="bi bi-cart3 me-2 text-primary"></i>Shopping Cart (<span x-text="cart.length"></span> items)</h5>
+                    <h4 class="mb-0 fw-black text-body d-flex align-items-center gap-2"><div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-cart3"></i></div> Shopping Cart (<span x-text="cart.length" class="text-primary"></span>)</h4>
                 </div>
                 <div class="col-sm-auto" x-show="cart.length > 0">
-                    <button type="button" class="btn btn-sm btn-link link-danger p-0 text-decoration-none" @click="cart = []">
-                        <i class="bi bi-trash me-1"></i> Clear Cart
+                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 shadow-sm hover-shadow" @click="cart = []">
+                        <i class="bi bi-trash3 me-1"></i> Clear Cart
                     </button>
                 </div>
             </div>
@@ -671,15 +686,19 @@
 
                         
                         <button type="button" @click.prevent="placeOrder()" :disabled="placing || cart.length === 0 || !partyId || !warehouseId"
-                            class="btn btn-primary w-100 rounded-4 py-3 fw-black text-uppercase tracking-widest shadow-sm d-flex justify-content-center align-items-center gap-2 hover-shadow">
-                            <span x-show="placing" class="spinner-border spinner-border-sm"></span>
-                            <i x-show="!placing" class="bi bi-check-square-fill"></i>
-                            <span x-text="isDraft ? 'Save Future Order' : 'Place Order'"></span>
+                            class="btn btn-primary w-100 rounded-pill py-3 fw-black text-uppercase tracking-widest shadow position-relative overflow-hidden transition-all hover-shadow" style="letter-spacing: 2px;">
+                            <span x-show="placing" class="spinner-border spinner-border-sm me-2"></span>
+                            <i x-show="!placing" class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
+                            <span x-text="isDraft ? 'Save Future Order' : 'Complete Order'" class="align-middle"></span>
+                            <div class="position-absolute top-0 start-0 w-100 h-100 bg-white opacity-25" style="transform: translateX(-100%); transition: transform 0.5s;" onmouseover="this.style.transform='translateX(100%)'" onmouseout="this.style.transform='translateX(-100%)'"></div>
                         </button>
                         
                         <template x-if="formErrors.length">
-                            <div class="alert alert-danger mt-3 mb-0 p-2 rounded-3 small">
-                                <template x-for="e in formErrors" :key="e"><div x-text="e"></div></template>
+                            <div class="alert alert-danger mt-3 mb-0 p-3 rounded-4 shadow-sm small border-0 bg-danger bg-opacity-10 text-danger-emphasis">
+                                <div class="d-flex align-items-center gap-2 mb-2 fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> Please fix the following errors:</div>
+                                <ul class="mb-0 ps-3">
+                                    <template x-for="e in formErrors" :key="e"><li x-text="e"></li></template>
+                                </ul>
                             </div>
                         </template>
                     </div>

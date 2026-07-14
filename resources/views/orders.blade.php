@@ -329,44 +329,96 @@
     <div class="card-body p-0">
         <!-- Bulk Actions Bar -->
         <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedOrders.length > 0" x-transition>
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-check-circle-fill text-primary me-2"></i>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-primary"></i>
                     <span class="fw-medium text-primary">
                         <strong x-text="selectedOrders.length"></strong> order(s) selected
                     </span>
+                    <span class="badge bg-primary bg-opacity-25 text-primary small d-none d-md-inline"
+                          x-text="'Next: ' + [
+                            bulkAvailableActions.canConfirm ? 'Confirm' : null,
+                            bulkAvailableActions.canProcess ? 'Process' : null,
+                            bulkAvailableActions.canReadyToShip ? 'Ready to Ship' : null,
+                            bulkAvailableActions.canDispatch ? 'Dispatch' : null,
+                            bulkAvailableActions.canDeliver ? 'Deliver' : null,
+                          ].filter(Boolean).join(', ') || 'No transitions'">
+                    </span>
                 </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('confirmed')">
+                <div class="d-flex flex-wrap gap-2">
+                    {{-- Next-step lifecycle buttons - only shown when relevant --}}
+                    <button class="btn btn-sm btn-primary"
+                            x-show="bulkAvailableActions.canConfirm"
+                            x-transition
+                            @click="bulkUpdateStatus('confirmed')"
+                            title="Move pending orders → Confirmed">
                         <i class="bi bi-check-circle me-1"></i>Confirm
                     </button>
-                    <button class="btn btn-sm btn-secondary" @click="bulkUpdateStatus('processing')">
+                    <button class="btn btn-sm btn-secondary"
+                            x-show="bulkAvailableActions.canProcess"
+                            x-transition
+                            @click="bulkUpdateStatus('processing')"
+                            title="Move confirmed orders → Processing">
                         <i class="bi bi-arrow-clockwise me-1"></i>Process
                     </button>
-                    <button class="btn btn-sm btn-info" @click="bulkUpdateStatus('ready_to_ship')">
+                    <button class="btn btn-sm btn-info text-white"
+                            x-show="bulkAvailableActions.canReadyToShip"
+                            x-transition
+                            @click="bulkUpdateStatus('ready_to_ship')"
+                            title="Move processing orders → Ready to Ship">
                         <i class="bi bi-truck me-1"></i>Ready to Ship
                     </button>
-                    <button class="btn btn-sm btn-warning" @click="bulkUpdateStatus('dispatched')">
+                    <button class="btn btn-sm btn-warning"
+                            x-show="bulkAvailableActions.canDispatch"
+                            x-transition
+                            @click="bulkUpdateStatus('dispatched')"
+                            title="Move ready-to-ship orders → Dispatched">
                         <i class="bi bi-box-arrow-right me-1"></i>Dispatch
                     </button>
-                    <button class="btn btn-sm btn-success" @click="bulkUpdateStatus('delivered')">
+                    <button class="btn btn-sm btn-success"
+                            x-show="bulkAvailableActions.canDeliver"
+                            x-transition
+                            @click="bulkUpdateStatus('delivered')"
+                            title="Move dispatched orders → Delivered">
                         <i class="bi bi-check2-all me-1"></i>Deliver
                     </button>
-                    <button class="btn btn-sm btn-danger" @click="bulkUpdateStatus('cancelled')">
+
+                    {{-- Separator before non-lifecycle actions --}}
+                    <div class="vr" x-show="bulkAvailableActions.canCancel || true"></div>
+
+                    {{-- Cancel (always shown if any selected order is cancellable) --}}
+                    <button class="btn btn-sm btn-outline-danger"
+                            x-show="bulkAvailableActions.canCancel"
+                            x-transition
+                            @click="bulkUpdateStatus('cancelled')"
+                            title="Cancel selected orders">
                         <i class="bi bi-x-circle me-1"></i>Cancel
                     </button>
-                    <button class="btn btn-sm btn-warning" @click="openBulkVerificationModal()">
+
+                    {{-- Verification & Print (always available for any selection) --}}
+                    <button class="btn btn-sm btn-outline-warning" @click="openBulkVerificationModal()"
+                            title="Log a verification call for selected orders">
                         <i class="bi bi-telephone me-1"></i>Verify Call
                     </button>
                     <div class="dropdown d-inline-block">
                         <button class="btn btn-sm btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-printer me-1"></i>Print
                         </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" @click.prevent="bulkPrint('invoice')">Invoice PDF</a></li>
-                            <li><a class="dropdown-item" href="#" @click.prevent="bulkPrint('cod')">COD PDF</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" @click.prevent="bulkPrint('invoice')">
+                                <i class="bi bi-file-pdf me-2"></i>Invoice PDF
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="bulkPrint('cod')">
+                                <i class="bi bi-file-earmark-pdf me-2"></i>COD PDF
+                            </a></li>
                         </ul>
                     </div>
+
+                    {{-- Deselect all --}}
+                    <button class="btn btn-sm btn-outline-secondary" @click="selectedOrders = []"
+                            title="Clear selection">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -394,7 +446,7 @@
                             <i class="bi bi-arrow-up" x-show="sortField === 'order_no' && sortDirection === 'asc'" aria-hidden="true"></i>
                             <i class="bi bi-arrow-down" x-show="sortField === 'order_no' && sortDirection === 'desc'" aria-hidden="true"></i>
                         </th>
-                        <th scope="col">Customer</th>
+                        <th scope="col">Placed By</th>
                         <th scope="col">Items</th>
                         <th scope="col"
                             role="button"
@@ -417,7 +469,7 @@
                             @keydown.space.prevent="sortBy('order_date')"
                             :aria-sort="sortField === 'order_date' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
                             class="sortable">
-                            Date
+                            Order Placed
                             <i class="bi bi-arrow-up" x-show="sortField === 'order_date' && sortDirection === 'asc'" aria-hidden="true"></i>
                             <i class="bi bi-arrow-down" x-show="sortField === 'order_date' && sortDirection === 'desc'" aria-hidden="true"></i>
                         </th>
@@ -439,15 +491,15 @@
                                 <small class="text-muted" x-text="'ID: ' + order.id"></small>
                             </td>
                             <td>
-                                <div class="order-customer d-flex align-items-center">
-                                    <img :src="order.customer.avatar" 
-                                         class="rounded-circle me-2" 
+                                <div class="d-flex align-items-center">
+                                    <img :src="order.createdBy.avatar"
+                                         class="rounded-circle me-2"
                                          width="32"
                                          height="32"
-                                         :alt="order.customer.name">
+                                         :alt="order.createdBy.name">
                                     <div>
-                                        <div class="fw-medium small" x-text="order.customer.name"></div>
-                                        <small class="text-muted" x-text="order.customer.email"></small>
+                                        <div class="fw-medium small" x-text="order.createdBy.name"></div>
+                                        <small class="text-muted" x-text="order.createdBy.email"></small>
                                     </div>
                                 </div>
                             </td>
@@ -463,7 +515,10 @@
                                       :style="`background-color: ${getStatusColor(order.status)}; color: #fff`"
                                       x-text="order.status.charAt(0).toUpperCase() + order.status.slice(1).replace(/_/g, ' ')"></span>
                             </td>
-                            <td class="small" x-text="order.orderDate"></td>
+                            <td>
+                                <div class="small fw-medium" x-text="order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'"></div>
+                                <small class="text-muted" x-text="order.orderDate ? new Date(order.orderDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''"></small>
+                            </td>
                             <td>
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
@@ -626,7 +681,7 @@
                                             </div>
                                             <div class="col-md-4">
                                                 <p class="small text-muted mb-1">Created By</p>
-                                                <p class="fw-semibold mb-0" x-text="selectedOrder.createdBy"></p>
+                                                <p class="fw-semibold mb-0" x-text="selectedOrder.createdBy.name"></p>
                                             </div>
                                             <div class="col-md-4">
                                                 <p class="small text-muted mb-1">Updated By</p>

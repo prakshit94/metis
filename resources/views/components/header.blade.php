@@ -1,5 +1,5 @@
 <!-- Header -->
-<header class="admin-header bg-body border-bottom shadow-sm sticky-top" role="banner" style="z-index: 1030; min-height: 70px;">
+<header class="admin-header border-bottom shadow-sm sticky-top" role="banner" style="z-index: 1030; min-height: 70px; background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
     <nav class="navbar navbar-expand h-100 py-0" aria-label="Main navigation">
         <div class="container-fluid align-items-center h-100 px-3 px-md-4 gap-3">
 
@@ -186,7 +186,7 @@
                                         <div class="bg-body-secondary border rounded-3 d-flex align-items-center justify-content-center overflow-hidden me-3 flex-shrink-0" style="width: 48px; height: 48px;">
                                             <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-cover" alt="Product" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                         </div>
-                                        <div class="flex-grow-1 min-w-0">
+                                        <div class="flex-grow-1" style="min-width: 0;">
                                             <h6 class="mb-1 fw-bold text-body text-truncate fs-6" x-text="item.name"></h6>
                                             <p class="mb-0 text-muted fw-semibold" style="font-size: 11px;">Qty: <span x-text="item.quantity"></span> × ₹<span x-text="parseFloat(item.price).toFixed(2)"></span></p>
                                         </div>
@@ -364,7 +364,7 @@
                                  alt="{{ Auth::user()?->name ?? 'User' }}"
                                  width="48" height="48"
                                  class="rounded-circle object-fit-cover shadow-sm">
-                            <div class="min-w-0">
+                            <div style="min-width: 0;">
                                 <h6 class="mb-1 fw-bold text-body text-truncate">{{ Auth::user()?->name ?? 'User' }}</h6>
                                 <p class="mb-0 text-muted small text-truncate">{{ Auth::user()?->email ?? 'admin@example.com' }}</p>
                             </div>
