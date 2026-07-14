@@ -22,7 +22,8 @@ class PromotionsController extends Controller
 
     public function offers()
     {
-        return view('promotions.offers');
+        $products = \App\Models\Product::where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku']);
+        return view('promotions.offers', compact('products'));
     }
 
     // ─── Coupons JSON API ─────────────────────────────────────────────────────
@@ -42,7 +43,22 @@ class PromotionsController extends Controller
         $perPage  = min((int) $request->input('per_page', 15), 100);
         $coupons  = $query->paginate($perPage);
 
-        return response()->json(['data' => $coupons]);
+        $now = now();
+        $stats = [
+            'total' => Coupon::count(),
+            'active' => Coupon::where('is_active', true)->count(),
+            'inactive' => Coupon::where('is_active', false)->count(),
+            'expiring_soon' => Coupon::where('is_active', true)
+                ->whereNotNull('expiry_date')
+                ->where('expiry_date', '<=', $now->copy()->addDays(7))
+                ->where('expiry_date', '>', $now)
+                ->count(),
+        ];
+
+        return response()->json([
+            'data' => $coupons,
+            'stats' => $stats,
+        ]);
     }
 
     public function couponsStore(Request $request): JsonResponse
@@ -148,6 +164,13 @@ class PromotionsController extends Controller
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
+        if ($request->filled('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
 
         $perPage = min((int) $request->input('per_page', 15), 100);
         $offers  = $query->paginate($perPage);
@@ -164,22 +187,41 @@ class PromotionsController extends Controller
         $data = $request->validate([
             'name'          => 'required|string|max:255',
             'type'          => 'required|in:order_discount,bogo',
-            'discount_type' => 'required|in:percentage,fixed',
-            'value'         => 'required|numeric|min:0',
+            'discount_type' => 'required_if:type,order_discount|nullable|in:percentage,fixed',
+            'value'         => 'required_if:type,order_discount|nullable|numeric|min:0',
             'min_spend'     => 'nullable|numeric|min:0',
             'max_discount'  => 'nullable|numeric|min:0',
-            'product_id'    => 'nullable|exists:products,id',
-            'buy_qty'       => 'nullable|integer|min:1',
-            'get_qty'       => 'nullable|integer|min:1',
+            'product_ids'   => 'nullable|array',
+            'product_ids.*' => 'exists:products,id',
+            'buy_qty'       => 'required_if:type,bogo|nullable|integer|min:1',
+            'get_qty'       => 'required_if:type,bogo|nullable|integer|min:1',
             'starts_at'     => 'nullable|date',
             'ends_at'       => 'nullable|date|after_or_equal:starts_at',
             'priority'      => 'nullable|integer|min:0',
             'is_active'     => 'boolean',
         ]);
 
-        $offer = Offer::create($data);
+        $productIds = $request->input('product_ids', []);
+        
+        if (empty($productIds)) {
+            // Create a single global offer
+            $offerData = $data;
+            unset($offerData['product_ids']);
+            $offerData['product_id'] = null;
+            $offer = Offer::create($offerData);
+            return response()->json(['message' => 'Global offer created.', 'data' => $offer->load('product')], 201);
+        }
 
-        return response()->json(['message' => 'Offer created.', 'data' => $offer->load('product')], 201);
+        // Bulk create offers for each selected product
+        $createdOffers = collect();
+        foreach ($productIds as $pId) {
+            $offerData = $data;
+            unset($offerData['product_ids']);
+            $offerData['product_id'] = $pId;
+            $createdOffers->push(Offer::create($offerData)->load('product'));
+        }
+
+        return response()->json(['message' => 'Offers created for selected products.', 'data' => $createdOffers->first()], 201);
     }
 
     public function offersUpdate(Request $request, Offer $offer): JsonResponse
@@ -191,13 +233,13 @@ class PromotionsController extends Controller
         $data = $request->validate([
             'name'          => 'sometimes|required|string|max:255',
             'type'          => 'sometimes|required|in:order_discount,bogo',
-            'discount_type' => 'sometimes|required|in:percentage,fixed',
-            'value'         => 'sometimes|required|numeric|min:0',
+            'discount_type' => 'required_if:type,order_discount|nullable|in:percentage,fixed',
+            'value'         => 'required_if:type,order_discount|nullable|numeric|min:0',
             'min_spend'     => 'nullable|numeric|min:0',
             'max_discount'  => 'nullable|numeric|min:0',
             'product_id'    => 'nullable|exists:products,id',
-            'buy_qty'       => 'nullable|integer|min:1',
-            'get_qty'       => 'nullable|integer|min:1',
+            'buy_qty'       => 'required_if:type,bogo|nullable|integer|min:1',
+            'get_qty'       => 'required_if:type,bogo|nullable|integer|min:1',
             'starts_at'     => 'nullable|date',
             'ends_at'       => 'nullable|date',
             'priority'      => 'nullable|integer|min:0',

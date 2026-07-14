@@ -50,21 +50,28 @@ class CouponController extends Controller
             ]);
         }
 
+        $discount = 0.0;
         if ($coupon->type === 'percentage') {
-            $discount = $subtotal * ($coupon->value / 100);
-            if ((float) $coupon->max_discount > 0 && $discount > (float) $coupon->max_discount) {
+            $discount = $subtotal * ((float)$coupon->value / 100);
+            if ((float)$coupon->max_discount > 0 && $discount > (float)$coupon->max_discount) {
                 $discount = (float) $coupon->max_discount;
             }
         } else {
             $discount = (float) $coupon->value;
         }
-
         $discount = min($discount, $subtotal);
 
         return response()->json([
             'valid'    => true,
-            'discount' => round($discount, 2),
-            'message'  => 'Promo code applied! You save ₹' . number_format($discount, 2) . '.',
+            'discount' => (float) $discount,
+            'coupon'   => [
+                'code' => $coupon->code,
+                'type' => $coupon->type,
+                'value' => (float)$coupon->value,
+                'min_spend' => (float)$coupon->min_spend,
+                'max_discount' => $coupon->max_discount ? (float)$coupon->max_discount : null,
+            ],
+            'message'  => 'Promo code applied!',
         ]);
     }
 }

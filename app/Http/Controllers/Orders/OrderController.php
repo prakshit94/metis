@@ -56,8 +56,6 @@ class OrderController extends Controller implements HasMiddleware
             'payments',
             'creator',
             'updater',
-            'shippingAddress.village.services',
-            'billingAddress.village.services',
             'verificationLogs.user',
         ])->withCount('items');
 
@@ -313,13 +311,14 @@ class OrderController extends Controller implements HasMiddleware
     {
         $warehouses   = Warehouse::orderBy('name')->get();
         $parties      = Party::orderBy('firstname')->get();
-        $activeOffers = \App\Models\Offer::active()->get();
+        $activeOffers = \App\Models\Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
+        $activeCoupons = \App\Models\Coupon::where('is_active', true)->get();
         $categories   = \App\Models\Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
 
         $hideSidebar = true;
         $lockSearch = true;
 
-        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'categories', 'hideSidebar', 'lockSearch'));
+        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch'));
     }
 
     public function store(Request $request, OrderService $orderService)
@@ -327,24 +326,29 @@ class OrderController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'type' => 'required|string|in:sale,purchase',
             'party_id' => 'required|exists:parties,id',
-            'warehouse_id' => 'nullable|exists:warehouses,id',
-            'shipping_address_id' => 'nullable|exists:party_addresses,id',
-            'billing_address_id' => 'nullable|exists:party_addresses,id',
-            'order_date' => 'nullable|date',
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'shipping_address_id' => 'required|exists:party_addresses,id',
+            'billing_address_id' => 'required|exists:party_addresses,id',
+            'order_date' => 'required|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_variant_id' => 'nullable|integer',
             'items.*.quantity' => 'required|numeric|gt:0',
             'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.tax_rate' => 'nullable|numeric|min:0',
             'items.*.discount_amount' => 'nullable|numeric|min:0',
             'items.*.tax_amount' => 'nullable|numeric|min:0',
             'items.*.total_amount' => 'nullable|numeric|min:0',
             'is_draft' => 'nullable|boolean',
             'future_order_date' => 'nullable|date',
             'coupon_code' => 'nullable|string',
-            'total_amount' => 'nullable|numeric',
-            'tax_amount' => 'nullable|numeric',
-            'discount_amount' => 'nullable|numeric',
-            'net_amount' => 'nullable|numeric',
+            'applied_offer_id' => 'nullable|integer|exists:offers,id',
+            'applied_bogo_ids' => 'nullable|array',
+            'applied_bogo_ids.*' => 'integer|exists:offers,id',
+            'total_amount' => 'required|numeric',
+            'tax_amount' => 'required|numeric',
+            'discount_amount' => 'required|numeric',
+            'net_amount' => 'required|numeric',
         ]);
 
         $order = $orderService->createOrder($validated);

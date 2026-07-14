@@ -43,9 +43,37 @@ async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it'
         confirmButtonColor: '#dc3545',
         reverseButtons: true,
         focusCancel: true,
+        customClass: {
+            popup: 'rounded-4 shadow-lg',
+            confirmButton: 'btn btn-danger me-2',
+            cancelButton: 'btn btn-secondary',
+        },
+        buttonsStyling: false,
     });
 
     return result.isConfirmed;
+}
+
+function emptyForm() {
+    return {
+        id: null,
+        name: '',
+        code: '',
+        company_name: '',
+        gstin: '',
+        phone: '',
+        address_line_1: '',
+        address_line_2: '',
+        village_id: '',
+        village_name: '',
+        post_office: '',
+        taluka: '',
+        city: '',
+        state: '',
+        pincode: '',
+        is_default: false,
+        status: 'active',
+    };
 }
 
 export default () => {
@@ -69,15 +97,13 @@ export default () => {
         apiBase: '/api/warehouses',
         modalInstance: null,
 
-        form: {
-            id: null,
-            name: '',
-            code: '',
-            description: '',
-            rate: 0,
-            short_name: '',
-            status: 'active'
-        },
+        // Village autofill
+        villageSearchQuery: '',
+        villageResults: [],
+        villageSearchLoading: false,
+        villageSearchTimeout: null,
+
+        form: emptyForm(),
 
         init() {
             this.loadData();
@@ -130,18 +156,20 @@ export default () => {
         },
 
         calculateStats() {
-            this.stats.total = this.items.length;
-            this.stats.active = this.items.filter(i => i.status === 'active').length;
+            this.stats.total    = this.items.length;
+            this.stats.active   = this.items.filter(i => i.status === 'active').length;
             this.stats.inactive = this.items.filter(i => i.status === 'inactive').length;
         },
 
         filterData() {
             this.filteredItems = this.items.filter(item => {
-                const searchTerms = this.searchQuery.toLowerCase();
-                const matchesSearch = !this.searchQuery ||
-                    (item.name || '').toLowerCase().includes(searchTerms) ||
-                    (item.code || '').toLowerCase().includes(searchTerms) ||
-                    (item.description || '').toLowerCase().includes(searchTerms);
+                const q = this.searchQuery.toLowerCase();
+                const matchesSearch = !q ||
+                    (item.name || '').toLowerCase().includes(q) ||
+                    (item.code || '').toLowerCase().includes(q) ||
+                    (item.city || '').toLowerCase().includes(q) ||
+                    (item.state || '').toLowerCase().includes(q) ||
+                    (item.gstin || '').toLowerCase().includes(q);
 
                 const matchesStatus = !this.statusFilter || item.status === this.statusFilter;
                 return matchesSearch && matchesStatus;
@@ -158,9 +186,9 @@ export default () => {
                 let aVal = a[this.sortField] || '';
                 let bVal = b[this.sortField] || '';
 
-                if (this.sortField === 'id' || this.sortField === 'rate') {
-                    aVal = parseFloat(aVal) || 0;
-                    bVal = parseFloat(bVal) || 0;
+                if (this.sortField === 'id') {
+                    aVal = parseInt(aVal) || 0;
+                    bVal = parseInt(bVal) || 0;
                 } else {
                     aVal = String(aVal).toLowerCase();
                     bVal = String(bVal).toLowerCase();
@@ -201,8 +229,7 @@ export default () => {
 
         get visiblePages() {
             if (this.totalPages <= 1) return [1];
-            const pages = [];
-            pages.push(1);
+            const pages = [1];
 
             if (this.totalPages <= 7) {
                 for (let i = 2; i <= this.totalPages; i++) pages.push(i);
@@ -244,15 +271,9 @@ export default () => {
 
         resetForm() {
             this.isEditing = false;
-            this.form = {
-                id: null,
-                name: '',
-                code: '',
-                description: '',
-                rate: 0,
-                short_name: '',
-                status: 'active'
-            };
+            this.form = emptyForm();
+            this.villageSearchQuery = '';
+            this.villageResults = [];
         },
 
         openCreateModal() {
@@ -262,26 +283,49 @@ export default () => {
 
         editItem(item) {
             this.isEditing = true;
-            this.form = { ...item };
-            this.form.name = item.name || item.code || '';
+            this.form = {
+                id:             item.id,
+                name:           item.name || '',
+                code:           item.code || '',
+                company_name:   item.company_name || '',
+                gstin:          item.gstin || '',
+                phone:          item.phone || '',
+                address_line_1: item.address_line_1 || '',
+                address_line_2: item.address_line_2 || '',
+                village_id:     item.village_id || '',
+                village_name:   item.village_name || '',
+                post_office:    item.post_office || '',
+                taluka:         item.taluka || '',
+                city:           item.city || '',
+                state:          item.state || '',
+                pincode:        item.pincode || '',
+                is_default:     !!item.is_default,
+                status:         item.status || 'active',
+            };
+            this.villageSearchQuery = item.village_name || '';
+            this.villageResults = [];
             this.modalInstance?.show();
         },
 
         async saveItem() {
+            if (!this.form.name.trim()) {
+                showToast('Warehouse name is required.', 'warning');
+                return;
+            }
+
             this.saving = true;
             try {
-                const url = this.isEditing ? `${this.apiBase}/${this.form.id}` : this.apiBase;
+                const url    = this.isEditing ? `${this.apiBase}/${this.form.id}` : this.apiBase;
                 const method = this.isEditing ? 'PUT' : 'POST';
 
-                // Warehouses store the code field as primary
-                this.form.code = this.form.name;
+                const payload = { ...this.form };
 
                 await this.apiRequest(url, {
                     method,
-                    body: JSON.stringify(this.form)
+                    body: JSON.stringify(payload),
                 });
 
-                showToast(`Successfully ${this.isEditing ? 'updated' : 'created'} warehouse.`, 'success');
+                showToast(`Warehouse ${this.isEditing ? 'updated' : 'created'} successfully.`, 'success');
                 this.modalInstance?.hide();
                 await this.loadData();
             } catch (error) {
@@ -295,7 +339,7 @@ export default () => {
             const name = item.name || item.code;
             const confirmed = await confirmDelete({
                 title: 'Delete Warehouse?',
-                text: `Are you sure you want to delete "${name}"?`
+                text: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
             });
             if (!confirmed) return;
 
@@ -309,13 +353,16 @@ export default () => {
         },
 
         async bulkAction(action) {
-            if (this.selectedItems.length === 0) return;
+            if (this.selectedItems.length === 0) {
+                showToast('Please select at least one warehouse.', 'warning');
+                return;
+            }
 
             try {
                 if (action === 'delete') {
                     const confirmed = await confirmDelete({
                         title: 'Delete Selected?',
-                        text: `Are you sure you want to delete ${this.selectedItems.length} warehouses?`
+                        text: `Are you sure you want to delete ${this.selectedItems.length} warehouses?`,
                     });
                     if (!confirmed) return;
 
@@ -327,7 +374,7 @@ export default () => {
                     for (const id of this.selectedItems) {
                         await this.apiRequest(`${this.apiBase}/${id}`, {
                             method: 'PUT',
-                            body: JSON.stringify({ status })
+                            body: JSON.stringify({ status }),
                         });
                     }
                 }
@@ -340,34 +387,93 @@ export default () => {
             }
         },
 
+        // ─── Village Autofill ──────────────────────────────────────────────────────
+
+        onVillageInput() {
+            clearTimeout(this.villageSearchTimeout);
+            if (this.villageSearchQuery.length < 3) {
+                this.villageResults = [];
+                return;
+            }
+            this.villageSearchTimeout = setTimeout(() => this.searchVillages(), 300);
+        },
+
+        async searchVillages() {
+            if (this.villageSearchQuery.trim().length < 3) {
+                this.villageResults = [];
+                return;
+            }
+            this.villageSearchLoading = true;
+            try {
+                const res = await this.apiRequest(`/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`);
+                this.villageResults = res.data ?? [];
+            } catch (e) {
+                console.error('Village search failed:', e);
+            } finally {
+                this.villageSearchLoading = false;
+            }
+        },
+
+        selectVillage(v) {
+            this.form.village_id   = v.id;
+            this.form.village_name = v.village_name;
+            this.form.city         = v.taluka_name || v.district_name || '';
+            this.form.state        = v.state_name || '';
+            this.form.pincode      = v.pincode || '';
+            this.form.post_office  = v.post_so_name || '';
+            this.form.taluka       = v.taluka_name || '';
+            this.villageSearchQuery = v.village_name;
+            this.villageResults = [];
+        },
+
+        clearVillage() {
+            this.form.village_id   = '';
+            this.form.village_name = '';
+            this.form.city         = '';
+            this.form.state        = '';
+            this.form.pincode      = '';
+            this.form.post_office  = '';
+            this.form.taluka       = '';
+            this.villageSearchQuery = '';
+            this.villageResults = [];
+        },
+
         exportData() {
             if (this.filteredItems.length === 0) {
                 showToast('No data to export.', 'warning');
                 return;
             }
 
-            const headers = ['ID', 'Name/Code', 'Description', 'Status', 'Created At'];
+            const headers = ['ID', 'Name', 'Code', 'Company', 'GSTIN', 'Phone', 'Address', 'City', 'State', 'Pincode', 'Status', 'Default'];
             const csvRows = [headers.join(',')];
 
             this.filteredItems.forEach(item => {
+                const addr = [item.address_line_1, item.address_line_2].filter(Boolean).join(', ');
                 const values = [
                     item.id,
-                    `"${(item.name || item.code || '').replace(/"/g, '""')}"`,
-                    `"${(item.description || '').replace(/"/g, '""')}"`,
+                    `"${(item.name || '').replace(/"/g, '""')}"`,
+                    item.code || '',
+                    `"${(item.company_name || '').replace(/"/g, '""')}"`,
+                    item.gstin || '',
+                    item.phone || '',
+                    `"${addr.replace(/"/g, '""')}"`,
+                    item.city || '',
+                    item.state || '',
+                    item.pincode || '',
                     item.status,
-                    item.created_at || ''
+                    item.is_default ? 'Yes' : 'No',
                 ];
                 csvRows.push(values.join(','));
             });
 
             const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
             a.setAttribute('href', url);
             a.setAttribute('download', 'warehouses_export.csv');
             a.click();
             URL.revokeObjectURL(url);
-        }
+        },
     };
 
     window.Alpine.store('warehousesTable', instance);

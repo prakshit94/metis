@@ -90,6 +90,15 @@ class OrderService
             $dailyCount = \App\Models\Order::whereBetween('created_at', [$todayStart, $todayEnd])->count() + 1;
             $orderNo   = $dailyCount . '-' . $datePart . '-' . $timePart;
 
+            $shippingAddressJson = $data['shipping_address'] ?? null;
+            if (!$shippingAddressJson && !empty($data['shipping_address_id'])) {
+                $shippingAddressJson = $this->formatAddressJson(\App\Models\PartyAddress::find($data['shipping_address_id']));
+            }
+            $billingAddressJson = $data['billing_address'] ?? null;
+            if (!$billingAddressJson && !empty($data['billing_address_id'])) {
+                $billingAddressJson = $this->formatAddressJson(\App\Models\PartyAddress::find($data['billing_address_id']));
+            }
+
             $order = Order::create([
                 'order_no'            => $orderNo,
                 'type'                => $data['type'],
@@ -97,13 +106,14 @@ class OrderService
                 'warehouse_id'        => $data['warehouse_id'] ?? null,
                 'shipping_address_id' => $data['shipping_address_id'] ?? null,
                 'billing_address_id'  => $data['billing_address_id'] ?? null,
-                'shipping_address'    => $data['shipping_address'] ?? null,
-                'billing_address'     => $data['billing_address'] ?? null,
+                'shipping_address'    => $shippingAddressJson,
+                'billing_address'     => $billingAddressJson,
                 'order_date'          => $data['order_date'] ?? now(),
                 'total_amount'        => $data['total_amount'] ?? 0,
                 'tax_amount'          => $data['tax_amount'] ?? 0,
                 'discount_amount'     => $data['discount_amount'] ?? 0,
                 'coupon_code'         => $data['coupon_code'] ?? null,
+                'applied_offer_id'    => $data['applied_offer_id'] ?? null,
                 'net_amount'          => $data['net_amount'] ?? 0,
                 'status'              => 'pending',
                 'is_draft'            => $data['is_draft'] ?? false,
@@ -115,8 +125,10 @@ class OrderService
             foreach ($data['items'] as $item) {
                 $order->items()->create([
                     'product_id'      => $item['product_id'],
+                    'product_variant_id' => $item['product_variant_id'] ?? null,
                     'quantity'        => $item['quantity'],
                     'unit_price'      => $item['unit_price'],
+                    'tax_rate'        => $item['tax_rate'] ?? 0,
                     'discount_amount' => $item['discount_amount'] ?? 0,
                     'tax_amount'      => $item['tax_amount'] ?? 0,
                     'total_amount'    => $item['total_amount']
@@ -138,6 +150,14 @@ class OrderService
 
             if ($order->coupon_code) {
                 \App\Models\Coupon::where('code', $order->coupon_code)->increment('used_count');
+            }
+
+            if ($order->applied_offer_id) {
+                \App\Models\Offer::where('id', $order->applied_offer_id)->increment('used_count');
+            }
+
+            if (!empty($data['applied_bogo_ids'])) {
+                \App\Models\Offer::whereIn('id', $data['applied_bogo_ids'])->increment('used_count');
             }
 
             return $order->refresh();
@@ -170,10 +190,8 @@ class OrderService
 
         $activeOffers = \App\Models\Offer::active()
             ->where(function ($query) use ($productIds) {
-                $query->where('type', 'order_discount')
-                    ->orWhere(function ($q) use ($productIds) {
-                        $q->where('type', 'bogo')->whereIn('product_id', $productIds);
-                    });
+                $query->whereNull('product_id')
+                    ->orWhereIn('product_id', $productIds);
             })
             ->orderByDesc('priority')
             ->orderBy('id')
@@ -217,16 +235,6 @@ class OrderService
 
             $itemTotal = $itemBase - $itemDisc;
 
-            $productBogoOffer = $bogoOffers->get($product->id)?->first();
-            if ($productBogoOffer) {
-                $bogoDiscount += $this->calculateBogoDiscount(
-                    $itemTotal,
-                    $qty,
-                    (int) $productBogoOffer->buy_qty,
-                    (int) $productBogoOffer->get_qty
-                );
-            }
-            
             // Recalculate tax
             $taxRateVal = (float) ($product->taxRate?->rate ?? 0);
             $itemTax = $itemTotal * ($taxRateVal / 100);
@@ -239,11 +247,33 @@ class OrderService
                 'product_id'      => $product->id,
                 'quantity'        => $qty,
                 'unit_price'      => $unitPrice,
+                'tax_rate'        => $taxRateVal,
                 'discount_amount' => $itemDisc,
                 'tax_amount'      => $itemTax,
                 'total_amount'    => $itemTotal,
             ];
         }
+
+        $appliedBogoIds = [];
+        // Calculate BOGO on second pass to respect minimum spend
+        foreach ($items as $item) {
+            $productBogoOffer = $bogoOffers->get($item['product_id'])?->first() 
+                             ?? $bogoOffers->get('')?->first();
+
+            if ($productBogoOffer && $subtotal >= ((float) $productBogoOffer->min_spend ?? 0)) {
+                $disc = $this->calculateBogoDiscount(
+                    $item['total_amount'],
+                    $item['quantity'],
+                    (int) $productBogoOffer->buy_qty,
+                    (int) $productBogoOffer->get_qty
+                );
+                if ($disc > 0) {
+                    $bogoDiscount += $disc;
+                    $appliedBogoIds[] = $productBogoOffer->id;
+                }
+            }
+        }
+        $appliedBogoIds = array_unique($appliedBogoIds);
 
         if (empty($items)) {
             throw ValidationException::withMessages([
@@ -314,7 +344,16 @@ class OrderService
         if ($appliedOfferId) {
             $bestOrderOffer = $orderOffers->firstWhere('id', $appliedOfferId);
             if ($bestOrderOffer) {
-                $discount = $this->calculateOfferDiscount($subtotal, $bestOrderOffer);
+                $eligibleSubtotal = $subtotal;
+                if ($bestOrderOffer->product_id) {
+                    $eligibleSubtotal = 0.0;
+                    foreach ($items as $item) {
+                        if ($item['product_id'] == $bestOrderOffer->product_id) {
+                            $eligibleSubtotal += $item['total_amount'];
+                        }
+                    }
+                }
+                $discount = $this->calculateOfferDiscount($eligibleSubtotal, $bestOrderOffer);
                 if ($discount > 0) {
                     $orderDiscount = $discount;
                 } else {
@@ -342,6 +381,8 @@ class OrderService
             'grand_total'           => $grandTotal,
             'coupon_code'           => $couponCode,
             'order_offer_name'      => $bestOrderOffer?->name,
+            'applied_offer_id'      => $bestOrderOffer?->id,
+            'applied_bogo_ids'      => $appliedBogoIds,
         ];
     }
 
@@ -368,17 +409,19 @@ class OrderService
                 'warehouse_id'        => $data['warehouse_id'],
                 'shipping_address_id' => $data['address_id'] ?? null,
                 'billing_address_id'  => $data['billing_address_id'] ?? $data['address_id'] ?? null,
-                'shipping_address'    => $this->formatAddress($shippingAddr),
-                'billing_address'     => $this->formatAddress($billingAddr),
+                'shipping_address'    => $this->formatAddressJson($shippingAddr),
+                'billing_address'     => $this->formatAddressJson($billingAddr),
                 'order_date'          => now(),
                 'total_amount'        => $calc['subtotal'],
                 'tax_amount'          => $calc['tax_amount'],
                 'discount_amount'     => $calc['total_discount'],
                 'coupon_code'         => $calc['coupon_code'],
+                'applied_offer_id'    => $calc['applied_offer_id'],
                 'net_amount'          => $calc['grand_total'],
                 'items'               => $calc['items'],
                 'is_draft'            => $data['is_draft'] ?? false,
                 'future_order_date'   => $data['future_order_date'] ?? null,
+                'applied_bogo_ids'    => $calc['applied_bogo_ids'],
             ]);
 
             return $order;
@@ -428,8 +471,8 @@ class OrderService
                 'warehouse_id'        => $data['warehouse_id'] ?? $order->warehouse_id,
                 'shipping_address_id' => $data['address_id'] ?? null,
                 'billing_address_id'  => $data['billing_address_id'] ?? $data['address_id'] ?? null,
-                'shipping_address'    => $this->formatAddress($shippingAddr),
-                'billing_address'     => $this->formatAddress($billingAddr),
+                'shipping_address'    => $this->formatAddressJson($shippingAddr),
+                'billing_address'     => $this->formatAddressJson($billingAddr),
                 'total_amount'        => $calc['subtotal'],
                 'tax_amount'          => $calc['tax_amount'],
                 'discount_amount'     => $calc['total_discount'],
@@ -556,6 +599,7 @@ class OrderService
                 'product_id'      => $item['id'],
                 'quantity'        => (float) $item['quantity'],
                 'unit_price'      => (float) $item['price'],
+                'tax_rate'        => (float) ($item['taxRate'] ?? 0),
                 'discount_amount' => $itemDisc,
                 'tax_amount'      => (float) ($item['tax_amount'] ?? 0),
                 'total_amount'    => $itemBase - $itemDisc,
@@ -588,11 +632,37 @@ class OrderService
     }
 
     /**
+     * Format a PartyAddress model to a JSON string containing all details.
+     */
+    protected function formatAddressJson(?PartyAddress $address): ?string
+    {
+        if (!$address) return null;
+
+        $address->loadMissing('village');
+        return json_encode([
+            'label' => $address->label,
+            'address_line_1' => $address->address_line_1,
+            'address_line_2' => $address->address_line_2,
+            'city' => $address->city,
+            'state' => $address->state,
+            'pincode' => $address->pincode,
+            'village' => $address->village ? [
+                'village_name' => $address->village->village_name,
+                'post_so_name' => $address->village->post_so_name,
+                'taluka_name' => $address->village->taluka_name,
+                'district_name' => $address->village->district_name,
+                'state_name' => $address->village->state_name,
+                'pincode' => $address->village->pincode,
+            ] : null,
+        ]);
+    }
+
+    /**
      * Fetch a full order for receipt printing.
      */
     public function getOrderForReceipt(int $orderId): Order
     {
-        return Order::with(['party', 'items.product', 'warehouse'])
+        return Order::with(['party', 'items.product', 'warehouse', 'appliedOffer'])
             ->findOrFail($orderId);
     }
 }

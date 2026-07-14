@@ -56,18 +56,24 @@ class Order extends Model
 
     protected $fillable = [
         'order_no', 'type', 'party_id', 'order_date', 'total_amount', 
-        'tax_amount', 'discount_amount', 'coupon_code', 'net_amount', 'status', 'warehouse_id',
+        'tax_amount', 'discount_amount', 'coupon_code', 'applied_offer_id', 'net_amount', 'status', 'warehouse_id',
         'shipping_address_id', 'billing_address_id', 'billing_address', 'shipping_address',
         'is_draft', 'future_order_date', 'created_by', 'updated_by'
     ];
 
     protected $casts = [
         'order_date' => 'datetime',
+        'applied_offer_id' => 'integer',
     ];
 
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function appliedOffer(): BelongsTo
+    {
+        return $this->belongsTo(Offer::class, 'applied_offer_id');
     }
 
     public function party(): BelongsTo

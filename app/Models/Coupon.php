@@ -10,6 +10,23 @@ class Coupon extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($coupon) {
+            if (is_null($coupon->min_spend)) {
+                $coupon->min_spend = 0.00;
+            }
+            if (is_null($coupon->used_count)) {
+                $coupon->used_count = 0;
+            }
+            if (is_null($coupon->is_active)) {
+                $coupon->is_active = true;
+            }
+        });
+    }
+
     protected $fillable = [
         'code',
         'type',

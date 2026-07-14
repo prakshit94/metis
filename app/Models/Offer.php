@@ -10,6 +10,41 @@ class Offer extends Model
 {
     use HasFactory;
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($offer) {
+            if ($offer->type === 'bogo') {
+                if (is_null($offer->value)) {
+                    $offer->value = 0.00;
+                }
+                if (is_null($offer->discount_type)) {
+                    $offer->discount_type = 'fixed';
+                }
+            } else {
+                if (is_null($offer->buy_qty)) {
+                    $offer->buy_qty = 1;
+                }
+                if (is_null($offer->get_qty)) {
+                    $offer->get_qty = 1;
+                }
+            }
+            if (is_null($offer->min_spend)) {
+                $offer->min_spend = 0.00;
+            }
+            if (is_null($offer->priority)) {
+                $offer->priority = 0;
+            }
+            if (is_null($offer->is_active)) {
+                $offer->is_active = true;
+            }
+            if (is_null($offer->used_count)) {
+                $offer->used_count = 0;
+            }
+        });
+    }
+
     protected $fillable = [
         'name',
         'type',
@@ -24,6 +59,7 @@ class Offer extends Model
         'ends_at',
         'priority',
         'is_active',
+        'used_count',
     ];
 
     protected $casts = [
@@ -36,6 +72,7 @@ class Offer extends Model
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'is_active' => 'boolean',
+        'used_count' => 'integer',
     ];
 
     public function product(): BelongsTo

@@ -625,261 +625,294 @@
 </div>
 
 <!-- ═══════════════════════ Order Details Modal ═══════════════════════════ -->
-<div class="modal fade order-detail-modal" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel">
+<div class="modal fade order-detail-modal" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content" x-show="selectedOrder">
+        <div class="modal-content shadow-lg border-0 rounded-4" x-show="selectedOrder">
             <template x-if="selectedOrder">
-                <div class="d-flex flex-column h-100">
-                    <div class="modal-header border-bottom-0 pb-0">
-                        <div class="d-flex align-items-center gap-2">
-                            <h5 class="modal-title fw-bold" id="orderDetailModalLabel">
-                                <i class="bi bi-receipt me-2 text-primary"></i>Order Details: <span x-text="selectedOrder.orderNumber"></span>
-                            </h5>
-                            <span class="badge" 
-                                  :style="`background-color: ${getStatusColor(selectedOrder.status)}; color: #fff`"
-                                  x-text="selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1).replace(/_/g, ' ')"></span>
+                <div class="d-flex flex-column h-100 bg-white rounded-4 overflow-hidden">
+                    
+                    <!-- Header with Gradient and Status -->
+                    <div class="modal-header border-bottom-0 pb-4 pt-4 px-4 px-lg-5" style="background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between w-100 gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-white text-primary p-3 rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                    <i class="bi bi-receipt fs-3"></i>
+                                </div>
+                                <div>
+                                    <h4 class="modal-title fw-bolder mb-1" id="orderDetailModalLabel" style="letter-spacing: -0.5px;">
+                                        Order <span class="text-primary" x-text="selectedOrder.orderNumber"></span>
+                                    </h4>
+                                    <p class="text-muted small mb-0 d-flex align-items-center gap-2">
+                                        <i class="bi bi-calendar3"></i> <span x-text="selectedOrder.orderDate ? new Date(selectedOrder.orderDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'"></span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge rounded-pill px-4 py-2 fs-6 shadow-sm" 
+                                      :style="`background-color: ${getStatusColor(selectedOrder.status)}15; color: ${getStatusColor(selectedOrder.status)}; border: 1px solid ${getStatusColor(selectedOrder.status)}40;`">
+                                    <i class="bi bi-circle-fill me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
+                                    <span x-text="selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1).replace(/_/g, ' ')"></span>
+                                </span>
+                                <button type="button" class="btn-close shadow-sm bg-white rounded-circle p-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
                         </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body pt-3">
-                        <div class="row g-4">
+
+                    <div class="modal-body p-4 p-lg-5 bg-body-tertiary">
+                        <div class="row g-4 g-lg-5">
+                            
                             <!-- Left Column: Details & Items -->
                             <div class="col-lg-8">
-                                <!-- Order Overview -->
-                                <div class="card mb-4 border-light-subtle bg-body-tertiary">
-                                    <div class="card-body">
-                                        <div class="row g-3">
-                                            <div class="col-md-4">
-                                                <p class="small text-muted mb-1">Order Date</p>
-                                                <p class="fw-semibold mb-0" x-text="selectedOrder.orderDate ? new Date(selectedOrder.orderDate).toLocaleString() : 'N/A'"></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <p class="small text-muted mb-1">Order Type</p>
-                                                <p class="fw-semibold mb-0 text-capitalize" x-text="selectedOrder.type || 'sale'"></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <p class="small text-muted mb-1">Payment Method</p>
-                                                <p class="fw-semibold mb-0" x-text="selectedOrder.paymentMethod || 'N/A'"></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <p class="small text-muted mb-1">Subtotal</p>
-                                                <p class="fw-semibold mb-0" x-text="`$${selectedOrder.subtotal.toFixed(2)}`"></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <p class="small text-muted mb-1">Discount</p>
-                                                <p class="fw-semibold mb-0 text-success" x-text="`-$${selectedOrder.discountTotal.toFixed(2)}`"></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <p class="small text-muted mb-1">Tax</p>
-                                                <p class="fw-semibold mb-0" x-text="`$${selectedOrder.taxTotal.toFixed(2)}`"></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <p class="small text-muted mb-1">Net Total</p>
-                                                <p class="fw-semibold mb-0 text-primary" x-text="`$${selectedOrder.total.toFixed(2)}`"></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <p class="small text-muted mb-1">Created By</p>
-                                                <p class="fw-semibold mb-0" x-text="selectedOrder.createdBy.name"></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <p class="small text-muted mb-1">Updated By</p>
-                                                <p class="fw-semibold mb-0" x-text="selectedOrder.updatedBy"></p>
-                                            </div>
-                                            <template x-if="selectedOrder.couponCode">
-                                                <div class="col-md-4">
-                                                    <p class="small text-muted mb-1">Coupon Code</p>
-                                                    <p class="fw-semibold mb-0" x-text="selectedOrder.couponCode"></p>
+                                <!-- Quick Stats Row -->
+                                <div class="row g-3 mb-4">
+                                    <div class="col-sm-4">
+                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                            <div class="card-body p-3 d-flex align-items-center gap-3">
+                                                <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3"><i class="bi bi-credit-card fs-5"></i></div>
+                                                <div>
+                                                    <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Payment</p>
+                                                    <p class="fw-bold mb-0 text-dark" x-text="selectedOrder.paymentMethod || 'N/A'"></p>
                                                 </div>
-                                            </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                            <div class="card-body p-3 d-flex align-items-center gap-3">
+                                                <div class="bg-success bg-opacity-10 text-success p-2 rounded-3"><i class="bi bi-tag fs-5"></i></div>
+                                                <div>
+                                                    <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Order Type</p>
+                                                    <p class="fw-bold mb-0 text-dark text-capitalize" x-text="selectedOrder.type || 'Sale'"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                            <div class="card-body p-3 d-flex align-items-center gap-3">
+                                                <div class="bg-info bg-opacity-10 text-info p-2 rounded-3"><i class="bi bi-person-badge fs-5"></i></div>
+                                                <div>
+                                                    <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Created By</p>
+                                                    <p class="fw-bold mb-0 text-dark" x-text="selectedOrder.createdBy.name"></p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Customer Info -->
-                                <div class="card mb-4 border-light-subtle bg-body-tertiary">
-                                    <div class="card-body">
-                                        <h6 class="fw-bold mb-3 text-uppercase text-muted small">Customer Details</h6>
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <p class="small text-muted mb-1">Customer Name</p>
-                                                <p class="fw-semibold mb-0" x-text="selectedOrder.customer.name"></p>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <p class="small text-muted mb-1">Email / Phone</p>
-                                                <p class="fw-semibold mb-0" x-text="`${selectedOrder.customer.email} / ${selectedOrder.customer.phone || 'N/A'}`"></p>
-                                            </div>
-                                            <div class="col-md-12">
-                                                <p class="small text-muted mb-1">Shipping Address</p>
-                                                <p class="mb-0 small" x-text="selectedOrder.shippingAddress ? selectedOrder.shippingAddress.formatted : 'N/A'"></p>
-                                            </div>
-                                            <div class="col-md-12">
-                                                <p class="small text-muted mb-1">Billing Address</p>
-                                                <p class="mb-0 small" x-text="selectedOrder.billingAddress ? selectedOrder.billingAddress.formatted : 'N/A'"></p>
-                                            </div>
-                                        </div>
+                                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+                                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                            <i class="bi bi-person-hearts text-danger fs-5"></i> Customer & Fulfillment
+                                        </h6>
                                     </div>
-                                </div>
-
-                                <div class="card mb-4 border-light-subtle bg-body-tertiary" x-show="selectedOrder.shipment || selectedOrder.invoice">
-                                    <div class="card-body">
+                                    <div class="card-body p-4">
                                         <div class="row g-4">
-                                            <div class="col-md-6" x-show="selectedOrder.shipment">
-                                                <h6 class="fw-bold mb-3 text-uppercase text-muted small">Shipment Details</h6>
-                                                <div class="small">
-                                                    <div class="mb-2"><span class="text-muted">Shipment No:</span> <span class="fw-semibold" x-text="selectedOrder.shipment.no"></span></div>
-                                                    <div class="mb-2"><span class="text-muted">Carrier:</span> <span class="fw-semibold" x-text="selectedOrder.shipment.carrier"></span></div>
-                                                    <div class="mb-2"><span class="text-muted">Tracking:</span> <span class="fw-semibold font-monospace" x-text="selectedOrder.shipment.trackingNo"></span></div>
-                                                    <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold text-capitalize" x-text="selectedOrder.shipment.status.replace(/_/g, ' ')"></span></div>
-                                                    <div class="mb-2"><span class="text-muted">Shipped At:</span> <span class="fw-semibold" x-text="formatDateTime(selectedOrder.shipment.shippedAt)"></span></div>
-                                                    <div><span class="text-muted">Delivered At:</span> <span class="fw-semibold" x-text="formatDateTime(selectedOrder.shipment.deliveredAt)"></span></div>
-                                                </div>
-                                                <div class="mt-3" x-show="selectedOrder.shipment.events && selectedOrder.shipment.events.length">
-                                                    <p class="small text-muted mb-2">Tracking Events</p>
-                                                    <div class="border rounded bg-white p-2" style="max-height: 180px; overflow-y: auto;">
-                                                        <template x-for="event in selectedOrder.shipment.events" :key="event.id">
-                                                            <div class="mb-2 pb-2 border-bottom small">
-                                                                <div class="d-flex justify-content-between">
-                                                                    <span class="fw-semibold" x-text="event.status || 'Event'"></span>
-                                                                    <small class="text-muted" x-text="formatDateTime(event.created_at)"></small>
-                                                                </div>
-                                                                <div class="text-muted" x-text="event.description || event.remark || 'No description provided.'"></div>
-                                                            </div>
-                                                        </template>
+                                            <div class="col-md-6 border-end-md">
+                                                <div class="d-flex align-items-start gap-3 mb-3">
+                                                    <img :src="selectedOrder.customer.avatar" class="rounded-circle shadow-sm" width="48" height="48" alt="Customer">
+                                                    <div>
+                                                        <h6 class="fw-bold mb-1" x-text="selectedOrder.customer.name"></h6>
+                                                        <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i class="bi bi-envelope"></i> <span x-text="selectedOrder.customer.email"></span></p>
+                                                        <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i class="bi bi-telephone"></i> <span x-text="selectedOrder.customer.phone || 'N/A'"></span></p>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-6" x-show="selectedOrder.invoice">
-                                                <h6 class="fw-bold mb-3 text-uppercase text-muted small">Invoice Details</h6>
-                                                <div class="small">
-                                                    <div class="mb-2"><span class="text-muted">Invoice No:</span> <span class="fw-semibold" x-text="selectedOrder.invoice.number"></span></div>
-                                                    <div class="mb-2"><span class="text-muted">Invoice Date:</span> <span class="fw-semibold" x-text="formatDateTime(selectedOrder.invoice.date)"></span></div>
-                                                    <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold text-capitalize" x-text="selectedOrder.invoice.status.replace(/_/g, ' ')"></span></div>
-                                                    <div class="mb-2"><span class="text-muted">Invoice Total:</span> <span class="fw-semibold" x-text="`$${selectedOrder.invoice.total.toFixed(2)}`"></span></div>
-                                                    <div class="mb-2"><span class="text-muted">Invoice Tax:</span> <span class="fw-semibold" x-text="`$${selectedOrder.invoice.tax.toFixed(2)}`"></span></div>
-                                                    <div class="mb-2"><span class="text-muted">Paid:</span> <span class="fw-semibold text-success" x-text="`$${selectedOrder.invoice.paid.toFixed(2)}`"></span></div>
-                                                    <div><span class="text-muted">Due:</span> <span class="fw-semibold text-danger" x-text="`$${selectedOrder.invoice.due.toFixed(2)}`"></span></div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <p class="fw-bold small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Shipping Address</p>
+                                                    <p class="small mb-0 text-dark" x-text="selectedOrder.shippingAddress ? selectedOrder.shippingAddress.formatted : 'N/A'"></p>
+                                                </div>
+                                                <div>
+                                                    <p class="fw-bold small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Billing Address</p>
+                                                    <p class="small mb-0 text-dark" x-text="selectedOrder.billingAddress ? selectedOrder.billingAddress.formatted : 'N/A'"></p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Items Table -->
-                                <h6 class="fw-bold mb-3 text-uppercase text-muted small">Order Items</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-bordered align-middle">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Product</th>
-                                                <th style="width: 120px;">SKU</th>
-                                                <th class="text-end" style="width: 100px;">Qty</th>
-                                                <th class="text-end" style="width: 120px;">Price</th>
-                                                <th class="text-end" style="width: 120px;">Discount</th>
-                                                <th class="text-end" style="width: 120px;">Tax</th>
-                                                <th class="text-end" style="width: 140px;">Net Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <template x-for="(item, idx) in selectedOrder.items" :key="idx">
+                                <!-- Order Items Table -->
+                                <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                                    <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                            <i class="bi bi-box-seam text-primary fs-5"></i> Order Items
+                                        </h6>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3" x-text="`${selectedOrder.itemCount} Items`"></span>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-borderless table-hover align-middle mb-0 text-nowrap">
+                                            <thead class="bg-light">
                                                 <tr>
-                                                    <td class="fw-medium small" x-text="item.name"></td>
-                                                    <td class="small text-muted font-monospace" x-text="item.sku || '—'"></td>
-                                                    <td class="text-end" x-text="item.quantity"></td>
-                                                    <td class="text-end" x-text="`$${parseFloat(item.price).toFixed(2)}`"></td>
-                                                    <td class="text-end" x-text="`$${parseFloat(item.discount).toFixed(2)}`"></td>
-                                                    <td class="text-end" x-text="`$${parseFloat(item.tax).toFixed(2)}`"></td>
-                                                    <td class="text-end fw-semibold text-primary" x-text="`$${parseFloat(item.net).toFixed(2)}`"></td>
+                                                    <th class="fw-semibold text-muted small py-3 ps-4">Product Details</th>
+                                                    <th class="fw-semibold text-muted small py-3 text-end">Price</th>
+                                                    <th class="fw-semibold text-muted small py-3 text-center">Qty</th>
+                                                    <th class="fw-semibold text-muted small py-3 text-end">Tax/Disc</th>
+                                                    <th class="fw-semibold text-muted small py-3 text-end pe-4">Total</th>
                                                 </tr>
-                                            </template>
-                                        </tbody>
-                                        <tfoot>
-                                            <tr class="table-light fw-bold">
-                                                <td colspan="6" class="text-end">Total Amount:</td>
-                                                <td class="text-end text-primary" x-text="`$${selectedOrder.total.toFixed(2)}`"></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                <template x-for="(item, idx) in selectedOrder.items" :key="idx">
+                                                    <tr class="border-bottom">
+                                                        <td class="ps-4 py-3">
+                                                            <p class="fw-bold text-dark mb-0" x-text="item.name"></p>
+                                                            <p class="text-muted small mb-0 font-monospace" style="font-size: 0.75rem;" x-text="item.sku || 'No SKU'"></p>
+                                                        </td>
+                                                        <td class="text-end py-3">
+                                                            <span class="text-dark fw-medium" x-text="`$${parseFloat(item.price).toFixed(2)}`"></span>
+                                                        </td>
+                                                        <td class="text-center py-3">
+                                                            <span class="badge bg-secondary bg-opacity-10 text-dark px-2 py-1 rounded-3" x-text="item.quantity"></span>
+                                                        </td>
+                                                        <td class="text-end py-3 small">
+                                                            <div class="text-success" x-show="item.discount > 0" x-text="`-$${parseFloat(item.discount).toFixed(2)}`"></div>
+                                                            <div class="text-muted" x-text="`+$${parseFloat(item.tax).toFixed(2)}`"></div>
+                                                        </td>
+                                                        <td class="text-end pe-4 py-3">
+                                                            <span class="fw-bold text-primary" x-text="`$${parseFloat(item.net).toFixed(2)}`"></span>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Financial Summary -->
+                                <div class="card border-0 shadow-sm rounded-4">
+                                    <div class="card-body p-4 bg-white rounded-4">
+                                        <div class="row justify-content-end">
+                                            <div class="col-md-6 col-lg-5">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span class="text-muted fw-medium">Subtotal</span>
+                                                    <span class="text-dark fw-bold" x-text="`$${selectedOrder.subtotal.toFixed(2)}`"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span class="text-muted fw-medium">Discount <span x-show="selectedOrder.couponCode" class="badge bg-success ms-2 rounded-pill" x-text="selectedOrder.couponCode"></span></span>
+                                                    <span class="text-success fw-bold" x-text="`-$${selectedOrder.discountTotal.toFixed(2)}`"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-3 border-bottom pb-3">
+                                                    <span class="text-muted fw-medium">Tax</span>
+                                                    <span class="text-dark fw-bold" x-text="`$${selectedOrder.taxTotal.toFixed(2)}`"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="text-dark fw-bolder fs-5">Grand Total</span>
+                                                    <span class="text-primary fw-bolder fs-4" x-text="`$${selectedOrder.total.toFixed(2)}`"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <!-- Right Column: Warehouse / Payments / Verification -->
-                            <div class="col-lg-4 border-start">
-                                <!-- Action Buttons Inside Details -->
-                                <div class="mb-4 d-grid gap-2">
-                                    <button class="btn btn-outline-secondary btn-sm" @click="printInvoice(selectedOrder)">
-                                        <i class="bi bi-file-pdf me-2"></i>Invoice PDF
+                            <!-- Right Column: Warehouse / Logistics / Timeline -->
+                            <div class="col-lg-4">
+                                
+                                <!-- Document Actions -->
+                                <div class="d-flex flex-wrap gap-2 mb-4">
+                                    <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printInvoice(selectedOrder)">
+                                        <i class="bi bi-file-earmark-pdf me-2"></i>Invoice
                                     </button>
-                                    <button class="btn btn-outline-secondary btn-sm" @click="printCOD(selectedOrder)">
-                                        <i class="bi bi-file-earmark-pdf me-2"></i>COD Receipt
-                                    </button>
-                                    <button class="btn btn-outline-secondary btn-sm" @click="printReceipt(selectedOrder)">
-                                        <i class="bi bi-receipt me-2"></i>Thermal Receipt
+                                    <button class="btn btn-outline-secondary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printReceipt(selectedOrder)">
+                                        <i class="bi bi-receipt me-2"></i>Receipt
                                     </button>
                                 </div>
 
-                                <div class="card mb-4 border-light-subtle">
-                                    <div class="card-body">
-                                        <h6 class="fw-bold text-uppercase text-muted small mb-3">Warehouse</h6>
-                                        <p class="mb-1 fw-semibold" x-text="selectedOrder.warehouse ? selectedOrder.warehouse.name : 'N/A'"></p>
-                                        <p class="small text-muted mb-1" x-text="selectedOrder.warehouse ? selectedOrder.warehouse.address : 'N/A'"></p>
-                                        <p class="small text-muted mb-0" x-text="selectedOrder.warehouse ? `Phone: ${selectedOrder.warehouse.phone} | GST: ${selectedOrder.warehouse.gstin}` : ''"></p>
+                                <!-- Logistics / Warehouse -->
+                                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                            <i class="bi bi-building text-secondary fs-5"></i> Fulfillment Center
+                                        </h6>
                                     </div>
-                                </div>
-
-                                <div class="card mb-4 border-light-subtle" x-show="selectedOrder.payments && selectedOrder.payments.length">
-                                    <div class="card-body">
-                                        <h6 class="fw-bold text-uppercase text-muted small mb-3">Payments</h6>
-                                        <template x-for="payment in selectedOrder.payments" :key="payment.id">
-                                            <div class="border rounded p-2 mb-2 bg-light">
-                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <span class="fw-semibold" x-text="payment.no"></span>
-                                                    <span class="badge bg-secondary text-capitalize" x-text="payment.status"></span>
-                                                </div>
-                                                <div class="small text-muted">
-                                                    <div x-text="`Amount: $${payment.amount.toFixed(2)}`"></div>
-                                                    <div x-text="`Method: ${payment.method}`"></div>
-                                                    <div x-text="`Date: ${formatDateTime(payment.date)}`"></div>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
-
-                                <!-- Verification Call History -->
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="fw-bold text-uppercase text-muted small mb-0">Verification History</h6>
-                                    <button class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size: 11px" @click="openVerificationModal(selectedOrder)">
-                                        + Add Call
-                                    </button>
-                                </div>
-
-                                <div class="verification-timeline" style="max-height: 300px; overflow-y: auto;">
-                                    <template x-for="log in (selectedOrder.verificationLogs || selectedOrder.original.verification_logs || [])" :key="log.id">
-                                        <div class="p-2 border rounded mb-2 bg-light">
-                                            <div class="d-flex justify-content-between mb-1">
-                                                <span class="badge bg-secondary" x-text="log.outcome_label || log.outcome"></span>
-                                                <small class="text-muted" x-text="formatDateTime(log.created_at)"></small>
-                                            </div>
-                                            <p class="small mb-1 text-dark" x-text="log.remark || 'No remark added.'"></p>
-                                            <div class="d-flex justify-content-between align-items-center mt-1" style="font-size: 11px">
-                                                <span class="text-muted" x-text="`By: ${log.user ? log.user.name : 'System'}`"></span>
-                                                <template x-if="log.follow_up_at">
-                                                    <span class="text-warning fw-semibold">
-                                                        <i class="bi bi-bell-fill me-1"></i>Follow-up: <span x-text="new Date(log.follow_up_at).toLocaleDateString()"></span>
-                                                    </span>
-                                                </template>
+                                    <div class="card-body p-4 pt-2">
+                                        <div class="p-3 bg-light rounded-4 border">
+                                            <p class="mb-1 fw-bold text-dark" x-text="selectedOrder.warehouse ? selectedOrder.warehouse.name : 'Unassigned'"></p>
+                                            <p class="small text-muted mb-2 lh-sm" x-text="selectedOrder.warehouse ? selectedOrder.warehouse.address : 'N/A'"></p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill fw-medium px-2 py-1"><i class="bi bi-telephone-fill me-1"></i> <span x-text="selectedOrder.warehouse ? selectedOrder.warehouse.phone : 'N/A'"></span></span>
                                             </div>
                                         </div>
-                                    </template>
-                                    <template x-if="!(selectedOrder.verificationLogs || selectedOrder.original.verification_logs || []).length">
-                                        <p class="text-muted small text-center my-3">No verification calls logged.</p>
-                                    </template>
+                                    </div>
+                                </div>
+
+                                <!-- Shipment Tracking -->
+                                <template x-if="selectedOrder.shipment">
+                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                                        <div class="card-body p-4">
+                                            <h6 class="fw-bold mb-3 text-primary d-flex align-items-center gap-2">
+                                                <i class="bi bi-truck fs-5"></i> Shipping Details
+                                            </h6>
+                                            <div class="bg-white p-3 rounded-4 shadow-sm mb-3">
+                                                <p class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.65rem;">Tracking Number</p>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <p class="fw-bold text-dark font-monospace mb-0 fs-6" x-text="selectedOrder.shipment.trackingNo"></p>
+                                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill" x-text="selectedOrder.shipment.carrier"></span>
+                                                </div>
+                                            </div>
+                                            
+                                            <template x-if="selectedOrder.shipment.events && selectedOrder.shipment.events.length">
+                                                <div class="position-relative ms-2 ps-3 border-start border-primary border-opacity-25 border-2">
+                                                    <template x-for="(event, i) in selectedOrder.shipment.events" :key="event.id">
+                                                        <div class="position-relative mb-3">
+                                                            <div class="position-absolute bg-primary rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
+                                                            <p class="fw-bold text-dark mb-0 small" x-text="event.status"></p>
+                                                            <p class="text-muted mb-0" style="font-size: 0.75rem;" x-text="formatDateTime(event.created_at)"></p>
+                                                            <p class="text-secondary small mt-1 lh-sm" x-text="event.description || event.remark"></p>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Verification History -->
+                                <div class="card border-0 shadow-sm rounded-4">
+                                    <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                            <i class="bi bi-telephone-inbound text-success fs-5"></i> Verification Logs
+                                        </h6>
+                                        <button class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm hover-shadow" @click="openVerificationModal(selectedOrder)">
+                                            <i class="bi bi-plus-lg"></i> Log
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="list-group list-group-flush rounded-bottom-4" style="max-height: 300px; overflow-y: auto;">
+                                            <template x-for="log in (selectedOrder.verificationLogs || selectedOrder.original.verification_logs || [])" :key="log.id">
+                                                <div class="list-group-item p-4 bg-transparent border-bottom">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <span class="badge bg-dark bg-opacity-10 text-dark rounded-pill border fw-medium px-2 py-1" x-text="log.outcome_label || log.outcome"></span>
+                                                        <span class="text-muted small" style="font-size: 0.75rem;" x-text="formatDateTime(log.created_at)"></span>
+                                                    </div>
+                                                    <p class="small text-dark mb-2 lh-sm fw-medium" x-text="log.remark || 'No remark added.'"></p>
+                                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <div class="bg-secondary bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
+                                                                <i class="bi bi-person text-secondary" style="font-size: 0.6rem;"></i>
+                                                            </div>
+                                                            <span class="text-muted" style="font-size: 0.75rem;" x-text="log.user ? log.user.name : 'System'"></span>
+                                                        </div>
+                                                        <template x-if="log.follow_up_at">
+                                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill shadow-sm">
+                                                                <i class="bi bi-bell-fill me-1"></i> <span x-text="new Date(log.follow_up_at).toLocaleDateString()"></span>
+                                                            </span>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            <template x-if="!(selectedOrder.verificationLogs || selectedOrder.original.verification_logs || []).length">
+                                                <div class="text-center py-5">
+                                                    <i class="bi bi-journal-x text-muted fs-3 opacity-50 mb-2"></i>
+                                                    <p class="text-muted small mb-0">No verification calls logged yet.</p>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="modal-footer border-top-0 pt-0">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </template>

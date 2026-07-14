@@ -99,6 +99,16 @@
                                 <span>Discount Total</span>
                                 <span class="fw-medium">-₹{{ number_format($order->discount_amount, 2) }}</span>
                             </div>
+                            @if($order->coupon_code)
+                            <div class="d-flex justify-content-between mb-3 text-success text-opacity-75 small" style="margin-top: -10px;">
+                                <span class="small font-monospace">Coupon Applied: {{ $order->coupon_code }}</span>
+                            </div>
+                            @endif
+                            @if($order->appliedOffer)
+                            <div class="d-flex justify-content-between mb-3 text-success text-opacity-75 small" style="margin-top: -10px;">
+                                <span class="small font-monospace">Offer Applied: {{ $order->appliedOffer->name }}</span>
+                            </div>
+                            @endif
                             <div class="d-flex justify-content-between mb-3 text-muted small">
                                 <span>Tax Amount</span>
                                 <span class="fw-medium">₹{{ number_format($order->tax_amount, 2) }}</span>

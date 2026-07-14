@@ -172,24 +172,9 @@
                                     <span>Warehouses</span>
                                 </a>
                             </li>
-                        </ul>
-                    </div>
-                </li>
-
-                
-                <li class="nav-item">
-                    <a class="nav-link <?php echo e(Str::startsWith($current, 'promotions') ? 'active' : ''); ?>"
-                       href="#"
-                       data-bs-toggle="collapse"
-                       data-bs-target="#promotionsSubmenu"
-                       aria-expanded="<?php echo e(Str::startsWith($current, 'promotions') ? 'true' : 'false'); ?>"
-                       aria-controls="promotionsSubmenu">
-                        <i class="bi bi-gift-fill"></i>
-                        <span>Promotions</span>
-                        <i class="bi bi-chevron-down ms-auto"></i>
-                    </a>
-                    <div class="collapse <?php echo e(Str::startsWith($current, 'promotions') ? 'show' : ''); ?>" id="promotionsSubmenu">
-                        <ul class="nav nav-submenu">
+                            <li class="nav-item">
+                                <hr class="dropdown-divider bg-secondary opacity-25 mx-3 my-2">
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link <?php echo e($current === 'promotions.coupons' ? 'active' : ''); ?>" href="<?php echo e(route('promotions.coupons')); ?>">
                                     <i class="bi bi-ticket-perforated-fill"></i>
@@ -205,6 +190,8 @@
                         </ul>
                     </div>
                 </li>
+
+
 
                 
                 <li class="nav-item sidebar-section-label mt-3">

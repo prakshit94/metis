@@ -304,6 +304,9 @@ document.addEventListener('alpine:init', () => {
     mapOrder(o) {
       const formatAddress = (address) => {
         if (!address) return null;
+        if (typeof address === 'string') {
+          try { address = JSON.parse(address); } catch (e) {}
+        }
 
         const village = address.village || null;
         const parts = [
@@ -376,8 +379,8 @@ document.addEventListener('alpine:init', () => {
             o.warehouse.pincode,
           ].filter(Boolean).join(', ') || 'N/A',
         } : null,
-        shippingAddress: formatAddress(o.shippingAddress),
-        billingAddress: formatAddress(o.billingAddress),
+        shippingAddress: formatAddress(o.shipping_address),
+        billingAddress: formatAddress(o.billing_address),
         invoice: invoice ? {
           number: invoice.invoice_no || 'N/A',
           date: invoice.invoice_date || null,

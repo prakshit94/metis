@@ -134,4 +134,106 @@ class PromotionsAndOrderSearchTest extends TestCase
         $response->assertStatus(200);
         $this->assertFalse($coupon->fresh()->is_active);
     }
+
+    public function test_offers_filtering_by_status(): void
+    {
+        $uniq = uniqid();
+        
+        $activeOffer = Offer::create([
+            'name' => 'Active Offer ' . $uniq,
+            'type' => 'order_discount',
+            'discount_type' => 'percentage',
+            'value' => 10.0,
+            'is_active' => true,
+        ]);
+
+        $inactiveOffer = Offer::create([
+            'name' => 'Inactive Offer ' . $uniq,
+            'type' => 'order_discount',
+            'discount_type' => 'percentage',
+            'value' => 15.0,
+            'is_active' => false,
+        ]);
+
+        // Filter active
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('api.promotions.offers.index', ['status' => 'active']));
+
+        $response->assertStatus(200);
+        $data = $response->json('data.data');
+        $names = array_column($data, 'name');
+        $this->assertContains('Active Offer ' . $uniq, $names);
+        $this->assertNotContains('Inactive Offer ' . $uniq, $names);
+
+        // Filter inactive
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('api.promotions.offers.index', ['status' => 'inactive']));
+
+        $response->assertStatus(200);
+        $data = $response->json('data.data');
+        $names = array_column($data, 'name');
+        $this->assertContains('Inactive Offer ' . $uniq, $names);
+        $this->assertNotContains('Active Offer ' . $uniq, $names);
+    }
+
+    public function test_offers_usage_tracking(): void
+    {
+        $party = \App\Models\Party::create([
+            'firstname' => 'Usage',
+            'lastname' => 'Customer',
+            'type' => 'customer',
+            'is_active' => true,
+        ]);
+
+        $category = Category::create(['name' => 'Seeds ' . uniqid(), 'slug' => 'seeds-' . uniqid()]);
+        $product = Product::create([
+            'name' => 'Test Offer Product ' . uniqid(),
+            'sku' => 'TEST-OFFER-PROD',
+            'slug' => 'test-offer-prod',
+            'category_id' => $category->id,
+            'selling_price' => 100.00,
+            'purchase_price' => 50.00,
+            'status' => 'active',
+        ]);
+
+        $orderOffer = Offer::create([
+            'name' => 'Order Discount Offer',
+            'type' => 'order_discount',
+            'discount_type' => 'percentage',
+            'value' => 10.0,
+            'is_active' => true,
+        ]);
+
+        $bogoOffer = Offer::create([
+            'name' => 'BOGO Offer',
+            'type' => 'bogo',
+            'discount_type' => 'fixed',
+            'value' => 0.0,
+            'is_active' => true,
+        ]);
+
+        $this->assertEquals(0, $orderOffer->fresh()->used_count);
+        $this->assertEquals(0, $bogoOffer->fresh()->used_count);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson('/orders', [
+                'type' => 'sale',
+                'party_id' => $party->id,
+                'items' => [
+                    [
+                        'product_id' => $product->id,
+                        'quantity' => 2,
+                        'unit_price' => 100.00,
+                        'total_amount' => 200.00,
+                    ]
+                ],
+                'applied_offer_id' => $orderOffer->id,
+                'applied_bogo_ids' => [$bogoOffer->id],
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertEquals(1, $orderOffer->fresh()->used_count);
+        $this->assertEquals(1, $bogoOffer->fresh()->used_count);
+    }
 }
+

@@ -241,8 +241,11 @@ class ProductController extends Controller
         // Status filter — only active by default
         $statusFilter = $request->input('status', 'published');
         if ($statusFilter !== 'all') {
-            $dbStatus = $statusFilter === 'active' ? 'published' : $statusFilter;
-            $query->where('status', $dbStatus);
+            if ($statusFilter === 'published' || $statusFilter === 'active') {
+                $query->whereIn('status', ['published', 'active']);
+            } else {
+                $query->where('status', $statusFilter);
+            }
         }
 
         // SKU Enabled filter
