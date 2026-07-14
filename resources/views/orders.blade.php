@@ -513,7 +513,7 @@
                             <td>
                                 <span class="badge small" 
                                       :style="`background-color: ${getStatusColor(order.status)}; color: #fff`"
-                                      x-text="order.status.charAt(0).toUpperCase() + order.status.slice(1).replace(/_/g, ' ')"></span>
+                                      x-text="order.statusLabel"></span>
                             </td>
                             <td>
                                 <div class="small fw-medium" x-text="order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'"></div>
@@ -653,7 +653,7 @@
                                 <span class="badge rounded-pill px-4 py-2 fs-6 shadow-sm" 
                                       :style="`background-color: ${getStatusColor(selectedOrder.status)}15; color: ${getStatusColor(selectedOrder.status)}; border: 1px solid ${getStatusColor(selectedOrder.status)}40;`">
                                     <i class="bi bi-circle-fill me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
-                                    <span x-text="selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1).replace(/_/g, ' ')"></span>
+                                    <span x-text="selectedOrder.statusLabel"></span>
                                 </span>
                                 <button type="button" class="btn-close shadow-sm bg-white rounded-circle p-2" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>

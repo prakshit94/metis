@@ -29,6 +29,11 @@ class Order extends Model
         return ['dispatched', 'shipped'];
     }
 
+    protected $appends = [
+        'lifecycle_status',
+        'status_label',
+    ];
+
     /** Map legacy DB value and normalize for UI / stepper logic. */
     public function lifecycleStatus(): string
     {
@@ -52,6 +57,16 @@ class Order extends Model
             'return_requested' => 'Return Requested',
             default         => ucfirst(str_replace('_', ' ', $this->lifecycleStatus())),
         };
+    }
+
+    public function getLifecycleStatusAttribute(): string
+    {
+        return $this->lifecycleStatus();
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return $this->statusLabel();
     }
 
     protected $fillable = [

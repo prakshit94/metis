@@ -361,6 +361,9 @@ document.addEventListener('alpine:init', () => {
         orderNumber: o.order_no,
         type: o.type || 'sale',
         orderDate: o.order_date,
+        rawStatus: o.status,
+        status: o.lifecycle_status || o.status,
+        statusLabel: o.status_label || (o.lifecycle_status || o.status || '').charAt(0).toUpperCase() + (o.lifecycle_status || o.status || '').slice(1).replace(/_/g, ' '),
         customer: {
           name: o.party ? `${o.party.firstname} ${o.party.lastname}` : 'N/A',
           email: o.party ? o.party.email : 'N/A',
@@ -424,7 +427,6 @@ document.addEventListener('alpine:init', () => {
         subtotal: formatMoney(o.total_amount),
         taxTotal: formatMoney(o.tax_amount),
         discountTotal: formatMoney(o.discount_amount),
-        status: o.status,
         paymentMethod: o.payment_method || 'N/A',
         couponCode: o.coupon_code || '',
         isDraft: Boolean(o.is_draft),

@@ -399,4 +399,23 @@ class OrderLifecycleTest extends TestCase
             'status' => 'active',
         ]);
     }
+
+    public function test_future_dated_draft_orders_expose_future_order_status_for_the_ui(): void
+    {
+        $order = Order::create([
+            'order_no' => 'ORD-' . strtoupper(Str::random(8)),
+            'type' => 'sale',
+            'status' => 'pending',
+            'order_date' => now(),
+            'is_draft' => true,
+            'future_order_date' => now()->addDays(7)->toDateString(),
+        ]);
+
+        $this->assertSame('future_order', $order->lifecycle_status);
+        $this->assertSame('Future Order', $order->status_label);
+
+        $serialized = $order->toArray();
+        $this->assertSame('future_order', $serialized['lifecycle_status']);
+        $this->assertSame('Future Order', $serialized['status_label']);
+    }
 }
