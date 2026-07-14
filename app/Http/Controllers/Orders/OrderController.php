@@ -24,7 +24,7 @@ class OrderController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:orders.view', only: ['index', 'show', 'storeVerification', 'bulkExport']),
+            new Middleware('permission:orders.view', only: ['index', 'show', 'bulkExport']),
             new Middleware('permission:orders.create', only: ['create', 'store', 'bulkImport', 'bulkImportTemplate']),
             new Middleware('permission:orders.edit', only: ['edit']),
             new Middleware('permission:orders.delete', only: ['destroy']),
@@ -56,7 +56,6 @@ class OrderController extends Controller implements HasMiddleware
             'payments',
             'creator',
             'updater',
-            'verificationLogs.user',
         ])->withCount('items');
 
         $user = auth()->user();
@@ -314,11 +313,27 @@ class OrderController extends Controller implements HasMiddleware
         $activeOffers = \App\Models\Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
         $activeCoupons = \App\Models\Coupon::where('is_active', true)->get();
         $categories   = \App\Models\Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
+        $initialCustomer = null;
+
+        if (request()->filled('customer_id')) {
+            $initialCustomer = Party::with([
+                'addresses.village.services',
+                'orders' => function ($q) {
+                    $q->latest()->limit(10)->with([
+                        'items.product:id,name,sku,image_path',
+                        'warehouse:id,name',
+                        'shippingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
+                        'billingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
+                        'appliedOffer:id,name,discount_type,value',
+                    ]);
+                },
+            ])->find(request()->integer('customer_id'));
+        }
 
         $hideSidebar = true;
         $lockSearch = true;
 
-        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch'));
+        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer'));
     }
 
     public function store(Request $request, OrderService $orderService)
@@ -385,92 +400,15 @@ class OrderController extends Controller implements HasMiddleware
             'updater',
             'shippingAddress.village.services',
             'billingAddress.village.services',
-            'verificationLogs.user',
         ])->findOrFail($id);
-        $outcomes = \App\Models\OrderVerificationLog::OUTCOMES;
 
         if (request()->wantsJson() || request()->ajax()) {
             return response()->json([
                 'order' => $order,
-                'outcomes' => $outcomes,
             ]);
         }
 
         return redirect()->route('orders');
-    }
-
-    public function storeVerification(Request $request, string $id, InventoryService $inventoryService, OrderService $orderService)
-    {
-        $order = Order::findOrFail($id);
-
-        $validated = $request->validate([
-            'outcome' => 'required|string|in:' . implode(',', array_keys(\App\Models\OrderVerificationLog::OUTCOMES)),
-            'remark' => 'nullable|string',
-            'follow_up_at' => 'nullable|date_format:Y-m-d\TH:i',
-        ]);
-
-        DB::transaction(function () use ($order, $validated, $inventoryService, $orderService) {
-            $order->verificationLogs()->create([
-                'outcome' => $validated['outcome'],
-                'remark' => $validated['remark'] ?? null,
-                'follow_up_at' => $validated['follow_up_at'] ?? null,
-                'created_by' => auth()->id(),
-            ]);
-
-            $statusChangedMessage = '';
-
-            switch ($validated['outcome']) {
-                case 'cancel_order':
-                    if (in_array($order->status, ['pending', 'confirmed', 'processing', 'ready_to_ship'], true)) {
-                        $inventoryService->cancelOrder($order);
-                        $statusChangedMessage = ' Order cancelled.';
-                    }
-                    break;
-                case 'customer_confirmed':
-                    if ($order->status === 'pending') {
-                        $inventoryService->confirmOrder($order);
-                        $statusChangedMessage = ' Order confirmed.';
-                    }
-                    break;
-                case 'mark_processing':
-                    if ($order->status === 'confirmed') {
-                        $orderService->updateStatus($order, 'processing');
-                        $statusChangedMessage = ' Status changed to processing.';
-                    }
-                    break;
-                case 'wrong_number':
-                    if ($order->status === 'pending') {
-                        $inventoryService->cancelOrder($order);
-                        $statusChangedMessage = ' Order cancelled due to wrong number.';
-                    }
-                    break;
-                case 'dispatch_order':
-                    if ($order->status === 'ready_to_ship') {
-                        $inventoryService->dispatchOrder($order);
-                        $statusChangedMessage = ' Order dispatched.';
-                    }
-                    break;
-                case 'mark_delivered':
-                    if ($order->status === 'dispatched') {
-                        $inventoryService->deliverOrder($order);
-                        $statusChangedMessage = ' Order delivered.';
-                    }
-                    break;
-                case 'return_order':
-                    // Stubbed return creation logic
-                    $statusChangedMessage = ' Return request logged (stubbed).';
-                    break;
-            }
-        });
-
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Verification call logged.',
-            ]);
-        }
-
-        return back()->with('success', 'Verification call logged.');
     }
 
     public function confirm(string $id, InventoryService $inventoryService)
@@ -679,75 +617,6 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         return back()->with($count > 0 ? 'success' : 'error', $msg);
-    }
-
-    public function bulkStoreVerification(Request $request, InventoryService $inventoryService, OrderService $orderService)
-    {
-        $validated = $request->validate([
-            'order_ids' => 'required|array|min:1',
-            'order_ids.*' => 'integer|exists:orders,id',
-            'outcome' => 'required|string|in:' . implode(',', array_keys(\App\Models\OrderVerificationLog::OUTCOMES)),
-            'remark' => 'nullable|string',
-            'follow_up_at' => 'nullable|date_format:Y-m-d\TH:i',
-        ]);
-
-        $ids = $validated['order_ids'];
-        $count = 0;
-
-        DB::transaction(function () use ($ids, $validated, $inventoryService, $orderService, &$count) {
-            $orders = Order::whereIn('id', $ids)->lockForUpdate()->get();
-
-            foreach ($orders as $order) {
-                $order->verificationLogs()->create([
-                    'outcome' => $validated['outcome'],
-                    'remark' => $validated['remark'] ?? null,
-                    'follow_up_at' => $validated['follow_up_at'] ?? null,
-                    'created_by' => auth()->id(),
-                ]);
-
-                try {
-                    switch ($validated['outcome']) {
-                        case 'cancel_order':
-                            if (in_array($order->status, ['pending', 'confirmed', 'processing', 'ready_to_ship'], true)) {
-                                $inventoryService->cancelOrder($order);
-                            }
-                            break;
-                        case 'customer_confirmed':
-                            if ($order->status === 'pending') {
-                                $inventoryService->confirmOrder($order);
-                            }
-                            break;
-                        case 'mark_processing':
-                            if ($order->status === 'confirmed') {
-                                $orderService->updateStatus($order, 'processing');
-                            }
-                            break;
-                        case 'dispatch_order':
-                            if ($order->status === 'ready_to_ship') {
-                                $inventoryService->dispatchOrder($order);
-                            }
-                            break;
-                        case 'mark_delivered':
-                            if ($order->status === 'dispatched') {
-                                $inventoryService->deliverOrder($order);
-                            }
-                            break;
-                    }
-                } catch (\Exception $e) {
-                    // Ignore status transition failure for individual orders in bulk run
-                }
-
-                $count++;
-            }
-        });
-
-        $msg = "Logged verification call for {$count} order(s).";
-
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => true, 'message' => $msg]);
-        }
-
-        return back()->with('success', $msg);
     }
 
     public function destroy(Order $order)

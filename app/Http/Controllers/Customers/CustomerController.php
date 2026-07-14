@@ -175,9 +175,18 @@ class CustomerController extends Controller
     public function show(Request $request, int|string $customer)
     {
         $customer = Customer::withTrashed()
-            ->with(['addresses.village.services', 'orders' => function($q) {
-                $q->latest()->limit(5);
-            }])
+            ->with([
+                'addresses.village.services',
+                'orders' => function ($q) {
+                    $q->latest()->limit(10)->with([
+                        'items.product:id,name,sku,image_path',
+                        'warehouse:id,name',
+                        'shippingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
+                        'billingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
+                        'appliedOffer:id,name,discount_type,value',
+                    ]);
+                },
+            ])
             ->findOrFail($customer);
 
         if ($request->wantsJson() || $request->ajax()) {

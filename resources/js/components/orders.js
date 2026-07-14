@@ -143,10 +143,6 @@ document.addEventListener('alpine:init', () => {
     shipOrderNo: '',
     shipCarrierName: '',
     shipTrackingNo: '',
-    verifyOutcome: '',
-    verifyRemark: '',
-    verifyFollowUp: '',
-    isBulkVerification: false,
     importRows: [],
     importing: false,
 
@@ -437,7 +433,6 @@ document.addEventListener('alpine:init', () => {
           avatar: o.creator && o.creator.avatar ? o.creator.avatar : '/assets/images/avatar-placeholder.svg',
         },
         updatedBy: o.updater ? `${o.updater.name || ''}`.trim() : 'N/A',
-        verificationLogs: Array.isArray(o.verification_logs) ? o.verification_logs : [],
         original: o
       };
     },
@@ -848,62 +843,6 @@ document.addEventListener('alpine:init', () => {
 
     // ─── Verification Logs ───────────────────────────────────────────────────
     
-    openVerificationModal(order) {
-      this.selectedOrder = order;
-      this.isBulkVerification = false;
-      this.verifyOutcome = '';
-      this.verifyRemark = '';
-      this.verifyFollowUp = '';
-      getModal('#verificationModal')?.show();
-    },
-
-    openBulkVerificationModal() {
-      if (this.selectedOrders.length === 0) return;
-      this.isBulkVerification = true;
-      this.verifyOutcome = '';
-      this.verifyRemark = '';
-      this.verifyFollowUp = '';
-      getModal('#verificationModal')?.show();
-    },
-
-    async saveVerificationLog() {
-      if (!this.verifyOutcome) {
-        showToast('Please select a Call Outcome.', 'warning');
-        return;
-      }
-
-      try {
-        let res;
-        if (this.isBulkVerification) {
-          res = await apiFetch('/orders/bulk-verification', {
-            method: 'POST',
-            body: JSON.stringify({
-              order_ids: this.selectedOrders,
-              outcome: this.verifyOutcome,
-              remark: this.verifyRemark,
-              follow_up_at: this.verifyFollowUp || null
-            })
-          });
-          this.selectedOrders = [];
-        } else {
-          res = await apiFetch(`/orders/${this.selectedOrder.id}/verification`, {
-            method: 'POST',
-            body: JSON.stringify({
-              outcome: this.verifyOutcome,
-              remark: this.verifyRemark,
-              follow_up_at: this.verifyFollowUp || null
-            })
-          });
-        }
-
-        showToast(res.message || 'Verification log saved successfully.');
-        getModal('#verificationModal')?.hide();
-        this.loadOrders();
-      } catch (err) {
-        showToast(err.message, 'danger');
-      }
-    },
-
     // ─── Bulk Actions ────────────────────────────────────────────────────────
     
     async bulkUpdateStatus(status) {

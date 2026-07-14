@@ -43,7 +43,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/adjustments', [PageController::class, 'inventoryAdjustments'])->name('adjustments');
     });
     Route::post('orders/bulk-status', [\App\Http\Controllers\Orders\OrderController::class, 'bulkStatus'])->name('orders.bulk-status');
-    Route::post('orders/bulk-verification', [\App\Http\Controllers\Orders\OrderController::class, 'bulkStoreVerification'])->name('orders.bulk-verification');
     Route::get('orders/bulk-print', [\App\Http\Controllers\Orders\OrderController::class, 'bulkPrint'])->name('orders.bulk-print');
     Route::get('orders/export', [\App\Http\Controllers\Orders\OrderController::class, 'bulkExport'])->name('orders.export');
     Route::post('orders/import', [\App\Http\Controllers\Orders\OrderController::class, 'bulkImport'])->name('orders.import');
@@ -60,7 +59,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('orders/{order}/return', [\App\Http\Controllers\Orders\OrderController::class, 'markReturned'])->name('orders.return');
     Route::post('orders/{order}/revert-status', [\App\Http\Controllers\Orders\OrderController::class, 'revertStatus'])->name('orders.revert-status');
     Route::get('orders/{order}/receipt', [\App\Http\Controllers\Orders\OrderController::class, 'receipt'])->name('orders.receipt');
-    Route::post('orders/{order}/verification', [\App\Http\Controllers\Orders\OrderController::class, 'storeVerification'])->name('orders.verification.store');
     Route::get('/orders', [\App\Http\Controllers\Orders\OrderController::class, 'index'])->name('orders');
     Route::resource('orders', \App\Http\Controllers\Orders\OrderController::class)->except(['index']);
     Route::get('/customers', [PageController::class, 'customers'])->name('customers');

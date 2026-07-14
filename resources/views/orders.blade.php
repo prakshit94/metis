@@ -395,11 +395,6 @@
                         <i class="bi bi-x-circle me-1"></i>Cancel
                     </button>
 
-                    {{-- Verification & Print (always available for any selection) --}}
-                    <button class="btn btn-sm btn-outline-warning" @click="openBulkVerificationModal()"
-                            title="Log a verification call for selected orders">
-                        <i class="bi bi-telephone me-1"></i>Verify Call
-                    </button>
                     <div class="dropdown d-inline-block">
                         <button class="btn btn-sm btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-printer me-1"></i>Print
@@ -571,9 +566,6 @@
                                             <i class="bi bi-arrow-left-right me-2"></i>Revert Status
                                         </a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#" @click.prevent="openVerificationModal(order)">
-                                            <i class="bi bi-telephone me-2"></i>Log Verification
-                                        </a></li>
                                         <li><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
                                             <i class="bi bi-file-pdf me-2"></i>Print Invoice
                                         </a></li>
@@ -870,49 +862,6 @@
                                     </div>
                                 </template>
 
-                                <!-- Verification History -->
-                                <div class="card border-0 shadow-sm rounded-4">
-                                    <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
-                                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                                            <i class="bi bi-telephone-inbound text-success fs-5"></i> Verification Logs
-                                        </h6>
-                                        <button class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm hover-shadow" @click="openVerificationModal(selectedOrder)">
-                                            <i class="bi bi-plus-lg"></i> Log
-                                        </button>
-                                    </div>
-                                    <div class="card-body p-0">
-                                        <div class="list-group list-group-flush rounded-bottom-4" style="max-height: 300px; overflow-y: auto;">
-                                            <template x-for="log in (selectedOrder.verificationLogs || selectedOrder.original.verification_logs || [])" :key="log.id">
-                                                <div class="list-group-item p-4 bg-transparent border-bottom">
-                                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                                        <span class="badge bg-dark bg-opacity-10 text-dark rounded-pill border fw-medium px-2 py-1" x-text="log.outcome_label || log.outcome"></span>
-                                                        <span class="text-muted small" style="font-size: 0.75rem;" x-text="formatDateTime(log.created_at)"></span>
-                                                    </div>
-                                                    <p class="small text-dark mb-2 lh-sm fw-medium" x-text="log.remark || 'No remark added.'"></p>
-                                                    <div class="d-flex justify-content-between align-items-center mt-2">
-                                                        <div class="d-flex align-items-center gap-2">
-                                                            <div class="bg-secondary bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
-                                                                <i class="bi bi-person text-secondary" style="font-size: 0.6rem;"></i>
-                                                            </div>
-                                                            <span class="text-muted" style="font-size: 0.75rem;" x-text="log.user ? log.user.name : 'System'"></span>
-                                                        </div>
-                                                        <template x-if="log.follow_up_at">
-                                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill shadow-sm">
-                                                                <i class="bi bi-bell-fill me-1"></i> <span x-text="new Date(log.follow_up_at).toLocaleDateString()"></span>
-                                                            </span>
-                                                        </template>
-                                                    </div>
-                                                </div>
-                                            </template>
-                                            <template x-if="!(selectedOrder.verificationLogs || selectedOrder.original.verification_logs || []).length">
-                                                <div class="text-center py-5">
-                                                    <i class="bi bi-journal-x text-muted fs-3 opacity-50 mb-2"></i>
-                                                    <p class="text-muted small mb-0">No verification calls logged yet.</p>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -955,56 +904,6 @@
             <div class="modal-footer border-top-0 pt-0">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" @click="shipOrder()">Ship Order</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ═══════════════════════ Verification Call Modal ═══════════════════════════ -->
-<div class="modal fade" id="verificationModal" tabindex="-1" aria-labelledby="verificationModalLabel">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold" id="verificationModalLabel">
-                    <i class="bi bi-telephone-outbound me-2 text-success"></i>Log Verification Call
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body pt-3">
-                <p class="small text-muted" x-show="!isBulkVerification" x-text="selectedOrder ? `Logging call outcome for order ${selectedOrder.orderNumber}` : ''"></p>
-                <p class="small text-muted" x-show="isBulkVerification" x-text="`Logging call outcome for ${selectedOrders.length} selected orders`"></p>
-                
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Call Outcome <span class="text-danger">*</span></label>
-                    <select class="form-select" x-model="verifyOutcome" required>
-                        <option value="" disabled selected>Select outcome...</option>
-                        <option value="call_not_picked">Call Not Picked</option>
-                        <option value="customer_confirmed">Customer Confirmed Order</option>
-                        <option value="mark_processing">Mark as Processing</option>
-                        <option value="dispatch_order">Dispatch Order</option>
-                        <option value="mark_delivered">Mark as Delivered</option>
-                        <option value="reschedule_delivery">Reschedule Delivery</option>
-                        <option value="next_followup_call">Next Follow-up Call</option>
-                        <option value="cancel_order">Cancel Order</option>
-                        <option value="return_order">Return Order</option>
-                        <option value="wrong_number">Wrong Number</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Remarks</label>
-                    <textarea class="form-control" rows="3" placeholder="Customer notes, response details..." x-model="verifyRemark"></textarea>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Next Follow-up Date (Optional)</label>
-                    <input type="datetime-local" class="form-control" x-model="verifyFollowUp">
-                </div>
-            </div>
-            <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" @click="saveVerificationLog()">Save log</button>
             </div>
         </div>
     </div>

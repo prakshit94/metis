@@ -203,7 +203,7 @@
                                 <h6 class="m-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Gross Subtotal</h6>
                                 <h5 class="m-0 fw-black text-primary" x-text="'₹' + total.toFixed(2)"></h5>
                             </div>
-                            <a href="{{ route('orders.create') }}" class="btn btn-primary w-100 rounded-pill fw-bold text-uppercase shadow-sm d-flex align-items-center justify-content-center gap-2" style="font-size: 11px; letter-spacing: 1px;">
+                            <a :href="checkoutHref()" class="btn btn-primary w-100 rounded-pill fw-bold text-uppercase shadow-sm d-flex align-items-center justify-content-center gap-2" style="font-size: 11px; letter-spacing: 1px;">
                                 <i class="bi bi-cart-check"></i> Go to Checkout
                             </a>
                         </div>
@@ -440,10 +440,17 @@ document.addEventListener('alpine:init', () => {
         items: [],
         init() {
             this.loadCart();
+            this.syncCustomerContext();
             window.addEventListener('storage', (e) => {
                 if (e.key === 'metis_create_order_cart') this.loadCart();
             });
             window.addEventListener('cart-updated', () => this.loadCart());
+        },
+        syncCustomerContext() {
+            const match = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
+            if (match && match[1]) {
+                localStorage.setItem('metis_active_customer_id', match[1]);
+            }
         },
         loadCart() {
             try {
@@ -451,6 +458,14 @@ document.addEventListener('alpine:init', () => {
             } catch (e) {
                 this.items = [];
             }
+        },
+        checkoutHref() {
+            const pathMatch = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
+            const customerId = (pathMatch && pathMatch[1]) || localStorage.getItem('metis_active_customer_id');
+            if (customerId) {
+                return `/orders/create?customer_id=${encodeURIComponent(customerId)}&step=review`;
+            }
+            return '{{ route('orders.create') }}';
         },
         removeItem(index) {
             this.items.splice(index, 1);

@@ -141,8 +141,4 @@ class Order extends Model
         return $this->hasMany(Payment::class);
     }
 
-    public function verificationLogs(): HasMany
-    {
-        return $this->hasMany(OrderVerificationLog::class)->latest();
-    }
 }

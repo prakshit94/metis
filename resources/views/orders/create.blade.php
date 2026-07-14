@@ -4,6 +4,31 @@
 
 @push('head')
 <style>
+    .create-order-shell {
+        position: relative;
+        min-height: 100vh;
+        background:
+            radial-gradient(circle at top left, rgba(var(--bs-primary-rgb), 0.12), transparent 34%),
+            radial-gradient(circle at top right, rgba(var(--bs-info-rgb), 0.10), transparent 26%),
+            linear-gradient(180deg, var(--bs-body-bg) 0%, rgba(var(--bs-body-bg-rgb), 0.92) 100%);
+    }
+    .order-hero {
+        background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.10), rgba(var(--bs-info-rgb), 0.08));
+        border: 1px solid rgba(var(--bs-primary-rgb), 0.08);
+        box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+    }
+    .glass-panel {
+        background: rgba(var(--bs-body-bg-rgb), 0.92);
+        backdrop-filter: blur(14px);
+    }
+    .section-label {
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+    }
+    .profile-chip {
+        min-height: 100%;
+    }
     .input-step {
         display: inline-flex;
         border: 1px solid var(--bs-border-color);
@@ -39,20 +64,38 @@
     .cart-item-card {
         transition: all 0.2s;
     }
+    .sticky-side-div {
+        position: sticky;
+        top: 24px;
+    }
 </style>
 @endpush
 
+<script>
+    window.__INITIAL_ORDER_CUSTOMER__ = @json($initialCustomer ? $initialCustomer->toArray() : null);
+</script>
+
 @section('content')
-<div class="container-fluid p-4 bg-body-tertiary bg-gradient" style="min-height: 100vh;" x-data="createOrderApp()">
+    <div class="container-fluid p-4 create-order-shell" x-data="createOrderApp(window.__INITIAL_ORDER_CUSTOMER__)">
     {{-- Header --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-0 fw-bold text-body-emphasis"><i class="bi bi-cart-check-fill me-2 text-primary" style="filter: drop-shadow(0 2px 4px rgba(var(--bs-primary-rgb), 0.4));"></i>Create New Order</h1>
-            <p class="text-muted mb-0 small mt-1">Search products, build cart, select customer and place order</p>
+    <div class="order-hero rounded-5 p-4 p-lg-5 mb-4">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge rounded-pill text-bg-primary-subtle text-primary-emphasis border border-primary border-opacity-10 px-3 py-2">Order Studio</span>
+                    <span class="badge rounded-pill text-bg-dark-subtle text-body-secondary border px-3 py-2">Customer {{ request()->query('customer_id') ? '#' . request()->query('customer_id') : 'Selection' }}</span>
+                </div>
+                <h1 class="h3 mb-1 fw-black text-body-emphasis">
+                    <i class="bi bi-cart-check-fill me-2 text-primary"></i> Create New Order
+                </h1>
+                <p class="text-muted mb-0">A cleaner layout for customer profile, addresses, cart, and checkout.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('orders') }}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-arrow-left me-2"></i> Back to Orders
+                </a>
+            </div>
         </div>
-        <a href="{{ route('orders') }}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm hover-shadow transition-all">
-            <i class="bi bi-arrow-left me-2"></i> Back to Orders
-        </a>
     </div>
 
     {{-- Alert --}}
@@ -63,131 +106,354 @@
     </div>
     @endif
 
-    <div @customer-updated.window="loadAddresses()" class="row g-4">
-        {{-- LEFT: Customer + Warehouse + Product Search + Spacious Cart Items --}}
-        <div class="col-xl-8">
+    <div id="checkout-step-2" class="card mb-4 border-0 shadow-sm rounded-5 overflow-hidden glass-panel" x-show="partyId && showCheckoutReview" x-cloak>
+        <div class="card-header bg-body-tertiary border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0 fw-bold text-body-emphasis"><i class="bi bi-bag-check me-2 text-primary"></i><span x-text="isDraft ? 'Future Order Review' : 'Order Review'"></span></h5>
+                <p class="mb-0 small text-muted">Step 2 of 2. Review everything before placing the order.</p>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" @click="closeCheckoutReview()">
+                <i class="bi bi-x-lg me-1"></i>Close
+            </button>
+        </div>
+        <div class="card-body p-4 p-lg-4">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
+                        <div class="card-body p-4">
+                            <div class="section-label text-muted fw-bold mb-2">Customer</div>
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="rounded-circle bg-primary text-white fw-black d-flex align-items-center justify-content-center shadow-sm" style="width: 54px; height: 54px;" x-text="customerDetails && customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
+                                <div>
+                                    <h5 class="fw-bold text-body-emphasis mb-1" x-text="customerDisplayName"></h5>
+                                    <div class="small text-muted" x-text="customerDetails?.party_code || 'No customer code'"></div>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="badge rounded-pill text-bg-primary-subtle text-primary-emphasis border" x-text="customerDetails?.phone || 'No phone'"></span>
+                                <span class="badge rounded-pill text-bg-secondary-subtle text-body-secondary border" x-text="customerDetails?.email || 'No email'"></span>
+                            </div>
+                            <div class="mt-4">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" @click="$dispatch('open-add-customer-modal', {customer: customerDetails})">
+                                    <i class="bi bi-pencil-square me-1"></i>Edit Profile
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            {{-- CRM Dashboard & Order Details --}}
-            <div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden">
-                <div class="card-header bg-primary bg-opacity-10 border-bottom-0 py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold text-primary-emphasis fs-5"><i class="bi bi-person-badge me-2 text-primary"></i>Customer & Order Details</h5>
-                    <div x-show="customerDetails" class="badge bg-primary bg-opacity-25 text-primary-emphasis rounded-pill px-3 py-2 fw-medium shadow-sm transition-all" x-cloak>
-                        <i class="bi bi-check-circle-fill me-1"></i> Customer Selected
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
+                        <div class="card-body p-3">
+                            <div class="section-label text-muted fw-bold mb-2">Addresses</div>
+
+                            <div id="review-addresses-section" class="transition-all">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="fw-bold mb-0 text-body fs-6"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Shipping Addresses</h6>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm hover-shadow transition-all" @click="$dispatch('open-address-modal', {customerId: partyId})">
+                                        <i class="bi bi-plus-lg me-2"></i>Add Address
+                                    </button>
+                                </div>
+
+                                <div class="row g-3">
+                                    <template x-for="addr in addresses" :key="'review-shipping-' + addr.id">
+                                        <div class="col-md-6">
+                                            <div class="w-100 h-100 cursor-pointer" style="display:block;" @click="shippingAddressId = addr.id">
+                                                <div class="card h-100 border-2 rounded-4 transition-all" :class="shippingAddressId == addr.id ? 'border-primary bg-primary bg-opacity-10 shadow-md' : 'border-secondary border-opacity-10 bg-body-tertiary hover-shadow'" style="transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                                    <div class="card-body p-3 position-relative">
+                                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                                            <div>
+                                                                <span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis rounded-pill me-2 px-2 py-1 shadow-sm fw-medium" x-text="addr.label || 'Address'"></span>
+                                                                <span x-show="addr.is_default" class="badge bg-success bg-opacity-25 text-success-emphasis rounded-pill px-2 py-1 shadow-sm fw-medium"><i class="bi bi-star-fill me-1"></i>Default</span>
+                                                            </div>
+                                                            <button type="button" class="btn btn-light btn-sm rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 12px; right: 12px; width: 28px; height: 28px; z-index: 20; border: 1px solid rgba(0,0,0,0.05);" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
+                                                                <i class="bi bi-pencil text-primary"></i>
+                                                            </button>
+                                                        </div>
+                                                        <p class="mb-1 small fw-bold text-body" x-text="addr.address_line_1"></p>
+                                                        <p class="mb-1 small text-muted" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
+                                                        <p class="mb-1 small text-muted" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
+                                                        <p class="mb-0 small text-muted fw-medium" style="font-size: 12px;">
+                                                            <span x-show="addr.city" x-text="addr.city + ', '"></span>
+                                                            <span x-show="addr.state" x-text="addr.state"></span>
+                                                            <span class="text-body" x-show="addr.pincode" x-text="'- ' + addr.pincode"></span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template x-if="addresses.length === 0">
+                                        <div class="col-12">
+                                            <div class="alert alert-light border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0 p-4 shadow-sm bg-body-tertiary">
+                                                <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-4" style="width: 50px; height: 50px;">
+                                                    <i class="bi bi-info-circle text-muted fs-4"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="mb-1 fw-bold fs-6 text-body">No addresses found.</p>
+                                                    <p class="mb-0 small text-muted">Please add a shipping address to continue with your order.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <div class="mt-3 form-check form-switch cursor-pointer d-flex align-items-center gap-2">
+                                    <input class="form-check-input mt-0" type="checkbox" id="reviewSameAsShippingToggle" x-model="sameAsShipping" style="cursor: pointer; width: 40px; height: 20px;">
+                                    <label class="form-check-label small fw-bold text-muted text-uppercase mt-1" for="reviewSameAsShippingToggle" style="cursor: pointer; font-size: 11px; letter-spacing: 1px;">Billing address same as Shipping address</label>
+                                </div>
+
+                                <div x-show="!sameAsShipping" x-cloak class="mt-3 pt-3 border-top transition-all">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-bold mb-0 text-body fs-6"><i class="bi bi-receipt me-2 text-primary"></i>Billing Addresses</h6>
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <template x-for="addr in addresses" :key="'review-billing-' + addr.id">
+                                            <div class="col-md-6">
+                                                <div class="w-100 h-100 cursor-pointer" style="display:block;" @click="billingAddressId = addr.id">
+                                                    <div class="card h-100 border-2 rounded-4 transition-all" :class="billingAddressId == addr.id ? 'border-primary bg-primary bg-opacity-10 shadow-md' : 'border-secondary border-opacity-10 bg-body-tertiary hover-shadow'" style="transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                                        <div class="card-body p-3 position-relative">
+                                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                                <div>
+                                                                    <span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis rounded-pill me-2 px-2 py-1 shadow-sm fw-medium" x-text="addr.label || 'Address'"></span>
+                                                                    <span x-show="addr.is_default" class="badge bg-success bg-opacity-25 text-success-emphasis rounded-pill px-2 py-1 shadow-sm fw-medium"><i class="bi bi-star-fill me-1"></i>Default</span>
+                                                                </div>
+                                                                <button type="button" class="btn btn-light btn-sm rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 12px; right: 12px; width: 28px; height: 28px; z-index: 20; border: 1px solid rgba(0,0,0,0.05);" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
+                                                                    <i class="bi bi-pencil text-primary"></i>
+                                                                </button>
+                                                            </div>
+                                                            <p class="mb-1 small fw-bold text-body" x-text="addr.address_line_1"></p>
+                                                            <p class="mb-1 small text-muted" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
+                                                            <p class="mb-1 small text-muted" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
+                                                            <p class="mb-0 small text-muted fw-medium" style="font-size: 12px;">
+                                                                <span x-show="addr.city" x-text="addr.city + ', '"></span>
+                                                                <span x-show="addr.state" x-text="addr.state"></span>
+                                                                <span class="text-body" x-show="addr.pincode" x-text="'- ' + addr.pincode"></span>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <template x-if="addresses.length === 0">
+                                            <div class="col-12">
+                                                <div class="alert alert-light border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0 p-4 shadow-sm bg-body-tertiary">
+                                                    <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-4" style="width: 50px; height: 50px;">
+                                                        <i class="bi bi-info-circle text-muted fs-4"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="mb-1 fw-bold fs-6 text-body">No addresses found.</p>
+                                                        <p class="mb-0 small text-muted">Please add a billing address to continue with your order.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body p-4">
-                    {{-- Selectors --}}
-                    <div class="row g-4 mb-4">
-                        <div class="col-md-6">
-                           <label class="form-label fw-bold small text-uppercase text-muted"><i class="bi bi-person me-1"></i>Customer <span class="text-danger">*</span></label>
-                           <div class="form-control bg-body-secondary fw-bold rounded-3 shadow-sm border-0 d-flex align-items-center" style="height: 42px;">
-                               <template x-if="customerDetails">
-                                   <span class="text-body" x-text="`${customerDetails.firstname || ''} ${customerDetails.middlename ? customerDetails.middlename + ' ' : ''}${customerDetails.lastname || ''}`.replace(/\s+/g, ' ').trim()"></span>
-                               </template>
-                               <template x-if="!customerDetails">
-                                   <span class="text-muted fw-normal">Loading customer details...</span>
-                               </template>
-                           </div>
-                        </div>
-                        <div class="col-md-6">
-                           <label class="form-label fw-bold small text-uppercase text-muted"><i class="bi bi-shop me-1"></i>Warehouse <span class="text-danger">*</span></label>
-                           <select class="form-select fw-bold rounded-3 shadow-sm border-0 bg-body-secondary" style="height: 42px;" x-model="warehouseId">
-                               <option value="">Select Warehouse</option>
-                               @foreach($warehouses as $w)
-                               <option value="{{ $w->id }}">{{ $w->name }}</option>
-                               @endforeach
-                           </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small text-uppercase text-muted">Future Order?</label>
-                            <div class="form-check form-switch mt-2">
-                                <input class="form-check-input" type="checkbox" id="isDraft" x-model="isDraft" style="cursor: pointer;">
-                                <label class="form-check-label small fw-medium" for="isDraft" style="cursor: pointer;">Schedule for future</label>
+
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
+                        <div class="card-body p-4">
+                            <div class="section-label text-muted fw-bold mb-2">Order Summary</div>
+                            <div class="d-flex justify-content-between small mb-2">
+                                <span class="text-muted">Warehouse</span>
+                                <span class="fw-semibold text-body-emphasis" x-text="selectedWarehouseName"></span>
                             </div>
-                            <div x-show="isDraft" x-cloak class="mt-2 transition-all">
-                                <input type="date" class="form-control form-control-sm rounded-3 shadow-sm border-0 bg-body-secondary fw-bold" style="height: 38px;" x-model="futureOrderDate" placeholder="Future date">
+                            <div class="d-flex justify-content-between small mb-2">
+                                <span class="text-muted">Items</span>
+                                <span class="fw-semibold text-body-emphasis" x-text="cart.length"></span>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-2">
+                                <span class="text-muted">Subtotal</span>
+                                <span class="fw-semibold text-body-emphasis" x-text="'₹' + Number(subtotal).toFixed(2)"></span>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-2" x-show="totalDiscount > 0">
+                                <span class="text-muted">Discount</span>
+                                <span class="fw-semibold text-success" x-text="'- ₹' + Number(totalDiscount).toFixed(2)"></span>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-2">
+                                <span class="text-muted">GST</span>
+                                <span class="fw-semibold text-body-emphasis" x-text="'₹' + Number(taxAmount).toFixed(2)"></span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-uppercase small text-body">Grand Total</span>
+                                <span class="fw-black text-primary fs-4" x-text="'₹' + Number(grandTotal).toFixed(2)"></span>
+                            </div>
+                            <div class="mt-4">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" @click="closeCheckoutReview(); scrollToSection('catalog-section')">
+                                    <i class="bi bi-pencil me-1"></i>Edit Orders
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
+                        <div class="card-body p-4">
+                            <div class="section-label text-muted fw-bold mb-3">Order Items</div>
+                            <div class="table-responsive">
+                                <table class="table align-middle mb-0">
+                                    <thead>
+                                        <tr class="small text-muted">
+                                            <th>Item</th>
+                                            <th class="text-center">Qty</th>
+                                            <th class="text-end">Price</th>
+                                            <th class="text-end">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="item in cart" :key="'checkout-' + item.id">
+                                            <tr>
+                                                <td>
+                                                    <div class="fw-semibold text-body-emphasis" x-text="item.name"></div>
+                                                    <div class="small text-muted" x-text="item.sku"></div>
+                                                </td>
+                                                <td class="text-center fw-semibold" x-text="item.quantity"></td>
+                                                <td class="text-end text-muted" x-text="'₹' + Number(item.price).toFixed(2)"></td>
+                                                <td class="text-end fw-bold text-body-emphasis" x-text="'₹' + Number(lineTotal(item)).toFixed(2)"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <template x-if="isDraft">
+                    <div class="col-12">
+                        <div class="alert alert-warning rounded-4 border-0 mb-0">
+                            Future order date: <span class="fw-bold" x-text="futureOrderDate || 'Not selected'"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        <div class="card-footer bg-body-tertiary border-top-0 p-4 pt-0 d-flex flex-wrap gap-2 justify-content-end">
+            <button type="button" class="btn btn-light rounded-pill px-4" @click="closeCheckoutReview()">Back</button>
+            <button type="button" class="btn btn-primary rounded-pill px-4" :disabled="placing || (isDraft && !futureOrderDate)" @click="confirmCheckout()">
+                <span x-show="placing" class="spinner-border spinner-border-sm me-2"></span>
+                <span x-text="isDraft ? 'Confirm Future Order' : 'Confirm & Place Order'"></span>
+            </button>
+        </div>
+    </div>
+
+    <div @customer-updated.window="loadAddresses()" class="row g-4" x-show="!showCheckoutReview" x-cloak>
+        <div class="col-xl-8">
+            <div id="customer-workspace" class="card border-0 shadow-sm rounded-5 overflow-hidden mb-4 glass-panel">
+                <div class="card-header bg-body-tertiary border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0 fw-bold text-body-emphasis"><i class="bi bi-person-badge me-2 text-primary"></i>Customer Workspace</h5>
+                        <p class="mb-0 small text-muted">Profile, addresses, and order build steps in one place.</p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2" x-show="customerDetails" x-cloak>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" @click="$dispatch('open-add-customer-modal', {customer: customerDetails})">
+                            <i class="bi bi-pencil-square me-1"></i>Edit Profile
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-4 p-lg-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="rounded-4 border border-primary border-opacity-10 bg-primary bg-opacity-10 p-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-circle bg-primary text-white fw-black d-flex align-items-center justify-content-center shadow-sm" style="width: 62px; height: 62px;" x-text="customerDetails && customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
+                                    <div>
+                                        <div class="section-label text-primary-emphasis fw-bold mb-1">Selected Customer</div>
+                                        <h4 class="mb-1 fw-black text-body-emphasis" x-text="customerDisplayName"></h4>
+                                        <div class="d-flex flex-wrap gap-2 small text-muted">
+                                            <span x-text="customerDetails?.party_code ? customerDetails.party_code : 'No party code'"></span>
+                                            <span x-show="customerDetails?.phone" x-text="'• ' + customerDetails.phone"></span>
+                                            <span x-show="customerDetails?.email" x-text="'• ' + customerDetails.email"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="badge rounded-pill text-bg-success-subtle text-success-emphasis border">Profile ready</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {{-- CRM Details --}}
-                    <div x-show="customerDetails" x-cloak class="pt-3 border-top transition-all">
-                        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
-                            <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-person-lines-fill me-2 text-secondary"></i>Customer Profile</h6>
-                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4 shadow-sm hover-shadow transition-all" @click="$dispatch('open-add-customer-modal', {customer: customerDetails})">
-                                <i class="bi bi-pencil-square me-2"></i>Edit Profile
-                            </button>
-                        </div>
-
+                    <div x-show="customerDetails" x-cloak class="transition-all">
                         <div class="row g-4">
-                            {{-- Basic Info Card --}}
                             <div class="col-lg-4">
-                                <div class="bg-body-secondary rounded-4 p-4 h-100 border border-secondary border-opacity-10 transition-all hover-shadow" style="transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                    <div class="d-flex align-items-center gap-3 mb-4">
-                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold fs-3 shadow-sm" style="width: 56px; height: 56px;" x-text="customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
-                                        <div>
-                                            <h6 class="mb-0 fw-bold fs-5 text-body" x-text="`${customerDetails.firstname || ''} ${customerDetails.middlename ? customerDetails.middlename + ' ' : ''}${customerDetails.lastname || ''}`.replace(/\s+/g, ' ').trim()"></h6>
-                                            <span class="badge bg-success bg-opacity-25 text-success-emphasis rounded-pill mt-2 px-3 py-1 shadow-sm fw-medium" x-text="customerDetails.status || 'Active'"></span>
-                                        </div>
-                                    </div>
-                                    <ul class="list-unstyled mb-0 small">
-                                        <li class="mb-3 d-flex align-items-center gap-2"><i class="bi bi-telephone text-muted fs-6"></i><span class="fw-medium text-body" x-text="customerDetails.phone || 'N/A'"></span></li>
-                                        <li class="mb-3 d-flex align-items-center gap-2"><i class="bi bi-envelope text-muted fs-6"></i><span class="fw-medium text-body text-break" x-text="customerDetails.email || 'N/A'"></span></li>
-                                        <li class="mb-3 d-flex align-items-center gap-2" x-show="customerDetails.company_name"><i class="bi bi-building text-muted fs-6"></i><span class="fw-medium text-body" x-text="customerDetails.company_name"></span></li>
-                                        <li class="d-flex align-items-center gap-2" x-show="customerDetails.gst_no"><i class="bi bi-receipt text-muted fs-6"></i>GST: <span class="fw-medium text-body text-uppercase" x-text="customerDetails.gst_no"></span></li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            {{-- Agriculture Profile Card --}}
-                            <div class="col-lg-4">
-                                <div class="bg-warning bg-opacity-10 rounded-4 p-4 h-100 border border-warning border-opacity-25 transition-all hover-shadow" style="transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                    <h6 class="fw-bold mb-4 text-warning-emphasis fs-6"><i class="bi bi-sun me-2"></i>Agriculture Profile</h6>
-                                    <div class="row g-3 small">
-                                        <div class="col-6">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Land Area</div>
-                                            <div class="fw-black fs-5 text-body"><span x-text="customerDetails.land_area || '0'"></span> <span class="fs-6 fw-medium text-muted" x-text="customerDetails.land_unit || ''"></span></div>
-                                        </div>
-                                        <div class="col-12 mt-3" x-show="customerDetails.crops && customerDetails.crops.length > 0">
-                                            <div class="text-muted mb-2" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Major Crops</div>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                <template x-for="crop in customerDetails.crops">
-                                                    <span class="badge bg-success bg-opacity-25 text-success-emphasis rounded-pill px-2 py-1 shadow-sm fw-medium" x-text="crop"></span>
-                                                </template>
+                                <div class="card h-100 border-0 rounded-4 shadow-sm bg-body-secondary profile-chip">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center gap-3 mb-4">
+                                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold fs-3 shadow-sm" style="width: 56px; height: 56px;" x-text="customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
+                                            <div>
+                                                <div class="section-label text-muted fw-bold mb-1">Contact Profile</div>
+                                                <div class="fw-bold fs-5 text-body-emphasis" x-text="customerDetails.party_code || 'Customer profile'"></div>
+                                                <span class="badge bg-success bg-opacity-25 text-success-emphasis rounded-pill mt-2 px-3 py-1 shadow-sm fw-medium" x-text="customerDetails.status || 'Active'"></span>
                                             </div>
                                         </div>
-                                        <div class="col-12 mt-3" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
-                                            <div class="text-muted mb-2" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Irrigation</div>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                <template x-for="type in customerDetails.irrigation_type">
-                                                    <span class="badge bg-info bg-opacity-25 text-info-emphasis rounded-pill px-2 py-1 shadow-sm fw-medium" x-text="type"></span>
-                                                </template>
-                                            </div>
-                                        </div>
+                                        <ul class="list-unstyled mb-0 small">
+                                            <li class="mb-3 d-flex align-items-center gap-2"><i class="bi bi-telephone text-muted fs-6"></i><span class="fw-medium text-body" x-text="customerDetails.phone || 'N/A'"></span></li>
+                                            <li class="mb-3 d-flex align-items-center gap-2"><i class="bi bi-envelope text-muted fs-6"></i><span class="fw-medium text-body text-break" x-text="customerDetails.email || 'N/A'"></span></li>
+                                            <li class="mb-3 d-flex align-items-center gap-2" x-show="customerDetails.company_name"><i class="bi bi-building text-muted fs-6"></i><span class="fw-medium text-body" x-text="customerDetails.company_name"></span></li>
+                                            <li class="d-flex align-items-center gap-2" x-show="customerDetails.gst_no"><i class="bi bi-receipt text-muted fs-6"></i>GST: <span class="fw-medium text-body text-uppercase" x-text="customerDetails.gst_no"></span></li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
-
-                            {{-- Financial Terms Card --}}
                             <div class="col-lg-4">
-                                <div class="bg-danger bg-opacity-10 rounded-4 p-4 h-100 border border-danger border-opacity-25 transition-all hover-shadow" style="transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                    <h6 class="fw-bold mb-4 text-danger-emphasis fs-6"><i class="bi bi-wallet2 me-2"></i>Financial Terms</h6>
-                                    <div class="row g-3 small">
-                                        <div class="col-6">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Credit Limit</div>
-                                            <div class="fw-black fs-5 text-body">₹<span x-text="Number(customerDetails.credit_limit || 0).toFixed(2)"></span></div>
+                                <div class="card h-100 border-0 rounded-4 shadow-sm bg-warning bg-opacity-10">
+                                    <div class="card-body p-4">
+                                        <div class="section-label text-warning-emphasis fw-bold mb-3"><i class="bi bi-sun me-1"></i>Agriculture Snapshot</div>
+                                        <div class="row g-3 small">
+                                            <div class="col-6">
+                                                <div class="text-muted mb-1 section-label">Land Area</div>
+                                                <div class="fw-black fs-5 text-body"><span x-text="customerDetails.land_area || '0'"></span> <span class="fs-6 fw-medium text-muted" x-text="customerDetails.land_unit || ''"></span></div>
+                                            </div>
+                                            <div class="col-12 mt-2" x-show="customerDetails.crops && customerDetails.crops.length > 0">
+                                                <div class="text-muted mb-2 section-label">Major Crops</div>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <template x-for="crop in customerDetails.crops">
+                                                        <span class="badge bg-success bg-opacity-25 text-success-emphasis rounded-pill px-2 py-1 shadow-sm fw-medium" x-text="crop"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 mt-2" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
+                                                <div class="text-muted mb-2 section-label">Irrigation</div>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <template x-for="type in customerDetails.irrigation_type">
+                                                        <span class="badge bg-info bg-opacity-25 text-info-emphasis rounded-pill px-2 py-1 shadow-sm fw-medium" x-text="type"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-6">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Current Balance</div>
-                                            <div class="fw-black fs-5" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">₹<span x-text="Number(customerDetails.outstanding_balance || 0).toFixed(2)"></span></div>
-                                        </div>
-                                        <div class="col-6 mt-3">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Credit Days</div>
-                                            <div class="fw-bold text-body fs-6"><span x-text="customerDetails.credit_days || '0'"></span> Days</div>
-                                        </div>
-                                        <div class="col-6 mt-3" x-show="customerDetails.credit_valid_till">
-                                            <div class="text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">Valid Till</div>
-                                            <div class="fw-bold text-body fs-6" x-text="new Date(customerDetails.credit_valid_till).toLocaleDateString()"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="card h-100 border-0 rounded-4 shadow-sm bg-danger bg-opacity-10">
+                                    <div class="card-body p-4">
+                                        <div class="section-label text-danger-emphasis fw-bold mb-3"><i class="bi bi-wallet2 me-1"></i>Financial Snapshot</div>
+                                        <div class="row g-3 small">
+                                            <div class="col-6">
+                                                <div class="text-muted mb-1 section-label">Credit Limit</div>
+                                                <div class="fw-black fs-5 text-body">₹<span x-text="Number(customerDetails.credit_limit || 0).toFixed(2)"></span></div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="text-muted mb-1 section-label">Balance</div>
+                                                <div class="fw-black fs-5" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">₹<span x-text="Number(customerDetails.outstanding_balance || 0).toFixed(2)"></span></div>
+                                            </div>
+                                            <div class="col-6 mt-3">
+                                                <div class="text-muted mb-1 section-label">Credit Days</div>
+                                                <div class="fw-bold text-body fs-6"><span x-text="customerDetails.credit_days || '0'"></span> Days</div>
+                                            </div>
+                                            <div class="col-6 mt-3" x-show="customerDetails.credit_valid_till">
+                                                <div class="text-muted mb-1 section-label">Valid Till</div>
+                                                <div class="fw-bold text-body fs-6" x-text="new Date(customerDetails.credit_valid_till).toLocaleDateString()"></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -196,11 +462,11 @@
                     </div>
 
                     {{-- Addresses Section --}}
-                    <div x-show="partyId" x-cloak class="mt-4 pt-4 border-top transition-all">
+                    <div id="addresses-section" x-show="partyId" x-cloak class="mt-4 pt-4 border-top transition-all">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Shipping Addresses</h6>
                             <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 shadow-sm hover-shadow transition-all" @click="$dispatch('open-address-modal', {customerId: partyId})">
-                                <i class="bi bi-plus-lg me-2"></i>New Address
+                                <i class="bi bi-plus-lg me-2"></i>Add Address
                             </button>
                         </div>
                         
@@ -257,9 +523,6 @@
                         <div x-show="!sameAsShipping" x-cloak class="mt-4 pt-4 border-top transition-all">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-receipt me-2 text-primary"></i>Billing Addresses</h6>
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 shadow-sm hover-shadow transition-all" @click="$dispatch('open-address-modal', {customerId: partyId})">
-                                    <i class="bi bi-plus-lg me-2"></i>New Address
-                                </button>
                             </div>
                             
                             <div class="row g-4">
@@ -306,11 +569,29 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mt-4">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                                <div>
+                                    <div class="section-label text-primary fw-bold mb-1">Warehouse</div>
+                                    <h6 class="mb-0 fw-bold text-body-emphasis">Select fulfillment warehouse</h6>
+                                </div>
+                                <select class="form-select fw-bold rounded-pill shadow-sm border-0 bg-body-secondary" style="max-width: 260px; height: 42px;" x-model="warehouseId">
+                                    <option value="">Select Warehouse</option>
+                                    @foreach($warehouses as $w)
+                                    <option value="{{ $w->id }}">{{ $w->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
             {{-- Product Search Card --}}
-            <div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden">
+            <div id="catalog-section" class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden">
                 <div class="card-header bg-info bg-opacity-10 border-bottom-0 py-3">
                     <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
                         <span class="fw-bold text-info-emphasis fs-5"><i class="bi bi-search me-2 text-info"></i>Product Catalog</span>
@@ -446,7 +727,7 @@
             </div>
 
             {{-- Shopping Cart header --}}
-            <div class="row align-items-center gy-3 mb-4 mt-2">
+            <div class="row align-items-center gy-3 mb-4 mt-2" x-show="false">
                 <div class="col-sm">
                     <h4 class="mb-0 fw-black text-body d-flex align-items-center gap-2"><div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-cart3"></i></div> Shopping Cart (<span x-text="cart.length" class="text-primary"></span>)</h4>
                 </div>
@@ -458,7 +739,7 @@
             </div>
 
             {{-- Cart Items List (Glossy Style) --}}
-            <div class="mb-4 space-y-3">
+            <div class="mb-4 space-y-3" x-show="false">
                 {{-- Empty Cart --}}
                 <template x-if="cart.length === 0">
                     <div class="card border-0 shadow-sm rounded-4">
@@ -527,6 +808,93 @@
         {{-- RIGHT: Cart Summary + Calculations + Offers + Place Order (Glossy Style) --}}
         <div class="col-xl-4">
             <div class="sticky-side-div" style="position: sticky; top: 24px;">
+                <div class="card mb-4 border-0 shadow-sm rounded-5 overflow-hidden glass-panel" x-show="partyId" x-cloak>
+                    <div class="card-header bg-body-tertiary border-bottom-0 py-3 px-4">
+                        <h5 class="mb-0 fw-bold text-body-emphasis"><i class="bi bi-calendar-event me-2 text-primary"></i>Schedule Order</h5>
+                        <p class="mb-0 small text-muted">Switch this on to save a future order draft.</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="form-check form-switch d-flex align-items-center justify-content-between gap-3 p-3 rounded-4 border bg-white">
+                            <div>
+                                <label class="form-check-label fw-bold text-body-emphasis mb-1" for="futureOrderSwitch">Place as Future Order</label>
+                                <div class="small text-muted">Saves the order as pending for later processing.</div>
+                            </div>
+                            <input class="form-check-input fs-4 m-0" type="checkbox" id="futureOrderSwitch" x-model="isDraft">
+                        </div>
+                        <div x-show="isDraft" x-cloak class="mt-3 p-3 rounded-4 border bg-body-tertiary">
+                            <label class="form-label fw-semibold text-body-emphasis">Future Order Date</label>
+                            <input type="date" class="form-control rounded-pill" :min="new Date().toISOString().split('T')[0]" x-model="futureOrderDate" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4 border-0 shadow-sm rounded-5 overflow-hidden glass-panel" x-show="cart.length > 0" x-cloak>
+                    <div class="card-header bg-body-tertiary border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0 fw-bold text-body-emphasis"><i class="bi bi-cart3 me-2 text-primary"></i>Shopping Cart (<span x-text="cart.length" class="text-primary"></span>)</h5>
+                            <p class="mb-0 small text-muted">Pinned summary for the order you’re building.</p>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" @click="cart = []">
+                            <i class="bi bi-trash3 me-1"></i> Clear
+                        </button>
+                    </div>
+                    <div class="card-body p-3 p-lg-4">
+                        <template x-if="cart.length === 0">
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-bag fs-1 d-block mb-2"></i>
+                                Cart is empty
+                            </div>
+                        </template>
+                        <template x-for="(item, idx) in cart" :key="item.id">
+                            <div class="card border-0 shadow-sm rounded-4 mb-3 overflow-hidden group bg-body">
+                                <div class="d-flex align-items-start gap-3 p-3">
+                                    <div class="rounded-3 bg-body-tertiary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
+                                        <template x-if="item.image_url">
+                                            <img :src="item.image_url" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                        </template>
+                                        <template x-if="!item.image_url">
+                                            <i class="bi bi-box fs-3 text-muted opacity-50"></i>
+                                        </template>
+                                    </div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="d-flex align-items-start justify-content-between gap-2">
+                                            <div class="min-w-0">
+                                                <h6 class="fw-bold text-truncate mb-1" x-text="item.name"></h6>
+                                                <div class="font-monospace text-muted" style="font-size: 11px;" x-text="item.sku"></div>
+                                            </div>
+                                            <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-muted hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Remove">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between mt-2">
+                                            <span class="text-muted fw-medium" style="font-size: 12px;" x-text="'₹' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
+                                            <span class="fw-bold text-success fs-6" x-text="'₹' + Number(lineTotal(item)).toFixed(2)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="px-3 pb-3 d-flex flex-wrap align-items-center gap-3">
+                                    <div class="d-flex align-items-center bg-body-secondary border rounded-3 p-1 flex-shrink-0">
+                                        <button type="button" @click.prevent="updateQty(idx,-1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-dash"></i>
+                                        </button>
+                                        <span class="fw-bold text-center" style="width: 32px; font-size: 13px;" x-text="item.quantity"></span>
+                                        <button type="button" @click.prevent="updateQty(idx,1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
+                                    <div class="flex-grow-1 min-w-0 d-flex justify-content-end align-items-center gap-2">
+                                        <template x-if="item.discountValue > 0">
+                                            <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-flex align-items-center gap-1 px-2 py-1 rounded-3">
+                                                <i class="bi bi-tag-fill"></i>
+                                                <span class="fw-bold" style="font-size: 11px;" x-text="(item.discountType === 'flat' ? '₹' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (item.discountType === 'flat' ? ' off' : '% off')"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
                 <div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden" x-show="cart.length > 0" x-cloak>
                     <div class="card-body p-4 space-y-4">
                         
@@ -650,7 +1018,7 @@
                         </div>
 
                         {{-- Action Panel --}}
-                        <button type="button" @click.prevent="placeOrder()" :disabled="placing || cart.length === 0 || !partyId || !warehouseId"
+                        <button type="button" @click.prevent="openCheckoutReview()" :disabled="placing || cart.length === 0 || !partyId || !warehouseId"
                             class="btn btn-primary w-100 rounded-pill py-3 fw-black text-uppercase tracking-widest shadow position-relative overflow-hidden transition-all hover-shadow" style="letter-spacing: 2px;">
                             <span x-show="placing" class="spinner-border spinner-border-sm me-2"></span>
                             <i x-show="!placing" class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
@@ -672,6 +1040,200 @@
         </div>
     </div>
 
+    <div class="card border-0 shadow-sm rounded-5 overflow-hidden glass-panel mt-2 mb-4" x-show="partyId" x-cloak>
+        <div class="card-header bg-body-tertiary border-bottom-0 p-3 p-lg-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                <div>
+                    <h5 class="mb-1 fw-bold text-body-emphasis"><i class="bi bi-layers me-2 text-primary"></i>Order Center</h5>
+                    <p class="mb-0 small text-muted">Tap an order to expand its details.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'history' ? 'btn-primary border-primary' : 'btn-light text-body-secondary'" @click="bottomTab = 'history'; expandedOrderId = null">History</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'future' ? 'btn-primary border-primary' : 'btn-light text-body-secondary'" @click="bottomTab = 'future'; expandedOrderId = null">Future Orders</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'tags' ? 'btn-primary border-primary' : 'btn-light text-body-secondary'" @click="bottomTab = 'tags'; expandedOrderId = null">Customer Tags</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-4 p-lg-4">
+            <template x-if="bottomTab === 'history'">
+                <div class="d-flex flex-column gap-3">
+                    <template x-for="order in recentOrders" :key="'history-' + order.id">
+                        <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary overflow-hidden">
+                            <button type="button" class="w-100 text-start border-0 bg-transparent p-0" @click="toggleOrderDetails(order.id)">
+                                <div class="card-body p-4 d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-center">
+                                    <div class="min-w-0">
+                                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                            <h6 class="fw-bold mb-0 text-body-emphasis" x-text="order.order_no || order.order_number || ('Order #' + order.id)"></h6>
+                                            <span class="badge rounded-pill text-bg-primary-subtle text-primary-emphasis border" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                            <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis border" x-show="order.is_draft">Future Order</span>
+                                        </div>
+                                        <div class="small text-muted text-truncate">
+                                            <span class="me-3" x-text="order.order_date ? new Date(order.order_date).toLocaleDateString() : 'No date'"></span>
+                                            <span class="me-3" x-text="order.warehouse?.name ? 'Warehouse: ' + order.warehouse.name : 'Warehouse: N/A'"></span>
+                                            <span x-text="'Items: ' + (order.items ? order.items.length : 0)"></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-lg-end">
+                                        <div class="fw-bold text-body-emphasis" x-text="'₹' + Number(order.net_amount || 0).toFixed(2)"></div>
+                                        <div class="small text-muted" x-text="expandedOrderId === order.id ? 'Hide details' : 'Show details'"></div>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <div x-show="expandedOrderId === order.id" x-cloak class="border-top bg-white">
+                                <div class="p-4">
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-lg-4">
+                                            <div class="p-3 rounded-4 bg-body-tertiary border h-100">
+                                                <div class="fw-bold text-body-emphasis mb-1">Shipping</div>
+                                                <div class="small text-muted" x-text="order.shipping_address ? [order.shipping_address.label, order.shipping_address.address_line_1, order.shipping_address.city, order.shipping_address.state].filter(Boolean).join(', ') : 'Not available'"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <div class="p-3 rounded-4 bg-body-tertiary border h-100">
+                                                <div class="fw-bold text-body-emphasis mb-1">Billing</div>
+                                                <div class="small text-muted" x-text="order.billing_address ? [order.billing_address.label, order.billing_address.address_line_1, order.billing_address.city, order.billing_address.state].filter(Boolean).join(', ') : 'Same as shipping / not available'"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <div class="p-3 rounded-4 bg-body-tertiary border h-100">
+                                                <div class="fw-bold text-body-emphasis mb-1">Totals</div>
+                                                <div class="small text-muted" x-text="'Subtotal ₹' + Number(order.total_amount || 0).toFixed(2) + ' | GST ₹' + Number(order.tax_amount || 0).toFixed(2)"></div>
+                                                <div class="small text-muted" x-text="order.applied_offer?.name ? 'Offer: ' + order.applied_offer.name : 'No offer applied'"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table align-middle mb-0">
+                                            <thead>
+                                                <tr class="small text-muted">
+                                                    <th>Item</th>
+                                                    <th>SKU</th>
+                                                    <th class="text-center">Qty</th>
+                                                    <th class="text-end">Price</th>
+                                                    <th class="text-end">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template x-for="item in (order.items || [])" :key="'history-item-' + order.id + '-' + item.id">
+                                                    <tr>
+                                                        <td class="fw-semibold text-body-emphasis" x-text="item.product?.name || item.product_name || 'Product'"></td>
+                                                        <td class="text-muted" x-text="item.product?.sku || item.sku || 'N/A'"></td>
+                                                        <td class="text-center fw-semibold" x-text="item.quantity"></td>
+                                                        <td class="text-end text-muted" x-text="'₹' + Number(item.unit_price || 0).toFixed(2)"></td>
+                                                        <td class="text-end fw-bold text-body-emphasis" x-text="'₹' + Number(item.total_amount || 0).toFixed(2)"></td>
+                                                    </tr>
+                                                </template>
+                                                <template x-if="!order.items || order.items.length === 0">
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted py-4">No order items found.</td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="!recentOrders.length">
+                        <div class="alert alert-light border rounded-4 mb-0 p-4 text-center text-muted">No order history available.</div>
+                    </template>
+                </div>
+            </template>
+
+            <template x-if="bottomTab === 'future'">
+                <div class="d-flex flex-column gap-3">
+                    <template x-for="order in futureOrders" :key="'future-' + order.id">
+                        <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary overflow-hidden">
+                            <button type="button" class="w-100 text-start border-0 bg-transparent p-0" @click="toggleOrderDetails(order.id)">
+                                <div class="card-body p-4 d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-center">
+                                    <div class="min-w-0">
+                                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                            <h6 class="fw-bold mb-0 text-body-emphasis" x-text="order.order_no || order.order_number || ('Order #' + order.id)"></h6>
+                                            <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis border">Future</span>
+                                            <span class="badge rounded-pill text-bg-primary-subtle text-primary-emphasis border" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                        </div>
+                                        <div class="small text-muted text-truncate">
+                                            <span class="me-3" x-text="order.future_order_date ? new Date(order.future_order_date).toLocaleDateString() : 'No future date'"></span>
+                                            <span class="me-3" x-text="order.warehouse?.name ? 'Warehouse: ' + order.warehouse.name : 'Warehouse: N/A'"></span>
+                                            <span x-text="'Items: ' + (order.items ? order.items.length : 0)"></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-lg-end">
+                                        <div class="fw-bold text-body-emphasis" x-text="'₹' + Number(order.net_amount || 0).toFixed(2)"></div>
+                                        <div class="small text-muted" x-text="expandedOrderId === order.id ? 'Hide details' : 'Show details'"></div>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <div x-show="expandedOrderId === order.id" x-cloak class="border-top bg-white">
+                                <div class="p-4">
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-lg-6">
+                                            <div class="p-3 rounded-4 bg-body-tertiary border h-100">
+                                                <div class="fw-bold text-body-emphasis mb-1">Shipping</div>
+                                                <div class="small text-muted" x-text="order.shipping_address ? [order.shipping_address.label, order.shipping_address.address_line_1, order.shipping_address.city, order.shipping_address.state].filter(Boolean).join(', ') : 'Not available'"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <div class="p-3 rounded-4 bg-body-tertiary border h-100">
+                                                <div class="fw-bold text-body-emphasis mb-1">Billing</div>
+                                                <div class="small text-muted" x-text="order.billing_address ? [order.billing_address.label, order.billing_address.address_line_1, order.billing_address.city, order.billing_address.state].filter(Boolean).join(', ') : 'Same as shipping / not available'"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table align-middle mb-0">
+                                            <thead>
+                                                <tr class="small text-muted">
+                                                    <th>Item</th>
+                                                    <th>SKU</th>
+                                                    <th class="text-center">Qty</th>
+                                                    <th class="text-end">Price</th>
+                                                    <th class="text-end">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template x-for="item in (order.items || [])" :key="'future-item-' + order.id + '-' + item.id">
+                                                    <tr>
+                                                        <td class="fw-semibold text-body-emphasis" x-text="item.product?.name || item.product_name || 'Product'"></td>
+                                                        <td class="text-muted" x-text="item.product?.sku || item.sku || 'N/A'"></td>
+                                                        <td class="text-center fw-semibold" x-text="item.quantity"></td>
+                                                        <td class="text-end text-muted" x-text="'₹' + Number(item.unit_price || 0).toFixed(2)"></td>
+                                                        <td class="text-end fw-bold text-body-emphasis" x-text="'₹' + Number(item.total_amount || 0).toFixed(2)"></td>
+                                                    </tr>
+                                                </template>
+                                                <template x-if="!order.items || order.items.length === 0">
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted py-4">No order items found.</td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="!futureOrders.length">
+                        <div class="alert alert-light border rounded-4 mb-0 p-4 text-center text-muted">No future orders scheduled.</div>
+                    </template>
+                </div>
+            </template>
+
+            <template x-if="bottomTab === 'tags'">
+                <div class="d-flex flex-wrap gap-2">
+                    <template x-for="tag in customerTags" :key="tag">
+                        <span class="badge rounded-pill text-bg-primary-subtle text-primary-emphasis border px-3 py-2" x-text="tag"></span>
+                    </template>
+                    <span class="badge rounded-pill text-bg-success-subtle text-success-emphasis border px-3 py-2" x-show="customerDetails?.kyc_completed">KYC Completed</span>
+                    <span class="badge rounded-pill text-bg-danger-subtle text-danger-emphasis border px-3 py-2" x-show="customerDetails?.is_blacklisted">Blacklisted</span>
+                    <span class="badge rounded-pill text-bg-dark-subtle text-body-secondary border px-3 py-2" x-show="!customerTags.length && !customerDetails?.kyc_completed && !customerDetails?.is_blacklisted">No tags available</span>
+                </div>
+            </template>
+        </div>
+    </div>
 
     {{-- Promotions Modal --}}
     <div class="modal fade" id="promotionsModal" tabindex="-1">
@@ -861,27 +1423,51 @@
     ])->values()->all();
 @endphp
 <script>
-function createOrderApp() {
+function createOrderApp(initialCustomer = null) {
     return {
+        activeTab: 'customer',
         viewMode: 'grid',
         partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '{{ $warehouses->first()->id ?? '' }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale',
         orderDate: new Date().toISOString().substring(0,10),
         isDraft: false, futureOrderDate: '',
         addresses: [],
+        recentOrders: [],
         products: [], productQuery: '', stockFilter: 'available', categoryFilter: '',
         searching: false, productPage: 1, productLastPage: 1, productTotal: 0, productFrom: 0, productTo: 0,
         cart: [], couponCode: '', couponApplied: false, appliedCouponObj: null, appliedOfferId: null,
         placing: false, formErrors: [],
+        warehouses: @json($warehouses->map(fn($w) => ['id' => $w->id, 'name' => $w->name])),
         activeOffers: @json($offersArray),
         activeCoupons: @json($activeCoupons),
         couponInputTemp: '',
 
-        customerDetails: null,
+        customerDetails: initialCustomer || window.__INITIAL_ORDER_CUSTOMER__ || null,
+        bottomTab: 'history',
+        showCheckoutReview: false,
+        expandedOrderId: null,
 
-        init() {
+        async init() {
             this.searchProducts();
+            if (this.customerDetails) {
+                this.addresses = this.customerDetails.addresses || [];
+                this.recentOrders = this.customerDetails.orders || [];
+                if (this.addresses.length) {
+                    this.shippingAddressId = this.addresses.find(a => a.is_default)?.id || this.addresses[0].id;
+                    this.billingAddressId = this.shippingAddressId;
+                }
+            }
             if (this.partyId) {
-                this.loadAddresses();
+                await this.loadAddresses();
+            }
+            const step = new URLSearchParams(window.location.search).get('step');
+            if (step === 'review' && this.partyId) {
+                this.showCheckoutReview = true;
+                this.$nextTick(() => {
+                    const el = document.getElementById('checkout-step-2');
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
             }
             const saved = localStorage.getItem('metis_create_order_cart');
             if (saved) { try { this.cart = JSON.parse(saved); } catch(e){} }
@@ -952,17 +1538,107 @@ function createOrderApp() {
         },
 
         async loadAddresses() {
-            if (!this.partyId) { this.addresses = []; this.customerDetails = null; return; }
+            if (!this.partyId) { this.addresses = []; this.recentOrders = []; this.customerDetails = null; return; }
             try {
                 const res = await fetch(`/customers/${this.partyId}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                 const json = await res.json();
                 this.customerDetails = json.data;
                 this.addresses = json.data?.addresses || [];
+                this.recentOrders = json.data?.orders || [];
                 if (this.addresses.length) {
                     this.shippingAddressId = this.addresses.find(a=>a.is_default)?.id || this.addresses[0].id;
                     this.billingAddressId = this.shippingAddressId;
                 }
             } catch(e) { console.error(e); }
+        },
+
+        scrollToSection(sectionId) {
+            const el = document.getElementById(sectionId);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        },
+
+        get customerDisplayName() {
+            if (!this.customerDetails) {
+                return this.partyId ? `Customer #${this.partyId}` : 'Selected customer';
+            }
+            const parts = [
+                this.customerDetails.firstname || '',
+                this.customerDetails.middlename || '',
+                this.customerDetails.lastname || '',
+            ].filter(Boolean);
+            return parts.join(' ').replace(/\s+/g, ' ').trim() || this.customerDetails.company_name || this.customerDetails.name || `Customer #${this.partyId || ''}`;
+        },
+
+        get selectedWarehouseName() {
+            const match = (this.warehouses || []).find(w => String(w.id) === String(this.warehouseId));
+            return match ? match.name : 'Select warehouse';
+        },
+
+        get futureOrders() {
+            return (this.recentOrders || []).filter(order => Boolean(order.is_draft) || order.lifecycle_status === 'future_order' || order.status_label === 'Future Order');
+        },
+
+        get customerTags() {
+            const tags = this.customerDetails?.tags;
+            if (Array.isArray(tags)) return tags.filter(Boolean);
+            if (typeof tags === 'string' && tags.trim()) {
+                return tags.split(',').map(tag => tag.trim()).filter(Boolean);
+            }
+            return [];
+        },
+
+        toggleOrderDetails(orderId) {
+            this.expandedOrderId = this.expandedOrderId === orderId ? null : orderId;
+        },
+
+        addressSummary(address) {
+            if (!address) return 'Select address';
+            const parts = [
+                address.label,
+                address.address_line_1,
+                address.address_line_2,
+                address.city,
+                address.state,
+                address.pincode,
+            ].filter(Boolean);
+            return parts.join(', ');
+        },
+
+        get shippingAddressSummary() {
+            return this.addressSummary(this.addresses.find(a => String(a.id) === String(this.shippingAddressId)));
+        },
+
+        get billingAddressSummary() {
+            if (this.sameAsShipping) return 'Same as shipping';
+            return this.addressSummary(this.addresses.find(a => String(a.id) === String(this.billingAddressId)));
+        },
+
+        openCheckoutReview() {
+            this.showCheckoutReview = true;
+            this.bottomTab = 'history';
+            this.$nextTick(() => {
+                const el = document.getElementById('checkout-step-2');
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        },
+
+        closeCheckoutReview() {
+            this.showCheckoutReview = false;
+            this.$nextTick(() => {
+                const el = document.getElementById('customer-workspace');
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        },
+
+        async confirmCheckout() {
+            this.closeCheckoutReview();
+            await this.placeOrder();
         },
 
         async searchProducts(reset = false) {
