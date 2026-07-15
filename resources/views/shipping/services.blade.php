@@ -67,6 +67,44 @@
         </div>
     </div>
 
+    <!-- Charts Row -->
+    <div class="row g-4 g-lg-5 mb-5 mb-lg-5 mb-xl-6">
+        <!-- Trends Chart -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h5 card-title mb-0">Service Activity</h2>
+                </div>
+                <div class="card-body p-3 p-lg-4">
+                    <div id="serviceTrendsChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Distribution -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h2 class="h5 card-title mb-0">Service Status</h2>
+                </div>
+                <div class="card-body p-3 p-lg-4">
+                    <div id="statusChart" style="height: 200px;"></div>
+                    <div class="mt-3">
+                        <template x-for="status in statusStats" :key="status.name">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small" x-text="status.name"></span>
+                                <div class="d-flex align-items-center">
+                                    <span class="small text-muted me-2" x-text="`${status.percentage}%`"></span>
+                                    <span class="small fw-medium" x-text="status.count"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Directory Card -->
     <div class="card">
         <div class="card-header">
@@ -75,24 +113,101 @@
                     <h2 class="h5 card-title mb-0">Services Directory</h2>
                 </div>
                 <div class="col-auto">
-                    <div class="position-relative">
-                        <input type="search" 
-                               class="form-control form-control-sm" 
-                               placeholder="Search..."
-                               x-model.debounce.300ms="searchQuery"
-                               @input="filterData()"
-                               style="width: 250px;">
-                        <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
+                    <div class="d-flex flex-wrap gap-2 justify-content-end">
+                        <div class="position-relative">
+                            <input type="search" 
+                                   class="form-control form-control-sm" 
+                                   placeholder="Search..."
+                                   x-model.debounce.300ms="searchQuery"
+                                   @input="filterData()"
+                                   style="width: 200px;">
+                            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
+                        </div>
+                        <select class="form-select form-select-sm"
+                                x-model.number="itemsPerPage"
+                                @change="filterData()"
+                                style="width: 120px;">
+                            <option value="10">10 / page</option>
+                            <option value="25">25 / page</option>
+                            <option value="50">50 / page</option>
+                            <option value="100">100 / page</option>
+                        </select>
+                        <!-- Advanced Filters Trigger -->
+                        <button class="btn btn-sm"
+                                :class="hasActiveAdvancedFilters() ? 'btn-primary' : 'btn-outline-secondary'"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#advancedFilters"
+                                aria-expanded="false">
+                            <i class="bi bi-funnel me-1"></i>Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collapsible Advanced Filters Drawer -->
+        <div class="collapse" id="advancedFilters">
+            <div class="p-3 bg-body-tertiary border-top border-bottom border-secondary-subtle">
+                <div class="row g-3">
+                    <!-- Status Filter -->
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-body-secondary">Status</label>
+                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterData()">
+                            <option value="">All Statuses</option>
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
+                    </div>
+
+                    <!-- Reset Filters -->
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center" @click="clearFilters()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
         <div class="card-body p-0">
+            <!-- Bulk Actions Bar -->
+            <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25"
+                 x-show="selectedItems.length > 0" x-cloak>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                        <span class="fw-medium text-primary">
+                            <span x-text="selectedItems.length"></span> service<span x-show="selectedItems.length !== 1">s</span> selected
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-success" @click="bulkAction('activate')">
+                            <i class="bi bi-check-circle me-1"></i>Activate
+                        </button>
+                        <button class="btn btn-sm btn-warning" @click="bulkAction('deactivate')">
+                            <i class="bi bi-x-circle me-1"></i>Deactivate
+                        </button>
+                        <button class="btn btn-sm btn-danger" @click="bulkAction('delete')">
+                            <i class="bi bi-trash me-1"></i>Delete
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selectedItems = []" title="Clear selection">
+                            <i class="bi bi-x-lg" style="margin-left: 7px"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th @click="sortBy('id')" class="sortable ps-4">ID</th>
+                            <th style="width: 40px;" class="ps-3">
+                                <input type="checkbox" 
+                                       class="user-select-checkbox"
+                                       @change="$event.isTrusted && toggleAll($event.target.checked)"
+                                       :checked="selectedItems.length === items.length && items.length > 0">
+                            </th>
+                            <th @click="sortBy('id')" class="sortable">ID</th>
                             <th @click="sortBy('code')" class="sortable">Code</th>
                             <th @click="sortBy('name')" class="sortable">Name</th>
                             <th>Description</th>
@@ -113,8 +228,14 @@
                             </tr>
                         </template>
                         <template x-for="item in items" :key="item.id">
-                            <tr>
-                                <td class="ps-4 text-muted" x-text="item.id"></td>
+                            <tr :class="{ 'table-primary': selectedItems.includes(String(item.id)) }">
+                                <td class="ps-3">
+                                    <input type="checkbox"
+                                           class="user-select-checkbox"
+                                           :value="String(item.id)"
+                                           x-model="selectedItems">
+                                </td>
+                                <td class="text-muted" x-text="item.id"></td>
                                 <td class="font-monospace fw-semibold text-secondary" x-text="item.code"></td>
                                 <td class="fw-medium text-dark" x-text="item.name"></td>
                                 <td x-text="item.description || '-'"></td>

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
-use App\Models\LoginHistory;
-use App\Models\User;
+use App\Modules\Users\Models\LoginHistory;
+use App\Modules\Users\Models\User;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Request;

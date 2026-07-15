@@ -70,8 +70,8 @@
                                     </button>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between mt-2">
-                                    <span class="text-muted fw-semibold" style="font-size: 11px;" x-text="'₹' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
-                                    <span class="fw-black text-success fs-6" x-text="'₹' + Number(itemLineTotal(item)).toFixed(2)"></span>
+                                    <span class="text-muted fw-semibold" style="font-size: 11px;" x-text="'Rs ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
+                                    <span class="fw-black text-success fs-6" x-text="'Rs ' + Number(itemLineTotal(item)).toFixed(2)"></span>
                                 </div>
                             </div>
                         </div>
@@ -93,7 +93,7 @@
                                 <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 d-flex align-items-center gap-1 py-2 px-3">
                                     <i class="bi bi-tag-fill"></i>
                                     <span style="font-size: 10px; letter-spacing: 0.5px;"
-                                        x-text="(item.discountType === 'flat' ? '₹' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (item.discountType === 'flat' ? ' off' : '% off')">
+                                        x-text="(item.discountType === 'flat' ? 'Rs ' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (item.discountType === 'flat' ? ' off' : '% off')">
                                     </span>
                                 </div>
                             </template>
@@ -150,7 +150,7 @@
                         </div>
                         <div>
                             <p class="mb-0 fw-bold text-success fs-6 lh-1" x-text="bestOrderOffer.name"></p>
-                            <p class="mb-0 fw-semibold text-success" style="font-size: 10px;" x-text="'Saving ₹' + Number(orderDiscountAmount).toFixed(2)"></p>
+                            <p class="mb-0 fw-semibold text-success" style="font-size: 10px;" x-text="'Saving Rs ' + Number(orderDiscountAmount).toFixed(2)"></p>
                         </div>
                     </div>
                     <button type="button" @click.prevent="removeOrderOffer()"
@@ -172,7 +172,7 @@
                             <p class="mb-0 text-muted" style="font-size: 10px;">Auto-applied</p>
                         </div>
                     </div>
-                    <span class="fw-black text-success fs-6" x-text="'- ₹' + Number(bogoDiscountTotal).toFixed(2)"></span>
+                    <span class="fw-black text-success fs-6" x-text="'- Rs ' + Number(bogoDiscountTotal).toFixed(2)"></span>
                 </div>
             </template>
 
@@ -189,7 +189,7 @@
             <div class="d-flex align-items-center justify-content-between p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25" x-show="couponApplied" x-cloak>
                 <div class="d-flex align-items-center gap-2 text-success">
                     <i class="bi bi-check-circle-fill"></i>
-                    <span class="fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;" x-text="'Coupon: ' + couponCode + ' (- ₹' + Number(couponDiscount).toFixed(2) + ')'"></span>
+                    <span class="fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;" x-text="'Coupon: ' + couponCode + ' (- Rs ' + Number(couponDiscount).toFixed(2) + ')'"></span>
                 </div>
                 <button type="button" @click.prevent="removeCoupon()" class="btn-close shadow-none fs-6"></button>
             </div>
@@ -198,37 +198,37 @@
         <div class="p-4 d-flex flex-column gap-2 bg-light bg-opacity-50 border-bottom">
             <div class="d-flex justify-content-between text-muted fw-semibold" style="font-size: 12px;">
                 <span>Subtotal</span>
-                <span class="text-dark fw-bold" x-text="'₹' + Number(subtotal).toFixed(2)"></span>
+                <span class="text-dark fw-bold" x-text="'Rs ' + Number(subtotal).toFixed(2)"></span>
             </div>
             <div class="d-flex justify-content-between text-success fw-semibold" style="font-size: 12px;" x-show="bogoDiscountTotal > 0" x-cloak>
                 <div>
                     <span>BOGO Savings</span>
                     <span class="d-block text-muted" style="font-size: 10px;">Auto-applied backend offer</span>
                 </div>
-                <span class="fw-bold align-top" x-text="'- ₹' + Number(bogoDiscountTotal).toFixed(2)"></span>
+                <span class="fw-bold align-top" x-text="'- Rs ' + Number(bogoDiscountTotal).toFixed(2)"></span>
             </div>
             <div class="d-flex justify-content-between text-success fw-semibold" style="font-size: 12px;" x-show="orderDiscountAmount > 0" x-cloak>
                 <div>
                     <span>Order Discount</span>
                     <span class="d-block text-muted" style="font-size: 10px;" x-text="orderDiscountLabel"></span>
                 </div>
-                <span class="fw-bold align-top" x-text="'- ₹' + Number(orderDiscountAmount).toFixed(2)"></span>
+                <span class="fw-bold align-top" x-text="'- Rs ' + Number(orderDiscountAmount).toFixed(2)"></span>
             </div>
             <div class="d-flex justify-content-between text-success fw-semibold" style="font-size: 12px;" x-show="couponDiscount > 0" x-cloak>
                 <div>
                     <span>Coupon Savings</span>
                     <span class="d-block text-muted" style="font-size: 10px;" x-text="'(Code: ' + couponCode + ')'"></span>
                 </div>
-                <span class="fw-bold align-top" x-text="'- ₹' + Number(couponDiscount).toFixed(2)"></span>
+                <span class="fw-bold align-top" x-text="'- Rs ' + Number(couponDiscount).toFixed(2)"></span>
             </div>
             <div class="d-flex justify-content-between text-muted fw-semibold" style="font-size: 12px;">
                 <span>GST</span>
-                <span class="text-dark" x-text="'₹' + Number(taxAmount).toFixed(2)"></span>
+                <span class="text-dark" x-text="'Rs ' + Number(taxAmount).toFixed(2)"></span>
             </div>
             <hr class="my-2 opacity-10">
             <div class="d-flex justify-content-between align-items-center">
                 <span class="fw-bold text-uppercase text-dark" style="font-size: 12px; letter-spacing: 1px;">Grand Total</span>
-                <span class="fs-3 fw-black text-primary lh-1" x-text="'₹' + Number(grandTotal).toFixed(2)"></span>
+                <span class="fs-3 fw-black text-primary lh-1" x-text="'Rs ' + Number(grandTotal).toFixed(2)"></span>
             </div>
         </div>
 

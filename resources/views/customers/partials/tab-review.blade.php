@@ -341,12 +341,12 @@
                                                 <template x-if="item.discountValue > 0">
                                                     <div class="d-flex align-items-center gap-2 mt-1">
                                                         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 9px;"
-                                                            x-text="(item.discountType === 'flat' ? '₹' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (item.discountType === 'flat' ? ' off' : '% off')">
+                                                            x-text="(item.discountType === 'flat' ? 'Rs ' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (item.discountType === 'flat' ? ' off' : '% off')">
                                                         </span>
                                                         <span class="text-muted fw-semibold" style="font-size: 9px;"
                                                             x-text="item.discountType === 'percent' 
-                                                                ? '(Saved ₹' + Number(item.price * (item.discountValue / 100)).toFixed(2) + ' per unit × ' + item.quantity + ' = ₹' + Number(item.price * (item.discountValue / 100) * item.quantity).toFixed(2) + ')' 
-                                                                : '(Saved ₹' + Number(item.discountValue).toFixed(2) + ' per unit × ' + item.quantity + ' = ₹' + Number(item.discountValue * item.quantity).toFixed(2) + ')'">
+                                                                ? '(Saved Rs ' + Number(item.price * (item.discountValue / 100)).toFixed(2) + ' per unit × ' + item.quantity + ' = Rs ' + Number(item.price * (item.discountValue / 100) * item.quantity).toFixed(2) + ')' 
+                                                                : '(Saved Rs ' + Number(item.discountValue).toFixed(2) + ' per unit × ' + item.quantity + ' = Rs ' + Number(item.discountValue * item.quantity).toFixed(2) + ')'">
                                                         </span>
                                                     </div>
                                                 </template>
@@ -357,10 +357,10 @@
                                         <span class="badge bg-light text-dark border px-3 py-2 fs-6" x-text="item.quantity"></span>
                                     </td>
                                     <td class="px-4 py-3 text-end">
-                                        <span class="text-muted fw-bold" style="font-size: 12px;" x-text="'₹' + Number(item.price).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                        <span class="text-muted fw-bold" style="font-size: 12px;" x-text="'Rs ' + Number(item.price).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                     </td>
                                     <td class="px-4 py-3 text-end">
-                                        <span class="fw-bold text-dark fs-6" x-text="'₹' + Number(itemLineTotal(item)).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                        <span class="fw-bold text-dark fs-6" x-text="'Rs ' + Number(itemLineTotal(item)).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                     </td>
                                 </tr>
                             </template>
@@ -385,7 +385,7 @@
                             <div class="d-flex flex-column gap-3">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Gross Subtotal</span>
-                                    <span class="fw-bold text-dark" x-text="'₹' + Number(subtotal).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                    <span class="fw-bold text-dark" x-text="'Rs ' + Number(subtotal).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                 </div>
                                 <template x-if="bogoDiscountTotal > 0">
                                     <div class="d-flex justify-content-between align-items-center text-success">
@@ -393,7 +393,7 @@
                                             <span class="fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">BOGO Savings</span>
                                             <span class="text-muted fw-semibold" style="font-size: 9px;">Auto-applied backend offer</span>
                                         </div>
-                                        <span class="fw-bold" x-text="'- ₹' + Number(bogoDiscountTotal).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                        <span class="fw-bold" x-text="'- Rs ' + Number(bogoDiscountTotal).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                     </div>
                                 </template>
                                 {{-- Order Offer row --}}
@@ -421,7 +421,7 @@
                                         </template>
                                     </div>
                                     <template x-if="orderDiscountAmount > 0">
-                                        <span class="fw-bold text-success" x-text="'- ₹' + Number(orderDiscountAmount).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                        <span class="fw-bold text-success" x-text="'- Rs ' + Number(orderDiscountAmount).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                     </template>
                                     <template x-if="orderDiscountAmount === 0">
                                         <span class="fw-bold text-muted opacity-50" style="font-size: 10px;">—</span>
@@ -433,18 +433,18 @@
                                             <span class="fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Coupon Savings</span>
                                             <span class="text-muted fw-semibold" style="font-size: 9px;" x-text="'(Code: ' + couponCode + ')'"></span>
                                         </div>
-                                        <span class="fw-bold" x-text="'- ₹' + Number(couponDiscount).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                        <span class="fw-bold" x-text="'- Rs ' + Number(couponDiscount).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                     </div>
                                 </template>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Statutory Tax</span>
-                                    <span class="fw-bold text-dark" x-text="'₹' + Number(taxAmount).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                    <span class="fw-bold text-dark" x-text="'Rs ' + Number(taxAmount).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                 </div>
                                 
                                 <div class="pt-4 mt-2 border-top d-flex flex-column gap-4">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 3px;">Final Payable</span>
-                                        <span class="fs-2 fw-black text-primary lh-1" style="letter-spacing: -1px;" x-text="'₹' + Number(grandTotal).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                        <span class="fs-2 fw-black text-primary lh-1" style="letter-spacing: -1px;" x-text="'Rs ' + Number(grandTotal).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                     </div>
                                     
                                     {{-- ── Confirm Button ── --}}

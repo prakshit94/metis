@@ -354,6 +354,10 @@ document.addEventListener('alpine:init', () => {
 
       return {
         id: o.id,
+        partyId: o.party_id || null,
+        warehouseId: o.warehouse_id || null,
+        shippingAddressId: o.shipping_address_id || null,
+        billingAddressId: o.billing_address_id || null,
         orderNumber: o.order_no,
         type: o.type || 'sale',
         orderDate: o.order_date,
@@ -520,17 +524,9 @@ document.addEventListener('alpine:init', () => {
 
     toggleAll(checked) {
       if (checked) {
-        this.selectedOrders = this.orders.map(o => o.id);
+        this.selectedOrders = this.orders.map(o => String(o.id));
       } else {
         this.selectedOrders = [];
-      }
-    },
-
-    toggleOrder(orderId) {
-      if (this.selectedOrders.includes(orderId)) {
-        this.selectedOrders = this.selectedOrders.filter(id => id !== orderId);
-      } else {
-        this.selectedOrders = [...this.selectedOrders, orderId];
       }
     },
 
@@ -554,7 +550,7 @@ document.addEventListener('alpine:init', () => {
       }
 
       // Build a Set of statuses for all selected orders
-      const selectedOrderObjs = this.orders.filter(o => this.selectedOrders.includes(o.id));
+      const selectedOrderObjs = this.orders.filter(o => this.selectedOrders.includes(String(o.id)));
       const statuses = new Set(selectedOrderObjs.map(o => o.status));
 
       // Cancellable statuses
@@ -827,6 +823,15 @@ document.addEventListener('alpine:init', () => {
     viewOrder(order) {
       this.selectedOrder = order;
       getModal('#orderDetailModal')?.show();
+    },
+
+    editOrder(order) {
+      const customerId = order.partyId || order.original?.party_id || '';
+      const query = new URLSearchParams();
+      if (customerId) query.set('customer_id', customerId);
+      query.set('order_id', order.id);
+      query.set('step', 'review');
+      window.location.href = `/orders/create?${query.toString()}`;
     },
 
     printInvoice(order) {

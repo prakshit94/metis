@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\Order;
-use App\Models\Permission;
-use App\Models\Role;
-use App\Models\Shipment;
-use App\Models\Service;
-use App\Models\User;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Users\Models\Permission;
+use App\Modules\Users\Models\Role;
+use App\Modules\Orders\Models\Shipment;
+use App\Modules\Catalog\Models\Service;
+use App\Modules\Users\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;

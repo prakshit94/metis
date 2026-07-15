@@ -163,9 +163,9 @@
                             {{-- Pricing --}}
                             <td>
                                 <div class="d-flex flex-column">
-                                    <span class="fw-bold text-dark" style="font-size: 14px;" x-text="'₹' + Number(product.selling_price).toFixed(2)"></span>
-                                    <span class="text-muted text-decoration-line-through" style="font-size: 10px;" x-show="product.mrp && product.mrp > product.selling_price" x-text="'MRP ₹' + Number(product.mrp).toFixed(2)"></span>
-                                    <span class="text-muted" style="font-size: 10px;" x-show="product.purchase_price" x-text="'Cost ₹' + Number(product.purchase_price).toFixed(2)"></span>
+                                    <span class="fw-bold text-dark" style="font-size: 14px;" x-text="'Rs ' + Number(product.selling_price).toFixed(2)"></span>
+                                    <span class="text-muted text-decoration-line-through" style="font-size: 10px;" x-show="product.mrp && product.mrp > product.selling_price" x-text="'MRP Rs ' + Number(product.mrp).toFixed(2)"></span>
+                                    <span class="text-muted" style="font-size: 10px;" x-show="product.purchase_price" x-text="'Cost Rs ' + Number(product.purchase_price).toFixed(2)"></span>
                                 </div>
                             </td>
 
@@ -219,7 +219,7 @@
                                         <template x-if="product.default_discount > 0">
                                             <span class="badge bg-success-subtle text-success border border-success-subtle d-flex align-items-center gap-1" style="font-size: 10px;">
                                                 <i class="bi bi-tag-fill"></i>
-                                                <span x-text="(product.default_discount_type === 'flat' ? '₹' : '') + Number(product.default_discount).toFixed(product.default_discount % 1 === 0 ? 0 : 2) + (product.default_discount_type === 'flat' ? ' off' : '% off')">
+                                                <span x-text="(product.default_discount_type === 'flat' ? 'Rs ' : '') + Number(product.default_discount).toFixed(product.default_discount % 1 === 0 ? 0 : 2) + (product.default_discount_type === 'flat' ? ' off' : '% off')">
                                                 </span>
                                             </span>
                                         </template>

@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Coupon;
-use App\Models\Offer;
-use App\Models\Product;
-use App\Models\User;
-use App\Models\Warehouse;
-use App\Models\Category;
+use App\Modules\Orders\Models\Coupon;
+use App\Modules\Orders\Models\Offer;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Users\Models\User;
+use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Catalog\Models\Category;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -178,7 +178,7 @@ class PromotionsAndOrderSearchTest extends TestCase
 
     public function test_offers_usage_tracking(): void
     {
-        $party = \App\Models\Party::create([
+        $party = \App\Modules\Customers\Models\Party::create([
             'firstname' => 'Usage',
             'lastname' => 'Customer',
             'type' => 'customer',

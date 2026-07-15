@@ -164,7 +164,7 @@
                         </div>
                         <div>
                             <p class="mb-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Credit Limit</p>
-                            <p class="mb-0 fw-black text-dark fs-4 lh-1 mt-1">₹{{ number_format($customer->credit_limit ?? 0) }}</p>
+                            <p class="mb-0 fw-black text-dark fs-4 lh-1 mt-1">Rs {{ number_format($customer->credit_limit ?? 0) }}</p>
                         </div>
                     </div>
                 </div>

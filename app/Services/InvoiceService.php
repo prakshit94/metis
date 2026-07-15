@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Invoice;
-use App\Models\Order;
+use App\Modules\Orders\Models\Invoice;
+use App\Modules\Orders\Models\Order;
 use Illuminate\Support\Str;
 
 /**

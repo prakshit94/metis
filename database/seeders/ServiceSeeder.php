@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\Service;
+use App\Modules\Catalog\Models\Service;
 use Illuminate\Database\Seeder;
 
 class ServiceSeeder extends Seeder

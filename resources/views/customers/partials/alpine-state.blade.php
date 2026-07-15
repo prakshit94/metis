@@ -397,7 +397,7 @@
             return `${this.bestOrderOffer.name} (${this.bestOrderOffer.value}% off)`;
         }
 
-        return `${this.bestOrderOffer.name} (Flat ₹${Number(this.bestOrderOffer.value).toFixed(2)})`;
+        return `${this.bestOrderOffer.name} (Flat Rs ${Number(this.bestOrderOffer.value).toFixed(2)})`;
     },
     get taxAmount() {
         return this.cart.reduce((t, item) => t + this.itemTaxAmount(item), 0);

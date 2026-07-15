@@ -1,0 +1,28 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Catalog\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class UnitOfMeasure extends Model
+{
+    use SoftDeletes;
+
+    protected $table = 'units_of_measure';
+
+    protected $fillable = [
+        'name',
+        'short_name',
+        'slug',
+        'code',
+        'is_base_unit',
+        'status',
+    ];
+
+    protected $casts = [
+        'is_base_unit' => 'boolean',
+    ];
+}

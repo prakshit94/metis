@@ -117,6 +117,44 @@
         </div>
     </div>
 
+    <!-- Charts Row -->
+    <div class="row g-4 g-lg-5 mb-5 mb-lg-5 mb-xl-6">
+        <!-- Trends Chart -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h5 card-title mb-0">Shipment Trends</h2>
+                </div>
+                <div class="card-body p-3 p-lg-4">
+                    <div id="shipmentTrendsChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Distribution -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h2 class="h5 card-title mb-0">Status Distribution</h2>
+                </div>
+                <div class="card-body p-3 p-lg-4">
+                    <div id="statusChart" style="height: 200px;"></div>
+                    <div class="mt-3">
+                        <template x-for="status in statusStats" :key="status.name">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small" x-text="status.name"></span>
+                                <div class="d-flex align-items-center">
+                                    <span class="small text-muted me-2" x-text="`${status.percentage}%`"></span>
+                                    <span class="small fw-medium" x-text="status.count"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Directory Card -->
     <div class="card">
         <div class="card-header">
@@ -125,14 +163,14 @@
                     <h2 class="h5 card-title mb-0">Shipments Directory</h2>
                 </div>
                 <div class="col-auto">
-                    <div class="d-flex gap-2">
+                    <div class="d-flex flex-wrap gap-2 justify-content-end">
                         <div class="position-relative">
                             <input type="search" 
                                    class="form-control form-control-sm" 
                                    placeholder="Search..."
                                    x-model.debounce.300ms="searchQuery"
                                    @input="filterData()"
-                                   style="width: 250px;">
+                                   style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
                         <select class="form-select form-select-sm" 
@@ -146,16 +184,120 @@
                             <option value="returned">Returned</option>
                             <option value="failed">Failed</option>
                         </select>
+                        <!-- Date Range -->
+                        <select class="form-select form-select-sm" 
+                                x-model="dateFilter" 
+                                @change="filterData()"
+                                style="width: 150px;">
+                            <option value="">All Dates</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                        </select>
+                        <select class="form-select form-select-sm"
+                                x-model.number="itemsPerPage"
+                                @change="filterData()"
+                                style="width: 120px;">
+                            <option value="10">10 / page</option>
+                            <option value="25">25 / page</option>
+                            <option value="50">50 / page</option>
+                            <option value="100">100 / page</option>
+                        </select>
+                        <!-- Advanced Filters Trigger -->
+                        <button class="btn btn-sm"
+                                :class="hasActiveAdvancedFilters() ? 'btn-primary' : 'btn-outline-secondary'"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#advancedFilters"
+                                aria-expanded="false">
+                            <i class="bi bi-funnel me-1"></i>Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collapsible Advanced Filters Drawer -->
+        <div class="collapse" id="advancedFilters">
+            <div class="p-3 bg-body-tertiary border-top border-bottom border-secondary-subtle">
+                <div class="row g-3">
+                    <!-- Carrier Filter -->
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-body-secondary">Carrier</label>
+                        <select class="form-select form-select-sm" x-model="carrierFilter" @change="filterData()">
+                            <option value="">All Carriers</option>
+                            <option value="BlueDart">BlueDart</option>
+                            <option value="Delhivery">Delhivery</option>
+                            <option value="DTDC">DTDC</option>
+                            <option value="Ecom Express">Ecom Express</option>
+                            <option value="FedEx">FedEx</option>
+                            <option value="India Post">India Post</option>
+                            <option value="Shadowfax">Shadowfax</option>
+                            <option value="XpressBees">XpressBees</option>
+                            <option value="DHL">DHL</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Date Range From -->
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-body-secondary">From Date</label>
+                        <input type="date" class="form-control form-control-sm" x-model="fromDate" @change="filterData()">
+                    </div>
+
+                    <!-- Date Range To -->
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-body-secondary">To Date</label>
+                        <input type="date" class="form-control form-control-sm" x-model="toDate" @change="filterData()">
+                    </div>
+
+                    <!-- Reset Filters -->
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center" @click="clearFilters()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
         <div class="card-body p-0">
+            <!-- Bulk Actions Bar -->
+            <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25"
+                 x-show="selectedItems.length > 0" x-cloak>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                        <span class="fw-medium text-primary">
+                            <span x-text="selectedItems.length"></span> shipment<span x-show="selectedItems.length !== 1">s</span> selected
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-primary" @click="bulkAction('mark_in_transit')">
+                            <i class="bi bi-truck me-1"></i>Mark In Transit
+                        </button>
+                        <button class="btn btn-sm btn-success" @click="bulkAction('mark_delivered')">
+                            <i class="bi bi-check-circle me-1"></i>Mark Delivered
+                        </button>
+                        <button class="btn btn-sm btn-secondary" @click="bulkAction('mark_returned')">
+                            <i class="bi bi-arrow-return-left me-1"></i>Mark Returned
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selectedItems = []" title="Clear selection">
+                            <i class="bi bi-x-lg" style="margin-left: 7px"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th @click="sortBy('shipment_no')" class="sortable ps-4">Shipment No</th>
+                            <th style="width: 40px;" class="ps-3">
+                                <input type="checkbox" 
+                                       class="user-select-checkbox"
+                                       @change="$event.isTrusted && toggleAll($event.target.checked)"
+                                       :checked="selectedItems.length === items.length && items.length > 0">
+                            </th>
+                            <th @click="sortBy('shipment_no')" class="sortable">Shipment No</th>
                             <th>Order No</th>
                             <th>Carrier</th>
                             <th>Tracking No</th>
@@ -178,8 +320,14 @@
                             </tr>
                         </template>
                         <template x-for="item in items" :key="item.id">
-                            <tr>
-                                <td class="ps-4 fw-medium text-dark" x-text="item.shipment_no"></td>
+                            <tr :class="{ 'table-primary': selectedItems.includes(String(item.id)) }">
+                                <td class="ps-3">
+                                    <input type="checkbox"
+                                           class="user-select-checkbox"
+                                           :value="String(item.id)"
+                                           x-model="selectedItems">
+                                </td>
+                                <td class="fw-medium text-dark" x-text="item.shipment_no"></td>
                                 <td class="fw-semibold text-secondary" x-text="item.order ? item.order.order_no : ('ORD-' + item.order_id)"></td>
                                 <td x-text="item.carrier_name || '-'"></td>
                                 <td class="font-monospace" x-text="item.tracking_no || '-'"></td>

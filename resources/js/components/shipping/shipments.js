@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import { Modal } from 'bootstrap';
 import Swal from 'sweetalert2';
+import ApexCharts from 'apexcharts';
 
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
@@ -54,9 +55,18 @@ export default () => {
 
         searchQuery: '',
         statusFilter: '',
+        carrierFilter: '',
+        fromDate: '',
+        toDate: '',
         sortField: 'id',
         sortDirection: 'desc',
         currentPage: 1,
+        itemsPerPage: 10,
+        selectedItems: [],
+
+        charts: {},
+        chartsInitialized: false,
+        statusStats: [],
 
         isLoading: false,
         saving: false,
@@ -103,6 +113,74 @@ export default () => {
             if (addEventEl) {
                 this.addEventModal = Modal.getOrCreateInstance(addEventEl);
             }
+
+            setTimeout(() => {
+                this.initCharts();
+            }, 300);
+        },
+
+        initCharts() {
+            if (this.chartsInitialized) {
+                this.updateCharts();
+                return;
+            }
+            this.renderTrendChart();
+            this.renderStatusChart();
+            this.chartsInitialized = true;
+        },
+
+        renderTrendChart() {
+            const chartElement = document.getElementById('shipmentTrendsChart');
+            if (!chartElement) return;
+
+            // Generate some mock trend data based on the stats
+            const trendsData = {
+                series: [{
+                    name: 'Shipments',
+                    data: [12, 19, 15, 25, 22, 30, this.stats.total]
+                }],
+                chart: {
+                    type: 'area',
+                    height: 300,
+                    toolbar: { show: false },
+                    fontFamily: 'inherit'
+                },
+                colors: ['#3b82f6'],
+                fill: {
+                    type: 'gradient',
+                    gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.3 }
+                },
+                stroke: { curve: 'smooth', width: 2 },
+                xaxis: {
+                    categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                }
+            };
+
+            this.charts.trends = new ApexCharts(chartElement, trendsData);
+            this.charts.trends.render();
+        },
+
+        renderStatusChart() {
+            const chartElement = document.getElementById('statusChart');
+            if (!chartElement) return;
+
+            const chartData = {
+                series: this.statusStats.map(stat => stat.count),
+                chart: { type: 'donut', height: 200 },
+                labels: this.statusStats.map(stat => stat.name),
+                colors: this.statusStats.map(stat => stat.color),
+                plotOptions: { pie: { donut: { size: '70%' } } },
+                legend: { show: false }
+            };
+
+            this.charts.status = new ApexCharts(chartElement, chartData);
+            this.charts.status.render();
+        },
+
+        updateCharts() {
+            if (this.charts.status) {
+                this.charts.status.updateSeries(this.statusStats.map(stat => stat.count));
+            }
         },
 
         async apiRequest(url, options = {}) {
@@ -146,8 +224,25 @@ export default () => {
                 this.stats.failed = allItems.filter(i => i.status === 'failed').length;
                 this.stats.returned = allItems.filter(i => i.status === 'returned').length;
 
-                // Load active paginated page
-                const query = `page=${this.currentPage}&search=${encodeURIComponent(this.searchQuery)}&status=${this.statusFilter}&sort_by=${this.sortField}&sort_dir=${this.sortDirection}`;
+                this.statusStats = [
+                    { name: 'Pending', count: this.stats.pending, percentage: this.stats.total ? Math.round((this.stats.pending / this.stats.total) * 100) : 0, color: '#f97316' },
+                    { name: 'In Transit', count: this.stats.in_transit, percentage: this.stats.total ? Math.round((this.stats.in_transit / this.stats.total) * 100) : 0, color: '#3b82f6' },
+                    { name: 'Delivered', count: this.stats.delivered, percentage: this.stats.total ? Math.round((this.stats.delivered / this.stats.total) * 100) : 0, color: '#10b981' },
+                    { name: 'Returned', count: this.stats.returned, percentage: this.stats.total ? Math.round((this.stats.returned / this.stats.total) * 100) : 0, color: '#64748b' },
+                    { name: 'Failed', count: this.stats.failed, percentage: this.stats.total ? Math.round((this.stats.failed / this.stats.total) * 100) : 0, color: '#ef4444' }
+                ].filter(stat => stat.count > 0);
+
+                if (this.chartsInitialized) {
+                    this.updateCharts();
+                }
+
+                // Fetch paginated active list with all filters
+                let query = `page=${this.currentPage}&per_page=${this.itemsPerPage}&search=${encodeURIComponent(this.searchQuery)}&sort_by=${this.sortField}&sort_dir=${this.sortDirection}`;
+                if (this.statusFilter) query += `&status=${this.statusFilter}`;
+                if (this.carrierFilter) query += `&carrier=${this.carrierFilter}`;
+                if (this.fromDate) query += `&from_date=${this.fromDate}`;
+                if (this.toDate) query += `&to_date=${this.toDate}`;
+                
                 const payload = await this.apiRequest(`${this.apiBase}?${query}`);
                 
                 this.items = (payload.data || []).map(item => ({
@@ -172,7 +267,70 @@ export default () => {
 
         filterData() {
             this.currentPage = 1;
+            this.selectedItems = [];
             this.loadData();
+        },
+
+        clearFilters() {
+            this.searchQuery = '';
+            this.statusFilter = '';
+            this.carrierFilter = '';
+            this.fromDate = '';
+            this.toDate = '';
+            this.currentPage = 1;
+            this.loadData();
+        },
+
+        hasActiveAdvancedFilters() {
+            return Boolean(this.carrierFilter || this.fromDate || this.toDate);
+        },
+
+        toggleAll(checked) {
+            if (checked) {
+                this.selectedItems = this.items.map(i => String(i.id));
+            } else {
+                this.selectedItems = [];
+            }
+        },
+
+        async bulkAction(action) {
+            if (this.selectedItems.length === 0) return;
+            
+            const actionLabels = {
+                mark_in_transit: 'mark in transit',
+                mark_delivered: 'mark delivered',
+                mark_returned: 'mark returned'
+            };
+            
+            const result = await Swal.fire({
+                title: 'Confirm Bulk Action',
+                text: `Are you sure you want to ${actionLabels[action]} for ${this.selectedItems.length} shipment(s)?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, proceed'
+            });
+
+            if (!result.isConfirmed) return;
+
+            this.isLoading = true;
+            try {
+                await this.apiRequest(`${this.apiBase}/bulk-action`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: action,
+                        ids: this.selectedItems
+                    })
+                });
+                
+                showToast(`Bulk action completed successfully.`, 'success');
+                this.selectedItems = [];
+                this.loadData();
+            } catch (error) {
+                showToast(error.message || 'Bulk action failed.', 'error');
+                this.isLoading = false;
+            }
         },
 
         sortBy(field) {

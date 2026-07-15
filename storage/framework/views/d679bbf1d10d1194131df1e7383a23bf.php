@@ -548,19 +548,19 @@
                                     <span class="font-black text-foreground"
                                           x-text="offer.discount_type === 'percentage'
                                               ? offer.value + '% off'
-                                              : '₹' + Number(offer.value).toFixed(2) + ' flat off'">
+                                              : 'Rs ' + Number(offer.value).toFixed(2) + ' flat off'">
                                     </span>
                                 </p>
                                 
                                 <template x-if="(parseFloat(offer.min_spend) || 0) > 0">
                                     <p class="text-xs text-muted-foreground font-medium">
-                                        Min spend: <span class="font-black" x-text="'₹' + Number(offer.min_spend).toFixed(2)"></span>
+                                        Min spend: <span class="font-black" x-text="'Rs ' + Number(offer.min_spend).toFixed(2)"></span>
                                     </p>
                                 </template>
                                 
                                 <template x-if="(parseFloat(offer.max_discount) || 0) > 0">
                                     <p class="text-xs text-muted-foreground font-medium">
-                                        Max discount: <span class="font-black" x-text="'₹' + Number(offer.max_discount).toFixed(2)"></span>
+                                        Max discount: <span class="font-black" x-text="'Rs ' + Number(offer.max_discount).toFixed(2)"></span>
                                     </p>
                                 </template>
                             </div>
@@ -590,7 +590,7 @@
 <?php endif; ?>
                                 <span class="text-xs font-black"
                                       :class="appliedOrderOfferId === offer.id ? 'text-emerald-700' : 'text-amber-700'"
-                                      x-text="'You save ₹' + Number(offer.computed_discount).toFixed(2) + ' on this order'">
+                                      x-text="'You save Rs ' + Number(offer.computed_discount).toFixed(2) + ' on this order'">
                                 </span>
                             </div>
                         </div>
@@ -639,7 +639,7 @@
 <?php unset($__componentOriginal56804098dcf376a0e2227cb77b6cd00a); ?>
 <?php endif; ?>
                 <span class="text-xs font-black" x-text="'Applied: ' + (bestOrderOffer?.name ?? '')"></span>
-                <span class="text-xs font-semibold text-emerald-700" x-text="'(- ₹' + Number(orderDiscountAmount).toFixed(2) + ')'"></span>
+                <span class="text-xs font-semibold text-emerald-700" x-text="'(- Rs ' + Number(orderDiscountAmount).toFixed(2) + ')'"></span>
             </div>
             <div x-show="!bestOrderOffer" class="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">
                 No offer selected
@@ -1374,7 +1374,7 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         <div class="space-y-2 group">
-                            <label class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Credit Limit (₹)</label>
+                            <label class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Credit Limit (Rs )</label>
                             <input type="number" name="credit_limit" value="<?php echo e($customer->credit_limit); ?>" step="0.01" class="w-full px-5 py-3 rounded-2xl bg-background/40 border border-border/60 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium">
                         </div>
                         <div class="space-y-2 group">
@@ -1382,7 +1382,7 @@
                             <input type="number" name="credit_days" value="<?php echo e($customer->credit_days); ?>" class="w-full px-5 py-3 rounded-2xl bg-background/40 border border-border/60 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium">
                         </div>
                         <div class="space-y-2 group">
-                            <label class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Current Balance (₹)</label>
+                            <label class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Current Balance (Rs )</label>
                             <input type="number" name="outstanding_balance" value="<?php echo e($customer->outstanding_balance); ?>" step="0.01" class="w-full px-5 py-3 rounded-2xl bg-background/40 border border-border/60 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium">
                         </div>
                         <div class="space-y-2 group">

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\Customer;
-use App\Models\Party;
-use App\Models\PartyAddress;
-use App\Models\User;
-use App\Models\Village;
+use App\Modules\Customers\Models\Customer;
+use App\Modules\Customers\Models\Party;
+use App\Modules\Customers\Models\PartyAddress;
+use App\Modules\Users\Models\User;
+use App\Modules\Core\Models\Village;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -244,14 +244,14 @@ class CustomerAndVillageApiTest extends TestCase
             'status' => 'active',
         ]);
 
-        $warehouse = \App\Models\Warehouse::create([
+        $warehouse = \App\Modules\Catalog\Models\Warehouse::create([
             'name' => 'Main Warehouse ' . uniqid(),
             'code' => 'WH-' . uniqid(),
             'status' => 'active',
         ]);
 
-        $category = \App\Models\Category::create(['name' => 'Seeds ' . uniqid(), 'slug' => 'seeds-' . uniqid()]);
-        $product = \App\Models\Product::create([
+        $category = \App\Modules\Catalog\Models\Category::create(['name' => 'Seeds ' . uniqid(), 'slug' => 'seeds-' . uniqid()]);
+        $product = \App\Modules\Catalog\Models\Product::create([
             'name' => 'Wheat ' . uniqid(),
             'slug' => 'wheat-' . uniqid(),
             'sku' => 'WHEAT-' . uniqid(),

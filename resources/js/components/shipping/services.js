@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import { Modal } from 'bootstrap';
 import Swal from 'sweetalert2';
+import ApexCharts from 'apexcharts';
 
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
@@ -61,11 +62,17 @@ export default () => {
         },
         stats: { total: 0, active: 0, inactive: 0 },
 
+        charts: {},
+        chartsInitialized: false,
+        statusStats: [],
+
         searchQuery: '',
         statusFilter: '',
         sortField: 'id',
         sortDirection: 'desc',
         currentPage: 1,
+        itemsPerPage: 10,
+        selectedItems: [],
 
         isLoading: false,
         saving: false,
@@ -91,6 +98,74 @@ export default () => {
                 modalEl.addEventListener('hidden.bs.modal', () => {
                     this.resetForm();
                 });
+            }
+
+            setTimeout(() => {
+                this.initCharts();
+            }, 300);
+        },
+
+        initCharts() {
+            if (this.chartsInitialized) {
+                this.updateCharts();
+                return;
+            }
+            this.renderTrendChart();
+            this.renderStatusChart();
+            this.chartsInitialized = true;
+        },
+
+        renderTrendChart() {
+            const chartElement = document.getElementById('serviceTrendsChart');
+            if (!chartElement) return;
+
+            // Mock activity data
+            const trendsData = {
+                series: [{
+                    name: 'Activity',
+                    data: [5, 8, 12, 10, 15, 7, this.stats.total]
+                }],
+                chart: {
+                    type: 'area',
+                    height: 300,
+                    toolbar: { show: false },
+                    fontFamily: 'inherit'
+                },
+                colors: ['#8b5cf6'],
+                fill: {
+                    type: 'gradient',
+                    gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.3 }
+                },
+                stroke: { curve: 'smooth', width: 2 },
+                xaxis: {
+                    categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                }
+            };
+
+            this.charts.trends = new ApexCharts(chartElement, trendsData);
+            this.charts.trends.render();
+        },
+
+        renderStatusChart() {
+            const chartElement = document.getElementById('statusChart');
+            if (!chartElement) return;
+
+            const chartData = {
+                series: this.statusStats.map(stat => stat.count),
+                chart: { type: 'donut', height: 200 },
+                labels: this.statusStats.map(stat => stat.name),
+                colors: this.statusStats.map(stat => stat.color),
+                plotOptions: { pie: { donut: { size: '70%' } } },
+                legend: { show: false }
+            };
+
+            this.charts.status = new ApexCharts(chartElement, chartData);
+            this.charts.status.render();
+        },
+
+        updateCharts() {
+            if (this.charts.status) {
+                this.charts.status.updateSeries(this.statusStats.map(stat => stat.count));
             }
         },
 
@@ -128,8 +203,19 @@ export default () => {
                 this.stats.active = allItems.filter(i => i.is_active).length;
                 this.stats.inactive = allItems.filter(i => !i.is_active).length;
 
+                this.statusStats = [
+                    { name: 'Active', count: this.stats.active, percentage: this.stats.total ? Math.round((this.stats.active / this.stats.total) * 100) : 0, color: '#10b981' },
+                    { name: 'Inactive', count: this.stats.inactive, percentage: this.stats.total ? Math.round((this.stats.inactive / this.stats.total) * 100) : 0, color: '#64748b' }
+                ].filter(stat => stat.count > 0);
+
+                if (this.chartsInitialized) {
+                    this.updateCharts();
+                }
+
                 // Fetch paginated active list
-                const query = `page=${this.currentPage}&search=${encodeURIComponent(this.searchQuery)}&sort_by=${this.sortField}&sort_dir=${this.sortDirection}`;
+                let query = `page=${this.currentPage}&per_page=${this.itemsPerPage}&search=${encodeURIComponent(this.searchQuery)}&sort_by=${this.sortField}&sort_dir=${this.sortDirection}`;
+                if (this.statusFilter !== '') query += `&is_active=${this.statusFilter}`;
+
                 const payload = await this.apiRequest(`${this.apiBase}?${query}`);
                 this.items = payload.data || [];
                 this.paginator = {
@@ -150,7 +236,67 @@ export default () => {
 
         filterData() {
             this.currentPage = 1;
+            this.selectedItems = [];
             this.loadData();
+        },
+
+        clearFilters() {
+            this.searchQuery = '';
+            this.statusFilter = '';
+            this.currentPage = 1;
+            this.loadData();
+        },
+
+        hasActiveAdvancedFilters() {
+            return Boolean(this.statusFilter !== '');
+        },
+
+        toggleAll(checked) {
+            if (checked) {
+                this.selectedItems = this.items.map(i => String(i.id));
+            } else {
+                this.selectedItems = [];
+            }
+        },
+
+        async bulkAction(action) {
+            if (this.selectedItems.length === 0) return;
+            
+            const actionLabels = {
+                activate: 'activate',
+                deactivate: 'deactivate',
+                delete: 'delete'
+            };
+            
+            const result = await Swal.fire({
+                title: 'Confirm Bulk Action',
+                text: `Are you sure you want to ${actionLabels[action]} ${this.selectedItems.length} service(s)?`,
+                icon: action === 'delete' ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonColor: action === 'delete' ? '#dc3545' : '#3085d6',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, proceed'
+            });
+
+            if (!result.isConfirmed) return;
+
+            this.isLoading = true;
+            try {
+                await this.apiRequest(`${this.apiBase}/bulk-action`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: action,
+                        ids: this.selectedItems
+                    })
+                });
+                
+                showToast(`Bulk action completed successfully.`, 'success');
+                this.selectedItems = [];
+                this.loadData();
+            } catch (error) {
+                showToast(error.message || 'Bulk action failed.', 'error');
+                this.isLoading = false;
+            }
         },
 
         sortBy(field) {

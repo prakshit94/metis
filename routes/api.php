@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Roles\PermissionController;
-use App\Http\Controllers\Roles\RoleController;
-use App\Http\Controllers\Users\UserController;
+use App\Modules\Users\Controllers\AuthController;
+use App\Modules\Users\Controllers\PermissionController;
+use App\Modules\Users\Controllers\RoleController;
+use App\Modules\Users\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*

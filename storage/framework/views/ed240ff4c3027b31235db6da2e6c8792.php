@@ -181,12 +181,12 @@
                                             <span>Buy <span class="text-info" x-text="o.buy_qty"></span> Get <span class="text-info" x-text="o.get_qty"></span> Free</span>
                                         </template>
                                         <template x-if="o.type !== 'bogo'">
-                                            <span x-text="o.discount_type === 'percentage' ? o.value + '%' : '₹' + parseFloat(o.value).toFixed(2)"></span>
+                                            <span x-text="o.discount_type === 'percentage' ? o.value + '%' : 'Rs ' + parseFloat(o.value).toFixed(2)"></span>
                                         </template>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="fw-semibold text-secondary" x-text="o.min_spend > 0 ? '₹' + parseFloat(o.min_spend).toFixed(2) : 'No Min Spend'"></span>
+                                    <span class="fw-semibold text-secondary" x-text="o.min_spend > 0 ? 'Rs ' + parseFloat(o.min_spend).toFixed(2) : 'No Min Spend'"></span>
                                 </td>
                                 <td>
                                     <template x-if="o.product">
@@ -352,14 +352,14 @@
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Type *</label>
                                             <select class="form-select form-select-sm fw-semibold" x-model="form.discount_type">
                                                 <option value="percentage">Percentage (%)</option>
-                                                <option value="flat">Flat Amount (₹)</option>
+                                                <option value="flat">Flat Amount (Rs )</option>
                                             </select>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Choose percentage or fixed rate.</small>
                                         </div>
                                         <div class="col-md-6" x-show="form.type === 'order_discount'">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Value *</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text" x-text="form.discount_type === 'percentage' ? '%' : '₹'"></span>
+                                                <span class="input-group-text" x-text="form.discount_type === 'percentage' ? '%' : 'Rs '"></span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.value" min="0" step="0.01">
                                             </div>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Numeric value of the discount.</small>
@@ -367,7 +367,7 @@
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Min Spend</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text">₹</span>
+                                                <span class="input-group-text">Rs </span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.min_spend" min="0" step="0.01" placeholder="0">
                                             </div>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Minimum purchase requirement to unlock offer.</small>
@@ -375,7 +375,7 @@
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Max Discount</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text">₹</span>
+                                                <span class="input-group-text">Rs </span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.max_discount" min="0" step="0.01" placeholder="Unlimited">
                                             </div>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Maximum cap. Leave empty/0 for unlimited.</small>

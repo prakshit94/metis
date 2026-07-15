@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\Brand;
-use App\Models\Category;
-use App\Models\HsnCode;
-use App\Models\Product;
-use App\Models\TaxRate;
-use App\Models\UnitOfMeasure;
-use App\Models\Warehouse;
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\HsnCode;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\TaxRate;
+use App\Modules\Catalog\Models\UnitOfMeasure;
+use App\Modules\Catalog\Models\Warehouse;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 

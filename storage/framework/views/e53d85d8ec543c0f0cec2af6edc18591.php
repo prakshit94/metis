@@ -188,10 +188,10 @@
                                         </div>
                                         <div class="flex-grow-1" style="min-width: 0;">
                                             <h6 class="mb-1 fw-bold text-body text-truncate fs-6" x-text="item.name"></h6>
-                                            <p class="mb-0 text-muted fw-semibold" style="font-size: 11px;">Qty: <span x-text="item.quantity"></span> × ₹<span x-text="parseFloat(item.price).toFixed(2)"></span></p>
+                                            <p class="mb-0 text-muted fw-semibold" style="font-size: 11px;">Qty: <span x-text="item.quantity"></span> × Rs <span x-text="parseFloat(item.price).toFixed(2)"></span></p>
                                         </div>
                                         <div class="text-end ms-2">
-                                            <h6 class="mb-1 fw-black text-success" x-text="'₹' + (item.quantity * parseFloat(item.price)).toFixed(2)"></h6>
+                                            <h6 class="mb-1 fw-black text-success" x-text="'Rs ' + (item.quantity * parseFloat(item.price)).toFixed(2)"></h6>
                                             <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" style="font-size: 11px;" @click="removeItem(idx)">Remove</button>
                                         </div>
                                     </div>
@@ -201,7 +201,7 @@
                         <div class="p-3 border-top bg-body-secondary bg-opacity-50 rounded-bottom-4" x-show="items.length > 0" x-cloak>
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="m-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Gross Subtotal</h6>
-                                <h5 class="m-0 fw-black text-primary" x-text="'₹' + total.toFixed(2)"></h5>
+                                <h5 class="m-0 fw-black text-primary" x-text="'Rs ' + total.toFixed(2)"></h5>
                             </div>
                             <a :href="checkoutHref()" class="btn btn-primary w-100 rounded-pill fw-bold text-uppercase shadow-sm d-flex align-items-center justify-content-center gap-2" style="font-size: 11px; letter-spacing: 1px;">
                                 <i class="bi bi-cart-check"></i> Go to Checkout

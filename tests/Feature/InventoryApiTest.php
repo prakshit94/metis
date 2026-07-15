@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\Category;
-use App\Models\Permission;
-use App\Models\Product;
-use App\Models\Role;
-use App\Models\User;
-use App\Models\Warehouse;
-use App\Models\StockTransfer;
-use App\Models\InventoryAdjustment;
-use App\Models\Stock;
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Users\Models\Permission;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Users\Models\Role;
+use App\Modules\Users\Models\User;
+use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Inventory\Models\InventoryAdjustment;
+use App\Modules\Inventory\Models\Stock;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;

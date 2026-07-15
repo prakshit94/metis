@@ -76,9 +76,9 @@
                                             <div class="text-muted small font-monospace mt-1"><?php echo e($item->product?->sku ?: 'SKU N/A'); ?></div>
                                         </td>
                                         <td class="py-4 text-center fw-bold"><?php echo e(number_format($item->quantity, 0)); ?></td>
-                                        <td class="py-4 text-end text-muted">₹<?php echo e(number_format($item->unit_price, 2)); ?></td>
-                                        <td class="py-4 text-end text-success">-₹<?php echo e(number_format($item->discount_amount, 2)); ?></td>
-                                        <td class="py-4 text-end fw-bold text-dark">₹<?php echo e(number_format($item->total_amount, 2)); ?></td>
+                                        <td class="py-4 text-end text-muted">Rs <?php echo e(number_format($item->unit_price, 2)); ?></td>
+                                        <td class="py-4 text-end text-success">-Rs <?php echo e(number_format($item->discount_amount, 2)); ?></td>
+                                        <td class="py-4 text-end fw-bold text-dark">Rs <?php echo e(number_format($item->total_amount, 2)); ?></td>
                                     </tr>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </tbody>
@@ -92,11 +92,11 @@
                         <div class="col-md-5 col-lg-4">
                             <div class="d-flex justify-content-between mb-3 text-muted small">
                                 <span>Subtotal</span>
-                                <span class="fw-medium">₹<?php echo e(number_format($order->total_amount, 2)); ?></span>
+                                <span class="fw-medium">Rs <?php echo e(number_format($order->total_amount, 2)); ?></span>
                             </div>
                             <div class="d-flex justify-content-between mb-3 text-success small">
                                 <span>Discount Total</span>
-                                <span class="fw-medium">-₹<?php echo e(number_format($order->discount_amount, 2)); ?></span>
+                                <span class="fw-medium">-Rs <?php echo e(number_format($order->discount_amount, 2)); ?></span>
                             </div>
                             <?php if($order->coupon_code): ?>
                             <div class="d-flex justify-content-between mb-3 text-success text-opacity-75 small" style="margin-top: -10px;">
@@ -110,12 +110,12 @@
                             <?php endif; ?>
                             <div class="d-flex justify-content-between mb-3 text-muted small">
                                 <span>Tax Amount</span>
-                                <span class="fw-medium">₹<?php echo e(number_format($order->tax_amount, 2)); ?></span>
+                                <span class="fw-medium">Rs <?php echo e(number_format($order->tax_amount, 2)); ?></span>
                             </div>
                             <hr class="my-3 border-light-subtle">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="h6 mb-0 text-uppercase fw-bold">Grand Total</span>
-                                <span class="h3 mb-0 fw-bold text-primary">₹<?php echo e(number_format($order->net_amount, 2)); ?></span>
+                                <span class="h3 mb-0 fw-bold text-primary">Rs <?php echo e(number_format($order->net_amount, 2)); ?></span>
                             </div>
                         </div>
                     </div>

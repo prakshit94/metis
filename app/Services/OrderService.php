@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Party;
-use App\Models\PartyAddress;
-use App\Models\Customer;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderItem;
+use App\Modules\Customers\Models\Party;
+use App\Modules\Customers\Models\PartyAddress;
+use App\Modules\Customers\Models\Customer;
 use App\Services\InventoryService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -51,7 +51,7 @@ class OrderService
         return min($effectiveUnit * $freeUnits, $lineTotal);
     }
 
-    private function calculateOfferDiscount(float $subtotal, \App\Models\Offer $offer): float
+    private function calculateOfferDiscount(float $subtotal, \App\Modules\Orders\Models\Offer $offer): float
     {
         if ($subtotal <= 0 || (float) $offer->min_spend > $subtotal) {
             return 0.0;
@@ -87,16 +87,16 @@ class OrderService
             $timePart  = $today->format('Hi');    // HHMM
             $todayStart = $today->copy()->startOfDay();
             $todayEnd   = $today->copy()->endOfDay();
-            $dailyCount = \App\Models\Order::whereBetween('created_at', [$todayStart, $todayEnd])->count() + 1;
+            $dailyCount = \App\Modules\Orders\Models\Order::whereBetween('created_at', [$todayStart, $todayEnd])->count() + 1;
             $orderNo   = $dailyCount . '-' . $datePart . '-' . $timePart;
 
             $shippingAddressJson = $data['shipping_address'] ?? null;
             if (!$shippingAddressJson && !empty($data['shipping_address_id'])) {
-                $shippingAddressJson = $this->formatAddressJson(\App\Models\PartyAddress::find($data['shipping_address_id']));
+                $shippingAddressJson = $this->formatAddressJson(\App\Modules\Customers\Models\PartyAddress::find($data['shipping_address_id']));
             }
             $billingAddressJson = $data['billing_address'] ?? null;
             if (!$billingAddressJson && !empty($data['billing_address_id'])) {
-                $billingAddressJson = $this->formatAddressJson(\App\Models\PartyAddress::find($data['billing_address_id']));
+                $billingAddressJson = $this->formatAddressJson(\App\Modules\Customers\Models\PartyAddress::find($data['billing_address_id']));
             }
 
             $order = Order::create([
@@ -149,15 +149,15 @@ class OrderService
             ]);
 
             if ($order->coupon_code) {
-                \App\Models\Coupon::where('code', $order->coupon_code)->increment('used_count');
+                \App\Modules\Orders\Models\Coupon::where('code', $order->coupon_code)->increment('used_count');
             }
 
             if ($order->applied_offer_id) {
-                \App\Models\Offer::where('id', $order->applied_offer_id)->increment('used_count');
+                \App\Modules\Orders\Models\Offer::where('id', $order->applied_offer_id)->increment('used_count');
             }
 
             if (!empty($data['applied_bogo_ids'])) {
-                \App\Models\Offer::whereIn('id', $data['applied_bogo_ids'])->increment('used_count');
+                \App\Modules\Orders\Models\Offer::whereIn('id', $data['applied_bogo_ids'])->increment('used_count');
             }
 
             return $order->refresh();
@@ -183,12 +183,12 @@ class OrderService
 
         // Load products to verify prices
         $productIds = array_filter(array_column($cart, 'id'));
-        $products = \App\Models\Product::whereIn('id', $productIds)
+        $products = \App\Modules\Catalog\Models\Product::whereIn('id', $productIds)
             ->with('taxRate')
             ->get()
             ->keyBy('id');
 
-        $activeOffers = \App\Models\Offer::active()
+        $activeOffers = \App\Modules\Orders\Models\Offer::active()
             ->where(function ($query) use ($productIds) {
                 $query->whereNull('product_id')
                     ->orWhereIn('product_id', $productIds);
@@ -286,7 +286,7 @@ class OrderService
         $couponCode = null;
         if (!empty($data['coupon_code'])) {
             $code = strtoupper(trim($data['coupon_code']));
-            $coupon = \App\Models\Coupon::where('code', $code)
+            $coupon = \App\Modules\Orders\Models\Coupon::where('code', $code)
                 ->lockForUpdate()
                 ->first();
 
@@ -437,10 +437,12 @@ class OrderService
      */
     public function updateCustomerOrder(Order $order, array $data): Order
     {
-        $shippingAddr = PartyAddress::find($data['address_id']);
-        $billingAddr  = PartyAddress::find($data['billing_address_id'] ?? $data['address_id']);
+        $shippingAddressId = $data['shipping_address_id'] ?? $data['address_id'] ?? null;
+        $billingAddressId  = $data['billing_address_id'] ?? $shippingAddressId;
+        $shippingAddr = $shippingAddressId ? PartyAddress::find($shippingAddressId) : null;
+        $billingAddr  = $billingAddressId ? PartyAddress::find($billingAddressId) : null;
 
-        return DB::transaction(function () use ($order, $data, $shippingAddr, $billingAddr) {
+        return DB::transaction(function () use ($order, $data, $shippingAddressId, $billingAddressId, $shippingAddr, $billingAddr) {
             // Reload with lock
             $order = Order::with('items')->lockForUpdate()->findOrFail($order->id);
 
@@ -451,10 +453,119 @@ class OrderService
             }
 
             $lastCouponCode = $order->coupon_code;
+            $lastOfferId = $order->applied_offer_id;
 
-            $calc = $this->recalculateAndValidate($data, $lastCouponCode);
+            $usingCartPayload = array_key_exists('cart', $data);
 
-            // If already confirmed, release all reservations before recalculating
+            if ($usingCartPayload) {
+                $calc = $this->recalculateAndValidate($data, $lastCouponCode);
+
+                // If already confirmed, release all reservations before recalculating
+                if ($order->status === 'confirmed' && $order->type === 'sale' && $order->warehouse_id) {
+                    foreach ($order->items as $item) {
+                        $this->inventoryService->releaseReservedStock(
+                            (int) $item->product_id,
+                            (int) $order->warehouse_id,
+                            (float) $item->quantity,
+                            $order->id,
+                            'cancelled'
+                        );
+                    }
+                }
+
+                $order->update([
+                    'warehouse_id'        => $data['warehouse_id'] ?? $order->warehouse_id,
+                    'shipping_address_id' => $shippingAddressId,
+                    'billing_address_id'  => $billingAddressId,
+                    'shipping_address'    => $this->formatAddressJson($shippingAddr),
+                    'billing_address'     => $this->formatAddressJson($billingAddr),
+                    'total_amount'        => $calc['subtotal'],
+                    'tax_amount'          => $calc['tax_amount'],
+                    'discount_amount'     => $calc['total_discount'],
+                    'coupon_code'         => $calc['coupon_code'],
+                    'applied_offer_id'     => $calc['applied_offer_id'],
+                    'net_amount'          => $calc['grand_total'],
+                    'is_draft'            => isset($data['is_draft']) ? (bool)$data['is_draft'] : $order->is_draft,
+                    'future_order_date'   => array_key_exists('future_order_date', $data) ? $data['future_order_date'] : $order->future_order_date,
+                    'updated_by'          => auth()->id(),
+                ]);
+
+                $order->items()->delete();
+                foreach ($calc['items'] as $item) {
+                    $order->items()->create($item);
+                }
+
+                if ($order->status === 'confirmed' && $order->type === 'sale' && $order->warehouse_id) {
+                    $order->load('items');
+                    foreach ($order->items as $item) {
+                        $this->inventoryService->reserveStock(
+                            (int) $item->product_id,
+                            (int) $order->warehouse_id,
+                            (float) $item->quantity,
+                            $order->id
+                        );
+                    }
+                }
+
+                $newCouponCode = $calc['coupon_code'];
+                if ($newCouponCode !== $lastCouponCode) {
+                    if ($lastCouponCode) {
+                        \App\Modules\Orders\Models\Coupon::where('code', $lastCouponCode)->decrement('used_count');
+                    }
+                    if ($newCouponCode) {
+                        \App\Modules\Orders\Models\Coupon::where('code', $newCouponCode)->increment('used_count');
+                    }
+                }
+
+                if (($calc['applied_offer_id'] ?? null) !== $lastOfferId) {
+                    if ($lastOfferId) {
+                        \App\Modules\Orders\Models\Offer::where('id', $lastOfferId)->decrement('used_count');
+                    }
+                    if (!empty($calc['applied_offer_id'])) {
+                        \App\Modules\Orders\Models\Offer::where('id', $calc['applied_offer_id'])->increment('used_count');
+                    }
+                }
+
+                return $order->refresh();
+            }
+
+            if (empty($data['items']) || !is_array($data['items'])) {
+                throw ValidationException::withMessages([
+                    'items' => 'Order items are required.',
+                ]);
+            }
+
+            $normalizedItems = [];
+            foreach ($data['items'] as $item) {
+                if (empty($item['product_id']) || (float) ($item['quantity'] ?? 0) <= 0) {
+                    continue;
+                }
+
+                $normalizedItems[] = [
+                    'product_id'      => (int) $item['product_id'],
+                    'product_variant_id' => $item['product_variant_id'] ?? null,
+                    'quantity'        => (float) $item['quantity'],
+                    'unit_price'      => (float) ($item['unit_price'] ?? 0),
+                    'tax_rate'        => (float) ($item['tax_rate'] ?? 0),
+                    'discount_amount' => (float) ($item['discount_amount'] ?? 0),
+                    'tax_amount'      => (float) ($item['tax_amount'] ?? 0),
+                    'total_amount'    => (float) ($item['total_amount'] ?? 0),
+                ];
+            }
+
+            if (empty($normalizedItems)) {
+                throw ValidationException::withMessages([
+                    'items' => 'Order items are required.',
+                ]);
+            }
+
+            $subtotal = array_reduce($normalizedItems, fn ($carry, $item) => $carry + (float) $item['total_amount'], 0.0);
+            $taxAmount = (float) ($data['tax_amount'] ?? array_reduce($normalizedItems, fn ($carry, $item) => $carry + (float) $item['tax_amount'], 0.0));
+            $discountAmount = (float) ($data['discount_amount'] ?? array_reduce($normalizedItems, fn ($carry, $item) => $carry + (float) $item['discount_amount'], 0.0));
+            $netAmount = (float) ($data['net_amount'] ?? max(0, $subtotal - $discountAmount + $taxAmount));
+            $newCouponCode = $data['coupon_code'] ?? null;
+            $newOfferId = $data['applied_offer_id'] ?? null;
+
             if ($order->status === 'confirmed' && $order->type === 'sale' && $order->warehouse_id) {
                 foreach ($order->items as $item) {
                     $this->inventoryService->releaseReservedStock(
@@ -469,27 +580,26 @@ class OrderService
 
             $order->update([
                 'warehouse_id'        => $data['warehouse_id'] ?? $order->warehouse_id,
-                'shipping_address_id' => $data['address_id'] ?? null,
-                'billing_address_id'  => $data['billing_address_id'] ?? $data['address_id'] ?? null,
+                'shipping_address_id' => $shippingAddressId,
+                'billing_address_id'  => $billingAddressId,
                 'shipping_address'    => $this->formatAddressJson($shippingAddr),
                 'billing_address'     => $this->formatAddressJson($billingAddr),
-                'total_amount'        => $calc['subtotal'],
-                'tax_amount'          => $calc['tax_amount'],
-                'discount_amount'     => $calc['total_discount'],
-                'coupon_code'         => $calc['coupon_code'],
-                'net_amount'          => $calc['grand_total'],
-                'is_draft'            => isset($data['is_draft']) ? (bool)$data['is_draft'] : $order->is_draft,
+                'total_amount'        => $subtotal,
+                'tax_amount'          => $taxAmount,
+                'discount_amount'     => $discountAmount,
+                'coupon_code'         => $newCouponCode,
+                'applied_offer_id'     => $newOfferId,
+                'net_amount'          => $netAmount,
+                'is_draft'            => isset($data['is_draft']) ? (bool) $data['is_draft'] : $order->is_draft,
                 'future_order_date'   => array_key_exists('future_order_date', $data) ? $data['future_order_date'] : $order->future_order_date,
                 'updated_by'          => auth()->id(),
             ]);
 
-            // Replace items
             $order->items()->delete();
-            foreach ($calc['items'] as $item) {
+            foreach ($normalizedItems as $item) {
                 $order->items()->create($item);
             }
 
-            // Re-apply reservations if it was confirmed
             if ($order->status === 'confirmed' && $order->type === 'sale' && $order->warehouse_id) {
                 $order->load('items');
                 foreach ($order->items as $item) {
@@ -502,14 +612,21 @@ class OrderService
                 }
             }
 
-            // If the coupon changed, update the used_count of both coupons
-            $newCouponCode = $calc['coupon_code'];
             if ($newCouponCode !== $lastCouponCode) {
                 if ($lastCouponCode) {
-                    \App\Models\Coupon::where('code', $lastCouponCode)->decrement('used_count');
+                    \App\Modules\Orders\Models\Coupon::where('code', $lastCouponCode)->decrement('used_count');
                 }
                 if ($newCouponCode) {
-                    \App\Models\Coupon::where('code', $newCouponCode)->increment('used_count');
+                    \App\Modules\Orders\Models\Coupon::where('code', $newCouponCode)->increment('used_count');
+                }
+            }
+
+            if ($newOfferId !== $lastOfferId) {
+                if ($lastOfferId) {
+                    \App\Modules\Orders\Models\Offer::where('id', $lastOfferId)->decrement('used_count');
+                }
+                if ($newOfferId) {
+                    \App\Modules\Orders\Models\Offer::where('id', $newOfferId)->increment('used_count');
                 }
             }
 
@@ -548,8 +665,8 @@ class OrderService
                     }
                 }
                 
-                \App\Models\Shipment::create([
-                    'shipment_no'  => \App\Models\Shipment::generateShipmentNo(),
+                \App\Modules\Orders\Models\Shipment::create([
+                    'shipment_no'  => \App\Modules\Orders\Models\Shipment::generateShipmentNo(),
                     'order_id'     => $order->id,
                     'status'       => 'pending',
                     'carrier_name' => $carrierName,

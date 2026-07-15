@@ -284,7 +284,7 @@
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Credit Limit (₹)</label>
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Credit Limit (Rs )</label>
                                             <input type="number" step="0.01" name="credit_limit" x-model="form.credit_limit" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-6">

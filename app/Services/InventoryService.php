@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\InventoryAdjustment;
-use App\Models\Order;
-use App\Models\Product;
-use App\Models\Stock;
-use App\Models\StockMovement;
-use App\Models\StockReservation;
-use App\Models\StockTransfer;
+use App\Modules\Inventory\Models\InventoryAdjustment;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Models\StockReservation;
+use App\Modules\Inventory\Models\StockTransfer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -123,13 +123,13 @@ class InventoryService
      */
     private function syncProductStatus(int $productId): void
     {
-        $product = \App\Models\Product::find($productId);
+        $product = \App\Modules\Catalog\Models\Product::find($productId);
         if (!$product) return;
 
         // Never auto-activate a draft product
         if ($product->status === 'draft') return;
 
-        $totalAvailable = \App\Models\Stock::where('product_id', $productId)
+        $totalAvailable = \App\Modules\Inventory\Models\Stock::where('product_id', $productId)
             ->get()
             ->sum(fn($s) => (float) $s->quantity - (float) $s->reserved_qty);
 
@@ -937,8 +937,8 @@ class InventoryService
 
             $shipment = $order->shipments()->first();
             if (!$shipment) {
-                $shipment = new \App\Models\Shipment([
-                    'shipment_no' => \App\Models\Shipment::generateShipmentNo(),
+                $shipment = new \App\Modules\Orders\Models\Shipment([
+                    'shipment_no' => \App\Modules\Orders\Models\Shipment::generateShipmentNo(),
                     'order_id' => $order->id,
                 ]);
             }
