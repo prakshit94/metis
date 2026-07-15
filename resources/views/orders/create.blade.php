@@ -50,107 +50,104 @@
                     </div>
                 </div>
                 <div class="card-body p-4 p-lg-4">
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
-                            <div class="border rounded p-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 bg-body-tertiary">
+                    <div class="card border shadow-sm mb-4" x-show="customerDetails" x-cloak>
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 50px; height: 50px;" x-text="customerDetails && customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
+                                    <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;" x-text="customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
                                     <div>
-                                        <div class="small fw-bold text-muted text-uppercase mb-1" style="font-size: 11px; letter-spacing: 1px;">Selected Customer</div>
                                         <h5 class="mb-1 fw-bold" x-text="customerDisplayName"></h5>
-                                        <div class="d-flex flex-wrap gap-2 small text-muted">
-                                            <span x-text="customerDetails?.party_code ? customerDetails.party_code : 'No party code'"></span>
-                                            <span x-show="customerDetails?.phone" x-text="'• ' + customerDetails.phone"></span>
-                                            <span x-show="customerDetails?.email" x-text="'• ' + customerDetails.email"></span>
+                                        <div class="small text-muted d-flex align-items-center gap-2">
+                                            <span x-text="customerDetails.party_code"></span>
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success" x-text="customerDetails.status || 'Active'"></span>
+                                            <span class="badge bg-info bg-opacity-10 text-info border border-info" x-show="customerDetails.kyc_completed">KYC Verified</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="d-flex flex-wrap gap-2">
-                                    <span class="badge bg-success">Profile ready</span>
+                                <div class="d-flex flex-column align-items-end gap-2">
+                                    <div x-show="customerDetails.created_at" class="badge bg-primary bg-opacity-10 text-primary border border-primary fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
+                                        <i class="bi bi-clock-history me-1"></i> Since: <span x-text="new Date(customerDetails.created_at).toLocaleDateString()"></span> 
+                                        (<span x-text="customerDetails.created_at ? Math.max(0, Math.floor((new Date() - new Date(customerDetails.created_at)) / 86400000)) : 0"></span> days)
+                                    </div>
+                                    <div x-show="customerDetails.updated_at" class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
+                                        <i class="bi bi-activity me-1"></i> Active: <span x-text="customerDetails.updated_at ? Math.max(0, Math.floor((new Date() - new Date(customerDetails.updated_at)) / 86400000)) : 0"></span> days ago
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3 small">
+                                <!-- Contact Profile -->
+                                <div class="col-md-6 col-lg-3">
+                                    <div class="fw-bold text-muted mb-2 pb-1 border-bottom" style="font-size: 11px; text-transform: uppercase;">Contact</div>
+                                    <div class="mb-1" x-show="customerDetails.phone"><span class="text-muted me-1"><i class="bi bi-telephone"></i> Primary:</span><span class="fw-medium" x-text="customerDetails.phone"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.alternatemobile"><span class="text-muted me-1">Alt Mo:</span><span class="fw-medium" x-text="customerDetails.alternatemobile"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.phone_number_2"><span class="text-muted me-1">Landline:</span><span class="fw-medium" x-text="customerDetails.phone_number_2"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.relative_mobile"><span class="text-muted me-1">Relative Name:</span><span class="fw-medium" x-text="customerDetails.relative_mobile"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.relative_phone"><span class="text-muted me-1">Relative Mo:</span><span class="fw-medium" x-text="customerDetails.relative_phone"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.email"><span class="text-muted me-1"><i class="bi bi-envelope"></i> Email:</span><span class="fw-medium text-truncate d-inline-block align-bottom" style="max-width: 150px;" :title="customerDetails.email" x-text="customerDetails.email"></span></div>
+                                    <div class="mb-1" x-show="!customerDetails.phone && !customerDetails.alternatemobile && !customerDetails.email && !customerDetails.phone_number_2 && !customerDetails.relative_mobile && !customerDetails.relative_phone"><span class="text-muted">No contact details</span></div>
+                                </div>
+
+                                <!-- Business Details -->
+                                <div class="col-md-6 col-lg-3">
+                                    <div class="fw-bold text-muted mb-2 pb-1 border-bottom" style="font-size: 11px; text-transform: uppercase;">Business & Identity</div>
+                                    <div class="mb-1" x-show="customerDetails.category"><span class="text-muted me-1">Category:</span><span class="fw-medium text-capitalize" x-text="customerDetails.category"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.company_name"><span class="text-muted me-1">Company:</span><span class="fw-medium" x-text="customerDetails.company_name"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.gst_no"><span class="text-muted me-1">GST:</span><span class="fw-medium text-uppercase" x-text="customerDetails.gst_no"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.pan_no"><span class="text-muted me-1">PAN:</span><span class="fw-medium text-uppercase" x-text="customerDetails.pan_no"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.tax_no"><span class="text-muted me-1">Tax No:</span><span class="fw-medium text-uppercase" x-text="customerDetails.tax_no"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.aadhaar_last4"><span class="text-muted me-1">Aadhaar:</span><span class="fw-medium" x-text="'xxxx-xxxx-' + customerDetails.aadhaar_last4"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.kyc_verified_at"><span class="text-muted me-1">KYC Date:</span><span class="fw-medium" x-text="new Date(customerDetails.kyc_verified_at).toLocaleDateString()"></span></div>
+                                    <div class="mb-1" x-show="!customerDetails.company_name && !customerDetails.gst_no && !customerDetails.pan_no && !customerDetails.category && !customerDetails.aadhaar_last4"><span class="text-muted">No business/identity details</span></div>
+                                </div>
+
+                                <!-- Agriculture Snapshot -->
+                                <div class="col-md-6 col-lg-3">
+                                    <div class="fw-bold text-muted mb-2 pb-1 border-bottom" style="font-size: 11px; text-transform: uppercase;">Agriculture & Tags</div>
+                                    <div class="mb-1"><span class="text-muted me-1">Land:</span><span class="fw-medium"><span x-text="customerDetails.land_area || '0'"></span> <span x-text="customerDetails.land_unit || ''"></span></span></div>
+                                    <div class="mb-1 d-flex gap-1 flex-wrap" x-show="customerDetails.crops && customerDetails.crops.length > 0">
+                                        <span class="text-muted me-1">Crops:</span>
+                                        <template x-for="crop in customerDetails.crops"><span class="badge bg-success bg-opacity-10 text-success" style="font-size:10px" x-text="crop"></span></template>
+                                    </div>
+                                    <div class="mb-1 d-flex gap-1 flex-wrap" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
+                                        <span class="text-muted me-1">Irrig:</span>
+                                        <template x-for="type in customerDetails.irrigation_type"><span class="badge bg-info bg-opacity-10 text-info" style="font-size:10px" x-text="type"></span></template>
+                                    </div>
+                                    <div class="mb-1 d-flex gap-1 flex-wrap" x-show="customerDetails.tags && customerDetails.tags.length > 0">
+                                        <span class="text-muted me-1">Tags:</span>
+                                        <template x-for="tag in customerDetails.tags"><span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size:10px" x-text="tag"></span></template>
+                                    </div>
+                                    <div class="mb-1 d-flex gap-1 flex-wrap" x-show="customerDetails.source && customerDetails.source.length > 0">
+                                        <span class="text-muted me-1">Source:</span>
+                                        <template x-for="src in customerDetails.source"><span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:10px" x-text="src"></span></template>
+                                    </div>
+                                </div>
+
+                                <!-- Financial Snapshot -->
+                                <div class="col-md-6 col-lg-3">
+                                    <div class="fw-bold text-muted mb-2 pb-1 border-bottom" style="font-size: 11px; text-transform: uppercase;">Financial & Stats</div>
+                                    <div class="mb-1"><span class="text-muted me-1">Limit:</span><span class="fw-medium">Rs <span x-text="Number(customerDetails.credit_limit || 0).toFixed(2)"></span></span></div>
+                                    <div class="mb-1"><span class="text-muted me-1">Balance:</span><span class="fw-medium" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">Rs <span x-text="Number(customerDetails.outstanding_balance || 0).toFixed(2)"></span></span></div>
+                                    <div class="mb-1"><span class="text-muted me-1">Cr. Days:</span><span class="fw-medium"><span x-text="customerDetails.credit_days || '0'"></span> Days</span></div>
+                                    <div class="mb-1" x-show="customerDetails.credit_valid_till"><span class="text-muted me-1">Valid Till:</span><span class="fw-medium" x-text="new Date(customerDetails.credit_valid_till).toLocaleDateString()"></span></div>
+                                    <div class="mb-1"><span class="text-muted me-1">Orders:</span><span class="fw-medium" x-text="customerDetails.orders_count || 0"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.first_purchase_at"><span class="text-muted me-1">First Order:</span><span class="fw-medium" x-text="new Date(customerDetails.first_purchase_at).toLocaleDateString()"></span></div>
+                                    <div class="mb-1" x-show="customerDetails.last_purchase_at"><span class="text-muted me-1">Last Order:</span><span class="fw-medium" x-text="new Date(customerDetails.last_purchase_at).toLocaleDateString()"></span></div>
+                                </div>
+
+                                <!-- Notes & Status -->
+                                <div class="col-12 mt-2 pt-2 border-top" x-show="customerDetails.internal_notes || customerDetails.is_blacklisted">
+                                    <div class="d-flex flex-wrap gap-3 align-items-center">
+                                        <div x-show="customerDetails.is_blacklisted"><span class="badge bg-danger"><i class="bi bi-slash-circle me-1"></i>Blacklisted</span></div>
+                                        <div x-show="customerDetails.internal_notes">
+                                            <span class="text-muted me-1 fw-bold" style="font-size: 11px; text-transform: uppercase;">Notes:</span>
+                                            <span class="fw-medium text-danger" x-text="customerDetails.internal_notes"></span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <div x-show="customerDetails" x-cloak class="transition-all">
-                        <div class="row g-4">
-                            <div class="col-lg-4">
-                                <div class="card h-100 border shadow-sm">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center gap-3 mb-3">
-                                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 48px; height: 48px;" x-text="customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
-                                            <div>
-                                                <div class="small fw-bold text-muted text-uppercase mb-1" style="font-size: 10px; letter-spacing: 1px;">Contact Profile</div>
-                                                <div class="fw-bold fs-6" x-text="customerDetails.party_code || 'Customer profile'"></div>
-                                                <span class="badge bg-success mt-1" x-text="customerDetails.status || 'Active'"></span>
-                                            </div>
-                                        </div>
-                                        <ul class="list-unstyled mb-0 small">
-                                            <li class="mb-2 d-flex align-items-center gap-2"><i class="bi bi-telephone text-muted"></i><span class="fw-medium" x-text="customerDetails.phone || 'N/A'"></span></li>
-                                            <li class="mb-2 d-flex align-items-center gap-2"><i class="bi bi-envelope text-muted"></i><span class="fw-medium text-break" x-text="customerDetails.email || 'N/A'"></span></li>
-                                            <li class="mb-2 d-flex align-items-center gap-2" x-show="customerDetails.company_name"><i class="bi bi-building text-muted"></i><span class="fw-medium" x-text="customerDetails.company_name"></span></li>
-                                            <li class="d-flex align-items-center gap-2" x-show="customerDetails.gst_no"><i class="bi bi-receipt text-muted"></i>GST: <span class="fw-medium text-uppercase" x-text="customerDetails.gst_no"></span></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-4">
-                                <div class="card h-100 border shadow-sm">
-                                    <div class="card-body p-3">
-                                        <div class="small fw-bold text-muted text-uppercase mb-3" style="font-size: 10px; letter-spacing: 1px;"><i class="bi bi-sun me-1"></i>Agriculture Snapshot</div>
-                                        <div class="row g-2 small">
-                                            <div class="col-6">
-                                                <div class="text-muted mb-1" style="font-size: 11px;">Land Area</div>
-                                                <div class="fw-bold"><span x-text="customerDetails.land_area || '0'"></span> <span class="fw-normal text-muted" x-text="customerDetails.land_unit || ''"></span></div>
-                                            </div>
-                                            <div class="col-12 mt-2" x-show="customerDetails.crops && customerDetails.crops.length > 0">
-                                                <div class="text-muted mb-2" style="font-size: 11px;">Major Crops</div>
-                                                <div class="d-flex flex-wrap gap-1">
-                                                    <template x-for="crop in customerDetails.crops">
-                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success" x-text="crop"></span>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                            <div class="col-12 mt-2" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
-                                                <div class="text-muted mb-2" style="font-size: 11px;">Irrigation</div>
-                                                <div class="d-flex flex-wrap gap-1">
-                                                    <template x-for="type in customerDetails.irrigation_type">
-                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info" x-text="type"></span>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-4">
-                                <div class="card h-100 border shadow-sm">
-                                    <div class="card-body p-3">
-                                        <div class="small fw-bold text-muted text-uppercase mb-3" style="font-size: 10px; letter-spacing: 1px;"><i class="bi bi-wallet2 me-1"></i>Financial Snapshot</div>
-                                        <div class="row g-2 small">
-                                            <div class="col-6">
-                                                <div class="text-muted mb-1" style="font-size: 11px;">Credit Limit</div>
-                                                <div class="fw-bold">Rs <span x-text="Number(customerDetails.credit_limit || 0).toFixed(2)"></span></div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="text-muted mb-1" style="font-size: 11px;">Balance</div>
-                                                <div class="fw-bold" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">Rs <span x-text="Number(customerDetails.outstanding_balance || 0).toFixed(2)"></span></div>
-                                            </div>
-                                            <div class="col-6 mt-2">
-                                                <div class="text-muted mb-1" style="font-size: 11px;">Credit Days</div>
-                                                <div class="fw-bold"><span x-text="customerDetails.credit_days || '0'"></span> Days</div>
-                                            </div>
-                                            <div class="col-6 mt-2" x-show="customerDetails.credit_valid_till">
-                                                <div class="text-muted mb-1" style="font-size: 11px;">Valid Till</div>
-                                                <div class="fw-bold" x-text="new Date(customerDetails.credit_valid_till).toLocaleDateString()"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     {{-- Addresses Section --}}
                     <div id="addresses-section" x-show="partyId" x-cloak class="mt-4 pt-4 border-top transition-all">
                         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -329,14 +326,14 @@
                                     <div class="card h-100 border shadow-sm transition-all" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id)}">
                                         <div class="card-body p-3">
                                             <div class="d-flex gap-3 mb-3">
-                                                <div class="position-relative">
+                                                <div class="position-relative cursor-pointer" @click="openProductModal(p)">
                                                     <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded border bg-body" style="width:60px;height:60px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                                     <div x-show="isInCart(p.id)" class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 20px; height: 20px; font-size: 10px;">
                                                         <i class="bi bi-check"></i>
                                                     </div>
                                                 </div>
                                                 <div class="flex-grow-1" style="min-width: 0;">
-                                                    <div class="fw-bold text-truncate text-body" :title="p.name" x-text="p.name"></div>
+                                                    <div class="fw-bold text-truncate text-body cursor-pointer text-primary-hover" :title="p.name" x-text="p.name" @click="openProductModal(p)"></div>
                                                     <div class="text-muted text-truncate font-monospace mt-1" style="font-size:11px;" x-text="p.sku"></div>
                                                 </div>
                                             </div>
@@ -352,8 +349,9 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-4">
-                                                    <button class="btn btn-sm w-100 h-100 d-flex align-items-center justify-content-center" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" title="Add to cart">
-                                                        <i class="bi fs-5" :class="isInCart(p.id) ? 'bi-plus-circle-fill' : 'bi-cart-plus'"></i>
+                                                    <button class="btn btn-sm w-100 h-100 d-flex align-items-center justify-content-center gap-1" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'">
+                                                        <i class="bi fs-5" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
+                                                        <span x-text="isInCart(p.id) ? 'Add More' : 'Add'" style="font-size: 13px;" class="fw-bold"></span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -364,39 +362,63 @@
                         </div>
                         
                         {{-- Table View --}}
-                        <div class="table-responsive" x-show="viewMode === 'table'" style="display: none;">
-                            <table class="table table-hover align-middle mb-0 border">
-                                <thead class="table-secondary">
-                                    <tr>
-                                        <th>Product</th>
-                                        <th class="text-center">Stock</th>
-                                        <th class="text-end">Price</th>
-                                        <th class="text-center" style="width: 100px;">Qty</th>
-                                        <th class="text-center" style="width: 60px;">Add</th>
+                        <div class="table-responsive border rounded bg-body shadow-sm" x-show="viewMode === 'table'">
+                            <table class="table table-hover table-striped align-middle mb-0" style="font-size: 13px;">
+                                <thead class="border-bottom">
+                                    <tr class="text-muted">
+                                        <th style="min-width: 250px;">Product Details</th>
+                                        <th style="min-width: 150px;">Pricing & Offers</th>
+                                        <th style="min-width: 150px;">Inventory</th>
+                                        <th class="text-center" style="width: 140px;">Order Qty</th>
+                                        <th class="text-center" style="width: 80px;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <template x-for="p in products" :key="'tbl-'+p.id">
-                                        <tr :class="{'table-primary': isInCart(p.id)}">
+                                        <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id)}">
                                             <td>
-                                                <div class="d-flex align-items-center gap-2" style="min-width: 0;">
-                                                    <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded border bg-body-tertiary" style="width:36px;height:36px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
-                                                    <div style="min-width: 0; flex-grow: 1;">
-                                                        <div class="fw-semibold small text-truncate" :title="p.name" x-text="p.name"></div>
-                                                        <div class="text-muted text-truncate" style="font-size:11px" x-text="p.sku"></div>
+                                                <div class="d-flex gap-3">
+                                                    <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded border bg-body shadow-sm cursor-pointer" style="width:50px;height:50px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'" @click="openProductModal(p)">
+                                                    <div style="min-width: 0;">
+                                                        <div class="fw-bold text-body text-truncate mb-1 cursor-pointer text-primary-hover" :title="p.name" x-text="p.name" @click="openProductModal(p)"></div>
+                                                        <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
+                                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" x-text="p.sku"></span>
+                                                            <span x-show="p.barcode" class="badge bg-body-secondary text-muted border"><i class="bi bi-upc-scan me-1"></i><span x-text="p.barcode"></span></span>
+                                                            <span x-show="p.grade" class="badge bg-info bg-opacity-10 text-info border border-info" x-text="p.grade"></span>
+                                                        </div>
+                                                        <div class="small text-muted" style="font-size: 11px;">
+                                                            <span x-show="p.category_id">Cat ID: <span class="fw-medium text-body" x-text="p.category_id"></span></span>
+                                                            <span x-show="p.brand_id" class="ms-2">Brand ID: <span class="fw-medium text-body" x-text="p.brand_id"></span></span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td class="text-center">
-                                                <span class="badge" :class="p.available_stock > 10 ? 'bg-success' : (p.available_stock > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="p.available_stock"></span>
-                                            </td>
-                                            <td class="text-end fw-bold text-primary" x-text="'Rs ' + parseFloat(p.selling_price).toFixed(2)"></td>
                                             <td>
-                                                <input type="number" class="form-control form-control-sm text-center" x-model.number="p._qty" min="1" :max="p.available_stock || 9999" placeholder="Qty">
+                                                <div class="fw-bold text-primary fs-6 mb-1" x-text="'Rs ' + parseFloat(p.selling_price).toFixed(2)"></div>
+                                                <div class="small text-muted text-decoration-line-through mb-1" x-show="p.mrp > p.selling_price" x-text="'MRP Rs ' + parseFloat(p.mrp).toFixed(2)"></div>
+                                                <div class="badge bg-success" x-show="p.default_discount > 0"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <span class="badge" :class="p.available_stock > (p.min_stock_level || 10) ? 'bg-success' : (p.available_stock > 0 ? 'bg-warning text-dark' : 'bg-danger')" x-text="'Stock: ' + p.available_stock + ' ' + (p.uom_id || 'Units')"></span>
+                                                </div>
+                                                <div class="small text-muted mb-1" style="font-size: 11px;" x-show="p.min_stock_level > 0">Min Lvl: <span class="fw-medium" x-text="p.min_stock_level"></span></div>
+                                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                                    <span x-show="p.batch_tracking" class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 9px;"><i class="bi bi-box me-1"></i>Batch</span>
+                                                    <span x-show="p.expiry_tracking" class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 9px;"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm shadow-sm flex-nowrap mx-auto" style="width: 110px;">
+                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty > 1) p._qty--"><i class="bi bi-dash"></i></button>
+                                                    <input type="number" class="form-control text-center fw-bold px-1 no-spinners" x-model.number="p._qty" min="1" :max="p.available_stock || 9999" placeholder="Qty">
+                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty < (p.available_stock || 9999)) p._qty++"><i class="bi bi-plus"></i></button>
+                                                </div>
                                             </td>
                                             <td class="text-center">
-                                                <button class="btn btn-sm w-100" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" title="Add to cart">
-                                                    <i class="bi" :class="isInCart(p.id) ? 'bi-plus-circle-fill' : 'bi-cart-plus'"></i>
+                                                <button class="btn btn-sm shadow-sm w-100 transition-all fw-bold text-nowrap" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'">
+                                                    <i class="bi" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i> 
+                                                    <span x-text="isInCart(p.id) ? 'Add More' : 'Add'"></span>
                                                 </button>
                                             </td>
                                         </tr>
@@ -468,6 +490,10 @@
                                 <div class="d-flex align-items-center justify-content-between mt-2">
                                     <span class="text-muted fw-medium" style="font-size: 12px;" x-text="'Rs ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
                                     <span class="fw-bold text-success fs-6" x-text="'Rs ' + Number(lineTotal(item)).toFixed(2)"></span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between mt-1" x-show="item.taxRate > 0">
+                                    <span class="text-muted" style="font-size: 11px;" x-text="'+ GST ' + item.taxRate + '%'"></span>
+                                    <span class="text-muted" style="font-size: 11px;" x-text="'Rs ' + Number(lineTotal(item) * (item.taxRate / 100)).toFixed(2)"></span>
                                 </div>
                             </div>
                         </div>
@@ -559,6 +585,10 @@
                                         <div class="d-flex align-items-center justify-content-between mt-2">
                                             <span class="text-muted fw-medium" style="font-size: 12px;" x-text="'Rs ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
                                             <span class="fw-bold text-success fs-6" x-text="'Rs ' + Number(lineTotal(item)).toFixed(2)"></span>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between mt-1" x-show="item.taxRate > 0">
+                                            <span class="text-muted" style="font-size: 11px;" x-text="'+ GST ' + item.taxRate + '%'"></span>
+                                            <span class="text-muted" style="font-size: 11px;" x-text="'Rs ' + Number(lineTotal(item) * (item.taxRate / 100)).toFixed(2)"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -769,7 +799,7 @@
                                 </div>
                             </button>
 
-                            <div x-show="expandedOrderId === order.id" x-cloak class="border-top bg-white">
+                            <div x-show="expandedOrderId === order.id" x-cloak class="border-top bg-body">
                                 <div class="p-4">
                                     <div class="row g-3 mb-4">
                                         <div class="col-lg-4">
@@ -856,7 +886,7 @@
                                 </div>
                             </button>
 
-                            <div x-show="expandedOrderId === order.id" x-cloak class="border-top bg-white">
+                            <div x-show="expandedOrderId === order.id" x-cloak class="border-top bg-body">
                                 <div class="p-4">
                                     <div class="row g-3 mb-4">
                                         <div class="col-lg-6">
@@ -1090,8 +1120,241 @@
                 </div>
             </div>
         </div>
+    </div>
     
-</div>
+    <!-- Product Details Modal -->
+    <div class="modal fade" id="productDetailsModal" tabindex="-1" aria-labelledby="productDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content bg-body border-0 shadow-lg" x-show="selectedProductForModal">
+                <!-- Header -->
+                <div class="modal-header bg-body-tertiary border-bottom py-3 px-4">
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <h5 class="modal-title fw-bold mb-0" id="productDetailsModalLabel" x-text="selectedProductForModal ? selectedProductForModal.name : ''"></h5>
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" x-text="selectedProductForModal ? selectedProductForModal.sku : ''"></span>
+                        <span class="badge" :class="selectedProductForModal && selectedProductForModal.status === 'published' ? 'bg-success' : 'bg-warning text-dark'" x-text="selectedProductForModal ? selectedProductForModal.status : ''"></span>
+                        <span class="spinner-border spinner-border-sm text-primary ms-2" role="status" x-show="productModalLoading"></span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <!-- Body: scrollable single column -->
+                <div class="modal-body p-0" style="overflow-y: auto;">
+                    <div class="row g-0" style="min-height: 100%;">
+                        <!-- Left: Image & Meta (fixed panel) -->
+                        <div class="col-md-4 bg-body-tertiary border-end p-3" style="position: sticky; top: 0; height: fit-content; align-self: flex-start;">
+                            <div class="card border border-secondary border-opacity-25 mb-3 rounded-4 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
+                                <img :src="selectedProductForModal ? (selectedProductForModal.image_url || '/assets/images/product-placeholder.svg') : ''" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm" x-show="selectedProductForModal && selectedProductForModal.default_discount > 0" x-text="selectedProductForModal ? selectedProductForModal.default_discount + (selectedProductForModal.default_discount_type === 'percent' ? '%' : '') + ' OFF' : ''"></span>
+                            </div>
+                            <div x-show="selectedProductForModal">
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <span x-show="selectedProductForModal && selectedProductForModal.category" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-2 px-3"><i class="bi bi-tag-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.category : ''"></span></span>
+                                    <span x-show="selectedProductForModal && selectedProductForModal.brand" class="badge bg-dark bg-opacity-10 text-dark border py-2 px-3"><i class="bi bi-award-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.brand : ''"></span></span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-borderless small mb-0 text-muted">
+                                        <tbody>
+                                            <tr x-show="selectedProductForModal && selectedProductForModal.barcode"><th class="ps-0" style="width:100px;">Barcode</th><td x-text="selectedProductForModal ? selectedProductForModal.barcode : ''"></td></tr>
+                                            <tr x-show="selectedProductForModal && selectedProductForModal.weight"><th class="ps-0">Weight</th><td x-text="selectedProductForModal ? selectedProductForModal.weight : ''"></td></tr>
+                                            <tr x-show="selectedProductForModal && selectedProductForModal.uom"><th class="ps-0">UOM</th><td x-text="selectedProductForModal ? selectedProductForModal.uom : ''"></td></tr>
+                                            <tr x-show="selectedProductForModal && selectedProductForModal.grade"><th class="ps-0">Grade</th><td x-text="selectedProductForModal ? selectedProductForModal.grade : ''"></td></tr>
+                                            <tr x-show="selectedProductForModal && selectedProductForModal.warehouse"><th class="ps-0">Warehouse</th><td x-text="selectedProductForModal ? selectedProductForModal.warehouse : ''"></td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: All Data Cards (scrolls with modal-body) -->
+                        <div class="col-md-8 p-3">
+
+                            <!-- Pricing Card -->
+                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
+                                        <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Pricing Breakdown</h6>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-4 border-end border-secondary border-opacity-25">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Selling Price</label>
+                                            <div class="fw-black text-primary" style="font-size:18px;" x-text="selectedProductForModal ? 'Rs ' + parseFloat(selectedProductForModal.selling_price||0).toFixed(2) : ''"></div>
+                                            <div class="text-muted text-decoration-line-through" style="font-size:10px;" x-show="selectedProductForModal && selectedProductForModal.mrp > selectedProductForModal.selling_price" x-text="selectedProductForModal ? 'MRP Rs ' + parseFloat(selectedProductForModal.mrp||0).toFixed(2) : ''"></div>
+                                        </div>
+                                        <div class="col-4 border-end border-secondary border-opacity-25 ps-3">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Purchase Price</label>
+                                            <div class="fw-bold text-body-emphasis" style="font-size:14px;" x-text="selectedProductForModal ? 'Rs ' + parseFloat(selectedProductForModal.purchase_price||0).toFixed(2) : ''"></div>
+                                        </div>
+                                        <div class="col-4 ps-3">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Profit Margin</label>
+                                            <div class="fw-bold text-success" style="font-size:14px;" x-text="selectedProductForModal && selectedProductForModal.selling_price > 0 && selectedProductForModal.purchase_price > 0 ? (((selectedProductForModal.selling_price - selectedProductForModal.purchase_price) / selectedProductForModal.purchase_price) * 100).toFixed(1) + '%' : 'N/A'"></div>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 pt-2 border-top border-secondary border-opacity-25">
+                                        <div class="col-6 border-end border-secondary border-opacity-25">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Taxes</label>
+                                            <div class="fw-bold text-body-emphasis" style="font-size:13px;" x-text="selectedProductForModal && selectedProductForModal.tax_rate > 0 ? (selectedProductForModal.tax_rate + '%') : 'No Tax'"></div>
+                                        </div>
+                                        <div class="col-6 ps-3">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">HSN / SAC Code</label>
+                                            <div class="fw-bold text-body-emphasis" style="font-size:13px;" x-text="selectedProductForModal ? (selectedProductForModal.hsn_code || 'Not Set') : ''"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Inventory & Specs Row -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="card h-100 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
+                                                <div class="bg-warning bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;color:#ffc107;"><i class="bi bi-box-seam-fill" style="font-size:12px;"></i></div>
+                                                <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Inventory</h6>
+                                            </div>
+                                            <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary border-opacity-25">
+                                                <div>
+                                                    <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="selectedProductForModal ? (selectedProductForModal.available_stock + ' ' + (selectedProductForModal.uom || 'Units')) : ''"></div>
+                                                    <div class="text-muted" style="font-size:10px;">Available to Order</div>
+                                                </div>
+                                                <span class="badge" style="font-size:10px;" :class="selectedProductForModal && selectedProductForModal.available_stock > (selectedProductForModal.min_stock_level || 10) ? 'bg-success' : (selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'bg-warning text-dark' : 'bg-danger')" x-text="selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'In Stock' : 'Out of Stock'"></span>
+                                            </div>
+                                            <div class="row text-center g-1 mb-2">
+                                                <div class="col-4"><div class="fw-semibold" style="font-size:13px;" x-text="selectedProductForModal ? (selectedProductForModal.physical_available || selectedProductForModal.stock) : 0"></div><div class="text-muted" style="font-size:9px;">Physical</div></div>
+                                                <div class="col-4 border-start border-end border-secondary border-opacity-25"><div class="fw-semibold text-warning" style="font-size:13px;" x-text="selectedProductForModal ? ((selectedProductForModal.reserved_qty || 0) + (selectedProductForModal.pending_qty || 0)) : 0"></div><div class="text-muted" style="font-size:9px;">Reserved</div></div>
+                                                <div class="col-4"><div class="fw-semibold text-danger" style="font-size:13px;" x-text="selectedProductForModal ? selectedProductForModal.min_stock_level : 0"></div><div class="text-muted" style="font-size:9px;">Min Level</div></div>
+                                            </div>
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Tracking</label>
+                                            <div class="list-group list-group-flush border border-secondary border-opacity-25 rounded-3">
+                                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-box me-1"></i>Batch</span><span class="badge" style="font-size:9px;" :class="selectedProductForModal && selectedProductForModal.batch_tracking ? 'bg-success' : 'bg-secondary'" x-text="selectedProductForModal && selectedProductForModal.batch_tracking ? 'ON' : 'OFF'"></span></div>
+                                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-calendar-x me-1"></i>Expiry</span><span class="badge" style="font-size:9px;" :class="selectedProductForModal && selectedProductForModal.expiry_tracking ? 'bg-success' : 'bg-secondary'" x-text="selectedProductForModal && selectedProductForModal.expiry_tracking ? 'ON' : 'OFF'"></span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
+                                                <div class="bg-info bg-opacity-10 text-info rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-list-stars" style="font-size:12px;"></i></div>
+                                                <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Technical Specs</h6>
+                                            </div>
+                                            <div x-show="productModalLoading" class="text-center p-3 text-muted"><div class="spinner-border spinner-border-sm mb-1" role="status"></div><div style="font-size:10px;">Loading...</div></div>
+                                            <div x-show="!productModalLoading">
+                                                <template x-if="selectedProductForModal && selectedProductForModal.attributes && selectedProductForModal.attributes.length > 0">
+                                                    <table class="table table-sm table-hover mb-0" style="font-size:11px;">
+                                                        <tbody>
+                                                            <template x-for="attr in selectedProductForModal.attributes" :key="attr.id">
+                                                                <tr><th class="ps-2 text-muted w-50 border-0" x-text="attr.attribute"></th><td class="pe-2 fw-semibold text-end border-0"><div class="d-flex align-items-center justify-content-end gap-1"><span x-show="attr.color_code" class="rounded-circle border" :style="'width:8px;height:8px;background-color:'+attr.color_code"></span><span x-text="attr.value"></span></div></td></tr>
+                                                            </template>
+                                                        </tbody>
+                                                    </table>
+                                                </template>
+                                                <template x-if="!selectedProductForModal || !selectedProductForModal.attributes || selectedProductForModal.attributes.length === 0">
+                                                    <div class="text-center text-muted py-3" style="font-size:10px;">No specifications recorded.</div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Details & Usage -->
+                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
+                                        <div class="bg-secondary bg-opacity-10 text-secondary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-file-text-fill" style="font-size:12px;"></i></div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Details & Usage</h6>
+                                    </div>
+                                    <div x-show="productModalLoading" class="text-center p-3 text-muted"><div class="spinner-border spinner-border-sm" role="status"></div></div>
+                                    <div x-show="!productModalLoading" class="row g-3">
+                                        <div class="col-md-6 border-end border-secondary border-opacity-25">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Product Description</label>
+                                            <div style="font-size:11px;" x-show="selectedProductForModal && selectedProductForModal.description" x-html="selectedProductForModal ? selectedProductForModal.description : ''"></div>
+                                            <div style="font-size:11px;" x-show="!selectedProductForModal || !selectedProductForModal.description" class="text-muted fst-italic">No description available.</div>
+                                        </div>
+                                        <div class="col-md-6 ps-3">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Application / Dosage</label>
+                                            <div style="font-size:11px;" x-show="selectedProductForModal && selectedProductForModal.application_instructions" x-html="selectedProductForModal ? selectedProductForModal.application_instructions : ''"></div>
+                                            <div style="font-size:11px;" x-show="!selectedProductForModal || !selectedProductForModal.application_instructions" class="text-muted fst-italic">No instructions available.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Promotions -->
+                            <div x-show="productModalOffers && productModalOffers.length > 0" class="card mb-3 border border-primary border-opacity-25 shadow-sm rounded-4" style="background-color:var(--bs-primary-bg-subtle);">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-primary border-opacity-25">
+                                        <div class="bg-primary text-white rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-stars" style="font-size:12px;"></i></div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-primary" style="font-size:11px;letter-spacing:1px;">Available Promotions</h6>
+                                    </div>
+                                    <div class="row g-2">
+                                        <template x-for="offer in productModalOffers" :key="'pmo-'+offer.id">
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-center gap-2 p-2 rounded-3 border border-primary border-opacity-10 bg-body">
+                                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:28px;height:28px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
+                                                    <div class="min-w-0">
+                                                        <div class="fw-bold text-body-emphasis text-truncate" style="font-size:11px;" x-text="offer.name"></div>
+                                                        <div class="text-muted text-truncate" style="font-size:9px;" x-text="offer.type === 'percentage' ? offer.value + '% off' : 'Flat Rs ' + offer.value + ' off'"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                        <!-- end col-md-8 -->
+                    </div>
+                    <!-- end row -->
+                </div>
+                <!-- end modal-body -->
+
+                <!-- Footer -->
+                <div class="modal-footer bg-body-tertiary border-top p-3 d-flex justify-content-between align-items-center">
+                    <div class="text-muted small">
+                        <span x-show="selectedProductForModal && isInCart(selectedProductForModal.id)" class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Currently in cart</span>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-light me-2 fw-medium" data-bs-dismiss="modal">Close</button>
+                        <button x-show="selectedProductForModal" type="button" class="btn btn-primary fw-bold px-4" @click="selectedProductForModal && addToCart(selectedProductForModal); bootstrap.Modal.getInstance(document.getElementById('productDetailsModal')).hide();">
+                            <i class="bi" :class="selectedProductForModal && isInCart(selectedProductForModal.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
+                            <span x-text="selectedProductForModal && isInCart(selectedProductForModal.id) ? 'Add More' : 'Add to Cart'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<style>
+    /* Hide number input spin buttons */
+    .no-spinners::-webkit-inner-spin-button,
+    .no-spinners::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    .no-spinners {
+        -moz-appearance: textfield;
+    }
+
+    /* Product Details Modal — two-column layout */
+    #productDetailsModal .modal-body > .row {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+    }
+    #productDetailsModal .modal-body > .row > .col-md-4 {
+        min-width: 300px;
+        max-width: 300px;
+    }
+    #productDetailsModal .modal-body > .row > .col-md-8 {
+        flex: 1;
+        min-width: 0;
+    }
+</style>
 
 @push('scripts')
 @php
@@ -1115,7 +1378,7 @@
 function createOrderApp(initialCustomer = null, initialOrder = null) {
     return {
         activeTab: 'customer',
-        viewMode: 'grid',
+        viewMode: 'table',
         partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '{{ $warehouses->first()->id ?? '' }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale',
         orderDate: new Date().toISOString().substring(0,10),
         isDraft: false, futureOrderDate: '',
@@ -1131,6 +1394,11 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         activeOffers: @json($offersArray),
         activeCoupons: @json($activeCoupons),
         couponInputTemp: '',
+
+        selectedProductForModal: null,
+        productModalOffers: [],
+        productModalLoading: false,
+        productModalTab: 'overview',
 
         customerDetails: initialCustomer || window.__INITIAL_ORDER_CUSTOMER__ || null,
         bottomTab: 'history',
@@ -1242,6 +1510,23 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     this.billingAddressId = this.shippingAddressId;
                 }
             } catch(e) { console.error(e); }
+        },
+
+        async openProductModal(p) {
+            this.selectedProductForModal = p;
+            this.productModalTab = 'overview';
+            this.productModalOffers = this.activeOffers.filter(o => o.product_id === p.id || o.product_id === null);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('productDetailsModal')).show();
+            
+            this.productModalLoading = true;
+            try {
+                const res = await fetch(`/products/${p.id}`, { headers: {'Accept':'application/json'} });
+                const json = await res.json();
+                if (json && json.data) {
+                    this.selectedProductForModal = { ...p, ...json.data };
+                }
+            } catch(e) { console.error(e); }
+            this.productModalLoading = false;
         },
 
         applyOrderForEdit(order) {

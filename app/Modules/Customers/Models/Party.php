@@ -70,6 +70,8 @@ class Party extends Model
         'is_blacklisted'      => 'boolean',
         'kyc_completed'       => 'boolean',
         'crops'               => 'array',
+        'irrigation_type'     => 'array',
+        'source'              => 'array',
         'tags'                => 'array',
         'credit_valid_till'   => 'date',
         'first_purchase_at'   => 'date',

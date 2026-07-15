@@ -171,15 +171,19 @@
                                                 <input type="text" name="company_name" x-model="form.company_name" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;">
                                             </div>
                                         </div>
-                                        <div class="col-sm-4">
+                                        <div class="col-sm-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">GST Number</label>
                                             <input type="text" name="gst_no" x-model="form.gst_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
                                         </div>
-                                        <div class="col-sm-4">
+                                        <div class="col-sm-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">PAN Number</label>
                                             <input type="text" name="pan_no" x-model="form.pan_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
                                         </div>
-                                        <div class="col-sm-4">
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Tax No (Other)</label>
+                                            <input type="text" name="tax_no" x-model="form.tax_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
+                                        </div>
+                                        <div class="col-sm-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Aadhaar (Last 4)</label>
                                             <input type="text" name="aadhaar_last4" x-model="form.aadhaar_last4" class="form-control form-control-sm fw-semibold font-monospace" style="font-size: 12px; letter-spacing: 2px;" maxlength="4">
                                         </div>
@@ -352,7 +356,7 @@ document.addEventListener('alpine:init', () => {
         customerId: null,
         form: {
             firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', phone_number_2: '', relative_mobile: '', relative_phone: '',
-            category: '', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
+            category: '', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
             land_area: '', land_unit: '', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
         },
 
@@ -388,7 +392,7 @@ document.addEventListener('alpine:init', () => {
         resetForm() {
             this.form = {
                 firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', phone_number_2: '', relative_mobile: '', relative_phone: '',
-                category: '', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
+                category: '', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
                 land_area: '', land_unit: '', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
             };
             this.selectedSources = [];
