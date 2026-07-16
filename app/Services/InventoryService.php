@@ -354,8 +354,9 @@ class InventoryService
             $maxReservable = $rawAvailable;
 
             if ($maxReservable < $quantity) {
+                $productName = \App\Modules\Catalog\Models\Product::where('id', $productId)->value('name') ?? "ID: {$productId}";
                 throw ValidationException::withMessages([
-                    'quantity' => "Not enough stock to reserve. Available: {$maxReservable}, Requested: {$quantity}.",
+                    'quantity' => "Not enough stock for product '{$productName}'. Available: {$maxReservable}, Requested: {$quantity}.",
                 ]);
             }
 

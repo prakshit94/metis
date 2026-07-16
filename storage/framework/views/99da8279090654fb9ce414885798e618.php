@@ -284,11 +284,13 @@
             </div>
 
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <th style="width: 40px;">
-                                <input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event.target.checked)" :checked="selectedItems.length === currentItems.length && currentItems.length > 0">
+                                <div class="form-check m-0">
+                                    <input class="form-check-input" type="checkbox" @change="$event.isTrusted && toggleAll($event.target.checked)" :checked="selectedItems.length === currentItems.length && currentItems.length > 0">
+                                </div>
                             </th>
                             <th scope="col" role="button" tabindex="0" @click="sortBy('name')" @keydown.enter.prevent="sortBy('name')" @keydown.space.prevent="sortBy('name')" :aria-sort="sortField === 'name' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'" class="sortable">
                                 Name
@@ -305,9 +307,11 @@
                     </thead>
                     <tbody>
                         <template x-for="item in currentItems" :key="`${activeTab}-${item.id}`">
-                            <tr :class="{ 'selected': selectedItems.includes(item.id) }">
+                            <tr :class="{ 'table-active': selectedItems.includes(item.id) }">
                                 <td>
-                                    <input type="checkbox" class="user-select-checkbox" :value="item.id" :checked="selectedItems.includes(item.id)" @change="toggleItem(item.id)">
+                                    <div class="form-check m-0">
+                                        <input class="form-check-input" type="checkbox" :value="item.id" :checked="selectedItems.includes(item.id)" @change="toggleItem(item.id)">
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -409,22 +413,28 @@
 </div>
 
 <div class="modal fade user-management" id="accessModal" tabindex="-1" aria-labelledby="accessModalLabel">
-    <div class="modal-dialog modal-lg" x-data="accessForm">
-        <div class="modal-content">
-            <form @submit.prevent="saveItem()">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="accessModalLabel" x-text="title"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" x-data="accessForm">
+        <form class="modal-content border-0 shadow-lg" @submit.prevent="saveItem()">
+                <div class="modal-header bg-primary bg-gradient text-white border-bottom-0 pb-4">
+                    <h5 class="modal-title d-flex align-items-center" id="accessModalLabel">
+                        <i class="bi me-2 fs-4" :class="type === 'roles' ? 'bi-shield-lock' : 'bi-key'"></i>
+                        <span x-text="title"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="row g-3">
+                <div class="modal-body position-relative" style="margin-top: -15px; border-radius: 12px 12px 0 0; background: var(--bs-body-bg);">
+                    <div class="row g-4 pt-2">
                         <div class="col-md-8">
-                            <label class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="form.name" required placeholder="e.g. user-create">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="accessName" x-model="form.name" required placeholder="e.g. user-create">
+                                <label for="accessName">Name <span class="text-danger">*</span></label>
+                            </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Guard</label>
-                            <input type="text" class="form-control" x-model="form.guard_name" placeholder="web">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="accessGuard" x-model="form.guard_name" placeholder="web">
+                                <label for="accessGuard">Guard</label>
+                            </div>
                         </div>
                         <template x-if="type === 'roles'">
                             <div class="col-12">
@@ -449,46 +459,65 @@
                                     </div>
                                 </template>
                                 <template x-if="!permissionsLoading && !permissionsError">
-                                    <div>
-                                        <div class="accordion" id="permissionGroupsAccordion" x-show="groupedPermissions.length > 0">
+                                    <div class="permissions-container mt-3">
+                                        <div class="row g-3" x-show="groupedPermissions.length > 0">
                                             <template x-for="group in groupedPermissions" :key="group.key">
-                                                <div class="accordion-item">
-                                                    <h2 class="accordion-header" :id="`permission-group-heading-${group.key}`">
-                                                        <button class="accordion-button py-2" type="button" data-bs-toggle="collapse" :data-bs-target="`#permission-group-${group.key}`" aria-expanded="true" :aria-controls="`permission-group-${group.key}`">
-                                                            <span class="d-flex align-items-center justify-content-between w-100 pe-3">
-                                                                <span>
-                                                                    <i class="bi me-2" :class="`bi-${group.icon}`"></i>
-                                                                    <span x-text="group.label"></span>
-                                                                </span>
-                                                                <span class="badge bg-primary-subtle text-primary" x-text="`${selectedPermissionCount(group)} / ${group.items.length}`"></span>
-                                                            </span>
-                                                        </button>
-                                                    </h2>
-                                                    <div class="accordion-collapse collapse show" :id="`permission-group-${group.key}`" :aria-labelledby="`permission-group-heading-${group.key}`">
-                                                        <div class="accordion-body">
-                                                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                                                <button type="button" class="btn btn-sm btn-outline-primary" @click="togglePermissionGroup(group)">
-                                                                    <i class="bi me-1" :class="isPermissionGroupSelected(group) ? 'bi-dash-circle' : 'bi-check2-square'"></i>
-                                                                    <span x-text="isPermissionGroupSelected(group) ? 'Unselect Group' : 'Select Group'"></span>
-                                                                </button>
-                                                                <span class="small text-muted" x-text="`${group.items.length} permission${group.items.length === 1 ? '' : 's'}`"></span>
+                                                <div class="col-md-12">
+                                                    <div class="card border-0 shadow-sm overflow-hidden h-100">
+                                                        <div class="card-header bg-body-tertiary border-0 py-3 d-flex justify-content-between align-items-center cursor-pointer" 
+                                                             data-bs-toggle="collapse" 
+                                                             :data-bs-target="`#permission-group-${group.key}`" 
+                                                             aria-expanded="true" 
+                                                             :aria-controls="`permission-group-${group.key}`">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 rounded-3" style="width: 40px; height: 40px;">
+                                                                    <i class="bi fs-5" :class="`bi-${group.icon}`"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="mb-0 fw-bold" x-text="group.label"></h6>
+                                                                    <small class="text-muted" x-text="`${group.items.length} permissions`"></small>
+                                                                </div>
                                                             </div>
-                                                            <div class="row g-2">
-                                                                <template x-for="permission in group.items" :key="permission.id">
-                                                                    <div class="col-md-6">
-                                                                        <label class="d-flex align-items-start gap-2 small border rounded p-2 h-100" :for="`perm-${permission.id}`">
-                                                                            <input class="user-select-checkbox flex-shrink-0 mt-1"
-                                                                                   type="checkbox"
-                                                                                   :id="`perm-${permission.id}`"
-                                                                                   :value="permission.name"
-                                                                                   x-model="form.permissions">
-                                                                            <span>
-                                                                                <span class="fw-medium d-block" x-text="permission.actionLabel"></span>
-                                                                                <span class="text-muted" x-text="permission.name"></span>
-                                                                            </span>
-                                                                        </label>
+                                                            <div class="d-flex align-items-center gap-3">
+                                                                <span class="badge rounded-pill" 
+                                                                      :class="selectedPermissionCount(group) > 0 ? 'bg-primary' : 'bg-secondary bg-opacity-25 text-secondary'" 
+                                                                      x-text="`${selectedPermissionCount(group)} / ${group.items.length}`">
+                                                                </span>
+                                                                <i class="bi bi-chevron-down text-muted transition-all"></i>
+                                                            </div>
+                                                        </div>
+                                                        <div class="collapse show" :id="`permission-group-${group.key}`">
+                                                            <div class="card-body bg-body">
+                                                                <div class="d-flex justify-content-end mb-3 pb-2 border-bottom">
+                                                                    <div class="form-check form-switch">
+                                                                        <input class="form-check-input cursor-pointer" type="checkbox" role="switch" :id="`toggle-all-${group.key}`" 
+                                                                               :checked="isPermissionGroupSelected(group)" 
+                                                                               @change="togglePermissionGroup(group)">
+                                                                        <label class="form-check-label small fw-medium text-muted cursor-pointer" :for="`toggle-all-${group.key}`" 
+                                                                               x-text="isPermissionGroupSelected(group) ? 'Deselect All' : 'Select All'"></label>
                                                                     </div>
-                                                                </template>
+                                                                </div>
+                                                                <div class="row g-3">
+                                                                    <template x-for="permission in group.items" :key="permission.id">
+                                                                        <div class="col-md-6 col-lg-4">
+                                                                            <div class="position-relative border rounded-3 p-3 h-100 transition-all hover-border-primary" 
+                                                                                 :class="{'border-primary bg-primary bg-opacity-10': form.permissions.includes(permission.name)}">
+                                                                                <div class="form-check form-switch mb-0">
+                                                                                    <input class="form-check-input cursor-pointer" 
+                                                                                           type="checkbox" 
+                                                                                           role="switch" 
+                                                                                           :id="`perm-${permission.id}`" 
+                                                                                           :value="permission.name" 
+                                                                                           x-model="form.permissions">
+                                                                                    <label class="form-check-label w-100 cursor-pointer ps-2" :for="`perm-${permission.id}`">
+                                                                                        <span class="fw-semibold d-block text-body" x-text="permission.actionLabel"></span>
+                                                                                        <span class="small text-muted d-block mt-1" x-text="permission.name" style="word-break: break-all;"></span>
+                                                                                    </label>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -504,15 +533,14 @@
                         </template>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" :disabled="saving">
-                        <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
-                        <span x-text="editingId ? 'Save Changes' : 'Create'"></span>
+                <div class="modal-footer bg-body-tertiary border-top-0 rounded-bottom-3">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4 shadow-sm" :disabled="saving">
+                        <span x-show="saving" class="spinner-border spinner-border-sm me-2"></span>
+                        <span x-text="editingId ? 'Save Changes' : 'Create Access'"></span>
                     </button>
                 </div>
-            </form>
-        </div>
+        </form>
     </div>
 </div>
 

@@ -447,6 +447,8 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->confirmOrder($order);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
@@ -468,6 +470,8 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
@@ -489,6 +493,8 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->dispatchOrder($order);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
@@ -505,6 +511,8 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $orderService->updateStatus($order, 'processing');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
@@ -521,6 +529,8 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->deliverOrder($order);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
@@ -537,6 +547,8 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->cancelOrder($order);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
@@ -553,6 +565,8 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->returnOrder($order);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
@@ -580,8 +594,9 @@ class OrderController extends Controller implements HasMiddleware
         $targetStatus = $validated['status'];
         $count = 0;
         $skipped = 0;
+        $errors = [];
 
-        DB::transaction(function () use ($ids, $targetStatus, $validated, $inventoryService, $orderService, &$count, &$skipped) {
+        DB::transaction(function () use ($ids, $targetStatus, $validated, $inventoryService, $orderService, &$count, &$skipped, &$errors) {
             $orders = Order::whereIn('id', $ids)->lockForUpdate()->get();
 
             foreach ($orders as $order) {
@@ -631,13 +646,24 @@ class OrderController extends Controller implements HasMiddleware
                             $skipped++;
                         }
                     }
+                } catch (\Illuminate\Validation\ValidationException $e) {
+                    $errors[] = "Order #{$order->order_no}: " . collect($e->validator->errors()->all())->first();
+                    $skipped++;
                 } catch (\Exception $e) {
+                    $errors[] = "Order #{$order->order_no}: " . $e->getMessage();
                     $skipped++;
                 }
             }
         });
 
         $msg = "Bulk status update completed. Success: {$count}, Skipped: {$skipped}.";
+        if (!empty($errors)) {
+            // Include up to 3 errors to avoid excessively long toast messages
+            $msg .= " Errors: " . implode(' ', array_slice($errors, 0, 3));
+            if (count($errors) > 3) {
+                $msg .= " (and " . (count($errors) - 3) . " more)";
+            }
+        }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['success' => true, 'message' => $msg]);

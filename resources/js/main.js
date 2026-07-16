@@ -538,22 +538,25 @@ class AdminApp {
         navbarPages.filter(p => p.title.toLowerCase().includes(query.toLowerCase())),
     }));
 
-    // Stats counter — tracked interval so it can be cleaned up on pagehide
-    Alpine.data('statsCounter', (initialValue = 0, increment = 1) => ({
-      value: initialValue,
-      _intervalId: null,
-
+    // Stats counter — animates from 0 to target on load
+    Alpine.data('statsCounter', (targetValue = 0) => ({
+      value: 0,
+      
       init() {
-        this._intervalId = setInterval(() => {
-          this.value += Math.floor(Math.random() * increment) + 1;
-        }, 5000);
-      },
-
-      destroy() {
-        if (this._intervalId !== null) {
-          clearInterval(this._intervalId);
-          this._intervalId = null;
-        }
+        const duration = 1000;
+        const steps = 30;
+        const stepValue = targetValue / steps;
+        let currentStep = 0;
+        
+        const timer = setInterval(() => {
+          this.value = Math.floor(this.value + stepValue);
+          currentStep++;
+          
+          if (currentStep >= steps) {
+            this.value = targetValue;
+            clearInterval(timer);
+          }
+        }, duration / steps);
       },
     }));
 

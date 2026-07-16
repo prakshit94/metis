@@ -35,7 +35,7 @@
 
                 <!-- Stats Cards with Alpine.js -->
                 <div class="row g-3 g-lg-4 mb-4">
-                    <div class="col-sm-6 col-xl-3" x-data="statsCounter(12426, 5)">
+                    <div class="col-sm-6 col-xl-3" x-data="statsCounter({{ $totalCustomers }}, 5)">
                         <div class="card stats-card">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
@@ -45,8 +45,8 @@
                                         </div>
                                     </div>
                                     <div class="flex-grow-1 ms-3">
-                                        <p class="h6 mb-0 text-muted">Total Users</p>
-                                        <div class="h3 mb-0" aria-live="polite" data-stat-value><span x-text="value.toLocaleString()">12,426</span></div>
+                                        <p class="h6 mb-0 text-muted">Total Customers</p>
+                                        <div class="h3 mb-0"><span x-text="value.toLocaleString()">{{ number_format($totalCustomers) }}</span></div>
                                         <small class="text-success-emphasis">
                                             <i class="bi bi-arrow-up"></i> +12.5%
                                         </small>
@@ -56,7 +56,7 @@
                         </div>
                     </div>
 
-                    <div class="col-sm-6 col-xl-3">
+                    <div class="col-sm-6 col-xl-3" x-data="statsCounter({{ $totalRevenue }}, 5)">
                         <div class="card stats-card">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
@@ -67,7 +67,7 @@
                                     </div>
                                     <div class="flex-grow-1 ms-3">
                                         <p class="h6 mb-0 text-muted">Revenue</p>
-                                        <h3 class="mb-0">$54,320</h3>
+                                        <h3 class="mb-0">Rs <span x-text="value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})">{{ number_format($totalRevenue, 2) }}</span></h3>
                                         <small class="text-success-emphasis">
                                             <i class="bi bi-arrow-up"></i> +8.2%
                                         </small>
@@ -77,7 +77,7 @@
                         </div>
                     </div>
 
-                    <div class="col-sm-6 col-xl-3">
+                    <div class="col-sm-6 col-xl-3" x-data="statsCounter({{ $totalOrders }}, 5)">
                         <div class="card stats-card">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
@@ -88,7 +88,7 @@
                                     </div>
                                     <div class="flex-grow-1 ms-3">
                                         <p class="h6 mb-0 text-muted">Orders</p>
-                                        <h3 class="mb-0">1,852</h3>
+                                        <h3 class="mb-0"><span x-text="value.toLocaleString()">{{ number_format($totalOrders) }}</span></h3>
                                         <small class="text-danger-emphasis">
                                             <i class="bi bi-arrow-down"></i> -2.1%
                                         </small>
@@ -98,7 +98,7 @@
                         </div>
                     </div>
 
-                    <div class="col-sm-6 col-xl-3">
+                    <div class="col-sm-6 col-xl-3" x-data="statsCounter({{ $totalProducts }}, 5)">
                         <div class="card stats-card">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
@@ -108,8 +108,8 @@
                                         </div>
                                     </div>
                                     <div class="flex-grow-1 ms-3">
-                                        <p class="h6 mb-0 text-muted">Avg. Response</p>
-                                        <h3 class="mb-0">2.3s</h3>
+                                        <p class="h6 mb-0 text-muted">Total Products</p>
+                                        <h3 class="mb-0"><span x-text="value.toLocaleString()">{{ number_format($totalProducts) }}</span></h3>
                                         <small class="text-success-emphasis">
                                             <i class="bi bi-arrow-up"></i> +5.4%
                                         </small>
@@ -256,9 +256,12 @@
                             <div class="card-body">
                                 <div id="salesByLocationChart" style="min-height: 400px; width: 100%;"></div>
                             </div>
-                        </div>
                     </div>
                 </div>
+
+                <script>
+                    window.dashboardData = @json($dashboardData);
+                </script>
 @endsection
 
 @push('modals')
