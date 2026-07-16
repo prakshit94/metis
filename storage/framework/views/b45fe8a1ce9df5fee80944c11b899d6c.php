@@ -625,13 +625,13 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content shadow-lg border-0 rounded-4" x-show="selectedOrder">
             <template x-if="selectedOrder">
-                <div class="d-flex flex-column h-100 bg-white rounded-4 overflow-hidden">
+                <div class="d-flex flex-column h-100 bg-body rounded-4 overflow-hidden">
                     
                     <!-- Header with Gradient and Status -->
-                    <div class="modal-header border-bottom-0 pb-4 pt-4 px-4 px-lg-5" style="background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);">
+                    <div class="modal-header border-bottom-0 pb-4 pt-4 px-4 px-lg-5 bg-body-tertiary">
                         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between w-100 gap-3">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="bg-white text-primary p-3 rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                <div class="bg-body-secondary text-primary p-3 rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
                                     <i class="bi bi-receipt fs-3"></i>
                                 </div>
                                 <div>
@@ -649,16 +649,16 @@
                                     <i class="bi bi-circle-fill me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
                                     <span x-text="selectedOrder.statusLabel"></span>
                                 </span>
-                                <button type="button" class="btn-close shadow-sm bg-white rounded-circle p-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <button type="button" class="btn-close shadow-sm bg-body-secondary rounded-circle p-2" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="modal-body p-4 p-lg-5 bg-body-tertiary">
-                        <div class="row g-4 g-lg-5">
+                    <div class="modal-body p-0" style="overflow-y: auto;">
+                        <div class="row g-0" style="min-height: 100%;">
                             
                             <!-- Left Column: Details & Items -->
-                            <div class="col-lg-8">
+                            <div class="col-lg-8 p-4 p-lg-5 bg-body-tertiary">
                                 <!-- Quick Stats Row -->
                                 <div class="row g-3 mb-4">
                                     <div class="col-sm-4">
@@ -667,7 +667,7 @@
                                                 <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3"><i class="bi bi-credit-card fs-5"></i></div>
                                                 <div>
                                                     <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Payment</p>
-                                                    <p class="fw-bold mb-0 text-dark" x-text="selectedOrder.paymentMethod || 'N/A'"></p>
+                                                    <p class="fw-bold mb-0 text-body-emphasis" x-text="selectedOrder.paymentMethod || 'N/A'"></p>
                                                 </div>
                                             </div>
                                         </div>
@@ -678,7 +678,7 @@
                                                 <div class="bg-success bg-opacity-10 text-success p-2 rounded-3"><i class="bi bi-tag fs-5"></i></div>
                                                 <div>
                                                     <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Order Type</p>
-                                                    <p class="fw-bold mb-0 text-dark text-capitalize" x-text="selectedOrder.type || 'Sale'"></p>
+                                                    <p class="fw-bold mb-0 text-body-emphasis text-capitalize" x-text="selectedOrder.type || 'Sale'"></p>
                                                 </div>
                                             </div>
                                         </div>
@@ -689,7 +689,7 @@
                                                 <div class="bg-info bg-opacity-10 text-info p-2 rounded-3"><i class="bi bi-person-badge fs-5"></i></div>
                                                 <div>
                                                     <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Created By</p>
-                                                    <p class="fw-bold mb-0 text-dark" x-text="selectedOrder.createdBy.name"></p>
+                                                    <p class="fw-bold mb-0 text-body-emphasis" x-text="selectedOrder.createdBy.name"></p>
                                                 </div>
                                             </div>
                                         </div>
@@ -698,8 +698,8 @@
 
                                 <!-- Customer Info -->
                                 <div class="card border-0 shadow-sm rounded-4 mb-4">
-                                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-                                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                    <div class="card-header bg-body border-bottom-0 pt-4 pb-0 px-4">
+                                        <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                                             <i class="bi bi-person-hearts text-danger fs-5"></i> Customer & Fulfillment
                                         </h6>
                                     </div>
@@ -718,11 +718,11 @@
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <p class="fw-bold small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Shipping Address</p>
-                                                    <p class="small mb-0 text-dark" x-text="selectedOrder.shippingAddress ? selectedOrder.shippingAddress.formatted : 'N/A'"></p>
+                                                    <p class="small mb-0 text-body-emphasis" x-text="selectedOrder.shippingAddress ? selectedOrder.shippingAddress.formatted : 'N/A'"></p>
                                                 </div>
                                                 <div>
                                                     <p class="fw-bold small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Billing Address</p>
-                                                    <p class="small mb-0 text-dark" x-text="selectedOrder.billingAddress ? selectedOrder.billingAddress.formatted : 'N/A'"></p>
+                                                    <p class="small mb-0 text-body-emphasis" x-text="selectedOrder.billingAddress ? selectedOrder.billingAddress.formatted : 'N/A'"></p>
                                                 </div>
                                             </div>
                                         </div>
@@ -731,15 +731,15 @@
 
                                 <!-- Order Items Table -->
                                 <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
-                                    <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
-                                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                    <div class="card-header bg-body border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                                        <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                                             <i class="bi bi-box-seam text-primary fs-5"></i> Order Items
                                         </h6>
                                         <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3" x-text="`${selectedOrder.itemCount} Items`"></span>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-borderless table-hover align-middle mb-0 text-nowrap">
-                                            <thead class="bg-light">
+                                            <thead class="bg-body-tertiary">
                                                 <tr>
                                                     <th class="fw-semibold text-muted small py-3 ps-4">Product Details</th>
                                                     <th class="fw-semibold text-muted small py-3 text-end">Price</th>
@@ -752,14 +752,14 @@
                                                 <template x-for="(item, idx) in selectedOrder.items" :key="idx">
                                                     <tr class="border-bottom">
                                                         <td class="ps-4 py-3">
-                                                            <p class="fw-bold text-dark mb-0" x-text="item.name"></p>
+                                                            <p class="fw-bold text-body-emphasis mb-0" x-text="item.name"></p>
                                                             <p class="text-muted small mb-0 font-monospace" style="font-size: 0.75rem;" x-text="item.sku || 'No SKU'"></p>
                                                         </td>
                                                         <td class="text-end py-3">
-                                                            <span class="text-dark fw-medium" x-text="`$${parseFloat(item.price).toFixed(2)}`"></span>
+                                                            <span class="text-body-emphasis fw-medium" x-text="`$${parseFloat(item.price).toFixed(2)}`"></span>
                                                         </td>
                                                         <td class="text-center py-3">
-                                                            <span class="badge bg-secondary bg-opacity-10 text-dark px-2 py-1 rounded-3" x-text="item.quantity"></span>
+                                                            <span class="badge bg-secondary bg-opacity-10 text-body-emphasis px-2 py-1 rounded-3" x-text="item.quantity"></span>
                                                         </td>
                                                         <td class="text-end py-3 small">
                                                             <div class="text-success" x-show="item.discount > 0" x-text="`-$${parseFloat(item.discount).toFixed(2)}`"></div>
@@ -777,12 +777,12 @@
 
                                 <!-- Financial Summary -->
                                 <div class="card border-0 shadow-sm rounded-4">
-                                    <div class="card-body p-4 bg-white rounded-4">
+                                    <div class="card-body p-4 bg-body rounded-4">
                                         <div class="row justify-content-end">
                                             <div class="col-md-6 col-lg-5">
                                                 <div class="d-flex justify-content-between mb-2">
                                                     <span class="text-muted fw-medium">Subtotal</span>
-                                                    <span class="text-dark fw-bold" x-text="`$${selectedOrder.subtotal.toFixed(2)}`"></span>
+                                                    <span class="text-body-emphasis fw-bold" x-text="`$${selectedOrder.subtotal.toFixed(2)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between mb-2">
                                                     <span class="text-muted fw-medium">Discount <span x-show="selectedOrder.couponCode" class="badge bg-success ms-2 rounded-pill" x-text="selectedOrder.couponCode"></span></span>
@@ -790,10 +790,10 @@
                                                 </div>
                                                 <div class="d-flex justify-content-between mb-3 border-bottom pb-3">
                                                     <span class="text-muted fw-medium">Tax</span>
-                                                    <span class="text-dark fw-bold" x-text="`$${selectedOrder.taxTotal.toFixed(2)}`"></span>
+                                                    <span class="text-body-emphasis fw-bold" x-text="`$${selectedOrder.taxTotal.toFixed(2)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="text-dark fw-bolder fs-5">Grand Total</span>
+                                                    <span class="text-body-emphasis fw-bolder fs-5">Grand Total</span>
                                                     <span class="text-primary fw-bolder fs-4" x-text="`$${selectedOrder.total.toFixed(2)}`"></span>
                                                 </div>
                                             </div>
@@ -803,7 +803,7 @@
                             </div>
                             
                             <!-- Right Column: Warehouse / Logistics / Timeline -->
-                            <div class="col-lg-4">
+                            <div class="col-lg-4 p-4 p-lg-5 border-start bg-body" style="position: sticky; top: 0; height: fit-content; align-self: flex-start;">
                                 
                                 <!-- Document Actions -->
                                 <div class="d-flex flex-wrap gap-2 mb-4">
@@ -817,17 +817,17 @@
 
                                 <!-- Logistics / Warehouse -->
                                 <div class="card border-0 shadow-sm rounded-4 mb-4">
-                                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
-                                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                    <div class="card-header bg-body border-bottom-0 pt-4 pb-2 px-4">
+                                        <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                                             <i class="bi bi-building text-secondary fs-5"></i> Fulfillment Center
                                         </h6>
                                     </div>
                                     <div class="card-body p-4 pt-2">
-                                        <div class="p-3 bg-light rounded-4 border">
-                                            <p class="mb-1 fw-bold text-dark" x-text="selectedOrder.warehouse ? selectedOrder.warehouse.name : 'Unassigned'"></p>
+                                        <div class="p-3 bg-body-tertiary rounded-4 border">
+                                            <p class="mb-1 fw-bold text-body-emphasis" x-text="selectedOrder.warehouse ? selectedOrder.warehouse.name : 'Unassigned'"></p>
                                             <p class="small text-muted mb-2 lh-sm" x-text="selectedOrder.warehouse ? selectedOrder.warehouse.address : 'N/A'"></p>
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill fw-medium px-2 py-1"><i class="bi bi-telephone-fill me-1"></i> <span x-text="selectedOrder.warehouse ? selectedOrder.warehouse.phone : 'N/A'"></span></span>
+                                                <span class="badge bg-secondary bg-opacity-10 text-body-emphasis rounded-pill fw-medium px-2 py-1"><i class="bi bi-telephone-fill me-1"></i> <span x-text="selectedOrder.warehouse ? selectedOrder.warehouse.phone : 'N/A'"></span></span>
                                             </div>
                                         </div>
                                     </div>
@@ -840,10 +840,10 @@
                                             <h6 class="fw-bold mb-3 text-primary d-flex align-items-center gap-2">
                                                 <i class="bi bi-truck fs-5"></i> Shipping Details
                                             </h6>
-                                            <div class="bg-white p-3 rounded-4 shadow-sm mb-3">
+                                            <div class="bg-body p-3 rounded-4 shadow-sm mb-3">
                                                 <p class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.65rem;">Tracking Number</p>
                                                 <div class="d-flex justify-content-between align-items-center">
-                                                    <p class="fw-bold text-dark font-monospace mb-0 fs-6" x-text="selectedOrder.shipment.trackingNo"></p>
+                                                    <p class="fw-bold text-body-emphasis font-monospace mb-0 fs-6" x-text="selectedOrder.shipment.trackingNo"></p>
                                                     <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill" x-text="selectedOrder.shipment.carrier"></span>
                                                 </div>
                                             </div>
@@ -853,7 +853,7 @@
                                                     <template x-for="(event, i) in selectedOrder.shipment.events" :key="event.id">
                                                         <div class="position-relative mb-3">
                                                             <div class="position-absolute bg-primary rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
-                                                            <p class="fw-bold text-dark mb-0 small" x-text="event.status"></p>
+                                                            <p class="fw-bold text-body-emphasis mb-0 small" x-text="event.status"></p>
                                                             <p class="text-muted mb-0" style="font-size: 0.75rem;" x-text="formatDateTime(event.created_at)"></p>
                                                             <p class="text-secondary small mt-1 lh-sm" x-text="event.description || event.remark"></p>
                                                         </div>

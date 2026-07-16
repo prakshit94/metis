@@ -323,7 +323,7 @@
                         <div class="row g-3" x-show="viewMode === 'grid'">
                             <template x-for="p in products" :key="p.id">
                                 <div class="col-sm-6 col-md-4">
-                                    <div class="card h-100 border shadow-sm transition-all" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id)}">
+                                    <div class="card h-100 border shadow-sm transition-all" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !p.is_sku_enabled || p.available_stock <= 0}">
                                         <div class="card-body p-3">
                                             <div class="d-flex gap-3 mb-3">
                                                 <div class="position-relative cursor-pointer" @click="openProductModal(p)">
@@ -344,14 +344,14 @@
                                             <div class="row g-2">
                                                 <div class="col-8">
                                                     <div class="form-floating">
-                                                        <input type="number" class="form-control form-control-sm text-center fw-bold" style="height: 42px; min-height: 42px;" x-model.number="p._qty" min="1" :max="p.available_stock || 9999" placeholder="Qty">
+                                                        <input type="number" class="form-control form-control-sm text-center fw-bold" style="height: 42px; min-height: 42px;" x-model.number="p._qty" min="1" :max="p.available_stock || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || p.available_stock <= 0">
                                                         <label class="text-muted" style="padding-top: 0.5rem; padding-bottom: 0.5rem; font-size: 0.75rem;">Qty</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-4">
-                                                    <button class="btn btn-sm w-100 h-100 d-flex align-items-center justify-content-center gap-1" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'">
+                                                    <button class="btn btn-sm w-100 h-100 d-flex align-items-center justify-content-center gap-1" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || p.available_stock <= 0">
                                                         <i class="bi fs-5" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
-                                                        <span x-text="isInCart(p.id) ? 'Add More' : 'Add'" style="font-size: 13px;" class="fw-bold"></span>
+                                                        <span x-text="!p.is_sku_enabled ? 'Disabled' : (p.available_stock <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 13px;" class="fw-bold"></span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -375,7 +375,7 @@
                                 </thead>
                                 <tbody>
                                     <template x-for="p in products" :key="'tbl-'+p.id">
-                                        <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id)}">
+                                        <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id), 'opacity-50': !p.is_sku_enabled || p.available_stock <= 0}">
                                             <td>
                                                 <div class="d-flex gap-3">
                                                     <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded border bg-body shadow-sm cursor-pointer" style="width:50px;height:50px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'" @click="openProductModal(p)">
@@ -410,15 +410,15 @@
                                             </td>
                                             <td>
                                                 <div class="input-group input-group-sm shadow-sm flex-nowrap mx-auto" style="width: 110px;">
-                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty > 1) p._qty--"><i class="bi bi-dash"></i></button>
-                                                    <input type="number" class="form-control text-center fw-bold px-1 no-spinners" x-model.number="p._qty" min="1" :max="p.available_stock || 9999" placeholder="Qty">
-                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty < (p.available_stock || 9999)) p._qty++"><i class="bi bi-plus"></i></button>
+                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!p.is_sku_enabled || p.available_stock <= 0"><i class="bi bi-dash"></i></button>
+                                                    <input type="number" class="form-control text-center fw-bold px-1 no-spinners" x-model.number="p._qty" min="1" :max="p.available_stock || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || p.available_stock <= 0">
+                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty < (p.available_stock || 9999)) p._qty++" :disabled="!p.is_sku_enabled || p.available_stock <= 0"><i class="bi bi-plus"></i></button>
                                                 </div>
                                             </td>
                                             <td class="text-center">
-                                                <button class="btn btn-sm shadow-sm w-100 transition-all fw-bold text-nowrap" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'">
+                                                <button class="btn btn-sm shadow-sm w-100 transition-all fw-bold text-nowrap" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || p.available_stock <= 0">
                                                     <i class="bi" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i> 
-                                                    <span x-text="isInCart(p.id) ? 'Add More' : 'Add'"></span>
+                                                    <span x-text="!p.is_sku_enabled ? 'Disabled' : (p.available_stock <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))"></span>
                                                 </button>
                                             </td>
                                         </tr>
@@ -805,13 +805,13 @@
                                         <div class="col-lg-4">
                                             <div class="p-3 rounded-4 bg-body-tertiary border h-100">
                                                 <div class="fw-bold text-body-emphasis mb-1">Shipping</div>
-                                                <div class="small text-muted" x-text="order.shipping_address ? [order.shipping_address.label, order.shipping_address.address_line_1, order.shipping_address.city, order.shipping_address.state].filter(Boolean).join(', ') : 'Not available'"></div>
+                                                <div class="small text-muted" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_city, order.shipping_state].filter(Boolean).join(', ') : 'Not available'"></div>
                                             </div>
                                         </div>
                                         <div class="col-lg-4">
                                             <div class="p-3 rounded-4 bg-body-tertiary border h-100">
                                                 <div class="fw-bold text-body-emphasis mb-1">Billing</div>
-                                                <div class="small text-muted" x-text="order.billing_address ? [order.billing_address.label, order.billing_address.address_line_1, order.billing_address.city, order.billing_address.state].filter(Boolean).join(', ') : 'Same as shipping / not available'"></div>
+                                                <div class="small text-muted" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_city, order.billing_state].filter(Boolean).join(', ') : 'Same as shipping / not available'"></div>
                                             </div>
                                         </div>
                                         <div class="col-lg-4">
@@ -892,13 +892,13 @@
                                         <div class="col-lg-6">
                                             <div class="p-3 rounded-4 bg-body-tertiary border h-100">
                                                 <div class="fw-bold text-body-emphasis mb-1">Shipping</div>
-                                                <div class="small text-muted" x-text="order.shipping_address ? [order.shipping_address.label, order.shipping_address.address_line_1, order.shipping_address.city, order.shipping_address.state].filter(Boolean).join(', ') : 'Not available'"></div>
+                                                <div class="small text-muted" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_city, order.shipping_state].filter(Boolean).join(', ') : 'Not available'"></div>
                                             </div>
                                         </div>
                                         <div class="col-lg-6">
                                             <div class="p-3 rounded-4 bg-body-tertiary border h-100">
                                                 <div class="fw-bold text-body-emphasis mb-1">Billing</div>
-                                                <div class="small text-muted" x-text="order.billing_address ? [order.billing_address.label, order.billing_address.address_line_1, order.billing_address.city, order.billing_address.state].filter(Boolean).join(', ') : 'Same as shipping / not available'"></div>
+                                                <div class="small text-muted" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_city, order.billing_state].filter(Boolean).join(', ') : 'Same as shipping / not available'"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -1380,7 +1380,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         activeTab: 'customer',
         viewMode: 'table',
         partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '<?php echo e($warehouses->first()->id ?? ''); ?>', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale',
-        orderDate: new Date().toISOString().substring(0,10),
+        orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
         isDraft: false, futureOrderDate: '',
         editingOrderId: null,
         editingOrderNo: null,
@@ -1540,7 +1540,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             this.shippingAddressId = order.shipping_address_id || '';
             this.billingAddressId = order.billing_address_id || order.shipping_address_id || '';
             this.sameAsShipping = !order.billing_address_id || String(order.billing_address_id) === String(order.shipping_address_id);
-            this.orderDate = order.order_date ? String(order.order_date).substring(0, 10) : this.orderDate;
+            this.orderDate = order.order_date ? String(order.order_date).replace('T', ' ').substring(0, 19) : this.orderDate;
             this.isDraft = Boolean(order.is_draft);
             this.futureOrderDate = order.future_order_date ? String(order.future_order_date).substring(0, 10) : '';
             this.couponCode = order.coupon_code || '';

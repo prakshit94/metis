@@ -298,43 +298,38 @@ document.addEventListener('alpine:init', () => {
     },
 
     mapOrder(o) {
-      const formatAddress = (address) => {
-        if (!address) return null;
-        if (typeof address === 'string') {
-          try { address = JSON.parse(address); } catch (e) {}
-        }
+      const formatAddress = (orderObj, prefix) => {
+        if (!orderObj || !orderObj[`${prefix}_address_id`]) return null;
 
-        const village = address.village || null;
         const parts = [
-          address.label,
-          address.address_line_1,
-          address.address_line_2,
-          village?.village_name,
-          village?.taluka_name,
-          village?.district_name,
-          address.city,
-          address.state,
-          address.pincode,
+          orderObj[`${prefix}_address_line_1`],
+          orderObj[`${prefix}_address_line_2`],
+          orderObj[`${prefix}_village_name`],
+          orderObj[`${prefix}_taluka`],
+          orderObj[`${prefix}_district`],
+          orderObj[`${prefix}_city`],
+          orderObj[`${prefix}_state`],
+          orderObj[`${prefix}_pincode`],
         ].filter(Boolean);
 
         return {
-          id: address.id,
-          label: address.label || '',
-          line1: address.address_line_1 || '',
-          line2: address.address_line_2 || '',
-          city: address.city || '',
-          state: address.state || '',
-          pincode: address.pincode || '',
-          country: address.country || 'India',
-          village: village ? {
-            name: village.village_name || '',
-            taluka: village.taluka_name || '',
-            district: village.district_name || '',
-            state: village.state_name || '',
-            postOffice: village.post_so_name || '',
+          id: orderObj[`${prefix}_address_id`],
+          label: '',
+          line1: orderObj[`${prefix}_address_line_1`] || '',
+          line2: orderObj[`${prefix}_address_line_2`] || '',
+          city: orderObj[`${prefix}_city`] || '',
+          state: orderObj[`${prefix}_state`] || '',
+          pincode: orderObj[`${prefix}_pincode`] || '',
+          country: 'India',
+          village: orderObj[`${prefix}_village_name`] ? {
+            name: orderObj[`${prefix}_village_name`] || '',
+            taluka: orderObj[`${prefix}_taluka`] || '',
+            district: orderObj[`${prefix}_district`] || '',
+            state: orderObj[`${prefix}_state`] || '',
+            postOffice: orderObj[`${prefix}_post_office`] || '',
           } : null,
           formatted: parts.join(', ') || 'N/A',
-          raw: address,
+          raw: orderObj,
         };
       };
 
@@ -382,8 +377,8 @@ document.addEventListener('alpine:init', () => {
             o.warehouse.pincode,
           ].filter(Boolean).join(', ') || 'N/A',
         } : null,
-        shippingAddress: formatAddress(o.shipping_address),
-        billingAddress: formatAddress(o.billing_address),
+        shippingAddress: formatAddress(o, 'shipping'),
+        billingAddress: formatAddress(o, 'billing'),
         invoice: invoice ? {
           number: invoice.invoice_no || 'N/A',
           date: invoice.invoice_date || null,

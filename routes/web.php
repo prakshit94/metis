@@ -160,6 +160,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::get('/export', [CatalogProductController::class, 'export'])->name('export');
             Route::post('/import', [CatalogProductController::class, 'import'])->name('import');
             Route::post('/bulk-status', [CatalogProductController::class, 'bulkStatus'])->name('bulk-status');
+            Route::post('/bulk-disable-sku', [CatalogProductController::class, 'bulkDisableSku'])->name('bulk-disable-sku');
             Route::post('/bulk-delete', [CatalogProductController::class, 'bulkDelete'])->name('bulk-delete');
             Route::post('/{product}/duplicate', [CatalogProductController::class, 'duplicate'])->name('duplicate');
             Route::post('/{product}/restore', [CatalogProductController::class, 'restore'])->name('restore');

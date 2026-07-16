@@ -38,7 +38,6 @@ class Product extends Model
         'selling_price',
         'default_discount',
         'default_discount_type',
-        'stock_quantity',
         'min_stock_level',
         'batch_tracking',
         'expiry_tracking',
@@ -58,7 +57,6 @@ class Product extends Model
         'mrp' => 'decimal:2',
         'selling_price' => 'decimal:2',
         'default_discount' => 'decimal:2',
-        'stock_quantity' => 'integer',
         'min_stock_level' => 'integer',
         'overselling_qty' => 'integer',
         'batch_tracking' => 'boolean',
@@ -129,6 +127,14 @@ class Product extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function pendingOrderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class)
+            ->whereHas('order', function ($query) {
+                $query->where('status', 'pending');
+            });
+    }
+
     // ─── Computed Attributes ───────────────────────────────────────────────
 
     /**
@@ -137,6 +143,15 @@ class Product extends Model
     public function getTotalStockAttribute(): float
     {
         return (float) $this->stocks()->sum('quantity');
+    }
+
+    /**
+     * Alias for total_stock to maintain backwards compatibility 
+     * with APIs/frontend expecting stock_quantity.
+     */
+    public function getStockQuantityAttribute(): float
+    {
+        return $this->total_stock;
     }
 
     /**

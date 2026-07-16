@@ -112,10 +112,11 @@ class ProductCatalogSeeder extends Seeder
                     'purchase_price' => $example['purchase_price'],
                     'mrp' => $example['mrp'],
                     'selling_price' => $example['price'],
-                    'stock_quantity' => $example['stock'],
                     'min_stock_level' => 10,
-                    'allow_overselling' => false,
-                    'overselling_qty' => 0,
+                    'allow_overselling' => $index === 0, // Enable for first item
+                    'overselling_qty' => $index === 0 ? 50 : 0,
+                    'batch_tracking' => $index === 1, // Enable for second item
+                    'expiry_tracking' => $index === 1, // Enable for second item
                     'manage_stock' => true,
                     'is_sku_enabled' => true,
                     'status' => $example['status'],

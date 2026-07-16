@@ -18,7 +18,7 @@
     "isDynamicEntry": true
   },
   "resources/js/components/analytics.js": {
-    "file": "assets/analytics-sX2l_1nt.js",
+    "file": "assets/analytics-CY5mlEGH.js",
     "name": "analytics",
     "src": "resources/js/components/analytics.js",
     "isDynamicEntry": true,
@@ -34,7 +34,7 @@
     ]
   },
   "resources/js/components/calendar.js": {
-    "file": "assets/calendar-CkSwlX4s.js",
+    "file": "assets/calendar-BNZlpAiN.js",
     "name": "calendar",
     "src": "resources/js/components/calendar.js",
     "isDynamicEntry": true,
@@ -50,7 +50,7 @@
     ]
   },
   "resources/js/components/catalog/attributes.js": {
-    "file": "assets/attributes-CHxE_bAZ.js",
+    "file": "assets/attributes-B-c3rFBP.js",
     "name": "attributes",
     "src": "resources/js/components/catalog/attributes.js",
     "isDynamicEntry": true,
@@ -66,7 +66,7 @@
     ]
   },
   "resources/js/components/catalog/brands.js": {
-    "file": "assets/brands-Bw5pD1vf.js",
+    "file": "assets/brands-jUrs4Jx9.js",
     "name": "brands",
     "src": "resources/js/components/catalog/brands.js",
     "isDynamicEntry": true,
@@ -82,7 +82,7 @@
     ]
   },
   "resources/js/components/catalog/categories.js": {
-    "file": "assets/categories-Cw_WyZPx.js",
+    "file": "assets/categories-DgX1sHNa.js",
     "name": "categories",
     "src": "resources/js/components/catalog/categories.js",
     "isDynamicEntry": true,
@@ -98,7 +98,7 @@
     ]
   },
   "resources/js/components/catalog/hsn-codes.js": {
-    "file": "assets/hsn-codes-PLqO-sFY.js",
+    "file": "assets/hsn-codes-D2k5I0Qc.js",
     "name": "hsn-codes",
     "src": "resources/js/components/catalog/hsn-codes.js",
     "isDynamicEntry": true,
@@ -114,7 +114,7 @@
     ]
   },
   "resources/js/components/catalog/tax-rates.js": {
-    "file": "assets/tax-rates-ClDPrA76.js",
+    "file": "assets/tax-rates-BPxOUpJH.js",
     "name": "tax-rates",
     "src": "resources/js/components/catalog/tax-rates.js",
     "isDynamicEntry": true,
@@ -130,7 +130,7 @@
     ]
   },
   "resources/js/components/catalog/uom.js": {
-    "file": "assets/uom-BPKpUN6P.js",
+    "file": "assets/uom-CzVU9sKs.js",
     "name": "uom",
     "src": "resources/js/components/catalog/uom.js",
     "isDynamicEntry": true,
@@ -146,7 +146,7 @@
     ]
   },
   "resources/js/components/catalog/warehouses.js": {
-    "file": "assets/warehouses-DJvScUHv.js",
+    "file": "assets/warehouses-lO6XIrbC.js",
     "name": "warehouses",
     "src": "resources/js/components/catalog/warehouses.js",
     "isDynamicEntry": true,
@@ -162,7 +162,7 @@
     ]
   },
   "resources/js/components/customers.js": {
-    "file": "assets/customers-CeJcjg_e.js",
+    "file": "assets/customers-CeIudlrI.js",
     "name": "customers",
     "src": "resources/js/components/customers.js",
     "isDynamicEntry": true,
@@ -178,7 +178,7 @@
     ]
   },
   "resources/js/components/elements.js": {
-    "file": "assets/elements-D9i28pAQ.js",
+    "file": "assets/elements-BLCIcNMu.js",
     "name": "elements",
     "src": "resources/js/components/elements.js",
     "isDynamicEntry": true,
@@ -194,7 +194,7 @@
     ]
   },
   "resources/js/components/files.js": {
-    "file": "assets/files-DZgylkPB.js",
+    "file": "assets/files-Bf5fe2-w.js",
     "name": "files",
     "src": "resources/js/components/files.js",
     "isDynamicEntry": true,
@@ -210,7 +210,7 @@
     ]
   },
   "resources/js/components/forms.js": {
-    "file": "assets/forms-C9EOLY4U.js",
+    "file": "assets/forms-C1VV3U1w.js",
     "name": "forms",
     "src": "resources/js/components/forms.js",
     "isDynamicEntry": true,
@@ -226,7 +226,7 @@
     ]
   },
   "resources/js/components/help.js": {
-    "file": "assets/help-CYUTUYgF.js",
+    "file": "assets/help-C1nt8zHt.js",
     "name": "help",
     "src": "resources/js/components/help.js",
     "isDynamicEntry": true,
@@ -242,7 +242,7 @@
     ]
   },
   "resources/js/components/inventory/adjustments.js": {
-    "file": "assets/adjustments-B52qbghp.js",
+    "file": "assets/adjustments-CuEBnoCa.js",
     "name": "adjustments",
     "src": "resources/js/components/inventory/adjustments.js",
     "isDynamicEntry": true,
@@ -258,7 +258,7 @@
     ]
   },
   "resources/js/components/inventory/stock-management.js": {
-    "file": "assets/stock-management-PtnLQTV1.js",
+    "file": "assets/stock-management-CQymmdx-.js",
     "name": "stock-management",
     "src": "resources/js/components/inventory/stock-management.js",
     "isDynamicEntry": true,
@@ -274,7 +274,7 @@
     ]
   },
   "resources/js/components/inventory/stock-transfers.js": {
-    "file": "assets/stock-transfers-Ddc0PSXW.js",
+    "file": "assets/stock-transfers--nS-95KT.js",
     "name": "stock-transfers",
     "src": "resources/js/components/inventory/stock-transfers.js",
     "isDynamicEntry": true,
@@ -290,7 +290,7 @@
     ]
   },
   "resources/js/components/messages.js": {
-    "file": "assets/messages-DhO_KRXM.js",
+    "file": "assets/messages-Dg8wCzog.js",
     "name": "messages",
     "src": "resources/js/components/messages.js",
     "isDynamicEntry": true,
@@ -306,7 +306,7 @@
     ]
   },
   "resources/js/components/orders.js": {
-    "file": "assets/orders-CgOh9hE1.js",
+    "file": "assets/orders-RucSWN0B.js",
     "name": "orders",
     "src": "resources/js/components/orders.js",
     "isDynamicEntry": true,
@@ -322,7 +322,7 @@
     ]
   },
   "resources/js/components/products.js": {
-    "file": "assets/products-DQ1xR9bC.js",
+    "file": "assets/products-DVs71YnR.js",
     "name": "products",
     "src": "resources/js/components/products.js",
     "isDynamicEntry": true,
@@ -338,7 +338,7 @@
     ]
   },
   "resources/js/components/reports.js": {
-    "file": "assets/reports-C2opIeZX.js",
+    "file": "assets/reports-D4gfKe_U.js",
     "name": "reports",
     "src": "resources/js/components/reports.js",
     "isDynamicEntry": true,
@@ -354,7 +354,7 @@
     ]
   },
   "resources/js/components/roles-permissions.js": {
-    "file": "assets/roles-permissions-CMw4BWvi.js",
+    "file": "assets/roles-permissions-DeIzfmt0.js",
     "name": "roles-permissions",
     "src": "resources/js/components/roles-permissions.js",
     "isDynamicEntry": true,
@@ -370,7 +370,7 @@
     ]
   },
   "resources/js/components/security.js": {
-    "file": "assets/security-DYMN6ru4.js",
+    "file": "assets/security-CYQ_e5H6.js",
     "name": "security",
     "src": "resources/js/components/security.js",
     "isDynamicEntry": true,
@@ -386,7 +386,7 @@
     ]
   },
   "resources/js/components/settings.js": {
-    "file": "assets/settings-c9klB34r.js",
+    "file": "assets/settings-B0QsOboI.js",
     "name": "settings",
     "src": "resources/js/components/settings.js",
     "isDynamicEntry": true,
@@ -402,7 +402,7 @@
     ]
   },
   "resources/js/components/shipping/services.js": {
-    "file": "assets/services-8P0xQClA.js",
+    "file": "assets/services-7MsunoZS.js",
     "name": "services",
     "src": "resources/js/components/shipping/services.js",
     "isDynamicEntry": true,
@@ -418,7 +418,7 @@
     ]
   },
   "resources/js/components/shipping/shipments.js": {
-    "file": "assets/shipments-BB9yOTip.js",
+    "file": "assets/shipments-GX5-qMB0.js",
     "name": "shipments",
     "src": "resources/js/components/shipping/shipments.js",
     "isDynamicEntry": true,
@@ -434,7 +434,7 @@
     ]
   },
   "resources/js/components/users.js": {
-    "file": "assets/users-B3c0T-ua.js",
+    "file": "assets/users-Cu6nasa-.js",
     "name": "users",
     "src": "resources/js/components/users.js",
     "isDynamicEntry": true,
@@ -450,7 +450,7 @@
     ]
   },
   "resources/js/components/villages.js": {
-    "file": "assets/villages-Buuc4GDw.js",
+    "file": "assets/villages-XJoaDdKe.js",
     "name": "villages",
     "src": "resources/js/components/villages.js",
     "isDynamicEntry": true,
@@ -466,7 +466,7 @@
     ]
   },
   "resources/js/main.js": {
-    "file": "assets/main-DdNU5NI2.js",
+    "file": "assets/main-CCf911BH.js",
     "name": "main",
     "src": "resources/js/main.js",
     "isEntry": true,

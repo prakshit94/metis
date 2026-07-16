@@ -78,7 +78,7 @@ class InventoryService
         return Stock::create([
             'warehouse_id'   => $warehouseId,
             'product_id'     => $productId,
-            'quantity'       => max(0.0, (float) ($product?->stock_quantity ?? 0)),
+            'quantity'       => max(0.0, (float) ($product?->total_stock ?? 0)),
             'reserved_qty'   => 0,
             'dispatched_qty' => 0,
             'committed_qty'  => 0,
@@ -127,7 +127,10 @@ class InventoryService
         if (!$product) return;
 
         // Never auto-activate a draft product
-        if ($product->status === 'draft') return;
+        if ($product->status === 'draft') {
+            $product->saveQuietly();
+            return;
+        }
 
         $totalAvailable = \App\Modules\Inventory\Models\Stock::where('product_id', $productId)
             ->get()
@@ -140,13 +143,15 @@ class InventoryService
         } else {
             // If it was out of stock but now has stock or overselling is enabled, activate it
             if ($product->status === 'out_of_stock') {
-                $newStatus = 'active';
+                $newStatus = 'published';
             }
         }
 
         if ($newStatus !== $product->status) {
-            $product->update(['status' => $newStatus]);
+            $product->status = $newStatus;
         }
+        
+        $product->saveQuietly();
     }
 
     /**

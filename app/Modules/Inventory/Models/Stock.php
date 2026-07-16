@@ -83,4 +83,13 @@ class Stock extends Model
         return $this->hasMany(StockMovement::class, 'product_id', 'product_id')
             ->where('warehouse_id', $this->warehouse_id ?? -1);
     }
+
+    public function pendingOrderItems(): HasMany
+    {
+        return $this->hasMany(\App\Modules\Orders\Models\OrderItem::class, 'product_id', 'product_id')
+            ->whereHas('order', function ($query) {
+                $query->whereColumn('orders.warehouse_id', 'stocks.warehouse_id')
+                      ->where('orders.status', 'pending');
+            });
+    }
 }

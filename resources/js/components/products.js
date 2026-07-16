@@ -59,9 +59,11 @@ function parseCsvLine(line) {
 
 function normalizeStatus(status) {
   const value = String(status ?? '').trim().toLowerCase();
-  if (['published', 'publish', 'active'].includes(value)) return 'published';
+  if (['published', 'publish'].includes(value)) return 'published';
+  if (value === 'active') return 'active';
   if (['draft', 'unpublished'].includes(value)) return 'draft';
   if (['pending', 'review', 'pending review'].includes(value)) return 'pending';
+  if (value === 'out_of_stock') return 'out_of_stock';
   return 'draft';
 }
 
@@ -467,6 +469,22 @@ document.addEventListener('alpine:init', () => {
 
       if (action === 'delete') {
         this.deleteProductsByIds(this.selectedProducts);
+        return;
+      }
+
+      if (action === 'disable_sku') {
+        this.apiRequest(`${this.apiBase}/bulk-disable-sku`, {
+          method: 'POST',
+          body: JSON.stringify({ ids: this.selectedProducts }),
+        })
+          .then(async () => {
+            await this.loadProductsFromApi();
+            this.filterProducts();
+            this.calculateStats();
+            this.selectedProducts = [];
+            this.showNotification('SKUs disabled successfully!', 'success');
+          })
+          .catch((error) => this.showNotification(error.message || 'Failed to disable SKUs.', 'danger'));
         return;
       }
 
@@ -916,8 +934,9 @@ document.addEventListener('alpine:init', () => {
       }
 
       if (!this.form.name || !this.form.sku || !this.form.category_id ||
-          this.form.selling_price === '' || this.form.stock === '' || !this.form.status) {
-        table.showNotification('Please fill in all required fields.', 'warning');
+          this.form.selling_price === '' || this.form.purchase_price === '' ||
+          this.form.stock === '' || !this.form.status) {
+        table.showNotification('Please fill in all required fields (Name, SKU, Category, Purchase Price, Selling Price, Stock, Status).', 'warning');
         return;
       }
 

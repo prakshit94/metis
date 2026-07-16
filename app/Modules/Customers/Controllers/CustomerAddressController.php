@@ -48,6 +48,19 @@ class CustomerAddressController extends Controller implements HasMiddleware
 
         $address = new PartyAddress($validated);
         $address->is_default = $isDefault;
+        
+        if (!empty($validated['village_id'])) {
+            $village = \App\Modules\Core\Models\Village::find($validated['village_id']);
+            if ($village) {
+                $address->village_name = $village->village_name;
+                $address->post_office = $village->post_so_name;
+                $address->taluka = $village->taluka_name;
+                $address->district = $village->district_name;
+                $address->state = $address->state ?? $village->state_name;
+                $address->pincode = $address->pincode ?? $village->pincode;
+            }
+        }
+        
         $customer->addresses()->save($address);
 
         return response()->json([
@@ -84,6 +97,19 @@ class CustomerAddressController extends Controller implements HasMiddleware
         }
 
         $validated['is_default'] = $isDefault;
+        
+        if (!empty($validated['village_id'])) {
+            $village = \App\Modules\Core\Models\Village::find($validated['village_id']);
+            if ($village) {
+                $validated['village_name'] = $village->village_name;
+                $validated['post_office'] = $village->post_so_name;
+                $validated['taluka'] = $village->taluka_name;
+                $validated['district'] = $village->district_name;
+                $validated['state'] = $validated['state'] ?? $village->state_name;
+                $validated['pincode'] = $validated['pincode'] ?? $village->pincode;
+            }
+        }
+        
         $address->update($validated);
 
         return response()->json([

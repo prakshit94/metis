@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->index();
             $table->string('type')->default('text');
+            $table->boolean('is_filterable')->default(false)->index();
             $table->string('status')->default('active')->index();
             $table->timestamps();
             $table->softDeletes();

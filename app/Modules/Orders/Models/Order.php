@@ -78,7 +78,12 @@ class Order extends Model
     protected $fillable = [
         'order_no', 'type', 'party_id', 'order_date', 'total_amount', 
         'tax_amount', 'discount_amount', 'coupon_code', 'applied_offer_id', 'net_amount', 'status', 'warehouse_id',
-        'shipping_address_id', 'billing_address_id', 'billing_address', 'shipping_address',
+        'shipping_address_id', 'shipping_address_line_1', 'shipping_address_line_2',
+        'shipping_village_id', 'shipping_village_name', 'shipping_post_office', 'shipping_taluka',
+        'shipping_district', 'shipping_city', 'shipping_state', 'shipping_pincode',
+        'billing_address_id', 'billing_address_line_1', 'billing_address_line_2',
+        'billing_village_id', 'billing_village_name', 'billing_post_office', 'billing_taluka',
+        'billing_district', 'billing_city', 'billing_state', 'billing_pincode',
         'is_draft', 'future_order_date', 'created_by', 'updated_by'
     ];
 
@@ -115,6 +120,16 @@ class Order extends Model
     public function billingAddress(): BelongsTo
     {
         return $this->belongsTo(PartyAddress::class, 'billing_address_id');
+    }
+
+    public function shippingVillage(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Core\Models\Village::class, 'shipping_village_id');
+    }
+
+    public function billingVillage(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Core\Models\Village::class, 'billing_village_id');
     }
 
     public function creator(): BelongsTo

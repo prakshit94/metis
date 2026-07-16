@@ -16,6 +16,8 @@ use App\Modules\Catalog\Models\UnitOfMeasure;
 use App\Modules\Catalog\Models\Warehouse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Modules\Inventory\Models\Stock;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -62,6 +64,7 @@ class ProductController extends Controller
         $this->fillProduct($product, $data, $request);
         $product->save();
         $this->syncAttributes($product, $data['attributes'] ?? []);
+        $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0));
 
         return response()->json([
             'message' => 'Product created successfully.',
@@ -79,6 +82,11 @@ class ProductController extends Controller
 
         if (array_key_exists('attributes', $data)) {
             $this->syncAttributes($product, $data['attributes']);
+        }
+
+        // Only sync stock if stock value was explicitly submitted
+        if (array_key_exists('stock', $data) || array_key_exists('stock_quantity', $data)) {
+            $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0));
         }
 
         return response()->json([
@@ -136,6 +144,24 @@ class ProductController extends Controller
         ]);
     }
 
+    public function bulkDisableSku(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-edit'), 403);
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:products,id'],
+        ]);
+
+        Product::whereIn('id', $data['ids'])->update([
+            'is_sku_enabled' => false,
+        ]);
+
+        return response()->json([
+            'message' => 'SKUs disabled for selected products.',
+        ]);
+    }
+
     public function restore(Request $request, string $product): JsonResponse
     {
         abort_unless($request->user()?->can('product-restore'), 403);
@@ -168,7 +194,8 @@ class ProductController extends Controller
             ->with(['category', 'brand', 'taxRate'])
             ->withSum('stocks as stocks_sum_quantity', 'quantity')
             ->withSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
-            ->withSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty');
+            ->withSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+            ->withSum('pendingOrderItems as pending_orders_qty', 'quantity');
 
         if ($request->filled('q')) {
             $q = $request->q;
@@ -180,6 +207,14 @@ class ProductController extends Controller
 
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
+        }
+
+        if ($request->filled('stock')) {
+            if ($request->stock === 'available') {
+                $query->havingRaw('(COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0');
+            } elseif ($request->stock === 'out_of_stock') {
+                $query->havingRaw('(COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= 0');
+            }
         }
 
         $perPage = (int) $request->input('perPage', 12);
@@ -425,6 +460,9 @@ class ProductController extends Controller
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'mrp' => ['nullable', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
+            // stock / stock_quantity are accepted interchangeably
+            'stock' => ['nullable', 'integer', 'min:0'],
+            'stock_quantity' => ['nullable', 'integer', 'min:0'],
             'min_stock_level' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', 'in:active,draft,out_of_stock,published,pending'],
             'allow_overselling' => ['nullable', 'boolean'],
@@ -464,7 +502,6 @@ class ProductController extends Controller
         $product->purchase_price = (float) $data['purchase_price'];
         $product->mrp = isset($data['mrp']) && $data['mrp'] !== '' ? (float) $data['mrp'] : (float) $data['selling_price'];
         $product->selling_price = (float) $data['selling_price'];
-        $product->stock_quantity = (int) ($data['stock_quantity'] ?? $data['stock'] ?? 0);
         $product->min_stock_level = (int) ($data['min_stock_level'] ?? 0);
         $product->batch_tracking = (bool) ($data['batch_tracking'] ?? false);
         $product->expiry_tracking = (bool) ($data['expiry_tracking'] ?? false);
@@ -611,6 +648,39 @@ class ProductController extends Controller
         $product->attributeValues()->sync(array_values(array_filter(array_map('intval', $attributeIds))));
     }
 
+    /**
+     * Helper to insert or update the primary stock record when a product is saved.
+     * This ensures the InventoryService logic doesn't fail when no stock is registered.
+     */
+    private function syncStock(Product $product, int $qty): void
+    {
+        // Determine the warehouse to assign stock to
+        $warehouseId = $product->default_warehouse_id;
+
+        // If no warehouse is assigned, try to use the first available warehouse
+        if (! $warehouseId) {
+            $warehouseId = \App\Modules\Catalog\Models\Warehouse::query()->value('id');
+        }
+
+        if (! $warehouseId) {
+            // No warehouse exists — skip stock table entry
+            return;
+        }
+
+        Stock::withTrashed()->updateOrCreate(
+            ['product_id' => $product->id, 'warehouse_id' => $warehouseId],
+            [
+                'quantity'       => $qty,
+                'reserved_qty'   => 0,
+                'dispatched_qty' => 0,
+                'committed_qty'  => 0,
+                'in_transit_qty' => 0,
+                'status'         => 'active',
+                'deleted_at'     => null,
+            ]
+        );
+    }
+
     private function resolveCategoryId(mixed $value): ?int
     {
         if ($value === null || $value === '') {
@@ -641,10 +711,11 @@ class ProductController extends Controller
         $status = Str::of($status)->lower()->trim()->toString();
 
         return match ($status) {
-            'active', 'published' => 'published',
+            'published'    => 'published',
+            'active'       => 'active',
             'out_of_stock' => 'out_of_stock',
             'pending', 'review' => 'pending',
-            default => 'draft',
+            default        => 'draft',
         };
     }
 

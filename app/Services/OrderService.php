@@ -90,24 +90,20 @@ class OrderService
             $dailyCount = \App\Modules\Orders\Models\Order::whereBetween('created_at', [$todayStart, $todayEnd])->count() + 1;
             $orderNo   = $dailyCount . '-' . $datePart . '-' . $timePart;
 
-            $shippingAddressJson = $data['shipping_address'] ?? null;
-            if (!$shippingAddressJson && !empty($data['shipping_address_id'])) {
-                $shippingAddressJson = $this->formatAddressJson(\App\Modules\Customers\Models\PartyAddress::find($data['shipping_address_id']));
+            $shippingAddressFields = [];
+            if (!empty($data['shipping_address_id'])) {
+                $shippingAddressFields = $this->mapAddressFields(\App\Modules\Customers\Models\PartyAddress::find($data['shipping_address_id']), 'shipping');
             }
-            $billingAddressJson = $data['billing_address'] ?? null;
-            if (!$billingAddressJson && !empty($data['billing_address_id'])) {
-                $billingAddressJson = $this->formatAddressJson(\App\Modules\Customers\Models\PartyAddress::find($data['billing_address_id']));
+            $billingAddressFields = [];
+            if (!empty($data['billing_address_id'])) {
+                $billingAddressFields = $this->mapAddressFields(\App\Modules\Customers\Models\PartyAddress::find($data['billing_address_id']), 'billing');
             }
 
-            $order = Order::create([
+            $orderPayload = array_merge([
                 'order_no'            => $orderNo,
                 'type'                => $data['type'],
                 'party_id'            => $data['party_id'],
                 'warehouse_id'        => $data['warehouse_id'] ?? null,
-                'shipping_address_id' => $data['shipping_address_id'] ?? null,
-                'billing_address_id'  => $data['billing_address_id'] ?? null,
-                'shipping_address'    => $shippingAddressJson,
-                'billing_address'     => $billingAddressJson,
                 'order_date'          => $data['order_date'] ?? now(),
                 'total_amount'        => $data['total_amount'] ?? 0,
                 'tax_amount'          => $data['tax_amount'] ?? 0,
@@ -120,7 +116,9 @@ class OrderService
                 'future_order_date'   => $data['future_order_date'] ?? null,
                 'created_by'          => auth()->id(),
                 'updated_by'          => auth()->id(),
-            ]);
+            ], $shippingAddressFields, $billingAddressFields);
+
+            $order = Order::create($orderPayload);
 
             foreach ($data['items'] as $item) {
                 $order->items()->create([
@@ -403,14 +401,10 @@ class OrderService
         return DB::transaction(function () use ($customer, $data, $shippingAddr, $billingAddr) {
             $calc = $this->recalculateAndValidate($data);
 
-            $order = $this->createOrder([
+            $orderPayload = array_merge([
                 'type'                => 'sale',
                 'party_id'            => $customer->id,
                 'warehouse_id'        => $data['warehouse_id'],
-                'shipping_address_id' => $data['address_id'] ?? null,
-                'billing_address_id'  => $data['billing_address_id'] ?? $data['address_id'] ?? null,
-                'shipping_address'    => $this->formatAddressJson($shippingAddr),
-                'billing_address'     => $this->formatAddressJson($billingAddr),
                 'order_date'          => now(),
                 'total_amount'        => $calc['subtotal'],
                 'tax_amount'          => $calc['tax_amount'],
@@ -422,7 +416,9 @@ class OrderService
                 'is_draft'            => $data['is_draft'] ?? false,
                 'future_order_date'   => $data['future_order_date'] ?? null,
                 'applied_bogo_ids'    => $calc['applied_bogo_ids'],
-            ]);
+            ], $this->mapAddressFields($shippingAddr, 'shipping'), $this->mapAddressFields($billingAddr, 'billing'));
+
+            $order = $this->createOrder($orderPayload);
 
             return $order;
         });
@@ -473,12 +469,8 @@ class OrderService
                     }
                 }
 
-                $order->update([
+                $orderPayload = array_merge([
                     'warehouse_id'        => $data['warehouse_id'] ?? $order->warehouse_id,
-                    'shipping_address_id' => $shippingAddressId,
-                    'billing_address_id'  => $billingAddressId,
-                    'shipping_address'    => $this->formatAddressJson($shippingAddr),
-                    'billing_address'     => $this->formatAddressJson($billingAddr),
                     'total_amount'        => $calc['subtotal'],
                     'tax_amount'          => $calc['tax_amount'],
                     'discount_amount'     => $calc['total_discount'],
@@ -488,7 +480,9 @@ class OrderService
                     'is_draft'            => isset($data['is_draft']) ? (bool)$data['is_draft'] : $order->is_draft,
                     'future_order_date'   => array_key_exists('future_order_date', $data) ? $data['future_order_date'] : $order->future_order_date,
                     'updated_by'          => auth()->id(),
-                ]);
+                ], $this->mapAddressFields($shippingAddr, 'shipping'), $this->mapAddressFields($billingAddr, 'billing'));
+
+                $order->update($orderPayload);
 
                 $order->items()->delete();
                 foreach ($calc['items'] as $item) {
@@ -578,12 +572,8 @@ class OrderService
                 }
             }
 
-            $order->update([
+            $orderPayload = array_merge([
                 'warehouse_id'        => $data['warehouse_id'] ?? $order->warehouse_id,
-                'shipping_address_id' => $shippingAddressId,
-                'billing_address_id'  => $billingAddressId,
-                'shipping_address'    => $this->formatAddressJson($shippingAddr),
-                'billing_address'     => $this->formatAddressJson($billingAddr),
                 'total_amount'        => $subtotal,
                 'tax_amount'          => $taxAmount,
                 'discount_amount'     => $discountAmount,
@@ -593,7 +583,9 @@ class OrderService
                 'is_draft'            => isset($data['is_draft']) ? (bool) $data['is_draft'] : $order->is_draft,
                 'future_order_date'   => array_key_exists('future_order_date', $data) ? $data['future_order_date'] : $order->future_order_date,
                 'updated_by'          => auth()->id(),
-            ]);
+            ], $this->mapAddressFields($shippingAddr, 'shipping'), $this->mapAddressFields($billingAddr, 'billing'));
+
+            $order->update($orderPayload);
 
             $order->items()->delete();
             foreach ($normalizedItems as $item) {
@@ -749,29 +741,26 @@ class OrderService
     }
 
     /**
-     * Format a PartyAddress model to a JSON string containing all details.
+     * Map a PartyAddress model to a flat array for the order table.
      */
-    protected function formatAddressJson(?PartyAddress $address): ?string
+    protected function mapAddressFields(?PartyAddress $address, string $prefix): array
     {
-        if (!$address) return null;
+        if (!$address) return [];
 
         $address->loadMissing('village');
-        return json_encode([
-            'label' => $address->label,
-            'address_line_1' => $address->address_line_1,
-            'address_line_2' => $address->address_line_2,
-            'city' => $address->city,
-            'state' => $address->state,
-            'pincode' => $address->pincode,
-            'village' => $address->village ? [
-                'village_name' => $address->village->village_name,
-                'post_so_name' => $address->village->post_so_name,
-                'taluka_name' => $address->village->taluka_name,
-                'district_name' => $address->village->district_name,
-                'state_name' => $address->village->state_name,
-                'pincode' => $address->village->pincode,
-            ] : null,
-        ]);
+        return [
+            "{$prefix}_address_id"      => $address->id,
+            "{$prefix}_address_line_1"  => $address->address_line_1,
+            "{$prefix}_address_line_2"  => $address->address_line_2,
+            "{$prefix}_village_id"      => $address->village_id,
+            "{$prefix}_village_name"    => $address->village_name ?? $address->village?->village_name,
+            "{$prefix}_post_office"     => $address->post_office ?? $address->village?->post_so_name,
+            "{$prefix}_taluka"          => $address->taluka ?? $address->village?->taluka_name,
+            "{$prefix}_district"        => $address->district ?? $address->village?->district_name,
+            "{$prefix}_city"            => $address->city,
+            "{$prefix}_state"           => $address->state ?? $address->village?->state_name,
+            "{$prefix}_pincode"         => $address->pincode ?? $address->village?->pincode,
+        ];
     }
 
     /**

@@ -177,6 +177,7 @@
                                 <th @click="sortBy('warehouse_id')" class="sortable">Warehouse</th>
                                 <th @click="sortBy('quantity')" class="sortable text-center">On Hand</th>
                                 <th @click="sortBy('reserved_qty')" class="sortable text-center">Reserved</th>
+                                <th @click="sortBy('pending_qty')" class="sortable text-center">Pending</th>
                                 <th @click="sortBy('dispatched_qty')" class="sortable text-center">Dispatched</th>
                                 <th @click="sortBy('available')" class="sortable text-center">Available</th>
                                 <th @click="sortBy('in_transit_qty')" class="sortable text-center">In Transit</th>
@@ -186,7 +187,7 @@
                         <tbody>
                             <template x-if="paginatedItems.length === 0">
                                 <tr>
-                                    <td colspan="9" class="text-center py-5 text-muted">
+                                    <td colspan="10" class="text-center py-5 text-muted">
                                         <div x-show="isLoading" class="spinner-border text-primary" role="status">
                                             <span class="visually-hidden">Loading...</span>
                                         </div>
@@ -235,17 +236,21 @@
                                               x-text="parseFloat(item.reserved_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"
+                                              x-text="parseFloat(item.pending_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
                                         <span class="badge bg-info-subtle text-info border border-info-subtle"
                                               x-text="parseFloat(item.dispatched_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge stock-badge"
                                               :class="{
-                                                  'in-stock':     (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)) > 5,
-                                                  'low-stock':    (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)) > 0 && (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)) <= 5,
-                                                  'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)) <= 0
+                                                  'in-stock':     (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 5,
+                                                  'low-stock':    (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 0 && (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 5,
+                                                  'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 0
                                               }"
-                                              x-text="Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)).toFixed(2)">
+                                              x-text="Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)).toFixed(2)">
                                         </span>
                                     </td>
                                     <td class="text-center">

@@ -15,6 +15,8 @@ return new class extends Migration {
             $table->decimal('total_amount', 15, 2)->default(0);
             $table->decimal('tax_amount', 15, 2)->default(0);
             $table->decimal('discount_amount', 15, 2)->default(0);
+            $table->string('coupon_code')->nullable();
+            $table->foreignId('applied_offer_id')->nullable()->constrained('offers')->nullOnDelete();
             $table->decimal('net_amount', 15, 2)->default(0);
             $table->enum('status', ['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'cancelled', 'returned', 'return_requested'])->default('pending')->index();
             $table->boolean('is_draft')->default(false)->index();
@@ -22,9 +24,28 @@ return new class extends Migration {
             $table->foreignId('warehouse_id')->nullable()->constrained()->nullOnDelete();
 
             $table->unsignedBigInteger('shipping_address_id')->nullable();
+            $table->string('shipping_address_line_1')->nullable();
+            $table->string('shipping_address_line_2')->nullable();
+            $table->foreignId('shipping_village_id')->nullable()->constrained('villages')->nullOnDelete();
+            $table->string('shipping_village_name')->nullable();
+            $table->string('shipping_post_office')->nullable();
+            $table->string('shipping_taluka')->nullable();
+            $table->string('shipping_district')->nullable();
+            $table->string('shipping_city')->nullable();
+            $table->string('shipping_state')->nullable();
+            $table->string('shipping_pincode')->nullable();
+
             $table->unsignedBigInteger('billing_address_id')->nullable();
-            $table->text('shipping_address')->nullable();
-            $table->text('billing_address')->nullable();
+            $table->string('billing_address_line_1')->nullable();
+            $table->string('billing_address_line_2')->nullable();
+            $table->foreignId('billing_village_id')->nullable()->constrained('villages')->nullOnDelete();
+            $table->string('billing_village_name')->nullable();
+            $table->string('billing_post_office')->nullable();
+            $table->string('billing_taluka')->nullable();
+            $table->string('billing_district')->nullable();
+            $table->string('billing_city')->nullable();
+            $table->string('billing_state')->nullable();
+            $table->string('billing_pincode')->nullable();
 
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();

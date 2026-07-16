@@ -13,6 +13,10 @@ return new class extends Migration {
             $table->string('address_line_1');
             $table->string('address_line_2')->nullable();
             $table->foreignId('village_id')->nullable()->constrained('villages')->nullOnDelete();
+            $table->string('village_name')->nullable();
+            $table->string('post_office')->nullable();
+            $table->string('taluka')->nullable();
+            $table->string('district')->nullable();
             $table->string('city')->nullable();
             $table->string('state')->nullable();
             $table->string('pincode')->nullable()->index();

@@ -18,7 +18,7 @@
                     </linearGradient>
                 </defs>
             </svg>
-            <span class="auth-brand-name">Metis</span>
+            <span class="auth-brand-name">Ecommerce</span>
         </div>
 
         
@@ -83,10 +83,10 @@ unset($__errorArgs, $__bag); ?>
 
                 
                 <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
+                    <!-- <div class="d-flex justify-content-between align-items-center mb-1">
                         <label for="loginPassword" class="form-label fw-semibold mb-0">Password</label>
                         <a href="#" class="auth-forgot-link" tabindex="-1">Forgot password?</a>
-                    </div>
+                    </div> -->
                     <div class="input-group">
                         <input :type="showPassword ? 'text' : 'password'"
                                class="form-control <?php $__errorArgs = ['password'];
