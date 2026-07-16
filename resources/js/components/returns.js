@@ -36,7 +36,6 @@ function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
   if (!container) return;
 
-  const id = 'toast-' + Date.now();
   const iconMap = {
     success: 'bi-check-circle-fill',
     danger:  'bi-x-circle-fill',
@@ -45,7 +44,6 @@ function showToast(message, type = 'success') {
   };
 
   const el = document.createElement('div');
-  el.id = id;
   el.className = `toast align-items-center text-bg-${type} border-0 show mb-2`;
   el.setAttribute('role', 'alert');
   el.innerHTML = `
@@ -58,60 +56,71 @@ function showToast(message, type = 'success') {
   el.querySelector('.toast-body span').textContent = message;
 
   container.appendChild(el);
-  setTimeout(() => el.remove(), 4000);
+  setTimeout(() => el.remove(), 5000);
 }
 
+// ─── Modal helper ─────────────────────────────────────────────────────────────
+function getModal(id) {
+  const el = document.getElementById(id);
+  return el ? Modal.getOrCreateInstance(el) : null;
+}
+
+// ─── Main Alpine Component ────────────────────────────────────────────────────
 document.addEventListener('alpine:init', () => {
   Alpine.data('returnsTable', () => ({
+    // --- Table state ---
     returns: [],
     selectedReturns: [],
     currentPage: 1,
     totalPages: 1,
     totalReturns: 0,
     itemsPerPage: 15,
-    
-    // Filters state
+    isLoading: false,
+    isSubmitting: false,
+
+    // --- Filters ---
     searchQuery: '',
     statusFilter: '',
     financialFilter: '',
     sortField: 'id',
     sortDirection: 'desc',
-    isLoading: false,
-    
-    // Statistics
+
+    // --- Stats ---
     stats: {
       total: 0,
       pending_qc: 0,
       completed: 0,
       rejected: 0,
       total_refunded: 0,
-      total_credited: 0
+      total_credited: 0,
     },
 
-    // Dropdown lists
-    statusesList: [],
-    financialStatusesList: [],
-
-    // Modal data state
+    // --- QC Modal state ---
     selectedReturn: null,
-    selectedReturns: [],
-    totalPaidForSelected: 0,
+    // Deep-editable copy of items for QC form
+    qcItems: [],
+
+    // --- Finance Modal state ---
     financeAction: 'refund',
     financeAmount: 0,
     financeMethod: 'upi',
+
+    // ─── Lifecycle ───────────────────────────────────────────────────────────
 
     init() {
       this.loadReturns();
     },
 
+    // ─── Data Loading ─────────────────────────────────────────────────────────
+
     loadReturns() {
       this.isLoading = true;
       const params = new URLSearchParams();
-      
+
       if (this.searchQuery) params.append('search', this.searchQuery);
       if (this.statusFilter) params.append('status', this.statusFilter);
       if (this.financialFilter) params.append('financial_status', this.financialFilter);
-      
+
       params.append('limit', this.itemsPerPage);
       params.append('page', this.currentPage);
       params.append('sort_field', this.sortField);
@@ -119,233 +128,360 @@ document.addEventListener('alpine:init', () => {
 
       apiFetch(`/returns?${params.toString()}`)
         .then(data => {
-          this.returns = (data.returns.data || []).map(r => this.mapReturn(r));
-          this.currentPage = data.returns.current_page || 1;
-          this.totalPages = data.returns.last_page || 1;
-          this.totalReturns = data.returns.total || 0;
-          
-          if (data.stats) {
-            this.stats = {
-              total: data.stats.total,
-              pending_qc: data.stats.pending_qc,
-              completed: data.stats.completed,
-              rejected: data.stats.rejected,
-              total_refunded: data.stats.total_refunded,
-              total_credited: data.stats.total_credited,
-            };
-          }
+          this.returns = (data.returns?.data || []).map(r => this.mapReturn(r));
+          this.currentPage = data.returns?.current_page || 1;
+          this.totalPages  = data.returns?.last_page  || 1;
+          this.totalReturns = data.returns?.total     || 0;
 
-          if (data.statuses) this.statusesList = data.statuses;
-          if (data.financial_statuses) this.financialStatusesList = data.financial_statuses;
+          if (data.stats) {
+            this.stats = { ...this.stats, ...data.stats };
+          }
         })
-        .catch(err => {
-          showToast(err.message, 'danger');
-        })
-        .finally(() => {
-          this.isLoading = false;
-        });
+        .catch(err => showToast(err.message, 'danger'))
+        .finally(() => { this.isLoading = false; });
     },
 
+    // ─── Mapping ──────────────────────────────────────────────────────────────
+
     mapReturn(r) {
-      // Map items and ensure fields are properly typed
       const items = (r.items || []).map(item => ({
         id: item.id,
-        product: item.product || { name: 'Unknown', sku: 'N/A' },
-        requested_qty: parseFloat(item.requested_qty || 0),
-        received_qty: parseFloat(item.received_qty || item.requested_qty || 0), // Default to requested if 0
-        restocked_qty: parseFloat(item.restocked_qty || 0),
-        damaged_qty: parseFloat(item.damaged_qty || 0),
-        qc_notes: item.qc_notes || '',
-        qc_status: item.qc_status || 'pending'
+        product_id: item.product_id,
+        product:        item.product  || { name: 'Unknown', sku: 'N/A', image_url: null },
+        image_url:      item.product?.image_url || item.product?.image_path || null,
+        requested_qty:  parseFloat(item.requested_qty  || 0),
+        received_qty:   parseFloat(item.received_qty   || 0),
+        restocked_qty:  parseFloat(item.restocked_qty  || 0),
+        damaged_qty:    parseFloat(item.damaged_qty    || 0),
+        qc_notes:  item.qc_notes  || '',
+        qc_status: item.qc_status || 'pending',
       }));
 
-      // Calculate total paid for the associated order
-      const orderPayments = r.order?.payments || [];
-      const totalPaid = orderPayments
+      const totalPaid = (r.order?.payments || [])
         .filter(p => p.status === 'completed')
         .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
 
       return {
-        id: r.id,
-        return_no: r.return_no,
-        order_id: r.order_id,
-        order_no: r.order?.order_no || 'N/A',
-        status: r.status,
-        financial_status: r.financial_status,
-        reason: r.reason || 'N/A',
-        notes: r.notes || '',
-        refund_amount: parseFloat(r.refund_amount || 0),
+        id:              r.id,
+        return_no:       r.return_no,
+        order_id:        r.order_id,
+        order_no:        r.order?.order_no || 'N/A',
+        status:          r.status,
+        financial_status:r.financial_status,
+        reason:          r.reason || 'N/A',
+        notes:           r.notes  || '',
+        refund_amount:   parseFloat(r.refund_amount        || 0),
         credit_note_amount: parseFloat(r.credit_note_amount || 0),
-        created_at: r.created_at,
+        created_at:      r.created_at,
         customer: {
-          name: r.order?.party ? `${r.order.party.firstname} ${r.order.party.lastname}` : 'N/A',
+          name: r.order?.party
+            ? `${r.order.party.firstname} ${r.order.party.lastname || ''}`.trim()
+            : 'N/A',
         },
-        order: r.order,
-        items: items,
-        refunds: r.refunds || [],
-        totalPaid: totalPaid,
-        original: r
+        order:    r.order,
+        items:    items,
+        refunds:  r.refunds || [],
+        totalPaid,
+        original: r,
       };
     },
 
-    formatCurrency(value) {
-      const amount = Number.parseFloat(value ?? 0);
-      return Number.isFinite(amount) ? '₹' + amount.toFixed(2) : '₹0.00';
-    },
-
-    formatDateTime(value) {
-      if (!value) return 'N/A';
-      const date = new Date(value);
-      return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleString();
-    },
-
-    formatDate(value) {
-      if (!value) return 'N/A';
-      const date = new Date(value);
-      return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
-    },
-
-    getStatusColor(status) {
-      const colors = {
-        pending: '#f97316',
-        received: '#0ea5e9',
-        qc_in_progress: '#3b82f6',
-        completed: '#10b981',
-        rejected: '#ef4444'
-      };
-      return colors[status] || '#6c757d';
-    },
-
-    getFinancialStatusColor(status) {
-      const colors = {
-        pending: '#f97316',
-        partial_refund: '#0ea5e9',
-        fully_refunded: '#10b981',
-        credited: '#6366f1'
-      };
-      return colors[status] || '#6c757d';
-    },
+    // ─── Filters / Sort / Pagination ──────────────────────────────────────────
 
     filterReturns() {
       this.currentPage = 1;
+      this.selectedReturns = [];
       this.loadReturns();
     },
 
     clearFilters() {
-      this.searchQuery = '';
-      this.statusFilter = '';
+      this.searchQuery    = '';
+      this.statusFilter   = '';
       this.financialFilter = '';
-      this.sortField = 'id';
-      this.sortDirection = 'desc';
-      this.currentPage = 1;
+      this.sortField      = 'id';
+      this.sortDirection  = 'desc';
+      this.currentPage    = 1;
       this.loadReturns();
-    },
-
-    hasActiveAdvancedFilters() {
-      return Boolean(
-        this.statusFilter ||
-        this.financialFilter
-      );
     },
 
     sortBy(field) {
-      if (this.sortField === field) {
-        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-      } else {
-        this.sortField = field;
-        this.sortDirection = 'desc';
-      }
+      this.sortDirection = (this.sortField === field && this.sortDirection === 'asc') ? 'desc' : 'asc';
+      this.sortField = field;
       this.currentPage = 1;
       this.loadReturns();
     },
-    
-    viewReturnDetails(r) {
-      // Fetch full details if needed, but we have enough from mapReturn for now,
-      // though typically we might want to fetch `show` if we didn't eager load everything.
-      // Assuming index eagerly loads everything we need:
-      this.selectedReturn = r;
-      this.financeAmount = 0;
-      this.financeAction = 'refund';
-      this.financeMethod = 'upi';
+
+    goToPage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page;
+        this.loadReturns();
+      }
     },
 
-    closeReturnDetails() {
-      this.selectedReturn = null;
+    get visiblePages() {
+      if (this.totalPages <= 1) return [1];
+      const pages = [1];
+      if (this.totalPages <= 7) {
+        for (let i = 2; i <= this.totalPages; i++) pages.push(i);
+      } else {
+        if (this.currentPage > 3) pages.push('...');
+        const start = Math.max(2, this.currentPage - 1);
+        const end   = Math.min(this.totalPages - 1, this.currentPage + 1);
+        for (let i = start; i <= end; i++) pages.push(i);
+        if (this.currentPage < this.totalPages - 2) pages.push('...');
+        pages.push(this.totalPages);
+      }
+      return pages;
     },
+
+    // ─── Selection / Bulk ─────────────────────────────────────────────────────
 
     toggleAll(checked) {
       this.selectedReturns = checked ? this.returns.map(r => String(r.id)) : [];
     },
 
-    async processQc() {
-      try {
-        const payload = {
-          items: this.selectedReturn.items.map(i => ({
-            id: i.id,
-            received_qty: parseFloat(i.received_qty || 0),
-            restocked_qty: parseFloat(i.restocked_qty || 0),
-            damaged_qty: parseFloat(i.damaged_qty || 0),
-            qc_notes: i.qc_notes
-          }))
-        };
-
-        const res = await apiFetch(`/returns/${this.selectedReturn.id}/qc`, { 
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
-        
-        showToast(res.message || 'Quality Check processed successfully.');
-        
-        // Refresh data
-        this.loadReturns();
-        
-        // Temporarily clear selectedReturn to force re-render, then set it back with updated data
-        const returnId = this.selectedReturn.id;
-        this.selectedReturn = null;
-        
-        // After loading, the updated return will be in `this.returns`, but we need to wait for loadReturns to finish
-        setTimeout(() => {
-          this.selectedReturn = this.returns.find(r => r.id === returnId) || null;
-        }, 500);
-
-      } catch (err) {
-        showToast(err.message, 'danger');
-      }
+    get allSelected() {
+      return this.returns.length > 0 && this.selectedReturns.length === this.returns.length;
     },
 
-    async processFinance() {
-      if (this.financeAmount <= 0) {
-        showToast('Amount must be greater than zero', 'warning');
+    /**
+     * Bulk approve: loop each selected pending return and call QC with
+     * restocked = requested (100 % good), damaged = 0.
+     */
+    async bulkUpdateStatus(action) {
+      if (!this.selectedReturns.length) return;
+
+      const pendingReturns = this.returns.filter(r =>
+        this.selectedReturns.includes(String(r.id)) && r.status === 'pending'
+      );
+
+      if (!pendingReturns.length) {
+        showToast('No pending returns selected.', 'warning');
         return;
       }
 
+      this.isSubmitting = true;
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const ret of pendingReturns) {
+        try {
+          const payload = {
+            items: ret.items.map(i => ({
+              id:            i.id,
+              received_qty:  i.requested_qty,
+              restocked_qty: action === 'completed' ? i.requested_qty : 0,
+              damaged_qty:   action === 'rejected'  ? i.requested_qty : 0,
+              qc_notes:      action === 'completed'
+                ? 'Bulk approved — all items restocked'
+                : 'Bulk rejected — all items marked damaged',
+            })),
+          };
+          await apiFetch(`/returns/${ret.id}/qc`, { method: 'POST', body: JSON.stringify(payload) });
+          successCount++;
+        } catch {
+          failCount++;
+        }
+      }
+
+      this.isSubmitting = false;
+      this.selectedReturns = [];
+
+      if (successCount) showToast(`${successCount} return(s) processed successfully.`);
+      if (failCount)    showToast(`${failCount} return(s) failed.`, 'warning');
+
+      this.loadReturns();
+    },
+
+    // ─── QC Inspect Modal ─────────────────────────────────────────────────────
+
+    /** Open Inspect QC modal for a single return */
+    viewReturnDetails(ret) {
+      this.selectedReturn = ret;
+      // Deep-copy items so we don't mutate the table data until confirmed
+      this.qcItems = ret.items.map(i => ({
+        ...i,
+        image_url:     i.image_url || i.product?.image_url || null,
+        received_qty:  i.requested_qty,
+        restocked_qty: i.requested_qty,
+        damaged_qty:   0,
+        qc_notes:      i.qc_notes || '',
+      }));
+      this.financeAmount = 0;
+      this.financeAction = 'refund';
+      this.financeMethod = 'upi';
+      this.$nextTick(() => getModal('qcInspectModal')?.show());
+    },
+
+    closeQcModal() {
+      getModal('qcInspectModal')?.hide();
+      setTimeout(() => {
+        this.selectedReturn = null;
+        this.qcItems = [];
+      }, 300);
+    },
+
+    /** Per-item validation: damaged + restocked should not exceed received, received ≤ requested */
+    qcItemValid(item) {
+      const req  = parseFloat(item.requested_qty || 0);
+      const recv = parseFloat(item.received_qty  || 0);
+      const rest = parseFloat(item.restocked_qty || 0);
+      const dmg  = parseFloat(item.damaged_qty   || 0);
+      return recv >= 0 && recv <= req && rest >= 0 && dmg >= 0 && (rest + dmg) <= recv;
+    },
+
+    get qcFormValid() {
+      return this.qcItems.length > 0 && this.qcItems.every(i => this.qcItemValid(i));
+    },
+
+    /** Clamp received to [0, requested], then auto-set restocked to remainder */
+    onReceivedChange(item) {
+      const req  = parseFloat(item.requested_qty || 0);
+      item.received_qty  = Math.min(Math.max(0, parseFloat(item.received_qty || 0)), req);
+      const recv = item.received_qty;
+      const dmg  = Math.min(parseFloat(item.damaged_qty || 0), recv);
+      item.damaged_qty   = dmg;
+      item.restocked_qty = Math.max(0, recv - dmg);
+    },
+
+    /** Clamp damaged to [0, received], then auto-set restocked to remainder */
+    onDamagedChange(item) {
+      const recv = parseFloat(item.received_qty || 0);
+      item.damaged_qty   = Math.min(Math.max(0, parseFloat(item.damaged_qty || 0)), recv);
+      item.restocked_qty = Math.max(0, recv - item.damaged_qty);
+    },
+
+    /** Clamp restocked to [0, received - damaged] */
+    onRestockedChange(item) {
+      const recv = parseFloat(item.received_qty || 0);
+      const dmg  = parseFloat(item.damaged_qty  || 0);
+      item.restocked_qty = Math.min(Math.max(0, parseFloat(item.restocked_qty || 0)), Math.max(0, recv - dmg));
+    },
+
+    /** Quick-fill: mark all as fully restocked (all good) */
+    markAllGood() {
+      this.qcItems.forEach(i => {
+        i.received_qty  = i.requested_qty;
+        i.restocked_qty = i.requested_qty;
+        i.damaged_qty   = 0;
+      });
+    },
+
+    /** Quick-fill: mark all as damaged */
+    markAllDamaged() {
+      this.qcItems.forEach(i => {
+        i.received_qty  = i.requested_qty;
+        i.restocked_qty = 0;
+        i.damaged_qty   = i.requested_qty;
+      });
+    },
+
+    /** Submit QC with full per-item quantities */
+    async processQc() {
+      if (!this.qcFormValid) {
+        showToast('Please fix validation errors before submitting.', 'warning');
+        return;
+      }
+
+      this.isSubmitting = true;
       try {
         const payload = {
-          action: this.financeAction,
-          amount: parseFloat(this.financeAmount),
-          payment_method: this.financeMethod
+          items: this.qcItems.map(i => ({
+            id:            i.id,
+            received_qty:  parseFloat(i.received_qty  || 0),
+            restocked_qty: parseFloat(i.restocked_qty || 0),
+            damaged_qty:   parseFloat(i.damaged_qty   || 0),
+            qc_notes:      i.qc_notes || null,
+          })),
         };
 
-        const res = await apiFetch(`/returns/${this.selectedReturn.id}/finance`, { 
+        const res = await apiFetch(`/returns/${this.selectedReturn.id}/qc`, {
           method: 'POST',
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
-        
-        showToast(res.message || 'Financial action processed successfully.');
-        
-        // Refresh data
-        this.loadReturns();
-        
-        const returnId = this.selectedReturn.id;
-        this.selectedReturn = null;
-        
-        setTimeout(() => {
-          this.selectedReturn = this.returns.find(r => r.id === returnId) || null;
-        }, 500);
 
+        showToast(res.message || 'QC submitted successfully.');
+        this.closeQcModal();
+        this.loadReturns();
       } catch (err) {
         showToast(err.message, 'danger');
+      } finally {
+        this.isSubmitting = false;
       }
-    }
+    },
+
+    // ─── Finance ──────────────────────────────────────────────────────────────
+
+    async processFinance() {
+      if (this.financeAmount <= 0) {
+        showToast('Amount must be greater than zero.', 'warning');
+        return;
+      }
+
+      this.isSubmitting = true;
+      try {
+        const payload = {
+          action:         this.financeAction,
+          amount:         parseFloat(this.financeAmount),
+          payment_method: this.financeMethod,
+        };
+
+        const res = await apiFetch(`/returns/${this.selectedReturn.id}/finance`, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+
+        showToast(res.message || 'Financial action processed successfully.');
+        this.closeQcModal();
+        this.loadReturns();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+
+    // ─── Formatting ───────────────────────────────────────────────────────────
+
+    formatCurrency(value) {
+      const n = Number.parseFloat(value ?? 0);
+      return Number.isFinite(n) ? '₹' + n.toFixed(2) : '₹0.00';
+    },
+
+    formatDate(value) {
+      if (!value) return 'N/A';
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    },
+
+    getStatusColor(status) {
+      // Returns hex so blades can use :style="`color: ${getStatusColor(s)}`"
+      return {
+        pending:        '#f97316',
+        received:       '#0ea5e9',
+        qc_in_progress: '#6366f1',
+        completed:      '#10b981',
+        rejected:       '#ef4444',
+      }[status] || '#6c757d';
+    },
+
+    getStatusLabel(status) {
+      return {
+        pending:        'Pending',
+        received:       'Received',
+        qc_in_progress: 'QC In Progress',
+        completed:      'Completed',
+        rejected:       'Rejected',
+      }[status] || status;
+    },
+
+    getFinancialStatusColor(status) {
+      return {
+        pending:        '#f97316',
+        partial_refund: '#0ea5e9',
+        fully_refunded: '#10b981',
+        credited:       '#6366f1',
+      }[status] || '#6c757d';
+    },
   }));
 });

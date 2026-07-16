@@ -3,7 +3,11 @@
 // ==========================================================================
 
 // Order management specific styles
-.order-management {
+.order-management,
+.returns-management,
+.refunds-management,
+.payments-management,
+.invoices-management {
   .stats-card {
     @include stats-card-hover();
   }

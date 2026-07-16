@@ -470,7 +470,9 @@ document.addEventListener('alpine:init', () => {
         dispatched: '#14b8a6',
         shipped: '#14b8a6',
         delivered: '#10b981',
-        cancelled: '#ef4444'
+        cancelled: '#ef4444',
+        return_requested: '#f59e0b',
+        returned: '#64748b'
       };
       return colors[status] || '#6c757d';
     },

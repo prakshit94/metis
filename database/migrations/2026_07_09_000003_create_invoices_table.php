@@ -11,6 +11,7 @@ return new class extends Migration {
             $table->string('invoice_no')->unique();
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
             $table->dateTime('invoice_date');
+            $table->dateTime('due_date')->nullable();
             $table->decimal('total_amount', 15, 2);
             $table->decimal('tax_amount', 15, 2);
             $table->decimal('net_amount', 15, 2);

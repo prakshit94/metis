@@ -238,7 +238,7 @@ class InventoryService
     /**
      * Hard-set a stock quantity (used by adjustments & imports).
      */
-    public function setStock(int $productId, int $warehouseId, float $newQuantity): Stock
+    public function setStock(int $productId, int $warehouseId, float $newQuantity, float $newDamagedQuantity = null): Stock
     {
         if ($newQuantity < 0) {
             throw ValidationException::withMessages([
@@ -246,7 +246,13 @@ class InventoryService
             ]);
         }
 
-        return DB::transaction(function () use ($productId, $warehouseId, $newQuantity) {
+        if ($newDamagedQuantity !== null && $newDamagedQuantity < 0) {
+            throw ValidationException::withMessages([
+                'damaged_qty' => 'Damaged quantity cannot be negative.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($productId, $warehouseId, $newQuantity, $newDamagedQuantity) {
             $stock = $this->getStockForUpdate($productId, $warehouseId);
 
             if ($stock->reserved_qty > $newQuantity) {
@@ -257,14 +263,31 @@ class InventoryService
 
             $diff = $newQuantity - (float) $stock->quantity;
             $stock->quantity = $newQuantity;
+
+            if ($newDamagedQuantity !== null) {
+                $diffDamaged = $newDamagedQuantity - (float) $stock->damaged_qty;
+                $stock->damaged_qty = $newDamagedQuantity;
+                
+                if ($diffDamaged != 0) {
+                    $this->logMovement(
+                        $productId,
+                        $warehouseId,
+                        abs($diffDamaged),
+                        $diffDamaged > 0 ? 'damage' : 'adjustment'
+                    );
+                }
+            }
+
             $stock->save();
 
-            $this->logMovement(
-                $productId,
-                $warehouseId,
-                abs($diff),
-                'adjustment'
-            );
+            if ($diff != 0) {
+                $this->logMovement(
+                    $productId,
+                    $warehouseId,
+                    abs($diff),
+                    'adjustment'
+                );
+            }
 
             $this->syncProductStatus($productId);
 

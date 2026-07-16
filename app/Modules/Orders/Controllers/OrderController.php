@@ -56,6 +56,7 @@ class OrderController extends Controller implements HasMiddleware
             'payments',
             'creator',
             'updater',
+            'orderReturns',
         ])->withCount('items');
 
         $user = auth()->user();

@@ -46,6 +46,20 @@ class Order extends Model
         if ($this->is_draft && $this->status === 'pending') {
             return 'future_order';
         }
+
+        $latestReturn = $this->relationLoaded('orderReturns') 
+            ? $this->orderReturns->sortByDesc('id')->first() 
+            : $this->orderReturns()->latest('id')->first();
+
+        if ($latestReturn) {
+            if ($latestReturn->status === 'completed') {
+                return 'returned';
+            }
+            if ($latestReturn->status !== 'rejected') {
+                return 'return_requested';
+            }
+        }
+
         return $this->status === 'shipped' ? 'dispatched' : $this->status;
     }
 

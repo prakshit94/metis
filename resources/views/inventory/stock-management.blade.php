@@ -181,13 +181,14 @@
                                 <th @click="sortBy('dispatched_qty')" class="sortable text-center">Dispatched</th>
                                 <th @click="sortBy('available')" class="sortable text-center">Available</th>
                                 <th @click="sortBy('in_transit_qty')" class="sortable text-center">In Transit</th>
+                                <th @click="sortBy('damaged_qty')" class="sortable text-center">Bad Qty</th>
                                 <th style="width: 120px;" class="text-end pe-4">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <template x-if="paginatedItems.length === 0">
                                 <tr>
-                                    <td colspan="10" class="text-center py-5 text-muted">
+                                    <td colspan="11" class="text-center py-5 text-muted">
                                         <div x-show="isLoading" class="spinner-border text-primary" role="status">
                                             <span class="visually-hidden">Loading...</span>
                                         </div>
@@ -256,6 +257,10 @@
                                     <td class="text-center">
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
                                               x-text="parseFloat(item.in_transit_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle"
+                                              x-text="parseFloat(item.damaged_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-end pe-4">
                                         <div class="dropdown">
@@ -398,6 +403,14 @@
                                             <div class="col-6">
                                                 <label class="form-label fw-medium text-muted small">New Quantity <span class="text-danger">*</span></label>
                                                 <input type="number" class="form-control" x-model.number="adjustForm.newQty" min="0" step="0.01" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label fw-medium text-muted small">Current Bad Qty</label>
+                                                <input type="number" class="form-control bg-body-secondary" :value="adjustForm.currentDamagedQty" disabled>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label fw-medium text-muted small">New Bad Qty <span class="text-danger">*</span></label>
+                                                <input type="number" class="form-control" x-model.number="adjustForm.newDamagedQty" min="0" step="0.01" required>
                                             </div>
                                         </div>
                                     </div>

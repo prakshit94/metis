@@ -68,6 +68,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('returns/{return}', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'show'])->name('returns.show');
     Route::post('returns/{return}/qc', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'processQc'])->name('returns.qc');
     Route::post('returns/{return}/finance', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'processFinancials'])->name('returns.finance');
+
+    // Billing & Financials
+    Route::get('refunds', [\App\Modules\Orders\Controllers\RefundController::class, 'index'])->name('refunds.index');
+    Route::get('payments', [\App\Modules\Orders\Controllers\PaymentController::class, 'index'])->name('payments.index');
+    Route::get('invoices', [\App\Modules\Orders\Controllers\InvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/customers', [PageController::class, 'customers'])->name('customers');
     Route::get('/customers/search-by-phone', [\App\Modules\Customers\Controllers\CustomerController::class, 'searchByPhone'])->name('customers.search-by-phone');
     Route::get('/customers/{customer}', [\App\Modules\Customers\Controllers\CustomerController::class, 'show'])->name('customers.show');

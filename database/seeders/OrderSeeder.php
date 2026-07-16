@@ -173,7 +173,7 @@ class OrderSeeder extends Seeder
                             'payment_method' => 'bank_transfer',
                             'transaction_id' => 'TXN' . rand(10000000, 99999999),
                             'payment_date' => $orderDate->copy()->addHours(1),
-                            'status' => 'completed',
+                            'status' => 'captured',
                         ]);
                     }
                 }

@@ -67,7 +67,7 @@ class StockManagementController extends Controller implements HasMiddleware
 
         if ($sortBy === 'available') {
             $query->orderByRaw('(quantity - reserved_qty) ' . $sortDir);
-        } elseif (in_array($sortBy, ['id', 'product_id', 'warehouse_id', 'quantity', 'reserved_qty', 'dispatched_qty', 'in_transit_qty'])) {
+        } elseif (in_array($sortBy, ['id', 'product_id', 'warehouse_id', 'quantity', 'reserved_qty', 'dispatched_qty', 'in_transit_qty', 'damaged_qty'])) {
             $query->orderBy($sortBy, $sortDir);
         }
 
@@ -105,6 +105,7 @@ class StockManagementController extends Controller implements HasMiddleware
             'product_id'   => 'required|exists:products,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'quantity'     => 'required|numeric|min:0',
+            'damaged_qty'  => 'nullable|numeric|min:0',
             'notes'        => 'nullable|string|max:500',
         ]);
 
@@ -112,7 +113,8 @@ class StockManagementController extends Controller implements HasMiddleware
             $stock = $this->inventoryService->setStock(
                 (int) $validated['product_id'],
                 (int) $validated['warehouse_id'],
-                (float) $validated['quantity']
+                (float) $validated['quantity'],
+                isset($validated['damaged_qty']) ? (float) $validated['damaged_qty'] : null
             );
 
             return response()->json([

@@ -44,11 +44,46 @@
                     </a>
                 </li>
                 
+                {{-- Billing & Returns Dropdown --}}
                 <li class="nav-item">
-                    <a class="nav-link {{ Str::startsWith($current, 'returns') ? 'active' : '' }}" href="{{ route('returns.index') }}">
-                        <i class="bi bi-arrow-return-left"></i>
-                        <span>Returns & Refunds</span>
+                    <a class="nav-link {{ Str::startsWith($current, 'returns') || Str::startsWith($current, 'refunds') || Str::startsWith($current, 'payments') || Str::startsWith($current, 'invoices') ? 'active' : '' }}"
+                       href="#"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#billingSubmenu"
+                       aria-expanded="{{ Str::startsWith($current, 'returns') || Str::startsWith($current, 'refunds') || Str::startsWith($current, 'payments') || Str::startsWith($current, 'invoices') ? 'true' : 'false' }}"
+                       aria-controls="billingSubmenu">
+                        <i class="bi bi-cash-stack"></i>
+                        <span>Billing &amp; Returns</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
+                    <div class="collapse {{ Str::startsWith($current, 'returns') || Str::startsWith($current, 'refunds') || Str::startsWith($current, 'payments') || Str::startsWith($current, 'invoices') ? 'show' : '' }}" id="billingSubmenu">
+                        <ul class="nav nav-submenu">
+                            <li class="nav-item">
+                                <a class="nav-link {{ Str::startsWith($current, 'returns') ? 'active' : '' }}" href="{{ route('returns.index') }}">
+                                    <i class="bi bi-arrow-return-left"></i>
+                                    <span>Returns</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ Str::startsWith($current, 'refunds') ? 'active' : '' }}" href="{{ route('refunds.index') }}">
+                                    <i class="bi bi-cash-coin"></i>
+                                    <span>Refunds</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ Str::startsWith($current, 'payments') ? 'active' : '' }}" href="{{ route('payments.index') }}">
+                                    <i class="bi bi-credit-card"></i>
+                                    <span>Payments</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ Str::startsWith($current, 'invoices') ? 'active' : '' }}" href="{{ route('invoices.index') }}">
+                                    <i class="bi bi-receipt"></i>
+                                    <span>Invoices</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
 
                 {{-- Shipping & Logistics Dropdown --}}

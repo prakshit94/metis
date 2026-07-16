@@ -39,6 +39,7 @@ return new class extends Migration
 
         Schema::create('refunds', function (Blueprint $table) {
             $table->id();
+            $table->string('refund_no')->unique();
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
             $table->foreignId('invoice_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('order_return_id')->nullable()->constrained()->nullOnDelete();
