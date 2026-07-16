@@ -1157,4 +1157,34 @@ class InventoryService
             }
         });
     }
+
+    /**
+     * Process a return item after Quality Check (QC).
+     */
+    public function processReturnItem(
+        int $productId,
+        int $warehouseId,
+        float $restockQty,
+        float $damageQty,
+        int $orderReturnId = null
+    ): void {
+        DB::transaction(function () use ($productId, $warehouseId, $restockQty, $damageQty, $orderReturnId) {
+            if ($restockQty > 0 || $damageQty > 0) {
+                $stock = $this->getStockForUpdate($productId, $warehouseId);
+                
+                if ($restockQty > 0) {
+                    $stock->quantity = (float) $stock->quantity + $restockQty;
+                    $this->logMovement($productId, $warehouseId, $restockQty, 'in', \App\Modules\Orders\Models\OrderReturn::class, $orderReturnId);
+                }
+                
+                if ($damageQty > 0) {
+                    $stock->damaged_qty = (float) $stock->damaged_qty + $damageQty;
+                    $this->logMovement($productId, $warehouseId, $damageQty, 'damage', \App\Modules\Orders\Models\OrderReturn::class, $orderReturnId);
+                }
+                
+                $stock->save();
+                $this->syncProductStatus($productId);
+            }
+        });
+    }
 }

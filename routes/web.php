@@ -61,6 +61,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('orders/{order}/receipt', [\App\Modules\Orders\Controllers\OrderController::class, 'receipt'])->name('orders.receipt');
     Route::get('/orders', [\App\Modules\Orders\Controllers\OrderController::class, 'index'])->name('orders');
     Route::resource('orders', \App\Modules\Orders\Controllers\OrderController::class)->except(['index']);
+
+    // Order Returns
+    Route::get('returns', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'index'])->name('returns.index');
+    Route::post('orders/{order}/returns', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'store'])->name('orders.returns.store');
+    Route::get('returns/{return}', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'show'])->name('returns.show');
+    Route::post('returns/{return}/qc', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'processQc'])->name('returns.qc');
+    Route::post('returns/{return}/finance', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'processFinancials'])->name('returns.finance');
     Route::get('/customers', [PageController::class, 'customers'])->name('customers');
     Route::get('/customers/search-by-phone', [\App\Modules\Customers\Controllers\CustomerController::class, 'searchByPhone'])->name('customers.search-by-phone');
     Route::get('/customers/{customer}', [\App\Modules\Customers\Controllers\CustomerController::class, 'show'])->name('customers.show');

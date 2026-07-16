@@ -162,4 +162,23 @@ class Order extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function orderReturns(): HasMany
+    {
+        return $this->hasMany(OrderReturn::class);
+    }
+
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
+    }
+
+    public function getTotalPaidAttribute(): float
+    {
+        return (float) $this->payments()->where('status', 'completed')->sum('amount');
+    }
+
+    public function getTotalRefundedAttribute(): float
+    {
+        return (float) $this->refunds()->where('status', 'completed')->sum('amount');
+    }
 }

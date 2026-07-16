@@ -960,6 +960,67 @@
     </div>
 </div>
 
+<!-- ═══════════════════════ Initiate Return Modal ═══════════════════════════ -->
+<div class="modal fade" id="initiateReturnModal" tabindex="-1" aria-labelledby="initiateReturnModalLabel">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="initiateReturnModalLabel">
+                    <i class="bi bi-arrow-return-left me-2 text-warning"></i>Initiate Return for Order <span class="text-warning" x-text="returnModalOrder?.orderNumber"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Reason for Return <span class="text-danger">*</span></label>
+                    <select class="form-select" x-model="returnReason">
+                        <option value="">Select reason...</option>
+                        <option value="damaged">Damaged in transit</option>
+                        <option value="defective">Defective product</option>
+                        <option value="wrong_item">Wrong item received</option>
+                        <option value="not_needed">No longer needed</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Select Items to Return</label>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th style="width: 150px;">Qty to Return</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(item, index) in returnItems" :key="index">
+                                    <tr>
+                                        <td x-text="item.name"></td>
+                                        <td>
+                                            <input type="number" class="form-control form-control-sm" x-model.number="item.requested_qty" min="0" :max="item.max_qty">
+                                            <div class="form-text mt-0" style="font-size: 0.7rem;">Max: <span x-text="item.max_qty"></span></div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Additional Notes</label>
+                    <textarea class="form-control" rows="2" x-model="returnNotes" placeholder="Any details..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" @click="submitReturn()">Initiate Return</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </div> <!-- End Order Management Container -->
 @endsection
 

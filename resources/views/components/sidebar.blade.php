@@ -43,6 +43,13 @@
                         <span>Orders</span>
                     </a>
                 </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link {{ Str::startsWith($current, 'returns') ? 'active' : '' }}" href="{{ route('returns.index') }}">
+                        <i class="bi bi-arrow-return-left"></i>
+                        <span>Returns & Refunds</span>
+                    </a>
+                </li>
 
                 {{-- Shipping & Logistics Dropdown --}}
                 <li class="nav-item">

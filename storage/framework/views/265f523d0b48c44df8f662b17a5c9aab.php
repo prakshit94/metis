@@ -43,6 +43,13 @@
                         <span>Orders</span>
                     </a>
                 </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link <?php echo e(Str::startsWith($current, 'returns') ? 'active' : ''); ?>" href="<?php echo e(route('returns.index')); ?>">
+                        <i class="bi bi-arrow-return-left"></i>
+                        <span>Returns & Refunds</span>
+                    </a>
+                </li>
 
                 
                 <li class="nav-item">

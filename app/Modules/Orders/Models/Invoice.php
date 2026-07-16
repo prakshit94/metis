@@ -46,4 +46,19 @@ class Invoice extends Model
     {
         return max(0, $this->net_amount - $this->paid_amount);
     }
+
+    public function refunds()
+    {
+        return $this->hasMany(Refund::class);
+    }
+
+    public function creditNotes()
+    {
+        return $this->hasMany(CreditNote::class);
+    }
+
+    public function getRefundedAmountAttribute()
+    {
+        return $this->refunds()->where('status', 'completed')->sum('amount');
+    }
 }

@@ -179,6 +179,9 @@ class AdminApp {
       case 'orders':
         await this.initOrdersPage();
         break;
+      case 'returns':
+        await this.initReturnsPage();
+        break;
       case 'reports':
         await this.initReportsPage();
         break;
@@ -297,6 +300,15 @@ class AdminApp {
       console.log('🛒 Orders page script loaded successfully');
     } catch (error) {
       console.error('Failed to load orders page script:', error);
+    }
+  }
+
+  async initReturnsPage() {
+    try {
+      await import('./components/returns.js');
+      console.log('↩️ Returns page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load returns page script:', error);
     }
   }
 

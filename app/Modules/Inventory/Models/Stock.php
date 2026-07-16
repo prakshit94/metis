@@ -25,6 +25,7 @@ class Stock extends Model
         'dispatched_qty',
         'committed_qty',
         'in_transit_qty',
+        'damaged_qty',
         'status',
     ];
 
@@ -34,6 +35,7 @@ class Stock extends Model
         'dispatched_qty'  => 'float',
         'committed_qty'   => 'float',
         'in_transit_qty'  => 'float',
+        'damaged_qty'     => 'float',
     ];
 
     // ─── Computed Attributes ───────────────────────────────────────────────

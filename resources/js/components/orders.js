@@ -146,6 +146,12 @@ document.addEventListener('alpine:init', () => {
     importRows: [],
     importing: false,
 
+    // Return Modal state
+    returnModalOrder: null,
+    returnReason: '',
+    returnNotes: '',
+    returnItems: [],
+
     init() {
       this.loadOrders();
       
@@ -409,6 +415,7 @@ document.addEventListener('alpine:init', () => {
           transactionId: payment.transaction_id || 'N/A',
         })),
         items: (o.items || []).map(item => ({
+          product_id: item.product_id || (item.product ? item.product.id : null),
           name: item.product ? item.product.name : 'Unknown Product',
           sku: item.product ? item.product.sku || '' : '',
           quantity: item.quantity,
@@ -714,26 +721,41 @@ document.addEventListener('alpine:init', () => {
     },
 
     async returnOrder(order) {
-      const confirmed = await Swal.fire({
-        title: 'Return Order?',
-        text: `Mark order ${order.orderNumber} as returned? This will restock physical inventory.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, return order',
-        cancelButtonText: 'Cancel',
-        customClass: {
-          confirmButton: 'btn btn-warning me-2',
-          cancelButton: 'btn btn-secondary',
-          popup: 'rounded-3 shadow-lg',
-          title: 'fs-4 fw-bold'
-        },
-        buttonsStyling: false
-      });
-      if (!confirmed.isConfirmed) return;
+      this.returnModalOrder = order;
+      this.returnReason = '';
+      this.returnNotes = '';
+      this.returnItems = (order.items || []).map(item => ({
+        product_id: item.product_id,
+        name: item.name,
+        requested_qty: item.quantity,
+        max_qty: item.quantity
+      }));
+      getModal('#initiateReturnModal')?.show();
+    },
+
+    async submitReturn() {
+      if (!this.returnReason) {
+        showToast('Please select a return reason.', 'warning');
+        return;
+      }
+      
+      const itemsToReturn = this.returnItems.filter(i => i.requested_qty > 0);
+      if (itemsToReturn.length === 0) {
+        showToast('Please select at least one item to return with a quantity greater than 0.', 'warning');
+        return;
+      }
 
       try {
-        const res = await apiFetch(`/orders/${order.id}/return`, { method: 'POST' });
-        showToast(res.message || 'Order marked as returned.');
+        const res = await apiFetch(`/orders/${this.returnModalOrder.id}/returns`, { 
+          method: 'POST',
+          body: JSON.stringify({
+            reason: this.returnReason,
+            notes: this.returnNotes,
+            items: itemsToReturn
+          })
+        });
+        showToast(res.message || 'Return request initiated.');
+        getModal('#initiateReturnModal')?.hide();
         this.loadOrders();
       } catch (err) {
         showToast(err.message, 'danger');
