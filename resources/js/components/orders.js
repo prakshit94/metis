@@ -576,6 +576,18 @@ document.addEventListener('alpine:init', () => {
       };
     },
 
+    get bulkDocumentActions() {
+      const selectedOrderObjs = this.orders.filter(o => this.selectedOrders.includes(String(o.id)));
+      const hasCompleteSelection = selectedOrderObjs.length === this.selectedOrders.length;
+      const allHaveInvoices = hasCompleteSelection && selectedOrderObjs.length > 0 && selectedOrderObjs.every(o => o.invoice);
+      const hasOrdersWithoutInvoices = selectedOrderObjs.some(o => !o.invoice);
+
+      return {
+        canPrint: allHaveInvoices,
+        canGenerateInvoices: hasOrdersWithoutInvoices,
+      };
+    },
+
     // ─── Lifecycle Actions ───────────────────────────────────────────────────
     
     async confirmOrder(order) {
@@ -930,8 +942,60 @@ document.addEventListener('alpine:init', () => {
 
     bulkPrint(type) {
       if (this.selectedOrders.length === 0) return;
-      window.open(`/orders/bulk-print?order_ids=${this.selectedOrders.join(',')}&type=${type}`, '_blank');
+      const params = new URLSearchParams();
+      this.selectedOrders.forEach(id => params.append('order_ids[]', id));
+      params.append('type', type);
+      window.open(`/orders/bulk-print?${params.toString()}`, '_blank');
       this.selectedOrders = [];
+    },
+
+    async generateBulkInvoices() {
+      if (this.selectedOrders.length === 0) return;
+
+      const confirmed = await Swal.fire({
+        title: 'Generate bulk invoices?',
+        html: `
+          <div class="text-start px-2">
+            <div class="d-flex align-items-center gap-3 p-3 mb-3 rounded-3 bg-primary bg-opacity-10 border border-primary border-opacity-25">
+              <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white flex-shrink-0" style="width: 42px; height: 42px;">
+                <i class="bi bi-receipt-cutoff fs-5"></i>
+              </span>
+              <div>
+                <div class="fw-semibold text-body">${this.selectedOrders.length} order(s) selected</div>
+                <div class="small text-muted">Invoices will be created only for orders that do not already have one.</div>
+              </div>
+            </div>
+            <p class="small text-muted mb-0">You can print bulk invoices and COD receipts after invoices are generated.</p>
+          </div>`,
+        icon: undefined,
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-receipt-cutoff me-1"></i> Generate invoices',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-primary px-4',
+          cancelButton: 'btn btn-light border px-4',
+          popup: 'rounded-4 shadow-lg border-0 p-2',
+          title: 'fs-4 fw-bold pt-3',
+          htmlContainer: 'mb-2',
+          actions: 'd-flex flex-row-reverse gap-2 w-100 px-3 pb-3 mt-0'
+        },
+        buttonsStyling: false,
+        reverseButtons: true,
+        focusCancel: true
+      });
+      if (!confirmed.isConfirmed) return;
+
+      try {
+        const res = await apiFetch('/orders/bulk-generate-invoices', {
+          method: 'POST',
+          body: JSON.stringify({ order_ids: this.selectedOrders })
+        });
+        showToast(res.message || 'Bulk invoices generated successfully.');
+        this.selectedOrders = [];
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
     },
 
     exportOrders() {

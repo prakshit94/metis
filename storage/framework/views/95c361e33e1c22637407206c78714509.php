@@ -393,16 +393,23 @@
                         <i class="bi bi-x-circle me-1"></i>Cancel
                     </button>
 
-                    <div class="dropdown d-inline-block">
+                    <button class="btn btn-sm btn-primary"
+                            x-show="bulkDocumentActions.canGenerateInvoices"
+                            x-transition
+                            @click="generateBulkInvoices()">
+                        <i class="bi bi-receipt-cutoff me-1"></i>Generate Bulk Invoices
+                    </button>
+
+                    <div class="dropdown d-inline-block" x-show="bulkDocumentActions.canPrint" x-transition>
                         <button class="btn btn-sm btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-printer me-1"></i>Print
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="#" @click.prevent="bulkPrint('invoice')">
-                                <i class="bi bi-file-pdf me-2"></i>Invoice PDF
+                                <i class="bi bi-file-pdf me-2"></i>Print Bulk Invoices
                             </a></li>
                             <li><a class="dropdown-item" href="#" @click.prevent="bulkPrint('cod')">
-                                <i class="bi bi-file-earmark-pdf me-2"></i>COD PDF
+                                <i class="bi bi-file-earmark-pdf me-2"></i>Print Bulk COD
                             </a></li>
                         </ul>
                     </div>

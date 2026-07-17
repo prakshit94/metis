@@ -36,7 +36,7 @@ class OrderController extends Controller implements HasMiddleware
             new Middleware('permission:orders.cancel', only: ['cancel']),
             new Middleware('permission:orders.return', only: ['markReturned']),
             new Middleware('permission:orders.invoice_pdf', only: ['downloadInvoice']),
-            new Middleware('permission:orders.generate_invoice', only: ['generateInvoice']),
+            new Middleware('permission:orders.generate_invoice', only: ['generateInvoice', 'generateBulkInvoices']),
             new Middleware('permission:orders.cod', only: ['downloadReceipt']),
             new Middleware('permission:orders.receipt', only: ['receipt']),
             new Middleware('permission:orders.bulk_status', only: ['bulkStatus', 'bulkStoreVerification']),
@@ -687,7 +687,9 @@ class OrderController extends Controller implements HasMiddleware
     public function downloadInvoice(string $id, InvoiceService $invoiceService)
     {
         $order = Order::findOrFail($id);
-        $invoice = $invoiceService->generateForOrder($order);
+        $invoice = $invoiceService->findForOrder($order);
+
+        abort_unless($invoice, 404, 'Generate an invoice before printing it.');
 
         $pdf = Pdf::loadView('orders.pdf.invoice', compact('invoice'))->setPaper('a5', 'portrait');
         return $pdf->download("invoice-{$invoice->invoice_no}.pdf");
@@ -705,14 +707,42 @@ class OrderController extends Controller implements HasMiddleware
         return back()->with('success', 'Invoice generated successfully.');
     }
 
+    public function generateBulkInvoices(Request $request, InvoiceService $invoiceService)
+    {
+        $validated = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:orders,id',
+        ]);
+
+        $orders = Order::whereIn('id', array_unique($validated['order_ids']))->get();
+        $generated = 0;
+
+        DB::transaction(function () use ($orders, $invoiceService, &$generated): void {
+            foreach ($orders as $order) {
+                if (!$invoiceService->findForOrder($order)) {
+                    $invoiceService->generateForOrder($order);
+                    $generated++;
+                }
+            }
+        });
+
+        $message = $generated > 0
+            ? "Generated {$generated} invoice(s)."
+            : 'Invoices have already been generated for the selected orders.';
+
+        return response()->json(['success' => true, 'message' => $message, 'generated' => $generated]);
+    }
+
     public function downloadReceipt(string $id)
     {
-        $order = Order::with(['party', 'items.product', 'shippingAddress.village'])->findOrFail($id);
+        $order = Order::with(['party', 'items.product', 'shippingAddress.village', 'invoice'])->findOrFail($id);
+        abort_unless($order->invoice, 404, 'Generate an invoice before printing the COD receipt.');
+
         $pdf = Pdf::loadView('orders.pdf.cod', compact('order'))->setPaper('a5', 'portrait');
         return $pdf->download("receipt-{$order->order_no}.pdf");
     }
 
-    public function bulkPrint(Request $request, InvoiceService $invoiceService)
+    public function bulkPrint(Request $request)
     {
         $request->validate([
             'order_ids' => 'required|array|min:1',
@@ -720,13 +750,26 @@ class OrderController extends Controller implements HasMiddleware
             'type' => 'required|string|in:invoice,cod',
         ]);
 
-        $orders = Order::whereIn('id', $request->order_ids)->get();
+        $orders = Order::whereIn('id', array_unique($request->order_ids))
+            ->with('invoice')
+            ->get();
+
+        $ordersWithoutInvoices = $orders->filter(fn (Order $order) => !$order->invoice);
+        if ($ordersWithoutInvoices->isNotEmpty()) {
+            return response()->json([
+                'message' => 'Generate invoices for every selected order before bulk printing invoices or COD receipts.',
+                'missing_order_ids' => $ordersWithoutInvoices->pluck('id')->values(),
+            ], 422);
+        }
 
         if ($request->type === 'invoice') {
-            $invoices = [];
-            foreach ($orders as $order) {
-                $invoices[] = $invoiceService->generateForOrder($order);
-            }
+            $invoices = Invoice::with([
+                'order.party',
+                'order.warehouse',
+                'order.items.product',
+                'order.shippingAddress.village',
+                'order.billingAddress.village',
+            ])->whereIn('order_id', $orders->pluck('id'))->get();
             $pdf = Pdf::loadView('orders.pdf.bulk_invoice', compact('invoices'))->setPaper('a5', 'portrait');
             return $pdf->download('bulk-invoices.pdf');
         } else {

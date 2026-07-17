@@ -43,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/adjustments', [PageController::class, 'inventoryAdjustments'])->name('adjustments');
     });
     Route::post('orders/bulk-status', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkStatus'])->name('orders.bulk-status');
+    Route::post('orders/bulk-generate-invoices', [\App\Modules\Orders\Controllers\OrderController::class, 'generateBulkInvoices'])->name('orders.bulk-generate-invoices');
     Route::get('orders/bulk-print', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkPrint'])->name('orders.bulk-print');
     Route::get('orders/export', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkExport'])->name('orders.export');
     Route::post('orders/import', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkImport'])->name('orders.import');
