@@ -77,6 +77,9 @@ class ShippingController extends Controller implements HasMiddleware
             'status' => 'required|in:pending,shipped,in_transit,delivered,failed,returned',
             'location' => 'nullable|string|max:255',
             'description' => 'nullable|string',
+            'delivery_attempts' => 'nullable|integer|min:0',
+            'next_followup_date' => 'nullable|date',
+            'delivered_by' => 'nullable|string|max:255',
         ]);
 
         DB::transaction(function () use ($shipment, $validated) {
@@ -91,6 +94,16 @@ class ShippingController extends Controller implements HasMiddleware
 
             if ($newStatus === 'delivered' && !$shipment->delivered_at) {
                 $updateData['delivered_at'] = now();
+            }
+            
+            if (isset($validated['delivery_attempts'])) {
+                $updateData['delivery_attempts'] = $validated['delivery_attempts'];
+            }
+            if (isset($validated['next_followup_date'])) {
+                $updateData['next_followup_date'] = $validated['next_followup_date'];
+            }
+            if (isset($validated['delivered_by'])) {
+                $updateData['delivered_by'] = $validated['delivered_by'];
             }
 
             $shipment->update($updateData);

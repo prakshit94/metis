@@ -609,8 +609,8 @@ class OrderController extends Controller implements HasMiddleware
             'order_ids' => 'required|array|min:1',
             'order_ids.*' => 'integer|exists:orders,id',
             'status' => 'required|string|in:pending,confirmed,processing,ready_to_ship,dispatched,delivered,cancelled,returned',
-            'carrier_name' => 'nullable|string|max:255',
-            'tracking_no' => 'nullable|string|max:255',
+            'carrier_name' => 'required_if:status,ready_to_ship|nullable|string|max:255',
+            'tracking_no' => 'required_if:status,ready_to_ship|nullable|string|max:255',
         ]);
 
         $ids = $validated['order_ids'];
@@ -640,13 +640,7 @@ class OrderController extends Controller implements HasMiddleware
                         }
                     } elseif ($targetStatus === 'ready_to_ship') {
                         if ($order->status === 'processing') {
-                            $carrier = $validated['carrier_name'] ?? 'Generic';
-                            $baseNo = str_replace('ORD-', 'TRK-', $order->order_no);
-                            if ($baseNo === $order->order_no) {
-                                $baseNo = 'TRK-' . $order->order_no;
-                            }
-                            $tracking = $validated['tracking_no'] ?? $baseNo;
-                            $inventoryService->readyToShipOrder($order, $carrier, $tracking);
+                            $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no']);
                             $count++;
                         } else {
                             $skipped++;
@@ -849,7 +843,7 @@ class OrderController extends Controller implements HasMiddleware
 
     public function bulkExport(Request $request)
     {
-        $query = Order::with(['party', 'warehouse', 'items.product', 'shipments']);
+        $query = Order::with(['party', 'warehouse', 'items.product', 'shipments', 'billingAddress', 'shippingAddress']);
 
         $user = auth()->user();
         if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view_all_order')) {
@@ -891,43 +885,7 @@ class OrderController extends Controller implements HasMiddleware
 
         $filename = 'orders-export-' . now()->format('Ymd_His') . '.csv';
 
-        return response()->streamDownload(function () use ($orders) {
-            $out = fopen('php://output', 'w');
-
-            fputcsv($out, [
-                'order_no',
-                'type',
-                'status',
-                'order_date',
-                'party_name',
-                'party_phone',
-                'warehouse_code',
-                'warehouse_name',
-                'carrier_name',
-                'tracking_no',
-                'total_items'
-            ]);
-
-            foreach ($orders as $order) {
-                $shipment = $order->shipments->first();
-                $partyName = $order->party ? trim($order->party->firstname . ' ' . $order->party->lastname . ' ' . $order->party->company_name) : '';
-                fputcsv($out, [
-                    $order->order_no,
-                    $order->type,
-                    $order->status,
-                    $order->order_date,
-                    $partyName,
-                    $order->party?->phone,
-                    $order->warehouse?->code,
-                    $order->warehouse?->name,
-                    $shipment?->carrier_name,
-                    $shipment?->tracking_no,
-                    $order->items->count(),
-                ]);
-            }
-
-            fclose($out);
-        }, $filename, [
+        return response()->streamDownload($this->generateCsvExportCallback($orders), $filename, [
             'Content-Type' => 'text/csv',
         ]);
     }
@@ -1038,6 +996,10 @@ class OrderController extends Controller implements HasMiddleware
             $message .= " Skipped {$skipped} invalid/non-processing row(s).";
         }
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
         return back()->with('success', $message);
     }
 
@@ -1049,6 +1011,25 @@ class OrderController extends Controller implements HasMiddleware
             fputcsv($out, ['1', 'FedEx', 'FDX123456789']);
             fclose($out);
         }, 'orders-shipping-import-template.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    public function exportSelected(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:orders,id',
+        ]);
+
+        $orders = Order::with(['party', 'warehouse', 'items.product', 'shipments', 'billingAddress', 'shippingAddress'])
+            ->whereIn('id', $validated['ids'])
+            ->orderBy('id')
+            ->get();
+
+        $filename = 'orders-export-selected-' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload($this->generateCsvExportCallback($orders), $filename, [
             'Content-Type' => 'text/csv',
         ]);
     }
@@ -1209,5 +1190,81 @@ class OrderController extends Controller implements HasMiddleware
         $orderedStatuses = ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'];
 
         return array_values(array_intersect($orderedStatuses, array_unique($statuses)));
+    }
+
+    private function generateCsvExportCallback($orders)
+    {
+        return function () use ($orders) {
+            $out = fopen('php://output', 'w');
+
+            fputcsv($out, [
+                'Order ID', 'Order No', 'Order Date', 'Status', 'Order Type',
+                'Order Subtotal', 'Order Tax', 'Order Discount', 'Order Total',
+                'Customer Name', 'Customer Email', 'Customer Phone',
+                'Billing Address 1', 'Billing Address 2', 'Billing Village', 'Billing PO/BO', 'Billing Taluka', 'Billing District', 'Billing City', 'Billing State', 'Billing Pincode',
+                'Shipping Address 1', 'Shipping Address 2', 'Shipping Village', 'Shipping PO/BO', 'Shipping Taluka', 'Shipping District', 'Shipping City', 'Shipping State', 'Shipping Pincode',
+                'Warehouse Name', 'Carrier Name', 'Tracking No',
+                'Product Name', 'Product SKU', 'Quantity', 'Unit Price', 'Item Tax', 'Item Discount', 'Item Net'
+            ]);
+
+            foreach ($orders as $order) {
+                $shipment = $order->shipments->first();
+                $customerName = $order->party ? trim($order->party->firstname . ' ' . $order->party->lastname) : '';
+                $customerEmail = $order->party->email ?? '';
+                $customerPhone = $order->party->phone ?? '';
+                
+                $billingAdd1 = $order->billing_address_line_1 ?? '';
+                $billingAdd2 = $order->billing_address_line_2 ?? '';
+                $billingVillage = $order->billing_village_name ?? '';
+                $billingPO = $order->billing_post_office ?? '';
+                $billingTaluka = $order->billing_taluka ?? '';
+                $billingDistrict = $order->billing_district ?? '';
+                $billingCity = $order->billing_city ?? '';
+                $billingState = $order->billing_state ?? '';
+                $billingPin = $order->billing_pincode ?? '';
+
+                $shippingAdd1 = $order->shipping_address_line_1 ?? '';
+                $shippingAdd2 = $order->shipping_address_line_2 ?? '';
+                $shippingVillage = $order->shipping_village_name ?? '';
+                $shippingPO = $order->shipping_post_office ?? '';
+                $shippingTaluka = $order->shipping_taluka ?? '';
+                $shippingDistrict = $order->shipping_district ?? '';
+                $shippingCity = $order->shipping_city ?? '';
+                $shippingState = $order->shipping_state ?? '';
+                $shippingPin = $order->shipping_pincode ?? '';
+
+                $warehouseName = $order->warehouse->name ?? '';
+                $carrierName = $shipment->carrier_name ?? '';
+                $trackingNo = $shipment->tracking_no ?? '';
+
+                if ($order->items->isEmpty()) {
+                    fputcsv($out, [
+                        $order->id, $order->order_no, $order->order_date, $order->status, $order->type,
+                        $order->total_amount, $order->tax_amount, $order->discount_amount, $order->net_amount,
+                        $customerName, $customerEmail, $customerPhone,
+                        $billingAdd1, $billingAdd2, $billingVillage, $billingPO, $billingTaluka, $billingDistrict, $billingCity, $billingState, $billingPin,
+                        $shippingAdd1, $shippingAdd2, $shippingVillage, $shippingPO, $shippingTaluka, $shippingDistrict, $shippingCity, $shippingState, $shippingPin,
+                        $warehouseName, $carrierName, $trackingNo,
+                        '', '', '', '', '', '', ''
+                    ]);
+                } else {
+                    foreach ($order->items as $item) {
+                        $productName = $item->product ? $item->product->name : 'Unknown Product';
+                        $productSku = $item->product ? $item->product->sku : '';
+                        fputcsv($out, [
+                            $order->id, $order->order_no, $order->order_date, $order->status, $order->type,
+                            $order->total_amount, $order->tax_amount, $order->discount_amount, $order->net_amount,
+                            $customerName, $customerEmail, $customerPhone,
+                            $billingAdd1, $billingAdd2, $billingVillage, $billingPO, $billingTaluka, $billingDistrict, $billingCity, $billingState, $billingPin,
+                            $shippingAdd1, $shippingAdd2, $shippingVillage, $shippingPO, $shippingTaluka, $shippingDistrict, $shippingCity, $shippingState, $shippingPin,
+                            $warehouseName, $carrierName, $trackingNo,
+                            $productName, $productSku, $item->quantity, $item->unit_price, $item->tax_amount, $item->discount_amount, $item->net_amount
+                        ]);
+                    }
+                }
+            }
+
+            fclose($out);
+        };
     }
 }

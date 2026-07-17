@@ -14,11 +14,15 @@ class Shipment extends Model
         'status',
         'shipped_at',
         'delivered_at',
+        'delivered_by',
+        'delivery_attempts',
+        'next_followup_date',
     ];
 
     protected $casts = [
         'shipped_at' => 'datetime',
         'delivered_at' => 'datetime',
+        'next_followup_date' => 'datetime',
     ];
 
     public function order()

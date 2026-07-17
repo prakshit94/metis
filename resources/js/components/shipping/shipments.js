@@ -81,13 +81,22 @@ export default () => {
         statusForm: {
             status: 'pending',
             location: '',
-            description: ''
+            description: '',
+            delivery_attempts: 0,
+            next_followup_date: '',
+            delivered_by: ''
         },
 
         eventForm: {
             event_name: '',
             location: '',
             description: ''
+        },
+
+        returnModal: null,
+        returnForm: {
+            reason: '',
+            notes: ''
         },
 
         apiBase: '/api/shipping/shipments',
@@ -112,6 +121,11 @@ export default () => {
             const addEventEl = document.getElementById('addEventModal');
             if (addEventEl) {
                 this.addEventModal = Modal.getOrCreateInstance(addEventEl);
+            }
+
+            const returnOrderEl = document.getElementById('returnOrderModal');
+            if (returnOrderEl) {
+                this.returnModal = Modal.getOrCreateInstance(returnOrderEl);
             }
 
             setTimeout(() => {
@@ -381,7 +395,10 @@ export default () => {
             this.statusForm = {
                 status: shipment.status,
                 location: '',
-                description: ''
+                description: '',
+                delivery_attempts: shipment.delivery_attempts || 0,
+                next_followup_date: shipment.next_followup_date ? shipment.next_followup_date.split('T')[0] : '',
+                delivered_by: shipment.delivered_by || ''
             };
             this.statusModal?.show();
         },
@@ -442,6 +459,65 @@ export default () => {
                 if (this.trackingModal && this.selectedShipment) {
                     this.openTrackingModal(this.selectedShipment);
                 }
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        openReturnModal(shipment) {
+            this.selectedShipment = shipment;
+            this.returnForm = {
+                reason: '',
+                notes: ''
+            };
+            this.returnModal?.show();
+        },
+
+        async submitReturn() {
+            if (!this.selectedShipment) return;
+            
+            this.saving = true;
+            try {
+                const orderId = this.selectedShipment.order?.id || this.selectedShipment.order_id;
+                
+                const orderPayload = await this.apiRequest(`/orders/${orderId}`);
+                if (!orderPayload || !orderPayload.order) {
+                    throw new Error("Order details not found.");
+                }
+                const order = orderPayload.order;
+                const itemsToReturn = (order.items || []).map(item => ({
+                    product_id: item.product_id,
+                    name: item.product?.name || item.name || 'Unknown Product',
+                    requested_qty: item.quantity,
+                    max_qty: item.quantity
+                }));
+
+                const payload = {
+                    reason: this.returnForm.reason,
+                    notes: this.returnForm.notes,
+                    items: itemsToReturn
+                };
+                
+                await this.apiRequest(`/orders/${orderId}/returns`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                showToast('Order return initiated successfully.', 'success');
+                this.returnModal?.hide();
+                
+                this.statusForm = {
+                    status: 'returned',
+                    location: '',
+                    description: 'Order Returned: ' + this.returnForm.reason,
+                    delivery_attempts: this.selectedShipment.delivery_attempts || 0,
+                    next_followup_date: this.selectedShipment.next_followup_date || '',
+                    delivered_by: this.selectedShipment.delivered_by || ''
+                };
+                await this.saveStatus();
+                
             } catch (error) {
                 showToast(error.message, 'error');
             } finally {

@@ -329,7 +329,6 @@
                           x-text="'Next: ' + [
                             bulkAvailableActions.canConfirm ? 'Confirm' : null,
                             bulkAvailableActions.canProcess ? 'Process' : null,
-                            bulkAvailableActions.canReadyToShip ? 'Ready to Ship' : null,
                             bulkAvailableActions.canDispatch ? 'Dispatch' : null,
                             bulkAvailableActions.canDeliver ? 'Deliver' : null,
                           ].filter(Boolean).join(', ') || 'No transitions'">
@@ -351,13 +350,6 @@
                             title="Move confirmed orders → Processing">
                         <i class="bi bi-arrow-clockwise me-1"></i>Process
                     </button>
-                    <button class="btn btn-sm btn-info text-white"
-                            x-show="bulkAvailableActions.canReadyToShip"
-                            x-transition
-                            @click="bulkUpdateStatus('ready_to_ship')"
-                            title="Move processing orders → Ready to Ship">
-                        <i class="bi bi-truck me-1"></i>Ready to Ship
-                    </button>
                     <button class="btn btn-sm btn-warning"
                             x-show="bulkAvailableActions.canDispatch"
                             x-transition
@@ -375,6 +367,12 @@
 
                     
                     <div class="vr" x-show="bulkAvailableActions.canCancel || true"></div>
+
+                    <button class="btn btn-sm btn-outline-info" 
+                            @click="exportSelectedOrders()" 
+                            title="Export Selected to CSV">
+                        <i class="bi bi-download me-1"></i>Export CSV
+                    </button>
 
                     
                     <button class="btn btn-sm btn-outline-danger"
@@ -933,7 +931,7 @@
 
 <!-- ═══════════════════════ CSV Import Preview Modal ═══════════════════════════ -->
 <div class="modal fade" id="importPreviewModal" tabindex="-1" aria-labelledby="importPreviewModalLabel" data-bs-backdrop="static">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold" id="importPreviewModalLabel">
@@ -943,34 +941,54 @@
             </div>
             <div class="modal-body pt-3">
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle-fill me-2"></i>Please review the rows before finalizing the bulk import.
+                    <i class="bi bi-info-circle-fill me-2"></i>Please review the details below. Only valid orders (currently in "Processing" status) will be updated.
                 </div>
                 <div class="table-responsive" style="max-height: 400px;">
-                    <table class="table table-striped table-sm small align-middle">
-                        <thead>
+                    <table class="table table-striped table-hover table-sm small align-middle mb-0">
+                        <thead class="table-light sticky-top">
                             <tr>
                                 <th>Order No</th>
-                                <th>Status</th>
-                                <th>Reason / Validation</th>
+                                <th>Customer</th>
+                                <th>Current Status</th>
+                                <th>Carrier (CSV)</th>
+                                <th>Tracking No (CSV)</th>
+                                <th>Validation</th>
                             </tr>
                         </thead>
                         <tbody>
                             <template x-for="(row, idx) in importRows" :key="idx">
-                                <tr>
+                                <tr :class="row.is_valid ? '' : 'table-danger'">
                                     <td class="font-monospace fw-bold" x-text="row.order_no"></td>
+                                    <td class="text-truncate" style="max-width: 150px;" x-text="row.customer"></td>
                                     <td>
-                                        <span class="badge" 
-                                              :class="row.status === 'success' || row.status === 'valid' ? 'bg-success' : 'bg-danger'"
-                                              x-text="row.status"></span>
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary" x-text="row.current_status"></span>
+                                        <template x-if="row.is_valid">
+                                            <span>
+                                                <i class="bi bi-arrow-right mx-1 text-muted"></i>
+                                                <span class="badge bg-primary bg-opacity-10 text-primary" x-text="row.upcoming_status"></span>
+                                            </span>
+                                        </template>
                                     </td>
-                                    <td x-text="row.validation_message || row.message || 'Row looks valid.'"></td>
+                                    <td x-text="row.csv_carrier"></td>
+                                    <td class="font-monospace" x-text="row.csv_tracking"></td>
+                                    <td>
+                                        <template x-if="row.is_valid">
+                                            <span class="text-success fw-medium"><i class="bi bi-check-circle me-1"></i>Valid (Will process)</span>
+                                        </template>
+                                        <template x-if="!row.is_valid">
+                                            <span class="text-danger fw-medium">
+                                                <i class="bi bi-x-circle me-1"></i>
+                                                <span x-text="row.current_status === 'Not Found' ? 'Order not found' : 'Must be in Processing status'"></span>
+                                            </span>
+                                        </template>
+                                    </td>
                                 </tr>
                             </template>
                         </tbody>
                     </table>
                 </div>
             </div>
-            <div class="modal-footer border-top-0 pt-0">
+            <div class="modal-footer border-top-0 pt-0 mt-3">
                 <button type="button" class="btn btn-secondary" @click="cancelImport()">Cancel</button>
                 <button type="button" class="btn btn-primary" @click="confirmImport()">Confirm Import</button>
             </div>
@@ -1043,6 +1061,21 @@
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
+<script>
+    document.addEventListener('show.bs.dropdown', function (event) {
+        var responsiveContainer = event.target.closest('.table-responsive');
+        if (responsiveContainer) {
+            responsiveContainer.style.overflow = 'visible';
+        }
+    });
+    
+    document.addEventListener('hide.bs.dropdown', function (event) {
+        var responsiveContainer = event.target.closest('.table-responsive');
+        if (responsiveContainer) {
+            responsiveContainer.style.overflow = '';
+        }
+    });
+</script>
 <?php $__env->stopPush(); ?>
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/user/metis/resources/views/orders/index.blade.php ENDPATH**/ ?>

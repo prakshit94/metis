@@ -912,29 +912,80 @@ document.addEventListener('alpine:init', () => {
     async bulkUpdateStatus(status) {
       if (this.selectedOrders.length === 0) return;
 
-      const confirmed = await Swal.fire({
-        title: 'Bulk Update Status',
-        text: `Update status of ${this.selectedOrders.length} order(s) to "${status.replace(/_/g, ' ')}"?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, update',
-        cancelButtonText: 'Cancel',
-        customClass: {
-          confirmButton: 'btn btn-primary me-2',
-          cancelButton: 'btn btn-secondary',
-          popup: 'rounded-3 shadow-lg',
-          title: 'fs-4 fw-bold'
-        },
-        buttonsStyling: false
-      });
-      if (!confirmed.isConfirmed) return;
+      let carrierName = null;
+      let trackingNo = null;
+
+      if (status === 'ready_to_ship') {
+        const result = await Swal.fire({
+          title: 'Ready to Ship (Bulk)',
+          html: `
+            <div class="text-start">
+              <label class="form-label fw-bold">Carrier Name <span class="text-danger">*</span></label>
+              <select id="swal-carrier" class="form-select mb-3">
+                <option value="" disabled selected>Select Carrier</option>
+                ${(this.carriersList || []).map(c => `<option value="${c}">${c}</option>`).join('')}
+              </select>
+              <label class="form-label fw-bold">Tracking Number (Base) <span class="text-danger">*</span></label>
+              <input type="text" id="swal-tracking" class="form-control" placeholder="Enter tracking details">
+              <small class="text-muted mt-1 d-block">This tracking number will be applied to all selected orders. You can update them individually later if needed.</small>
+            </div>
+          `,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, update',
+          cancelButtonText: 'Cancel',
+          customClass: {
+            confirmButton: 'btn btn-primary me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'rounded-3 shadow-lg',
+            title: 'fs-4 fw-bold'
+          },
+          buttonsStyling: false,
+          preConfirm: () => {
+            const cName = document.getElementById('swal-carrier').value;
+            const tNo = document.getElementById('swal-tracking').value;
+            if (!cName) {
+              Swal.showValidationMessage('Please select a carrier');
+              return false;
+            }
+            if (!tNo) {
+              Swal.showValidationMessage('Please enter a tracking number');
+              return false;
+            }
+            return { carrierName: cName, trackingNo: tNo };
+          }
+        });
+
+        if (!result.isConfirmed) return;
+        carrierName = result.value.carrierName;
+        trackingNo = result.value.trackingNo;
+      } else {
+        const confirmed = await Swal.fire({
+          title: 'Bulk Update Status',
+          text: `Update status of ${this.selectedOrders.length} order(s) to "${status.replace(/_/g, ' ')}"?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, update',
+          cancelButtonText: 'Cancel',
+          customClass: {
+            confirmButton: 'btn btn-primary me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'rounded-3 shadow-lg',
+            title: 'fs-4 fw-bold'
+          },
+          buttonsStyling: false
+        });
+        if (!confirmed.isConfirmed) return;
+      }
 
       try {
         const res = await apiFetch('/orders/bulk-status', {
           method: 'POST',
           body: JSON.stringify({
             order_ids: this.selectedOrders,
-            status: status
+            status: status,
+            ...(carrierName ? { carrier_name: carrierName } : {}),
+            ...(trackingNo ? { tracking_no: trackingNo } : {})
           })
         });
         showToast(res.message || 'Bulk status update completed.');
@@ -1030,6 +1081,38 @@ document.addEventListener('alpine:init', () => {
       }).toString()}`, '_blank');
     },
 
+    async exportSelectedOrders() {
+      if (!this.selectedOrders.length) return;
+      try {
+        const res = await fetch('/orders/export-selected', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken()
+          },
+          body: JSON.stringify({ ids: this.selectedOrders })
+        });
+        
+        if (!res.ok) {
+          const text = await res.text();
+          const errData = text ? JSON.parse(text) : {};
+          throw new Error(errData.message || 'Export failed');
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `orders-export-selected-${new Date().getTime()}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
     // ─── CSV Import Preview & Confirm ────────────────────────────────────────
     
     async handleImportFileSelect(event) {
@@ -1065,8 +1148,37 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    confirmImport() {
-      document.getElementById('import-form').submit();
+    async confirmImport() {
+      const fileInput = document.getElementById('import-file');
+      if (!fileInput.files.length) return;
+      
+      this.importing = true;
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      
+      try {
+        const res = await fetch('/orders/import', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken()
+          }
+        });
+        
+        const data = await res.json();
+        if (data.error) {
+          showToast(data.error, 'danger');
+        } else {
+          showToast(data.message || 'Import successful.', 'success');
+          this.cancelImport();
+          this.loadOrders();
+        }
+      } catch (err) {
+        showToast('Error finalizing import.', 'danger');
+      } finally {
+        this.importing = false;
+      }
     },
 
     cancelImport() {
