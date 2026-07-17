@@ -281,10 +281,32 @@ class OrderController extends Controller implements HasMiddleware
             ->sort()
             ->values();
 
+        // 7 Day Trends Data
+        $trendsQuery = Order::whereDate('order_date', '>=', now()->subDays(6))
+            ->groupBy(DB::raw('DATE(order_date)'))
+            ->orderBy(DB::raw('DATE(order_date)'))
+            ->get([
+                DB::raw('DATE(order_date) as date'),
+                DB::raw('COUNT(*) as orders'),
+                DB::raw('SUM(net_amount) as revenue')
+            ]);
+
+        $trendsData = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->format('Y-m-d');
+            $record = $trendsQuery->firstWhere('date', $date);
+            $trendsData[] = [
+                'date' => \Carbon\Carbon::parse($date)->format('D'),
+                'orders' => $record ? (int)$record->orders : 0,
+                'revenue' => $record ? (float)$record->revenue : 0,
+            ];
+        }
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'orders' => $orders,
                 'stats' => $stats,
+                'trends' => $trendsData,
                 'allowed_filter_statuses' => $statusesList,
                 'districts' => $districtsList,
                 'talukas' => $talukasList,

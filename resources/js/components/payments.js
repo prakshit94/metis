@@ -79,9 +79,9 @@ document.addEventListener('alpine:init', () => {
 
     stats: {
       total_volume: 0,
-      captured: 0,
-      authorized: 0,
-      failed: 0,
+      captured_amount: 0,
+      authorized_amount: 0,
+      failed_amount: 0,
     },
 
     selectedPayment: null,
@@ -93,6 +93,12 @@ document.addEventListener('alpine:init', () => {
       status: '',
       transaction_id: ''
     },
+
+    importStep: 1,
+    importFile: null,
+    importPreview: [],
+    importErrors: [],
+    isImporting: false,
 
     init() {
       this.loadPayments();
@@ -206,6 +212,44 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    async exportSelectedPayments() {
+      if (!this.selectedPayments.length) return;
+      this.isSubmitting = true;
+      try {
+        const res = await fetch('/payments/export', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken()
+          },
+          body: JSON.stringify({ ids: this.selectedPayments })
+        });
+        
+        if (!res.ok) {
+          const text = await res.text();
+          const errData = text ? JSON.parse(text) : {};
+          throw new Error(errData.message || 'Export failed');
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'payments_export.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        showToast('Payments exported successfully.');
+        this.selectedPayments = [];
+      } catch (err) {
+        showToast(err.message, 'danger');
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+
     viewDetails(payment) {
       this.selectedPayment = payment;
       this.$nextTick(() => {
@@ -242,6 +286,65 @@ document.addEventListener('alpine:init', () => {
         showToast(err.message, 'danger');
       } finally {
         this.isSubmitting = false;
+      }
+    },
+
+    openImportModal() {
+      this.importStep = 1;
+      this.importFile = null;
+      this.importPreview = [];
+      this.importErrors = [];
+      if (document.getElementById('importFile')) {
+        document.getElementById('importFile').value = '';
+      }
+      this.$nextTick(() => {
+        getModal('importPaymentsModal')?.show();
+      });
+    },
+
+    async previewImport() {
+      if (!this.importFile) return;
+      this.isImporting = true;
+      const formData = new FormData();
+      formData.append('file', this.importFile);
+
+      try {
+        const res = await fetch('/payments/import/preview', {
+          method: 'POST',
+          headers: { 'X-CSRF-TOKEN': getCsrfToken(), 'Accept': 'application/json' },
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to parse file.');
+        
+        this.importPreview = data.preview || [];
+        this.importErrors = data.errors || [];
+        this.importStep = 2;
+      } catch (err) {
+        showToast(err.message, 'danger');
+      } finally {
+        this.isImporting = false;
+      }
+    },
+
+    async processImport() {
+      if (!this.importPreview.length) return;
+      this.isImporting = true;
+      try {
+        const res = await apiFetch('/payments/import/process', {
+          method: 'POST',
+          body: JSON.stringify({ payments: this.importPreview })
+        });
+        showToast(res.message);
+        if (res.errors && res.errors.length) {
+          res.errors.forEach(e => showToast(e, 'warning'));
+        }
+        getModal('importPaymentsModal')?.hide();
+        this.loadPayments();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      } finally {
+        this.isImporting = false;
       }
     },
 

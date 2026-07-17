@@ -32,85 +32,77 @@
                 </div>
 
                 <!-- Stats Cards with Alpine.js -->
-                <div class="row g-3 g-lg-4 mb-4">
-                    <div class="col-sm-6 col-xl-3" x-data="statsCounter(<?php echo e($totalCustomers); ?>, 5)">
-                        <div class="card stats-card">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <div class="stats-icon bg-primary bg-opacity-10 text-primary">
-                                            <i class="bi bi-people"></i>
-                                        </div>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <p class="h6 mb-0 text-muted">Total Customers</p>
-                                        <div class="h3 mb-0"><span x-text="value.toLocaleString()"><?php echo e(number_format($totalCustomers)); ?></span></div>
-                                        <small class="text-success-emphasis">
-                                            <i class="bi bi-arrow-up"></i> +12.5%
+                <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
+                    <div class="col-xl-3 col-lg-6" x-data="statsCounter(<?php echo e($totalCustomers); ?>, 5)">
+                        <div class="card metric-card visitors">
+                            <div class="card-body p-3 p-lg-4">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted mb-1">Total Customers</h6>
+                                        <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()"><?php echo e(number_format($totalCustomers)); ?></span></div>
+                                        <small class="trend-up">
+                                            <i class="bi bi-arrow-up"></i> +12.5% from last month
                                         </small>
+                                    </div>
+                                    <div class="stats-icon bg-primary bg-opacity-10 text-primary">
+                                        <i class="bi bi-people"></i>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-sm-6 col-xl-3" x-data="statsCounter(<?php echo e($totalRevenue); ?>, 5)">
-                        <div class="card stats-card">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <div class="stats-icon bg-success bg-opacity-10 text-success">
-                                            <i class="bi bi-graph-up"></i>
-                                        </div>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <p class="h6 mb-0 text-muted">Revenue</p>
-                                        <h3 class="mb-0">Rs <span x-text="value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})"><?php echo e(number_format($totalRevenue, 2)); ?></span></h3>
-                                        <small class="text-success-emphasis">
-                                            <i class="bi bi-arrow-up"></i> +8.2%
+                    <div class="col-xl-3 col-lg-6" x-data="statsCounter(<?php echo e($totalRevenue); ?>, 5)">
+                        <div class="card metric-card revenue">
+                            <div class="card-body p-3 p-lg-4">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted mb-1">Total Revenue</h6>
+                                        <div class="h3 mb-0" aria-live="polite"><span x-text="'Rs ' + value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})">Rs <?php echo e(number_format($totalRevenue, 2)); ?></span></div>
+                                        <small class="trend-up">
+                                            <i class="bi bi-arrow-up"></i> +8.2% from last month
                                         </small>
+                                    </div>
+                                    <div class="stats-icon bg-success bg-opacity-10 text-success">
+                                        <i class="bi bi-currency-dollar"></i>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-sm-6 col-xl-3" x-data="statsCounter(<?php echo e($totalOrders); ?>, 5)">
-                        <div class="card stats-card">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <div class="stats-icon bg-warning bg-opacity-10 text-warning">
-                                            <i class="bi bi-bag-check"></i>
-                                        </div>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <p class="h6 mb-0 text-muted">Orders</p>
-                                        <h3 class="mb-0"><span x-text="value.toLocaleString()"><?php echo e(number_format($totalOrders)); ?></span></h3>
-                                        <small class="text-danger-emphasis">
-                                            <i class="bi bi-arrow-down"></i> -2.1%
+                    <div class="col-xl-3 col-lg-6" x-data="statsCounter(<?php echo e($totalOrders); ?>, 5)">
+                        <div class="card metric-card conversion">
+                            <div class="card-body p-3 p-lg-4">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted mb-1">Total Orders</h6>
+                                        <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()"><?php echo e(number_format($totalOrders)); ?></span></div>
+                                        <small class="trend-down">
+                                            <i class="bi bi-arrow-down"></i> -2.1% from last month
                                         </small>
+                                    </div>
+                                    <div class="stats-icon bg-warning bg-opacity-10 text-warning">
+                                        <i class="bi bi-bag-check"></i>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-sm-6 col-xl-3" x-data="statsCounter(<?php echo e($totalProducts); ?>, 5)">
-                        <div class="card stats-card">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <div class="stats-icon bg-info bg-opacity-10 text-info">
-                                            <i class="bi bi-clock-history"></i>
-                                        </div>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <p class="h6 mb-0 text-muted">Total Products</p>
-                                        <h3 class="mb-0"><span x-text="value.toLocaleString()"><?php echo e(number_format($totalProducts)); ?></span></h3>
-                                        <small class="text-success-emphasis">
-                                            <i class="bi bi-arrow-up"></i> +5.4%
+                    <div class="col-xl-3 col-lg-6" x-data="statsCounter(<?php echo e($totalProducts); ?>, 5)">
+                        <div class="card metric-card bounce">
+                            <div class="card-body p-3 p-lg-4">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted mb-1">Total Products</h6>
+                                        <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()"><?php echo e(number_format($totalProducts)); ?></span></div>
+                                        <small class="trend-up">
+                                            <i class="bi bi-arrow-up"></i> +5.4% from last month
                                         </small>
+                                    </div>
+                                    <div class="stats-icon bg-info bg-opacity-10 text-info">
+                                        <i class="bi bi-box-seam"></i>
                                     </div>
                                 </div>
                             </div>
@@ -118,99 +110,72 @@
                     </div>
                 </div>
 
-                <!-- Chart Section -->
-                <div class="row g-4 mb-4">
+                <!-- Charts Row 1 -->
+                <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <div class="col-lg-8">
-                        <div class="card">
+                        <div class="card h-100">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h2 class="h5 card-title mb-0">Revenue Overview</h2>
+                                <h2 class="h5 card-title mb-0">Revenue Analytics</h2>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button" class="btn btn-outline-primary active" data-chart-period="7d">7D</button>
-                                    <button type="button" class="btn btn-outline-primary" data-chart-period="30d">30D</button>
-                                    <button type="button" class="btn btn-outline-primary" data-chart-period="90d">90D</button>
-                                    <button type="button" class="btn btn-outline-primary" data-chart-period="1y">1Y</button>
+                                    <button type="button" class="btn btn-outline-secondary active" data-chart-period="7d">7D</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-chart-period="30d">30D</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-chart-period="90d">90D</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-chart-period="1y">1Y</button>
                                 </div>
                             </div>
-                            <div class="card-body">
-                                <div id="revenueChart" style="min-height: 320px;"></div>
+                            <div class="card-body p-3 p-lg-4">
+                                <div class="chart-container" style="position: relative; overflow: hidden;">
+                                    <div id="revenueChart" style="min-height: 320px;"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-lg-4">
-                        <div class="card">
+                        <div class="card h-100">
                             <div class="card-header">
-                                <h2 class="h5 card-title mb-0">Recent Activity</h2>
+                                <h2 class="h5 card-title mb-0">Order Status Distribution</h2>
                             </div>
-                            <div class="card-body">
-                                <div class="activity-feed">
-                                    <div class="activity-item">
-                                        <div class="activity-icon bg-primary bg-opacity-10 text-primary">
-                                            <i class="bi bi-person-plus"></i>
-                                        </div>
-                                        <div class="activity-content">
-                                            <p class="mb-1">New user registered</p>
-                                            <small class="text-muted">2 minutes ago</small>
-                                        </div>
-                                    </div>
-                                    <div class="activity-item">
-                                        <div class="activity-icon bg-success bg-opacity-10 text-success">
-                                            <i class="bi bi-bag-check"></i>
-                                        </div>
-                                        <div class="activity-content">
-                                            <p class="mb-1">Order #1234 completed</p>
-                                            <small class="text-muted">5 minutes ago</small>
-                                        </div>
-                                    </div>
-                                    <div class="activity-item">
-                                        <div class="activity-icon bg-warning bg-opacity-10 text-warning">
-                                            <i class="bi bi-exclamation-triangle"></i>
-                                        </div>
-                                        <div class="activity-content">
-                                            <p class="mb-1">Server maintenance scheduled</p>
-                                            <small class="text-muted">1 hour ago</small>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="card-body p-3 p-lg-4">
+                                <div id="orderStatusChart" style="min-height: 280px;" class="mb-4"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Additional Charts Row -->
-                <div class="row g-4 mb-4">
+                <!-- Charts Row 2 -->
+                <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <div class="col-lg-6">
-                        <div class="card">
+                        <div class="card h-100">
                             <div class="card-header">
                                 <h2 class="h5 card-title mb-0">User Growth (Last 7 Days)</h2>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-3 p-lg-4">
                                 <div id="userGrowthChart" style="min-height: 280px;"></div>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-lg-6">
-                        <div class="card">
+                        <div class="card h-100">
                             <div class="card-header">
-                                <h2 class="h5 card-title mb-0">Order Status Distribution</h2>
+                                <h2 class="h5 card-title mb-0">Storage Status</h2>
                             </div>
-                            <div class="card-body">
-                                <div id="orderStatusChart" style="min-height: 280px;"></div>
+                            <div class="card-body p-3 p-lg-4">
+                                <div id="storageStatusChart"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- New Widgets Row -->
-                <div class="row g-4 mb-4">
-                    <!-- Recent Orders -->
-                    <div class="col-lg-8">
+                <!-- Data Tables -->
+                <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
+                    <div class="col-lg-12">
                         <div class="card">
                             <div class="card-header">
                                 <h2 class="h5 card-title mb-0">Recent Orders</h2>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-0">
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">
                                         <thead class="table-light">
@@ -230,30 +195,19 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Storage Status -->
-                    <div class="col-lg-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h2 class="h5 card-title mb-0">Storage Status</h2>
-                            </div>
-                            <div class="card-body">
-                                <div id="storageStatusChart"></div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Sales by Location -->
-                <div class="row g-4">
+                <!-- Geographic Data -->
+                <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <div class="col-12">
-                        <div class="card">
+                        <div class="card h-100">
                             <div class="card-header">
                                 <h2 class="h5 card-title mb-0">Sales by Location</h2>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-3 p-lg-4">
                                 <div id="salesByLocationChart" style="min-height: 400px; width: 100%;"></div>
                             </div>
+                        </div>
                     </div>
                 </div>
 

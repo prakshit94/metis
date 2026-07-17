@@ -58,9 +58,7 @@
                     <div>
                         <p class="h6 mb-0 text-muted">Total Orders</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.total"></span></div>
-                        <small class="text-success-emphasis">
-                            <i class="bi bi-arrow-up"></i> +12% from last month
-                        </small>
+                        <small class="text-muted" x-text="'Value: ' + formatCurrency(stats.revenue)"></small>
                     </div>
                 </div>
             </div>
@@ -76,9 +74,7 @@
                     <div>
                         <p class="h6 mb-0 text-muted">Pending</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.pending"></span></div>
-                        <small class="text-warning">
-                            <i class="bi bi-exclamation-circle"></i> Needs attention
-                        </small>
+                        <small class="text-warning" x-text="'Value: ' + formatCurrency(stats.pending_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -94,9 +90,7 @@
                     <div>
                         <p class="h6 mb-0 text-muted">Shipped / Dispatched</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.dispatched"></span></div>
-                        <small class="text-info">
-                            <i class="bi bi-arrow-right"></i> In transit
-                        </small>
+                        <small class="text-info" x-text="'Value: ' + formatCurrency(stats.dispatched_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -110,11 +104,9 @@
                         <i class="bi bi-currency-dollar"></i>
                     </div>
                     <div>
-                        <p class="h6 mb-0 text-muted">Revenue</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="`Rs. ${stats.revenue.toLocaleString()}`"></span></div>
-                        <small class="text-success-emphasis">
-                            <i class="bi bi-arrow-up"></i> +8% from last week
-                        </small>
+                        <p class="h6 mb-0 text-muted">Delivered</p>
+                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.delivered"></span></div>
+                        <small class="text-success-emphasis" x-text="'Value: ' + formatCurrency(stats.delivered_amount)"></small>
                     </div>
                 </div>
             </div>

@@ -45,10 +45,10 @@ class PaymentController extends Controller
 
         if ($request->wantsJson() || $request->ajax()) {
             $stats = [
-                'total_volume' => (float) Payment::where('status', 'captured')->sum('amount'),
-                'captured' => Payment::where('status', 'captured')->count(),
-                'authorized' => Payment::where('status', 'authorized')->count(),
-                'failed' => Payment::where('status', 'failed')->count(),
+                'total_volume' => (float) Payment::sum('amount'),
+                'captured_amount' => (float) Payment::whereIn('status', ['captured', 'completed'])->sum('amount'),
+                'authorized_amount' => (float) Payment::whereIn('status', ['authorized', 'pending'])->sum('amount'),
+                'failed_amount' => (float) Payment::where('status', 'failed')->sum('amount'),
             ];
 
             return response()->json([
@@ -98,5 +98,60 @@ class PaymentController extends Controller
             'message' => 'Payment updated successfully.',
             'payment' => $payment
         ]);
+    }
+
+    public function exportSelected(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:payments,id',
+        ]);
+
+        $payments = Payment::whereIn('id', $validated['ids'])->with(['invoice.order.party', 'order.party'])->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="payments_export.csv"',
+        ];
+
+        $columns = [
+            'payment_no', 'reference_type', 'reference_no', 'amount', 'payment_method', 'transaction_id', 'payment_date', 'status',
+            'customer_name'
+        ];
+
+        $callback = function () use ($columns, $payments) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            
+            foreach ($payments as $payment) {
+                $refType = $payment->invoice_id ? 'invoice' : ($payment->order_id ? 'order' : '');
+                $refNo = $payment->invoice ? $payment->invoice->invoice_no : ($payment->order ? $payment->order->order_no : '');
+                
+                $party = null;
+                if ($payment->invoice && $payment->invoice->order) {
+                    $party = $payment->invoice->order->party;
+                } elseif ($payment->order) {
+                    $party = $payment->order->party;
+                }
+                
+                $customerName = $party ? trim($party->firstname . ' ' . $party->lastname) : '';
+
+                $row = [
+                    $payment->payment_no,
+                    $refType,
+                    $refNo,
+                    number_format($payment->amount, 2, '.', ''),
+                    $payment->payment_method,
+                    $payment->transaction_id,
+                    $payment->payment_date ? $payment->payment_date->format('Y-m-d H:i:s') : '',
+                    $payment->status,
+                    $customerName
+                ];
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return \Illuminate\Support\Facades\Response::stream($callback, 200, $headers);
     }
 }

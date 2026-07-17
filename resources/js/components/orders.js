@@ -127,6 +127,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     statusStats: [],
+    trendsData: [],
 
     // Dropdown lists
     productsList: [],
@@ -285,6 +286,10 @@ document.addEventListener('alpine:init', () => {
               { name: 'Delivered', count: this.stats.delivered, percentage: this.stats.total ? Math.round((this.stats.delivered / this.stats.total) * 100) : 0, color: '#10b981' },
               { name: 'Cancelled', count: this.stats.cancelled, percentage: this.stats.total ? Math.round((this.stats.cancelled / this.stats.total) * 100) : 0, color: '#ef4444' }
             ].filter(stat => stat.count > 0);
+
+            if (data.trends) {
+              this.trendsData = data.trends;
+            }
 
             this.initCharts();
           }
@@ -1081,6 +1086,20 @@ document.addEventListener('alpine:init', () => {
             colors: this.statusStats.map(stat => stat.color)
           });
         }
+        if (this.charts.orderTrends && this.trendsData && this.trendsData.length) {
+          this.charts.orderTrends.updateSeries([{
+            name: 'Orders',
+            data: this.trendsData.map(t => t.orders)
+          }, {
+            name: 'Revenue',
+            data: this.trendsData.map(t => t.revenue)
+          }]);
+          this.charts.orderTrends.updateOptions({
+            xaxis: {
+              categories: this.trendsData.map(t => t.date)
+            }
+          });
+        }
         return;
       }
 
@@ -1099,10 +1118,10 @@ document.addEventListener('alpine:init', () => {
         const trendsData = {
           series: [{
             name: 'Orders',
-            data: [12, 19, 15, 27, 24, 32, 28]
+            data: this.trendsData && this.trendsData.length ? this.trendsData.map(t => t.orders) : [0, 0, 0, 0, 0, 0, 0]
           }, {
             name: 'Revenue',
-            data: [1200, 1900, 1500, 2700, 2400, 3200, 2800]
+            data: this.trendsData && this.trendsData.length ? this.trendsData.map(t => t.revenue) : [0, 0, 0, 0, 0, 0, 0]
           }],
           chart: {
             type: 'area',
@@ -1123,7 +1142,7 @@ document.addEventListener('alpine:init', () => {
             width: 2
           },
           xaxis: {
-            categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            categories: this.trendsData && this.trendsData.length ? this.trendsData.map(t => t.date) : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
           },
           yaxis: [{
             title: { text: 'Orders' }

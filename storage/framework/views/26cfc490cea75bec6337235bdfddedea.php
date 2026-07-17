@@ -10,6 +10,9 @@
             <p class="text-muted mb-0">Generate, track, and send customer invoices</p>
         </div>
         <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" @click.prevent="openImportModal">
+                <i class="bi bi-upload me-2"></i>Import Payments
+            </button>
             <button class="btn btn-primary" style="background: rgba(99,102,241,0.8); border: none;">
                 <i class="bi bi-plus-lg me-2"></i>Generate Invoice
             </button>
@@ -42,8 +45,8 @@
                             <i class="bi bi-check2-square"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted">Paid</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="stats.paid"></div>
+                            <p class="h6 mb-0 text-muted">Collected Amount</p>
+                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.collected_amount)"></div>
                             <small class="text-success-emphasis">Collection rate tracked</small>
                         </div>
                     </div>
@@ -58,8 +61,8 @@
                             <i class="bi bi-clock-history"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted">Unpaid/Overdue</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="stats.unpaid"></div>
+                            <p class="h6 mb-0 text-muted">Pending Amount</p>
+                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.pending_amount)"></div>
                             <small class="text-warning">Follow-up required</small>
                         </div>
                     </div>
@@ -120,6 +123,9 @@
                         </span>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-outline-info" @click="exportSelectedInvoices()" :disabled="isSubmitting" title="Export Selected to CSV">
+                            <i class="bi bi-download me-1"></i>Export CSV
+                        </button>
                         <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('paid')" :disabled="isSubmitting" title="Mark as Paid">
                             <i class="bi bi-check2-all me-1"></i>Mark Paid
                         </button>
@@ -361,6 +367,8 @@
             </div>
         </div>
     </div>
+    
+    <?php echo $__env->make('components.import-payments-modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 </div>
 <?php $__env->stopSection(); ?>
 

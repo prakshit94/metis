@@ -11,6 +11,9 @@
             <p class="text-muted mb-0">Track incoming transactions and capture statuses</p>
         </div>
         <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" @click.prevent="openImportModal">
+                <i class="bi bi-upload me-2"></i>Import
+            </button>
             <button type="button" class="btn btn-outline-secondary">
                 <i class="bi bi-download me-2"></i>Export
             </button>
@@ -44,7 +47,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Captured</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="stats.captured"></div>
+                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.captured_amount)"></div>
                             <small class="text-success-emphasis">Successful payments</small>
                         </div>
                     </div>
@@ -59,8 +62,8 @@
                             <i class="bi bi-shield-lock"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted">Authorized</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="stats.authorized"></div>
+                            <p class="h6 mb-0 text-muted">Authorized/Pending</p>
+                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.authorized_amount)"></div>
                             <small class="text-info">Awaiting capture</small>
                         </div>
                     </div>
@@ -75,8 +78,8 @@
                             <i class="bi bi-exclamation-triangle"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted">Failed</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="stats.failed"></div>
+                            <p class="h6 mb-0 text-muted">Failed/Refunded</p>
+                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.failed_amount)"></div>
                             <small class="text-danger">Failed transactions</small>
                         </div>
                     </div>
@@ -122,6 +125,9 @@
                         </span>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-outline-info" @click="exportSelectedPayments()" :disabled="isSubmitting" title="Export Selected to CSV">
+                            <i class="bi bi-download me-1"></i>Export CSV
+                        </button>
                         <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('captured')" :disabled="isSubmitting" title="Capture authorized payments">
                             <i class="bi bi-cash me-1"></i>Capture Selected
                         </button>
@@ -385,5 +391,7 @@
             </div>
         </div>
     </div>
+    
+    @include('components.import-payments-modal')
 </div>
 @endsection

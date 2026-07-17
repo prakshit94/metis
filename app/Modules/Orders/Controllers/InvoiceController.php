@@ -43,10 +43,14 @@ class InvoiceController extends Controller
         $invoices = $query->paginate($request->integer('limit', 10));
 
         if ($request->wantsJson() || $request->ajax()) {
+            $totalInvoiced = (float) Invoice::sum('net_amount');
+            $collectedAmount = (float) \App\Modules\Orders\Models\Payment::whereIn('status', ['completed', 'captured'])->sum('amount');
+            $pendingAmount = max(0, $totalInvoiced - $collectedAmount);
+
             $stats = [
-                'total_invoiced' => (float) Invoice::sum('net_amount'),
-                'paid' => Invoice::where('status', 'paid')->count(),
-                'unpaid' => Invoice::whereIn('status', ['unpaid', 'partially_paid'])->count(),
+                'total_invoiced' => $totalInvoiced,
+                'collected_amount' => $collectedAmount,
+                'pending_amount' => $pendingAmount,
                 'avg_value' => (float) (Invoice::avg('net_amount') ?? 0),
             ];
 
@@ -111,5 +115,60 @@ class InvoiceController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Failed to record payment: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function exportSelected(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:invoices,id',
+        ]);
+
+        $invoices = Invoice::whereIn('id', $validated['ids'])->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="invoices_export.csv"',
+        ];
+
+        $columns = [
+            'reference_type', 'reference_no', 'amount', 'payment_method', 'transaction_id', 'payment_date',
+            'order_no', 'customer_name', 'invoice_date', 'due_date', 'total_amount', 'tax_amount', 'net_amount', 'paid_amount', 'status'
+        ];
+
+        $callback = function () use ($columns, $invoices) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            
+            foreach ($invoices as $invoice) {
+                $order = $invoice->order;
+                $party = $order ? $order->party : null;
+                $customerName = $party ? trim($party->firstname . ' ' . $party->lastname) : '';
+
+                $latestPayment = $invoice->payments()->latest('payment_date')->first();
+
+                $row = [
+                    'invoice',
+                    $invoice->invoice_no,
+                    number_format($invoice->due_amount, 2, '.', ''),
+                    $latestPayment ? $latestPayment->payment_method : '', // payment_method
+                    $latestPayment ? $latestPayment->transaction_id : '', // transaction_id
+                    $latestPayment && $latestPayment->payment_date ? $latestPayment->payment_date->format('Y-m-d H:i:s') : '', // payment_date
+                    $order ? $order->order_no : '',
+                    $customerName,
+                    $invoice->invoice_date ? $invoice->invoice_date->format('Y-m-d') : '',
+                    $invoice->due_date ? $invoice->due_date->format('Y-m-d') : '',
+                    number_format($invoice->total_amount, 2, '.', ''),
+                    number_format($invoice->tax_amount, 2, '.', ''),
+                    number_format($invoice->net_amount, 2, '.', ''),
+                    number_format($invoice->paid_amount, 2, '.', ''),
+                    $invoice->status,
+                ];
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return \Illuminate\Support\Facades\Response::stream($callback, 200, $headers);
     }
 }
