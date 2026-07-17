@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Payments Management')
+@section('title', '💳 Payments Management')
 @section('page', 'payments')
 
 @section('content')
@@ -7,7 +7,7 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
-            <h1 class="h3 mb-0 fw-bold">Payments</h1>
+            <h1 class="h3 mb-0 fw-bold"><i class="bi bi-credit-card text-primary me-2"></i>Payments</h1>
             <p class="text-muted mb-0">Track incoming transactions and capture statuses</p>
         </div>
         <div class="d-flex gap-2">
@@ -28,8 +28,8 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Total Volume</p>
-                            <div class="h3 mb-0 fw-bold text-white">$1.2M</div>
-                            <small class="text-success"><i class="bi bi-arrow-up"></i> +12% YoY</small>
+                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.total_volume)"></div>
+                            <small class="text-success"><i class="bi bi-arrow-up"></i> Live data</small>
                         </div>
                     </div>
                 </div>
@@ -45,7 +45,7 @@
                         <div>
                             <p class="h6 mb-0 text-muted">Captured</p>
                             <div class="h3 mb-0 fw-bold text-white" x-text="stats.captured"></div>
-                            <small class="text-success-emphasis">95% success</small>
+                            <small class="text-success-emphasis">Successful payments</small>
                         </div>
                     </div>
                 </div>
@@ -77,7 +77,7 @@
                         <div>
                             <p class="h6 mb-0 text-muted">Failed</p>
                             <div class="h3 mb-0 fw-bold text-white" x-text="stats.failed"></div>
-                            <small class="text-danger">0.4% failure rate</small>
+                            <small class="text-danger">Failed transactions</small>
                         </div>
                     </div>
                 </div>
@@ -95,14 +95,16 @@
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
                         <div class="position-relative">
-                            <input type="search" class="form-control form-control-sm" placeholder="Search Txn ID..." x-model="searchQuery" @input="filterPayments()" style="width: 200px;">
+                            <input type="search" class="form-control form-control-sm" placeholder="Search Txn ID..." x-model="searchQuery" @input.debounce.300ms="filterPayments()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
                         <select class="form-select form-select-sm" x-model="statusFilter" @change="filterPayments()" style="width: 150px;">
                             <option value="">All Statuses</option>
-                            <option value="captured">Captured</option>
+                            <option value="pending">Pending</option>
                             <option value="authorized">Authorized</option>
+                            <option value="captured">Captured</option>
                             <option value="failed">Failed</option>
+                            <option value="refunded">Refunded</option>
                         </select>
                     </div>
                 </div>
@@ -120,10 +122,10 @@
                         </span>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
-                        <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('captured')" title="Capture authorized payments">
+                        <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('captured')" :disabled="isSubmitting" title="Capture authorized payments">
                             <i class="bi bi-cash me-1"></i>Capture Selected
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" @click="bulkUpdateStatus('failed')" title="Mark as failed">
+                        <button class="btn btn-sm btn-outline-danger" @click="bulkUpdateStatus('failed')" :disabled="isSubmitting" title="Mark as failed">
                             <i class="bi bi-x-circle me-1"></i>Mark Failed
                         </button>
                         <button class="btn btn-sm btn-outline-secondary" @click="selectedPayments = []" title="Clear selection">
@@ -141,29 +143,29 @@
                             <th style="width: 40px;">
                                 <input type="checkbox" class="form-check-input border-secondary" style="cursor: pointer;" @change="toggleAll($event.target.checked)" :checked="selectedPayments.length === payments.length && payments.length > 0">
                             </th>
-                            <th scope="col" role="button" @click="sortBy('transaction_id')" class="sortable">
-                                Txn ID
-                                <i class="bi bi-arrow-up" x-show="sortField === 'transaction_id' && sortDirection === 'asc'"></i>
-                                <i class="bi bi-arrow-down" x-show="sortField === 'transaction_id' && sortDirection === 'desc'"></i>
+                            <th scope="col" role="button" @click="sortBy('payment_no')" class="sortable">
+                                <i class="bi bi-credit-card me-1 text-secondary"></i>Payment #
+                                <i class="bi bi-arrow-up" x-show="sortField === 'payment_no' && sortDirection === 'asc'"></i>
+                                <i class="bi bi-arrow-down" x-show="sortField === 'payment_no' && sortDirection === 'desc'"></i>
                             </th>
-                            <th scope="col">Order #</th>
+                            <th scope="col"><i class="bi bi-hash me-1 text-secondary"></i>Order #</th>
                             <th scope="col" role="button" @click="sortBy('payment_method')" class="sortable">
-                                Method
+                                <i class="bi bi-wallet2 me-1 text-secondary"></i>Method
                                 <i class="bi bi-arrow-up" x-show="sortField === 'payment_method' && sortDirection === 'asc'"></i>
                                 <i class="bi bi-arrow-down" x-show="sortField === 'payment_method' && sortDirection === 'desc'"></i>
                             </th>
                             <th scope="col" role="button" @click="sortBy('amount')" class="sortable">
-                                Amount
+                                <i class="bi bi-currency-dollar me-1 text-secondary"></i>Amount
                                 <i class="bi bi-arrow-up" x-show="sortField === 'amount' && sortDirection === 'asc'"></i>
                                 <i class="bi bi-arrow-down" x-show="sortField === 'amount' && sortDirection === 'desc'"></i>
                             </th>
-                            <th scope="col">Status</th>
+                            <th scope="col"><i class="bi bi-info-circle me-1 text-secondary"></i>Status</th>
                             <th scope="col" role="button" @click="sortBy('payment_date')" class="sortable">
-                                Date
+                                <i class="bi bi-calendar-event me-1 text-secondary"></i>Date
                                 <i class="bi bi-arrow-up" x-show="sortField === 'payment_date' && sortDirection === 'asc'"></i>
                                 <i class="bi bi-arrow-down" x-show="sortField === 'payment_date' && sortDirection === 'desc'"></i>
                             </th>
-                            <th style="width: 120px;">Actions</th>
+                            <th style="width: 120px;"><i class="bi bi-lightning-charge me-1 text-secondary"></i>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -173,37 +175,41 @@
                                     <input type="checkbox" class="form-check-input border-secondary" style="cursor: pointer;" :value="String(payment.id)" x-model="selectedPayments">
                                 </td>
                                 <td>
-                                    <span class="fw-medium text-white" x-text="payment.transaction_id"></span>
+                                    <span class="fw-medium text-white" x-text="payment.payment_no"></span>
+                                    <br><small class="text-muted" x-text="payment.transaction_id || 'N/A'"></small>
                                 </td>
                                 <td>
-                                    <span class="text-white-50 font-monospace" x-text="payment.order_id"></span>
+                                    <span class="text-white-50 font-monospace" x-text="payment.order ? payment.order.order_no : 'N/A'"></span>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="bg-secondary bg-opacity-25 rounded-circle me-2 d-flex align-items-center justify-content-center" style="width:32px;height:32px;">
                                             <i class="bi text-white-50" :class="{
-                                                'bi-credit-card': payment.payment_method === 'Credit Card',
-                                                'bi-paypal': payment.payment_method === 'PayPal',
-                                                'bi-cash': payment.payment_method === 'COD'
+                                                'bi-credit-card': payment.payment_method === 'credit_card' || payment.payment_method === 'Credit Card',
+                                                'bi-paypal': payment.payment_method === 'paypal' || payment.payment_method === 'PayPal',
+                                                'bi-cash': payment.payment_method === 'cod' || payment.payment_method === 'COD',
+                                                'bi-bank': payment.payment_method === 'bank_transfer'
                                             }"></i>
                                         </div>
-                                        <div class="small fw-medium text-white" x-text="payment.payment_method"></div>
+                                        <div class="small fw-medium text-white" x-text="payment.payment_method.toUpperCase().replace('_', ' ')"></div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="fw-bold text-white" x-text="`$${payment.amount.toFixed(2)}`"></span>
+                                    <span class="fw-bold text-white" x-text="formatCurrency(payment.amount)"></span>
                                 </td>
                                 <td>
                                     <span class="badge" 
                                           :class="{
                                               'bg-success bg-opacity-25 text-success border border-success border-opacity-50': payment.status === 'captured',
                                               'bg-info bg-opacity-25 text-info border border-info border-opacity-50': payment.status === 'authorized',
-                                              'bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50': payment.status === 'failed'
+                                              'bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50': payment.status === 'pending',
+                                              'bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50': payment.status === 'failed',
+                                              'bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-50': payment.status === 'refunded'
                                           }"
                                           x-text="payment.status.toUpperCase()"></span>
                                 </td>
                                 <td>
-                                    <div class="small text-white-50" x-text="payment.payment_date"></div>
+                                    <div class="small text-white-50" x-text="formatDate(payment.payment_date)"></div>
                                 </td>
                                 <td>
                                     <div class="dropdown">
@@ -215,7 +221,7 @@
                                                 <i class="bi bi-eye me-2"></i>View Details
                                             </a></li>
                                             <template x-if="payment.status === 'authorized'">
-                                                <li><a class="dropdown-item" href="#" @click.prevent="payment.status = 'captured'; filterPayments()">
+                                                <li><a class="dropdown-item" href="#" @click.prevent="updatePaymentStatus(payment.id, 'captured')">
                                                     <i class="bi bi-cash me-2"></i>Capture Payment
                                                 </a></li>
                                             </template>
@@ -239,7 +245,7 @@
             <!-- Pagination -->
             <div class="d-flex justify-content-between align-items-center p-3 border-top">
                 <div class="text-muted small">
-                    Showing <span x-text="(currentPage - 1) * itemsPerPage + 1"></span> to 
+                    Showing <span x-text="totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1"></span> to 
                     <span x-text="Math.min(currentPage * itemsPerPage, totalItems)"></span> of 
                     <span x-text="totalItems"></span> results
                 </div>
@@ -274,8 +280,8 @@
                                     <i class="bi bi-receipt fs-3"></i>
                                 </div>
                                 <div>
-                                    <h4 class="modal-title fw-bolder mb-1">Txn <span class="text-primary" x-text="selectedPayment.transaction_id"></span></h4>
-                                    <p class="text-muted small mb-0" x-text="selectedPayment.payment_date"></p>
+                                    <h4 class="modal-title fw-bolder mb-1">Txn <span class="text-primary" x-text="selectedPayment.payment_no"></span></h4>
+                                    <p class="text-muted small mb-0" x-text="formatDate(selectedPayment.payment_date)"></p>
                                 </div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -284,31 +290,31 @@
                             <div class="row g-4">
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Method</p>
-                                    <p class="fs-5 fw-medium text-body-emphasis" x-text="selectedPayment.payment_method"></p>
+                                    <p class="fs-5 fw-medium text-body-emphasis" x-text="selectedPayment.payment_method.toUpperCase().replace('_', ' ')"></p>
                                 </div>
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Order Ref</p>
-                                    <p class="font-monospace fw-medium text-body-emphasis" x-text="selectedPayment.order_id"></p>
+                                    <p class="font-monospace fw-medium text-body-emphasis" x-text="selectedPayment.order ? selectedPayment.order.order_no : 'N/A'"></p>
                                 </div>
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Amount</p>
-                                    <p class="fs-4 fw-bolder text-primary" x-text="`$${selectedPayment.amount.toFixed(2)}`"></p>
+                                    <p class="fs-4 fw-bolder text-primary" x-text="formatCurrency(selectedPayment.amount)"></p>
                                 </div>
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Status</p>
-                                    <p class="fw-medium text-body-emphasis" x-text="selectedPayment.status"></p>
+                                    <p class="fw-medium text-body-emphasis" x-text="selectedPayment.status.toUpperCase()"></p>
                                 </div>
                                 <div class="col-12 mt-4">
                                     <p class="fw-bold small text-muted text-uppercase mb-2">Gateway Response Log</p>
-                                    <div class="bg-body-tertiary p-3 rounded font-monospace small text-muted" style="white-space: pre-wrap;">
+                                    <pre class="bg-body-tertiary p-3 rounded font-monospace small text-muted" style="white-space: pre-wrap;">
 {
-  "id": "<span x-text="selectedPayment.transaction_id"></span>",
+  "id": "<span x-text="selectedPayment.payment_no"></span>",
   "object": "charge",
   "amount": <span x-text="selectedPayment.amount * 100"></span>,
-  "status": "succeeded",
+  "status": "<span x-text="selectedPayment.status"></span>",
   "captured": <span x-text="selectedPayment.status === 'captured' ? 'true' : 'false'"></span>
 }
-                                    </div>
+                                    </pre>
                                 </div>
                             </div>
                         </div>
@@ -318,110 +324,4 @@
         </div>
     </div>
 </div>
-
-@push('scripts')
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('paymentsTable', () => ({
-            allPayments: [
-                { id: 1, transaction_id: 'TXN-994821', order_id: 'ORD-1310', payment_method: 'Credit Card', amount: 350.00, status: 'captured', payment_date: 'Oct 24, 2026' },
-                { id: 2, transaction_id: 'TXN-994822', order_id: 'ORD-1311', payment_method: 'PayPal', amount: 89.99, status: 'authorized', payment_date: 'Oct 24, 2026' },
-                { id: 3, transaction_id: 'TXN-994823', order_id: 'ORD-1312', payment_method: 'COD', amount: 45.50, status: 'failed', payment_date: 'Oct 23, 2026' },
-                { id: 4, transaction_id: 'TXN-994824', order_id: 'ORD-1313', payment_method: 'Credit Card', amount: 1200.00, status: 'captured', payment_date: 'Oct 22, 2026' },
-                { id: 5, transaction_id: 'TXN-994825', order_id: 'ORD-1314', payment_method: 'Credit Card', amount: 65.25, status: 'captured', payment_date: 'Oct 21, 2026' }
-            ],
-            payments: [],
-            selectedPayments: [],
-            selectedPayment: null,
-            searchQuery: '',
-            statusFilter: '',
-            sortField: 'transaction_id',
-            sortDirection: 'desc',
-            currentPage: 1,
-            itemsPerPage: 10,
-            totalItems: 5,
-            
-            get stats() {
-                return {
-                    captured: this.allPayments.filter(i => i.status === 'captured').length,
-                    authorized: this.allPayments.filter(i => i.status === 'authorized').length,
-                    failed: this.allPayments.filter(i => i.status === 'failed').length
-                }
-            },
-            
-            init() {
-                this.filterPayments();
-            },
-            
-            filterPayments() {
-                let filtered = this.allPayments.filter(p => {
-                    const matchesSearch = p.transaction_id.toLowerCase().includes(this.searchQuery.toLowerCase());
-                    const matchesStatus = this.statusFilter === '' || p.status === this.statusFilter;
-                    return matchesSearch && matchesStatus;
-                });
-                
-                filtered.sort((a, b) => {
-                    let modifier = this.sortDirection === 'asc' ? 1 : -1;
-                    if(a[this.sortField] < b[this.sortField]) return -1 * modifier;
-                    if(a[this.sortField] > b[this.sortField]) return 1 * modifier;
-                    return 0;
-                });
-                
-                this.totalItems = filtered.length;
-                this.payments = filtered;
-            },
-            
-            sortBy(field) {
-                if (this.sortField === field) {
-                    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-                } else {
-                    this.sortField = field;
-                    this.sortDirection = 'asc';
-                }
-                this.filterPayments();
-            },
-            
-            toggleAll(checked) {
-                if (checked) {
-                    this.selectedPayments = this.payments.map(p => String(p.id));
-                } else {
-                    this.selectedPayments = [];
-                }
-            },
-            
-            bulkUpdateStatus(status) {
-                this.allPayments.forEach(p => {
-                    if(this.selectedPayments.includes(String(p.id))) {
-                        p.status = status;
-                    }
-                });
-                this.selectedPayments = [];
-                this.filterPayments();
-            },
-            
-            viewDetails(payment) {
-                this.selectedPayment = payment;
-                this.$nextTick(() => {
-                    const modalEl = document.getElementById('detailModal');
-                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                    modal.show();
-                });
-            },
-            
-            get totalPages() {
-                return Math.ceil(this.totalItems / this.itemsPerPage) || 1;
-            },
-            
-            goToPage(page) {
-                this.currentPage = page;
-                this.filterPayments();
-            },
-            
-            get visiblePages() {
-                return [1];
-            }
-        }));
-    });
-</script>
-@endpush
 @endsection

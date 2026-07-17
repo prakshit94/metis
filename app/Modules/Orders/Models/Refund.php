@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Refund extends Model
 {
     protected $fillable = [
+        'refund_no',
         'order_id',
         'invoice_id',
         'order_return_id',
@@ -17,6 +18,15 @@ class Refund extends Model
         'status',
         'notes',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($refund) {
+            if (empty($refund->refund_no)) {
+                $refund->refund_no = 'REF-' . strtoupper(\Illuminate\Support\Str::random(8));
+            }
+        });
+    }
 
     public function order(): BelongsTo
     {

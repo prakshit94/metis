@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Refunds Management')
+@section('title', '🪙 Refunds Management')
 @section('page', 'refunds')
 
 @section('content')
@@ -7,15 +7,12 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
-            <h1 class="h3 mb-0 fw-bold">Refunds</h1>
+            <h1 class="h3 mb-0 fw-bold"><i class="bi bi-cash-coin text-primary me-2"></i>Refunds</h1>
             <p class="text-muted mb-0">Manage financial settlements and customer refunds</p>
         </div>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-outline-secondary">
                 <i class="bi bi-download me-2"></i>Export
-            </button>
-            <button class="btn btn-primary" style="background: rgba(99,102,241,0.8); border: none;">
-                <i class="bi bi-arrow-return-left me-2"></i>Process Refund
             </button>
         </div>
     </div>
@@ -31,8 +28,8 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Total Refunded</p>
-                            <div class="h3 mb-0 fw-bold text-white">$45,230</div>
-                            <small class="text-success"><i class="bi bi-arrow-up"></i> +5.2% this month</small>
+                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.total_refunded)"></div>
+                            <small class="text-success"><i class="bi bi-arrow-up"></i> Live data</small>
                         </div>
                     </div>
                 </div>
@@ -63,7 +60,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Processed Today</p>
-                            <div class="h3 mb-0 fw-bold text-white">8</div>
+                            <div class="h3 mb-0 fw-bold text-white" x-text="stats.processed_today"></div>
                             <small class="text-success"><i class="bi bi-check2-all"></i> All cleared</small>
                         </div>
                     </div>
@@ -98,7 +95,7 @@
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
                         <div class="position-relative">
-                            <input type="search" class="form-control form-control-sm" placeholder="Search refunds..." x-model="searchQuery" @input="filterRefunds()" style="width: 200px;">
+                            <input type="search" class="form-control form-control-sm" placeholder="Search refunds..." x-model="searchQuery" @input.debounce.300ms="filterRefunds()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
                         <select class="form-select form-select-sm" x-model="statusFilter" @change="filterRefunds()" style="width: 150px;">
@@ -123,10 +120,10 @@
                         </span>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
-                        <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('processed')" title="Process selected refunds">
+                        <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('processed')" :disabled="isSubmitting" title="Process selected refunds">
                             <i class="bi bi-check2-all me-1"></i>Process Selected
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" @click="bulkUpdateStatus('failed')" title="Mark as failed">
+                        <button class="btn btn-sm btn-outline-danger" @click="bulkUpdateStatus('failed')" :disabled="isSubmitting" title="Mark as failed">
                             <i class="bi bi-x-circle me-1"></i>Mark Failed
                         </button>
                         <button class="btn btn-sm btn-outline-secondary" @click="selectedRefunds = []" title="Clear selection">
@@ -145,24 +142,24 @@
                                 <input type="checkbox" class="form-check-input border-secondary" style="cursor: pointer;" @change="toggleAll($event.target.checked)" :checked="selectedRefunds.length === refunds.length && refunds.length > 0">
                             </th>
                             <th scope="col" role="button" @click="sortBy('refund_no')" class="sortable">
-                                Refund ID
+                                <i class="bi bi-cash-coin me-1 text-secondary"></i>Refund ID
                                 <i class="bi bi-arrow-up" x-show="sortField === 'refund_no' && sortDirection === 'asc'"></i>
                                 <i class="bi bi-arrow-down" x-show="sortField === 'refund_no' && sortDirection === 'desc'"></i>
                             </th>
-                            <th scope="col">Order #</th>
-                            <th scope="col">Customer</th>
+                            <th scope="col"><i class="bi bi-hash me-1 text-secondary"></i>Order #</th>
+                            <th scope="col"><i class="bi bi-person me-1 text-secondary"></i>Customer</th>
                             <th scope="col" role="button" @click="sortBy('amount')" class="sortable">
-                                Amount
+                                <i class="bi bi-currency-dollar me-1 text-secondary"></i>Amount
                                 <i class="bi bi-arrow-up" x-show="sortField === 'amount' && sortDirection === 'asc'"></i>
                                 <i class="bi bi-arrow-down" x-show="sortField === 'amount' && sortDirection === 'desc'"></i>
                             </th>
-                            <th scope="col">Status</th>
+                            <th scope="col"><i class="bi bi-info-circle me-1 text-secondary"></i>Status</th>
                             <th scope="col" role="button" @click="sortBy('created_at')" class="sortable">
-                                Date
+                                <i class="bi bi-calendar-event me-1 text-secondary"></i>Date
                                 <i class="bi bi-arrow-up" x-show="sortField === 'created_at' && sortDirection === 'asc'"></i>
                                 <i class="bi bi-arrow-down" x-show="sortField === 'created_at' && sortDirection === 'desc'"></i>
                             </th>
-                            <th style="width: 120px;">Actions</th>
+                            <th style="width: 120px;"><i class="bi bi-lightning-charge me-1 text-secondary"></i>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -175,19 +172,19 @@
                                     <span class="fw-medium text-white" x-text="refund.refund_no"></span>
                                 </td>
                                 <td>
-                                    <span class="text-white-50 font-monospace" x-text="refund.order_id"></span>
+                                    <span class="text-white-50 font-monospace" x-text="refund.order ? refund.order.order_no : 'N/A'"></span>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="bg-secondary bg-opacity-25 rounded-circle me-2 d-flex align-items-center justify-content-center" style="width:32px;height:32px;">
                                             <i class="bi bi-person text-white-50"></i>
                                         </div>
-                                        <div class="small fw-medium text-white" x-text="refund.customer"></div>
+                                        <div class="small fw-medium text-white" x-text="refund.order && refund.order.party ? (refund.order.party.firstname + ' ' + refund.order.party.lastname) : 'N/A'"></div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="fw-bold text-white" x-text="`$${refund.amount.toFixed(2)}`"></span>
-                                    <br><small class="text-muted" x-text="refund.payment_method"></small>
+                                    <span class="fw-bold text-white" x-text="formatCurrency(refund.amount)"></span>
+                                    <br><small class="text-muted" x-text="refund.payment_method ? refund.payment_method.toUpperCase().replace('_', ' ') : 'N/A'"></small>
                                 </td>
                                 <td>
                                     <span class="badge" 
@@ -199,7 +196,7 @@
                                           x-text="refund.status.toUpperCase()"></span>
                                 </td>
                                 <td>
-                                    <div class="small text-white-50" x-text="refund.created_at"></div>
+                                    <div class="small text-white-50" x-text="formatDate(refund.created_at)"></div>
                                 </td>
                                 <td>
                                     <div class="dropdown">
@@ -211,7 +208,7 @@
                                                 <i class="bi bi-eye me-2"></i>View Details
                                             </a></li>
                                             <template x-if="refund.status === 'pending'">
-                                                <li><a class="dropdown-item" href="#" @click.prevent="refund.status = 'processed'; filterRefunds()">
+                                                <li><a class="dropdown-item" href="#" @click.prevent="updateRefundStatus(refund.id, 'processed')">
                                                     <i class="bi bi-check2 me-2"></i>Process Refund
                                                 </a></li>
                                             </template>
@@ -235,7 +232,7 @@
             <!-- Pagination -->
             <div class="d-flex justify-content-between align-items-center p-3 border-top">
                 <div class="text-muted small">
-                    Showing <span x-text="(currentPage - 1) * itemsPerPage + 1"></span> to 
+                    Showing <span x-text="totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1"></span> to 
                     <span x-text="Math.min(currentPage * itemsPerPage, totalItems)"></span> of 
                     <span x-text="totalItems"></span> results
                 </div>
@@ -271,7 +268,7 @@
                                 </div>
                                 <div>
                                     <h4 class="modal-title fw-bolder mb-1">Refund <span class="text-primary" x-text="selectedRefund.refund_no"></span></h4>
-                                    <p class="text-muted small mb-0" x-text="selectedRefund.created_at"></p>
+                                    <p class="text-muted small mb-0" x-text="formatDate(selectedRefund.created_at)"></p>
                                 </div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -280,19 +277,19 @@
                             <div class="row g-4">
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Customer</p>
-                                    <p class="fs-5 fw-medium text-body-emphasis" x-text="selectedRefund.customer"></p>
+                                    <p class="fs-5 fw-medium text-body-emphasis" x-text="selectedRefund.order && selectedRefund.order.party ? (selectedRefund.order.party.firstname + ' ' + selectedRefund.order.party.lastname) : 'N/A'"></p>
                                 </div>
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Order Ref</p>
-                                    <p class="font-monospace fw-medium text-body-emphasis" x-text="selectedRefund.order_id"></p>
+                                    <p class="font-monospace fw-medium text-body-emphasis" x-text="selectedRefund.order ? selectedRefund.order.order_no : 'N/A'"></p>
                                 </div>
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Amount</p>
-                                    <p class="fs-4 fw-bolder text-primary" x-text="`$${selectedRefund.amount.toFixed(2)}`"></p>
+                                    <p class="fs-4 fw-bolder text-primary" x-text="formatCurrency(selectedRefund.amount)"></p>
                                 </div>
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Gateway</p>
-                                    <p class="fw-medium text-body-emphasis" x-text="selectedRefund.payment_method"></p>
+                                    <p class="fw-medium text-body-emphasis" x-text="selectedRefund.payment_method ? selectedRefund.payment_method.toUpperCase().replace('_', ' ') : 'N/A'"></p>
                                 </div>
                             </div>
                         </div>
@@ -302,109 +299,4 @@
         </div>
     </div>
 </div>
-
-@push('scripts')
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('refundsTable', () => ({
-            allRefunds: [
-                { id: 1, refund_no: 'REF-89234', order_id: 'ORD-1234', customer: 'Alice Smith', amount: 124.50, status: 'processed', created_at: 'Oct 24, 2026', payment_method: 'Stripe' },
-                { id: 2, refund_no: 'REF-89235', order_id: 'ORD-1245', customer: 'Bob Johnson', amount: 45.00, status: 'pending', created_at: 'Oct 24, 2026', payment_method: 'PayPal' },
-                { id: 3, refund_no: 'REF-89236', order_id: 'ORD-1288', customer: 'Charlie Davis', amount: 210.75, status: 'failed', created_at: 'Oct 23, 2026', payment_method: 'Stripe' },
-                { id: 4, refund_no: 'REF-89237', order_id: 'ORD-1299', customer: 'Diana Evans', amount: 89.99, status: 'processed', created_at: 'Oct 22, 2026', payment_method: 'Store Credit' },
-                { id: 5, refund_no: 'REF-89238', order_id: 'ORD-1302', customer: 'Evan Wright', amount: 15.20, status: 'processed', created_at: 'Oct 21, 2026', payment_method: 'Stripe' }
-            ],
-            refunds: [],
-            selectedRefunds: [],
-            selectedRefund: null,
-            searchQuery: '',
-            statusFilter: '',
-            sortField: 'refund_no',
-            sortDirection: 'desc',
-            currentPage: 1,
-            itemsPerPage: 10,
-            totalItems: 5,
-            
-            get stats() {
-                return {
-                    pending: this.allRefunds.filter(r => r.status === 'pending').length,
-                    failed: this.allRefunds.filter(r => r.status === 'failed').length
-                }
-            },
-            
-            init() {
-                this.filterRefunds();
-            },
-            
-            filterRefunds() {
-                let filtered = this.allRefunds.filter(r => {
-                    const matchesSearch = r.refund_no.toLowerCase().includes(this.searchQuery.toLowerCase()) || r.customer.toLowerCase().includes(this.searchQuery.toLowerCase());
-                    const matchesStatus = this.statusFilter === '' || r.status === this.statusFilter;
-                    return matchesSearch && matchesStatus;
-                });
-                
-                filtered.sort((a, b) => {
-                    let modifier = this.sortDirection === 'asc' ? 1 : -1;
-                    if(a[this.sortField] < b[this.sortField]) return -1 * modifier;
-                    if(a[this.sortField] > b[this.sortField]) return 1 * modifier;
-                    return 0;
-                });
-                
-                this.totalItems = filtered.length;
-                this.refunds = filtered;
-            },
-            
-            sortBy(field) {
-                if (this.sortField === field) {
-                    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-                } else {
-                    this.sortField = field;
-                    this.sortDirection = 'asc';
-                }
-                this.filterRefunds();
-            },
-            
-            toggleAll(checked) {
-                if (checked) {
-                    this.selectedRefunds = this.refunds.map(r => String(r.id));
-                } else {
-                    this.selectedRefunds = [];
-                }
-            },
-            
-            bulkUpdateStatus(status) {
-                this.allRefunds.forEach(r => {
-                    if(this.selectedRefunds.includes(String(r.id))) {
-                        r.status = status;
-                    }
-                });
-                this.selectedRefunds = [];
-                this.filterRefunds();
-            },
-            
-            viewDetails(refund) {
-                this.selectedRefund = refund;
-                this.$nextTick(() => {
-                    const modalEl = document.getElementById('detailModal');
-                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                    modal.show();
-                });
-            },
-            
-            get totalPages() {
-                return Math.ceil(this.totalItems / this.itemsPerPage) || 1;
-            },
-            
-            goToPage(page) {
-                this.currentPage = page;
-                this.filterRefunds();
-            },
-            
-            get visiblePages() {
-                return [1];
-            }
-        }));
-    });
-</script>
-@endpush
 @endsection

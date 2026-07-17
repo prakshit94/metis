@@ -171,16 +171,16 @@
                                            @change="$event.isTrusted && toggleAll($event.target.checked)"
                                            :checked="selectedItems.length === paginatedItems.length && paginatedItems.length > 0">
                                 </th>
-                                <th @click="sortBy('product_id')" class="sortable">Product</th>
-                                <th @click="sortBy('warehouse_id')" class="sortable">Warehouse</th>
-                                <th @click="sortBy('quantity')" class="sortable text-center">On Hand</th>
-                                <th @click="sortBy('reserved_qty')" class="sortable text-center">Reserved</th>
-                                <th @click="sortBy('pending_qty')" class="sortable text-center">Pending</th>
-                                <th @click="sortBy('dispatched_qty')" class="sortable text-center">Dispatched</th>
-                                <th @click="sortBy('available')" class="sortable text-center">Available</th>
-                                <th @click="sortBy('in_transit_qty')" class="sortable text-center">In Transit</th>
-                                <th @click="sortBy('damaged_qty')" class="sortable text-center">Bad Qty</th>
-                                <th style="width: 120px;" class="text-end pe-4">Actions</th>
+                                <th @click="sortBy('product_id')" class="sortable"><i class="bi bi-box-seam me-1 text-secondary"></i>Product</th>
+                                <th @click="sortBy('warehouse_id')" class="sortable"><i class="bi bi-buildings-fill me-1 text-secondary"></i>Warehouse</th>
+                                <th @click="sortBy('quantity')" class="sortable text-center"><i class="bi bi-inboxes me-1 text-secondary"></i>On Hand</th>
+                                <th @click="sortBy('reserved_qty')" class="sortable text-center"><i class="bi bi-bookmark-dash me-1 text-secondary"></i>Reserved</th>
+                                <th @click="sortBy('pending_qty')" class="sortable text-center"><i class="bi bi-hourglass-split me-1 text-secondary"></i>Pending</th>
+                                <th @click="sortBy('dispatched_qty')" class="sortable text-center"><i class="bi bi-send-check me-1 text-secondary"></i>Dispatched</th>
+                                <th @click="sortBy('available')" class="sortable text-center"><i class="bi bi-check-circle me-1 text-secondary"></i>Available</th>
+                                <th @click="sortBy('in_transit_qty')" class="sortable text-center"><i class="bi bi-truck me-1 text-secondary"></i>In Transit</th>
+                                <th @click="sortBy('damaged_qty')" class="sortable text-center"><i class="bi bi-exclamation-octagon me-1 text-secondary"></i>Bad Qty</th>
+                                <th style="width: 120px;" class="text-end pe-4"><i class="bi bi-lightning-charge me-1 text-secondary"></i>Actions</th>
                             </tr>
                         </thead>
                         <tbody>

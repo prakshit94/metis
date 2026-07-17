@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Returns Management')
+@section('title', '↩️ Returns Management')
 @section('page', 'returns')
 
 @section('content')
@@ -8,7 +8,7 @@
     {{-- Page Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-1 fw-bold">Returns &amp; QC</h1>
+            <h1 class="h3 mb-1 fw-bold"><i class="bi bi-arrow-return-left text-primary me-2"></i>Returns &amp; QC</h1>
             <p class="text-muted mb-0 small">Inspect returned items, update stock, and process financials.</p>
         </div>
     </div>
@@ -126,17 +126,17 @@
                                 <input type="checkbox" class="form-check-input border-secondary" :checked="allSelected" @change="toggleAll($event.target.checked)" style="cursor:pointer;">
                             </th>
                             <th role="button" @click="sortBy('return_no')" class="user-select-none">
-                                RMA # <i class="bi ms-1" :class="sortField==='return_no'?(sortDirection==='asc'?'bi-sort-up':'bi-sort-down'):'bi-sort'"></i>
+                                <i class="bi bi-arrow-return-left me-1 text-secondary"></i>RMA # <i class="bi ms-1" :class="sortField==='return_no'?(sortDirection==='asc'?'bi-sort-up':'bi-sort-down'):'bi-sort'"></i>
                             </th>
-                            <th>Order #</th>
-                            <th>Customer</th>
-                            <th>Reason</th>
-                            <th>Items</th>
-                            <th>QC Status</th>
+                            <th><i class="bi bi-hash me-1 text-secondary"></i>Order #</th>
+                            <th><i class="bi bi-person me-1 text-secondary"></i>Customer</th>
+                            <th><i class="bi bi-chat-left-text me-1 text-secondary"></i>Reason</th>
+                            <th><i class="bi bi-box-seam me-1 text-secondary"></i>Items</th>
+                            <th><i class="bi bi-shield-check me-1 text-secondary"></i>QC Status</th>
                             <th role="button" @click="sortBy('created_at')" class="user-select-none">
-                                Date <i class="bi ms-1" :class="sortField==='created_at'?(sortDirection==='asc'?'bi-sort-up':'bi-sort-down'):'bi-sort'"></i>
+                                <i class="bi bi-calendar-event me-1 text-secondary"></i>Date <i class="bi ms-1" :class="sortField==='created_at'?(sortDirection==='asc'?'bi-sort-up':'bi-sort-down'):'bi-sort'"></i>
                             </th>
-                            <th style="width:100px;">Actions</th>
+                            <th style="width:100px;"><i class="bi bi-lightning-charge me-1 text-secondary"></i>Actions</th>
                         </tr>
                     </thead>
                     <tbody>

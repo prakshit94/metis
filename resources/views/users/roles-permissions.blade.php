@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Roles & Permissions')
+@section('title', '🛡️ Roles & Permissions')
 @section('page', 'roles-permissions')
 
 @section('content')
 <div class="user-management" x-data="rolesPermissionsTable">
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
-            <h1 class="h3 mb-0">Roles & Permissions</h1>
+            <h1 class="h3 mb-0"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Roles & Permissions</h1>
             <p class="text-muted mb-0">Manage access roles, permissions, and assignments</p>
         </div>
         <div class="d-flex gap-2">

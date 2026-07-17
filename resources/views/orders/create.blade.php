@@ -201,8 +201,8 @@
                         </div>
 
                         {{-- Same as Shipping Toggle --}}
-                        <div class="mt-4 form-check form-switch cursor-pointer d-flex align-items-center gap-2">
-                            <input class="form-check-input mt-0" type="checkbox" id="sameAsShippingToggle" x-model="sameAsShipping" style="cursor: pointer; width: 40px; height: 20px;">
+                        <div class="mt-4 form-check cursor-pointer d-flex align-items-center gap-2">
+                            <input class="form-check-input mt-0" type="checkbox" id="sameAsShippingToggle" x-model="sameAsShipping" style="cursor: pointer;">
                             <label class="form-check-label small fw-bold text-muted text-uppercase mt-1" for="sameAsShippingToggle" style="cursor: pointer; font-size: 11px; letter-spacing: 1px;">Billing address same as Shipping address</label>
                         </div>
 

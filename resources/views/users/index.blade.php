@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'User Management')
+@section('title', '👥 User Management')
 @section('page', 'users')
 
 @section('content')
@@ -8,7 +8,7 @@
 <!-- Page Header -->
                     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
                         <div>
-                            <h1 class="h3 mb-0">User Management</h1>
+                            <h1 class="h3 mb-0"><i class="bi bi-people-fill text-primary me-2"></i>User Management</h1>
                             <p class="text-muted mb-0">Manage users, roles, and permissions</p>
                         </div>
                         <div class="d-flex gap-2">

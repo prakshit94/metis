@@ -20,6 +20,12 @@ class Invoice extends Model
         'status',
     ];
 
+    protected $appends = [
+        'paid_amount',
+        'due_amount',
+        'refunded_amount',
+    ];
+
     protected $casts = [
         'invoice_date' => 'datetime',
         'total_amount' => 'decimal:2',
@@ -39,7 +45,7 @@ class Invoice extends Model
 
     public function getPaidAmountAttribute()
     {
-        return $this->payments()->where('status', 'completed')->sum('amount');
+        return $this->payments()->whereIn('status', ['completed', 'captured'])->sum('amount');
     }
 
     public function getDueAmountAttribute()

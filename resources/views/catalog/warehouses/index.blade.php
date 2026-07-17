@@ -25,7 +25,7 @@
     <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card">
+            <div class="card stats-card border-0 shadow-sm rounded-4">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -41,7 +41,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card">
+            <div class="card stats-card border-0 shadow-sm rounded-4">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
@@ -59,7 +59,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card">
+            <div class="card stats-card border-0 shadow-sm rounded-4">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
@@ -77,7 +77,7 @@
     </div>
 
     <!-- ═══════════════════════ Main Table Card ═════════════════════════════ -->
-    <div class="card">
+    <div class="card border-0 shadow-sm rounded-4">
         <div class="card-header">
             <div class="row align-items-center g-2">
                 <div class="col">
@@ -132,15 +132,24 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width:44px" class="ps-4">
-                                <input type="checkbox" class="user-select-checkbox"
+                                <input type="checkbox" class="form-check-input"
                                        @change="$event.isTrusted && toggleAll($event.target.checked)"
                                        :checked="selectedItems.length === paginatedItems.length && paginatedItems.length > 0">
                             </th>
-                            <th @click="sortBy('id')" class="sortable" style="width:70px">ID</th>
-                            <th @click="sortBy('name')" class="sortable">Warehouse</th>
+                            <th @click="sortBy('id')" class="sortable" style="width:90px">
+                                ID
+                                <i class="bi ms-1" :class="sortField === 'id' ? (sortDirection === 'asc' ? 'bi-chevron-up' : 'bi-chevron-down') : 'bi-arrow-down-up opacity-50'"></i>
+                            </th>
+                            <th @click="sortBy('name')" class="sortable">
+                                Warehouse
+                                <i class="bi ms-1" :class="sortField === 'name' ? (sortDirection === 'asc' ? 'bi-chevron-up' : 'bi-chevron-down') : 'bi-arrow-down-up opacity-50'"></i>
+                            </th>
                             <th>Contact Info</th>
                             <th>Address</th>
-                            <th @click="sortBy('status')" class="sortable" style="width:110px">Status</th>
+                            <th @click="sortBy('status')" class="sortable" style="width:110px">
+                                Status
+                                <i class="bi ms-1" :class="sortField === 'status' ? (sortDirection === 'asc' ? 'bi-chevron-up' : 'bi-chevron-down') : 'bi-arrow-down-up opacity-50'"></i>
+                            </th>
                             <th style="width:110px" class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
@@ -173,7 +182,7 @@
                         <template x-for="item in paginatedItems" :key="item.id">
                             <tr>
                                 <td class="ps-4">
-                                    <input type="checkbox" class="user-select-checkbox"
+                                    <input type="checkbox" class="form-check-input"
                                            :value="item.id"
                                            :checked="selectedItems.includes(item.id)"
                                            @change="toggleItem(item.id)">
@@ -218,7 +227,10 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="small text-muted" x-text="[item.address_line_1, item.city, item.state, item.pincode].filter(Boolean).join(', ') || '—'"></div>
+                                    <div class="small text-muted d-flex align-items-start gap-1">
+                                        <i class="bi bi-geo-alt text-muted mt-0.5"></i>
+                                        <span x-text="[item.address_line_1, item.city, item.state, item.pincode].filter(Boolean).join(', ') || '—'"></span>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge rounded-pill"
@@ -285,7 +297,7 @@
     <!-- ═══════════════════════ Add / Edit Modal ════════════════════════════ -->
     <div class="modal fade" id="warehousesModal" tabindex="-1" aria-labelledby="warehousesModalLabel" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
+            <div class="modal-content shadow-lg border-0 rounded-4">
 
                 <!-- Header -->
                 <div class="modal-header border-bottom-0 pb-0">
@@ -383,9 +395,9 @@
                                                 </div>
                                             </div>
                                             <div class="col-12">
-                                                <div class="form-check form-switch">
+                                                <div class="form-check">
                                                     <input class="form-check-input" type="checkbox"
-                                                           role="switch" id="wh_default"
+                                                           id="wh_default"
                                                            x-model="form.is_default">
                                                     <label class="form-check-label fw-medium small" for="wh_default">
                                                         Set as <strong>Default</strong> warehouse

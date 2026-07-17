@@ -568,12 +568,21 @@
                                             <i class="bi bi-arrow-left-right me-2"></i>Revert Status
                                         </a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
-                                            <i class="bi bi-file-pdf me-2"></i>Print Invoice
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
-                                            <i class="bi bi-file-earmark-pdf me-2"></i>Print COD Receipt
-                                        </a></li>
+                                        <template x-if="order.invoice">
+                                            <li><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
+                                                <i class="bi bi-file-pdf me-2"></i>Print Invoice
+                                            </a></li>
+                                        </template>
+                                        <template x-if="order.invoice">
+                                            <li><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
+                                                <i class="bi bi-file-earmark-pdf me-2"></i>Print COD Receipt
+                                            </a></li>
+                                        </template>
+                                        <template x-if="!order.invoice">
+                                            <li><a class="dropdown-item text-primary" href="#" @click.prevent="generateAndPrintInvoice(order)">
+                                                <i class="bi bi-receipt-cutoff me-2"></i>Generate Invoice & Print
+                                            </a></li>
+                                        </template>
                                         <li><a class="dropdown-item" href="#" @click.prevent="printReceipt(order)">
                                             <i class="bi bi-receipt me-2"></i>Print Receipt
                                         </a></li>
@@ -806,10 +815,22 @@
                             <div class="col-lg-4 p-4 p-lg-5 border-start bg-body" style="position: sticky; top: 0; height: fit-content; align-self: flex-start;">
                                 
                                 <!-- Document Actions -->
-                                <div class="d-flex flex-wrap gap-2 mb-4">
-                                    <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printInvoice(selectedOrder)">
-                                        <i class="bi bi-file-earmark-pdf me-2"></i>Invoice
-                                    </button>
+                                <div class="d-flex flex-wrap gap-2 mb-4 w-100">
+                                    <template x-if="selectedOrder.invoice">
+                                        <div class="d-flex flex-wrap gap-2 w-100">
+                                            <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printInvoice(selectedOrder)">
+                                                <i class="bi bi-file-earmark-pdf me-2"></i>Print Invoice
+                                            </button>
+                                            <button class="btn btn-info text-white flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printCOD(selectedOrder)">
+                                                <i class="bi bi-file-earmark-pdf me-2"></i>COD Receipt
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template x-if="!selectedOrder.invoice">
+                                        <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="generateAndPrintInvoice(selectedOrder)">
+                                            <i class="bi bi-receipt-cutoff me-2"></i>Generate Invoice & Print
+                                        </button>
+                                    </template>
                                     <button class="btn btn-outline-secondary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printReceipt(selectedOrder)">
                                         <i class="bi bi-receipt me-2"></i>Receipt
                                     </button>

@@ -17,6 +17,9 @@ use App\Modules\Orders\Models\Payment;
 use App\Modules\Orders\Models\Shipment;
 use App\Modules\Orders\Models\OrderVerificationLog;
 use App\Modules\Orders\Models\ShipmentTrackingEvent;
+use App\Modules\Orders\Models\OrderReturn;
+use App\Modules\Orders\Models\OrderReturnItem;
+use App\Modules\Orders\Models\Refund;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -150,8 +153,8 @@ class OrderSeeder extends Seeder
                 ]);
 
                 // 3. Invoice Execution
-                if (in_array($status, ['confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'])) {
-                    $invoiceStatus = ($status === 'delivered') ? 'paid' : (rand(0, 1) ? 'unpaid' : 'partially_paid');
+                if (in_array($status, ['confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'returned'])) {
+                    $invoiceStatus = ($status === 'delivered' || $status === 'returned') ? 'paid' : (rand(0, 1) ? 'unpaid' : 'partially_paid');
                     
                     $invoice = Invoice::create([
                         'invoice_no' => 'INV-' . strtoupper(Str::random(8)),
@@ -174,6 +177,45 @@ class OrderSeeder extends Seeder
                             'transaction_id' => 'TXN' . rand(10000000, 99999999),
                             'payment_date' => $orderDate->copy()->addHours(1),
                             'status' => 'captured',
+                        ]);
+                    }
+
+                    // Seeding Returns and Refunds
+                    if ($status === 'returned') {
+                        $return = OrderReturn::create([
+                            'order_id' => $order->id,
+                            'return_no' => 'RET-' . strtoupper(Str::random(8)),
+                            'status' => 'completed',
+                            'financial_status' => 'fully_refunded',
+                            'reason' => 'Defective Item',
+                            'notes' => 'Customer requested a refund.',
+                            'refund_amount' => $netAmount,
+                            'credit_note_amount' => 0.00,
+                        ]);
+
+                        foreach ($order->items as $item) {
+                            OrderReturnItem::create([
+                                'order_return_id' => $return->id,
+                                'product_id' => $item->product_id,
+                                'requested_qty' => $item->quantity,
+                                'received_qty' => $item->quantity,
+                                'restocked_qty' => $item->quantity,
+                                'damaged_qty' => 0,
+                                'qc_status' => 'passed',
+                                'qc_notes' => 'Passed inspection.',
+                            ]);
+                        }
+
+                        Refund::create([
+                            'refund_no' => 'REF-' . strtoupper(Str::random(8)),
+                            'order_id' => $order->id,
+                            'invoice_id' => $invoice->id,
+                            'order_return_id' => $return->id,
+                            'amount' => $netAmount,
+                            'payment_method' => 'bank_transfer',
+                            'transaction_id' => 'TXN' . rand(10000000, 99999999),
+                            'status' => 'completed',
+                            'notes' => 'Processed refund back to customer account.',
                         ]);
                     }
                 }

@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Offers & Deals')
+@section('title', '⭐ Offers & Deals')
 @section('page', 'promotions.offers')
 
 @section('content')
@@ -7,7 +7,7 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
-            <h1 class="h3 mb-0">Offers &amp; Deals</h1>
+            <h1 class="h3 mb-0"><i class="bi bi-star-fill text-primary me-2"></i>Offers &amp; Deals</h1>
             <p class="text-muted mb-0">Create BOGO deals and order-level discount offers</p>
         </div>
         <div class="d-flex gap-2">

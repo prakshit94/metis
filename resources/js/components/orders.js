@@ -865,6 +865,29 @@ document.addEventListener('alpine:init', () => {
       window.open(`/orders/${order.id}/receipt`, '_blank');
     },
 
+    async generateAndPrintInvoice(order) {
+      try {
+        const res = await apiFetch(`/orders/${order.id}/generate-invoice`, { method: 'POST' });
+        showToast(res.message || 'Invoice generated successfully.');
+        
+        // Open/Print the PDF invoice in a new tab
+        this.printInvoice(order);
+        
+        // Reload list of orders
+        this.loadOrders();
+        
+        // If the detail modal is currently showing the selected order, update it too
+        if (this.selectedOrder && this.selectedOrder.id === order.id) {
+          const details = await apiFetch(`/orders/${order.id}`);
+          if (details && details.order) {
+            this.selectedOrder = this.mapOrder(details.order);
+          }
+        }
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
     // ─── Verification Logs ───────────────────────────────────────────────────
     
     // ─── Bulk Actions ────────────────────────────────────────────────────────

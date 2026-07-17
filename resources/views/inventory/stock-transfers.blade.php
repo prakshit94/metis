@@ -167,14 +167,14 @@
                                            @change="$event.isTrusted && toggleAll($event.target.checked)"
                                            :checked="selectedItems.length === paginatedItems.length && paginatedItems.length > 0">
                                 </th>
-                                <th class="ps-2" style="width: 70px;">ID</th>
-                                <th>Transfer No.</th>
-                                <th>From Warehouse</th>
-                                <th>To Warehouse</th>
-                                <th class="text-center">Items Count</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th style="width: 120px;" class="text-end pe-4">Actions</th>
+                                <th class="ps-2" style="width: 70px;"><i class="bi bi-hash me-1 text-secondary"></i>ID</th>
+                                <th><i class="bi bi-file-earmark-text me-1 text-secondary"></i>Transfer No.</th>
+                                <th><i class="bi bi-box-arrow-right me-1 text-secondary"></i>From Warehouse</th>
+                                <th><i class="bi bi-box-arrow-in-right me-1 text-secondary"></i>To Warehouse</th>
+                                <th class="text-center"><i class="bi bi-box-seam me-1 text-secondary"></i>Items Count</th>
+                                <th><i class="bi bi-info-circle me-1 text-secondary"></i>Status</th>
+                                <th><i class="bi bi-calendar-event me-1 text-secondary"></i>Date</th>
+                                <th style="width: 120px;" class="text-end pe-4"><i class="bi bi-lightning-charge me-1 text-secondary"></i>Actions</th>
                             </tr>
                         </thead>
                         <tbody>

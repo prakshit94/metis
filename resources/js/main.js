@@ -182,6 +182,15 @@ class AdminApp {
       case 'returns':
         await this.initReturnsPage();
         break;
+      case 'invoices':
+        await this.initInvoicesPage();
+        break;
+      case 'payments':
+        await this.initPaymentsPage();
+        break;
+      case 'refunds':
+        await this.initRefundsPage();
+        break;
       case 'reports':
         await this.initReportsPage();
         break;
@@ -309,6 +318,33 @@ class AdminApp {
       console.log('↩️ Returns page script loaded successfully');
     } catch (error) {
       console.error('Failed to load returns page script:', error);
+    }
+  }
+
+  async initInvoicesPage() {
+    try {
+      await import('./components/invoices.js');
+      console.log('🧾 Invoices page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load invoices page script:', error);
+    }
+  }
+
+  async initPaymentsPage() {
+    try {
+      await import('./components/payments.js');
+      console.log('💳 Payments page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load payments page script:', error);
+    }
+  }
+
+  async initRefundsPage() {
+    try {
+      await import('./components/refunds.js');
+      console.log('💵 Refunds page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load refunds page script:', error);
     }
   }
 

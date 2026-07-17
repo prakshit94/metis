@@ -35,7 +35,7 @@ class Payment extends Model
             if ($payment->invoice_id) {
                 $invoice = $payment->invoice;
                 if ($invoice) {
-                    $paid = $invoice->payments()->where('status', 'completed')->sum('amount');
+                    $paid = $invoice->payments()->whereIn('status', ['completed', 'captured'])->sum('amount');
                     if ($paid >= $invoice->net_amount) {
                         $invoice->update(['status' => 'paid']);
                     } elseif ($paid > 0) {
