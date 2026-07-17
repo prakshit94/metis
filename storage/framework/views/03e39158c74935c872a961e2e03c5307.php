@@ -71,10 +71,10 @@
                                     <div class="d-flex align-items-center justify-content-between">
                                         <div>
                                             <h6 class="text-muted mb-2">Total Revenue</h6>
-                                            <div class="metric-value" x-text="`$${kpis.revenue.toLocaleString()}`"></div>
-                                            <div class="metric-change positive">
-                                                <i class="bi bi-arrow-up"></i>
-                                                <span x-text="`+${kpis.revenueChange}%`"></span> vs last period
+                                            <div class="metric-value" x-text="`Rs ${kpis.revenue.toLocaleString()}`"></div>
+                                            <div class="metric-change" :class="kpis.revenueChange >= 0 ? 'positive' : 'negative'">
+                                                <i class="bi" :class="kpis.revenueChange >= 0 ? 'bi-arrow-up' : 'bi-arrow-down'"></i>
+                                                <span x-text="`${kpis.revenueChange > 0 ? '+' : ''}${kpis.revenueChange}%`"></span> vs last period
                                             </div>
                                         </div>
                                         <div class="stats-icon bg-success bg-opacity-10 text-success">
@@ -90,9 +90,9 @@
                                         <div>
                                             <h6 class="text-muted mb-2">Orders</h6>
                                             <div class="metric-value" x-text="kpis.orders.toLocaleString()"></div>
-                                            <div class="metric-change positive">
-                                                <i class="bi bi-arrow-up"></i>
-                                                <span x-text="`+${kpis.ordersChange}%`"></span> vs last period
+                                            <div class="metric-change" :class="kpis.ordersChange >= 0 ? 'positive' : 'negative'">
+                                                <i class="bi" :class="kpis.ordersChange >= 0 ? 'bi-arrow-up' : 'bi-arrow-down'"></i>
+                                                <span x-text="`${kpis.ordersChange > 0 ? '+' : ''}${kpis.ordersChange}%`"></span> vs last period
                                             </div>
                                         </div>
                                         <div class="stats-icon bg-primary bg-opacity-10 text-primary">
@@ -108,9 +108,9 @@
                                         <div>
                                             <h6 class="text-muted mb-2">Customers</h6>
                                             <div class="metric-value" x-text="kpis.customers.toLocaleString()"></div>
-                                            <div class="metric-change positive">
-                                                <i class="bi bi-arrow-up"></i>
-                                                <span x-text="`+${kpis.customersChange}%`"></span> vs last period
+                                            <div class="metric-change" :class="kpis.customersChange >= 0 ? 'positive' : 'negative'">
+                                                <i class="bi" :class="kpis.customersChange >= 0 ? 'bi-arrow-up' : 'bi-arrow-down'"></i>
+                                                <span x-text="`${kpis.customersChange > 0 ? '+' : ''}${kpis.customersChange}%`"></span> vs last period
                                             </div>
                                         </div>
                                         <div class="stats-icon bg-info bg-opacity-10 text-info">
@@ -174,7 +174,7 @@
                                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                                     <span class="small" x-text="product.name"></span>
                                                     <div class="d-flex align-items-center">
-                                                        <span class="small text-muted me-2" x-text="`$${product.revenue}k`"></span>
+                                                        <span class="small text-muted me-2" x-text="`Rs ${product.revenue}`"></span>
                                                         <span class="small fw-medium" x-text="product.units"></span>
                                                     </div>
                                                 </div>

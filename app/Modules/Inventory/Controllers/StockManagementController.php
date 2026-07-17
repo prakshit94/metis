@@ -55,9 +55,11 @@ class StockManagementController extends Controller implements HasMiddleware
 
         if ($stockLevel = $request->query('stock_level')) {
             if ($stockLevel === 'in_stock') {
-                $query->whereRaw('quantity - reserved_qty > 5 AND quantity > 0');
+                $query->whereRaw('quantity - reserved_qty > (SELECT COALESCE(min_stock_level, 5) FROM products WHERE products.id = stocks.product_id)')
+                      ->where('quantity', '>', 0);
             } elseif ($stockLevel === 'low_stock') {
-                $query->whereRaw('quantity - reserved_qty <= 5 AND quantity > 0');
+                $query->whereRaw('quantity - reserved_qty <= (SELECT COALESCE(min_stock_level, 5) FROM products WHERE products.id = stocks.product_id)')
+                      ->where('quantity', '>', 0);
             } elseif ($stockLevel === 'out_of_stock') {
                 $query->where('quantity', '<=', 0);
             }
@@ -79,7 +81,7 @@ class StockManagementController extends Controller implements HasMiddleware
         $stats = [
             'total_products'    => Stock::select('product_id')->distinct()->count(),
             'total_warehouses'  => Stock::select('warehouse_id')->distinct()->count(),
-            'low_stock_count'   => Stock::whereRaw('quantity - reserved_qty <= 5 AND quantity > 0')->count(),
+            'low_stock_count'   => Stock::whereRaw('quantity - reserved_qty <= (SELECT COALESCE(min_stock_level, 5) FROM products WHERE products.id = stocks.product_id) AND quantity > 0')->count(),
             'out_of_stock'      => Stock::where('quantity', 0)->count(),
         ];
 

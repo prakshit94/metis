@@ -224,9 +224,9 @@
                                     <td class="text-center">
                                         <span class="badge stock-badge"
                                               :class="{
-                                                  'in-stock':     parseFloat(item.quantity || 0) > 5,
-                                                  'low-stock':    parseFloat(item.quantity || 0) > 0 && parseFloat(item.quantity || 0) <= 5,
-                                                  'out-of-stock': parseFloat(item.quantity || 0) === 0
+                                                  'in-stock':     parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > (item.product?.min_stock_level ?? 5),
+                                                  'low-stock':    parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > 0 && parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= (item.product?.min_stock_level ?? 5),
+                                                  'out-of-stock': parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= 0
                                               }"
                                               x-text="parseFloat(item.quantity || 0).toFixed(2) + ' units'">
                                         </span>

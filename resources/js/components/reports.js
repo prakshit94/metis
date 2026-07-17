@@ -28,14 +28,8 @@ document.addEventListener('alpine:init', () => {
     },
 
     init() {
-      this.loadSampleData();
+      this.refreshData();
       
-      // Delay chart initialization to ensure DOM is fully ready
-      setTimeout(() => {
-        this.initCharts();
-        this.initResizeHandler();
-      }, 500);
-
       const onHide = () => this.destroy();
       window.addEventListener('pagehide', onHide, { once: true });
     },
@@ -142,15 +136,52 @@ document.addEventListener('alpine:init', () => {
       this.showNotification('Filters applied successfully!', 'success');
     },
 
-    refreshData() {
-      // Simulate data refresh based on filters
-      this.kpis.revenue = Math.floor(Math.random() * 50000) + 100000;
-      this.kpis.orders = Math.floor(Math.random() * 500) + 1000;
-      this.kpis.customers = Math.floor(Math.random() * 200) + 800;
-      
-      // Refresh charts if they exist
-      if (this.chartsInitialized) {
-        this.updateCharts();
+    async refreshData() {
+      try {
+        const response = await fetch(`/reports?period=${this.dateRange}`, {
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        if (!response.ok) throw new Error('Failed to fetch report data');
+        const data = await response.json();
+
+        if (data.kpis) {
+          this.kpis = { ...this.kpis, ...data.kpis };
+        }
+        
+        if (data.topProducts) {
+          this.topProducts = data.topProducts;
+        }
+
+        this.trendsData = data.trends || [];
+        this.regionSalesData = data.regionSales || [];
+
+        // Simulated recent reports
+        this.recentReports = [
+          {
+            id: 'RPT-001',
+            name: 'Monthly Sales Report',
+            type: 'Sales',
+            dateRange: this.dateRange,
+            generated: new Date().toISOString().split('T')[0],
+            status: 'ready'
+          }
+        ];
+
+        // Initialize or update charts
+        if (this.chartsInitialized) {
+          this.updateCharts();
+        } else {
+          setTimeout(() => {
+            this.initCharts();
+            this.initResizeHandler();
+          }, 300);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        this.showNotification('Error loading report data', 'error');
       }
     },
 
@@ -240,62 +271,34 @@ document.addEventListener('alpine:init', () => {
         const chartData = {
           series: [{
             name: 'Revenue',
-            data: [28000, 32000, 35000, 41000, 38000, 45000, 52000]
-          }, {
-            name: 'Profit',
-            data: [8400, 9600, 10500, 12300, 11400, 13500, 15600]
+            data: this.trendsData && this.trendsData.length ? this.trendsData.map(t => t.revenue) : [0]
           }],
           chart: {
             type: 'area',
             height: 350,
             toolbar: {
               show: true,
-              tools: {
-                download: true,
-                selection: true,
-                zoom: true,
-                zoomin: true,
-                zoomout: true,
-                pan: true,
-                reset: true
-              }
+              tools: { download: true, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true }
             }
           },
-          colors: ['#6366f1', '#10b981'],
+          colors: ['#6366f1'],
           fill: {
             type: 'gradient',
-            gradient: {
-              shadeIntensity: 1,
-              opacityFrom: 0.7,
-              opacityTo: 0.3,
-            }
+            gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.3 }
           },
-          stroke: {
-            curve: 'smooth',
-            width: 3
-          },
+          stroke: { curve: 'smooth', width: 3 },
           xaxis: {
-            categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            title: {
-              text: 'Days of Week'
-            }
+            categories: this.trendsData && this.trendsData.length ? this.trendsData.map(t => t.date) : ['No Data'],
+            title: { text: 'Date' }
           },
           yaxis: {
-            title: {
-              text: 'Amount ($)'
-            },
+            title: { text: 'Amount (Rs)' },
             labels: {
-              formatter: function (val) {
-                return "$" + val.toLocaleString()
-              }
+              formatter: function (val) { return "Rs " + val.toLocaleString() }
             }
           },
           tooltip: {
-            y: {
-              formatter: function (val) {
-                return "$" + val.toLocaleString()
-              }
-            }
+            y: { formatter: function (val) { return "Rs " + val.toLocaleString() } }
           },
           legend: {
             position: 'top'
@@ -339,11 +342,7 @@ document.addEventListener('alpine:init', () => {
             show: false
           },
           tooltip: {
-            y: {
-              formatter: function (val) {
-                return "$" + val + "k revenue"
-              }
-            }
+            y: { formatter: function (val) { return "Rs " + val } }
           }
         };
 
@@ -420,19 +419,14 @@ document.addEventListener('alpine:init', () => {
         const chartData = {
           series: [{
             name: 'Sales',
-            data: [44, 55, 41, 67, 22, 43]
+            data: this.regionSalesData && this.regionSalesData.length ? this.regionSalesData.map(s => s.revenue) : [0]
           }],
-          chart: {
-            type: 'radar',
-            height: 250
-          },
+          chart: { type: 'radar', height: 250 },
           colors: ['#6366f1'],
           xaxis: {
-            categories: ['North America', 'Europe', 'Asia', 'South America', 'Africa', 'Oceania']
+            categories: this.regionSalesData && this.regionSalesData.length ? this.regionSalesData.map(s => s.shipping_state) : ['No Data']
           },
-          yaxis: {
-            tickAmount: 4
-          },
+          yaxis: { tickAmount: 4 },
           markers: {
             size: 4,
             colors: ['#6366f1'],
@@ -449,8 +443,26 @@ document.addEventListener('alpine:init', () => {
     },
 
     updateCharts() {
-      // This would be called when filters change to update chart data
-      console.log('Updating charts with new data...');
+      if (this.charts.revenueTrends && this.trendsData) {
+        this.charts.revenueTrends.updateSeries([{
+          name: 'Revenue',
+          data: this.trendsData.map(t => t.revenue)
+        }]);
+        this.charts.revenueTrends.updateOptions({ xaxis: { categories: this.trendsData.map(t => t.date) } });
+      }
+
+      if (this.charts.topProducts && this.topProducts) {
+        this.charts.topProducts.updateSeries(this.topProducts.map(p => p.revenue));
+        this.charts.topProducts.updateOptions({ labels: this.topProducts.map(p => p.name) });
+      }
+
+      if (this.charts.regionSales && this.regionSalesData) {
+        this.charts.regionSales.updateSeries([{
+          name: 'Sales',
+          data: this.regionSalesData.map(s => s.revenue)
+        }]);
+        this.charts.regionSales.updateOptions({ xaxis: { categories: this.regionSalesData.map(s => s.shipping_state) } });
+      }
     }
   }));
 
