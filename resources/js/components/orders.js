@@ -940,48 +940,59 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    bulkPrint(type) {
+    async bulkPrint(type) {
       if (this.selectedOrders.length === 0) return;
       const params = new URLSearchParams();
       this.selectedOrders.forEach(id => params.append('order_ids[]', id));
       params.append('type', type);
-      window.open(`/orders/bulk-print?${params.toString()}`, '_blank');
-      this.selectedOrders = [];
+
+      try {
+        const response = await fetch(`/orders/bulk-print?${params.toString()}`, {
+          headers: {
+            'Accept': 'application/json, application/pdf'
+          }
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          showToast(data.message || 'Failed to generate bulk print.', 'danger');
+          return;
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `bulk-${type}-${new Date().getTime()}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+        showToast(`Bulk ${type} generated successfully.`, 'success');
+        this.selectedOrders = [];
+      } catch (err) {
+        showToast('Network error or download failed.', 'danger');
+      }
     },
 
     async generateBulkInvoices() {
       if (this.selectedOrders.length === 0) return;
 
       const confirmed = await Swal.fire({
-        title: 'Generate bulk invoices?',
-        html: `
-          <div class="text-start px-2">
-            <div class="d-flex align-items-center gap-3 p-3 mb-3 rounded-3 bg-primary bg-opacity-10 border border-primary border-opacity-25">
-              <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white flex-shrink-0" style="width: 42px; height: 42px;">
-                <i class="bi bi-receipt-cutoff fs-5"></i>
-              </span>
-              <div>
-                <div class="fw-semibold text-body">${this.selectedOrders.length} order(s) selected</div>
-                <div class="small text-muted">Invoices will be created only for orders that do not already have one.</div>
-              </div>
-            </div>
-            <p class="small text-muted mb-0">You can print bulk invoices and COD receipts after invoices are generated.</p>
-          </div>`,
-        icon: undefined,
+        title: 'Generate Bulk Invoices?',
+        text: `Generate invoices for ${this.selectedOrders.length} selected order(s)? Invoices will be created only for orders that do not already have one.`,
+        icon: 'question',
         showCancelButton: true,
-        confirmButtonText: '<i class="bi bi-receipt-cutoff me-1"></i> Generate invoices',
+        confirmButtonText: 'Yes, generate',
         cancelButtonText: 'Cancel',
         customClass: {
-          confirmButton: 'btn btn-primary px-4',
-          cancelButton: 'btn btn-light border px-4',
-          popup: 'rounded-4 shadow-lg border-0 p-2',
-          title: 'fs-4 fw-bold pt-3',
-          htmlContainer: 'mb-2',
-          actions: 'd-flex flex-row-reverse gap-2 w-100 px-3 pb-3 mt-0'
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-3 shadow-lg',
+          title: 'fs-4 fw-bold'
         },
-        buttonsStyling: false,
-        reverseButtons: true,
-        focusCancel: true
+        buttonsStyling: false
       });
       if (!confirmed.isConfirmed) return;
 
@@ -1118,13 +1129,13 @@ document.addEventListener('alpine:init', () => {
             title: { text: 'Orders' }
           }, {
             opposite: true,
-            title: { text: 'Revenue ($)' }
+            title: { text: 'Revenue (Rs.)' }
           }],
           tooltip: {
             y: [{
               formatter: (val) => val + " orders"
             }, {
-              formatter: (val) => "$" + val
+              formatter: (val) => "Rs. " + val
             }]
           }
         };

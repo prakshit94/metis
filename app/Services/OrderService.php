@@ -84,11 +84,11 @@ class OrderService
             // Generate order number: {daily_seq}-{MMDDYYYY}-{HHMM}
             $today     = now();
             $datePart  = $today->format('dmY');   // DDMMYYYY
-            $timePart  = $today->format('Hi');    // HHMM
             $todayStart = $today->copy()->startOfDay();
             $todayEnd   = $today->copy()->endOfDay();
             $dailyCount = \App\Modules\Orders\Models\Order::whereBetween('created_at', [$todayStart, $todayEnd])->count() + 1;
-            $orderNo   = $dailyCount . '-' . $datePart . '-' . $timePart;
+            $seq       = str_pad((string)$dailyCount, 2, '0', STR_PAD_LEFT);
+            $orderNo   = "ORD-{$datePart}-{$seq}";
 
             $shippingAddressFields = [];
             if (!empty($data['shipping_address_id'])) {
@@ -658,7 +658,7 @@ class OrderService
                 }
                 
                 \App\Modules\Orders\Models\Shipment::create([
-                    'shipment_no'  => \App\Modules\Orders\Models\Shipment::generateShipmentNo(),
+                    'shipment_no'  => \App\Modules\Orders\Models\Shipment::generateShipmentNo($order),
                     'order_id'     => $order->id,
                     'status'       => 'pending',
                     'carrier_name' => $carrierName,

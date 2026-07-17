@@ -104,8 +104,8 @@
                     <div class="col">
                         <h2 class="h5 card-title mb-0">Stock Levels</h2>
                     </div>
-                    <div class="col-auto">
-                        <div class="d-flex gap-2">
+                    <div class="col-auto mt-3 mt-md-0">
+                        <div class="d-flex flex-wrap gap-2 justify-content-end">
                             
                             <div class="position-relative">
                                 <input type="search"
@@ -162,7 +162,7 @@
 
                 
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                    <table class="table table-hover align-middle mb-0 text-nowrap">
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 50px;" class="ps-3">
@@ -177,6 +177,7 @@
                                 <th @click="sortBy('reserved_qty')" class="sortable text-center"><i class="bi bi-bookmark-dash me-1 text-secondary"></i>Reserved</th>
                                 <th @click="sortBy('pending_qty')" class="sortable text-center"><i class="bi bi-hourglass-split me-1 text-secondary"></i>Pending</th>
                                 <th @click="sortBy('dispatched_qty')" class="sortable text-center"><i class="bi bi-send-check me-1 text-secondary"></i>Dispatched</th>
+                                <th @click="sortBy('delivered_qty')" class="sortable text-center"><i class="bi bi-box2-heart me-1 text-secondary"></i>Delivered</th>
                                 <th @click="sortBy('available')" class="sortable text-center"><i class="bi bi-check-circle me-1 text-secondary"></i>Available</th>
                                 <th @click="sortBy('in_transit_qty')" class="sortable text-center"><i class="bi bi-truck me-1 text-secondary"></i>In Transit</th>
                                 <th @click="sortBy('damaged_qty')" class="sortable text-center"><i class="bi bi-exclamation-octagon me-1 text-secondary"></i>Bad Qty</th>
@@ -186,7 +187,7 @@
                         <tbody>
                             <template x-if="paginatedItems.length === 0">
                                 <tr>
-                                    <td colspan="11" class="text-center py-5 text-muted">
+                                    <td colspan="12" class="text-center py-5 text-muted">
                                         <div x-show="isLoading" class="spinner-border text-primary" role="status">
                                             <span class="visually-hidden">Loading...</span>
                                         </div>
@@ -241,6 +242,10 @@
                                     <td class="text-center">
                                         <span class="badge bg-info-subtle text-info border border-info-subtle"
                                               x-text="parseFloat(item.dispatched_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle"
+                                              x-text="parseFloat(item.delivered_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge stock-badge"

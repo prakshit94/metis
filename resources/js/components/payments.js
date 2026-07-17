@@ -85,6 +85,14 @@ document.addEventListener('alpine:init', () => {
     },
 
     selectedPayment: null,
+    editForm: {
+      id: null,
+      amount: '',
+      payment_date: '',
+      payment_method: '',
+      status: '',
+      transaction_id: ''
+    },
 
     init() {
       this.loadPayments();
@@ -203,6 +211,38 @@ document.addEventListener('alpine:init', () => {
       this.$nextTick(() => {
         getModal('detailModal')?.show();
       });
+    },
+
+    editPayment(payment) {
+      this.editForm = {
+        id: payment.id,
+        amount: payment.amount,
+        payment_date: payment.payment_date ? payment.payment_date.slice(0, 16) : '',
+        payment_method: payment.payment_method,
+        status: payment.status,
+        transaction_id: payment.transaction_id || ''
+      };
+      this.$nextTick(() => {
+        getModal('editModal')?.show();
+      });
+    },
+
+    async updatePayment() {
+      if (!this.editForm.id) return;
+      this.isSubmitting = true;
+      try {
+        const res = await apiFetch(`/payments/${this.editForm.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(this.editForm)
+        });
+        showToast(res.message || 'Payment updated successfully.');
+        getModal('editModal')?.hide();
+        this.loadPayments();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      } finally {
+        this.isSubmitting = false;
+      }
     },
 
     formatCurrency(value) {

@@ -205,6 +205,11 @@
                                             <li><a class="dropdown-item" href="#" @click.prevent="viewDetails(invoice)">
                                                 <i class="bi bi-eye me-2"></i>View Details
                                             </a></li>
+                                            <template x-if="invoice.due_amount > 0 && invoice.status !== 'cancelled'">
+                                                <li><a class="dropdown-item" href="#" @click.prevent="recordPayment(invoice)">
+                                                    <i class="bi bi-cash-coin me-2"></i>Record Payment
+                                                </a></li>
+                                            </template>
                                         </ul>
                                     </div>
                                 </td>
@@ -301,6 +306,59 @@
                         </div>
                     </div>
                 </template>
+            </div>
+        </div>
+</div>
+    
+    <!-- Record Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <form @submit.prevent="submitPayment">
+                    <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                        <h5 class="modal-title fw-bold">Record Payment</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="alert alert-info py-2 mb-4 d-flex justify-content-between align-items-center">
+                            <span>Balance Due:</span>
+                            <strong class="fs-5" x-text="formatCurrency(paymentForm.max_amount)"></strong>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-muted">Amount Received</label>
+                                <div class="input-group">
+                                    <span class="input-group-text border-end-0 bg-transparent text-muted">₹</span>
+                                    <input type="number" step="0.01" min="0.01" :max="paymentForm.max_amount" class="form-control fs-5 fw-medium" x-model="paymentForm.amount" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-muted">Payment Method</label>
+                                <select class="form-select" x-model="paymentForm.payment_method" required>
+                                    <option value="credit_card">Credit Card</option>
+                                    <option value="paypal">PayPal</option>
+                                    <option value="cod">Cash on Delivery (COD)</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-muted">Transaction ID (Optional)</label>
+                                <input type="text" class="form-control" x-model="paymentForm.transaction_id" placeholder="e.g. TXN-12345">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-muted">Payment Date & Time (Optional)</label>
+                                <input type="datetime-local" class="form-control" x-model="paymentForm.payment_date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary px-4" :disabled="isSubmitting">
+                            <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Record Payment
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

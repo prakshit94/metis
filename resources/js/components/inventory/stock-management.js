@@ -162,11 +162,12 @@ export default () => ({
                 exportItems = await this.fetchAllFiltered();
             }
 
-            const headers = ['Product Name', 'SKU', 'Warehouse', 'Quantity', 'Reserved', 'Dispatched', 'In Transit', 'Bad Qty', 'Alert Level', 'Status'];
+            const headers = ['Product Name', 'SKU', 'Warehouse', 'Quantity', 'Reserved', 'Dispatched', 'Delivered', 'In Transit', 'Bad Qty', 'Alert Level', 'Status'];
             const rows = exportItems.map(item => {
                 const qty = parseFloat(item.quantity || 0);
                 const reserved = parseFloat(item.reserved_qty || 0);
                 const dispatched = parseFloat(item.dispatched_qty || 0);
+                const delivered = parseFloat(item.delivered_qty || 0);
                 const inTransit = parseFloat(item.in_transit_qty || 0);
                 const damaged = parseFloat(item.damaged_qty || 0);
                 const alert = parseFloat(item.product?.alert_quantity || 0);
@@ -181,6 +182,7 @@ export default () => ({
                     qty,
                     reserved,
                     dispatched,
+                    delivered,
                     inTransit,
                     damaged,
                     alert,

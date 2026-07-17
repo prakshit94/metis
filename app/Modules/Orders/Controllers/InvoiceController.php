@@ -59,7 +59,7 @@ class InvoiceController extends Controller
         return view('orders.invoices.index', compact('invoices'));
     }
 
-    public function bulkStatus(Request $request)
+    public function bulkStatus(Request $request, \App\Services\FinancialService $financialService)
     {
         $validated = $request->validate([
             'ids' => 'required|array',
@@ -67,11 +67,49 @@ class InvoiceController extends Controller
             'status' => 'required|in:paid,unpaid,cancelled',
         ]);
 
-        Invoice::whereIn('id', $validated['ids'])->update(['status' => $validated['status']]);
+        $invoices = Invoice::whereIn('id', $validated['ids'])->get();
+
+        foreach ($invoices as $invoice) {
+            if ($validated['status'] === 'paid' && $invoice->due_amount > 0) {
+                $financialService->processPayment($invoice, $invoice->due_amount, 'bank_transfer', 'BULK-AUTO');
+            } else {
+                $invoice->update(['status' => $validated['status']]);
+            }
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Selected invoices updated successfully.',
         ]);
+    }
+
+    public function recordPayment(Request $request, Invoice $invoice, \App\Services\FinancialService $financialService)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'payment_method' => 'required|string',
+            'transaction_id' => 'nullable|string',
+            'payment_date' => 'nullable|date',
+        ]);
+
+        try {
+            $payment = $financialService->processPayment(
+                $invoice,
+                (float)$validated['amount'],
+                $validated['payment_method'],
+                $validated['transaction_id'] ?? null,
+                $validated['payment_date'] ?? null
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment recorded successfully.',
+                'payment' => $payment
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to record payment: ' . $e->getMessage()], 500);
+        }
     }
 }

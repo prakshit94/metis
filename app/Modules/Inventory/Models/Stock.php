@@ -94,4 +94,13 @@ class Stock extends Model
                       ->where('orders.status', 'pending');
             });
     }
+
+    public function deliveredOrderItems(): HasMany
+    {
+        return $this->hasMany(\App\Modules\Orders\Models\OrderItem::class, 'product_id', 'product_id')
+            ->whereHas('order', function ($query) {
+                $query->whereColumn('orders.warehouse_id', 'stocks.warehouse_id')
+                      ->whereIn('orders.status', ['delivered', 'completed']);
+            });
+    }
 }

@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
             VillageSeeder::class,
             PartyDataSeeder::class,
             ServiceSeeder::class,
-            OrderSeeder::class,
+            //OrderSeeder::class,
         ]);
     }
 }

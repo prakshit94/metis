@@ -18,7 +18,7 @@ class FinancialService
     /**
      * Process a payment for an invoice.
      */
-    public function processPayment(Invoice $invoice, float $amount, string $method, ?string $transactionId = null): Payment
+    public function processPayment(Invoice $invoice, float $amount, string $method, ?string $transactionId = null, ?string $paymentDate = null): Payment
     {
         if ($amount <= 0) {
             throw ValidationException::withMessages(['amount' => 'Payment amount must be greater than zero.']);
@@ -28,16 +28,24 @@ class FinancialService
             throw ValidationException::withMessages(['amount' => 'Payment amount cannot exceed the due amount.']);
         }
 
-        return DB::transaction(function () use ($invoice, $amount, $method, $transactionId) {
+        return DB::transaction(function () use ($invoice, $amount, $method, $transactionId, $paymentDate) {
+            $order = $invoice->order;
+            $baseNo = str_replace('ORD-', 'PAY-', $order->order_no);
+            if ($baseNo === $order->order_no) {
+                $baseNo = 'PAY-' . $order->order_no;
+            }
+            $count = Payment::where('order_id', $order->id)->count();
+            $paymentNo = $count > 0 ? $baseNo . '-' . ($count + 1) : $baseNo;
+
             $payment = Payment::create([
-                'payment_no' => 'PAY-' . strtoupper(Str::random(10)),
+                'payment_no' => $paymentNo,
                 'invoice_id' => $invoice->id,
                 'order_id' => $invoice->order_id,
                 'amount' => $amount,
                 'payment_method' => $method,
                 'transaction_id' => $transactionId,
-                'payment_date' => now(),
-                'status' => 'completed',
+                'payment_date' => $paymentDate ? \Carbon\Carbon::parse($paymentDate) : now(),
+                'status' => 'captured',
             ]);
 
             return $payment;
@@ -57,7 +65,15 @@ class FinancialService
             $order = $return->order;
             $invoice = $order->invoice;
 
+            $baseNo = str_replace('ORD-', 'REF-', $order->order_no);
+            if ($baseNo === $order->order_no) {
+                $baseNo = 'REF-' . $order->order_no;
+            }
+            $count = Refund::where('order_id', $order->id)->count();
+            $refundNo = $count > 0 ? $baseNo . '-' . ($count + 1) : $baseNo;
+
             $refund = Refund::create([
+                'refund_no' => $refundNo,
                 'order_id' => $order->id,
                 'invoice_id' => $invoice?->id,
                 'order_return_id' => $return->id,

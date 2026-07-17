@@ -619,7 +619,11 @@ class OrderController extends Controller implements HasMiddleware
                     } elseif ($targetStatus === 'ready_to_ship') {
                         if ($order->status === 'processing') {
                             $carrier = $validated['carrier_name'] ?? 'Generic';
-                            $tracking = $validated['tracking_no'] ?? ('TRK-' . strtoupper(Str::random(10)));
+                            $baseNo = str_replace('ORD-', 'TRK-', $order->order_no);
+                            if ($baseNo === $order->order_no) {
+                                $baseNo = 'TRK-' . $order->order_no;
+                            }
+                            $tracking = $validated['tracking_no'] ?? $baseNo;
                             $inventoryService->readyToShipOrder($order, $carrier, $tracking);
                             $count++;
                         } else {

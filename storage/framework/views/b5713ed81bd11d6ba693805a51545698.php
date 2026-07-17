@@ -219,6 +219,9 @@
                                             <li><a class="dropdown-item" href="#" @click.prevent="viewDetails(payment)">
                                                 <i class="bi bi-eye me-2"></i>View Details
                                             </a></li>
+                                            <li><a class="dropdown-item" href="#" @click.prevent="editPayment(payment)">
+                                                <i class="bi bi-pencil-square me-2"></i>Edit
+                                            </a></li>
                                             <template x-if="payment.status === 'authorized'">
                                                 <li><a class="dropdown-item" href="#" @click.prevent="updatePaymentStatus(payment.id, 'captured')">
                                                     <i class="bi bi-cash me-2"></i>Capture Payment
@@ -319,6 +322,65 @@
                         </div>
                     </div>
                 </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <form @submit.prevent="updatePayment">
+                    <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                        <h5 class="modal-title fw-bold">Edit Payment</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-muted">Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text border-end-0 bg-transparent text-muted">₹</span>
+                                    <input type="number" step="0.01" class="form-control" x-model="editForm.amount" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-muted">Payment Date</label>
+                                <input type="datetime-local" class="form-control" x-model="editForm.payment_date" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-muted">Method</label>
+                                <select class="form-select" x-model="editForm.payment_method" required>
+                                    <option value="credit_card">Credit Card</option>
+                                    <option value="paypal">PayPal</option>
+                                    <option value="cod">COD</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-muted">Status</label>
+                                <select class="form-select" x-model="editForm.status" required>
+                                    <option value="pending">Pending</option>
+                                    <option value="authorized">Authorized</option>
+                                    <option value="captured">Captured</option>
+                                    <option value="failed">Failed</option>
+                                    <option value="refunded">Refunded</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-muted">Transaction ID</label>
+                                <input type="text" class="form-control" x-model="editForm.transaction_id">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary px-4" :disabled="isSubmitting">
+                            <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

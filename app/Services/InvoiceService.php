@@ -26,7 +26,10 @@ class InvoiceService
             return $existing;
         }
 
-        $invoiceNo = 'INV-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6));
+        $invoiceNo = str_replace('ORD-', 'INV-', $order->order_no);
+        if ($invoiceNo === $order->order_no) {
+            $invoiceNo = 'INV-' . $order->order_no;
+        }
 
         $invoice = Invoice::create([
             'invoice_no'    => $invoiceNo,

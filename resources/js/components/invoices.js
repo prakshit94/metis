@@ -85,6 +85,14 @@ document.addEventListener('alpine:init', () => {
     },
 
     selectedInvoice: null,
+    paymentForm: {
+      invoice_id: null,
+      max_amount: 0,
+      amount: '',
+      payment_method: 'credit_card',
+      transaction_id: '',
+      payment_date: ''
+    },
 
     init() {
       this.loadInvoices();
@@ -184,6 +192,46 @@ document.addEventListener('alpine:init', () => {
       this.$nextTick(() => {
         getModal('detailModal')?.show();
       });
+    },
+
+    recordPayment(invoice) {
+      const now = new Date();
+      const localISOTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
+      this.paymentForm = {
+        invoice_id: invoice.id,
+        max_amount: invoice.due_amount,
+        amount: invoice.due_amount,
+        payment_method: 'credit_card',
+        transaction_id: '',
+        payment_date: localISOTime
+      };
+      this.$nextTick(() => {
+        getModal('paymentModal')?.show();
+      });
+    },
+
+    async submitPayment() {
+      if (!this.paymentForm.invoice_id) return;
+      this.isSubmitting = true;
+      try {
+        const res = await apiFetch(`/invoices/${this.paymentForm.invoice_id}/payments`, {
+          method: 'POST',
+          body: JSON.stringify({
+            amount: this.paymentForm.amount,
+            payment_method: this.paymentForm.payment_method,
+            transaction_id: this.paymentForm.transaction_id,
+            payment_date: this.paymentForm.payment_date
+          })
+        });
+        showToast(res.message || 'Payment recorded successfully.');
+        getModal('paymentModal')?.hide();
+        this.loadInvoices();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      } finally {
+        this.isSubmitting = false;
+      }
     },
 
     formatCurrency(value) {

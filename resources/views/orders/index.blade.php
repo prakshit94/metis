@@ -111,7 +111,7 @@
                     </div>
                     <div>
                         <p class="h6 mb-0 text-muted">Revenue</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="`$${stats.revenue.toLocaleString()}`"></span></div>
+                        <div class="h3 mb-0" aria-live="polite"><span x-text="`Rs. ${stats.revenue.toLocaleString()}`"></span></div>
                         <small class="text-success-emphasis">
                             <i class="bi bi-arrow-up"></i> +8% from last week
                         </small>
@@ -512,7 +512,7 @@
                                     <small class="text-muted" x-text="order.items.length > 0 ? order.items[0].name + (order.itemCount > 1 ? ' +' + (order.itemCount - 1) + ' more' : '') : '—'"></small>
                                 </div>
                             </td>
-                            <td class="fw-medium small" x-text="`$${order.total}`"></td>
+                            <td class="fw-medium small" x-text="`Rs. ${order.total}`"></td>
                             <td>
                                 <span class="badge small" 
                                       :style="`background-color: ${getStatusColor(order.status)}; color: #fff`"
@@ -774,17 +774,17 @@
                                                             <p class="text-muted small mb-0 font-monospace" style="font-size: 0.75rem;" x-text="item.sku || 'No SKU'"></p>
                                                         </td>
                                                         <td class="text-end py-3">
-                                                            <span class="text-body-emphasis fw-medium" x-text="`$${parseFloat(item.price).toFixed(2)}`"></span>
+                                                            <span class="text-body-emphasis fw-medium" x-text="`Rs. ${parseFloat(item.price).toFixed(2)}`"></span>
                                                         </td>
                                                         <td class="text-center py-3">
                                                             <span class="badge bg-secondary bg-opacity-10 text-body-emphasis px-2 py-1 rounded-3" x-text="item.quantity"></span>
                                                         </td>
                                                         <td class="text-end py-3 small">
-                                                            <div class="text-success" x-show="item.discount > 0" x-text="`-$${parseFloat(item.discount).toFixed(2)}`"></div>
-                                                            <div class="text-muted" x-text="`+$${parseFloat(item.tax).toFixed(2)}`"></div>
+                                                            <div class="text-success" x-show="item.discount > 0" x-text="`-Rs. ${parseFloat(item.discount).toFixed(2)}`"></div>
+                                                            <div class="text-muted" x-text="`+Rs. ${parseFloat(item.tax).toFixed(2)}`"></div>
                                                         </td>
                                                         <td class="text-end pe-4 py-3">
-                                                            <span class="fw-bold text-primary" x-text="`$${parseFloat(item.net).toFixed(2)}`"></span>
+                                                            <span class="fw-bold text-primary" x-text="`Rs. ${parseFloat(item.net).toFixed(2)}`"></span>
                                                         </td>
                                                     </tr>
                                                 </template>
@@ -800,19 +800,19 @@
                                             <div class="col-md-6 col-lg-5">
                                                 <div class="d-flex justify-content-between mb-2">
                                                     <span class="text-muted fw-medium">Subtotal</span>
-                                                    <span class="text-body-emphasis fw-bold" x-text="`$${selectedOrder.subtotal.toFixed(2)}`"></span>
+                                                    <span class="text-body-emphasis fw-bold" x-text="`Rs. ${selectedOrder.subtotal.toFixed(2)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between mb-2">
                                                     <span class="text-muted fw-medium">Discount <span x-show="selectedOrder.couponCode" class="badge bg-success ms-2 rounded-pill" x-text="selectedOrder.couponCode"></span></span>
-                                                    <span class="text-success fw-bold" x-text="`-$${selectedOrder.discountTotal.toFixed(2)}`"></span>
+                                                    <span class="text-success fw-bold" x-text="`-Rs. ${selectedOrder.discountTotal.toFixed(2)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between mb-3 border-bottom pb-3">
                                                     <span class="text-muted fw-medium">Tax</span>
-                                                    <span class="text-body-emphasis fw-bold" x-text="`$${selectedOrder.taxTotal.toFixed(2)}`"></span>
+                                                    <span class="text-body-emphasis fw-bold" x-text="`Rs. ${selectedOrder.taxTotal.toFixed(2)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <span class="text-body-emphasis fw-bolder fs-5">Grand Total</span>
-                                                    <span class="text-primary fw-bolder fs-4" x-text="`$${selectedOrder.total.toFixed(2)}`"></span>
+                                                    <span class="text-primary fw-bolder fs-4" x-text="`Rs. ${selectedOrder.total.toFixed(2)}`"></span>
                                                 </div>
                                             </div>
                                         </div>

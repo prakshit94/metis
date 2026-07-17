@@ -75,8 +75,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('refunds/bulk-status', [\App\Modules\Orders\Controllers\RefundController::class, 'bulkStatus'])->name('refunds.bulk-status');
     Route::get('payments', [\App\Modules\Orders\Controllers\PaymentController::class, 'index'])->name('payments.index');
     Route::post('payments/bulk-status', [\App\Modules\Orders\Controllers\PaymentController::class, 'bulkStatus'])->name('payments.bulk-status');
+    Route::put('payments/{payment}', [\App\Modules\Orders\Controllers\PaymentController::class, 'update'])->name('payments.update');
     Route::get('invoices', [\App\Modules\Orders\Controllers\InvoiceController::class, 'index'])->name('invoices.index');
     Route::post('invoices/bulk-status', [\App\Modules\Orders\Controllers\InvoiceController::class, 'bulkStatus'])->name('invoices.bulk-status');
+    Route::post('invoices/{invoice}/payments', [\App\Modules\Orders\Controllers\InvoiceController::class, 'recordPayment'])->name('invoices.payments.store');
     Route::get('/customers', [PageController::class, 'customers'])->name('customers');
     Route::get('/customers/search-by-phone', [\App\Modules\Customers\Controllers\CustomerController::class, 'searchByPhone'])->name('customers.search-by-phone');
     Route::get('/customers/{customer}', [\App\Modules\Customers\Controllers\CustomerController::class, 'show'])->name('customers.show');

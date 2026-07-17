@@ -31,8 +31,20 @@ class Shipment extends Model
         return $this->hasMany(ShipmentTrackingEvent::class);
     }
 
-    public static function generateShipmentNo(): string
+    public static function generateShipmentNo(?Order $order = null): string
     {
+        if ($order && $order->order_no) {
+            $baseNo = str_replace('ORD-', 'SHP-', $order->order_no);
+            if ($baseNo === $order->order_no) {
+                $baseNo = 'SHP-' . $order->order_no;
+            }
+            $count = self::where('order_id', $order->id)->count();
+            if ($count > 0) {
+                return $baseNo . '-' . ($count + 1);
+            }
+            return $baseNo;
+        }
+
         $prefix = 'SHP-' . now()->format('dmYHi');
         $lastShipment = self::where('shipment_no', 'like', $prefix . '-%')
             ->orderBy('shipment_no', 'desc')

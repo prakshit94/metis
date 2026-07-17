@@ -80,4 +80,23 @@ class PaymentController extends Controller
             'message' => 'Selected payments updated successfully.',
         ]);
     }
+
+    public function update(Request $request, Payment $payment)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0',
+            'payment_method' => 'required|string',
+            'transaction_id' => 'nullable|string',
+            'status' => 'required|in:pending,authorized,captured,failed,refunded',
+            'payment_date' => 'required|date',
+        ]);
+
+        $payment->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment updated successfully.',
+            'payment' => $payment
+        ]);
+    }
 }

@@ -36,6 +36,7 @@ class StockManagementController extends Controller implements HasMiddleware
         $query = Stock::query()
             ->with(['product:id,name,sku,status', 'warehouse:id,name,code'])
             ->withSum('pendingOrderItems as pending_qty', 'quantity')
+            ->withSum('deliveredOrderItems as delivered_qty', 'quantity')
             ->whereHas('product')
             ->whereHas('warehouse');
 
@@ -67,7 +68,7 @@ class StockManagementController extends Controller implements HasMiddleware
 
         if ($sortBy === 'available') {
             $query->orderByRaw('(quantity - reserved_qty) ' . $sortDir);
-        } elseif (in_array($sortBy, ['id', 'product_id', 'warehouse_id', 'quantity', 'reserved_qty', 'dispatched_qty', 'in_transit_qty', 'damaged_qty'])) {
+        } elseif (in_array($sortBy, ['id', 'product_id', 'warehouse_id', 'quantity', 'reserved_qty', 'dispatched_qty', 'delivered_qty', 'in_transit_qty', 'damaged_qty'])) {
             $query->orderBy($sortBy, $sortDir);
         }
 

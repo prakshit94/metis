@@ -79,9 +79,16 @@ class OrderReturnController extends Controller
         ]);
 
         $return = DB::transaction(function () use ($validated, $order) {
+            $baseNo = str_replace('ORD-', 'RET-', $order->order_no);
+            if ($baseNo === $order->order_no) {
+                $baseNo = 'RET-' . $order->order_no;
+            }
+            $count = OrderReturn::where('order_id', $order->id)->count();
+            $returnNo = $count > 0 ? $baseNo . '-' . ($count + 1) : $baseNo;
+
             $return = OrderReturn::create([
                 'order_id' => $order->id,
-                'return_no' => 'RET-' . strtoupper(Str::random(8)),
+                'return_no' => $returnNo,
                 'status' => 'pending',
                 'reason' => $validated['reason'],
                 'notes' => $validated['notes'],
