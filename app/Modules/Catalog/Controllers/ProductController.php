@@ -370,6 +370,8 @@ class ProductController extends Controller
             $this->fillProduct($product, $payload, null);
             $product->save();
 
+            $this->syncStock($product, (int) $payload['stock']);
+
             if ($product->trashed()) {
                 $product->restore();
             }
@@ -660,6 +662,10 @@ class ProductController extends Controller
         // If no warehouse is assigned, try to use the first available warehouse
         if (! $warehouseId) {
             $warehouseId = \App\Modules\Catalog\Models\Warehouse::query()->value('id');
+            if ($warehouseId) {
+                $product->default_warehouse_id = $warehouseId;
+                $product->saveQuietly();
+            }
         }
 
         if (! $warehouseId) {
@@ -683,18 +689,26 @@ class ProductController extends Controller
 
     private function resolveCategoryId(mixed $value): ?int
     {
-        if ($value === null || $value === '') {
-            return null;
+        if ($value === null || trim((string) $value) === '') {
+            $value = 'Uncategorized';
         }
 
         if (is_numeric($value)) {
             return (int) $value;
         }
 
-        $slug = Str::slug((string) $value);
+        $name = trim((string) $value);
+        $slug = Str::slug($name);
+        
         $category = Category::query()->where('slug', $slug)->first();
+        if (!$category) {
+            $category = Category::create([
+                'name' => $name,
+                'slug' => $slug,
+            ]);
+        }
 
-        return $category?->id;
+        return $category->id;
     }
 
     private function resolveId(mixed $value): ?int

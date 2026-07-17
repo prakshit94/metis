@@ -185,6 +185,22 @@ class PromotionsAndOrderSearchTest extends TestCase
             'is_active' => true,
         ]);
 
+        $address = \App\Modules\Customers\Models\PartyAddress::create([
+            'party_id' => $party->id,
+            'label' => 'Primary Address',
+            'address_line_1' => '123 test street',
+            'city' => 'test city',
+            'state' => 'test state',
+            'pincode' => '400001',
+            'is_default' => true,
+        ]);
+
+        $warehouse = Warehouse::create([
+            'name' => 'Usage Warehouse',
+            'code' => 'US-WH',
+            'status' => 'active',
+        ]);
+
         $category = Category::create(['name' => 'Seeds ' . uniqid(), 'slug' => 'seeds-' . uniqid()]);
         $product = Product::create([
             'name' => 'Test Offer Product ' . uniqid(),
@@ -219,6 +235,10 @@ class PromotionsAndOrderSearchTest extends TestCase
             ->postJson('/orders', [
                 'type' => 'sale',
                 'party_id' => $party->id,
+                'warehouse_id' => $warehouse->id,
+                'shipping_address_id' => $address->id,
+                'billing_address_id' => $address->id,
+                'order_date' => now()->toDateString(),
                 'items' => [
                     [
                         'product_id' => $product->id,
@@ -229,6 +249,10 @@ class PromotionsAndOrderSearchTest extends TestCase
                 ],
                 'applied_offer_id' => $orderOffer->id,
                 'applied_bogo_ids' => [$bogoOffer->id],
+                'total_amount' => 200.00,
+                'tax_amount' => 0.00,
+                'discount_amount' => 20.00,
+                'net_amount' => 180.00,
             ]);
 
         $response->assertStatus(200);

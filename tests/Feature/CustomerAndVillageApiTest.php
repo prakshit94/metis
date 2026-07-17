@@ -28,6 +28,7 @@ class CustomerAndVillageApiTest extends TestCase
         parent::setUp();
 
         // Create admin user and authenticate
+        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
         $this->admin = User::create([
             'name' => 'Admin User',
             'email' => 'admin_' . uniqid() . '@example.com',
@@ -35,6 +36,7 @@ class CustomerAndVillageApiTest extends TestCase
             'is_active' => true,
             'email_verified_at' => now(),
         ]);
+        $this->admin->assignRole('Super Admin');
 
         $this->actingAs($this->admin);
 

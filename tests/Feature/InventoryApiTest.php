@@ -37,20 +37,7 @@ class InventoryApiTest extends TestCase
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // Create standard product permissions which govern inventory actions
-        $permissions = [
-            'product-view',
-            'product-create',
-            'product-edit',
-            'product-delete',
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::findOrCreate($permission, 'web');
-        }
-
-        $superAdminRole = Role::findOrCreate('Super Admin', 'web');
-        $superAdminRole->syncPermissions($permissions);
+        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
 
         $this->admin = $this->createUser('admin_' . uniqid() . '@example.com');
         $this->admin->assignRole('Super Admin');
@@ -402,7 +389,7 @@ class InventoryApiTest extends TestCase
     public function test_stock_level_filter(): void
     {
         $admin = $this->createUser('stock-filter-admin@example.com');
-        $admin->givePermissionTo('product-view');
+        $admin->givePermissionTo(['stockmanagement-view', 'product-view']);
         $this->actingAs($admin);
 
         // Clear existing stocks to ensure predictable test results

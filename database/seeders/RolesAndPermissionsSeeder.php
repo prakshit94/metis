@@ -80,6 +80,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'customer-create',
         'customer-edit',
         'customer-delete',
+        'customer-restore',
         'customeraddress-view',
         'customeraddress-create',
         'customeraddress-edit',

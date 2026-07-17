@@ -100,6 +100,10 @@ document.addEventListener('alpine:init', () => {
     // Deep-editable copy of items for QC form
     qcItems: [],
 
+    // --- Bulk QC Modal state ---
+    bulkQcItems: [],
+    selectedReturnsForBulk: [],
+
     // --- Finance Modal state ---
     financeAction: 'refund',
     financeAmount: 0,
@@ -408,6 +412,186 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.isSubmitting = false;
       }
+    },
+
+    // ─── Bulk QC Inspect Modal ────────────────────────────────────────────────
+    openBulkQcModal() {
+      // Find selected pending returns
+      this.selectedReturnsForBulk = this.returns.filter(r =>
+        this.selectedReturns.includes(String(r.id)) && r.status === 'pending'
+      );
+
+      if (!this.selectedReturnsForBulk.length) {
+        showToast('No pending returns selected.', 'warning');
+        return;
+      }
+
+      // Aggregate all items across selected returns by product_id
+      const aggregationMap = {};
+      for (const ret of this.selectedReturnsForBulk) {
+        for (const item of ret.items) {
+          const pid = item.product_id;
+          if (!aggregationMap[pid]) {
+            aggregationMap[pid] = {
+              product_id: pid,
+              product: item.product || { name: 'Unknown', sku: 'N/A', image_url: null },
+              image_url: item.image_url || item.product?.image_url || null,
+              requested_qty: 0,
+              received_qty: 0,
+              restocked_qty: 0,
+              damaged_qty: 0,
+              qc_notes: '',
+              items: [],
+            };
+          }
+          aggregationMap[pid].requested_qty += parseFloat(item.requested_qty || 0);
+          aggregationMap[pid].items.push({
+            id: item.id,
+            return_id: ret.id,
+            requested_qty: parseFloat(item.requested_qty || 0),
+          });
+        }
+      }
+
+      // Map map to array and set default quantities
+      this.bulkQcItems = Object.values(aggregationMap).map(p => {
+        p.received_qty = p.requested_qty;
+        p.restocked_qty = p.requested_qty;
+        p.damaged_qty = 0;
+        return p;
+      });
+
+      this.$nextTick(() => getModal('bulkQcModal')?.show());
+    },
+
+    closeBulkQcModal() {
+      getModal('bulkQcModal')?.hide();
+      setTimeout(() => {
+        this.selectedReturnsForBulk = [];
+        this.bulkQcItems = [];
+      }, 300);
+    },
+
+    bulkQcItemValid(item) {
+      const req  = parseFloat(item.requested_qty || 0);
+      const recv = parseFloat(item.received_qty  || 0);
+      const rest = parseFloat(item.restocked_qty || 0);
+      const dmg  = parseFloat(item.damaged_qty   || 0);
+      return recv >= 0 && recv <= req && rest >= 0 && dmg >= 0 && (rest + dmg) <= recv;
+    },
+
+    get bulkQcFormValid() {
+      return this.bulkQcItems.length > 0 && this.bulkQcItems.every(i => this.bulkQcItemValid(i));
+    },
+
+    onBulkReceivedChange(item) {
+      const req  = parseFloat(item.requested_qty || 0);
+      item.received_qty  = Math.min(Math.max(0, parseFloat(item.received_qty || 0)), req);
+      const recv = item.received_qty;
+      const dmg  = Math.min(parseFloat(item.damaged_qty || 0), recv);
+      item.damaged_qty   = dmg;
+      item.restocked_qty = Math.max(0, recv - dmg);
+    },
+
+    onBulkDamagedChange(item) {
+      const recv = parseFloat(item.received_qty || 0);
+      item.damaged_qty   = Math.min(Math.max(0, parseFloat(item.damaged_qty || 0)), recv);
+      item.restocked_qty = Math.max(0, recv - item.damaged_qty);
+    },
+
+    onBulkRestockedChange(item) {
+      const recv = parseFloat(item.received_qty || 0);
+      const dmg  = parseFloat(item.damaged_qty  || 0);
+      item.restocked_qty = Math.min(Math.max(0, parseFloat(item.restocked_qty || 0)), Math.max(0, recv - dmg));
+    },
+
+    bulkMarkAllGood() {
+      this.bulkQcItems.forEach(i => {
+        i.received_qty  = i.requested_qty;
+        i.restocked_qty = i.requested_qty;
+        i.damaged_qty   = 0;
+      });
+    },
+
+    bulkMarkAllDamaged() {
+      this.bulkQcItems.forEach(i => {
+        i.received_qty  = i.requested_qty;
+        i.restocked_qty = 0;
+        i.damaged_qty   = i.requested_qty;
+      });
+    },
+
+    async submitBulkQc() {
+      if (!this.bulkQcFormValid) {
+        showToast('Please fix validation errors before submitting.', 'warning');
+        return;
+      }
+
+      this.isSubmitting = true;
+
+      // Object to hold the final distributed QC payload for each return ID
+      const returnPayloads = {};
+
+      for (const aggProd of this.bulkQcItems) {
+        let R = parseFloat(aggProd.received_qty || 0);
+        let S = parseFloat(aggProd.restocked_qty || 0);
+        let D = parseFloat(aggProd.damaged_qty || 0);
+        const notes = aggProd.qc_notes || 'Bulk Processed QC';
+
+        // Sort items by ID for deterministic distribution
+        const sortedItems = [...aggProd.items].sort((a, b) => a.id - b.id);
+
+        for (const item of sortedItems) {
+          const req = parseFloat(item.requested_qty || 0);
+          const itemReceived = Math.min(req, R);
+          R -= itemReceived;
+
+          const itemRestocked = Math.min(itemReceived, S);
+          S -= itemRestocked;
+
+          const itemDamaged = Math.min(itemReceived - itemRestocked, D);
+          D -= itemDamaged;
+
+          if (!returnPayloads[item.return_id]) {
+            returnPayloads[item.return_id] = { items: [] };
+          }
+
+          returnPayloads[item.return_id].items.push({
+            id:            item.id,
+            received_qty:  itemReceived,
+            restocked_qty: itemRestocked,
+            damaged_qty:   itemDamaged,
+            qc_notes:      notes,
+          });
+        }
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+
+      // Submit API calls sequentially
+      for (const returnId of Object.keys(returnPayloads)) {
+        try {
+          const payload = returnPayloads[returnId];
+          await apiFetch(`/returns/${returnId}/qc`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+          successCount++;
+        } catch (err) {
+          console.error(`Bulk QC failed for return ID ${returnId}:`, err);
+          failCount++;
+        }
+      }
+
+      this.isSubmitting = false;
+      this.selectedReturns = [];
+
+      if (successCount) showToast(`${successCount} return(s) processed successfully.`);
+      if (failCount)    showToast(`${failCount} return(s) failed.`, 'warning');
+
+      this.closeBulkQcModal();
+      this.loadReturns();
     },
 
     // ─── Finance ──────────────────────────────────────────────────────────────

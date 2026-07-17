@@ -31,16 +31,7 @@ class ShippingApiTest extends TestCase
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // Seed roles & permissions
-        $permissions = [
-            'shipping.view',
-            'shipping.manage',
-        ];
-        foreach ($permissions as $permission) {
-            Permission::findOrCreate($permission, 'web');
-        }
-        $adminRole = Role::findOrCreate('Super Admin', 'web');
-        $adminRole->syncPermissions($permissions);
+        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
 
         // Create Admin user
         $this->admin = User::create([

@@ -372,10 +372,25 @@ class OrderLifecycleTest extends TestCase
         ]);
     }
 
-    public function test_confirm_uses_legacy_product_stock_when_stock_row_is_missing(): void
+    public function test_confirm_creates_stock_row_when_missing(): void
     {
-        $this->product->update(['stock_quantity' => 25]);
+        // Create a second warehouse
+        $warehouse2 = Warehouse::create([
+            'name' => 'Secondary Warehouse',
+            'code' => 'SEC-WH',
+            'status' => 'active',
+        ]);
 
+        // Set stock of 25 in the second warehouse
+        Stock::create([
+            'product_id' => $this->product->id,
+            'warehouse_id' => $warehouse2->id,
+            'quantity' => 25.00,
+            'reserved_qty' => 0.00,
+            'dispatched_qty' => 0.00,
+        ]);
+
+        // Force delete stock row in the primary warehouse
         Stock::where('product_id', $this->product->id)
             ->where('warehouse_id', $this->warehouse->id)
             ->forceDelete();

@@ -103,11 +103,8 @@
                         <strong x-text="selectedReturns.length"></strong> return(s) selected
                     </span>
                     <div class="d-flex gap-2 flex-wrap">
-                        <button class="btn btn-sm btn-success" @click="bulkUpdateStatus('completed')" :disabled="isSubmitting">
-                            <i class="bi bi-check2-all me-1"></i>Approve QC
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" @click="bulkUpdateStatus('rejected')" :disabled="isSubmitting">
-                            <i class="bi bi-x-circle me-1"></i>Reject Selected
+                        <button class="btn btn-sm btn-primary" @click="openBulkQcModal()" :disabled="isSubmitting">
+                            <i class="bi bi-clipboard2-check me-1"></i>Process Bulk QC
                         </button>
                         <button class="btn btn-sm btn-outline-secondary" @click="selectedReturns = []"><i class="bi bi-x-lg"></i></button>
                     </div>
@@ -160,8 +157,8 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge small"
-                                          :style="`background-color: ${getStatusColor(ret.status)}22; color: ${getStatusColor(ret.status)}; border: 1px solid ${getStatusColor(ret.status)}55;`"
+                                    <span class="badge small text-white px-2 py-1"
+                                          :style="`background-color: ${getStatusColor(ret.status)};`"
                                           x-text="getStatusLabel(ret.status)"></span>
                                 </td>
                                 <td><span class="small text-muted" x-text="formatDate(ret.created_at)"></span></td>
@@ -220,250 +217,406 @@
     </div>
 
     
-    <div class="modal fade" id="qcInspectModal" tabindex="-1" aria-labelledby="qcInspectModalLabel">
+    <div class="modal fade" id="qcInspectModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="qcInspectModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
-            <div class="modal-content shadow-lg border-0 rounded-4" x-show="selectedReturn">
-                <template x-if="selectedReturn">
-                    <div class="d-flex flex-column h-100 bg-body rounded-4 overflow-hidden">
+            <div class="modal-content shadow-lg border-0 rounded-4">
+                <div class="d-flex flex-column h-100 bg-body rounded-4 overflow-hidden">
 
-                        <div class="modal-header border-bottom-0 pb-4 pt-4 px-4 px-lg-5 bg-body-tertiary">
-                            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between w-100 gap-3">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="bg-body-secondary text-primary p-3 rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width:56px;height:56px;">
-                                        <i class="bi bi-clipboard2-check fs-3"></i>
-                                    </div>
-                                    <div>
-                                        <h5 class="modal-title fw-bold mb-1" id="qcInspectModalLabel">
-                                            QC Inspection — <span class="text-primary font-monospace" x-text="selectedReturn.return_no"></span>
-                                        </h5>
-                                        <p class="text-muted small mb-0">
-                                            Order <span class="font-monospace" x-text="selectedReturn.order_no"></span>
-                                            &nbsp;·&nbsp; <span x-text="selectedReturn.customer?.name"></span>
-                                            &nbsp;·&nbsp; <span x-text="formatDate(selectedReturn.created_at)"></span>
-                                        </p>
-                                    </div>
+                    <div class="modal-header border-bottom-0 pb-4 pt-4 px-4 px-lg-5 bg-body-tertiary">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between w-100 gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-body-secondary text-primary p-3 rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width:56px;height:56px;">
+                                    <i class="bi bi-clipboard2-check fs-3"></i>
                                 </div>
-                                <span class="badge fs-6 ms-auto"
-                                      :style="`background-color: ${getStatusColor(selectedReturn.status)}22; color: ${getStatusColor(selectedReturn.status)}; border: 1px solid ${getStatusColor(selectedReturn.status)}55;`"
-                                      x-text="getStatusLabel(selectedReturn.status)"></span>
+                                <div>
+                                    <h5 class="modal-title fw-bold mb-1" id="qcInspectModalLabel">
+                                        QC Inspection — <span class="text-primary font-monospace" x-text="selectedReturn?.return_no || ''"></span>
+                                    </h5>
+                                    <p class="text-muted small mb-0">
+                                        Order <span class="font-monospace" x-text="selectedReturn?.order_no || ''"></span>
+                                        &nbsp;·&nbsp; <span x-text="selectedReturn?.customer?.name || ''"></span>
+                                        &nbsp;·&nbsp; <span x-text="selectedReturn ? formatDate(selectedReturn.created_at) : ''"></span>
+                                    </p>
+                                </div>
                             </div>
-                            <button type="button" class="btn-close ms-3" @click="closeQcModal()"></button>
+                            <span class="badge fs-6 ms-auto text-white px-3 py-2"
+                                  :style="`background-color: ${getStatusColor(selectedReturn?.status || 'pending')};`"
+                                  x-text="getStatusLabel(selectedReturn?.status || 'pending')"></span>
+                        </div>
+                        <button type="button" class="btn-close ms-3" @click="closeQcModal()"></button>
+                    </div>
+
+                    
+                    <div class="modal-body px-4 px-lg-5 py-4">
+
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="p-3 rounded-3 bg-body-secondary h-100">
+                                    <p class="small text-muted fw-semibold text-uppercase mb-1">Reason</p>
+                                    <p class="mb-0 fw-medium text-capitalize" x-text="(selectedReturn?.reason||'N/A').replace(/_/g,' ')"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-3 rounded-3 bg-body-secondary h-100">
+                                    <p class="small text-muted fw-semibold text-uppercase mb-1">Total Items</p>
+                                    <p class="mb-0 fw-bold fs-5" x-text="qcItems.length || selectedReturn?.items?.length || 0"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 bg-body-secondary h-100">
+                                    <p class="small text-muted fw-semibold text-uppercase mb-1">Return Notes</p>
+                                    <p class="mb-0 small" x-text="selectedReturn?.notes || 'None'"></p>
+                                </div>
+                            </div>
                         </div>
 
                         
-                        <div class="modal-body px-4 px-lg-5 py-4">
+                        <template x-if="selectedReturn && selectedReturn.status === 'pending'">
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                                    <h6 class="fw-bold mb-0">
+                                        <i class="bi bi-list-check me-2 text-primary"></i>Per-Item QC Quantities
+                                    </h6>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-success" @click="markAllGood()">
+                                            <i class="bi bi-check2-all me-1"></i>All Good
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" @click="markAllDamaged()">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>All Damaged
+                                        </button>
+                                    </div>
+                                </div>
 
-                            
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-3">
-                                    <div class="p-3 rounded-3 bg-body-secondary h-100">
-                                        <p class="small text-muted fw-semibold text-uppercase mb-1">Reason</p>
-                                        <p class="mb-0 fw-medium text-capitalize" x-text="(selectedReturn.reason||'N/A').replace(/_/g,' ')"></p>
-                                    </div>
+                                <div class="alert alert-info border-0 py-2 small mb-3" role="alert">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Set <strong>Received Qty</strong> (physically arrived), <strong>Restock Qty</strong> (goes back to inventory), and <strong>Damaged Qty</strong>. Restock + Damaged must not exceed Received.
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="p-3 rounded-3 bg-body-secondary h-100">
-                                        <p class="small text-muted fw-semibold text-uppercase mb-1">Total Items</p>
-                                        <p class="mb-0 fw-bold fs-5" x-text="qcItems.length || selectedReturn.items?.length"></p>
-                                    </div>
+
+                                <div class="table-responsive rounded-3 border">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="ps-3" style="width:48px;"></th>
+                                                <th class="ps-2">Product</th>
+                                                <th class="text-center" style="width:90px;">Requested</th>
+                                                <th class="text-center" style="width:120px;">
+                                                    <span style="color:#0ea5e9;font-weight:600;">Received</span>
+                                                </th>
+                                                <th class="text-center" style="width:120px;">
+                                                    <span style="color:#10b981;font-weight:600;">Restock</span>
+                                                </th>
+                                                <th class="text-center" style="width:120px;">
+                                                    <span style="color:#ef4444;font-weight:600;">Damaged</span>
+                                                </th>
+                                                <th>Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="(item, idx) in qcItems" :key="item.id">
+                                                <tr :class="{ 'table-danger': !qcItemValid(item) }">
+                                                    <td class="ps-3" style="width:48px;">
+                                                        <div class="rounded border bg-body d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width:40px;height:40px;">
+                                                            <template x-if="item.image_url">
+                                                                <img :src="item.image_url" class="w-100 h-100" style="object-fit:cover;" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                            </template>
+                                                            <template x-if="!item.image_url">
+                                                                <i class="bi bi-box-seam text-muted"></i>
+                                                            </template>
+                                                        </div>
+                                                    </td>
+                                                    <td class="ps-2">
+                                                        <div class="fw-semibold small" x-text="item.product?.name || 'Unknown'"></div>
+                                                        <div class="text-muted x-small font-monospace" x-text="item.product?.sku || ''"></div>
+                                                        
+                                                        <div x-show="!qcItemValid(item)" class="text-danger mt-1" style="font-size:0.75rem;">
+                                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                            <span x-show="parseFloat(item.received_qty) > parseFloat(item.requested_qty)">Received cannot exceed requested qty (<span x-text="item.requested_qty"></span>).</span>
+                                                            <span x-show="parseFloat(item.received_qty) <= parseFloat(item.requested_qty) && (parseFloat(item.restocked_qty)+parseFloat(item.damaged_qty)) > parseFloat(item.received_qty)">Restock + Damaged exceeds received qty.</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge bg-secondary bg-opacity-25 text-body" x-text="item.requested_qty"></span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <input type="number"
+                                                               class="form-control form-control-sm text-center"
+                                                               :class="parseFloat(item.received_qty) > parseFloat(item.requested_qty) ? 'border-danger' : 'border-info'"
+                                                               min="0" :max="item.requested_qty" step="1"
+                                                               x-model.number="item.received_qty"
+                                                               @change="onReceivedChange(item)"
+                                                               style="width:90px; margin:auto;">
+                                                        <div class="x-small text-muted mt-1">max: <span x-text="item.requested_qty"></span></div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <input type="number"
+                                                               class="form-control form-control-sm text-center border-success"
+                                                               min="0" :max="item.received_qty" step="1"
+                                                               x-model.number="item.restocked_qty"
+                                                               @change="onRestockedChange(item)"
+                                                               style="width:90px; margin:auto;">
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <input type="number"
+                                                               class="form-control form-control-sm text-center border-danger"
+                                                               min="0" :max="item.received_qty" step="1"
+                                                               x-model.number="item.damaged_qty"
+                                                               @change="onDamagedChange(item)"
+                                                               style="width:90px; margin:auto;">
+                                                    </td>
+                                                    <td>
+                                                        <input type="text"
+                                                               class="form-control form-control-sm"
+                                                               placeholder="Optional note…"
+                                                               x-model="item.qc_notes">
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 rounded-3 bg-body-secondary h-100">
-                                        <p class="small text-muted fw-semibold text-uppercase mb-1">Return Notes</p>
-                                        <p class="mb-0 small" x-text="selectedReturn.notes || 'None'"></p>
+
+                                
+                                <template x-if="!qcFormValid && qcItems.length > 0">
+                                    <div class="alert alert-warning border-0 py-2 small mt-3" role="alert">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        One or more rows have invalid quantities. Restock + Damaged must not exceed Received, and all values must be ≥ 0.
                                     </div>
-                                </div>
+                                </template>
                             </div>
-
-                            
-                            <template x-if="selectedReturn.status === 'pending'">
-                                <div>
-                                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                                        <h6 class="fw-bold mb-0">
-                                            <i class="bi bi-list-check me-2 text-primary"></i>Per-Item QC Quantities
-                                        </h6>
-                                        <div class="d-flex gap-2">
-                                            <button type="button" class="btn btn-sm btn-outline-success" @click="markAllGood()">
-                                                <i class="bi bi-check2-all me-1"></i>All Good
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-outline-danger" @click="markAllDamaged()">
-                                                <i class="bi bi-exclamation-triangle me-1"></i>All Damaged
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div class="alert alert-info border-0 py-2 small mb-3" role="alert">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Set <strong>Received Qty</strong> (physically arrived), <strong>Restock Qty</strong> (goes back to inventory), and <strong>Damaged Qty</strong>. Restock + Damaged must not exceed Received.
-                                    </div>
-
-                                    <div class="table-responsive rounded-3 border">
-                                        <table class="table table-sm align-middle mb-0">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th class="ps-3" style="width:48px;"></th>
-                                                    <th class="ps-2">Product</th>
-                                                    <th class="text-center" style="width:100px;">Requested</th>
-                                                    <th class="text-center" style="width:120px;">
-                                                        <span style="color:#0ea5e9;font-weight:600;">Received</span>
-                                                    </th>
-                                                    <th class="text-center" style="width:120px;">
-                                                        <span style="color:#10b981;font-weight:600;">Restock</span>
-                                                    </th>
-                                                    <th class="text-center" style="width:120px;">
-                                                        <span style="color:#ef4444;font-weight:600;">Damaged</span>
-                                                    </th>
-                                                    <th>Notes</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <template x-for="(item, idx) in qcItems" :key="item.id">
-                                                    <tr :class="{ 'table-danger': !qcItemValid(item) }">
-                                                        <td class="ps-3" style="width:48px;">
-                                                            <div class="rounded border bg-body d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width:40px;height:40px;">
-                                                                <template x-if="item.image_url">
-                                                                    <img :src="item.image_url" class="w-100 h-100" style="object-fit:cover;" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
-                                                                </template>
-                                                                <template x-if="!item.image_url">
-                                                                    <i class="bi bi-box-seam text-muted"></i>
-                                                                </template>
-                                                            </div>
-                                                        </td>
-                                                        <td class="ps-2">
-                                                            <div class="fw-semibold small" x-text="item.product?.name || 'Unknown'"></div>
-                                                            <div class="text-muted x-small font-monospace" x-text="item.product?.sku || ''"></div>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span class="badge bg-secondary bg-opacity-25 text-body" x-text="item.requested_qty"></span>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <input type="number"
-                                                                   class="form-control form-control-sm text-center"
-                                                                   :class="parseFloat(item.received_qty) > parseFloat(item.requested_qty) ? 'border-danger' : 'border-info'"
-                                                                   min="0" :max="item.requested_qty" step="1"
-                                                                   x-model.number="item.received_qty"
-                                                                   @change="onReceivedChange(item)"
-                                                                   style="width:90px; margin:auto;">
-                                                            <div class="x-small text-muted mt-1">max: <span x-text="item.requested_qty"></span></div>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <input type="number"
-                                                                   class="form-control form-control-sm text-center border-success"
-                                                                   min="0" :max="item.received_qty" step="1"
-                                                                   x-model.number="item.restocked_qty"
-                                                                   @change="onRestockedChange(item)"
-                                                                   style="width:90px; margin:auto;">
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <input type="number"
-                                                                   class="form-control form-control-sm text-center border-danger"
-                                                                   min="0" :max="item.received_qty" step="1"
-                                                                   x-model.number="item.damaged_qty"
-                                                                   @change="onDamagedChange(item)"
-                                                                   style="width:90px; margin:auto;">
-                                                        </td>
-                                                        <td>
-                                                            <input type="text"
-                                                                   class="form-control form-control-sm"
-                                                                   placeholder="Optional note…"
-                                                                   x-model="item.qc_notes">
-                                                        </td>
-                                                    </tr>
-                                                    
-                                                    <template x-if="!qcItemValid(item)">
-                                                        <tr>
-                                                            <td colspan="6" class="pt-0 pb-1 px-3">
-                                                                <div class="d-flex align-items-center gap-1 text-danger" style="font-size:0.75rem;">
-                                                                    <i class="bi bi-exclamation-triangle-fill"></i>
-                                                                    <span x-show="parseFloat(item.received_qty) > parseFloat(item.requested_qty)">Received cannot exceed requested qty (<span x-text="item.requested_qty"></span>).</span>
-                                                                    <span x-show="parseFloat(item.received_qty) <= parseFloat(item.requested_qty) && (parseFloat(item.restocked_qty)+parseFloat(item.damaged_qty)) > parseFloat(item.received_qty)">Restock + Damaged exceeds received qty.</span>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    </template>
-                                                </template>
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    
-                                    <template x-if="!qcFormValid && qcItems.length > 0">
-                                        <div class="alert alert-warning border-0 py-2 small mt-3" role="alert">
-                                            <i class="bi bi-exclamation-triangle me-1"></i>
-                                            One or more rows have invalid quantities. Restock + Damaged must not exceed Received, and all values must be ≥ 0.
-                                        </div>
-                                    </template>
-                                </div>
-                            </template>
-
-                            
-                            <template x-if="selectedReturn.status !== 'pending'">
-                                <div>
-                                    <h6 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-muted"></i>QC Results</h6>
-                                    <div class="table-responsive rounded-3 border">
-                                        <table class="table table-sm align-middle mb-0">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th class="ps-3" style="width:48px;"></th>
-                                                    <th class="ps-2">Product</th>
-                                                    <th class="text-center">Requested</th>
-                                                    <th class="text-center">Received</th>
-                                                    <th class="text-center">Restocked</th>
-                                                    <th class="text-center">Damaged</th>
-                                                    <th>QC Notes</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <template x-for="item in selectedReturn.items" :key="item.id">
-                                                    <tr>
-                                                        <td class="ps-3" style="width:48px;">
-                                                            <div class="rounded border bg-body d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width:40px;height:40px;">
-                                                                <template x-if="item.image_url">
-                                                                    <img :src="item.image_url" class="w-100 h-100" style="object-fit:cover;" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
-                                                                </template>
-                                                                <template x-if="!item.image_url">
-                                                                    <i class="bi bi-box-seam text-muted"></i>
-                                                                </template>
-                                                            </div>
-                                                        </td>
-                                                        <td class="ps-2">
-                                                            <div class="fw-semibold small" x-text="item.product?.name || 'Unknown'"></div>
-                                                            <div class="text-muted x-small font-monospace" x-text="item.product?.sku || ''"></div>
-                                                        </td>
-                                                        <td class="text-center"><span class="badge bg-secondary bg-opacity-25 text-body" x-text="item.requested_qty"></span></td>
-                                                        <td class="text-center"><span class="badge" style="background-color:#0ea5e922;color:#0ea5e9;border:1px solid #0ea5e955;" x-text="item.received_qty"></span></td>
-                                                        <td class="text-center"><span class="badge" style="background-color:#10b98122;color:#10b981;border:1px solid #10b98155;" x-text="item.restocked_qty"></span></td>
-                                                        <td class="text-center"><span class="badge" style="background-color:#ef444422;color:#ef4444;border:1px solid #ef444455;" x-text="item.damaged_qty"></span></td>
-                                                        <td class="small text-muted" x-text="item.qc_notes || '—'"></td>
-                                                    </tr>
-                                                </template>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </template>
-
-                        </div>
+                        </template>
 
                         
-                        <div class="modal-footer bg-body-secondary border-top px-4 py-3 rounded-bottom-4">
-                            <button type="button" class="btn btn-outline-secondary" @click="closeQcModal()">
-                                <i class="bi bi-x-lg me-1"></i>Close
-                            </button>
-                            <template x-if="selectedReturn.status === 'pending'">
-                                <button type="button"
-                                        class="btn btn-primary"
-                                        @click="processQc()"
-                                        :disabled="!qcFormValid || isSubmitting">
-                                    <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                    <i class="bi bi-send-check me-1" x-show="!isSubmitting"></i>
-                                    Submit QC &amp; Update Inventory
-                                </button>
-                            </template>
-                        </div>
+                        <template x-if="selectedReturn && selectedReturn.status !== 'pending'">
+                            <div>
+                                <h6 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-muted"></i>QC Results</h6>
+                                <div class="table-responsive rounded-3 border">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="ps-3" style="width:48px;"></th>
+                                                <th class="ps-2">Product</th>
+                                                <th class="text-center">Requested</th>
+                                                <th class="text-center">Received</th>
+                                                <th class="text-center">Restocked</th>
+                                                <th class="text-center">Damaged</th>
+                                                <th>QC Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="item in (selectedReturn?.items || [])" :key="item.id">
+                                                <tr>
+                                                    <td class="ps-3">
+                                                        <div class="rounded border bg-body d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width:40px;height:40px;">
+                                                            <template x-if="item.image_url">
+                                                                <img :src="item.image_url" class="w-100 h-100" style="object-fit:cover;" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                            </template>
+                                                            <template x-if="!item.image_url">
+                                                                <i class="bi bi-box-seam text-muted"></i>
+                                                            </template>
+                                                        </div>
+                                                    </td>
+                                                    <td class="ps-2">
+                                                        <div class="fw-semibold small" x-text="item.product?.name || 'Unknown'"></div>
+                                                        <div class="text-muted x-small font-monospace" x-text="item.product?.sku || ''"></div>
+                                                    </td>
+                                                    <td class="text-center"><span class="badge bg-secondary bg-opacity-25 text-body" x-text="item.quantity"></span></td>
+                                                    <td class="text-center"><span class="badge bg-info bg-opacity-25 text-info" x-text="item.received_qty"></span></td>
+                                                    <td class="text-center"><span class="badge bg-success bg-opacity-25 text-success" x-text="item.restocked_qty"></span></td>
+                                                    <td class="text-center"><span class="badge bg-danger bg-opacity-25 text-danger" x-text="item.damaged_qty"></span></td>
+                                                    <td class="text-muted small" x-text="item.qc_notes || '—'"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
 
                     </div>
-                </template>
+
+                    
+                    <div class="modal-footer bg-body-secondary border-top px-4 py-3 rounded-bottom-4">
+                        <button type="button" class="btn btn-outline-secondary" @click="closeQcModal()">
+                            <i class="bi bi-x-lg me-1"></i>Close
+                        </button>
+                        <template x-if="selectedReturn && selectedReturn.status === 'pending'">
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    @click="processQc()"
+                                    :disabled="!qcFormValid || isSubmitting">
+                                <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                <i class="bi bi-send-check me-1" x-show="!isSubmitting"></i>
+                                Submit QC &amp; Update Inventory
+                            </button>
+                        </template>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="modal fade" id="bulkQcModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="bulkQcModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0 rounded-4">
+                <div class="d-flex flex-column h-100 bg-body rounded-4 overflow-hidden">
+
+                    <div class="modal-header border-bottom-0 pb-4 pt-4 px-4 px-lg-5 bg-body-tertiary">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between w-100 gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-body-secondary text-primary p-3 rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width:56px;height:56px;">
+                                    <i class="bi bi-layers-half fs-3"></i>
+                                </div>
+                                <div>
+                                    <h5 class="modal-title fw-bold mb-1" id="bulkQcModalLabel">
+                                        Bulk QC Inspection
+                                    </h5>
+                                    <p class="text-muted small mb-0">
+                                        Processing <strong x-text="selectedReturnsForBulk?.length || 0"></strong> selected return(s)
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="badge fs-6 ms-auto text-white px-3 py-2"
+                                  :style="`background-color: ${getStatusColor('pending')};`"
+                                  x-text="getStatusLabel('pending')"></span>
+                        </div>
+                        <button type="button" class="btn-close ms-3" @click="closeBulkQcModal()"></button>
+                    </div>
+
+                    
+                    <div class="modal-body px-4 px-lg-5 py-4">
+
+                        
+                        <div class="alert alert-info border-0 py-2 small mb-4" role="alert">
+                            <i class="bi bi-info-circle me-1"></i>
+                            This process aggregates all return items across the selected returns by product. Adjust quantities below; they will be allocated to individual RMAs automatically.
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <h6 class="fw-bold mb-0">
+                                <i class="bi bi-list-check me-2 text-primary"></i>Aggregated Products QC
+                            </h6>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-success" @click="markBulkAllGood()">
+                                    <i class="bi bi-check2-all me-1"></i>All Good
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" @click="markBulkAllDamaged()">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>All Damaged
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive rounded-3 border">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-3" style="width:48px;"></th>
+                                        <th class="ps-2">Product</th>
+                                        <th class="text-center" style="width:90px;">Requested</th>
+                                        <th class="text-center" style="width:120px;">
+                                            <span style="color:#0ea5e9;font-weight:600;">Received</span>
+                                        </th>
+                                        <th class="text-center" style="width:120px;">
+                                            <span style="color:#10b981;font-weight:600;">Restock</span>
+                                        </th>
+                                        <th class="text-center" style="width:120px;">
+                                            <span style="color:#ef4444;font-weight:600;">Damaged</span>
+                                        </th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="item in bulkQcItems" :key="item.product_id">
+                                        <tr :class="{ 'table-danger': !bulkQcItemValid(item) }">
+                                            <td class="ps-3" style="width:48px;">
+                                                <div class="rounded border bg-body d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width:40px;height:40px;">
+                                                    <template x-if="item.image_url">
+                                                        <img :src="item.image_url" class="w-100 h-100" style="object-fit:cover;" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                    </template>
+                                                    <template x-if="!item.image_url">
+                                                        <i class="bi bi-box-seam text-muted"></i>
+                                                    </template>
+                                                </div>
+                                            </td>
+                                            <td class="ps-2">
+                                                <div class="fw-semibold small" x-text="item.product?.name || 'Unknown'"></div>
+                                                <div class="text-muted x-small font-monospace" x-text="item.product?.sku || ''"></div>
+                                                
+                                                <div x-show="!bulkQcItemValid(item)" class="text-danger mt-1" style="font-size:0.75rem;">
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                    <span x-show="parseFloat(item.received_qty) > parseFloat(item.requested_qty)">Received cannot exceed requested qty (<span x-text="item.requested_qty"></span>).</span>
+                                                    <span x-show="parseFloat(item.received_qty) <= parseFloat(item.requested_qty) && (parseFloat(item.restocked_qty)+parseFloat(item.damaged_qty)) > parseFloat(item.received_qty)">Restock + Damaged exceeds received qty.</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-secondary bg-opacity-25 text-body" x-text="item.requested_qty"></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <input type="number"
+                                                       class="form-control form-control-sm text-center"
+                                                       :class="parseFloat(item.received_qty) > parseFloat(item.requested_qty) ? 'border-danger' : 'border-info'"
+                                                       min="0" :max="item.requested_qty" step="1"
+                                                       x-model.number="item.received_qty"
+                                                       @change="onBulkReceivedChange(item)"
+                                                       style="width:90px; margin:auto;">
+                                                <div class="x-small text-muted mt-1">max: <span x-text="item.requested_qty"></span></div>
+                                            </td>
+                                            <td class="text-center">
+                                                <input type="number"
+                                                       class="form-control form-control-sm text-center border-success"
+                                                       min="0" :max="item.received_qty" step="1"
+                                                       x-model.number="item.restocked_qty"
+                                                       @change="onBulkRestockedChange(item)"
+                                                       style="width:90px; margin:auto;">
+                                            </td>
+                                            <td class="text-center">
+                                                <input type="number"
+                                                       class="form-control form-control-sm text-center border-danger"
+                                                       min="0" :max="item.received_qty" step="1"
+                                                       x-model.number="item.damaged_qty"
+                                                       @change="onBulkDamagedChange(item)"
+                                                       style="width:90px; margin:auto;">
+                                            </td>
+                                            <td>
+                                                <input type="text"
+                                                       class="form-control form-control-sm"
+                                                       placeholder="Optional note…"
+                                                       x-model="item.qc_notes">
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        
+                        <template x-if="!bulkQcFormValid && (bulkQcItems || []).length > 0">
+                            <div class="alert alert-warning border-0 py-2 small mt-3" role="alert">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                One or more rows have invalid quantities. Restock + Damaged must not exceed Received, and all values must be ≥ 0.
+                            </div>
+                        </template>
+
+                    </div>
+
+                    
+                    <div class="modal-footer bg-body-secondary border-top px-4 py-3 rounded-bottom-4">
+                        <button type="button" class="btn btn-outline-secondary" @click="closeBulkQcModal()">
+                            <i class="bi bi-x-lg me-1"></i>Close
+                        </button>
+                        <button type="button"
+                                class="btn btn-primary"
+                                @click="submitBulkQc()"
+                                :disabled="!bulkQcFormValid || isSubmitting">
+                            <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            <i class="bi bi-send-check me-1" x-show="!isSubmitting"></i>
+                            Submit Bulk QC &amp; Update Inventory
+                        </button>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
