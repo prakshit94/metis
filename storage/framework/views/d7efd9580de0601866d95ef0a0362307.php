@@ -327,9 +327,9 @@
                                 <td x-text="v.state_name || '—'"></td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1">
-                                        <template x-for="map in v.active_mappings" :key="map.id">
+                                        <template x-for="(map, index) in v.active_mappings" :key="map.id">
                                             <span class="badge bg-success bg-opacity-10 text-success small" 
-                                                  x-text="map.service.name"></span>
+                                                  x-text="`${index + 1}. ${map.service.name}`"></span>
                                         </template>
                                         <span x-show="!v.active_mappings || v.active_mappings.length === 0" class="text-muted small">—</span>
                                     </div>
@@ -471,7 +471,7 @@
                                 <tr>
                                     <th>Service Name</th>
                                     <th>Availability</th>
-                                    <th>Priority (0-99)</th>
+                                    <th>Priority (1, 2, 3…)</th>
                                     <th>Remarks</th>
                                 </tr>
                             </thead>
@@ -484,12 +484,13 @@
                                         </td>
                                         <td>
                                             <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" :id="`servSwitch-${s.id}`" x-model="mappings[s.id].is_available">
+                                                <input class="form-check-input" type="checkbox" :id="`servSwitch-${s.id}`" x-model="mappings[s.id].is_available" @change="ensureUniquePriority(s.id)">
                                                 <label class="form-check-label small" :for="`servSwitch-${s.id}`" x-text="mappings[s.id].is_available ? 'Available' : 'Unavailable'"></label>
                                             </div>
                                         </td>
                                         <td>
-                                            <input type="number" class="form-control form-control-sm" style="max-width: 80px;" x-model="mappings[s.id].priority" :disabled="!mappings[s.id].is_available">
+                                            <input type="number" min="1" class="form-control form-control-sm" style="max-width: 80px;" x-model.number="mappings[s.id].priority" :class="{'is-invalid': isPriorityDuplicate(s.id) || mappings[s.id].priority < 1}" :disabled="!mappings[s.id].is_available">
+                                            <div class="invalid-feedback">Use a unique priority.</div>
                                         </td>
                                         <td>
                                             <input type="text" class="form-control form-control-sm" x-model="mappings[s.id].remarks" placeholder="Notes..." :disabled="!mappings[s.id].is_available">
@@ -526,13 +527,13 @@
                         Updating services for <strong x-text="count"></strong> selected village(s).
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Select Service</label>
-                        <select class="form-select" x-model="serviceId" required>
-                            <option value="">Choose Service...</option>
+                        <label class="form-label fw-semibold">Select Services</label>
+                        <select class="form-select" multiple size="6" x-model="serviceIds" required>
                             <template x-for="s in services" :key="s.id">
                                 <option :value="s.id" x-text="s.name"></option>
                             </template>
                         </select>
+                        <div class="form-text">Hold Ctrl/Cmd to select multiple services.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Coverage Status</label>
@@ -550,7 +551,7 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary" :disabled="saving">
                         <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
-                        Apply Bulk Update
+                        Apply to Selected Services
                     </button>
                 </div>
             </form>

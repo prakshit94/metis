@@ -299,6 +299,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('/shipments/{shipment}/tracking-event', [\App\Modules\Core\Controllers\ShippingController::class, 'addTrackingEvent'])->name('shipments.add-tracking-event');
 
             Route::get('/services', [\App\Modules\Core\Controllers\ShippingController::class, 'servicesIndex'])->name('services.index');
+            Route::get('/services/provider-options', [\App\Modules\Core\Controllers\ShippingController::class, 'providerOptions'])->name('services.provider-options');
             Route::post('/services/bulk-action', [\App\Modules\Core\Controllers\ShippingController::class, 'servicesBulk'])->name('services.bulk');
             Route::post('/services', [\App\Modules\Core\Controllers\ShippingController::class, 'storeService'])->name('services.store');
             Route::patch('/services/{service}', [\App\Modules\Core\Controllers\ShippingController::class, 'updateService'])->name('services.update');

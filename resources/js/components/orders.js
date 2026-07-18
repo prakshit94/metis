@@ -143,6 +143,7 @@ document.addEventListener('alpine:init', () => {
     shipOrderId: '',
     shipOrderNo: '',
     shipCarrierName: '',
+    shipCarrierOptions: [],
     shipTrackingNo: '',
     importRows: [],
     importing: false,
@@ -477,6 +478,25 @@ document.addEventListener('alpine:init', () => {
       };
 
       const shipment = Array.isArray(o.shipments) && o.shipments.length ? o.shipments[0] : null;
+      const availableCarrierOptions = (o.shipping_address?.village?.services || [])
+        .filter(service => {
+          const pivot = service.pivot || {};
+          return service.is_active && (pivot.is_available === true || pivot.is_available === 1 || pivot.is_available === '1');
+        })
+        .sort((a, b) => {
+          const priorityA = Number.isFinite(Number(a.pivot?.priority)) ? Number(a.pivot.priority) : 0;
+          const priorityB = Number.isFinite(Number(b.pivot?.priority)) ? Number(b.pivot.priority) : 0;
+          return priorityA - priorityB || String(a.name).localeCompare(String(b.name));
+        })
+        .reduce((options, service) => {
+          if (service.name && !options.some(option => option.name === service.name)) {
+            options.push({
+              name: service.name,
+              priority: Number.isFinite(Number(service.pivot?.priority)) ? Number(service.pivot.priority) : 0,
+            });
+          }
+          return options;
+        }, []);
       const invoice = o.invoice || null;
       const invoicePayments = invoice && Array.isArray(invoice.payments) ? invoice.payments : [];
       const paidAmount = invoicePayments
@@ -526,6 +546,7 @@ document.addEventListener('alpine:init', () => {
           ].filter(Boolean).join(', ') || 'N/A',
         } : null,
         shippingAddress: formatAddress(o, 'shipping'),
+        availableCarrierOptions,
         billingAddress: formatAddress(o, 'billing'),
         invoice: invoice ? {
           number: invoice.invoice_no || 'N/A',
@@ -815,10 +836,23 @@ document.addEventListener('alpine:init', () => {
     openShipModal(order) {
       this.shipOrderId = order.id;
       this.shipOrderNo = order.orderNumber;
-      this.shipCarrierName = '';
+      const availableCarriers = order?.availableCarrierOptions || [];
+      // When this address has mapped services, show only those options in
+      // priority order. Otherwise retain the complete carrier list.
+      this.shipCarrierOptions = availableCarriers.length
+        ? availableCarriers
+        : this.carriersList.map(name => ({ name, priority: null }));
+
+      // Available carriers are already sorted by priority, so always default
+      // to the highest-priority (lowest number) option.
+      this.shipCarrierName = this.shipCarrierOptions[0]?.name || '';
       this.shipTrackingNo = '';
       if (!this.carriersList || !this.carriersList.length) {
         this.carriersList = ['BlueDart', 'Delhivery', 'DTDC', 'Ecom Express', 'FedEx', 'India Post', 'Shadowfax', 'XpressBees', 'DHL'];
+      }
+      if (!this.shipCarrierOptions.length) {
+        this.shipCarrierOptions = this.carriersList.map(name => ({ name, priority: null }));
+        this.shipCarrierName = this.shipCarrierOptions[0]?.name || '';
       }
       getModal('#createShipmentModal')?.show();
     },

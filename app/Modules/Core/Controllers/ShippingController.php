@@ -11,6 +11,7 @@ use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Shipment;
 use App\Modules\Orders\Models\ShipmentTrackingEvent;
 use App\Modules\Catalog\Models\Service;
+use App\Modules\Users\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class ShippingController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:shipping-view', only: ['shipmentsIndex', 'trackingEvents', 'servicesIndex']),
-            new Middleware('permission:shipping-manage', only: ['addTrackingEvent', 'storeService', 'updateShipmentStatus', 'updateService', 'toggleService', 'destroyService', 'shipmentsBulk', 'servicesBulk']),
+            new Middleware('permission:shipping-manage', only: ['addTrackingEvent', 'storeService', 'updateShipmentStatus', 'updateService', 'toggleService', 'destroyService', 'shipmentsBulk', 'servicesBulk', 'providerOptions']),
         ];
     }
 
@@ -250,7 +251,7 @@ class ShippingController extends Controller implements HasMiddleware
     public function servicesIndex(Request $request): JsonResponse
     {
 
-        $query = Service::query();
+        $query = Service::query()->with(['providers:id,name,email,phone,department,is_active']);
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -273,6 +274,17 @@ class ShippingController extends Controller implements HasMiddleware
     }
 
     /**
+     * Active users that can be assigned as shipping-service providers.
+     */
+    public function providerOptions(): JsonResponse
+    {
+        return response()->json(User::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'phone', 'department']));
+    }
+
+    /**
      * Create a new shipping service.
      */
     public function storeService(Request $request): JsonResponse
@@ -283,9 +295,13 @@ class ShippingController extends Controller implements HasMiddleware
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'required|boolean',
+            'provider_user_ids' => 'nullable|array',
+            'provider_user_ids.*' => 'integer|exists:users,id',
         ]);
 
-        $service = Service::create($validated);
+        $service = Service::create(collect($validated)->except('provider_user_ids')->all());
+        $service->providers()->sync($validated['provider_user_ids'] ?? []);
+        $service->load('providers:id,name,email,phone,department,is_active');
 
         return response()->json([
             'message' => 'Shipping Service created successfully.',
@@ -304,9 +320,13 @@ class ShippingController extends Controller implements HasMiddleware
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'required|boolean',
+            'provider_user_ids' => 'nullable|array',
+            'provider_user_ids.*' => 'integer|exists:users,id',
         ]);
 
-        $service->update($validated);
+        $service->update(collect($validated)->except('provider_user_ids')->all());
+        $service->providers()->sync($validated['provider_user_ids'] ?? []);
+        $service->load('providers:id,name,email,phone,department,is_active');
 
         return response()->json([
             'message' => 'Shipping Service updated successfully.',

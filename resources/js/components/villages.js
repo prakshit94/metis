@@ -175,7 +175,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     _mapVillage(v) {
-      const activeMappings = (v.mappings ?? []).filter(m => m.is_available);
+      const activeMappings = (v.mappings ?? [])
+        .filter(m => m.is_available)
+        .sort((a, b) => Number(a.priority ?? 0) - Number(b.priority ?? 0));
       return {
         ...v,
         active_mappings: activeMappings,
@@ -513,7 +515,7 @@ document.addEventListener('alpine:init', () => {
         options.forEach(s => {
           this.mappings[s.id] = {
             is_available: false,
-            priority: 0,
+            priority: 1,
             remarks: '',
             serviceable_from_date: null,
             serviceable_to_date: null,
@@ -527,19 +529,27 @@ document.addEventListener('alpine:init', () => {
           if (this.mappings[m.service_id]) {
             this.mappings[m.service_id] = {
               is_available: !!m.is_available,
-              priority: m.priority ?? 0,
+              priority: m.priority ?? 1,
               remarks: m.remarks ?? '',
               serviceable_from_date: m.serviceable_from_date ?? null,
               serviceable_to_date: m.serviceable_to_date ?? null,
             };
           }
         });
+        // Keep existing mappings consistent with the new 1, 2, 3… priority
+        // sequence before the administrator makes further changes.
+        existing.forEach(m => this.ensureUniquePriority(m.service_id));
       } catch (err) {
         showToast('Failed to load mappings: ' + err.message, 'danger');
       }
     },
 
     async saveServices() {
+      if (this.hasDuplicatePriorities() || this.hasInvalidPriorities()) {
+        showToast('Each available service must have a unique priority of 1 or higher.', 'warning');
+        return;
+      }
+
       this.saving = true;
       try {
         const res = await apiFetch(`/api/villages/${this.villageId}`, {
@@ -559,6 +569,51 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.saving = false;
       }
+    },
+
+    isPriorityDuplicate(serviceId) {
+      const mapping = this.mappings[serviceId];
+      if (!mapping?.is_available) return false;
+
+      const priority = Number(mapping.priority ?? 0);
+      return Object.entries(this.mappings).some(([id, other]) =>
+        String(id) !== String(serviceId)
+        && other.is_available
+        && Number(other.priority ?? 0) === priority
+      );
+    },
+
+    hasDuplicatePriorities() {
+      const priorities = new Set();
+      return Object.values(this.mappings)
+        .filter(mapping => mapping.is_available)
+        .some(mapping => {
+          const priority = Number(mapping.priority ?? 0);
+          if (priorities.has(priority)) return true;
+          priorities.add(priority);
+          return false;
+        });
+    },
+
+    hasInvalidPriorities() {
+      return Object.values(this.mappings)
+        .filter(mapping => mapping.is_available)
+        .some(mapping => Number(mapping.priority) < 1);
+    },
+
+    ensureUniquePriority(serviceId) {
+      const mapping = this.mappings[serviceId];
+      if (!mapping?.is_available) return;
+
+      const priority = Number(mapping.priority ?? 0);
+      if (priority >= 1 && !this.isPriorityDuplicate(serviceId)) return;
+
+      const usedPriorities = new Set(Object.entries(this.mappings)
+        .filter(([id, other]) => String(id) !== String(serviceId) && other.is_available)
+        .map(([, other]) => Number(other.priority ?? 0)));
+      let nextPriority = 1;
+      while (usedPriorities.has(nextPriority)) nextPriority += 1;
+      mapping.priority = nextPriority;
     }
   }));
 
@@ -566,13 +621,13 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('bulkServicesForm', () => ({
     count: 0,
     ids: [],
-    serviceId: '',
+    serviceIds: [],
     status: 'available',
     saving: false,
     services: [],
 
     resetForm() {
-      this.serviceId = '';
+      this.serviceIds = [];
       this.status = 'available';
       
       const table = Alpine.$data(document.querySelector('[x-data="villageTable"]'));
@@ -580,19 +635,28 @@ document.addEventListener('alpine:init', () => {
     },
 
     async updateServices() {
+      if (!this.serviceIds.length) {
+        showToast('Please select at least one service.', 'warning');
+        return;
+      }
+
       this.saving = true;
       try {
-        const res = await apiFetch('/api/villages/bulk-action', {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'service-update',
-            ids: this.ids,
-            service_id: this.serviceId,
-            status: this.status,
-          })
-        });
+        // Reuse the existing single-service bulk endpoint for each selected
+        // service, keeping the server-side mapping logic unchanged.
+        for (const serviceId of this.serviceIds) {
+          await apiFetch('/api/villages/bulk-action', {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'service-update',
+              ids: this.ids,
+              service_id: serviceId,
+              status: this.status,
+            })
+          });
+        }
 
-        showToast(res.message || 'Bulk update applied.', 'success');
+        showToast(`${this.serviceIds.length} service(s) updated for ${this.ids.length} village(s).`, 'success');
         
         const table = Alpine.$data(document.querySelector('[x-data="villageTable"]'));
         if (table) {

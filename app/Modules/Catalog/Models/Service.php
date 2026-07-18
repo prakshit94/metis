@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Models;
 
 use App\Modules\Core\Models\Village;
 use App\Modules\Core\Models\VillageServiceMapping;
+use App\Modules\Users\Models\User;
 
 
 use Illuminate\Database\Eloquent\Model;
@@ -36,6 +37,15 @@ class Service extends Model
     public function mappings(): HasMany
     {
         return $this->hasMany(VillageServiceMapping::class);
+    }
+
+    /**
+     * Internal users responsible for providing this shipping service.
+     */
+    public function providers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'service_provider_users')
+            ->withTimestamps();
     }
 
     public function scopeActive(Builder $query): Builder

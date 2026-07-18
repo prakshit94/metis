@@ -80,17 +80,20 @@ export default () => {
 
         apiBase: '/api/shipping/services',
         modalInstance: null,
+        providerUsers: [],
 
         form: {
             id: null,
             code: '',
             name: '',
             description: '',
-            is_active: true
+            is_active: true,
+            provider_user_ids: []
         },
 
         init() {
             this.loadData();
+            this.loadProviderUsers();
 
             const modalEl = document.getElementById('servicesModal');
             if (modalEl) {
@@ -234,6 +237,15 @@ export default () => {
             }
         },
 
+        async loadProviderUsers() {
+            try {
+                this.providerUsers = await this.apiRequest(`${this.apiBase}/provider-options`);
+            } catch (error) {
+                console.error('Failed to load service providers:', error);
+                showToast(error.message, 'error');
+            }
+        },
+
         filterData() {
             this.currentPage = 1;
             this.selectedItems = [];
@@ -349,7 +361,8 @@ export default () => {
                 code: '',
                 name: '',
                 description: '',
-                is_active: true
+                is_active: true,
+                provider_user_ids: []
             };
         },
 
@@ -365,7 +378,8 @@ export default () => {
                 code: item.code,
                 name: item.name,
                 description: item.description || '',
-                is_active: !!item.is_active
+                is_active: !!item.is_active,
+                provider_user_ids: (item.providers || []).map(provider => String(provider.id))
             };
             this.modalInstance?.show();
         },

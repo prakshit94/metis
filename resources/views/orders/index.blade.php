@@ -1176,8 +1176,8 @@
                     <label class="form-label fw-semibold">Select Carrier <span class="text-danger">*</span></label>
                     <select class="form-select" x-model="shipCarrierName">
                         <option value="" disabled selected>Select carrier...</option>
-                        <template x-for="carrier in carriersList" :key="carrier">
-                            <option :value="carrier" x-text="carrier"></option>
+                        <template x-for="carrier in shipCarrierOptions" :key="carrier.name">
+                            <option :value="carrier.name" x-text="carrier.priority === null ? carrier.name : `${carrier.name} (Priority: ${carrier.priority})`"></option>
                         </template>
                     </select>
                 </div>

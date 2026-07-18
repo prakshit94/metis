@@ -211,6 +211,7 @@
                             <th @click="sortBy('code')" class="sortable">Code</th>
                             <th @click="sortBy('name')" class="sortable">Name</th>
                             <th>Description</th>
+                            <th>Service providers</th>
                             <th @click="sortBy('is_active')" class="sortable">Status</th>
                             <th style="width: 120px;" class="text-end pe-4">Actions</th>
                         </tr>
@@ -218,7 +219,7 @@
                     <tbody>
                         <template x-if="items.length === 0">
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
+                                <td colspan="8" class="text-center py-5 text-muted">
                                     <div x-show="isLoading" class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
                                     <div x-show="!isLoading">
                                         <i class="bi bi-gear-wide-connected fs-2 d-block mb-2 text-muted"></i>
@@ -239,6 +240,19 @@
                                 <td class="font-monospace fw-semibold text-secondary" x-text="item.code"></td>
                                 <td class="fw-medium text-dark" x-text="item.name"></td>
                                 <td x-text="item.description || '-'"></td>
+                                <td>
+                                    <template x-if="item.providers?.length">
+                                        <div class="d-flex flex-column gap-2">
+                                            <template x-for="provider in item.providers" :key="provider.id">
+                                                <div class="small">
+                                                    <div class="fw-semibold" x-text="provider.name"></div>
+                                                    <div class="text-muted" x-text="[provider.email, provider.phone, provider.department].filter(Boolean).join(' · ')"></div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <span class="small text-muted" x-show="!item.providers?.length">Not assigned</span>
+                                </td>
                                 <td>
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" role="switch"
@@ -334,6 +348,16 @@
                                     <div class="col-12">
                                         <label class="form-label fw-medium text-muted small">Description</label>
                                         <textarea class="form-control" rows="3" x-model="form.description" placeholder="Service priority, tier levels or notes..."></textarea>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-medium text-muted small">Service providers</label>
+                                        <select class="form-select" multiple size="5" x-model="form.provider_user_ids">
+                                            <template x-for="user in providerUsers" :key="user.id">
+                                                <option :value="String(user.id)" x-text="[user.name, user.email, user.phone, user.department].filter(Boolean).join(' · ')"></option>
+                                            </template>
+                                        </select>
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Select the users responsible for this service. Hold Ctrl/Cmd to select more than one.</div>
                                     </div>
                                     
                                     <div class="col-12 form-check form-switch ms-2">

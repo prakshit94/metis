@@ -7,6 +7,8 @@ namespace App\Modules\Users\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Modules\Catalog\Models\Service;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -73,6 +75,15 @@ class User extends Authenticatable
     public function loginHistories(): HasMany
     {
         return $this->hasMany(LoginHistory::class);
+    }
+
+    /**
+     * Shipping services this user provides or manages.
+     */
+    public function providedShippingServices(): BelongsToMany
+    {
+        return $this->belongsToMany(Service::class, 'service_provider_users')
+            ->withTimestamps();
     }
 
     // ─── Helper Methods ───────────────────────────────────────────────────────
