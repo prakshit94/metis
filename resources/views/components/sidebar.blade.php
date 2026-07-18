@@ -66,7 +66,7 @@
             <div class="position-relative">
                 <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary small"></i>
                 <input type="text" 
-                       class="form-control form-control-sm ps-5 bg-dark border-secondary text-white rounded-3 py-2" 
+                       class="form-control form-control-sm ps-5 rounded-3 py-2" 
                        placeholder="Search tabs..." 
                        x-model="searchQuery"
                        @keydown.escape="clearSearch()">
@@ -81,22 +81,22 @@
             
             <!-- Search Results Overlay -->
             <div x-show="searchQuery && filteredItems.length > 0" 
-                 class="position-absolute bg-dark border border-secondary rounded shadow-lg p-2 mt-1" 
+                 class="position-absolute bg-body border rounded shadow-lg p-2 mt-1" 
                  style="z-index: 1050; left: 0.75rem; right: 0.75rem; max-height: 250px; overflow-y: auto;"
                  x-cloak>
                 <template x-for="item in filteredItems" :key="item.path">
                     <a :href="item.path" 
-                       class="dropdown-item py-2 px-3 rounded text-white d-flex align-items-center gap-2"
+                       class="dropdown-item py-2 px-3 rounded d-flex align-items-center gap-2"
                        style="font-size: 0.825rem; transition: background-color 0.15s ease;"
                        @click="clearSearch()">
                         <i :class="item.icon" class="text-primary small"></i>
                         <span x-text="item.name"></span>
-                        <span class="badge bg-secondary bg-opacity-25 text-white ms-auto" style="font-size: 0.65rem;" x-text="item.group"></span>
+                        <span class="badge text-bg-secondary ms-auto" style="font-size: 0.65rem;" x-text="item.group"></span>
                     </a>
                 </template>
             </div>
             <div x-show="searchQuery && filteredItems.length === 0" 
-                 class="position-absolute bg-dark border border-secondary rounded shadow p-3 mt-1 text-center text-muted small" 
+                 class="position-absolute bg-body border rounded shadow p-3 mt-1 text-center text-muted small" 
                  style="z-index: 1050; left: 0.75rem; right: 0.75rem;"
                  x-cloak>
                 No tabs found
