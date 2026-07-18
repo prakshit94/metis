@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->string('payment_method')->nullable();
             $table->string('transaction_id')->nullable()->index();
             $table->dateTime('payment_date');
-            $table->enum('status', ['pending', 'authorized', 'captured', 'failed', 'refunded'])->default('pending')->index();
+            $table->enum('status', ['pending', 'authorized', 'completed', 'failed', 'refunded'])->default('pending')->index();
             $table->timestamps();
             $table->softDeletes()->index();
 

@@ -50,7 +50,7 @@ class OrderController extends Controller implements HasMiddleware
         $query = Order::with([
             'party',
             'warehouse',
-            'shippingAddress.village.services',
+            'shippingAddress.village.services.providers:id,name,phone',
             'billingAddress.village',
             'invoice.payments',
             'items.product',
@@ -439,7 +439,7 @@ class OrderController extends Controller implements HasMiddleware
             'payments',
             'creator',
             'updater',
-            'shippingAddress.village.services',
+            'shippingAddress.village.services.providers:id,name,phone',
             'billingAddress.village.services',
             'appliedOffer',
         ])->findOrFail($id);

@@ -478,7 +478,7 @@ document.addEventListener('alpine:init', () => {
       };
 
       const shipment = Array.isArray(o.shipments) && o.shipments.length ? o.shipments[0] : null;
-      const availableCarrierOptions = (o.shipping_address?.village?.services || [])
+      const availableServices = (o.shipping_address?.village?.services || [])
         .filter(service => {
           const pivot = service.pivot || {};
           return service.is_active && (pivot.is_available === true || pivot.is_available === 1 || pivot.is_available === '1');
@@ -488,26 +488,38 @@ document.addEventListener('alpine:init', () => {
           const priorityB = Number.isFinite(Number(b.pivot?.priority)) ? Number(b.pivot.priority) : 0;
           return priorityA - priorityB || String(a.name).localeCompare(String(b.name));
         })
-        .reduce((options, service) => {
-          if (service.name && !options.some(option => option.name === service.name)) {
-            options.push({
-              name: service.name,
-              priority: Number.isFinite(Number(service.pivot?.priority)) ? Number(service.pivot.priority) : 0,
-            });
-          }
-          return options;
-        }, []);
+        .map(service => ({
+          name: service.name || 'N/A',
+          code: service.code || '',
+          description: service.description || '',
+          priority: Number.isFinite(Number(service.pivot?.priority)) ? Number(service.pivot.priority) : 0,
+          providers: (service.providers || []).map(provider => ({
+            name: provider.name || 'N/A',
+            phone: provider.phone || '',
+          })),
+        }));
+      const availableCarrierOptions = availableServices.map(service => ({
+        name: service.name,
+        priority: service.priority,
+      }));
+      const assignedService = shipment
+        ? availableServices.find(service =>
+          service.name.trim().toLowerCase() === String(shipment.carrier_name || '').trim().toLowerCase()
+        ) || null
+        : null;
       const invoice = o.invoice || null;
       const invoicePayments = invoice && Array.isArray(invoice.payments) ? invoice.payments : [];
       const paidAmount = invoicePayments
-        .filter(payment => ['completed', 'captured'].includes(payment.status))
+        .filter(payment => payment.status === 'completed')
         .reduce((sum, payment) => sum + formatMoney(payment.amount || 0), 0);
       const netAmount = formatMoney(invoice ? (invoice.net_amount ?? 0) : 0);
       const payments = Array.isArray(o.payments) ? o.payments : [];
-      const firstPayment = payments[0] || invoicePayments[0] || null;
-      const formattedPaymentMethod = firstPayment 
-        ? (firstPayment.payment_method || 'N/A').toUpperCase().replace(/_/g, ' ') 
-        : 'N/A';
+      const latestPaymentWithMethod = [...payments, ...invoicePayments]
+        .filter(payment => String(payment.payment_method || '').trim())
+        .sort((a, b) => new Date(b.payment_date || 0) - new Date(a.payment_date || 0))[0] || null;
+      const formattedPaymentMethod = latestPaymentWithMethod
+        ? latestPaymentWithMethod.payment_method.toUpperCase().replace(/_/g, ' ')
+        : (invoice ? 'PENDING PAYMENT' : 'NOT RECORDED');
 
       return {
         id: o.id,
@@ -547,6 +559,7 @@ document.addEventListener('alpine:init', () => {
         } : null,
         shippingAddress: formatAddress(o, 'shipping'),
         availableCarrierOptions,
+        assignedService,
         billingAddress: formatAddress(o, 'billing'),
         invoice: invoice ? {
           number: invoice.invoice_no || 'N/A',
@@ -574,6 +587,7 @@ document.addEventListener('alpine:init', () => {
           amount: formatMoney(payment.amount || 0),
           method: payment.payment_method || 'N/A',
           status: payment.status || 'N/A',
+          statusLabel: payment.status || 'N/A',
           date: payment.payment_date || null,
           transactionId: payment.transaction_id || 'N/A',
         })),

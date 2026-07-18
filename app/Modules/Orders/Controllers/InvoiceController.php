@@ -44,7 +44,7 @@ class InvoiceController extends Controller
 
         if ($request->wantsJson() || $request->ajax()) {
             $totalInvoiced = (float) Invoice::sum('net_amount');
-            $collectedAmount = (float) \App\Modules\Orders\Models\Payment::whereIn('status', ['completed', 'captured'])->sum('amount');
+            $collectedAmount = (float) \App\Modules\Orders\Models\Payment::where('status', 'completed')->sum('amount');
             $pendingAmount = max(0, $totalInvoiced - $collectedAmount);
 
             $stats = [
@@ -61,6 +61,16 @@ class InvoiceController extends Controller
         }
 
         return view('orders.invoices.index', compact('invoices'));
+    }
+
+    public function show(Invoice $invoice)
+    {
+        $invoice->load([
+            'order.party',
+            'payments' => fn ($query) => $query->orderByDesc('payment_date')->orderByDesc('id'),
+        ]);
+
+        return response()->json(['invoice' => $invoice]);
     }
 
     public function bulkStatus(Request $request, \App\Services\FinancialService $financialService)

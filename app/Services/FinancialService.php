@@ -45,7 +45,7 @@ class FinancialService
                 'payment_method' => $method,
                 'transaction_id' => $transactionId,
                 'payment_date' => $paymentDate ? \Carbon\Carbon::parse($paymentDate) : now(),
-                'status' => 'captured',
+                'status' => 'completed',
             ]);
 
             return $payment;

@@ -45,7 +45,7 @@ class Invoice extends Model
 
     public function getPaidAmountAttribute()
     {
-        return $this->payments()->whereIn('status', ['completed', 'captured'])->sum('amount');
+        return $this->payments()->where('status', 'completed')->sum('amount');
     }
 
     public function getDueAmountAttribute()

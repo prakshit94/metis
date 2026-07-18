@@ -46,7 +46,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Completed</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.captured_amount)"></div>
+                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.completed_amount)"></div>
                             <small class="text-success-emphasis">Successful payments</small>
                         </div>
                     </div>
@@ -104,7 +104,7 @@
                             <option value="">All Statuses</option>
                             <option value="pending">Pending</option>
                             <option value="authorized">Authorized</option>
-                            <option value="captured">Completed</option>
+                            <option value="completed">Completed</option>
                             <option value="failed">Failed</option>
                             <option value="refunded">Refunded</option>
                         </select>
@@ -127,7 +127,7 @@
                         <button class="btn btn-sm btn-outline-info" @click="exportSelectedPayments()" :disabled="isSubmitting" title="Export Selected to CSV">
                             <i class="bi bi-download me-1"></i>Export CSV
                         </button>
-                        <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('captured')" :disabled="isSubmitting" title="Complete authorized payments">
+                        <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('completed')" :disabled="isSubmitting" title="Complete authorized payments">
                             <i class="bi bi-cash me-1"></i>Complete Selected
                         </button>
                         <button class="btn btn-sm btn-outline-danger" @click="bulkUpdateStatus('failed')" :disabled="isSubmitting" title="Mark as failed">
@@ -205,13 +205,13 @@
                                 <td>
                                     <span class="badge" 
                                           :class="{
-                                              'bg-success bg-opacity-25 text-success border border-success border-opacity-50': payment.status === 'captured',
+                                              'bg-success bg-opacity-25 text-success border border-success border-opacity-50': payment.status === 'completed',
                                               'bg-info bg-opacity-25 text-info border border-info border-opacity-50': payment.status === 'authorized',
                                               'bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50': payment.status === 'pending',
                                               'bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50': payment.status === 'failed',
                                               'bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-50': payment.status === 'refunded'
                                           }"
-                                          x-text="payment.status === 'captured' ? 'COMPLETED' : payment.status.toUpperCase()"></span>
+                                          x-text="payment.status.toUpperCase()"></span>
                                 </td>
                                 <td>
                                     <div class="small text-white-50" x-text="formatDate(payment.payment_date)"></div>
@@ -229,7 +229,7 @@
                                                 <i class="bi bi-pencil-square me-2"></i>Edit
                                             </a></li>
                                             <template x-if="payment.status === 'authorized'">
-                                                <li><a class="dropdown-item" href="#" @click.prevent="updatePaymentStatus(payment.id, 'captured')">
+                                                <li><a class="dropdown-item" href="#" @click.prevent="updatePaymentStatus(payment.id, 'completed')">
                                                     <i class="bi bi-cash me-2"></i>Complete Payment
                                                 </a></li>
                                             </template>
@@ -310,7 +310,32 @@
                                 </div>
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Status</p>
-                                    <p class="fw-medium text-body-emphasis" x-text="selectedPayment.status === 'captured' ? 'COMPLETED' : selectedPayment.status.toUpperCase()"></p>
+                                    <p class="fw-medium text-body-emphasis" x-text="selectedPayment.status.toUpperCase()"></p>
+                                </div>
+                                <div class="col-12">
+                                    <p class="fw-bold small text-muted text-uppercase mb-2">Payment History</p>
+                                    <div class="border rounded-3 overflow-hidden">
+                                        <template x-if="selectedPayment.paymentHistory.length">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm align-middle mb-0">
+                                                    <thead class="table-light"><tr><th>Payment #</th><th>Method</th><th>Date</th><th class="text-end">Amount</th><th>Status</th><th>Transaction ID</th></tr></thead>
+                                                    <tbody>
+                                                        <template x-for="historyPayment in selectedPayment.paymentHistory" :key="historyPayment.id">
+                                                            <tr :class="{ 'table-primary': historyPayment.id === selectedPayment.id }">
+                                                                <td class="font-monospace" x-text="historyPayment.payment_no"></td>
+                                                                <td x-text="(historyPayment.payment_method || 'N/A').toUpperCase().replace(/_/g, ' ')"></td>
+                                                                <td x-text="formatDate(historyPayment.payment_date)"></td>
+                                                                <td class="text-end fw-semibold" x-text="formatCurrency(historyPayment.amount)"></td>
+                                                                <td><span class="badge" :class="historyPayment.status === 'completed' ? 'bg-success' : 'bg-secondary'" x-text="historyPayment.status.toUpperCase()"></span></td>
+                                                                <td class="font-monospace small" x-text="historyPayment.transaction_id || '—'"></td>
+                                                            </tr>
+                                                        </template>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </template>
+                                        <template x-if="!selectedPayment.paymentHistory.length"><p class="text-muted small mb-0 p-3">No related payment history found.</p></template>
+                                    </div>
                                 </div>
                                 <div class="col-12 mt-4">
                                     <p class="fw-bold small text-muted text-uppercase mb-2">Gateway Response Log</p>
@@ -320,7 +345,7 @@
   "object": "charge",
   "amount": <span x-text="selectedPayment.amount * 100"></span>,
   "status": "<span x-text="selectedPayment.status"></span>",
-  "captured": <span x-text="selectedPayment.status === 'captured' ? 'true' : 'false'"></span>
+  "completed": <span x-text="selectedPayment.status === 'completed' ? 'true' : 'false'"></span>
 }
                                     </pre>
                                 </div>
@@ -368,7 +393,7 @@
                                 <select class="form-select" x-model="editForm.status" required>
                                     <option value="pending">Pending</option>
                                     <option value="authorized">Authorized</option>
-                                    <option value="captured">Completed</option>
+                                    <option value="completed">Completed</option>
                                     <option value="failed">Failed</option>
                                     <option value="refunded">Refunded</option>
                                 </select>

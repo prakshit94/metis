@@ -46,7 +46,7 @@ class PaymentController extends Controller
         if ($request->wantsJson() || $request->ajax()) {
             $stats = [
                 'total_volume' => (float) Payment::sum('amount'),
-                'captured_amount' => (float) Payment::whereIn('status', ['captured', 'completed'])->sum('amount'),
+                'completed_amount' => (float) Payment::where('status', 'completed')->sum('amount'),
                 'authorized_amount' => (float) Payment::whereIn('status', ['authorized', 'pending'])->sum('amount'),
                 'failed_amount' => (float) Payment::where('status', 'failed')->sum('amount'),
             ];
@@ -60,12 +60,31 @@ class PaymentController extends Controller
         return view('orders.payments.index', compact('payments'));
     }
 
+    public function show(Payment $payment)
+    {
+        $payment->load([
+            'order.party',
+            'invoice',
+            'invoice.payments' => fn ($query) => $query->orderByDesc('payment_date')->orderByDesc('id'),
+            'order.payments' => fn ($query) => $query->orderByDesc('payment_date')->orderByDesc('id'),
+        ]);
+
+        $history = $payment->invoice
+            ? $payment->invoice->payments
+            : ($payment->order?->payments ?? collect());
+
+        return response()->json([
+            'payment' => $payment,
+            'payment_history' => $history,
+        ]);
+    }
+
     public function bulkStatus(Request $request)
     {
         $validated = $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'exists:payments,id',
-            'status' => 'required|in:pending,authorized,captured,failed,refunded',
+            'status' => 'required|in:pending,authorized,completed,failed,refunded',
         ]);
 
         $payments = Payment::whereIn('id', $validated['ids'])->get();
@@ -87,7 +106,7 @@ class PaymentController extends Controller
             'amount' => 'required|numeric|min:0',
             'payment_method' => 'required|string',
             'transaction_id' => 'nullable|string',
-            'status' => 'required|in:pending,authorized,captured,failed,refunded',
+            'status' => 'required|in:pending,authorized,completed,failed,refunded',
             'payment_date' => 'required|date',
         ]);
 

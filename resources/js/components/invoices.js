@@ -232,11 +232,19 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    viewDetails(invoice) {
-      this.selectedInvoice = invoice;
-      this.$nextTick(() => {
-        getModal('detailModal')?.show();
-      });
+    async viewDetails(invoice) {
+      try {
+        const data = await apiFetch(`/invoices/${invoice.id}`);
+        this.selectedInvoice = {
+          ...data.invoice,
+          paymentHistory: data.invoice.payments || [],
+        };
+        this.$nextTick(() => {
+          getModal('detailModal')?.show();
+        });
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
     },
 
     recordPayment(invoice) {

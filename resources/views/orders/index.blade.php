@@ -1032,13 +1032,40 @@
                                             <h6 class="fw-bold mb-3 text-primary d-flex align-items-center gap-2">
                                                 <i class="bi bi-truck fs-5"></i> Shipping Details
                                             </h6>
-                                            <div class="bg-body p-3 rounded-4 shadow-sm mb-3">
-                                                <p class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.65rem;">Tracking Number</p>
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <p class="fw-bold text-body-emphasis font-monospace mb-0 fs-6" x-text="selectedOrder.shipment.trackingNo"></p>
-                                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill" x-text="selectedOrder.shipment.carrier"></span>
+                                            <template x-if="selectedOrder.shipment">
+                                                <div class="bg-body p-3 rounded-4 shadow-sm mb-3">
+                                                    <p class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.65rem;">Tracking Number</p>
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <p class="fw-bold text-body-emphasis font-monospace mb-0 fs-6" x-text="selectedOrder.shipment.trackingNo"></p>
+                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill" x-text="selectedOrder.shipment.carrier"></span>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            </template>
+
+                                            <template x-if="selectedOrder.assignedService">
+                                                <div class="bg-body p-3 rounded-4 shadow-sm mb-3">
+                                                    <p class="small text-muted mb-2 text-uppercase fw-semibold" style="font-size: 0.65rem;">Assigned Service</p>
+                                                    <div class="border rounded-3 p-3">
+                                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                                            <div>
+                                                                <p class="fw-bold text-body-emphasis mb-1" x-text="selectedOrder.assignedService.name"></p>
+                                                                <p class="small text-muted mb-0" x-show="selectedOrder.assignedService.code" x-text="`Code: ${selectedOrder.assignedService.code}`"></p>
+                                                                <p class="small text-secondary mb-0 mt-1" x-show="selectedOrder.assignedService.description" x-text="selectedOrder.assignedService.description"></p>
+                                                            </div>
+                                                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill" x-text="`Priority ${selectedOrder.assignedService.priority}`"></span>
+                                                        </div>
+                                                        <div class="mt-2 pt-2 border-top" x-show="selectedOrder.assignedService.providers.length">
+                                                            <p class="small text-muted mb-1">Mapped service providers</p>
+                                                            <template x-for="provider in selectedOrder.assignedService.providers" :key="`${selectedOrder.assignedService.name}-${provider.name}-${provider.phone}`">
+                                                                <div class="small text-body-emphasis">
+                                                                    <i class="bi bi-person-fill me-1"></i><span x-text="provider.name"></span>
+                                                                    <template x-if="provider.phone"><span class="text-muted ms-2"><i class="bi bi-telephone-fill me-1"></i><span x-text="provider.phone"></span></span></template>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
                                             
                                             <template x-if="selectedOrder.shipment.events && selectedOrder.shipment.events.length">
                                                 <div class="position-relative ms-2 ps-3 border-start border-primary border-opacity-25 border-2">
@@ -1112,11 +1139,11 @@
                                                             </div>
                                                             <span class="badge" 
                                                                   :class="{
-                                                                    'bg-success': payment.status === 'completed' || payment.status === 'captured',
+                                                                    'bg-success': payment.status === 'completed',
                                                                     'bg-warning': payment.status === 'pending' || payment.status === 'authorized',
                                                                     'bg-danger': payment.status === 'failed' || payment.status === 'refunded'
                                                                   }"
-                                                                  x-text="payment.status"></span>
+                                                                  x-text="payment.statusLabel"></span>
                                                         </div>
                                                     </div>
                                                 </template>

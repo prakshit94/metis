@@ -302,6 +302,31 @@
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Status</p>
                                     <p class="fw-medium text-body-emphasis" x-text="selectedInvoice.status.toUpperCase().replace('_', ' ')"></p>
                                 </div>
+                                <div class="col-12">
+                                    <p class="fw-bold small text-muted text-uppercase mb-2">Payment History</p>
+                                    <div class="border rounded-3 overflow-hidden">
+                                        <template x-if="selectedInvoice.paymentHistory.length">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm align-middle mb-0">
+                                                    <thead class="table-light"><tr><th>Payment #</th><th>Method</th><th>Date</th><th class="text-end">Amount</th><th>Status</th><th>Transaction ID</th></tr></thead>
+                                                    <tbody>
+                                                        <template x-for="payment in selectedInvoice.paymentHistory" :key="payment.id">
+                                                            <tr>
+                                                                <td class="font-monospace" x-text="payment.payment_no"></td>
+                                                                <td x-text="(payment.payment_method || 'N/A').toUpperCase().replace(/_/g, ' ')"></td>
+                                                                <td x-text="formatDate(payment.payment_date)"></td>
+                                                                <td class="text-end fw-semibold" x-text="formatCurrency(payment.amount)"></td>
+                                                                <td><span class="badge" :class="payment.status === 'completed' ? 'bg-success' : 'bg-secondary'" x-text="payment.status.toUpperCase()"></span></td>
+                                                                <td class="font-monospace small" x-text="payment.transaction_id || '—'"></td>
+                                                            </tr>
+                                                        </template>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </template>
+                                        <template x-if="!selectedInvoice.paymentHistory.length"><p class="text-muted small mb-0 p-3">No payment history recorded for this invoice.</p></template>
+                                    </div>
+                                </div>
                                 <div class="col-12 mt-4 text-center">
                                     <button class="btn btn-outline-primary shadow-sm" type="button">
                                         <i class="bi bi-download me-2"></i>Download PDF

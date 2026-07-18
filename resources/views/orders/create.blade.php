@@ -188,8 +188,8 @@
                                                     <div class="mt-3 pt-2 border-top">
                                                         <div class="small text-muted fw-semibold text-uppercase mb-1" style="font-size: 10px; letter-spacing: .5px;">Available services</div>
                                                         <div class="d-flex flex-wrap gap-1" x-show="availableServices(addr).length">
-                                                            <template x-for="service in availableServices(addr)" :key="service.id">
-                                                                <span class="badge text-bg-success" x-text="service.name"></span>
+                                                            <template x-for="(service, index) in availableServices(addr)" :key="service.id">
+                                                                <span class="badge text-bg-success" x-text="`${Number(service.pivot?.priority) > 0 ? Number(service.pivot.priority) : index + 1}. ${service.name}`"></span>
                                                             </template>
                                                         </div>
                                                         <span class="small text-muted" x-show="!availableServices(addr).length">No service available for this address</span>
@@ -1653,6 +1653,10 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 const hasNotEnded = !pivot.serviceable_to_date || pivot.serviceable_to_date >= today;
 
                 return isActive && isAvailable && hasStarted && hasNotEnded;
+            }).sort((a, b) => {
+                const priorityA = Number(a.pivot?.priority ?? 0);
+                const priorityB = Number(b.pivot?.priority ?? 0);
+                return priorityA - priorityB || String(a.name).localeCompare(String(b.name));
             });
         },
 

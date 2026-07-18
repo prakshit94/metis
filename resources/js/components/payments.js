@@ -79,7 +79,7 @@ document.addEventListener('alpine:init', () => {
 
     stats: {
       total_volume: 0,
-      captured_amount: 0,
+      completed_amount: 0,
       authorized_amount: 0,
       failed_amount: 0,
     },
@@ -250,11 +250,19 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    viewDetails(payment) {
-      this.selectedPayment = payment;
-      this.$nextTick(() => {
-        getModal('detailModal')?.show();
-      });
+    async viewDetails(payment) {
+      try {
+        const data = await apiFetch(`/payments/${payment.id}`);
+        this.selectedPayment = {
+          ...data.payment,
+          paymentHistory: data.payment_history || [],
+        };
+        this.$nextTick(() => {
+          getModal('detailModal')?.show();
+        });
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
     },
 
     editPayment(payment) {

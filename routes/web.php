@@ -75,6 +75,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('refunds', [\App\Modules\Orders\Controllers\RefundController::class, 'index'])->name('refunds.index');
     Route::post('refunds/bulk-status', [\App\Modules\Orders\Controllers\RefundController::class, 'bulkStatus'])->name('refunds.bulk-status');
     Route::get('payments', [\App\Modules\Orders\Controllers\PaymentController::class, 'index'])->name('payments.index');
+    Route::get('payments/{payment}', [\App\Modules\Orders\Controllers\PaymentController::class, 'show'])->name('payments.show');
     Route::post('payments/bulk-status', [\App\Modules\Orders\Controllers\PaymentController::class, 'bulkStatus'])->name('payments.bulk-status');
     Route::post('payments/export', [\App\Modules\Orders\Controllers\PaymentController::class, 'exportSelected'])->name('payments.export.selected');
     Route::put('payments/{payment}', [\App\Modules\Orders\Controllers\PaymentController::class, 'update'])->name('payments.update');
@@ -85,6 +86,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('payments/import/process', [\App\Modules\Orders\Controllers\PaymentImportController::class, 'process'])->name('payments.import.process');
 
     Route::get('invoices', [\App\Modules\Orders\Controllers\InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('invoices/{invoice}', [\App\Modules\Orders\Controllers\InvoiceController::class, 'show'])->name('invoices.show');
     Route::post('invoices/bulk-status', [\App\Modules\Orders\Controllers\InvoiceController::class, 'bulkStatus'])->name('invoices.bulk-status');
     Route::post('invoices/export', [\App\Modules\Orders\Controllers\InvoiceController::class, 'exportSelected'])->name('invoices.export.selected');
     Route::post('invoices/{invoice}/payments', [\App\Modules\Orders\Controllers\InvoiceController::class, 'recordPayment'])->name('invoices.payments.store');
