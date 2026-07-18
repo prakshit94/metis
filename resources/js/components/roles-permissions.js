@@ -142,22 +142,27 @@ const permissionGroupMeta = {
   user:       { label: 'Users',       icon: 'people',       order: 10 },
   role:       { label: 'Roles',       icon: 'shield-lock',  order: 20 },
   permission: { label: 'Permissions', icon: 'key',          order: 30 },
-  audit:      { label: 'Audit',       icon: 'journal-text', order: 40 },
+  audit:      { label: 'Audit Logs',  icon: 'journal-text', order: 40 },
+  orders:     { label: 'Orders',      icon: 'cart',         order: 50 },
+  product:    { label: 'Products',    icon: 'box-seam',     order: 60 },
+  customer:   { label: 'Customers',   icon: 'person-lines-fill', order: 70 },
+  warehouse:  { label: 'Warehouses',  icon: 'buildings',    order: 80 },
 };
 
 function permissionGroupFor(name) {
-  const prefix = String(name ?? '').split('-')[0] || 'other';
-  const meta = permissionGroupMeta[prefix] ?? { label: 'Other', icon: 'grid', order: 999 };
+  const prefix = String(name ?? '').split(/[-.]/)[0] || 'other';
+  const defaultLabel = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+  const meta = permissionGroupMeta[prefix] ?? { label: defaultLabel, icon: 'grid', order: 999 };
 
   return { key: prefix, ...meta };
 }
 
 function permissionActionLabel(name) {
-  const parts = String(name ?? '').split('-');
+  const parts = String(name ?? '').split(/[-.]/);
   if (parts.length <= 1) return String(name ?? '');
 
   return parts.slice(1)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).replace(/_/g, ' '))
     .join(' ');
 }
 
@@ -792,6 +797,10 @@ document.addEventListener('alpine:init', () => {
       }
 
       this.form.permissions = [...new Set([...this.form.permissions, ...groupNames])];
+    },
+
+    selectAllPermissions() {
+      this.form.permissions = this.permissions.map(permission => permission.name);
     },
 
     clearPermissions() {

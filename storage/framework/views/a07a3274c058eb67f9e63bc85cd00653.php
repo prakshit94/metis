@@ -1,9 +1,7 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', '🛡️ Roles & Permissions'); ?>
+<?php $__env->startSection('page', 'roles-permissions'); ?>
 
-@section('title', '🛡️ Roles & Permissions')
-@section('page', 'roles-permissions')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="user-management" x-data="rolesPermissionsTable">
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
@@ -733,4 +731,6 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/user/metis/resources/views/users/roles-permissions.blade.php ENDPATH**/ ?>

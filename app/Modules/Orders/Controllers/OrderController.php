@@ -60,12 +60,6 @@ class OrderController extends Controller implements HasMiddleware
         ])->withCount('items');
 
         $user = auth()->user();
-        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view_all_order')) {
-            $query->where('created_by', $user->id);
-        }
-        if ($user && $user->can('view_all_order') && !$user->hasAnyRole(['Super Admin', 'Admin'])) {
-            $query->where('status', '!=', 'pending');
-        }
         $this->applyOrderActionPermissionScope($query, $user);
 
         if ($request->filled('search')) {
@@ -1074,23 +1068,52 @@ class OrderController extends Controller implements HasMiddleware
             return;
         }
 
-        if ($user->hasAnyRole(['Super Admin', 'Admin'])) {
+        if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view_all_order')) {
             return;
         }
 
-        $today = now()->toDateString();
+        $query->where(function ($q) use ($user) {
+            // 1. User can ALWAYS see their own orders
+            $q->where('created_by', $user->id);
 
-        $query->where(function ($q) use ($user, $today) {
-            $hasScope = false;
+            // 2. Explicit view permissions for specific statuses
+            if ($user->can('orders.view.future_order')) {
+                $q->orWhere(function ($sub) {
+                    $sub->where('status', 'pending')->where('is_draft', true);
+                });
+            }
+            if ($user->can('orders.view.pending')) {
+                $q->orWhere(function ($sub) {
+                    $sub->where('status', 'pending')->where(function ($draft) {
+                        $draft->where('is_draft', false)->orWhereNull('is_draft');
+                    });
+                });
+            }
+            if ($user->can('orders.view.confirmed')) {
+                $q->orWhere('status', 'confirmed');
+            }
+            if ($user->can('orders.view.processing')) {
+                $q->orWhere('status', 'processing');
+            }
+            if ($user->can('orders.view.ready_to_ship')) {
+                $q->orWhere('status', 'ready_to_ship');
+            }
+            if ($user->can('orders.view.dispatched')) {
+                $q->orWhereIn('status', ['dispatched', 'shipped']);
+            }
+            if ($user->can('orders.view.delivered')) {
+                $q->orWhere('status', 'delivered');
+            }
+            if ($user->can('orders.view.returned')) {
+                $q->orWhere('status', 'returned');
+            }
+            if ($user->can('orders.view.cancelled')) {
+                $q->orWhere('status', 'cancelled');
+            }
 
-            $addScope = function (callable $callback) use ($q, &$hasScope) {
-                $method = $hasScope ? 'orWhere' : 'where';
-                $q->{$method}($callback);
-                $hasScope = true;
-            };
-
+            // 3. Legacy action permissions that grant visibility
             if ($user->can('orders.confirm')) {
-                $addScope(function ($sub) {
+                $q->orWhere(function ($sub) {
                     $sub->where('status', 'pending')
                         ->where(function ($draft) {
                             $draft->where('is_draft', false)->orWhereNull('is_draft');
@@ -1099,40 +1122,31 @@ class OrderController extends Controller implements HasMiddleware
             }
 
             if ($user->can('orders.processing')) {
-                $addScope(fn($sub) => $sub->where('status', 'confirmed'));
+                $q->orWhere('status', 'confirmed');
             }
 
             if ($user->can('orders.ship')) {
-                $addScope(fn($sub) => $sub->whereIn('status', ['confirmed', 'processing']));
+                $q->orWhereIn('status', ['confirmed', 'processing']);
             }
 
             if ($user->can('orders.dispatch')) {
-                $addScope(fn($sub) => $sub->where('status', 'ready_to_ship'));
+                $q->orWhere('status', 'ready_to_ship');
             }
 
             if ($user->can('orders.deliver')) {
-                $addScope(fn($sub) => $sub->whereIn('status', Order::inTransitStatuses()));
+                $q->orWhereIn('status', Order::inTransitStatuses());
             }
 
             if ($user->can('orders.return')) {
-                $addScope(fn($sub) => $sub->whereIn('status', ['delivered', 'dispatched', 'shipped']));
+                $q->orWhereIn('status', ['delivered', 'dispatched', 'shipped']);
             }
 
             if ($user->can('orders.cancel')) {
-                $addScope(fn($sub) => $sub->whereIn('status', ['pending', 'confirmed', 'processing', 'ready_to_ship']));
+                $q->orWhereIn('status', ['pending', 'confirmed', 'processing', 'ready_to_ship']);
             }
 
             if ($user->can('orders.revert_status')) {
-                $addScope(fn($sub) => $sub->whereIn('status', ['confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'returned', 'cancelled']));
-            }
-
-            $addScope(function ($sub) use ($user, $today) {
-                $sub->where('created_by', $user->id)
-                    ->whereDate('order_date', $today);
-            });
-
-            if (!$hasScope) {
-                $q->whereRaw('1 = 0');
+                $q->orWhereIn('status', ['confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'returned', 'cancelled']);
             }
         });
     }
@@ -1148,6 +1162,34 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         $statuses = [];
+
+        if ($user->can('orders.view.future_order')) {
+            $statuses[] = 'future_order';
+        }
+        if ($user->can('orders.view.pending')) {
+            $statuses[] = 'pending';
+        }
+        if ($user->can('orders.view.confirmed')) {
+            $statuses[] = 'confirmed';
+        }
+        if ($user->can('orders.view.processing')) {
+            $statuses[] = 'processing';
+        }
+        if ($user->can('orders.view.ready_to_ship')) {
+            $statuses[] = 'ready_to_ship';
+        }
+        if ($user->can('orders.view.dispatched')) {
+            $statuses[] = 'dispatched';
+        }
+        if ($user->can('orders.view.delivered')) {
+            $statuses[] = 'delivered';
+        }
+        if ($user->can('orders.view.returned')) {
+            $statuses[] = 'returned';
+        }
+        if ($user->can('orders.view.cancelled')) {
+            $statuses[] = 'cancelled';
+        }
 
         if ($user->can('orders.confirm')) {
             $statuses[] = 'pending';
