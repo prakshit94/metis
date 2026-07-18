@@ -185,6 +185,15 @@
                                                         <span x-show="addr.state" x-text="addr.state"></span>
                                                         <span x-show="addr.pincode" x-text="'- ' + addr.pincode"></span>
                                                     </p>
+                                                    <div class="mt-3 pt-2 border-top">
+                                                        <div class="small text-muted fw-semibold text-uppercase mb-1" style="font-size: 10px; letter-spacing: .5px;">Available services</div>
+                                                        <div class="d-flex flex-wrap gap-1" x-show="availableServices(addr).length">
+                                                            <template x-for="service in availableServices(addr)" :key="service.id">
+                                                                <span class="badge text-bg-success" x-text="service.name"></span>
+                                                            </template>
+                                                        </div>
+                                                        <span class="small text-muted" x-show="!availableServices(addr).length">No service available for this address</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -240,6 +249,15 @@
                                                         <span x-show="addr.state" x-text="addr.state"></span>
                                                         <span x-show="addr.pincode" x-text="'- ' + addr.pincode"></span>
                                                     </p>
+                                                    <div class="mt-3 pt-2 border-top">
+                                                        <div class="small text-muted fw-semibold text-uppercase mb-1" style="font-size: 10px; letter-spacing: .5px;">Available services</div>
+                                                        <div class="d-flex flex-wrap gap-1" x-show="availableServices(addr).length">
+                                                            <template x-for="service in availableServices(addr)" :key="service.id">
+                                                                <span class="badge text-bg-success" x-text="service.name"></span>
+                                                            </template>
+                                                        </div>
+                                                        <span class="small text-muted" x-show="!availableServices(addr).length">No service available for this address</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1622,6 +1640,20 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 address.pincode,
             ].filter(Boolean);
             return parts.join(', ');
+        },
+
+        availableServices(address) {
+            const today = new Date().toISOString().slice(0, 10);
+
+            return (address?.village?.services || []).filter(service => {
+                const pivot = service.pivot || {};
+                const isActive = service.is_active !== false && service.is_active !== 0;
+                const isAvailable = pivot.is_available === true || pivot.is_available === 1 || pivot.is_available === '1';
+                const hasStarted = !pivot.serviceable_from_date || pivot.serviceable_from_date <= today;
+                const hasNotEnded = !pivot.serviceable_to_date || pivot.serviceable_to_date >= today;
+
+                return isActive && isAvailable && hasStarted && hasNotEnded;
+            });
         },
 
         get shippingAddressSummary() {
