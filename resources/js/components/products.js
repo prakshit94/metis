@@ -904,16 +904,16 @@ document.addEventListener('alpine:init', () => {
       const file = event?.target?.files?.[0];
       if (!file) return;
 
-      if (file.size > 2 * 1024 * 1024) {
+      if (file.size > 5 * 1024 * 1024) {
         if (typeof Swal !== 'undefined') {
           Swal.fire({
             title: 'Image too large',
-            text: 'The selected image exceeds the maximum size limit of 2MB.',
+            text: 'The selected image exceeds the maximum size limit of 5MB.',
             icon: 'warning',
             confirmButtonColor: '#3085d6',
           });
         } else {
-          alert('The selected image exceeds the maximum size limit of 2MB.');
+          alert('The selected image exceeds the maximum size limit of 5MB.');
         }
         event.target.value = '';
         return;
@@ -980,8 +980,8 @@ document.addEventListener('alpine:init', () => {
       });
 
       if (this.form.imageFile instanceof File) {
-        if (this.form.imageFile.size > 2 * 1024 * 1024) {
-          table.showNotification('Selected image is too large. Maximum size allowed is 2MB.', 'warning');
+        if (this.form.imageFile.size > 5 * 1024 * 1024) {
+          table.showNotification('Selected image is too large. Maximum size allowed is 5MB.', 'warning');
           return;
         }
         formData.append('image', this.form.imageFile);

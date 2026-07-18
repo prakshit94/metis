@@ -50,6 +50,8 @@ class OrderController extends Controller implements HasMiddleware
         $query = Order::with([
             'party',
             'warehouse',
+            'shippingAddress.village',
+            'billingAddress.village',
             'invoice.payments',
             'items.product',
             'shipments.events',
@@ -57,6 +59,7 @@ class OrderController extends Controller implements HasMiddleware
             'creator',
             'updater',
             'orderReturns',
+            'appliedOffer',
         ])->withCount('items');
 
         $user = auth()->user();
@@ -438,6 +441,7 @@ class OrderController extends Controller implements HasMiddleware
             'updater',
             'shippingAddress.village.services',
             'billingAddress.village.services',
+            'appliedOffer',
         ])->findOrFail($id);
 
         if (request()->wantsJson() || request()->ajax()) {

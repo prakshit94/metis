@@ -659,25 +659,25 @@
                                 <h6 class="fw-bold mb-3 text-warning"><i class="bi bi-box-seam me-2"></i>Inventory Overview</h6>
                                 <div class="row text-center g-3">
                                     <div class="col-3">
-                                        <div class="p-2 border rounded bg-white shadow-sm">
+                                        <div class="p-2 border rounded bg-body shadow-sm">
                                             <div class="small text-muted mb-1">Total SKUs</div>
                                             <div class="h5 mb-0 fw-bold" x-text="viewData.total_skus || 0"></div>
                                         </div>
                                     </div>
                                     <div class="col-3">
-                                        <div class="p-2 border rounded bg-white shadow-sm">
+                                        <div class="p-2 border rounded bg-body shadow-sm">
                                             <div class="small text-muted mb-1">Physical Stock</div>
                                             <div class="h5 mb-0 fw-bold text-body-emphasis" x-text="viewData.total_physical_stock || 0"></div>
                                         </div>
                                     </div>
                                     <div class="col-3">
-                                        <div class="p-2 border rounded bg-white shadow-sm border-danger border-opacity-25">
+                                        <div class="p-2 border rounded bg-body shadow-sm border-danger border-opacity-25">
                                             <div class="small text-muted mb-1">Reserved</div>
                                             <div class="h5 mb-0 fw-bold text-danger" x-text="viewData.total_reserved_stock || 0"></div>
                                         </div>
                                     </div>
                                     <div class="col-3">
-                                        <div class="p-2 border rounded bg-white shadow-sm border-success border-opacity-25">
+                                        <div class="p-2 border rounded bg-body shadow-sm border-success border-opacity-25">
                                             <div class="small text-muted mb-1">Available</div>
                                             <div class="h5 mb-0 fw-bold text-success" x-text="Math.max(0, (viewData.total_physical_stock || 0) - (viewData.total_reserved_stock || 0))"></div>
                                         </div>

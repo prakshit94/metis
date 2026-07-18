@@ -87,6 +87,21 @@
 
     <?php echo $__env->yieldPushContent('modals'); ?>
     <?php echo $__env->yieldPushContent('scripts'); ?>
+    <script>
+        document.addEventListener('show.bs.dropdown', function (event) {
+            var responsiveContainer = event.target.closest('.table-responsive');
+            if (responsiveContainer) {
+                responsiveContainer.style.overflow = 'visible';
+            }
+        });
+        
+        document.addEventListener('hide.bs.dropdown', function (event) {
+            var responsiveContainer = event.target.closest('.table-responsive');
+            if (responsiveContainer) {
+                responsiveContainer.style.overflow = '';
+            }
+        });
+    </script>
 </body>
 </html>
 <?php /**PATH /home/user/metis/resources/views/layouts/app.blade.php ENDPATH**/ ?>

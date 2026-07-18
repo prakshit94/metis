@@ -394,14 +394,57 @@ document.addEventListener('alpine:init', () => {
 
     mapOrder(o) {
       const formatAddress = (orderObj, prefix) => {
+        const addressObj = prefix === 'shipping' ? orderObj.shipping_address : (prefix === 'billing' ? orderObj.billing_address : null);
+        
+        if (addressObj) {
+            const villageName = addressObj.village ? addressObj.village.village_name : addressObj.village_name;
+            const taluka = addressObj.village ? addressObj.village.taluka_name : addressObj.taluka;
+            const district = addressObj.village ? addressObj.village.district_name : addressObj.district;
+            const po = addressObj.village ? addressObj.village.post_so_name : addressObj.post_office;
+
+            const parts = [
+              addressObj.address_line_1,
+              addressObj.address_line_2,
+              villageName ? `Vill: ${villageName}` : null,
+              taluka ? `Ta: ${taluka}` : null,
+              district ? `Dist: ${district}` : null,
+              po ? `PO: ${po}` : null,
+              addressObj.city,
+              addressObj.state,
+              addressObj.pincode,
+            ].filter(Boolean);
+
+            return {
+              id: addressObj.id,
+              label: addressObj.label || '',
+              line1: addressObj.address_line_1 || '',
+              line2: addressObj.address_line_2 || '',
+              city: addressObj.city || '',
+              state: addressObj.state || '',
+              pincode: addressObj.pincode || '',
+              country: 'India',
+              village: {
+                name: villageName || '',
+                taluka: taluka || '',
+                district: district || '',
+                state: addressObj.state || '',
+                postOffice: po || '',
+              },
+              formatted: parts.join(', ') || 'N/A',
+              raw: addressObj,
+            };
+        }
+
+        // Fallback to old flat structure if relation is missing
         if (!orderObj || !orderObj[`${prefix}_address_id`]) return null;
 
         const parts = [
           orderObj[`${prefix}_address_line_1`],
           orderObj[`${prefix}_address_line_2`],
-          orderObj[`${prefix}_village_name`],
-          orderObj[`${prefix}_taluka`],
-          orderObj[`${prefix}_district`],
+          orderObj[`${prefix}_village_name`] ? `Vill: ${orderObj[`${prefix}_village_name`]}` : null,
+          orderObj[`${prefix}_taluka`] ? `Ta: ${orderObj[`${prefix}_taluka`]}` : null,
+          orderObj[`${prefix}_district`] ? `Dist: ${orderObj[`${prefix}_district`]}` : null,
+          orderObj[`${prefix}_post_office`] ? `PO: ${orderObj[`${prefix}_post_office`]}` : null,
           orderObj[`${prefix}_city`],
           orderObj[`${prefix}_state`],
           orderObj[`${prefix}_pincode`],
@@ -437,10 +480,14 @@ document.addEventListener('alpine:init', () => {
       const invoice = o.invoice || null;
       const invoicePayments = invoice && Array.isArray(invoice.payments) ? invoice.payments : [];
       const paidAmount = invoicePayments
-        .filter(payment => payment.status === 'completed')
+        .filter(payment => ['completed', 'captured'].includes(payment.status))
         .reduce((sum, payment) => sum + formatMoney(payment.amount || 0), 0);
       const netAmount = formatMoney(invoice ? (invoice.net_amount ?? 0) : 0);
       const payments = Array.isArray(o.payments) ? o.payments : [];
+      const firstPayment = payments[0] || invoicePayments[0] || null;
+      const formattedPaymentMethod = firstPayment 
+        ? (firstPayment.payment_method || 'N/A').toUpperCase().replace(/_/g, ' ') 
+        : 'N/A';
 
       return {
         id: o.id,
@@ -458,7 +505,13 @@ document.addEventListener('alpine:init', () => {
           name: o.party ? `${o.party.firstname} ${o.party.lastname}` : 'N/A',
           email: o.party ? o.party.email : 'N/A',
           avatar: o.party && o.party.avatar ? o.party.avatar : '/assets/images/avatar-placeholder.svg',
-          phone: o.party ? o.party.phone : ''
+          phone: o.party ? o.party.phone : '',
+          secondaryPhone: o.party ? (o.party.alternatemobile || o.party.phone_number_2) : '',
+          relativeName: o.party ? (o.party.relative_mobile || o.party.relative_name) : '',
+          relativePhone: o.party ? o.party.relative_phone : '',
+          company: o.party ? o.party.company_name : '',
+          pan: o.party ? o.party.pan_number : '',
+          gstin: o.party ? o.party.gstin : ''
         },
         warehouse: o.warehouse ? {
           name: o.warehouse.name || o.warehouse.company_name || 'N/A',
@@ -503,23 +556,49 @@ document.addEventListener('alpine:init', () => {
           date: payment.payment_date || null,
           transactionId: payment.transaction_id || 'N/A',
         })),
-        items: (o.items || []).map(item => ({
-          product_id: item.product_id || (item.product ? item.product.id : null),
-          name: item.product ? item.product.name : 'Unknown Product',
-          sku: item.product ? item.product.sku || '' : '',
-          quantity: item.quantity,
-          price: item.unit_price,
-          discount: item.discount_amount || 0,
-          tax: item.tax_amount || 0,
-          net: item.net_amount || 0
-        })),
+        items: (o.items || []).map(item => {
+          const qty = formatMoney(item.quantity) || 1;
+          const uPrice = formatMoney(item.unit_price);
+          const discAmt = formatMoney(item.discount_amount);
+          const type = item.product ? (item.product.default_discount_type || 'percent') : 'percent';
+          const baseAmount = uPrice * qty;
+          const val = item.product && formatMoney(item.product.default_discount) > 0
+            ? formatMoney(item.product.default_discount)
+            : (discAmt > 0 
+                ? (['flat', 'fixed', 'amount'].includes(type.toLowerCase()) 
+                    ? (qty > 0 ? discAmt / qty : 0) 
+                    : (baseAmount > 0 ? (discAmt / baseAmount) * 100 : 0)) 
+                : 0);
+
+          const isFlat = ['flat', 'fixed', 'amount'].includes(type.toLowerCase());
+          const displayVal = Number.isFinite(val) ? val : 0;
+          const formattedVal = displayVal % 1 === 0 ? displayVal.toFixed(0) : displayVal.toFixed(2);
+          const badgeLabel = displayVal > 0 ? (isFlat ? `Rs ${formattedVal} off` : `${formattedVal}% off`) : '';
+
+          return {
+            product_id: item.product_id || (item.product ? item.product.id : null),
+            name: item.product ? item.product.name : 'Unknown Product',
+            sku: item.product ? item.product.sku || '' : '',
+            image: item.product && item.product.image_path ? `/storage/${item.product.image_path}` : null,
+            quantity: item.quantity,
+            price: item.unit_price,
+            discount: discAmt,
+            discountType: type,
+            discountValue: displayVal,
+            discountBadgeLabel: badgeLabel,
+            tax: item.tax_amount || 0,
+            taxRate: item.tax_rate || 0,
+            net: item.total_amount || 0
+          };
+        }),
         itemCount: o.items_count || (o.items ? o.items.length : 0),
         total: formatMoney(o.net_amount),
-        subtotal: formatMoney(o.total_amount),
+        subtotal: (o.items || []).reduce((sum, item) => sum + (formatMoney(item.unit_price) * formatMoney(item.quantity)), 0),
         taxTotal: formatMoney(o.tax_amount),
-        discountTotal: formatMoney(o.discount_amount),
-        paymentMethod: o.payment_method || 'N/A',
+        discountTotal: Math.max(0, (o.items || []).reduce((sum, item) => sum + (formatMoney(item.unit_price) * formatMoney(item.quantity)), 0) + formatMoney(o.tax_amount) - formatMoney(o.net_amount)),
+        paymentMethod: formattedPaymentMethod,
         couponCode: o.coupon_code || '',
+        appliedOfferName: o.applied_offer ? o.applied_offer.name : '',
         isDraft: Boolean(o.is_draft),
         futureOrderDate: o.future_order_date || null,
         createdBy: {

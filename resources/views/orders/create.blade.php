@@ -21,7 +21,12 @@
             </p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('orders') }}" class="btn btn-outline-secondary">
+            <template x-if="editingOrderId">
+                <a href="{{ route('orders') }}" class="btn btn-outline-danger shadow-sm">
+                    <i class="bi bi-x-circle me-1"></i> Cancel Edit Mode
+                </a>
+            </template>
+            <a href="{{ route('orders') }}" class="btn btn-outline-secondary shadow-sm">
                 <i class="bi bi-arrow-left me-2"></i> Back to Orders
             </a>
         </div>
@@ -470,12 +475,7 @@
                     <div class="card border shadow-sm mb-3">
                         <div class="d-flex align-items-start gap-3 p-3">
                             <div class="rounded-3 bg-body-tertiary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
-                                <template x-if="item.image_url">
-                                    <img :src="item.image_url" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
-                                </template>
-                                <template x-if="!item.image_url">
-                                    <i class="bi bi-box fs-3 text-muted opacity-50"></i>
-                                </template>
+                                <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                             </div>
                             <div class="flex-grow-1 min-w-0">
                                 <div class="d-flex align-items-start justify-content-between gap-2">
@@ -565,12 +565,7 @@
                             <div class="card border shadow-sm mb-3">
                                 <div class="d-flex align-items-start gap-3 p-3">
                                     <div class="rounded-3 bg-body-tertiary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
-                                        <template x-if="item.image_url">
-                                            <img :src="item.image_url" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
-                                        </template>
-                                        <template x-if="!item.image_url">
-                                            <i class="bi bi-box fs-3 text-muted opacity-50"></i>
-                                        </template>
+                                        <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                     </div>
                                     <div class="flex-grow-1 min-w-0">
                                         <div class="d-flex align-items-start justify-content-between gap-2">
@@ -1560,7 +1555,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 name: item.product?.name || item.product_name || 'Product',
                 sku: item.product?.sku || item.sku || '',
                 price: item.unit_price ?? item.price ?? 0,
-                image_url: item.product?.image_url || item.product?.image_path || null,
+                image_url: item.product?.image_url || (item.product?.image_path ? `/storage/${item.product.image_path}` : null),
                 quantity: Number(item.quantity || 1),
                 available: item.product?.available_stock ?? item.available ?? null,
                 taxRate: Number(item.tax_rate || item.taxRate || 0),

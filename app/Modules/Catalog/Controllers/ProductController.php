@@ -473,7 +473,7 @@ class ProductController extends Controller
             'expiry_tracking' => ['nullable', 'boolean'],
             'application_instructions' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'image' => ['nullable', 'image', 'max:4096'],
+            'image' => ['nullable', 'image', 'max:5120'],
             'attributes' => ['nullable', 'array'],
             'attributes.*' => ['integer', 'exists:product_attribute_values,id'],
             'overselling_qty' => ['nullable', 'integer', 'min:0'],
@@ -521,7 +521,12 @@ class ProductController extends Controller
 
         if ($request?->hasFile('image')) {
             $this->deleteImage($product);
-            $product->image_path = $request->file('image')->store('products', 'public');
+            
+            $file = $request->file('image');
+            $extension = $file->extension() ?: 'jpg';
+            $filename = \Illuminate\Support\Str::slug($product->sku) . '-' . time() . '.' . $extension;
+            
+            $product->image_path = $file->storeAs('products', $filename, 'public');
         }
     }
 

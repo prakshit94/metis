@@ -736,7 +736,7 @@
                                     <i class="bi bi-circle-fill me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
                                     <span x-text="selectedOrder.statusLabel"></span>
                                 </span>
-                                <button type="button" class="btn-close shadow-sm bg-body-secondary rounded-circle p-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                         </div>
                     </div>
@@ -797,8 +797,23 @@
                                                     <img :src="selectedOrder.customer.avatar" class="rounded-circle shadow-sm" width="48" height="48" alt="Customer">
                                                     <div>
                                                         <h6 class="fw-bold mb-1" x-text="selectedOrder.customer.name"></h6>
-                                                        <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i class="bi bi-envelope"></i> <span x-text="selectedOrder.customer.email"></span></p>
-                                                        <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i class="bi bi-telephone"></i> <span x-text="selectedOrder.customer.phone || 'N/A'"></span></p>
+                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-envelope"></i> <span x-text="selectedOrder.customer.email"></span></p>
+                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone"></i> <span x-text="selectedOrder.customer.phone || 'N/A'"></span></p>
+                                                        <template x-if="selectedOrder.customer.secondaryPhone">
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone-plus"></i> <span x-text="selectedOrder.customer.secondaryPhone"></span></p>
+                                                        </template>
+                                                        <template x-if="selectedOrder.customer.relativeName">
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-people"></i> <span x-text="selectedOrder.customer.relativeName"></span> <span x-show="selectedOrder.customer.relativePhone" x-text="`(${selectedOrder.customer.relativePhone})`"></span></p>
+                                                        </template>
+                                                        <template x-if="selectedOrder.customer.company">
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-building"></i> <span x-text="selectedOrder.customer.company"></span></p>
+                                                        </template>
+                                                        <template x-if="selectedOrder.customer.pan">
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-card-text"></i> PAN: <span x-text="selectedOrder.customer.pan"></span></p>
+                                                        </template>
+                                                        <template x-if="selectedOrder.customer.gstin">
+                                                            <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i class="bi bi-receipt"></i> GSTIN: <span x-text="selectedOrder.customer.gstin"></span></p>
+                                                        </template>
                                                     </div>
                                                 </div>
                                             </div>
@@ -831,7 +846,8 @@
                                                     <th class="fw-semibold text-muted small py-3 ps-4">Product Details</th>
                                                     <th class="fw-semibold text-muted small py-3 text-end">Price</th>
                                                     <th class="fw-semibold text-muted small py-3 text-center">Qty</th>
-                                                    <th class="fw-semibold text-muted small py-3 text-end">Tax/Disc</th>
+                                                    <th class="fw-semibold text-muted small py-3 text-end">Discount</th>
+                                                    <th class="fw-semibold text-muted small py-3 text-end">Tax</th>
                                                     <th class="fw-semibold text-muted small py-3 text-end pe-4">Total</th>
                                                 </tr>
                                             </thead>
@@ -839,21 +855,41 @@
                                                 <template x-for="(item, idx) in selectedOrder.items" :key="idx">
                                                     <tr class="border-bottom">
                                                         <td class="ps-4 py-3">
-                                                            <p class="fw-bold text-body-emphasis mb-0" x-text="item.name"></p>
-                                                            <p class="text-muted small mb-0 font-monospace" style="font-size: 0.75rem;" x-text="item.sku || 'No SKU'"></p>
+                                                            <div class="d-flex align-items-center gap-3">
+                                                                <img :src="item.image || '/assets/images/product-placeholder.svg'"
+                                                                     class="rounded-3 shadow-sm object-fit-cover"
+                                                                     width="48"
+                                                                     height="48"
+                                                                     :alt="item.name"
+                                                                     x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                                <div>
+                                                                    <p class="fw-bold text-body-emphasis mb-0" x-text="item.name"></p>
+                                                                    <p class="text-muted small mb-0 font-monospace" style="font-size: 0.75rem;" x-text="item.sku || 'No SKU'"></p>
+                                                                </div>
+                                                            </div>
                                                         </td>
                                                         <td class="text-end py-3">
-                                                            <span class="text-body-emphasis fw-medium" x-text="`Rs. ${parseFloat(item.price).toFixed(2)}`"></span>
+                                                            <span class="text-body-emphasis fw-medium" x-text="`Rs. ${parseFloat(item.price || 0).toFixed(2)}`"></span>
                                                         </td>
                                                         <td class="text-center py-3">
-                                                            <span class="badge bg-secondary bg-opacity-10 text-body-emphasis px-2 py-1 rounded-3" x-text="item.quantity"></span>
+                                                            <span class="badge bg-secondary bg-opacity-10 text-body-emphasis px-2 py-1 rounded-3" x-text="item.quantity || 0"></span>
                                                         </td>
                                                         <td class="text-end py-3 small">
-                                                            <div class="text-success" x-show="item.discount > 0" x-text="`-Rs. ${parseFloat(item.discount).toFixed(2)}`"></div>
-                                                            <div class="text-muted" x-text="`+Rs. ${parseFloat(item.tax).toFixed(2)}`"></div>
+                                                            <div class="text-success fw-medium mb-1" x-show="parseFloat(item.discount || 0) > 0" x-text="`-Rs. ${parseFloat(item.discount || 0).toFixed(2)}`"></div>
+                                                            <template x-if="parseFloat(item.discount || 0) > 0 && item.discountBadgeLabel">
+                                                                <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-inline-flex align-items-center gap-1 px-2 py-1 rounded-3 mt-1">
+                                                                    <i class="bi bi-tag-fill"></i>
+                                                                    <span class="fw-bold" style="font-size: 11px;" x-text="item.discountBadgeLabel"></span>
+                                                                </div>
+                                                            </template>
+                                                            <div class="text-muted" x-show="!item.discount || parseFloat(item.discount) == 0">—</div>
+                                                        </td>
+                                                        <td class="text-end py-3 small">
+                                                            <div class="text-muted fw-medium" x-text="`+Rs. ${parseFloat(item.tax || 0).toFixed(2)}`"></div>
+                                                            <div class="text-muted opacity-75" style="font-size: 0.7rem;" x-show="parseFloat(item.taxRate || 0) > 0" x-text="`(${parseFloat(item.taxRate).toFixed(0)}%)`"></div>
                                                         </td>
                                                         <td class="text-end pe-4 py-3">
-                                                            <span class="fw-bold text-primary" x-text="`Rs. ${parseFloat(item.net).toFixed(2)}`"></span>
+                                                            <span class="fw-bold text-primary" x-text="`Rs. ${((parseFloat(item.price || 0) * parseFloat(item.quantity || 0)) - parseFloat(item.discount || 0) + parseFloat(item.tax || 0)).toFixed(2)}`"></span>
                                                         </td>
                                                     </tr>
                                                 </template>
@@ -869,19 +905,23 @@
                                             <div class="col-md-6 col-lg-5">
                                                 <div class="d-flex justify-content-between mb-2">
                                                     <span class="text-muted fw-medium">Subtotal</span>
-                                                    <span class="text-body-emphasis fw-bold" x-text="`Rs. ${selectedOrder.subtotal.toFixed(2)}`"></span>
+                                                    <span class="text-body-emphasis fw-bold" x-text="`Rs. ${formatCurrency(selectedOrder.subtotal)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between mb-2">
-                                                    <span class="text-muted fw-medium">Discount <span x-show="selectedOrder.couponCode" class="badge bg-success ms-2 rounded-pill" x-text="selectedOrder.couponCode"></span></span>
-                                                    <span class="text-success fw-bold" x-text="`-Rs. ${selectedOrder.discountTotal.toFixed(2)}`"></span>
+                                                    <div>
+                                                        <span class="text-muted fw-medium">Discount</span>
+                                                        <span x-show="selectedOrder.couponCode" class="badge bg-success ms-2 rounded-pill" x-text="selectedOrder.couponCode"></span>
+                                                        <span x-show="selectedOrder.appliedOfferName" class="text-muted d-block" style="font-size: 10px;" x-text="selectedOrder.appliedOfferName"></span>
+                                                    </div>
+                                                    <span class="text-success fw-bold" x-text="`-Rs. ${formatCurrency(selectedOrder.discountTotal)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between mb-3 border-bottom pb-3">
                                                     <span class="text-muted fw-medium">Tax</span>
-                                                    <span class="text-body-emphasis fw-bold" x-text="`Rs. ${selectedOrder.taxTotal.toFixed(2)}`"></span>
+                                                    <span class="text-body-emphasis fw-bold" x-text="`Rs. ${formatCurrency(selectedOrder.taxTotal)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <span class="text-body-emphasis fw-bolder fs-5">Grand Total</span>
-                                                    <span class="text-primary fw-bolder fs-4" x-text="`Rs. ${selectedOrder.total.toFixed(2)}`"></span>
+                                                    <span class="text-primary fw-bolder fs-4" x-text="`Rs. ${formatCurrency(selectedOrder.total)}`"></span>
                                                 </div>
                                             </div>
                                         </div>
@@ -913,6 +953,56 @@
                                         <i class="bi bi-receipt me-2"></i>Receipt
                                     </button>
                                 </div>
+                                
+                                <!-- Order Actions -->
+                                <div class="card border-0 shadow-sm rounded-4 mb-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                                    <div class="card-body p-3">
+                                        <h6 class="fw-bold mb-3 text-primary" style="font-size: 0.8rem; text-transform: uppercase;">
+                                            <i class="bi bi-lightning-charge me-1"></i> Order Actions
+                                        </h6>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button class="btn btn-sm btn-light flex-grow-1 shadow-sm fw-semibold border-secondary border-opacity-25" @click="editOrder(selectedOrder)">
+                                                <i class="bi bi-pencil-square me-1"></i>Edit
+                                            </button>
+                                            <template x-if="selectedOrder.status === 'pending'">
+                                                <button class="btn btn-sm btn-primary flex-grow-1 shadow-sm fw-semibold" @click="confirmOrder(selectedOrder)">
+                                                    <i class="bi bi-check-circle me-1"></i>Confirm
+                                                </button>
+                                            </template>
+                                            <template x-if="selectedOrder.status === 'confirmed'">
+                                                <button class="btn btn-sm btn-info text-white flex-grow-1 shadow-sm fw-semibold" @click="processOrder(selectedOrder)">
+                                                    <i class="bi bi-gear me-1"></i>Process
+                                                </button>
+                                            </template>
+                                            <template x-if="selectedOrder.status === 'processing'">
+                                                <button class="btn btn-sm btn-warning text-dark flex-grow-1 shadow-sm fw-semibold" @click="openShipModal(selectedOrder)">
+                                                    <i class="bi bi-truck me-1"></i>Ready to Ship
+                                                </button>
+                                            </template>
+                                            <template x-if="selectedOrder.status === 'ready_to_ship'">
+                                                <button class="btn btn-sm btn-primary flex-grow-1 shadow-sm fw-semibold" @click="dispatchOrder(selectedOrder)">
+                                                    <i class="bi bi-send me-1"></i>Dispatch
+                                                </button>
+                                            </template>
+                                            <template x-if="selectedOrder.status === 'dispatched' || selectedOrder.status === 'shipped'">
+                                                <button class="btn btn-sm btn-success flex-grow-1 shadow-sm fw-semibold" @click="deliverOrder(selectedOrder)">
+                                                    <i class="bi bi-check2-all me-1"></i>Deliver
+                                                </button>
+                                            </template>
+                                            <template x-if="['delivered', 'dispatched', 'shipped'].includes(selectedOrder.status)">
+                                                <button class="btn btn-sm btn-outline-warning flex-grow-1 shadow-sm fw-semibold" @click="returnOrder(selectedOrder)">
+                                                    <i class="bi bi-arrow-return-left me-1"></i>Return
+                                                </button>
+                                            </template>
+                                            <template x-if="['pending', 'confirmed', 'processing', 'ready_to_ship'].includes(selectedOrder.status)">
+                                                <button class="btn btn-sm btn-outline-danger flex-grow-1 shadow-sm fw-semibold" @click="cancelOrder(selectedOrder)">
+                                                    <i class="bi bi-x-circle me-1"></i>Cancel
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+
 
                                 <!-- Logistics / Warehouse -->
                                 <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -927,6 +1017,9 @@
                                             <p class="small text-muted mb-2 lh-sm" x-text="selectedOrder.warehouse ? selectedOrder.warehouse.address : 'N/A'"></p>
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <span class="badge bg-secondary bg-opacity-10 text-body-emphasis rounded-pill fw-medium px-2 py-1"><i class="bi bi-telephone-fill me-1"></i> <span x-text="selectedOrder.warehouse ? selectedOrder.warehouse.phone : 'N/A'"></span></span>
+                                                <template x-if="selectedOrder.warehouse && selectedOrder.warehouse.gstin && selectedOrder.warehouse.gstin !== 'N/A'">
+                                                    <span class="badge bg-info bg-opacity-10 text-info rounded-pill fw-medium px-2 py-1"><i class="bi bi-receipt me-1"></i> <span x-text="selectedOrder.warehouse.gstin"></span></span>
+                                                </template>
                                             </div>
                                         </div>
                                     </div>
@@ -1019,8 +1112,8 @@
                                                             </div>
                                                             <span class="badge" 
                                                                   :class="{
-                                                                    'bg-success': payment.status === 'completed',
-                                                                    'bg-warning': payment.status === 'pending',
+                                                                    'bg-success': payment.status === 'completed' || payment.status === 'captured',
+                                                                    'bg-warning': payment.status === 'pending' || payment.status === 'authorized',
                                                                     'bg-danger': payment.status === 'failed' || payment.status === 'refunded'
                                                                   }"
                                                                   x-text="payment.status"></span>

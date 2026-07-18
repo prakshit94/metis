@@ -45,7 +45,7 @@
                             <i class="bi bi-check-circle"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted">Captured</p>
+                            <p class="h6 mb-0 text-muted">Completed</p>
                             <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.captured_amount)"></div>
                             <small class="text-success-emphasis">Successful payments</small>
                         </div>
@@ -104,7 +104,7 @@
                             <option value="">All Statuses</option>
                             <option value="pending">Pending</option>
                             <option value="authorized">Authorized</option>
-                            <option value="captured">Captured</option>
+                            <option value="captured">Completed</option>
                             <option value="failed">Failed</option>
                             <option value="refunded">Refunded</option>
                         </select>
@@ -127,8 +127,8 @@
                         <button class="btn btn-sm btn-outline-info" @click="exportSelectedPayments()" :disabled="isSubmitting" title="Export Selected to CSV">
                             <i class="bi bi-download me-1"></i>Export CSV
                         </button>
-                        <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('captured')" :disabled="isSubmitting" title="Capture authorized payments">
-                            <i class="bi bi-cash me-1"></i>Capture Selected
+                        <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('captured')" :disabled="isSubmitting" title="Complete authorized payments">
+                            <i class="bi bi-cash me-1"></i>Complete Selected
                         </button>
                         <button class="btn btn-sm btn-outline-danger" @click="bulkUpdateStatus('failed')" :disabled="isSubmitting" title="Mark as failed">
                             <i class="bi bi-x-circle me-1"></i>Mark Failed
@@ -211,7 +211,7 @@
                                               'bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50': payment.status === 'failed',
                                               'bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-50': payment.status === 'refunded'
                                           }"
-                                          x-text="payment.status.toUpperCase()"></span>
+                                          x-text="payment.status === 'captured' ? 'COMPLETED' : payment.status.toUpperCase()"></span>
                                 </td>
                                 <td>
                                     <div class="small text-white-50" x-text="formatDate(payment.payment_date)"></div>
@@ -230,7 +230,7 @@
                                             </a></li>
                                             <template x-if="payment.status === 'authorized'">
                                                 <li><a class="dropdown-item" href="#" @click.prevent="updatePaymentStatus(payment.id, 'captured')">
-                                                    <i class="bi bi-cash me-2"></i>Capture Payment
+                                                    <i class="bi bi-cash me-2"></i>Complete Payment
                                                 </a></li>
                                             </template>
                                         </ul>
@@ -310,7 +310,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Status</p>
-                                    <p class="fw-medium text-body-emphasis" x-text="selectedPayment.status.toUpperCase()"></p>
+                                    <p class="fw-medium text-body-emphasis" x-text="selectedPayment.status === 'captured' ? 'COMPLETED' : selectedPayment.status.toUpperCase()"></p>
                                 </div>
                                 <div class="col-12 mt-4">
                                     <p class="fw-bold small text-muted text-uppercase mb-2">Gateway Response Log</p>
@@ -368,7 +368,7 @@
                                 <select class="form-select" x-model="editForm.status" required>
                                     <option value="pending">Pending</option>
                                     <option value="authorized">Authorized</option>
-                                    <option value="captured">Captured</option>
+                                    <option value="captured">Completed</option>
                                     <option value="failed">Failed</option>
                                     <option value="refunded">Refunded</option>
                                 </select>
