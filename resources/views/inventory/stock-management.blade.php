@@ -125,7 +125,7 @@
                                     style="width: 170px;">
                                 <option value="">All Warehouses</option>
                                 <template x-for="wh in warehouses" :key="wh.id">
-                                    <option :value="wh.id" x-text="wh.name"></option>
+                                    <option :value="wh.id" x-text="wh.name + (wh.is_default ? ' (Default)' : '')"></option>
                                 </template>
                             </select>
                             {{-- Stock Level Filter --}}

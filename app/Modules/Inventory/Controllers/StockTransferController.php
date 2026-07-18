@@ -307,7 +307,7 @@ class StockTransferController extends Controller implements HasMiddleware
         $this->authorize('product-view');
 
         return response()->json([
-            'warehouses' => Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name', 'code']),
+            'warehouses' => Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name', 'code', 'is_default']),
             'products'   => Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']),
         ]);
     }

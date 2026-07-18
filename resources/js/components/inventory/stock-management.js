@@ -72,6 +72,14 @@ export default () => ({
             const data = await this.apiRequest('/api/inventory/transfers/options');
             this.warehouses = data.warehouses || [];
             this.productOptions = data.products || [];
+            
+            // Automatically select default warehouse if not already filtered
+            if (!this.warehouseFilter) {
+                const defaultWh = this.warehouses.find(w => w.is_default);
+                if (defaultWh) {
+                    this.warehouseFilter = defaultWh.id.toString();
+                }
+            }
         } catch (e) { console.error(e); }
     },
 

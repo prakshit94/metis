@@ -96,6 +96,7 @@ export default () => {
 
         apiBase: '/api/warehouses',
         modalInstance: null,
+        viewModalInstance: null,
 
         // Village autofill
         villageSearchQuery: '',
@@ -104,6 +105,11 @@ export default () => {
         villageSearchTimeout: null,
 
         form: emptyForm(),
+        viewData: {},
+
+        stockChart: null,
+        skuChart: null,
+        _themeHandler: null,
 
         init() {
             this.loadData();
@@ -115,6 +121,33 @@ export default () => {
                     this.resetForm();
                 });
             }
+
+            const viewModalEl = document.getElementById('viewWarehouseModal');
+            if (viewModalEl) {
+                this.viewModalInstance = Modal.getOrCreateInstance(viewModalEl);
+            }
+
+            this._themeHandler = (e) => {
+                const theme = e.detail?.theme || 'light';
+                [this.stockChart, this.skuChart].forEach(chart => {
+                    if (chart && typeof chart.updateOptions === 'function') {
+                        chart.updateOptions({ 
+                            theme: { mode: theme },
+                            stroke: chart === this.skuChart ? { width: 2, colors: [theme === 'dark' ? '#212529' : '#fff'] } : undefined
+                        });
+                    }
+                });
+            };
+            window.addEventListener('themeChanged', this._themeHandler);
+            
+            // Clean up when Alpine element is destroyed
+            const onHide = () => {
+                if (this._themeHandler) {
+                    window.removeEventListener('themeChanged', this._themeHandler);
+                    this._themeHandler = null;
+                }
+            };
+            window.addEventListener('pagehide', onHide, { once: true });
         },
 
         async apiRequest(url, options = {}) {
@@ -179,6 +212,77 @@ export default () => {
             this.calculateStats();
             this.currentPage = 1;
             this.selectedItems = [];
+            
+            // Re-render charts after filtering to keep them synchronized
+            setTimeout(() => this.renderCharts(), 100);
+        },
+
+        renderCharts() {
+            if (typeof window.ApexCharts === 'undefined') return;
+
+            const items = this.filteredItems || [];
+            
+            const warehouseNames = items.map(i => i.name || `WH-${i.id}`);
+            const physicalStock = items.map(i => parseFloat(i.total_physical_stock || 0));
+            const totalSkus = items.map(i => parseFloat(i.total_skus || 0));
+            
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+
+            // Stock Distribution Chart (Bar)
+            const stockOptions = {
+                series: [{ name: 'Physical Stock', data: physicalStock }],
+                chart: { 
+                    type: 'bar', 
+                    height: 300, 
+                    toolbar: { show: false },
+                    background: 'transparent'
+                },
+                theme: { mode: currentTheme },
+                plotOptions: { bar: { borderRadius: 6, horizontal: false, columnWidth: '40%' } },
+                dataLabels: { enabled: false },
+                xaxis: { categories: warehouseNames, tooltip: { enabled: false } },
+                colors: ['#0d6efd'],
+                grid: { strokeDashArray: 4 },
+                tooltip: { y: { formatter: val => val.toLocaleString() + ' Units' } }
+            };
+
+            if (this.stockChart) {
+                this.stockChart.updateOptions(stockOptions);
+            } else {
+                const el = document.querySelector("#stockDistributionChart");
+                if (el) {
+                    this.stockChart = new window.ApexCharts(el, stockOptions);
+                    this.stockChart.render();
+                }
+            }
+
+            // SKU Spread Chart (Donut)
+            const hasSkuData = totalSkus.some(v => v > 0);
+            const skuOptions = {
+                series: hasSkuData ? totalSkus : [1],
+                chart: { 
+                    type: 'donut', 
+                    height: 300,
+                    background: 'transparent'
+                },
+                theme: { mode: currentTheme },
+                labels: hasSkuData ? warehouseNames : ['No Data'],
+                colors: hasSkuData ? ['#198754', '#0dcaf0', '#ffc107', '#fd7e14', '#dc3545', '#6f42c1', '#20c997'] : ['#e9ecef'],
+                dataLabels: { enabled: hasSkuData, dropShadow: { enabled: false } },
+                stroke: { width: 2, colors: [currentTheme === 'dark' ? '#212529' : '#fff'] },
+                legend: { position: 'bottom', markers: { radius: 12 } },
+                tooltip: { y: { formatter: val => hasSkuData ? val.toLocaleString() + ' SKUs' : '0 SKUs' } }
+            };
+
+            if (this.skuChart) {
+                this.skuChart.updateOptions(skuOptions);
+            } else {
+                const el = document.querySelector("#skuSpreadChart");
+                if (el) {
+                    this.skuChart = new window.ApexCharts(el, skuOptions);
+                    this.skuChart.render();
+                }
+            }
         },
 
         sortData() {
@@ -279,6 +383,11 @@ export default () => {
         openCreateModal() {
             this.resetForm();
             this.modalInstance?.show();
+        },
+
+        viewItem(item) {
+            this.viewData = { ...item };
+            this.viewModalInstance?.show();
         },
 
         editItem(item) {

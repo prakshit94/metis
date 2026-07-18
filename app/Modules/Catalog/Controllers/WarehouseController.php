@@ -28,7 +28,10 @@ class WarehouseController extends Controller implements HasMiddleware
     {
         $this->authorize('product-view');
 
-        $query = Warehouse::query();
+        $query = Warehouse::query()
+            ->withCount('stocks as total_skus')
+            ->withSum('stocks as total_physical_stock', 'quantity')
+            ->withSum('stocks as total_reserved_stock', 'reserved_qty');
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {

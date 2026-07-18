@@ -35,6 +35,9 @@ export class ThemeManager {
     localStorage.setItem('theme', theme);
     this.currentTheme = theme;
     this.updateThemeIcons();
+    
+    // Dispatch event so active components can update existing charts
+    window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
   }
 
   toggleTheme() {

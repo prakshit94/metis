@@ -246,32 +246,26 @@ class OrderController extends Controller implements HasMiddleware
             return \App\Modules\Core\Models\Village::distinct()->pluck('state_name')->filter()->sort()->values();
         });
 
-        $districtsList = \Illuminate\Support\Facades\Cache::remember('geo_districts_' . $request->state, 3600, function () use ($request) {
+        $districtsList = $request->filled('state') ? \Illuminate\Support\Facades\Cache::remember('geo_districts_' . md5($request->state), 3600, function () use ($request) {
+            return \App\Modules\Core\Models\Village::whereIn('state_name', array_map('trim', explode(',', $request->state)))
+                ->distinct()->pluck('district_name')->filter()->sort()->values();
+        }) : [];
+
+        $talukasList = $request->filled('district') ? \Illuminate\Support\Facades\Cache::remember('geo_talukas_' . md5($request->state . '_' . $request->district), 3600, function () use ($request) {
             return \App\Modules\Core\Models\Village::when($request->filled('state'), function ($q) use ($request) {
                 $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
-            })->distinct()->pluck('district_name')->filter()->sort()->values();
-        });
+            })->whereIn('district_name', array_map('trim', explode(',', $request->district)))
+            ->distinct()->pluck('taluka_name')->filter()->sort()->values();
+        }) : [];
 
-        $talukasList = \Illuminate\Support\Facades\Cache::remember('geo_talukas_' . md5($request->state . '_' . $request->district), 3600, function () use ($request) {
+        $villagesList = $request->filled('taluka') ? \Illuminate\Support\Facades\Cache::remember('geo_villages_' . md5($request->state . '_' . $request->district . '_' . $request->taluka), 3600, function () use ($request) {
             return \App\Modules\Core\Models\Village::when($request->filled('state'), function ($q) use ($request) {
                 $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
             })->when($request->filled('district'), function ($q) use ($request) {
                 $q->whereIn('district_name', array_map('trim', explode(',', $request->district)));
-            })->distinct()->pluck('taluka_name')->filter()->sort()->values();
-        });
-
-        $villagesList = \Illuminate\Support\Facades\Cache::remember('geo_villages_' . md5($request->state . '_' . $request->district . '_' . $request->taluka), 3600, function () use ($request) {
-            if (!$request->filled('taluka')) {
-                return collect([]);
-            }
-            return \App\Modules\Core\Models\Village::when($request->filled('state'), function ($q) use ($request) {
-                $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
-            })->when($request->filled('district'), function ($q) use ($request) {
-                $q->whereIn('district_name', array_map('trim', explode(',', $request->district)));
-            })->when($request->filled('taluka'), function ($q) use ($request) {
-                $q->whereIn('taluka_name', array_map('trim', explode(',', $request->taluka)));
-            })->distinct()->pluck('village_name')->filter()->sort()->values();
-        });
+            })->whereIn('taluka_name', array_map('trim', explode(',', $request->taluka)))
+            ->distinct()->pluck('village_name')->filter()->sort()->values();
+        }) : [];
 
         $services = \App\Modules\Catalog\Models\Service::active()->get();
         $carriersList = $services->pluck('name')

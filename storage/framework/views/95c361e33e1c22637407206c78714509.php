@@ -5,6 +5,9 @@
 <div class="order-management" x-data="orderTable" x-init="
     productsList = <?php echo e(json_encode($productsList->toArray())); ?>;
     statesList = <?php echo e(json_encode($statesList)); ?>;
+    districtsList = <?php echo e(json_encode($districtsList ?? [])); ?>;
+    talukasList = <?php echo e(json_encode($talukasList ?? [])); ?>;
+    villagesList = <?php echo e(json_encode($villagesList ?? [])); ?>;
     carriersList = <?php echo e(json_encode($carriersList)); ?>;
     allowedFilterStatuses = <?php echo e(json_encode($statusesList)); ?>;
     init();
@@ -263,47 +266,123 @@
                 </div>
 
                 <!-- State Filter -->
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold text-body-secondary">State</label>
-                    <select class="form-select form-select-sm" x-model="stateFilter" @change="filterOrders()">
-                        <option value="">All States</option>
-                        <template x-for="state in statesList" :key="state">
-                            <option :value="state" x-text="state"></option>
+                <div class="col-md-3 position-relative" @click.away="showStateDropdown = false" :style="showStateDropdown ? 'z-index: 1050;' : ''">
+                    <label class="form-label small fw-semibold text-body-secondary">
+                        State <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="stateFilter.length + ' / ' + Object.keys(statesList).length"></span>
+                    </label>
+                    <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showStateDropdown = true; $refs.stateSearch.focus()">
+                        <template x-for="state in stateFilter" :key="state">
+                            <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                                <span x-text="state" style="font-size: 11px;"></span>
+                                <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('state', state)" style="font-size: 13px;"></i>
+                            </div>
                         </template>
-                    </select>
+                        <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                            <input x-ref="stateSearch" type="text" x-model="stateSearch" @focus="showStateDropdown = true" placeholder="Search States..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                        </div>
+                    </div>
+                    <div x-show="showStateDropdown && filteredStates.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                        <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('state')">
+                            <input type="checkbox" :checked="stateFilter.length > 0 && stateFilter.length === Object.keys(statesList).length" class="me-2" style="cursor: pointer;">
+                            <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                        </div>
+                        <template x-for="state in filteredStates" :key="state">
+                            <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('state', state)">
+                                <input type="checkbox" :checked="stateFilter.includes(state)" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px;" x-text="state"></span>
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
                 <!-- District Filter -->
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold text-body-secondary">District</label>
-                    <select class="form-select form-select-sm" x-model="districtFilter" @change="filterOrders()">
-                        <option value="">All Districts</option>
-                        <template x-for="district in districtsList" :key="district">
-                            <option :value="district" x-text="district"></option>
+                <div class="col-md-3 position-relative" @click.away="showDistrictDropdown = false" :style="showDistrictDropdown ? 'z-index: 1050;' : ''">
+                    <label class="form-label small fw-semibold text-body-secondary">
+                        District <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="districtFilter.length + ' / ' + Object.keys(districtsList).length"></span>
+                    </label>
+                    <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showDistrictDropdown = true; $refs.districtSearch.focus()">
+                        <template x-for="district in districtFilter" :key="district">
+                            <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                                <span x-text="district" style="font-size: 11px;"></span>
+                                <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('district', district)" style="font-size: 13px;"></i>
+                            </div>
                         </template>
-                    </select>
+                        <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                            <input x-ref="districtSearch" type="text" x-model="districtSearch" @focus="showDistrictDropdown = true" placeholder="Search Districts..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                        </div>
+                    </div>
+                    <div x-show="showDistrictDropdown && filteredDistricts.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                        <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('district')">
+                            <input type="checkbox" :checked="districtFilter.length > 0 && districtFilter.length === Object.keys(districtsList).length" class="me-2" style="cursor: pointer;">
+                            <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                        </div>
+                        <template x-for="district in filteredDistricts" :key="district">
+                            <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('district', district)">
+                                <input type="checkbox" :checked="districtFilter.includes(district)" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px;" x-text="district"></span>
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
                 <!-- Taluka Filter -->
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold text-body-secondary">Taluka</label>
-                    <select class="form-select form-select-sm" x-model="talukaFilter" @change="filterOrders()">
-                        <option value="">All Talukas</option>
-                        <template x-for="taluka in talukasList" :key="taluka">
-                            <option :value="taluka" x-text="taluka"></option>
+                <div class="col-md-3 position-relative" @click.away="showTalukaDropdown = false" :style="showTalukaDropdown ? 'z-index: 1050;' : ''">
+                    <label class="form-label small fw-semibold text-body-secondary">
+                        Taluka <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="talukaFilter.length + ' / ' + Object.keys(talukasList).length"></span>
+                    </label>
+                    <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showTalukaDropdown = true; $refs.talukaSearch.focus()">
+                        <template x-for="taluka in talukaFilter" :key="taluka">
+                            <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                                <span x-text="taluka" style="font-size: 11px;"></span>
+                                <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('taluka', taluka)" style="font-size: 13px;"></i>
+                            </div>
                         </template>
-                    </select>
+                        <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                            <input x-ref="talukaSearch" type="text" x-model="talukaSearch" @focus="showTalukaDropdown = true" placeholder="Search Talukas..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                        </div>
+                    </div>
+                    <div x-show="showTalukaDropdown && filteredTalukas.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                        <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('taluka')">
+                            <input type="checkbox" :checked="talukaFilter.length > 0 && talukaFilter.length === Object.keys(talukasList).length" class="me-2" style="cursor: pointer;">
+                            <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                        </div>
+                        <template x-for="taluka in filteredTalukas" :key="taluka">
+                            <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('taluka', taluka)">
+                                <input type="checkbox" :checked="talukaFilter.includes(taluka)" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px;" x-text="taluka"></span>
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
                 <!-- Village Filter -->
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold text-body-secondary">Village</label>
-                    <select class="form-select form-select-sm" x-model="villageFilter" @change="filterOrders()">
-                        <option value="">All Villages</option>
-                        <template x-for="village in villagesList" :key="village">
-                            <option :value="village" x-text="village"></option>
+                <div class="col-md-3 position-relative" @click.away="showVillageDropdown = false" :style="showVillageDropdown ? 'z-index: 1050;' : ''">
+                    <label class="form-label small fw-semibold text-body-secondary">
+                        Village <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="villageFilter.length + ' / ' + Object.keys(villagesList).length"></span>
+                    </label>
+                    <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showVillageDropdown = true; $refs.villageSearch.focus()">
+                        <template x-for="village in villageFilter" :key="village">
+                            <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                                <span x-text="village" style="font-size: 11px;"></span>
+                                <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('village', village)" style="font-size: 13px;"></i>
+                            </div>
                         </template>
-                    </select>
+                        <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                            <input x-ref="villageSearch" type="text" x-model="villageSearch" @focus="showVillageDropdown = true" placeholder="Search Villages..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                        </div>
+                    </div>
+                    <div x-show="showVillageDropdown && filteredVillages.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                        <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('village')">
+                            <input type="checkbox" :checked="villageFilter.length > 0 && villageFilter.length === Object.keys(villagesList).length" class="me-2" style="cursor: pointer;">
+                            <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                        </div>
+                        <template x-for="village in filteredVillages" :key="village">
+                            <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('village', village)">
+                                <input type="checkbox" :checked="villageFilter.includes(village)" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px;" x-text="village"></span>
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
                 <!-- Reset Filters -->
@@ -878,6 +957,102 @@
                                                     </template>
                                                 </div>
                                             </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Invoice Details -->
+                                <template x-if="selectedOrder.invoice">
+                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
+                                        <div class="card-body p-4">
+                                            <h6 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2">
+                                                <i class="bi bi-receipt fs-5"></i> Invoice Details
+                                            </h6>
+                                            <div class="bg-body p-3 rounded-4 shadow-sm">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="small text-muted">Invoice No:</span>
+                                                    <span class="fw-bold text-body-emphasis" x-text="selectedOrder.invoice.number"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="small text-muted">Date:</span>
+                                                    <span class="fw-medium small" x-text="formatDate(selectedOrder.invoice.date)"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="small text-muted">Status:</span>
+                                                    <span class="badge bg-secondary" x-text="selectedOrder.invoice.status"></span>
+                                                </div>
+                                                <hr class="my-2">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="small text-muted">Paid:</span>
+                                                    <span class="text-success fw-bold" x-text="`Rs. ${selectedOrder.invoice.paid.toFixed(2)}`"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="small text-muted">Due:</span>
+                                                    <span class="text-danger fw-bold" x-text="`Rs. ${selectedOrder.invoice.due.toFixed(2)}`"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Payments Tracking -->
+                                <template x-if="selectedOrder.payments && selectedOrder.payments.length > 0">
+                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-success bg-opacity-10 border border-success border-opacity-25">
+                                        <div class="card-body p-4">
+                                            <h6 class="fw-bold mb-3 text-success d-flex align-items-center gap-2">
+                                                <i class="bi bi-cash-stack fs-5"></i> Payments
+                                            </h6>
+                                            <div class="position-relative ms-2 ps-3 border-start border-success border-opacity-25 border-2">
+                                                <template x-for="(payment, i) in selectedOrder.payments" :key="payment.id">
+                                                    <div class="position-relative mb-3">
+                                                        <div class="position-absolute bg-success rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div>
+                                                                <p class="fw-bold text-body-emphasis mb-0 small" x-text="`Rs. ${payment.amount}`"></p>
+                                                                <p class="text-muted mb-0" style="font-size: 0.75rem;" x-text="formatDateTime(payment.date)"></p>
+                                                                <p class="text-secondary small mt-1 lh-sm mb-0">
+                                                                    <span x-text="payment.method"></span>
+                                                                    <span x-show="payment.transactionId && payment.transactionId !== 'N/A'" x-text="` | Txn: ${payment.transactionId}`"></span>
+                                                                </p>
+                                                            </div>
+                                                            <span class="badge" 
+                                                                  :class="{
+                                                                    'bg-success': payment.status === 'completed',
+                                                                    'bg-warning': payment.status === 'pending',
+                                                                    'bg-danger': payment.status === 'failed' || payment.status === 'refunded'
+                                                                  }"
+                                                                  x-text="payment.status"></span>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Returns Tracking -->
+                                <template x-if="selectedOrder.original && (selectedOrder.original.order_returns && selectedOrder.original.order_returns.length > 0 || selectedOrder.original.orderReturns && selectedOrder.original.orderReturns.length > 0)">
+                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-danger bg-opacity-10 border border-danger border-opacity-25">
+                                        <div class="card-body p-4">
+                                            <h6 class="fw-bold mb-3 text-danger d-flex align-items-center gap-2">
+                                                <i class="bi bi-arrow-return-left fs-5"></i> Returns & Refunds
+                                            </h6>
+                                            <div class="position-relative ms-2 ps-3 border-start border-danger border-opacity-25 border-2">
+                                                <template x-for="(ret, i) in (selectedOrder.original.order_returns || selectedOrder.original.orderReturns)" :key="ret.id || i">
+                                                    <div class="position-relative mb-3">
+                                                        <div class="position-absolute bg-danger rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div>
+                                                                <p class="fw-bold text-body-emphasis mb-0 small" x-text="ret.return_no || 'Return'"></p>
+                                                                <p class="text-muted mb-0" style="font-size: 0.75rem;" x-text="formatDateTime(ret.created_at)"></p>
+                                                                <p class="text-secondary small mt-1 lh-sm mb-0">Reason: <span x-text="ret.reason || 'N/A'"></span></p>
+                                                                <p class="text-danger small fw-medium mt-1 mb-0" x-show="ret.refund_amount > 0">Refund: Rs. <span x-text="ret.refund_amount"></span></p>
+                                                            </div>
+                                                            <span class="badge bg-danger" x-text="ret.status"></span>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
                                         </div>
                                     </div>
                                 </template>

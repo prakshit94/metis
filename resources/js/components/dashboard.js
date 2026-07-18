@@ -59,6 +59,17 @@ export class DashboardManager {
     };
     window.addEventListener('resize', onResize);
     this.cleanupFns.push(() => window.removeEventListener('resize', onResize));
+
+    const onThemeChange = (e) => {
+      const theme = e.detail?.theme || 'light';
+      this.charts.forEach(chart => {
+        if (typeof chart.updateOptions === 'function') {
+          chart.updateOptions({ theme: { mode: theme } });
+        }
+      });
+    };
+    window.addEventListener('themeChanged', onThemeChange);
+    this.cleanupFns.push(() => window.removeEventListener('themeChanged', onThemeChange));
   }
 
   async loadDashboardData() {

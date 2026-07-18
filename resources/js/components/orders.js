@@ -88,10 +88,10 @@ document.addEventListener('alpine:init', () => {
     dateFilter: '',
     productFilter: '',
     fulfillmentFilter: '',
-    stateFilter: '',
-    districtFilter: '',
-    talukaFilter: '',
-    villageFilter: '',
+    stateFilter: [],
+    districtFilter: [],
+    talukaFilter: [],
+    villageFilter: [],
     carrierFilter: '',
     fromDate: '',
     toDate: '',
@@ -153,6 +153,90 @@ document.addEventListener('alpine:init', () => {
     returnNotes: '',
     returnItems: [],
 
+    // Multi-select dropdown states
+    showStateDropdown: false,
+    stateSearch: '',
+    showDistrictDropdown: false,
+    districtSearch: '',
+    showTalukaDropdown: false,
+    talukaSearch: '',
+    showVillageDropdown: false,
+    villageSearch: '',
+
+    get filteredStates() {
+        let list = Object.values(this.statesList || {});
+        if (!this.stateSearch) return list;
+        return list.filter(s => s && s.toLowerCase().includes(this.stateSearch.toLowerCase()));
+    },
+    
+    get filteredDistricts() {
+        let list = Object.values(this.districtsList || {});
+        if (!this.districtSearch) return list;
+        return list.filter(d => d && d.toLowerCase().includes(this.districtSearch.toLowerCase()));
+    },
+
+    get filteredTalukas() {
+        let list = Object.values(this.talukasList || {});
+        if (!this.talukaSearch) return list;
+        return list.filter(t => t && t.toLowerCase().includes(this.talukaSearch.toLowerCase()));
+    },
+
+    get filteredVillages() {
+        let list = Object.values(this.villagesList || {});
+        if (!this.villageSearch) return list;
+        return list.filter(v => v && v.toLowerCase().includes(this.villageSearch.toLowerCase()));
+    },
+
+    toggleFilter(type, value) {
+        if (type === 'state') {
+            if (this.stateFilter.includes(value)) this.stateFilter = this.stateFilter.filter(v => v !== value);
+            else this.stateFilter.push(value);
+            this.districtFilter = [];
+            this.talukaFilter = [];
+            this.villageFilter = [];
+        } else if (type === 'district') {
+            if (this.districtFilter.includes(value)) this.districtFilter = this.districtFilter.filter(v => v !== value);
+            else this.districtFilter.push(value);
+            this.talukaFilter = [];
+            this.villageFilter = [];
+        } else if (type === 'taluka') {
+            if (this.talukaFilter.includes(value)) this.talukaFilter = this.talukaFilter.filter(v => v !== value);
+            else this.talukaFilter.push(value);
+            this.villageFilter = [];
+        } else if (type === 'village') {
+            if (this.villageFilter.includes(value)) this.villageFilter = this.villageFilter.filter(v => v !== value);
+            else this.villageFilter.push(value);
+        }
+        this.filterOrders();
+    },
+
+    toggleAllFilter(type) {
+        if (type === 'state') {
+            let list = Object.values(this.statesList || {});
+            if (this.stateFilter.length === list.length) this.stateFilter = [];
+            else this.stateFilter = [...list];
+            this.districtFilter = [];
+            this.talukaFilter = [];
+            this.villageFilter = [];
+        } else if (type === 'district') {
+            let list = Object.values(this.districtsList || {});
+            if (this.districtFilter.length === list.length) this.districtFilter = [];
+            else this.districtFilter = [...list];
+            this.talukaFilter = [];
+            this.villageFilter = [];
+        } else if (type === 'taluka') {
+            let list = Object.values(this.talukasList || {});
+            if (this.talukaFilter.length === list.length) this.talukaFilter = [];
+            else this.talukaFilter = [...list];
+            this.villageFilter = [];
+        } else if (type === 'village') {
+            let list = Object.values(this.villagesList || {});
+            if (this.villageFilter.length === list.length) this.villageFilter = [];
+            else this.villageFilter = [...list];
+        }
+        this.filterOrders();
+    },
+
     init() {
       this.loadOrders();
       
@@ -211,10 +295,10 @@ document.addEventListener('alpine:init', () => {
       if (this.statusFilter) params.append('status', this.statusFilter);
       if (this.productFilter) params.append('product', this.productFilter);
       if (this.fulfillmentFilter) params.append('fulfillment', this.fulfillmentFilter);
-      if (this.stateFilter) params.append('state', this.stateFilter);
-      if (this.districtFilter) params.append('district', this.districtFilter);
-      if (this.talukaFilter) params.append('taluka', this.talukaFilter);
-      if (this.villageFilter) params.append('village', this.villageFilter);
+      if (this.stateFilter.length) params.append('state', this.stateFilter.join(','));
+      if (this.districtFilter.length) params.append('district', this.districtFilter.join(','));
+      if (this.talukaFilter.length) params.append('taluka', this.talukaFilter.join(','));
+      if (this.villageFilter.length) params.append('village', this.villageFilter.join(','));
       if (this.carrierFilter) params.append('carrier', this.carrierFilter);
       
       // Handle Date selection
@@ -493,10 +577,10 @@ document.addEventListener('alpine:init', () => {
       this.dateFilter = '';
       this.productFilter = '';
       this.fulfillmentFilter = '';
-      this.stateFilter = '';
-      this.districtFilter = '';
-      this.talukaFilter = '';
-      this.villageFilter = '';
+      this.stateFilter = [];
+      this.districtFilter = [];
+      this.talukaFilter = [];
+      this.villageFilter = [];
       this.carrierFilter = '';
       this.fromDate = '';
       this.toDate = '';
@@ -513,10 +597,10 @@ document.addEventListener('alpine:init', () => {
         this.carrierFilter ||
         this.fromDate ||
         this.toDate ||
-        this.stateFilter ||
-        this.districtFilter ||
-        this.talukaFilter ||
-        this.villageFilter
+        this.stateFilter.length > 0 ||
+        this.districtFilter.length > 0 ||
+        this.talukaFilter.length > 0 ||
+        this.villageFilter.length > 0
       );
     },
 
@@ -1071,10 +1155,10 @@ document.addEventListener('alpine:init', () => {
         status: this.statusFilter,
         product: this.productFilter,
         fulfillment: this.fulfillmentFilter,
-        state: this.stateFilter,
-        district: this.districtFilter,
-        taluka: this.talukaFilter,
-        village: this.villageFilter,
+        state: this.stateFilter.join(','),
+        district: this.districtFilter.join(','),
+        taluka: this.talukaFilter.join(','),
+        village: this.villageFilter.join(','),
         carrier: this.carrierFilter,
         from_date: this.fromDate,
         to_date: this.toDate
