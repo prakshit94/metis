@@ -334,7 +334,8 @@ class OrderController extends Controller implements HasMiddleware
                 'addresses.village.services',
                 'orders' => function ($q) {
                     $q->latest()->limit(10)->with([
-                        'items.product:id,name,sku,image_path',
+                        'items.product:id,name,sku,image_path,tax_rate_id',
+                        'items.product.taxRate',
                         'warehouse:id,name',
                         'shippingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
                         'billingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
@@ -348,7 +349,8 @@ class OrderController extends Controller implements HasMiddleware
             $initialOrder = Order::with([
                 'party.addresses.village.services',
                 'warehouse',
-                'items.product:id,name,sku,image_path',
+                'items.product:id,name,sku,image_path,tax_rate_id',
+                'items.product.taxRate',
                 'shippingAddress.village.services',
                 'billingAddress.village.services',
                 'appliedOffer:id,name,discount_type,value',
@@ -359,7 +361,8 @@ class OrderController extends Controller implements HasMiddleware
                     'addresses.village.services',
                     'orders' => function ($q) {
                         $q->latest()->limit(10)->with([
-                            'items.product:id,name,sku,image_path',
+                            'items.product:id,name,sku,image_path,tax_rate_id',
+                            'items.product.taxRate',
                             'warehouse:id,name',
                             'shippingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
                             'billingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',

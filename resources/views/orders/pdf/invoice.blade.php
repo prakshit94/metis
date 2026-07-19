@@ -298,8 +298,9 @@ br {
       <br>
       <!-- ITEMS -->
 @php
-$shippingState = strtolower($invoice->order->shippingAddress->state ?? $invoice->order->billingAddress->state ?? '');
-$isInterState = $shippingState !== 'gujarat';
+$shippingState = strtolower(trim($invoice->order->shippingAddress->state ?? $invoice->order->billingAddress->state ?? ''));
+$warehouseState = strtolower(trim($invoice->order->warehouse->state ?? 'gujarat'));
+$isInterState = $shippingState !== $warehouseState;
 
 $totalTaxable = 0;
 $totalCGST = 0;
@@ -336,7 +337,7 @@ $totalIGST = 0;
          $baseTotal = $item->unit_price * $item->quantity;
          $discount = $item->discount_amount ?? 0;
 
-         $taxPercent = floatval($item->tax_rate ?? 0);
+         $taxPercent = floatval($item->tax_rate > 0 ? $item->tax_rate : ($item->product->taxRate->rate ?? 0));
 
          $taxableValue = $baseTotal - $discount;
          $taxAmount = ($taxableValue * $taxPercent) / 100;

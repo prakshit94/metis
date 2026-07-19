@@ -1587,7 +1587,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 image_url: item.product?.image_url || (item.product?.image_path ? `/storage/${item.product.image_path}` : null),
                 quantity: Number(item.quantity || 1),
                 available: item.product?.available_stock ?? item.available ?? null,
-                taxRate: Number(item.tax_rate || item.taxRate || 0),
+                taxRate: Number(item.tax_rate > 0 ? item.tax_rate : (item.taxRate || item.product?.tax_rate?.rate || item.product?.taxRate?.rate || 0)),
                 discountValue: Number(item.quantity || 1) > 0
                     ? Number(item.discount_amount || item.discountValue || 0) / Number(item.quantity || 1)
                     : 0,
