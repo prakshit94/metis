@@ -236,7 +236,7 @@
                                 </td>
                                 <td class="text-muted" x-text="item.id"></td>
                                 <td class="font-monospace fw-semibold text-secondary" x-text="item.code"></td>
-                                <td class="fw-medium text-dark" x-text="item.name"></td>
+                                <td class="fw-medium text-body" x-text="item.name"></td>
                                 <td x-text="item.description || '-'"></td>
                                 <td>
                                     <template x-if="item.providers?.length">

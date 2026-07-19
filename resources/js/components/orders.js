@@ -861,9 +861,6 @@ document.addEventListener('alpine:init', () => {
       // to the highest-priority (lowest number) option.
       this.shipCarrierName = this.shipCarrierOptions[0]?.name || '';
       this.shipTrackingNo = '';
-      if (!this.carriersList || !this.carriersList.length) {
-        this.carriersList = ['BlueDart', 'Delhivery', 'DTDC', 'Ecom Express', 'FedEx', 'India Post', 'Shadowfax', 'XpressBees', 'DHL'];
-      }
       if (!this.shipCarrierOptions.length) {
         this.shipCarrierOptions = this.carriersList.map(name => ({ name, priority: null }));
         this.shipCarrierName = this.shipCarrierOptions[0]?.name || '';

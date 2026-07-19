@@ -186,16 +186,7 @@
                             <option value="returned">Returned</option>
                             <option value="failed">Failed</option>
                         </select>
-                        <!-- Date Range -->
-                        <select class="form-select form-select-sm" 
-                                x-model="dateFilter" 
-                                @change="filterData()"
-                                style="width: 150px;">
-                            <option value="">All Dates</option>
-                            <option value="today">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
-                        </select>
+
                         <select class="form-select form-select-sm"
                                 x-model.number="itemsPerPage"
                                 @change="filterData()"
@@ -330,9 +321,22 @@
                                            :value="String(item.id)"
                                            x-model="selectedItems">
                                 </td>
-                                <td class="fw-medium text-dark" x-text="item.shipment_no"></td>
+                                <td class="fw-medium text-body" x-text="item.shipment_no"></td>
                                 <td class="fw-semibold text-secondary" x-text="item.order ? item.order.order_no : ('ORD-' + item.order_id)"></td>
-                                <td x-text="item.carrier_name || '-'"></td>
+                                <td>
+                                    <div class="fw-medium text-body mb-1" x-text="item.carrier_name || '-'"></div>
+                                    <template x-if="item.service && item.service.providers?.length">
+                                        <div class="d-flex flex-column gap-1 mt-2 border-top pt-2 border-secondary-subtle">
+                                            <span class="small text-muted fw-semibold" style="font-size: 0.7rem; text-transform: uppercase;">Providers</span>
+                                            <template x-for="provider in item.service.providers" :key="provider.id">
+                                                <div class="small lh-sm">
+                                                    <div class="fw-semibold text-primary" x-text="provider.name"></div>
+                                                    <div class="text-muted" style="font-size: 0.75rem;" x-text="[provider.phone, provider.department].filter(Boolean).join(' · ')"></div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </td>
                                 <td class="font-monospace" x-text="item.tracking_no || '-'"></td>
                                 <td>
                                     <span class="badge rounded-pill px-3 py-1.5" 
@@ -489,7 +493,7 @@
                                 </div>
                                 <div class="timeline-panel border-bottom pb-2 w-100">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <h6 class="fw-bold mb-0 text-dark" x-text="event.event_name"></h6>
+                                        <h6 class="fw-bold mb-0 text-body" x-text="event.event_name"></h6>
                                         <small class="text-muted" x-text="new Date(event.occurred_at).toLocaleString()"></small>
                                     </div>
                                     <div class="text-secondary small mt-1">

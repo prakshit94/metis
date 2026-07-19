@@ -30,6 +30,11 @@ class Shipment extends Model
         return $this->belongsTo(Order::class);
     }
 
+    public function service()
+    {
+        return $this->belongsTo(\App\Modules\Catalog\Models\Service::class, 'carrier_name', 'name');
+    }
+
     public function events()
     {
         return $this->hasMany(ShipmentTrackingEvent::class);

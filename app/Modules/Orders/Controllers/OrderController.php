@@ -266,7 +266,6 @@ class OrderController extends Controller implements HasMiddleware
 
         $services = \App\Modules\Catalog\Models\Service::active()->get();
         $carriersList = $services->pluck('name')
-            ->merge(['BlueDart', 'Delhivery', 'DTDC', 'Ecom Express', 'FedEx', 'India Post', 'Shadowfax', 'XpressBees', 'DHL'])
             ->filter()
             ->unique()
             ->sort()
