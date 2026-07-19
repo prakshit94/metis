@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en" data-bs-theme="light">
 <head>
     <!-- Meta Tags -->
     <meta charset="UTF-8">
@@ -37,6 +37,15 @@
     <link rel="manifest" href="/manifest.json">
 
     <!-- Vite Assets -->
+    {{-- Apply saved theme immediately to prevent flash --}}
+    <script>
+        (function() {
+            var t = localStorage.getItem('theme') ||
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-bs-theme', t);
+        })();
+    </script>
+
     @vite(['resources/scss/main.scss', 'resources/js/main.js'])
 
     @stack('head')

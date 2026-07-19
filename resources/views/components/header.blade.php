@@ -345,14 +345,12 @@
                             data-bs-display="static"
                             aria-expanded="false"
                             aria-label="User menu">
-                        <img src="{{ asset('assets/images/avatar-1.jpg') }}"
-                             alt="{{ Auth::user()?->name ?? 'User' }}"
-                             width="36"
-                             height="36"
-                             class="rounded-circle object-fit-cover border border-2 border-body shadow-sm">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm border border-2 border-body" style="width: 36px; height: 36px;">
+                            <i class="bi bi-person-fill fs-5"></i>
+                        </div>
                         <span class="d-none d-md-flex flex-column text-start ms-1 lh-1">
                             <span class="fw-bold text-body" style="font-size: 13px;">{{ Auth::user()?->name ?? 'User' }}</span>
-                            <span class="text-muted fw-semibold" style="font-size: 10px;">Developer</span>
+                            <span class="text-muted fw-semibold" style="font-size: 10px;">{{ Auth::user()?->roles->first()?->name ?? 'User' }}</span>
                         </span>
                         <i class="bi bi-chevron-down text-muted ms-1 d-none d-md-inline" style="font-size: 12px;"></i>
                     </button>
@@ -360,10 +358,9 @@
                         aria-labelledby="userMenuBtn" style="min-width: 240px;">
                         
                         <li class="px-4 py-3 d-flex align-items-center gap-3 border-bottom mb-2">
-                            <img src="{{ asset('assets/images/avatar-1.jpg') }}"
-                                 alt="{{ Auth::user()?->name ?? 'User' }}"
-                                 width="48" height="48"
-                                 class="rounded-circle object-fit-cover shadow-sm">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
+                                <i class="bi bi-person-fill fs-3"></i>
+                            </div>
                             <div style="min-width: 0;">
                                 <h6 class="mb-1 fw-bold text-body text-truncate">{{ Auth::user()?->name ?? 'User' }}</h6>
                                 <p class="mb-0 text-muted small text-truncate">{{ Auth::user()?->email ?? 'admin@example.com' }}</p>
