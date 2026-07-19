@@ -91,6 +91,23 @@ export default () => {
             provider_user_ids: []
         },
 
+        bulkAssignForm: {
+            provider_ids: []
+        },
+        bulkAssignModalInstance: null,
+        providerSearch: '',
+
+        get filteredProviderUsers() {
+            if (!this.providerSearch) return this.providerUsers;
+            const term = this.providerSearch.toLowerCase();
+            return this.providerUsers.filter(u => 
+                (u.name || '').toLowerCase().includes(term) ||
+                (u.email || '').toLowerCase().includes(term) ||
+                (u.department || '').toLowerCase().includes(term) ||
+                (u.phone || '').toLowerCase().includes(term)
+            );
+        },
+
         init() {
             this.loadData();
             this.loadProviderUsers();
@@ -100,6 +117,14 @@ export default () => {
                 this.modalInstance = Modal.getOrCreateInstance(modalEl);
                 modalEl.addEventListener('hidden.bs.modal', () => {
                     this.resetForm();
+                });
+            }
+
+            const bulkModalEl = document.getElementById('bulkAssignModal');
+            if (bulkModalEl) {
+                this.bulkAssignModalInstance = Modal.getOrCreateInstance(bulkModalEl);
+                bulkModalEl.addEventListener('hidden.bs.modal', () => {
+                    this.bulkAssignForm.provider_ids = [];
                 });
             }
 
@@ -268,6 +293,37 @@ export default () => {
                 this.selectedItems = this.items.map(i => String(i.id));
             } else {
                 this.selectedItems = [];
+            }
+        },
+
+        openBulkAssignModal() {
+            if (this.selectedItems.length === 0) return;
+            this.bulkAssignForm.provider_ids = [];
+            this.bulkAssignModalInstance?.show();
+        },
+
+        async bulkAssignProvider() {
+            if (this.bulkAssignForm.provider_ids.length === 0 || this.selectedItems.length === 0) return;
+            
+            this.saving = true;
+            try {
+                await this.apiRequest(`${this.apiBase}/bulk-action`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'assign_provider',
+                        ids: this.selectedItems,
+                        provider_ids: this.bulkAssignForm.provider_ids
+                    })
+                });
+                
+                showToast(`Providers assigned successfully to ${this.selectedItems.length} service(s).`, 'success');
+                this.selectedItems = [];
+                this.bulkAssignModalInstance?.hide();
+                await this.loadData();
+            } catch (error) {
+                showToast(error.message || 'Failed to assign provider.', 'error');
+            } finally {
+                this.saving = false;
             }
         },
 

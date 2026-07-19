@@ -395,9 +395,11 @@ class ShippingController extends Controller implements HasMiddleware
     public function servicesBulk(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'action' => 'required|in:activate,deactivate,delete',
+            'action' => 'required|in:activate,deactivate,delete,assign_provider',
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:services,id',
+            'provider_ids' => 'required_if:action,assign_provider|array|min:1',
+            'provider_ids.*' => 'integer|exists:users,id',
         ]);
 
         $action = $validated['action'];
@@ -409,6 +411,12 @@ class ShippingController extends Controller implements HasMiddleware
             Service::whereIn('id', $ids)->update(['is_active' => false]);
         } elseif ($action === 'delete') {
             Service::whereIn('id', $ids)->delete();
+        } elseif ($action === 'assign_provider') {
+            $providerIds = $validated['provider_ids'];
+            $services = Service::whereIn('id', $ids)->get();
+            foreach ($services as $service) {
+                $service->providers()->syncWithoutDetaching($providerIds);
+            }
         }
 
         return response()->json([

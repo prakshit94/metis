@@ -181,6 +181,9 @@
                         </span>
                     </div>
                     <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-primary" @click="openBulkAssignModal()">
+                            <i class="bi bi-person-plus-fill me-1"></i>Assign Provider
+                        </button>
                         <button class="btn btn-sm btn-success" @click="bulkAction('activate')">
                             <i class="bi bi-check-circle me-1"></i>Activate
                         </button>
@@ -351,17 +354,32 @@
                                     </div>
 
                                     <div class="col-12">
-                                        <label class="form-label fw-medium text-muted small">Service providers</label>
-                                        <select class="form-select" multiple size="5" x-model="form.provider_user_ids">
-                                            <template x-for="user in providerUsers" :key="user.id">
-                                                <option :value="String(user.id)" x-text="[user.name, user.email, user.phone, user.department].filter(Boolean).join(' · ')"></option>
-                                            </template>
-                                        </select>
-                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Select the users responsible for this service. Hold Ctrl/Cmd to select more than one.</div>
+                                        <label class="form-label fw-medium text-muted small">Service Providers</label>
+                                        <div class="border rounded-2 p-2 bg-body border-secondary-subtle">
+                                            <div class="position-relative mb-2">
+                                                <input type="text" class="form-control form-control-sm border-secondary-subtle bg-body-tertiary pe-4" placeholder="Search providers..." x-model="providerSearch">
+                                                <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted" style="font-size: 0.8rem;"></i>
+                                            </div>
+                                            <div style="max-height: 180px; overflow-y: auto;" class="custom-scrollbar px-1">
+                                                <template x-for="user in filteredProviderUsers" :key="user.id">
+                                                    <div class="d-flex align-items-center py-1 mb-1 border-bottom border-light cursor-pointer">
+                                                        <input type="checkbox" class="me-2" style="cursor: pointer;" :value="String(user.id)" :id="'provider_' + user.id" x-model="form.provider_user_ids">
+                                                        <label class="d-block mb-0 cursor-pointer w-100" style="cursor: pointer;" :for="'provider_' + user.id">
+                                                            <div class="fw-medium text-body" x-text="user.name"></div>
+                                                            <div class="text-muted small" style="font-size: 0.75rem;" x-text="[user.email, user.department].filter(Boolean).join(' · ')"></div>
+                                                        </label>
+                                                    </div>
+                                                </template>
+                                                <div x-show="filteredProviderUsers.length === 0" class="text-muted small p-3 text-center">
+                                                    No providers found matching your search.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Check the boxes to assign providers to this service.</div>
                                     </div>
                                     
-                                    <div class="col-12 form-check form-switch ms-2">
-                                        <input class="form-check-input" type="checkbox" role="switch" x-model="form.is_active" id="isActiveSwitch">
+                                    <div class="col-12 form-check ms-2 mt-3">
+                                        <input class="form-check-input" type="checkbox" x-model="form.is_active" id="isActiveSwitch">
                                         <label class="form-check-label fw-semibold" for="isActiveSwitch">Is Active</label>
                                     </div>
                                 </div>
@@ -372,6 +390,52 @@
                             <button type="submit" class="btn btn-primary px-4" :disabled="saving">
                                 <span x-show="saving" class="spinner-border spinner-border-sm me-1" role="status"></span>
                                 <span x-text="isEditing ? 'Update Service' : 'Save Service'"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Bulk Assign Provider Modal -->
+    <div class="modal fade" id="bulkAssignModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold">Assign Service Provider</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <form @submit.prevent="bulkAssignProvider">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Select Providers <span class="text-danger">*</span></label>
+                            <div class="border rounded-2 p-2 bg-body border-secondary-subtle">
+                                <div class="position-relative mb-2">
+                                    <input type="text" class="form-control form-control-sm border-secondary-subtle bg-body-tertiary pe-4" placeholder="Search providers..." x-model="providerSearch">
+                                    <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted" style="font-size: 0.8rem;"></i>
+                                </div>
+                                <div style="max-height: 180px; overflow-y: auto;" class="custom-scrollbar px-1">
+                                    <template x-for="user in filteredProviderUsers" :key="user.id">
+                                        <div class="d-flex align-items-center py-1 mb-1 border-bottom border-light cursor-pointer">
+                                            <input type="checkbox" class="me-2" style="cursor: pointer;" :value="String(user.id)" :id="'bulk_provider_' + user.id" x-model="bulkAssignForm.provider_ids">
+                                            <label class="d-block mb-0 cursor-pointer w-100" style="cursor: pointer;" :for="'bulk_provider_' + user.id">
+                                                <div class="fw-medium text-body" x-text="user.name"></div>
+                                                <div class="text-muted small" style="font-size: 0.75rem;" x-text="[user.email, user.department].filter(Boolean).join(' · ')"></div>
+                                            </label>
+                                        </div>
+                                    </template>
+                                    <div x-show="filteredProviderUsers.length === 0" class="text-muted small p-3 text-center">
+                                        No providers found matching your search.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-text text-muted mt-2" style="font-size: 0.75rem;">These providers will be assigned to all selected services.</div>
+                        </div>
+                        <div class="modal-footer border-top-0 pt-0 px-0">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary" :disabled="saving">
+                                <span x-show="saving" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                Assign
                             </button>
                         </div>
                     </form>
