@@ -365,7 +365,14 @@ class PageController extends Controller
 
     public function shipments()
     {
-        return view('shipping.shipments');
+        $services = \App\Modules\Catalog\Models\Service::active()->get();
+        $carriersList = $services->pluck('name')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        return view('shipping.shipments', compact('carriersList'));
     }
 
     public function shippingServices()

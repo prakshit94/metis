@@ -219,15 +219,9 @@
                         <label class="form-label small fw-semibold text-body-secondary">Carrier</label>
                         <select class="form-select form-select-sm" x-model="carrierFilter" @change="filterData()">
                             <option value="">All Carriers</option>
-                            <option value="BlueDart">BlueDart</option>
-                            <option value="Delhivery">Delhivery</option>
-                            <option value="DTDC">DTDC</option>
-                            <option value="Ecom Express">Ecom Express</option>
-                            <option value="FedEx">FedEx</option>
-                            <option value="India Post">India Post</option>
-                            <option value="Shadowfax">Shadowfax</option>
-                            <option value="XpressBees">XpressBees</option>
-                            <option value="DHL">DHL</option>
+                            @foreach($carriersList as $carrier)
+                                <option value="{{ $carrier }}">{{ $carrier }}</option>
+                            @endforeach
                         </select>
                     </div>
                     
@@ -548,34 +542,65 @@
     </div>
     <!-- Return Order Modal -->
     <div class="modal fade" id="returnOrderModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold">Initiate Return</h5>
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-bottom-0 pt-4 pb-2 px-4">
+                    <h5 class="modal-title fw-bolder d-flex align-items-center gap-2">
+                        <i class="bi bi-arrow-return-left text-warning fs-4"></i>
+                        Initiate Shipment Return
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body pt-3">
+                <div class="modal-body px-4 pb-2">
+                    <div class="alert alert-warning border-0 bg-warning bg-opacity-10 d-flex align-items-center mb-4 rounded-3">
+                        <i class="bi bi-info-circle-fill text-warning me-3 fs-5"></i>
+                        <small class="text-warning-emphasis">This action will automatically log the return and sync with the main order inventory.</small>
+                    </div>
                     <form @submit.prevent="submitReturn">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Reason for Return <span class="text-danger">*</span></label>
-                            <select class="form-select" x-model="returnForm.reason" required>
-                                <option value="">Select a reason</option>
-                                <option value="defective">Defective / Damaged</option>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-body-secondary small text-uppercase">Reason for Return <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-lg shadow-sm border-secondary border-opacity-25 rounded-3" x-model="returnForm.reason" required>
+                                <option value="">Select a reason...</option>
+                                <option value="defective">Defective / Damaged in Transit</option>
                                 <option value="wrong_item">Wrong Item Sent</option>
-                                <option value="not_needed">No Longer Needed</option>
+                                <option value="not_needed">No Longer Needed / Refused</option>
                                 <option value="undeliverable">Undeliverable / Failed Delivery</option>
-                                <option value="other">Other</option>
+                                <option value="other">Other Reason</option>
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Notes</label>
-                            <textarea class="form-control" rows="3" x-model="returnForm.notes" placeholder="Detailed reason..."></textarea>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-body-secondary small text-uppercase">Select Items to Return</label>
+                            <div class="table-responsive rounded-3 border border-secondary border-opacity-25 shadow-sm">
+                                <table class="table table-bordered table-sm align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="px-3 py-2 text-secondary fw-semibold">Product</th>
+                                            <th class="px-3 py-2 text-secondary fw-semibold" style="width: 150px;">Qty to Return</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="(item, index) in returnItems" :key="index">
+                                            <tr>
+                                                <td class="px-3" x-text="item.name"></td>
+                                                <td class="px-3">
+                                                    <input type="number" class="form-control form-control-sm" x-model.number="item.requested_qty" min="0" :max="item.max_qty">
+                                                    <div class="form-text mt-1 text-muted" style="font-size: 0.75rem;">Max available: <span x-text="item.max_qty"></span></div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        <div class="modal-footer border-top-0 pt-0 px-0">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-warning" :disabled="saving">
-                                <span x-show="saving" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                Submit Return
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-body-secondary small text-uppercase">Additional Notes</label>
+                            <textarea class="form-control shadow-sm border-secondary border-opacity-25 rounded-3" rows="3" x-model="returnForm.notes" placeholder="Please provide any relevant details..."></textarea>
+                        </div>
+                        <div class="modal-footer border-top-0 px-0 pb-0 mt-2">
+                            <button type="button" class="btn btn-light border-secondary border-opacity-25 rounded-pill px-4 fw-semibold shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-warning rounded-pill px-4 fw-semibold shadow-sm text-dark d-flex align-items-center gap-2" :disabled="saving">
+                                <span x-show="saving" class="spinner-border spinner-border-sm" role="status"></span>
+                                <i class="bi bi-arrow-return-left" x-show="!saving"></i> Process Return
                             </button>
                         </div>
                     </form>

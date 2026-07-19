@@ -55,6 +55,18 @@ class ShippingController extends Controller implements HasMiddleware
             }
         }
 
+        if ($carrier = $request->query('carrier')) {
+            $query->where('carrier_name', $carrier);
+        }
+
+        if ($fromDate = $request->query('from_date')) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+
+        if ($toDate = $request->query('to_date')) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
         $sortBy = $request->query('sort_by', 'id');
         $sortDir = $request->query('sort_dir', 'desc');
 
@@ -121,15 +133,13 @@ class ShippingController extends Controller implements HasMiddleware
             // Sync with Order Status if needed
             $order = $shipment->order;
             if ($order) {
-                if ($newStatus === 'in_transit') {
-                    $order->update(['status' => 'dispatched']);
-                } elseif ($newStatus === 'delivered') {
-                    $order->update(['status' => 'delivered']);
-                } elseif ($newStatus === 'returned') {
-                    if ($order->status !== 'returned') {
-                        $inventoryService = app(\App\Services\InventoryService::class);
-                        $inventoryService->returnOrder($order);
-                    }
+                $inventoryService = app(\App\Services\InventoryService::class);
+                if ($newStatus === 'in_transit' && $order->status === 'ready_to_ship') {
+                    $inventoryService->dispatchOrder($order);
+                } elseif ($newStatus === 'delivered' && in_array($order->status, ['dispatched', 'shipped'], true)) {
+                    $inventoryService->deliverOrder($order);
+                } elseif ($newStatus === 'returned' && !in_array($order->status, ['returned', 'cancelled'], true)) {
+                    $inventoryService->returnOrder($order);
                 }
             }
         });
@@ -237,6 +247,19 @@ class ShippingController extends Controller implements HasMiddleware
                     'description' => "Shipment status changed to {$newStatus} via bulk action.",
                     'occurred_at' => now(),
                 ]);
+                
+                // Sync with Order Status if needed
+                $order = $shipment->order;
+                if ($order) {
+                    $inventoryService = app(\App\Services\InventoryService::class);
+                    if ($newStatus === 'in_transit' && $order->status === 'ready_to_ship') {
+                        $inventoryService->dispatchOrder($order);
+                    } elseif ($newStatus === 'delivered' && in_array($order->status, ['dispatched', 'shipped'], true)) {
+                        $inventoryService->deliverOrder($order);
+                    } elseif ($newStatus === 'returned' && !in_array($order->status, ['returned', 'cancelled'], true)) {
+                        $inventoryService->returnOrder($order);
+                    }
+                }
             }
         });
 

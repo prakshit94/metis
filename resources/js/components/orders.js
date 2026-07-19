@@ -1017,26 +1017,36 @@ document.addEventListener('alpine:init', () => {
     },
 
     async revertStatus(order) {
+      let options = {};
+      switch (order.status) {
+        case 'confirmed': options = { pending: 'Pending' }; break;
+        case 'processing': options = { confirmed: 'Confirmed' }; break;
+        case 'ready_to_ship': options = { processing: 'Processing' }; break;
+        case 'dispatched':
+        case 'shipped': options = { ready_to_ship: 'Ready to Ship' }; break;
+        case 'delivered': options = { dispatched: 'Dispatched' }; break;
+        default:
+          showToast('Cannot revert from this status.', 'warning');
+          return;
+      }
+
       const { value: status } = await Swal.fire({
         title: 'Revert Order Status',
+        html: `<p class="text-muted small mb-4">You are about to move this order one step back in the lifecycle. Please confirm the previous status.</p>`,
+        icon: 'question',
         input: 'select',
-        inputOptions: {
-          pending: 'Pending',
-          confirmed: 'Confirmed',
-          processing: 'Processing',
-          ready_to_ship: 'Ready to Ship',
-          dispatched: 'Dispatched'
-        },
-        inputPlaceholder: 'Select status to revert to...',
+        inputOptions: options,
+        inputPlaceholder: 'Select status...',
         showCancelButton: true,
-        confirmButtonText: 'Revert',
+        confirmButtonText: '<i class="bi bi-arrow-counterclockwise me-1"></i> Revert Status',
         cancelButtonText: 'Cancel',
         customClass: {
-          confirmButton: 'btn btn-primary me-2',
-          cancelButton: 'btn btn-secondary',
-          popup: 'rounded-3 shadow-lg',
-          title: 'fs-4 fw-bold',
-          input: 'form-select'
+          confirmButton: 'btn btn-primary shadow-sm rounded-pill px-4 fw-semibold me-2',
+          cancelButton: 'btn btn-light shadow-sm rounded-pill px-4 fw-semibold border-secondary border-opacity-25',
+          popup: 'rounded-4 shadow-lg border-0 bg-body',
+          title: 'fs-5 fw-bolder text-body-emphasis mt-2',
+          input: 'form-select form-select-lg mx-auto w-75 shadow-sm border-secondary border-opacity-25 rounded-3 mb-3',
+          icon: 'text-primary border-primary'
         },
         buttonsStyling: false,
         inputValidator: (value) => {

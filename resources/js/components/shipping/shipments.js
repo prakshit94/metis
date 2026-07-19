@@ -10,10 +10,10 @@ function showToast(message, type = 'success') {
     const id = 'toast-' + Date.now();
     const iconMap = {
         success: 'bi-check-circle-fill',
-        danger:  'bi-x-circle-fill',
+        danger: 'bi-x-circle-fill',
         warning: 'bi-exclamation-triangle-fill',
-        info:    'bi-info-circle-fill',
-        error:   'bi-x-circle-fill',
+        info: 'bi-info-circle-fill',
+        error: 'bi-x-circle-fill',
     };
 
     const el = document.createElement('div');
@@ -70,10 +70,10 @@ export default () => {
 
         isLoading: false,
         saving: false,
-        
+
         selectedShipment: null,
         trackingEvents: [],
-        
+
         statusModal: null,
         trackingModal: null,
         addEventModal: null,
@@ -98,6 +98,7 @@ export default () => {
             reason: '',
             notes: ''
         },
+        returnItems: [],
 
         apiBase: '/api/shipping/shipments',
 
@@ -230,7 +231,7 @@ export default () => {
                     ...item,
                     status: this.normalizeStatus(item.status)
                 }));
-                
+
                 this.stats.total = allItems.length;
                 this.stats.pending = allItems.filter(i => i.status === 'pending').length;
                 this.stats.in_transit = allItems.filter(i => i.status === 'in_transit').length;
@@ -256,9 +257,9 @@ export default () => {
                 if (this.carrierFilter) query += `&carrier=${this.carrierFilter}`;
                 if (this.fromDate) query += `&from_date=${this.fromDate}`;
                 if (this.toDate) query += `&to_date=${this.toDate}`;
-                
+
                 const payload = await this.apiRequest(`${this.apiBase}?${query}`);
-                
+
                 this.items = (payload.data || []).map(item => ({
                     ...item,
                     status: this.normalizeStatus(item.status)
@@ -309,13 +310,13 @@ export default () => {
 
         async bulkAction(action) {
             if (this.selectedItems.length === 0) return;
-            
+
             const actionLabels = {
                 mark_in_transit: 'mark in transit',
                 mark_delivered: 'mark delivered',
                 mark_returned: 'mark returned'
             };
-            
+
             const result = await Swal.fire({
                 title: 'Confirm Bulk Action',
                 text: `Are you sure you want to ${actionLabels[action]} for ${this.selectedItems.length} shipment(s)?`,
@@ -337,7 +338,7 @@ export default () => {
                         ids: this.selectedItems
                     })
                 });
-                
+
                 showToast(`Bulk action completed successfully.`, 'success');
                 this.selectedItems = [];
                 this.loadData();
@@ -425,7 +426,7 @@ export default () => {
             this.selectedShipment = shipment;
             this.trackingEvents = [];
             this.trackingModal?.show();
-            
+
             try {
                 const response = await this.apiRequest(`${this.apiBase}/${shipment.id}/tracking`);
                 this.trackingEvents = response.events || [];
@@ -454,7 +455,7 @@ export default () => {
                 });
                 showToast('Tracking event added successfully.', 'success');
                 this.addEventModal?.hide();
-                
+
                 // If tracking modal is open or needs to refresh, load again
                 if (this.trackingModal && this.selectedShipment) {
                     this.openTrackingModal(this.selectedShipment);
@@ -466,48 +467,61 @@ export default () => {
             }
         },
 
-        openReturnModal(shipment) {
+        async openReturnModal(shipment) {
             this.selectedShipment = shipment;
-            this.returnForm = {
-                reason: '',
-                notes: ''
-            };
-            this.returnModal?.show();
-        },
+            this.returnForm = { reason: '', notes: '' };
+            this.returnItems = [];
 
-        async submitReturn() {
-            if (!this.selectedShipment) return;
-            
-            this.saving = true;
             try {
-                const orderId = this.selectedShipment.order?.id || this.selectedShipment.order_id;
-                
+                const orderId = shipment.order?.id || shipment.order_id;
                 const orderPayload = await this.apiRequest(`/orders/${orderId}`);
                 if (!orderPayload || !orderPayload.order) {
                     throw new Error("Order details not found.");
                 }
                 const order = orderPayload.order;
-                const itemsToReturn = (order.items || []).map(item => ({
+                this.returnItems = (order.items || []).map(item => ({
                     product_id: item.product_id,
                     name: item.product?.name || item.name || 'Unknown Product',
                     requested_qty: item.quantity,
                     max_qty: item.quantity
                 }));
+                this.returnModal?.show();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        },
 
+        async submitReturn() {
+            if (!this.selectedShipment) return;
+
+            if (!this.returnForm.reason) {
+                showToast('Please select a return reason.', 'warning');
+                return;
+            }
+
+            const itemsToReturn = this.returnItems.filter(i => i.requested_qty > 0);
+            if (itemsToReturn.length === 0) {
+                showToast('Please select at least one item to return with a quantity greater than 0.', 'warning');
+                return;
+            }
+
+            this.saving = true;
+            try {
+                const orderId = this.selectedShipment.order?.id || this.selectedShipment.order_id;
                 const payload = {
                     reason: this.returnForm.reason,
                     notes: this.returnForm.notes,
                     items: itemsToReturn
                 };
-                
+
                 await this.apiRequest(`/orders/${orderId}/returns`, {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
-                
+
                 showToast('Order return initiated successfully.', 'success');
                 this.returnModal?.hide();
-                
+
                 this.statusForm = {
                     status: 'returned',
                     location: '',
@@ -517,7 +531,7 @@ export default () => {
                     delivered_by: this.selectedShipment.delivered_by || ''
                 };
                 await this.saveStatus();
-                
+
             } catch (error) {
                 showToast(error.message, 'error');
             } finally {
