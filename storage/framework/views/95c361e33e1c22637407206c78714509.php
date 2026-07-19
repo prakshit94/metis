@@ -586,8 +586,27 @@
                                       x-text="order.statusLabel"></span>
                             </td>
                             <td>
-                                <div class="small fw-medium" x-text="order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'"></div>
-                                <small class="text-muted" x-text="order.orderDate ? new Date(order.orderDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''"></small>
+                                <template x-if="!order.isDraft">
+                                    <div>
+                                        <div class="small fw-medium" x-text="order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'"></div>
+                                        <small class="text-muted" x-text="order.orderDate ? new Date(order.orderDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''"></small>
+                                    </div>
+                                </template>
+                                <template x-if="order.isDraft">
+                                    <div class="d-flex flex-column gap-1">
+                                        <div>
+                                            <div class="small fw-medium" x-text="order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'"></div>
+                                            <small class="text-muted" x-text="order.orderDate ? new Date(order.orderDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''"></small>
+                                        </div>
+                                        <div class="border-top border-warning-subtle pt-1 mt-1">
+                                            <div class="small fw-bold text-warning-emphasis d-flex align-items-center gap-1">
+                                                <i class="bi bi-clock-history"></i>
+                                                <span x-text="order.futureOrderDate ? new Date(order.futureOrderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Pending'"></span>
+                                            </div>
+                                            <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 9px; line-height: 1;">Scheduled For</span>
+                                        </div>
+                                    </div>
+                                </template>
                             </td>
                             <td>
                                 <div class="dropdown">

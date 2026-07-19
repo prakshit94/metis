@@ -1,16 +1,15 @@
-@extends('layouts.app')
-@section('title', 'Create Order')
-@section('page', 'orders.create')
+<?php $__env->startSection('title', 'Create Order'); ?>
+<?php $__env->startSection('page', 'orders.create'); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
     <script>
-        window.__INITIAL_ORDER_CUSTOMER__ = @json($initialCustomer ? $initialCustomer->toArray() : null);
-        window.__INITIAL_ORDER_TO_EDIT__ = @json($initialOrder ? $initialOrder->toArray() : null);
+        window.__INITIAL_ORDER_CUSTOMER__ = <?php echo json_encode($initialCustomer ? $initialCustomer->toArray() : null, 15, 512) ?>;
+        window.__INITIAL_ORDER_TO_EDIT__ = <?php echo json_encode($initialOrder ? $initialOrder->toArray() : null, 15, 512) ?>;
     </script>
 
     <div x-data="createOrderApp(window.__INITIAL_ORDER_CUSTOMER__, window.__INITIAL_ORDER_TO_EDIT__)">
     
-    {{-- Page Header --}}
+    
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
             <h1 class="h3 mb-1"><i class="bi bi-cart-check me-2"></i> Create New Order</h1>
@@ -22,23 +21,24 @@
         </div>
         <div class="d-flex gap-2">
             <template x-if="editingOrderId">
-                <a href="{{ route('orders') }}" class="btn btn-outline-danger shadow-sm">
+                <a href="<?php echo e(route('orders')); ?>" class="btn btn-outline-danger shadow-sm">
                     <i class="bi bi-x-circle me-1"></i> Cancel Edit Mode
                 </a>
             </template>
-            <a href="{{ route('orders') }}" class="btn btn-outline-secondary shadow-sm">
+            <a href="<?php echo e(route('orders')); ?>" class="btn btn-outline-secondary shadow-sm">
                 <i class="bi bi-arrow-left me-2"></i> Back to Orders
             </a>
         </div>
     </div>
 
-    {{-- Alert --}}
-    @if(session('error'))
+    
+    <?php if(session('error')): ?>
     <div class="alert alert-danger alert-dismissible fade show mb-4">
-        <i class="bi bi-exclamation-circle me-2"></i>{{ session('error') }}
+        <i class="bi bi-exclamation-circle me-2"></i><?php echo e(session('error')); ?>
+
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    @endif
+    <?php endif; ?>
 
     <div @customer-updated.window="loadAddresses()" class="row g-4">
         <div class="col-xl-8">
@@ -153,7 +153,7 @@
                             </div>
                         </div>
                     </div>
-                    {{-- Addresses Section --}}
+                    
                     <div id="addresses-section" x-show="partyId" x-cloak class="mt-4 pt-4 border-top transition-all">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Shipping Addresses</h6>
@@ -214,13 +214,13 @@
                             </template>
                         </div>
 
-                        {{-- Same as Shipping Toggle --}}
+                        
                         <div class="mt-4 form-check cursor-pointer d-flex align-items-center gap-2">
                             <input class="form-check-input mt-0" type="checkbox" id="sameAsShippingToggle" x-model="sameAsShipping" style="cursor: pointer;">
                             <label class="form-check-label small fw-bold text-muted text-uppercase mt-1" for="sameAsShippingToggle" style="cursor: pointer; font-size: 11px; letter-spacing: 1px;">Billing address same as Shipping address</label>
                         </div>
 
-                        {{-- Billing Address Section --}}
+                        
                         <div x-show="!sameAsShipping" x-cloak class="mt-4 pt-4 border-top transition-all">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-receipt me-2 text-primary"></i>Billing Addresses</h6>
@@ -289,9 +289,9 @@
                                 </div>
                                 <select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId">
                                     <option value="">Select Warehouse</option>
-                                    @foreach($warehouses as $w)
-                                    <option value="{{ $w->id }}">{{ $w->name }}</option>
-                                    @endforeach
+                                    <?php $__currentLoopData = $warehouses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $w): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($w->id); ?>"><?php echo e($w->name); ?></option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
                             </div>
                         </div>
@@ -300,7 +300,7 @@
                 </div>
             </div>
 
-            {{-- Product Search Card --}}
+            
             <div id="catalog-section" class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-transparent border-bottom py-3">
                     <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
@@ -321,28 +321,28 @@
                             </select>
                             <select class="form-select" style="max-width:160px" x-model="categoryFilter" @change="searchProducts(true)">
                                 <option value="">All Categories</option>
-                                @foreach($categories as $cat)
-                                <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                @foreach($cat->children as $child)
-                                <option value="{{ $child->id }}">— {{ $child->name }}</option>
-                                @endforeach
-                                @endforeach
+                                <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($cat->id); ?>"><?php echo e($cat->name); ?></option>
+                                <?php $__currentLoopData = $cat->children; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $child): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($child->id); ?>">— <?php echo e($child->name); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </select>
                         </div>
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    {{-- Loading --}}
+                    
                     <template x-if="searching">
                         <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
                     </template>
-                    {{-- Empty --}}
+                    
                     <template x-if="!searching && products.length === 0">
                         <div class="text-center py-5 text-muted"><i class="bi bi-box-seam fs-1 d-block mb-2"></i>No products found</div>
                     </template>
-                    {{-- Product Grid / Table --}}
+                    
                     <div class="p-3" x-show="!searching && products.length > 0">
-                        {{-- Grid View --}}
+                        
                         <div class="row g-3" x-show="viewMode === 'grid'">
                             <template x-for="p in products" :key="p.id">
                                 <div class="col-sm-6 col-md-4">
@@ -384,7 +384,7 @@
                             </template>
                         </div>
                         
-                        {{-- Table View --}}
+                        
                         <div class="table-responsive border rounded bg-body shadow-sm" x-show="viewMode === 'table'">
                             <table class="table table-hover table-striped align-middle mb-0" style="font-size: 13px;">
                                 <thead class="border-bottom">
@@ -450,7 +450,7 @@
                             </table>
                         </div>
                     </div>
-                    {{-- Pagination --}}
+                    
                     <div class="d-flex justify-content-between align-items-center px-3 pb-3 border-top pt-3" x-show="productTotal > 0">
                         <small class="text-muted"><span x-text="productFrom"></span>–<span x-text="productTo"></span> of <span x-text="productTotal"></span></small>
                         <div class="d-flex gap-1">
@@ -461,7 +461,7 @@
                 </div>
             </div>
 
-            {{-- Shopping Cart header --}}
+            
             <div class="row align-items-center gy-3 mb-4 mt-2" x-show="false">
                 <div class="col-sm">
                     <h4 class="mb-0 fw-black text-body d-flex align-items-center gap-2"><div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-cart3"></i></div> Shopping Cart (<span x-text="cart.length" class="text-primary"></span>)</h4>
@@ -473,9 +473,9 @@
                 </div>
             </div>
 
-            {{-- Cart Items List (Glossy Style) --}}
+            
             <div class="mb-4 space-y-3" x-show="false">
-                {{-- Empty Cart --}}
+                
                 <template x-if="cart.length === 0">
                     <div class="card border-0 shadow-sm rounded-4">
                         <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-5 opacity-50">
@@ -488,7 +488,7 @@
                     </div>
                 </template>
 
-                {{-- Cart Item Cards --}}
+                
                 <template x-for="(item, idx) in cart" :key="item.id">
                     <div class="card border shadow-sm mb-3">
                         <div class="d-flex align-items-start gap-3 p-3">
@@ -539,7 +539,7 @@
             </div>
         </div>
 
-        {{-- RIGHT: Cart Summary + Calculations + Offers + Place Order (Glossy Style) --}}
+        
         <div class="col-xl-4">
             <div class="sticky-side-div" style="position: sticky; top: 24px;">
                 <div class="card shadow-sm border-0 mb-4" x-show="cart.length > 0" x-cloak>
@@ -611,7 +611,7 @@
                 <div class="card shadow-sm border-0 mb-4" x-show="cart.length > 0" x-cloak>
                     <div class="card-body p-4 space-y-4">
                         
-                        {{-- ── Promotions & Offers ── --}}
+                        
                         <div class="mb-4">
                             <button type="button" class="btn btn-outline-primary w-100 border p-3 d-flex align-items-center justify-content-between shadow-sm bg-body-tertiary" data-bs-toggle="modal" data-bs-target="#promotionsModal">
                                 <div class="d-flex align-items-center gap-3">
@@ -627,10 +627,10 @@
                             </button>
                         </div>
 
-                        {{-- Applied Promotions Tags --}}
+                        
                         <div class="space-y-3 mb-4" x-show="bestOrderOffer || couponApplied || bogoDiscount > 0" x-cloak>
                             
-                            {{-- Offer applied --}}
+                            
                             <template x-if="bestOrderOffer">
                                 <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
@@ -648,7 +648,7 @@
                                 </div>
                             </template>
 
-                            {{-- Coupon applied --}}
+                            
                             <template x-if="couponApplied">
                                 <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
@@ -666,7 +666,7 @@
                                 </div>
                             </template>
 
-                            {{-- BOGO (auto-applied) --}}
+                            
                             <template x-if="bogoDiscount > 0">
                                 <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-25 shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
@@ -686,7 +686,7 @@
 
                         <hr class="border-secondary opacity-10">
 
-                        {{-- Order Summary Calculations --}}
+                        
                         <div class="space-y-2 mb-4">
                             <div class="d-flex justify-content-between fw-medium text-muted" style="font-size: 13px;">
                                 <span>Subtotal</span>
@@ -730,7 +730,7 @@
                             </div>
                         </div>
 
-                        {{-- Schedule Order Toggle (Merged) --}}
+                        
                         <div class="mb-4 bg-body-tertiary rounded-4 p-3 border shadow-sm transition-all" :class="isDraft ? 'border-warning' : ''">
                             <div class="form-check form-switch d-flex align-items-center justify-content-between gap-3 p-0 m-0 cursor-pointer" @click="isDraft = !isDraft">
                                 <div>
@@ -745,7 +745,7 @@
                             </div>
                         </div>
 
-                        {{-- Action Panel --}}
+                        
                         <button type="button" @click.prevent="placeOrder()" :disabled="placing || cart.length === 0 || !partyId || !warehouseId"
                             class="btn btn-primary w-100 py-3 fw-bold text-uppercase shadow-sm position-relative overflow-hidden" style="letter-spacing: 1px;">
                             <span x-show="placing" class="spinner-border spinner-border-sm me-2"></span>
@@ -978,7 +978,7 @@
         </div>
     </div>
 
-    {{-- Promotions Modal --}}
+    
     <div class="modal fade" id="promotionsModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -1006,7 +1006,7 @@
                     </ul>
                     <div class="tab-content p-4 bg-body">
                         
-                        {{-- Offers Tab --}}
+                        
                         <div class="tab-pane fade show active" id="tab-offers" role="tabpanel">
                             <template x-if="activeOffers.length === 0">
                                 <div class="text-center py-4 text-muted">
@@ -1026,14 +1026,14 @@
                                                     <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis rounded-pill px-2 py-0.5 small" style="font-size: 0.7rem;" x-text="'Priority: ' + offer.priority"></span>
                                                 </div>
                                                 
-                                                {{-- Common Rules --}}
+                                                
                                                 <div class="mt-2 mb-2 pe-3 border-start border-2 border-secondary border-opacity-25 ps-2">
-                                                    {{-- BOGO Offer Details --}}
+                                                    
                                                     <div x-show="offer.type === 'bogo'">
                                                         <p class="mb-1 small text-muted" x-text="'Rule: Buy ' + offer.buy_qty + ' Get ' + offer.get_qty + ' Free on ' + offer.product_name"></p>
                                                     </div>
 
-                                                    {{-- Order Discount Details --}}
+                                                    
                                                     <div x-show="offer.type === 'order_discount'">
                                                         <p class="mb-1 small text-muted" x-text="'Discount: ' + (offer.discount_type === 'percentage' ? offer.value + '%' : 'Rs ' + Number(offer.value).toFixed(2))"></p>
                                                         <p class="mb-1 small text-muted" x-show="offer.max_discount > 0" x-text="'Max Discount: Rs ' + Number(offer.max_discount).toFixed(2)"></p>
@@ -1043,7 +1043,7 @@
                                                     <p class="mb-0 small text-muted" x-show="offer.ends_at" x-text="'Valid till ' + new Date(offer.ends_at).toLocaleDateString()"></p>
                                                 </div>
 
-                                                {{-- Savings/Unlock Status --}}
+                                                
                                                 <div x-show="offer.type === 'bogo'">
                                                     <p class="mb-0 small text-info"><i class="bi bi-lightning-charge-fill me-1"></i>Auto-applied to eligible items</p>
                                                 </div>
@@ -1057,12 +1057,12 @@
                                                 </div>
                                             </div>
                                             <div class="flex-shrink-0">
-                                                {{-- BOGO Badge --}}
+                                                
                                                 <template x-if="offer.type === 'bogo'">
                                                     <span class="badge bg-info bg-opacity-25 text-info-emphasis rounded-pill px-3 py-2 fw-medium">Active</span>
                                                 </template>
                                                 
-                                                {{-- Order Discount Actions --}}
+                                                
                                                 <template x-if="offer.type === 'order_discount'">
                                                     <div>
                                                         <template x-if="appliedOfferId === offer.id">
@@ -1086,10 +1086,10 @@
                             </div>
                         </div>
                         
-                        {{-- Coupons Tab --}}
+                        
                         <div class="tab-pane fade" id="tab-coupons" role="tabpanel">
                             
-                            {{-- Manual Entry --}}
+                            
                             <div class="d-flex align-items-center gap-2 mb-4 p-3 bg-body-secondary rounded-4 border">
                                 <i class="bi bi-ticket-perforated text-muted fs-5 ms-1"></i>
                                 <input type="text" x-model="couponInputTemp" @keydown.enter.prevent="applyCoupon(couponInputTemp)" placeholder="Enter promo code..." class="form-control border-0 bg-transparent shadow-none font-monospace text-uppercase fw-bold">
@@ -1380,8 +1380,8 @@
     }
 </style>
 
-@push('scripts')
-@php
+<?php $__env->startPush('scripts'); ?>
+<?php
     $offersArray = $activeOffers->map(fn($o) => [
         'id' => $o->id,
         'name' => $o->name,
@@ -1397,13 +1397,13 @@
         'priority' => (int)$o->priority,
         'product_name' => $o->product ? $o->product->name : 'Any Product'
     ])->values()->all();
-@endphp
+?>
 <script>
 function createOrderApp(initialCustomer = null, initialOrder = null) {
     return {
         activeTab: 'customer',
         viewMode: 'table',
-        partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '{{ $warehouses->first()->id ?? '' }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale',
+        partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '<?php echo e($warehouses->first()->id ?? ''); ?>', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale',
         orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
         isDraft: false, futureOrderDate: '',
         editingOrderId: null,
@@ -1414,9 +1414,9 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         searching: false, productPage: 1, productLastPage: 1, productTotal: 0, productFrom: 0, productTo: 0,
         cart: [], couponCode: '', couponApplied: false, appliedCouponObj: null, appliedOfferId: null,
         placing: false, formErrors: [],
-        warehouses: @json($warehouses->map(fn($w) => ['id' => $w->id, 'name' => $w->name])),
-        activeOffers: @json($offersArray),
-        activeCoupons: @json($activeCoupons),
+        warehouses: <?php echo json_encode($warehouses->map(fn($w) => ['id' => $w->id, 'name' => $w->name]), 512) ?>,
+        activeOffers: <?php echo json_encode($offersArray, 15, 512) ?>,
+        activeCoupons: <?php echo json_encode($activeCoupons, 15, 512) ?>,
         couponInputTemp: '',
 
         selectedProductForModal: null,
@@ -1970,7 +1970,28 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
     };
 }
 </script>
-@endpush
-<x-customer-address-modal />
+<?php $__env->stopPush(); ?>
+<?php if (isset($component)) { $__componentOriginal6a3051decf2176a9f137b7e9181451ca = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal6a3051decf2176a9f137b7e9181451ca = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.customer-address-modal','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('customer-address-modal'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal6a3051decf2176a9f137b7e9181451ca)): ?>
+<?php $attributes = $__attributesOriginal6a3051decf2176a9f137b7e9181451ca; ?>
+<?php unset($__attributesOriginal6a3051decf2176a9f137b7e9181451ca); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal6a3051decf2176a9f137b7e9181451ca)): ?>
+<?php $component = $__componentOriginal6a3051decf2176a9f137b7e9181451ca; ?>
+<?php unset($__componentOriginal6a3051decf2176a9f137b7e9181451ca); ?>
+<?php endif; ?>
 
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/user/metis/resources/views/orders/create.blade.php ENDPATH**/ ?>
