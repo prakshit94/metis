@@ -41,7 +41,7 @@
     <?php endif; ?>
 
     <div @customer-updated.window="loadAddresses()" class="row g-4">
-        <div class="col-xl-8">
+        <div :class="cart.length > 0 ? 'col-xl-8' : 'col-xl-12'" style="transition: all 0.3s ease;">
             <div id="customer-workspace" class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                     <div>
@@ -80,64 +80,96 @@
                                 </div>
                             </div>
                             
-                            <div class="row g-3 small">
+                            <div class="row g-3 small mt-2">
                                 <!-- Contact Profile -->
                                 <div class="col-md-6 col-lg-3">
-                                    <div class="fw-bold text-muted mb-2 pb-1 border-bottom" style="font-size: 11px; text-transform: uppercase;">Contact</div>
-                                    <div class="mb-1" x-show="customerDetails.phone"><span class="text-muted me-1"><i class="bi bi-telephone"></i> Primary:</span><span class="fw-medium" x-text="customerDetails.phone"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.alternatemobile"><span class="text-muted me-1">Alt Mo:</span><span class="fw-medium" x-text="customerDetails.alternatemobile"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.phone_number_2"><span class="text-muted me-1">Landline:</span><span class="fw-medium" x-text="customerDetails.phone_number_2"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.relative_mobile"><span class="text-muted me-1">Relative Name:</span><span class="fw-medium" x-text="customerDetails.relative_mobile"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.relative_phone"><span class="text-muted me-1">Relative Mo:</span><span class="fw-medium" x-text="customerDetails.relative_phone"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.email"><span class="text-muted me-1"><i class="bi bi-envelope"></i> Email:</span><span class="fw-medium text-truncate d-inline-block align-bottom" style="max-width: 150px;" :title="customerDetails.email" x-text="customerDetails.email"></span></div>
-                                    <div class="mb-1" x-show="!customerDetails.phone && !customerDetails.alternatemobile && !customerDetails.email && !customerDetails.phone_number_2 && !customerDetails.relative_mobile && !customerDetails.relative_phone"><span class="text-muted">No contact details</span></div>
+                                    <div class="card h-100 border-0 bg-primary bg-opacity-10 shadow-sm rounded-4">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex align-items-center mb-3 border-bottom border-primary border-opacity-25 pb-2">
+                                                <i class="bi bi-person-lines-fill text-primary fs-5 me-2"></i>
+                                                <h6 class="fw-bold text-primary mb-0" style="text-transform: uppercase; font-size: 11px;">Contact</h6>
+                                            </div>
+                                            <div class="mb-2" x-show="customerDetails.phone"><span class="text-muted d-block small mb-1">Primary Phone</span><span class="fw-bold text-body-emphasis"><i class="bi bi-telephone text-primary me-1"></i><span x-text="customerDetails.phone"></span></span></div>
+                                            <div class="mb-2" x-show="customerDetails.alternatemobile"><span class="text-muted d-block small mb-1">Alt Phone</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.alternatemobile"></span></div>
+                                            <div class="mb-2" x-show="customerDetails.phone_number_2"><span class="text-muted d-block small mb-1">Landline</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.phone_number_2"></span></div>
+                                            <div class="mb-2" x-show="customerDetails.email"><span class="text-muted d-block small mb-1">Email Address</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block w-100" :title="customerDetails.email"><i class="bi bi-envelope text-primary me-1"></i><span x-text="customerDetails.email"></span></span></div>
+                                            <div class="mb-2" x-show="customerDetails.relative_mobile"><span class="text-muted d-block small mb-1">Relative</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.relative_mobile + ' (' + customerDetails.relative_phone + ')'"></span></div>
+                                            <div class="text-center mt-3" x-show="!customerDetails.phone && !customerDetails.alternatemobile && !customerDetails.email && !customerDetails.phone_number_2 && !customerDetails.relative_mobile"><span class="text-muted fst-italic">No contact details</span></div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Business Details -->
                                 <div class="col-md-6 col-lg-3">
-                                    <div class="fw-bold text-muted mb-2 pb-1 border-bottom" style="font-size: 11px; text-transform: uppercase;">Business & Identity</div>
-                                    <div class="mb-1" x-show="customerDetails.category"><span class="text-muted me-1">Category:</span><span class="fw-medium text-capitalize" x-text="customerDetails.category"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.company_name"><span class="text-muted me-1">Company:</span><span class="fw-medium" x-text="customerDetails.company_name"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.gst_no"><span class="text-muted me-1">GST:</span><span class="fw-medium text-uppercase" x-text="customerDetails.gst_no"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.pan_no"><span class="text-muted me-1">PAN:</span><span class="fw-medium text-uppercase" x-text="customerDetails.pan_no"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.tax_no"><span class="text-muted me-1">Tax No:</span><span class="fw-medium text-uppercase" x-text="customerDetails.tax_no"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.aadhaar_last4"><span class="text-muted me-1">Aadhaar:</span><span class="fw-medium" x-text="'xxxx-xxxx-' + customerDetails.aadhaar_last4"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.kyc_verified_at"><span class="text-muted me-1">KYC Date:</span><span class="fw-medium" x-text="new Date(customerDetails.kyc_verified_at).toLocaleDateString()"></span></div>
-                                    <div class="mb-1" x-show="!customerDetails.company_name && !customerDetails.gst_no && !customerDetails.pan_no && !customerDetails.category && !customerDetails.aadhaar_last4"><span class="text-muted">No business/identity details</span></div>
+                                    <div class="card h-100 border-0 bg-info bg-opacity-10 shadow-sm rounded-4">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex align-items-center mb-3 border-bottom border-info border-opacity-25 pb-2">
+                                                <i class="bi bi-building text-info fs-5 me-2"></i>
+                                                <h6 class="fw-bold text-info mb-0" style="text-transform: uppercase; font-size: 11px;">Business & Identity</h6>
+                                            </div>
+                                            <div class="mb-2" x-show="customerDetails.company_name"><span class="text-muted d-block small mb-1">Company</span><span class="fw-bold text-body-emphasis" x-text="customerDetails.company_name"></span></div>
+                                            <div class="mb-2" x-show="customerDetails.category"><span class="text-muted d-block small mb-1">Category</span><span class="fw-medium text-body-emphasis text-capitalize"><span class="badge bg-info text-dark bg-opacity-25" x-text="customerDetails.category"></span></span></div>
+                                            <div class="mb-2" x-show="customerDetails.gst_no"><span class="text-muted d-block small mb-1">GST Number</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" x-text="customerDetails.gst_no"></span></div>
+                                            <div class="mb-2" x-show="customerDetails.pan_no"><span class="text-muted d-block small mb-1">PAN Number</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" x-text="customerDetails.pan_no"></span></div>
+                                            <div class="mb-2" x-show="customerDetails.aadhaar_last4"><span class="text-muted d-block small mb-1">Aadhaar (Last 4)</span><span class="fw-medium text-body-emphasis font-monospace" x-text="'xxxx-xxxx-' + customerDetails.aadhaar_last4"></span></div>
+                                            <div class="text-center mt-3" x-show="!customerDetails.company_name && !customerDetails.gst_no && !customerDetails.pan_no && !customerDetails.category && !customerDetails.aadhaar_last4"><span class="text-muted fst-italic">No business details</span></div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Agriculture Snapshot -->
                                 <div class="col-md-6 col-lg-3">
-                                    <div class="fw-bold text-muted mb-2 pb-1 border-bottom" style="font-size: 11px; text-transform: uppercase;">Agriculture & Tags</div>
-                                    <div class="mb-1"><span class="text-muted me-1">Land:</span><span class="fw-medium"><span x-text="customerDetails.land_area || '0'"></span> <span x-text="customerDetails.land_unit || ''"></span></span></div>
-                                    <div class="mb-1 d-flex gap-1 flex-wrap" x-show="customerDetails.crops && customerDetails.crops.length > 0">
-                                        <span class="text-muted me-1">Crops:</span>
-                                        <template x-for="crop in customerDetails.crops"><span class="badge bg-success bg-opacity-10 text-success" style="font-size:10px" x-text="crop"></span></template>
-                                    </div>
-                                    <div class="mb-1 d-flex gap-1 flex-wrap" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
-                                        <span class="text-muted me-1">Irrig:</span>
-                                        <template x-for="type in customerDetails.irrigation_type"><span class="badge bg-info bg-opacity-10 text-info" style="font-size:10px" x-text="type"></span></template>
-                                    </div>
-                                    <div class="mb-1 d-flex gap-1 flex-wrap" x-show="customerDetails.tags && customerDetails.tags.length > 0">
-                                        <span class="text-muted me-1">Tags:</span>
-                                        <template x-for="tag in customerDetails.tags"><span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size:10px" x-text="tag"></span></template>
-                                    </div>
-                                    <div class="mb-1 d-flex gap-1 flex-wrap" x-show="customerDetails.source && customerDetails.source.length > 0">
-                                        <span class="text-muted me-1">Source:</span>
-                                        <template x-for="src in customerDetails.source"><span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:10px" x-text="src"></span></template>
+                                    <div class="card h-100 border-0 bg-success bg-opacity-10 shadow-sm rounded-4">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex align-items-center mb-3 border-bottom border-success border-opacity-25 pb-2">
+                                                <i class="bi bi-tree text-success fs-5 me-2"></i>
+                                                <h6 class="fw-bold text-success mb-0" style="text-transform: uppercase; font-size: 11px;">Agriculture</h6>
+                                            </div>
+                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Land Area</span><span class="fw-bold text-body-emphasis"><span x-text="customerDetails.land_area || '0'"></span> <span x-text="customerDetails.land_unit || ''"></span></span></div>
+                                            <div class="mb-2" x-show="customerDetails.crops && customerDetails.crops.length > 0">
+                                                <span class="text-muted d-block small mb-1">Crops</span>
+                                                <div class="d-flex gap-1 flex-wrap">
+                                                    <template x-for="crop in customerDetails.crops"><span class="badge bg-success bg-opacity-25 text-success-emphasis border border-success border-opacity-50" x-text="crop"></span></template>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
+                                                <span class="text-muted d-block small mb-1">Irrigation</span>
+                                                <div class="d-flex gap-1 flex-wrap">
+                                                    <template x-for="type in customerDetails.irrigation_type"><span class="badge bg-success text-white" x-text="type"></span></template>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2" x-show="customerDetails.tags && customerDetails.tags.length > 0">
+                                                <span class="text-muted d-block small mb-1">Tags</span>
+                                                <div class="d-flex gap-1 flex-wrap">
+                                                    <template x-for="tag in customerDetails.tags"><span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis" x-text="tag"></span></template>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <!-- Financial Snapshot -->
                                 <div class="col-md-6 col-lg-3">
-                                    <div class="fw-bold text-muted mb-2 pb-1 border-bottom" style="font-size: 11px; text-transform: uppercase;">Financial & Stats</div>
-                                    <div class="mb-1"><span class="text-muted me-1">Limit:</span><span class="fw-medium">Rs <span x-text="Number(customerDetails.credit_limit || 0).toFixed(2)"></span></span></div>
-                                    <div class="mb-1"><span class="text-muted me-1">Balance:</span><span class="fw-medium" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">Rs <span x-text="Number(customerDetails.outstanding_balance || 0).toFixed(2)"></span></span></div>
-                                    <div class="mb-1"><span class="text-muted me-1">Cr. Days:</span><span class="fw-medium"><span x-text="customerDetails.credit_days || '0'"></span> Days</span></div>
-                                    <div class="mb-1" x-show="customerDetails.credit_valid_till"><span class="text-muted me-1">Valid Till:</span><span class="fw-medium" x-text="new Date(customerDetails.credit_valid_till).toLocaleDateString()"></span></div>
-                                    <div class="mb-1"><span class="text-muted me-1">Orders:</span><span class="fw-medium" x-text="customerDetails.orders_count || 0"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.first_purchase_at"><span class="text-muted me-1">First Order:</span><span class="fw-medium" x-text="new Date(customerDetails.first_purchase_at).toLocaleDateString()"></span></div>
-                                    <div class="mb-1" x-show="customerDetails.last_purchase_at"><span class="text-muted me-1">Last Order:</span><span class="fw-medium" x-text="new Date(customerDetails.last_purchase_at).toLocaleDateString()"></span></div>
+                                    <div class="card h-100 border-0 bg-warning bg-opacity-10 shadow-sm rounded-4">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex align-items-center mb-3 border-bottom border-warning border-opacity-25 pb-2">
+                                                <i class="bi bi-wallet2 text-warning-emphasis fs-5 me-2"></i>
+                                                <h6 class="fw-bold text-warning-emphasis mb-0" style="text-transform: uppercase; font-size: 11px;">Financial & Stats</h6>
+                                            </div>
+                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Credit Limit</span><span class="fw-bold text-body-emphasis">Rs <span x-text="Number(customerDetails.credit_limit || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Balance</span><span class="fw-bold fs-6" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">Rs <span x-text="Number(customerDetails.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <div><span class="text-muted d-block small mb-1">Cr. Days</span><span class="fw-medium text-body-emphasis" x-text="(customerDetails.credit_days || '0') + ' Days'"></span></div>
+                                                <div class="text-end" x-show="customerDetails.credit_valid_till"><span class="text-muted d-block small mb-1">Valid Till</span><span class="fw-medium text-body-emphasis" x-text="new Date(customerDetails.credit_valid_till).toLocaleDateString()"></span></div>
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-between align-items-center mb-0 mt-3 pt-2 border-top border-warning border-opacity-25">
+                                                <div><span class="text-muted d-block small mb-1">Total Orders</span><span class="fw-bold text-primary fs-6" x-text="customerDetails.orders_count || 0"></span></div>
+                                                <div class="text-end" x-show="customerDetails.last_purchase_at"><span class="text-muted d-block small mb-1">Last Order</span><span class="fw-medium text-body-emphasis" style="font-size: 11px;" x-text="new Date(customerDetails.last_purchase_at).toLocaleDateString()"></span></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Notes & Status -->
@@ -540,7 +572,7 @@
         </div>
 
         
-        <div class="col-xl-4">
+        <div class="col-xl-4" x-show="cart.length > 0" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 translate-x-4">
             <div class="sticky-side-div" style="position: sticky; top: 24px;">
                 <div class="card shadow-sm border-0 mb-4" x-show="cart.length > 0" x-cloak>
                     <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
