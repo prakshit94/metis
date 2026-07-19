@@ -78,11 +78,27 @@ class VillageController extends Controller implements HasMiddleware
             }
         }
 
+        if ($request->filled('village')) {
+            $villageNames = array_filter(array_map('trim', explode(',', (string) $request->input('village'))));
+            if (!empty($villageNames)) {
+                $query->whereIn('village_name', $villageNames);
+            }
+        }
+
         if ($request->filled('service_id')) {
             $serviceId = (int) $request->input('service_id');
             $query->whereHas('mappings', function ($q) use ($serviceId): void {
                 $q->where('service_id', $serviceId)->where('is_available', true);
             });
+        }
+
+        if ($request->filled('deleted')) {
+            $deleted = $request->input('deleted');
+            if ($deleted === 'with') {
+                $query->withTrashed();
+            } elseif ($deleted === 'only') {
+                $query->onlyTrashed();
+            }
         }
 
         // Stats calculation
@@ -102,15 +118,39 @@ class VillageController extends Controller implements HasMiddleware
 
         $villages = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
 
-        // Include filters lists
-        $statesList = DB::table('villages')->distinct()->pluck('state_name')->filter()->sort()->values();
-        $districtsList = DB::table('villages')->distinct()->pluck('district_name')->filter()->sort()->values();
+        // Include filters lists with caching
+        $statesList = \Illuminate\Support\Facades\Cache::remember('geo_states', 3600, function () {
+            return Village::distinct()->pluck('state_name')->filter()->sort()->values();
+        });
+
+        $districtsList = $request->filled('state') ? \Illuminate\Support\Facades\Cache::remember('geo_districts_' . md5($request->state), 3600, function () use ($request) {
+            return Village::whereIn('state_name', array_map('trim', explode(',', $request->state)))
+                ->distinct()->pluck('district_name')->filter()->sort()->values();
+        }) : [];
+
+        $talukasList = $request->filled('district') ? \Illuminate\Support\Facades\Cache::remember('geo_talukas_' . md5($request->state . '_' . $request->district), 3600, function () use ($request) {
+            return Village::when($request->filled('state'), function ($q) use ($request) {
+                $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
+            })->whereIn('district_name', array_map('trim', explode(',', $request->district)))
+            ->distinct()->pluck('taluka_name')->filter()->sort()->values();
+        }) : [];
+
+        $villagesList = $request->filled('taluka') ? \Illuminate\Support\Facades\Cache::remember('geo_villages_' . md5($request->state . '_' . $request->district . '_' . $request->taluka), 3600, function () use ($request) {
+            return Village::when($request->filled('state'), function ($q) use ($request) {
+                $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
+            })->when($request->filled('district'), function ($q) use ($request) {
+                $q->whereIn('district_name', array_map('trim', explode(',', $request->district)));
+            })->whereIn('taluka_name', array_map('trim', explode(',', $request->taluka)))
+            ->distinct()->pluck('village_name')->filter()->sort()->values();
+        }) : [];
 
         return response()->json([
             'pagination' => $villages,
             'stats'      => $stats,
             'states'     => $statesList,
             'districts'  => $districtsList,
+            'talukas'    => $talukasList,
+            'villages'   => $villagesList,
         ]);
     }
 
@@ -209,7 +249,7 @@ class VillageController extends Controller implements HasMiddleware
     public function bulkAction(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'action'     => ['required', 'string', 'in:delete,service-update'],
+            'action'     => ['required', 'string', 'in:delete,service-update,restore,force-delete'],
             'ids'        => ['required', 'array', 'min:1'],
             'ids.*'      => ['integer', 'exists:villages,id'],
             'service_id' => ['required_if:action,service-update', 'nullable', 'integer', 'exists:services,id'],
@@ -223,6 +263,22 @@ class VillageController extends Controller implements HasMiddleware
             Village::whereIn('id', $ids)->delete();
             return response()->json([
                 'message' => count($ids) . ' village(s) deleted successfully.',
+                'deleted' => $ids,
+            ]);
+        }
+        
+        if ($action === 'restore') {
+            Village::withTrashed()->whereIn('id', $ids)->restore();
+            return response()->json([
+                'message' => count($ids) . ' village(s) restored successfully.',
+                'restored' => $ids,
+            ]);
+        }
+
+        if ($action === 'force-delete') {
+            Village::withTrashed()->whereIn('id', $ids)->forceDelete();
+            return response()->json([
+                'message' => count($ids) . ' village(s) permanently deleted.',
                 'deleted' => $ids,
             ]);
         }
@@ -295,10 +351,30 @@ class VillageController extends Controller implements HasMiddleware
     {
         $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
+            'preview' => ['nullable', 'boolean'],
         ]);
 
         $file = $request->file('file');
         $path = $file->getRealPath();
+
+        // Check if just previewing
+        if ($request->input('preview')) {
+            $rows = [];
+            $handle = fopen($path, 'r');
+            if ($handle) {
+                $header = fgetcsv($handle);
+                for ($i = 0; $i < 5; $i++) {
+                    if (($line = fgetcsv($handle)) !== false) {
+                        $rows[] = array_combine(array_slice(array_pad($header, count($line), ''), 0, count($line)), $line);
+                    }
+                }
+                fclose($handle);
+            }
+            return response()->json([
+                'preview' => true,
+                'rows'    => $rows,
+            ]);
+        }
 
         DB::transaction(function () use ($path): void {
             LazyCollection::make(function () use ($path) {
@@ -328,14 +404,154 @@ class VillageController extends Controller implements HasMiddleware
                         'created_at'      => now(),
                         'updated_at'      => now(),
                     ];
-                })->filter()->toArray();
+                })->filter()->values()->toArray();
 
-                DB::table('villages')->insert($data);
+                if (!empty($data)) {
+                    DB::table('villages')->insert($data);
+                }
             });
         });
 
         return response()->json([
             'message' => 'Villages imported successfully.',
         ]);
+    }
+
+    /**
+     * Download CSV template for import.
+     */
+    public function importTemplate()
+    {
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['village_name', 'pincode', 'post_so_name', 'taluka_name', 'district_name', 'state_name']);
+            fputcsv($out, ['Kawatha', '440001', 'Nagpur SO', 'Kamptee', 'Nagpur', 'Maharashtra']);
+            fclose($out);
+        }, 'villages-import-template.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    /**
+     * Export all villages (with filters) to CSV.
+     */
+    public function export(Request $request)
+    {
+        $query = Village::query();
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            $query->where(function ($q) use ($search): void {
+                $q->where('village_name', 'like', "%{$search}%")
+                  ->orWhere('pincode', 'like', "{$search}%")
+                  ->orWhere('taluka_name', 'like', "%{$search}%")
+                  ->orWhere('district_name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('state')) {
+            $states = array_filter(array_map('trim', explode(',', (string) $request->input('state'))));
+            if (!empty($states)) $query->whereIn('state_name', $states);
+        }
+
+        if ($request->filled('district')) {
+            $districts = array_filter(array_map('trim', explode(',', (string) $request->input('district'))));
+            if (!empty($districts)) $query->whereIn('district_name', $districts);
+        }
+
+        if ($request->filled('taluka')) {
+            $talukas = array_filter(array_map('trim', explode(',', (string) $request->input('taluka'))));
+            if (!empty($talukas)) $query->whereIn('taluka_name', $talukas);
+        }
+
+        if ($request->filled('village')) {
+            $villageNames = array_filter(array_map('trim', explode(',', (string) $request->input('village'))));
+            if (!empty($villageNames)) $query->whereIn('village_name', $villageNames);
+        }
+
+        if ($request->filled('service_id')) {
+            $serviceId = (int) $request->input('service_id');
+            $query->whereHas('mappings', function ($q) use ($serviceId): void {
+                $q->where('service_id', $serviceId)->where('is_available', true);
+            });
+        }
+
+        if ($request->filled('deleted')) {
+            $deleted = $request->input('deleted');
+            if ($deleted === 'with') {
+                $query->withTrashed();
+            } elseif ($deleted === 'only') {
+                $query->onlyTrashed();
+            }
+        }
+
+        $villages = $query->with(['mappings.service'])->get();
+        $filename = 'villages-export-' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload($this->generateCsvExportCallback($villages), $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    /**
+     * Export selected villages to CSV.
+     */
+    public function exportSelected(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+        ]);
+
+        $villages = Village::withTrashed()->with(['mappings.service'])->whereIn('id', $validated['ids'])->get();
+        $filename = 'villages-export-selected-' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload($this->generateCsvExportCallback($villages), $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    private function generateCsvExportCallback($villages)
+    {
+        return function () use ($villages) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'ID',
+                'Village Name',
+                'Pincode',
+                'Post SO Name',
+                'Taluka',
+                'District',
+                'State',
+                'Mapped Services',
+                'Available Services Count',
+                'Status',
+            ]);
+
+            foreach ($villages as $village) {
+                $availableMappings = $village->mappings
+                    ->where('is_available', true)
+                    ->sortBy('priority');
+
+                $serviceNames = $availableMappings
+                    ->map(fn($m) => $m->service?->name)
+                    ->filter()
+                    ->implode(', ');
+
+                fputcsv($file, [
+                    $village->id,
+                    $village->village_name,
+                    $village->pincode,
+                    $village->post_so_name,
+                    $village->taluka_name,
+                    $village->district_name,
+                    $village->state_name,
+                    $serviceNames ?: 'None',
+                    $availableMappings->count(),
+                    $village->trashed() ? 'Deleted' : 'Active',
+                ]);
+            }
+
+            fclose($file);
+        };
     }
 }

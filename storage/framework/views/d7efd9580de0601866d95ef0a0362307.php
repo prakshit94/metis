@@ -10,14 +10,33 @@
             <p class="text-muted mb-0">Manage geolocations, pincodes, and service coverage</p>
         </div>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
-                <i class="bi bi-upload me-2"></i>Import CSV
+            <button type="button" class="btn btn-outline-secondary" @click="exportVillages()">
+                <i class="bi bi-download me-2"></i>Export
             </button>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-upload me-2"></i>Import
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    <li><a class="dropdown-item" href="#" @click.prevent="document.getElementById('import-file').click()">
+                        <i class="bi bi-file-earmark-arrow-up me-2 text-primary"></i>Upload CSV
+                    </a></li>
+                    <li><a class="dropdown-item" href="<?php echo e(route('api.villages.import-template')); ?>">
+                        <i class="bi bi-file-earmark-arrow-down me-2 text-primary"></i>Download Template
+                    </a></li>
+                </ul>
+            </div>
             <button type="button" class="btn btn-primary" @click="openCreateVillage()">
                 <i class="bi bi-plus-circle me-2"></i>Add Village
             </button>
         </div>
     </div>
+
+    <!-- Hidden CSV Import Form -->
+    <form id="import-form" action="<?php echo e(route('api.villages.import')); ?>" method="POST" enctype="multipart/form-data" class="d-none">
+        <?php echo csrf_field(); ?>
+        <input type="file" name="file" id="import-file" accept=".csv,.txt" @change="handleImportFileSelect($event)">
+    </form>
 
     <!-- Stats Widgets -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
@@ -158,58 +177,14 @@
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
                         
-                        <!-- State Filter -->
-                        <select class="form-select form-select-sm" 
-                                x-model="stateFilter" 
-                                @change="filterVillages()"
-                                style="width: 140px;">
-                            <option value="">All States</option>
-                            <template x-for="state in statesList" :key="state">
-                                <option :value="state" x-text="state"></option>
-                            </template>
-                        </select>
-                        
-                        <!-- District Filter -->
-                        <select class="form-select form-select-sm" 
-                                x-model="districtFilter" 
-                                @change="filterVillages()"
-                                style="width: 140px;">
-                            <option value="">All Districts</option>
-                            <template x-for="dist in districtsList" :key="dist">
-                                <option :value="dist" x-text="dist"></option>
-                            </template>
-                        </select>
-
-                        <!-- Taluka Filter -->
-                        <select class="form-select form-select-sm" 
-                                x-model="talukaFilter" 
-                                @change="filterVillages()"
-                                style="width: 140px;">
-                            <option value="">All Talukas</option>
-                            <template x-for="t in talukasList" :key="t">
-                                <option :value="t" x-text="t"></option>
-                            </template>
-                        </select>
-
-                        <!-- Service Filter -->
-                        <select class="form-select form-select-sm" 
-                                x-model="serviceFilter" 
-                                @change="filterVillages()"
-                                style="width: 140px;">
-                            <option value="">All Services</option>
-                            <template x-for="s in servicesOptions" :key="s.id">
-                                <option :value="s.id" x-text="s.name"></option>
-                            </template>
-                        </select>
-
                         <!-- Deleted Filter -->
                         <select class="form-select form-select-sm"
                                 x-model="deletedFilter"
                                 @change="filterVillages()"
                                 style="width: 130px;">
-                            <option value="">Active Only</option>
-                            <option value="with">With Deleted</option>
-                            <option value="only">Deleted Only</option>
+                            <option value="">Active</option>
+                            <option value="with">All</option>
+                            <option value="only">Deleted</option>
                         </select>
 
                         <!-- Items Per Page -->
@@ -222,8 +197,159 @@
                             <option value="50">50 / page</option>
                             <option value="100">100 / page</option>
                         </select>
-                        
-                        <button class="btn btn-sm btn-outline-secondary" type="button" @click="resetFilters()">
+
+                        <!-- Advanced Filters Trigger -->
+                        <button class="btn btn-sm"
+                                :class="hasActiveAdvancedFilters() ? 'btn-primary' : 'btn-outline-secondary'"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#advancedFilters"
+                                aria-expanded="false">
+                            <i class="bi bi-funnel me-1"></i>Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collapsible Advanced Filters Drawer -->
+        <div class="collapse" id="advancedFilters">
+            <div class="p-3 bg-body-tertiary border-top border-bottom border-secondary-subtle">
+                <div class="row g-3">
+                    <!-- Service Filter -->
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold text-body-secondary">Service</label>
+                        <select class="form-select form-select-sm" x-model="serviceFilter" @change="filterVillages()">
+                            <option value="">All Services</option>
+                            <template x-for="s in servicesOptions" :key="s.id">
+                                <option :value="s.id" x-text="s.name"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- State Filter -->
+                    <div class="col-md-2 position-relative" @click.away="showStateDropdown = false" :style="showStateDropdown ? 'z-index: 1050;' : ''">
+                        <label class="form-label small fw-semibold text-body-secondary">
+                            State <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="stateFilter.length + ' / ' + Object.keys(statesList).length"></span>
+                        </label>
+                        <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showStateDropdown = true; $refs.stateSearch.focus()">
+                            <template x-for="state in stateFilter" :key="state">
+                                <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                                    <span x-text="state" style="font-size: 11px;"></span>
+                                    <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('state', state)" style="font-size: 13px;"></i>
+                                </div>
+                            </template>
+                            <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                                <input x-ref="stateSearch" type="text" x-model="stateSearch" @focus="showStateDropdown = true" placeholder="Search States..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            </div>
+                        </div>
+                        <div x-show="showStateDropdown && filteredStates.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                            <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('state')">
+                                <input type="checkbox" :checked="stateFilter.length > 0 && stateFilter.length === Object.keys(statesList).length" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                            </div>
+                            <template x-for="state in filteredStates" :key="state">
+                                <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('state', state)">
+                                    <input type="checkbox" :checked="stateFilter.includes(state)" class="me-2" style="cursor: pointer;">
+                                    <span style="font-size: 12px;" x-text="state"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- District Filter -->
+                    <div class="col-md-2 position-relative" @click.away="showDistrictDropdown = false" :style="showDistrictDropdown ? 'z-index: 1050;' : ''">
+                        <label class="form-label small fw-semibold text-body-secondary">
+                            District <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="districtFilter.length + ' / ' + Object.keys(districtsList).length"></span>
+                        </label>
+                        <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showDistrictDropdown = true; $refs.districtSearch.focus()">
+                            <template x-for="district in districtFilter" :key="district">
+                                <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                                    <span x-text="district" style="font-size: 11px;"></span>
+                                    <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('district', district)" style="font-size: 13px;"></i>
+                                </div>
+                            </template>
+                            <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                                <input x-ref="districtSearch" type="text" x-model="districtSearch" @focus="showDistrictDropdown = true" placeholder="Search Districts..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            </div>
+                        </div>
+                        <div x-show="showDistrictDropdown && filteredDistricts.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                            <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('district')">
+                                <input type="checkbox" :checked="districtFilter.length > 0 && districtFilter.length === Object.keys(districtsList).length" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                            </div>
+                            <template x-for="district in filteredDistricts" :key="district">
+                                <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('district', district)">
+                                    <input type="checkbox" :checked="districtFilter.includes(district)" class="me-2" style="cursor: pointer;">
+                                    <span style="font-size: 12px;" x-text="district"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Taluka Filter -->
+                    <div class="col-md-2 position-relative" @click.away="showTalukaDropdown = false" :style="showTalukaDropdown ? 'z-index: 1050;' : ''">
+                        <label class="form-label small fw-semibold text-body-secondary">
+                            Taluka <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="talukaFilter.length + ' / ' + Object.keys(talukasList).length"></span>
+                        </label>
+                        <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showTalukaDropdown = true; $refs.talukaSearch.focus()">
+                            <template x-for="taluka in talukaFilter" :key="taluka">
+                                <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                                    <span x-text="taluka" style="font-size: 11px;"></span>
+                                    <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('taluka', taluka)" style="font-size: 13px;"></i>
+                                </div>
+                            </template>
+                            <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                                <input x-ref="talukaSearch" type="text" x-model="talukaSearch" @focus="showTalukaDropdown = true" placeholder="Search Talukas..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            </div>
+                        </div>
+                        <div x-show="showTalukaDropdown && filteredTalukas.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                            <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('taluka')">
+                                <input type="checkbox" :checked="talukaFilter.length > 0 && talukaFilter.length === Object.keys(talukasList).length" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                            </div>
+                            <template x-for="taluka in filteredTalukas" :key="taluka">
+                                <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('taluka', taluka)">
+                                    <input type="checkbox" :checked="talukaFilter.includes(taluka)" class="me-2" style="cursor: pointer;">
+                                    <span style="font-size: 12px;" x-text="taluka"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Village Filter -->
+                    <div class="col-md-2 position-relative" @click.away="showVillageDropdown = false" :style="showVillageDropdown ? 'z-index: 1050;' : ''">
+                        <label class="form-label small fw-semibold text-body-secondary">
+                            Village <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="villageFilter.length + ' / ' + Object.keys(villagesList).length"></span>
+                        </label>
+                        <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showVillageDropdown = true; $refs.villageSearch.focus()">
+                            <template x-for="village in villageFilter" :key="village">
+                                <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                                    <span x-text="village" style="font-size: 11px;"></span>
+                                    <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('village', village)" style="font-size: 13px;"></i>
+                                </div>
+                            </template>
+                            <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                                <input x-ref="villageSearch" type="text" x-model="villageSearch" @focus="showVillageDropdown = true" placeholder="Search Villages..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            </div>
+                        </div>
+                        <div x-show="showVillageDropdown && filteredVillages.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                            <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('village')">
+                                <input type="checkbox" :checked="villageFilter.length > 0 && villageFilter.length === Object.keys(villagesList).length" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                            </div>
+                            <template x-for="village in filteredVillages" :key="village">
+                                <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('village', village)">
+                                    <input type="checkbox" :checked="villageFilter.includes(village)" class="me-2" style="cursor: pointer;">
+                                    <span style="font-size: 12px;" x-text="village"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Reset Filters -->
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center" @click="resetFilters()">
                             <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
                         </button>
                     </div>
@@ -243,6 +369,9 @@
                         </span>
                     </div>
                     <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" @click="exportSelectedVillages()" title="Export Selected to CSV">
+                            <i class="bi bi-download me-1"></i>Export CSV
+                        </button>
                         <button class="btn btn-sm btn-success" @click="openBulkServiceModal()" x-show="!hasSelectedDeletedVillages">
                             <i class="bi bi-gear me-1"></i>Update Services
                         </button>
@@ -559,33 +688,52 @@
     </div>
 </div>
 
-
-<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel">
-    <div class="modal-dialog modal-dialog-scrollable" x-data="importForm">
+<!-- ═══════════════════════ CSV Import Preview Modal ═══════════════════════════ -->
+<div class="modal fade" id="importPreviewModal" tabindex="-1" aria-labelledby="importPreviewModalLabel" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold" id="importModalLabel">
-                    <i class="bi bi-upload me-2"></i>Import Villages CSV
+                <h5 class="modal-title fw-bold" id="importPreviewModalLabel">
+                    <i class="bi bi-file-earmark-spreadsheet me-2 text-primary"></i>CSV Import Preview
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" @click="cancelImport()"></button>
             </div>
             <div class="modal-body pt-3">
-                <div class="alert alert-info mb-3">
-                    <i class="bi bi-info-circle me-2"></i>
-                    <strong>CSV Columns format:</strong><br>
-                    village_name, pincode, post_so_name, taluka_name, district_name, state_name<br>
-                    <small>Example: Kawatha, 440001, Nagpur SO, Kamptee, Nagpur, Maharashtra</small>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill me-2"></i>Please review the first 5 records of your CSV below before confirming.
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Select CSV File</label>
-                    <input type="file" class="form-control" accept=".csv" @change="handleFile($event)">
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-striped table-hover table-sm small align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Village Name</th>
+                                <th>Pincode</th>
+                                <th>Post SO Name</th>
+                                <th>Taluka</th>
+                                <th>District</th>
+                                <th>State</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(row, idx) in importRows" :key="idx">
+                                <tr>
+                                    <td class="fw-bold" x-text="row.village_name || row[Object.keys(row)[0]]"></td>
+                                    <td x-text="row.pincode || row[Object.keys(row)[1]]"></td>
+                                    <td x-text="row.post_so_name || row[Object.keys(row)[2]]"></td>
+                                    <td x-text="row.taluka_name || row[Object.keys(row)[3]]"></td>
+                                    <td x-text="row.district_name || row[Object.keys(row)[4]]"></td>
+                                    <td x-text="row.state_name || row[Object.keys(row)[5]]"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" @click="importVillages()" :disabled="importing || !file">
+                <button type="button" class="btn btn-secondary" @click="cancelImport()">Cancel</button>
+                <button type="button" class="btn btn-primary" @click="confirmImport()">
                     <span x-show="importing" class="spinner-border spinner-border-sm me-1"></span>
-                    <span x-text="importing ? 'Importing…' : 'Import Villages'"></span>
+                    <span x-text="importing ? 'Importing...' : 'Confirm Import'"></span>
                 </button>
             </div>
         </div>

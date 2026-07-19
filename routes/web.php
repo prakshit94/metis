@@ -284,6 +284,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/villages/services-options', [\App\Modules\Core\Controllers\VillageController::class, 'servicesOptions'])->name('api.villages.services-options');
         Route::get('/villages/search', [\App\Modules\Core\Controllers\VillageController::class, 'search'])->name('api.villages.search');
         Route::post('/villages/import', [\App\Modules\Core\Controllers\VillageController::class, 'import'])->name('api.villages.import');
+        Route::get('/villages/import-template', [\App\Modules\Core\Controllers\VillageController::class, 'importTemplate'])->name('api.villages.import-template');
+        Route::get('/villages/export', [\App\Modules\Core\Controllers\VillageController::class, 'export'])->name('api.villages.export');
+        Route::post('/villages/export-selected', [\App\Modules\Core\Controllers\VillageController::class, 'exportSelected'])->name('api.villages.export-selected');
         Route::apiResource('/villages', \App\Modules\Core\Controllers\VillageController::class)->names([
             'index'   => 'api.villages.index',
             'store'   => 'api.villages.store',

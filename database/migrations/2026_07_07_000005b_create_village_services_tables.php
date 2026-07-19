@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('district_name')->nullable()->index();
             $table->string('state_name')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             // Composite Indexes for MySQL 8 Optimization
             $table->index(['pincode', 'normalized_name'], 'idx_pincode_village');
