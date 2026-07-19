@@ -11,6 +11,7 @@ class ShipmentTrackingEvent extends Model
         'event_name',
         'location',
         'description',
+        'reschedule_reason',
         'occurred_at',
     ];
 

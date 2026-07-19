@@ -12,6 +12,7 @@ return new class extends Migration {
             $table->string('event_name');
             $table->string('location')->nullable();
             $table->text('description')->nullable();
+            $table->string('reschedule_reason')->nullable();
             $table->dateTime('occurred_at');
             $table->timestamps();
         });

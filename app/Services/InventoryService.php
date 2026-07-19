@@ -1092,6 +1092,7 @@ class InventoryService
                 $shipment->update([
                     'status' => 'delivered',
                     'delivered_at' => now(),
+                    'delivered_by' => auth()->user()?->name ?? 'System',
                 ]);
             }
         });

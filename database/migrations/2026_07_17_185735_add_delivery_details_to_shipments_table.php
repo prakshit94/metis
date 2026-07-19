@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('delivered_by')->nullable()->after('delivered_at');
             $table->integer('delivery_attempts')->default(0)->after('delivered_by');
             $table->timestamp('next_followup_date')->nullable()->after('delivery_attempts');
+            $table->string('reschedule_reason')->nullable()->after('next_followup_date');
         });
     }
 

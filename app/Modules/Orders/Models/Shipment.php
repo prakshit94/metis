@@ -17,6 +17,7 @@ class Shipment extends Model
         'delivered_by',
         'delivery_attempts',
         'next_followup_date',
+        'reschedule_reason',
     ];
 
     protected $casts = [

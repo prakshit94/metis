@@ -92,6 +92,7 @@ class ShippingController extends Controller implements HasMiddleware
             'description' => 'nullable|string',
             'delivery_attempts' => 'nullable|integer|min:0',
             'next_followup_date' => 'nullable|date',
+            'reschedule_reason' => 'nullable|string|max:255',
             'delivered_by' => 'nullable|string|max:255',
         ]);
 
@@ -115,6 +116,9 @@ class ShippingController extends Controller implements HasMiddleware
             if (isset($validated['next_followup_date'])) {
                 $updateData['next_followup_date'] = $validated['next_followup_date'];
             }
+            if (isset($validated['reschedule_reason'])) {
+                $updateData['reschedule_reason'] = $validated['reschedule_reason'];
+            }
             if (isset($validated['delivered_by'])) {
                 $updateData['delivered_by'] = $validated['delivered_by'];
             }
@@ -127,6 +131,7 @@ class ShippingController extends Controller implements HasMiddleware
                 'event_name' => 'Status Updated to ' . ucfirst($newStatus),
                 'location' => $validated['location'] ?? 'Hub Location',
                 'description' => $validated['description'] ?? "Shipment status changed from {$oldStatus} to {$newStatus}.",
+                'reschedule_reason' => $validated['reschedule_reason'] ?? null,
                 'occurred_at' => now(),
             ]);
 
