@@ -14,6 +14,10 @@ return new class extends Migration
             $table->string('company_name')->nullable();
             $table->string('gstin')->nullable();
             $table->string('phone')->nullable();
+            $table->string('email')->nullable();
+            $table->string('reference_no')->nullable();
+            $table->string('seed_lic_no')->nullable();
+            $table->string('pesti_lic_no')->nullable();
             $table->string('code')->nullable()->unique();
             $table->string('address')->nullable();
             $table->string('address_line_1')->nullable();

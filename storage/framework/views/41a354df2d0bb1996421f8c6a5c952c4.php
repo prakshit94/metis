@@ -2,7 +2,7 @@
 <html lang="en">
    <head>
       <meta charset="UTF-8">
-      <title>Delivery Challan - {{ $invoice->invoice_no }}</title>
+      <title>Delivery Challan - <?php echo e($invoice->invoice_no); ?></title>
 <style>
 @page {
    size: A4 portrait;
@@ -133,41 +133,44 @@ br {
       <table class="header-table">
          <tr>
             <td width="60%">
-               <div class="company-name">{{ $invoice->order?->warehouse?->company_name ?: 'Krushify Agro Pvt. Ltd.' }}</div>
+               <div class="company-name"><?php echo e($invoice->order?->warehouse?->company_name ?: 'Krushify Agro Pvt. Ltd.'); ?></div>
                <div class="muted">
-                  <strong>Mobile:</strong> {{ $invoice->order?->warehouse?->phone ?: '9199125925' }}<br>
+                  <strong>Mobile:</strong> <?php echo e($invoice->order?->warehouse?->phone ?: '9199125925'); ?><br>
                   <strong>Address:</strong>
-                  @if($invoice->order?->warehouse && $invoice->order->warehouse->address_line_1)
-                     {{ $invoice->order->warehouse->address_line_1 }}
-                     @if($invoice->order->warehouse->address_line_2), {{ $invoice->order->warehouse->address_line_2 }}@endif
-                     , {{ $invoice->order->warehouse->city ?? 'Rajkot' }}, {{ $invoice->order->warehouse->state ?? 'Gujarat' }} - {{ $invoice->order->warehouse->pincode ?? '360003' }}<br>
-                  @else
+                  <?php if($invoice->order?->warehouse && $invoice->order->warehouse->address_line_1): ?>
+                     <?php echo e($invoice->order->warehouse->address_line_1); ?>
+
+                     <?php if($invoice->order->warehouse->address_line_2): ?>, <?php echo e($invoice->order->warehouse->address_line_2); ?><?php endif; ?>
+                     , <?php echo e($invoice->order->warehouse->city ?? 'Rajkot'); ?>, <?php echo e($invoice->order->warehouse->state ?? 'Gujarat'); ?> - <?php echo e($invoice->order->warehouse->pincode ?? '360003'); ?><br>
+                  <?php else: ?>
                      The One World (B), 1005, Ayodhya Circle<br>
-                  @endif
-                  <strong>Email:</strong> {{ $invoice->order?->warehouse?->email ?: 'info@krushifyagro.com' }}<br>
-                  <strong>GST:</strong> {{ $invoice->order?->warehouse?->gstin ?: '24AAMCK0386L1Z6' }}
+                  <?php endif; ?>
+                  <strong>Email:</strong> <?php echo e($invoice->order?->warehouse?->email ?: 'info@krushifyagro.com'); ?><br>
+                  <strong>GST:</strong> <?php echo e($invoice->order?->warehouse?->gstin ?: '24AAMCK0386L1Z6'); ?>
+
                </div>
             </td>
             <td width="40%">
-               <strong>Invoice No:</strong> {{ $invoice->invoice_no }}<br>
-               <strong>Order No:</strong> {{ $invoice->order->order_no ?? 'N/A' }}<br>
-               <strong>Dated:</strong> {{ $invoice->invoice_date ? $invoice->invoice_date->format('d-m-Y') : 'N/A' }}<br>
+               <strong>Invoice No:</strong> <?php echo e($invoice->invoice_no); ?><br>
+               <strong>Order No:</strong> <?php echo e($invoice->order->order_no ?? 'N/A'); ?><br>
+               <strong>Dated:</strong> <?php echo e($invoice->invoice_date ? $invoice->invoice_date->format('d-m-Y') : 'N/A'); ?><br>
                <strong>Payment Mode:</strong>
-               {{ ucfirst($invoice->order->payment_method ?? 'Cash') }}<br>
-               @if(strtolower($invoice->order->payment_method ?? '') === 'cod')
+               <?php echo e(ucfirst($invoice->order->payment_method ?? 'Cash')); ?><br>
+               <?php if(strtolower($invoice->order->payment_method ?? '') === 'cod'): ?>
                <strong>To Collect:</strong>
-               Rs. {{ number_format($invoice->net_amount, 2) }}<br>
-               @endif
+               Rs. <?php echo e(number_format($invoice->net_amount, 2)); ?><br>
+               <?php endif; ?>
                <br>
-               @if($invoice->order?->warehouse?->reference_no)
-               <strong>Reference No:</strong> {{ $invoice->order->warehouse->reference_no }}<br>
-               @endif
-               @if($invoice->order?->warehouse?->seed_lic_no)
-               Seed Lic No.: {{ $invoice->order->warehouse->seed_lic_no }}<br>
-               @endif
-               @if($invoice->order?->warehouse?->pesti_lic_no)
-               Pesti Lic No.: {{ $invoice->order->warehouse->pesti_lic_no }}
-               @endif
+               <?php if($invoice->order?->warehouse?->reference_no): ?>
+               <strong>Reference No:</strong> <?php echo e($invoice->order->warehouse->reference_no); ?><br>
+               <?php endif; ?>
+               <?php if($invoice->order?->warehouse?->seed_lic_no): ?>
+               Seed Lic No.: <?php echo e($invoice->order->warehouse->seed_lic_no); ?><br>
+               <?php endif; ?>
+               <?php if($invoice->order?->warehouse?->pesti_lic_no): ?>
+               Pesti Lic No.: <?php echo e($invoice->order->warehouse->pesti_lic_no); ?>
+
+               <?php endif; ?>
             </td>
          </tr>
       </table>
@@ -184,56 +187,58 @@ br {
                   <tr>
                      <td class="label">Name</td>
                      <td>
-                        {{ $invoice->order->party->name ?? 'N/A' }}
+                        <?php echo e($invoice->order->party->name ?? 'N/A'); ?>
+
                      </td>
                   </tr>
                   <tr>
                      <td class="label">Mobile</td>
-                     <td>{{ $invoice->order->party->phone ?? 'N/A' }}</td>
+                     <td><?php echo e($invoice->order->party->phone ?? 'N/A'); ?></td>
                   </tr>
-                  @if($invoice->order->billingAddress)
+                  <?php if($invoice->order->billingAddress): ?>
                   <tr>
                      <td class="label">Address</td>
-                     <td>{{ $invoice->order->billingAddress->address_line_1 }}</td>
+                     <td><?php echo e($invoice->order->billingAddress->address_line_1); ?></td>
                   </tr>
-                  @if($invoice->order->billingAddress->address_line_2)
+                  <?php if($invoice->order->billingAddress->address_line_2): ?>
                   <tr>
                      <td></td>
-                     <td>{{ $invoice->order->billingAddress->address_line_2 }}</td>
+                     <td><?php echo e($invoice->order->billingAddress->address_line_2); ?></td>
                   </tr>
-                  @endif
+                  <?php endif; ?>
                   <tr>
                      <td class="label">Village</td>
-                     <td>{{ $invoice->order->billingAddress->village->village_name ?? $invoice->order->billingAddress->city ?? '-' }}</td>
+                     <td><?php echo e($invoice->order->billingAddress->village->village_name ?? $invoice->order->billingAddress->city ?? '-'); ?></td>
                   </tr>
                   <tr>
                      <td class="label">Taluka</td>
-                     <td>{{ $invoice->order->billingAddress->village->taluka_name ?? '-' }}</td>
+                     <td><?php echo e($invoice->order->billingAddress->village->taluka_name ?? '-'); ?></td>
                   </tr>
                   <tr>
                      <td class="label">District</td>
-                     <td>{{ $invoice->order->billingAddress->village->district_name ?? '-' }}</td>
+                     <td><?php echo e($invoice->order->billingAddress->village->district_name ?? '-'); ?></td>
                   </tr>
                   <tr>
                      <td class="label">Post Office</td>
-                     <td>{{ $invoice->order->billingAddress->village->post_so_name ?? '-' }}</td>
+                     <td><?php echo e($invoice->order->billingAddress->village->post_so_name ?? '-'); ?></td>
                   </tr>
                   <tr>
                      <td class="label">State / PIN</td>
                      <td>
-                        {{ $invoice->order->billingAddress->state }} -
-                        {{ $invoice->order->billingAddress->pincode }}
+                        <?php echo e($invoice->order->billingAddress->state); ?> -
+                        <?php echo e($invoice->order->billingAddress->pincode); ?>
+
                      </td>
                   </tr>
                   <tr>
                      <td class="label">Country</td>
-                     <td>{{ $invoice->order->billingAddress->country ?? 'India' }}</td>
+                     <td><?php echo e($invoice->order->billingAddress->country ?? 'India'); ?></td>
                   </tr>
-                  @else
+                  <?php else: ?>
                   <tr>
                      <td colspan="2">N/A</td>
                   </tr>
-                  @endif
+                  <?php endif; ?>
                </table>
             </td>
             <td>
@@ -241,63 +246,65 @@ br {
                   <tr>
                      <td class="label">Name</td>
                      <td>
-                        {{ $invoice->order->party->name ?? 'N/A' }}
+                        <?php echo e($invoice->order->party->name ?? 'N/A'); ?>
+
                      </td>
                   </tr>
                   <tr>
                      <td class="label">Mobile</td>
-                     <td>{{ $invoice->order->party->phone ?? 'N/A' }}</td>
+                     <td><?php echo e($invoice->order->party->phone ?? 'N/A'); ?></td>
                   </tr>
-                  @if($invoice->order->shippingAddress)
+                  <?php if($invoice->order->shippingAddress): ?>
                   <tr>
                      <td class="label">Address</td>
-                     <td>{{ $invoice->order->shippingAddress->address_line_1 }}</td>
+                     <td><?php echo e($invoice->order->shippingAddress->address_line_1); ?></td>
                   </tr>
-                  @if($invoice->order->shippingAddress->address_line_2)
+                  <?php if($invoice->order->shippingAddress->address_line_2): ?>
                   <tr>
                      <td></td>
-                     <td>{{ $invoice->order->shippingAddress->address_line_2 }}</td>
+                     <td><?php echo e($invoice->order->shippingAddress->address_line_2); ?></td>
                   </tr>
-                  @endif
+                  <?php endif; ?>
                   <tr>
                      <td class="label">Village</td>
-                     <td>{{ $invoice->order->shippingAddress->village->village_name ?? $invoice->order->shippingAddress->city ?? '-' }}</td>
+                     <td><?php echo e($invoice->order->shippingAddress->village->village_name ?? $invoice->order->shippingAddress->city ?? '-'); ?></td>
                   </tr>
                   <tr>
                      <td class="label">Taluka</td>
-                     <td>{{ $invoice->order->shippingAddress->village->taluka_name ?? '-' }}</td>
+                     <td><?php echo e($invoice->order->shippingAddress->village->taluka_name ?? '-'); ?></td>
                   </tr>
                   <tr>
                      <td class="label">District</td>
-                     <td>{{ $invoice->order->shippingAddress->village->district_name ?? '-' }}</td>
+                     <td><?php echo e($invoice->order->shippingAddress->village->district_name ?? '-'); ?></td>
                   </tr>
                   <tr>
                      <td class="label">Post Office</td>
-                     <td>{{ $invoice->order->shippingAddress->village->post_so_name ?? '-' }}</td>
+                     <td><?php echo e($invoice->order->shippingAddress->village->post_so_name ?? '-'); ?></td>
                   </tr>
                   <tr>
                      <td class="label">State / PIN</td>
                      <td>
-                        {{ $invoice->order->shippingAddress->state }} -
-                        {{ $invoice->order->shippingAddress->pincode }}
+                        <?php echo e($invoice->order->shippingAddress->state); ?> -
+                        <?php echo e($invoice->order->shippingAddress->pincode); ?>
+
                      </td>
                   </tr>
                   <tr>
                      <td class="label">Country</td>
-                     <td>{{ $invoice->order->shippingAddress->country ?? 'India' }}</td>
+                     <td><?php echo e($invoice->order->shippingAddress->country ?? 'India'); ?></td>
                   </tr>
-                  @else
+                  <?php else: ?>
                   <tr>
                      <td colspan="2">Same as Billing</td>
                   </tr>
-                  @endif
+                  <?php endif; ?>
                </table>
             </td>
          </tr>
       </table>
       <br>
       <!-- ITEMS -->
-@php
+<?php
 $shippingState = strtolower($invoice->order->shippingAddress->state ?? $invoice->order->billingAddress->state ?? '');
 $isInterState = $shippingState !== 'gujarat';
 
@@ -305,7 +312,7 @@ $totalTaxable = 0;
 $totalCGST = 0;
 $totalSGST = 0;
 $totalIGST = 0;
-@endphp
+?>
 
 <table class="items">
    <thead>
@@ -318,21 +325,21 @@ $totalIGST = 0;
          <th width="7%">Disc</th>
          <th width="11%">Taxable</th>
 
-         @if($isInterState)
+         <?php if($isInterState): ?>
             <th width="10%">IGST</th>
-         @else
+         <?php else: ?>
             <th width="10%">CGST</th>
             <th width="10%">SGST</th>
-         @endif
+         <?php endif; ?>
 
          <th width="10%">Total</th>
       </tr>
    </thead>
 
    <tbody>
-      @foreach($invoice->order->items as $i => $item)
+      <?php $__currentLoopData = $invoice->order->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $i => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
 
-      @php
+      <?php
          $baseTotal = $item->unit_price * $item->quantity;
          $discount = $item->discount_amount ?? 0;
 
@@ -367,72 +374,78 @@ $totalIGST = 0;
 
          $lineTotal = $item->total_amount ?? ($taxableValue + $taxAmount);
          $totalTaxable += $taxableValue;
-      @endphp
+      ?>
 
       <tr>
-         <td class="text-center">{{ $i + 1 }}</td>
+         <td class="text-center"><?php echo e($i + 1); ?></td>
 
          <td>
-            {{ $item->product->product_name ?? $item->product->name ?? 'Product' }}
-            <span class="muted">({{ $item->product->sku ?? 'N/A' }})</span>
+            <?php echo e($item->product->product_name ?? $item->product->name ?? 'Product'); ?>
+
+            <span class="muted">(<?php echo e($item->product->sku ?? 'N/A'); ?>)</span>
          </td>
 
          <td class="text-center">
-            {{ $item->product->hsn_code ?? '-' }}
+            <?php echo e($item->product->hsn_code ?? '-'); ?>
+
          </td>
 
-         <td class="text-center">{{ floatval($item->quantity) }}</td>
+         <td class="text-center"><?php echo e(floatval($item->quantity)); ?></td>
 
          <td class="text-right">
-            {{ number_format($item->unit_price, 2) }}
-         </td>
+            <?php echo e(number_format($item->unit_price, 2)); ?>
 
-         <td class="text-right">
-            {{ number_format($discount, 2) }}
          </td>
 
          <td class="text-right">
-            {{ number_format($taxableValue, 2) }}
+            <?php echo e(number_format($discount, 2)); ?>
+
          </td>
 
-         @if($isInterState)
+         <td class="text-right">
+            <?php echo e(number_format($taxableValue, 2)); ?>
+
+         </td>
+
+         <?php if($isInterState): ?>
             <!-- IGST -->
             <td class="text-right">
-               @if($igstRate > 0)
-                  {{ number_format($igstRate, 2) }}%
-                  ({{ number_format($igstAmount, 2) }})
-               @else
+               <?php if($igstRate > 0): ?>
+                  <?php echo e(number_format($igstRate, 2)); ?>%
+                  (<?php echo e(number_format($igstAmount, 2)); ?>)
+               <?php else: ?>
                   -
-               @endif
+               <?php endif; ?>
             </td>
-         @else
+         <?php else: ?>
             <!-- CGST -->
             <td class="text-right">
-               @if($cgstRate > 0)
-                  {{ number_format($cgstRate, 2) }}%
-                  ({{ number_format($cgstAmount, 2) }})
-               @else
+               <?php if($cgstRate > 0): ?>
+                  <?php echo e(number_format($cgstRate, 2)); ?>%
+                  (<?php echo e(number_format($cgstAmount, 2)); ?>)
+               <?php else: ?>
                   -
-               @endif
+               <?php endif; ?>
             </td>
 
             <!-- SGST -->
             <td class="text-right">
-               @if($sgstRate > 0)
-                  {{ number_format($sgstRate, 2) }}%
-                  ({{ number_format($sgstAmount, 2) }})
-               @else
+               <?php if($sgstRate > 0): ?>
+                  <?php echo e(number_format($sgstRate, 2)); ?>%
+                  (<?php echo e(number_format($sgstAmount, 2)); ?>)
+               <?php else: ?>
                   -
-               @endif
+               <?php endif; ?>
             </td>
-         @endif
+         <?php endif; ?>
 
          <td class="text-right">
-            {{ number_format($lineTotal, 2) }}
+            <?php echo e(number_format($lineTotal, 2)); ?>
+
          </td>
       </tr>
 
-      @endforeach
+      <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
    </tbody>
 </table>
 
@@ -445,26 +458,29 @@ $totalIGST = 0;
          Total Taxable Value
       </td>
       <td class="text-right">
-         {{ number_format($totalTaxable, 2) }}
+         <?php echo e(number_format($totalTaxable, 2)); ?>
+
       </td>
    </tr>
 
-   @if($isInterState)
+   <?php if($isInterState): ?>
       <tr>
          <td colspan="8" class="text-right bold">
             Total IGST
          </td>
          <td class="text-right">
-            {{ number_format($totalIGST, 2) }}
+            <?php echo e(number_format($totalIGST, 2)); ?>
+
          </td>
       </tr>
-   @else
+   <?php else: ?>
       <tr>
          <td colspan="8" class="text-right bold">
             Total CGST
          </td>
          <td class="text-right">
-            {{ number_format($totalCGST, 2) }}
+            <?php echo e(number_format($totalCGST, 2)); ?>
+
          </td>
       </tr>
 
@@ -473,17 +489,19 @@ $totalIGST = 0;
             Total SGST
          </td>
          <td class="text-right">
-            {{ number_format($totalSGST, 2) }}
+            <?php echo e(number_format($totalSGST, 2)); ?>
+
          </td>
       </tr>
-   @endif
+   <?php endif; ?>
 
    <tr class="grand-total">
       <td colspan="8" class="text-right">
          Grand Total
       </td>
       <td class="text-right">
-         {{ number_format($invoice->net_amount, 2) }}
+         <?php echo e(number_format($invoice->net_amount, 2)); ?>
+
       </td>
    </tr>
 </table>
@@ -506,3 +524,4 @@ $totalIGST = 0;
       </table>
    </body>
 </html>
+<?php /**PATH /home/user/metis/resources/views/orders/pdf/invoice.blade.php ENDPATH**/ ?>

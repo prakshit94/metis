@@ -1,9 +1,7 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Warehouses Management'); ?>
+<?php $__env->startSection('page', 'catalog-warehouses'); ?>
 
-@section('title', 'Warehouses Management')
-@section('page', 'catalog-warehouses')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="warehouses-management" x-data="warehousesTable" x-cloak>
 
     <!-- ═══════════════════════ Page Header ════════════════════════════════ -->
@@ -342,8 +340,8 @@
                 </nav>
             </div>
 
-        </div>{{-- end card-body --}}
-    </div>{{-- end card --}}
+        </div>
+    </div>
 
 
     <!-- ═══════════════════════ Add / Edit Modal ════════════════════════════ -->
@@ -624,11 +622,11 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>{{-- end col --}}
+                            </div>
 
-                        </div>{{-- end row --}}
+                        </div>
                     </form>
-                </div>{{-- end modal-body --}}
+                </div>
 
                 <!-- Footer -->
                 <div class="modal-footer border-top-0 pt-0">
@@ -639,7 +637,7 @@
                     </button>
                 </div>
 
-            </div>{{-- end modal-content --}}
+            </div>
         </div>
     </div>
 
@@ -753,9 +751,11 @@
         </div>
     </div>
 
-</div>{{-- end x-data --}}
-@endsection
+</div>
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/user/metis/resources/views/catalog/warehouses/index.blade.php ENDPATH**/ ?>

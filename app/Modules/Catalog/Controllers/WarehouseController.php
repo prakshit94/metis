@@ -82,6 +82,10 @@ class WarehouseController extends Controller implements HasMiddleware
             'pincode'        => 'nullable|string|max:10',
             'is_default'     => 'nullable|boolean',
             'status'         => 'required|in:active,inactive',
+            'email'          => 'nullable|email|max:255',
+            'reference_no'   => 'nullable|string|max:255',
+            'seed_lic_no'    => 'nullable|string|max:255',
+            'pesti_lic_no'   => 'nullable|string|max:255',
         ]);
 
         // Auto-generate code if not provided
@@ -144,6 +148,10 @@ class WarehouseController extends Controller implements HasMiddleware
             'pincode'        => 'sometimes|nullable|string|max:10',
             'is_default'     => 'sometimes|nullable|boolean',
             'status'         => 'sometimes|required|in:active,inactive',
+            'email'          => 'sometimes|nullable|email|max:255',
+            'reference_no'   => 'sometimes|nullable|string|max:255',
+            'seed_lic_no'    => 'sometimes|nullable|string|max:255',
+            'pesti_lic_no'   => 'sometimes|nullable|string|max:255',
         ]);
 
         // If a village is selected, fill in address details from it

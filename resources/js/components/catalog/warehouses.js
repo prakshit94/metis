@@ -62,6 +62,10 @@ function emptyForm() {
         company_name: '',
         gstin: '',
         phone: '',
+        email: '',
+        reference_no: '',
+        seed_lic_no: '',
+        pesti_lic_no: '',
         address_line_1: '',
         address_line_2: '',
         village_id: '',
@@ -399,6 +403,10 @@ export default () => {
                 company_name:   item.company_name || '',
                 gstin:          item.gstin || '',
                 phone:          item.phone || '',
+                email:          item.email || '',
+                reference_no:   item.reference_no || '',
+                seed_lic_no:    item.seed_lic_no || '',
+                pesti_lic_no:   item.pesti_lic_no || '',
                 address_line_1: item.address_line_1 || '',
                 address_line_2: item.address_line_2 || '',
                 village_id:     item.village_id || '',
@@ -553,7 +561,7 @@ export default () => {
                 return;
             }
 
-            const headers = ['ID', 'Name', 'Code', 'Company', 'GSTIN', 'Phone', 'Address', 'City', 'State', 'Pincode', 'Status', 'Default'];
+            const headers = ['ID', 'Name', 'Code', 'Company', 'GSTIN', 'Phone', 'Email', 'Reference No', 'Seed Lic No', 'Pesti Lic No', 'Address', 'City', 'State', 'Pincode', 'Status', 'Default'];
             const csvRows = [headers.join(',')];
 
             this.filteredItems.forEach(item => {
@@ -565,6 +573,10 @@ export default () => {
                     `"${(item.company_name || '').replace(/"/g, '""')}"`,
                     item.gstin || '',
                     item.phone || '',
+                    item.email || '',
+                    `"${(item.reference_no || '').replace(/"/g, '""')}"`,
+                    `"${(item.seed_lic_no || '').replace(/"/g, '""')}"`,
+                    `"${(item.pesti_lic_no || '').replace(/"/g, '""')}"`,
                     `"${addr.replace(/"/g, '""')}"`,
                     item.city || '',
                     item.state || '',
