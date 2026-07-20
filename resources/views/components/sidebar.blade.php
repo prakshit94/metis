@@ -4,9 +4,9 @@
 
 <!-- Sidebar -->
 <aside class="admin-sidebar" id="admin-sidebar">
-    <div class="sidebar-content">
+    <div class="sidebar-search">
         <!-- Sidebar Global Search -->
-        <div class="px-3 mb-4 mt-2 position-relative" x-data="{
+        <div class="position-relative" x-data="{
             searchQuery: '',
             items: [
                 { name: 'Dashboard', path: '{{ route('dashboard') }}', icon: 'bi bi-grid-1x2-fill', group: 'Main' },
@@ -82,7 +82,7 @@
             <!-- Search Results Overlay -->
             <div x-show="searchQuery && filteredItems.length > 0" 
                  class="position-absolute bg-body border rounded shadow-lg p-2 mt-1" 
-                 style="z-index: 1050; left: 0.75rem; right: 0.75rem; max-height: 250px; overflow-y: auto;"
+                 style="z-index: 1050; left: 0; right: 0; max-height: 250px; overflow-y: auto;"
                  x-cloak>
                 <template x-for="item in filteredItems" :key="item.path">
                     <a :href="item.path" 
@@ -97,11 +97,14 @@
             </div>
             <div x-show="searchQuery && filteredItems.length === 0" 
                  class="position-absolute bg-body border rounded shadow p-3 mt-1 text-center text-muted small" 
-                 style="z-index: 1050; left: 0.75rem; right: 0.75rem;"
+                 style="z-index: 1050; left: 0; right: 0;"
                  x-cloak>
                 No tabs found
             </div>
         </div>
+    </div>
+    
+    <div class="sidebar-content">
 
         <nav class="sidebar-nav">
             <ul class="nav flex-column gap-1">

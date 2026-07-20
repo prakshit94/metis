@@ -21,6 +21,8 @@ return new class extends Migration {
             $table->enum('status', ['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'cancelled', 'returned', 'return_requested'])->default('pending')->index();
             $table->boolean('is_draft')->default(false)->index();
             $table->date('future_order_date')->nullable();
+            $table->dateTime('scheduled_confirmation_date')->nullable();
+            $table->integer('confirmation_attempts')->default(0);
             $table->foreignId('warehouse_id')->nullable()->constrained()->nullOnDelete();
 
             $table->unsignedBigInteger('shipping_address_id')->nullable();
@@ -73,9 +75,19 @@ return new class extends Migration {
 
             $table->index(['order_id', 'product_id'], 'idx_order_items_lookup');
         });
+
+        Schema::create('order_status_logs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('order_id')->constrained()->cascadeOnDelete();
+            $table->string('status');
+            $table->text('notes')->nullable();
+            $table->foreignId('changed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamps();
+        });
     }
 
     public function down(): void {
+        Schema::dropIfExists('order_status_logs');
         Schema::dropIfExists('order_items');
         Schema::dropIfExists('orders');
     }

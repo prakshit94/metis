@@ -98,7 +98,7 @@ class Order extends Model
         'billing_address_id', 'billing_address_line_1', 'billing_address_line_2',
         'billing_village_id', 'billing_village_name', 'billing_post_office', 'billing_taluka',
         'billing_district', 'billing_city', 'billing_state', 'billing_pincode',
-        'is_draft', 'future_order_date', 'created_by', 'updated_by'
+        'is_draft', 'future_order_date', 'scheduled_confirmation_date', 'confirmation_attempts', 'created_by', 'updated_by'
     ];
 
     protected $casts = [
@@ -179,6 +179,11 @@ class Order extends Model
     public function orderReturns(): HasMany
     {
         return $this->hasMany(OrderReturn::class);
+    }
+
+    public function statusLogs(): HasMany
+    {
+        return $this->hasMany(OrderStatusLog::class)->orderBy('created_at', 'desc');
     }
 
     public function refunds(): HasMany

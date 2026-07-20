@@ -154,6 +154,13 @@ document.addEventListener('alpine:init', () => {
     returnNotes: '',
     returnItems: [],
 
+    // Confirm Modal state
+    confirmModalOrder: null,
+    confirmAction: 'now', // 'now' or 'schedule'
+    scheduledConfirmDate: '',
+    scheduleReason: '',
+    confirmNotes: '',
+
     // Multi-select dropdown states
     showStateDropdown: false,
     stateSearch: '',
@@ -532,6 +539,8 @@ document.addEventListener('alpine:init', () => {
         orderDate: o.order_date,
         rawStatus: o.status,
         status: o.lifecycle_status || o.status,
+        scheduledConfirmDate: o.scheduled_confirmation_date,
+        confirmAttempts: o.confirmation_attempts || 0,
         statusLabel: o.status_label || (o.lifecycle_status || o.status || '').charAt(0).toUpperCase() + (o.lifecycle_status || o.status || '').slice(1).replace(/_/g, ' '),
         customer: {
           name: o.party ? `${o.party.firstname} ${o.party.lastname}` : 'N/A',
@@ -793,27 +802,43 @@ document.addEventListener('alpine:init', () => {
 
     // ─── Lifecycle Actions ───────────────────────────────────────────────────
     
-    async confirmOrder(order) {
-      const confirmed = await Swal.fire({
-        title: 'Confirm Order?',
-        text: `Are you sure you want to confirm order ${order.orderNumber}?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, confirm',
-        cancelButtonText: 'Cancel',
-        customClass: {
-          confirmButton: 'btn btn-primary me-2',
-          cancelButton: 'btn btn-secondary',
-          popup: 'rounded-3 shadow-lg',
-          title: 'fs-4 fw-bold'
-        },
-        buttonsStyling: false
-      });
-      if (!confirmed.isConfirmed) return;
+    confirmOrder(order) {
+      this.confirmModalOrder = order;
+      this.confirmAction = 'now';
+      this.scheduledConfirmDate = '';
+      this.scheduleReason = '';
+      this.confirmNotes = '';
+      const modal = getModal('#confirmOrderModal');
+      if (modal) modal.show();
+    },
+
+    async submitConfirmOrder() {
+      if (!this.confirmModalOrder) return;
+      if (this.confirmAction === 'schedule' && !this.scheduledConfirmDate) {
+        showToast('Please select a scheduled date.', 'warning');
+        return;
+      }
+      if (this.confirmAction === 'schedule' && !this.scheduleReason) {
+        showToast('Please select a reason for rescheduling.', 'warning');
+        return;
+      }
 
       try {
-        const res = await apiFetch(`/orders/${order.id}/confirm`, { method: 'POST' });
-        showToast(res.message || 'Order confirmed successfully.');
+        const payload = {
+          action: this.confirmAction,
+          scheduled_date: this.confirmAction === 'schedule' ? this.scheduledConfirmDate : null,
+          reason: this.confirmAction === 'schedule' ? this.scheduleReason : null,
+          notes: this.confirmNotes
+        };
+        
+        const res = await apiFetch(`/orders/${this.confirmModalOrder.id}/confirm`, { 
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        
+        showToast(res.message || 'Order updated successfully.');
+        const modal = getModal('#confirmOrderModal');
+        if (modal) modal.hide();
         this.loadOrders();
       } catch (err) {
         showToast(err.message, 'danger');

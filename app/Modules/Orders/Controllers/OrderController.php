@@ -60,6 +60,7 @@ class OrderController extends Controller implements HasMiddleware
             'updater',
             'orderReturns',
             'appliedOffer',
+            'statusLogs.user',
         ])->withCount('items');
 
         $user = auth()->user();
@@ -455,15 +456,40 @@ class OrderController extends Controller implements HasMiddleware
         return redirect()->route('orders');
     }
 
-    public function confirm(string $id, InventoryService $inventoryService)
+    public function confirm(string $id, Request $request, InventoryService $inventoryService)
     {
         $order = Order::findOrFail($id);
         if ($order->status !== 'pending') {
-            return response()->json(['error' => 'Only pending orders can be confirmed.'], 400);
+            return response()->json(['error' => 'Only pending orders can be confirmed or scheduled.'], 400);
+        }
+
+        if ($request->input('action') === 'schedule') {
+            $request->validate([
+                'scheduled_date' => 'required|date',
+            ]);
+            
+            $order->scheduled_confirmation_date = $request->input('scheduled_date');
+            $order->increment('confirmation_attempts');
+            $order->save();
+            
+            $reasonText = $request->filled('reason') ? 'Reason: ' . ucfirst(str_replace('_', ' ', $request->input('reason'))) . '. ' : '';
+            $order->statusLogs()->create([
+                'status' => 'pending (scheduled)',
+                'notes' => $reasonText . ($request->input('notes') ?? 'Scheduled for future confirmation.'),
+                'changed_by' => auth()->id()
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Order scheduled for confirmation.']);
         }
 
         try {
             $inventoryService->confirmOrder($order);
+            
+            $order->statusLogs()->create([
+                'status' => 'confirmed',
+                'notes' => $request->input('notes') ?? 'Order confirmed.',
+                'changed_by' => auth()->id()
+            ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {

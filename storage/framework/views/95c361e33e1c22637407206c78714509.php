@@ -584,6 +584,17 @@
                                 <span class="badge small" 
                                       :style="`background-color: ${getStatusColor(order.status)}; color: #fff`"
                                       x-text="order.statusLabel"></span>
+                                <template x-if="order.status === 'pending' && order.scheduledConfirmDate">
+                                    <div class="mt-1" style="font-size: 0.7rem;">
+                                        <div class="text-primary fw-semibold" title="Scheduled Confirmation Date">
+                                            <i class="bi bi-calendar-event me-1"></i>
+                                            <span x-text="new Date(order.scheduledConfirmDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit', hour12: true })"></span>
+                                        </div>
+                                        <div class="text-muted mt-1" x-show="order.confirmAttempts > 0">
+                                            <i class="bi bi-arrow-repeat me-1"></i>Attempts: <span class="fw-bold" x-text="order.confirmAttempts"></span>
+                                        </div>
+                                    </div>
+                                </template>
                             </td>
                             <td>
                                 <template x-if="!order.isDraft">
@@ -1305,6 +1316,82 @@
             <div class="modal-footer border-top-0 pt-0 mt-3">
                 <button type="button" class="btn btn-secondary" @click="cancelImport()">Cancel</button>
                 <button type="button" class="btn btn-primary" @click="confirmImport()">Confirm Import</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ═══════════════════════ Confirm Order Modal ═══════════════════════════ -->
+<div class="modal fade" id="confirmOrderModal" tabindex="-1" aria-labelledby="confirmOrderModalLabel">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="confirmOrderModalLabel">
+                    <i class="bi bi-check-circle me-2 text-primary"></i>Confirm Order <span class="text-primary" x-text="confirmModalOrder?.orderNumber"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <template x-if="confirmModalOrder?.scheduledConfirmDate">
+                    <div class="alert bg-info bg-opacity-10 border border-info border-opacity-25 shadow-sm mb-4 rounded-3">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="bi bi-calendar-event fs-5 me-2 text-info"></i>
+                            <h6 class="fw-bold text-info-emphasis mb-0">Currently Scheduled</h6>
+                        </div>
+                        <div class="small ms-4 ps-1 text-body">
+                            <div class="mb-1"><strong class="text-body-emphasis">Date:</strong> <span class="fw-medium text-body" x-text="new Date(confirmModalOrder.scheduledConfirmDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', year:'numeric', hour: '2-digit', minute:'2-digit', hour12: true })"></span></div>
+                            <div><strong class="text-body-emphasis">Previous Attempts:</strong> <span class="badge bg-warning text-dark ms-1" x-text="confirmModalOrder.confirmAttempts || 0"></span></div>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="mb-4">
+                    <p class="text-muted mb-2">How would you like to process this order?</p>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="confirmAction" id="actionConfirmNow" value="now" x-model="confirmAction">
+                        <label class="form-check-label fw-semibold text-body-emphasis" for="actionConfirmNow">
+                            Confirm Immediately
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="confirmAction" id="actionSchedule" value="schedule" x-model="confirmAction">
+                        <label class="form-check-label fw-semibold text-body-emphasis" for="actionSchedule">
+                            Schedule for Future Confirmation
+                        </label>
+                    </div>
+                </div>
+
+                <div x-show="confirmAction === 'schedule'" x-cloak x-transition>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-body-emphasis">Reason for Reschedule <span class="text-danger">*</span></label>
+                        <select class="form-select" x-model="scheduleReason">
+                            <option value="">Select reason...</option>
+                            <option value="customer_not_reachable">Customer Not Reachable</option>
+                            <option value="waiting_for_payment">Waiting for Payment Confirmation</option>
+                            <option value="customer_requested_delay">Customer Requested Delay</option>
+                            <option value="stock_verification_pending">Stock Verification Pending</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-body-emphasis">Follow-up / Scheduled Date <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control" x-model="scheduledConfirmDate" :min="new Date().toISOString().slice(0,16)">
+                        <div class="form-text mt-1 text-muted"><i class="bi bi-info-circle me-1"></i>The order will remain pending and tracked for this date.</div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-body-emphasis">Internal Notes (Optional)</label>
+                    <textarea class="form-control" rows="2" x-model="confirmNotes" placeholder="Any additional notes regarding this action..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" @click="submitConfirmOrder()">
+                    <span x-text="confirmAction === 'schedule' ? 'Save Schedule' : 'Confirm Order'"></span>
+                </button>
             </div>
         </div>
     </div>
