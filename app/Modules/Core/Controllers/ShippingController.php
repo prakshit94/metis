@@ -121,6 +121,8 @@ class ShippingController extends Controller implements HasMiddleware
             }
             if (isset($validated['delivered_by'])) {
                 $updateData['delivered_by'] = $validated['delivered_by'];
+            } elseif ($newStatus === 'delivered') {
+                $updateData['delivered_by'] = auth()->user()->name;
             }
 
             $shipment->update($updateData);
@@ -143,8 +145,23 @@ class ShippingController extends Controller implements HasMiddleware
                     $inventoryService->dispatchOrder($order);
                 } elseif ($newStatus === 'delivered' && in_array($order->status, ['dispatched', 'shipped'], true)) {
                     $inventoryService->deliverOrder($order);
+                    $order->statusLogs()->create([
+                        'status' => 'delivered',
+                        'notes' => 'Shipment delivered.',
+                        'changed_by' => auth()->id()
+                    ]);
                 } elseif ($newStatus === 'returned' && !in_array($order->status, ['returned', 'cancelled'], true)) {
                     $inventoryService->returnOrder($order);
+                }
+                
+                // Add status log for rescheduling if applicable
+                if (isset($validated['next_followup_date'])) {
+                    $reasonText = isset($validated['reschedule_reason']) ? 'Reason: ' . ucfirst(str_replace('_', ' ', $validated['reschedule_reason'])) . '. ' : '';
+                    $order->statusLogs()->create([
+                        'status' => 'delivery_rescheduled',
+                        'notes' => $reasonText . ($validated['description'] ?? 'Scheduled for future delivery attempt.'),
+                        'changed_by' => auth()->id()
+                    ]);
                 }
             }
         });
@@ -160,7 +177,7 @@ class ShippingController extends Controller implements HasMiddleware
      */
     public function trackingEvents(Shipment $shipment): JsonResponse
     {
-
+        $shipment->load('order.statusLogs.user');
         return response()->json([
             'shipment' => $shipment,
             'events' => $shipment->events()->orderBy('occurred_at', 'desc')->get(),

@@ -789,74 +789,17 @@
 .admin-wrapper {
   &.sidebar-collapsed {
     .admin-sidebar {
-      width: var(--sidebar-mini-width);
-
-      .sidebar-nav {
-        .nav-link {
-          justify-content: center;
-          padding: 0.7rem 0.5rem;
-          border-radius: 0.5rem;
-
-          span {
-            display: none;
-          }
-
-          .badge {
-            display: none;
-          }
-
-          .bi-chevron-down {
-            display: none;
-          }
-
-          i:first-child {
-            margin-right: 0;
-            font-size: 1.15rem;
-            width: 1.5rem;
-          }
-        }
-
-        .nav-item {
-          small {
-            display: none;
-          }
-        }
-
-        // Hide section labels in collapsed state
-        .sidebar-section-label {
-          small {
-            display: none;
-          }
-          // Show a thin divider line instead
-          &::before {
-            content: "";
-            display: block;
-            height: 1px;
-            background-color: var(--bs-border-color);
-            margin: 0.5rem 0.75rem;
-            opacity: 0.5;
-          }
-        }
-
-        // Hide submenu in collapsed state
-        .collapse {
-          display: none !important;
-        }
-
-        // Active state indicator position override
-        .nav-link.active {
-          &::before {
-            left: 0.125rem;
-            top: 0.4rem;
-            bottom: 0.4rem;
-          }
-        }
-      }
+      width: 0 !important;
+      min-width: 0 !important;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-100%);
     }
 
     .admin-main,
     .admin-footer {
-      margin-left: var(--sidebar-mini-width);
+      margin-left: 0 !important;
     }
   }
 }

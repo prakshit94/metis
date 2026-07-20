@@ -563,15 +563,50 @@ class OrderController extends Controller implements HasMiddleware
         return response()->json(['success' => true, 'message' => 'Order moved to processing.']);
     }
 
-    public function markDelivered(string $id, InventoryService $inventoryService)
+    public function markDelivered(string $id, Request $request, InventoryService $inventoryService)
     {
         $order = Order::findOrFail($id);
         if (!in_array($order->status, ['dispatched', 'shipped'], true)) {
             return response()->json(['error' => 'Only dispatched orders can be marked as delivered.'], 400);
         }
 
+        if ($request->input('action') === 'schedule') {
+            $request->validate([
+                'scheduled_date' => 'required|date',
+            ]);
+            
+            $shipment = $order->shipments()->latest()->first();
+            if ($shipment) {
+                $shipment->next_followup_date = $request->input('scheduled_date');
+                $shipment->reschedule_reason = $request->input('reason');
+                $shipment->increment('delivery_attempts');
+                $shipment->save();
+            }
+
+            $reasonText = $request->filled('reason') ? 'Reason: ' . ucfirst(str_replace('_', ' ', $request->input('reason'))) . '. ' : '';
+            $order->statusLogs()->create([
+                'status' => 'delivery_rescheduled',
+                'notes' => $reasonText . ($request->input('notes') ?? 'Scheduled for future delivery attempt.'),
+                'changed_by' => auth()->id()
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Delivery attempt rescheduled.']);
+        }
+
         try {
             $inventoryService->deliverOrder($order);
+            
+            $shipment = $order->shipments()->latest()->first();
+            if ($shipment) {
+                $shipment->delivered_by = $request->filled('delivered_by') ? $request->input('delivered_by') : auth()->user()->name;
+                $shipment->save();
+            }
+
+            $order->statusLogs()->create([
+                'status' => 'delivered',
+                'notes' => $request->input('notes') ?? 'Order delivered.',
+                'changed_by' => auth()->id()
+            ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {

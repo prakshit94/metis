@@ -595,6 +595,20 @@
                                         </div>
                                     </div>
                                 </template>
+                                <template x-if="order.shipment?.next_followup_date && (order.status === 'dispatched' || order.status === 'shipped')">
+                                    <div class="mt-1" style="font-size: 0.7rem;">
+                                        <div class="text-warning-emphasis fw-semibold" title="Scheduled Delivery Date">
+                                            <i class="bi bi-calendar-event me-1 text-warning"></i>
+                                            <span x-text="new Date(order.shipment.next_followup_date).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit', hour12: true })"></span>
+                                        </div>
+                                        <div class="text-muted mt-1" x-show="order.shipment.delivery_attempts > 0">
+                                            <i class="bi bi-arrow-repeat me-1 text-danger"></i>Attempts: <span class="fw-bold text-danger" x-text="order.shipment.delivery_attempts"></span>
+                                        </div>
+                                        <div class="text-muted mt-1 text-truncate" style="max-width: 150px;" x-show="order.shipment.reschedule_reason" :title="order.shipment.reschedule_reason">
+                                            <i class="bi bi-info-circle me-1"></i><span x-text="order.shipment.reschedule_reason"></span>
+                                        </div>
+                                    </div>
+                                </template>
                             </td>
                             <td>
                                 <template x-if="!order.isDraft">
@@ -1346,6 +1360,33 @@
                     </div>
                 </template>
 
+                <template x-if="confirmModalOrder?.original?.status_logs && confirmModalOrder.original.status_logs.length > 0">
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3 text-body-emphasis border-bottom pb-2">
+                            <i class="bi bi-clock-history me-2"></i>Status History
+                        </h6>
+                        <div class="position-relative ms-2 ps-3 border-start border-secondary border-opacity-25 border-2" style="max-height: 200px; overflow-y: auto;">
+                            <template x-for="log in confirmModalOrder.original.status_logs" :key="log.id">
+                                <div class="position-relative mb-3">
+                                    <div class="position-absolute bg-secondary rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <p class="fw-bold text-body-emphasis mb-0 small text-capitalize" x-text="log.status.replace(/_/g, ' ')"></p>
+                                            <p class="text-muted mb-0" style="font-size: 0.75rem;">
+                                                <span x-text="formatDateTime(log.created_at)"></span>
+                                                <template x-if="log.user">
+                                                    <span> &bull; by <span x-text="log.user.name"></span></span>
+                                                </template>
+                                            </p>
+                                            <p class="text-secondary small mt-1 lh-sm mb-0" x-show="log.notes" x-text="log.notes"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
                 <div class="mb-4">
                     <p class="text-muted mb-2">How would you like to process this order?</p>
                     <div class="form-check mb-2">
@@ -1391,6 +1432,111 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" @click="submitConfirmOrder()">
                     <span x-text="confirmAction === 'schedule' ? 'Save Schedule' : 'Confirm Order'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════ Deliver Order Modal ═══════════════════════════ -->
+<div class="modal fade" id="deliverOrderModal" tabindex="-1" aria-labelledby="deliverOrderModalLabel">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="deliverOrderModalLabel">
+                    <i class="bi bi-check2-all me-2 text-success"></i>Deliver Order <span class="text-success" x-text="deliverModalOrder?.orderNumber"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <template x-if="deliverModalOrder?.shipment?.next_followup_date">
+                    <div class="alert bg-warning bg-opacity-10 border border-warning border-opacity-25 shadow-sm mb-4 rounded-3">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="bi bi-calendar-event fs-5 me-2 text-warning"></i>
+                            <h6 class="fw-bold text-warning-emphasis mb-0">Currently Scheduled Attempt</h6>
+                        </div>
+                        <div class="small ms-4 ps-1 text-body">
+                            <div class="mb-1"><strong class="text-body-emphasis">Date:</strong> <span class="fw-medium text-body" x-text="new Date(deliverModalOrder.shipment.next_followup_date).toLocaleString('en-IN', { day: '2-digit', month: 'short', year:'numeric', hour: '2-digit', minute:'2-digit', hour12: true })"></span></div>
+                            <div><strong class="text-body-emphasis">Previous Attempts:</strong> <span class="badge bg-danger ms-1" x-text="deliverModalOrder.shipment.delivery_attempts || 0"></span></div>
+                            <div x-show="deliverModalOrder.shipment.reschedule_reason"><strong class="text-body-emphasis">Reason:</strong> <span class="fw-medium text-body" x-text="deliverModalOrder.shipment.reschedule_reason"></span></div>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="deliverModalOrder?.original?.status_logs && deliverModalOrder.original.status_logs.length > 0">
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3 text-body-emphasis border-bottom pb-2">
+                            <i class="bi bi-clock-history me-2"></i>Status History
+                        </h6>
+                        <div class="position-relative ms-2 ps-3 border-start border-secondary border-opacity-25 border-2" style="max-height: 200px; overflow-y: auto;">
+                            <template x-for="log in deliverModalOrder.original.status_logs" :key="log.id">
+                                <div class="position-relative mb-3">
+                                    <div class="position-absolute bg-secondary rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <p class="fw-bold text-body-emphasis mb-0 small text-capitalize" x-text="log.status.replace(/_/g, ' ')"></p>
+                                            <p class="text-muted mb-0" style="font-size: 0.75rem;">
+                                                <span x-text="formatDateTime(log.created_at)"></span>
+                                                <template x-if="log.user">
+                                                    <span> &bull; by <span x-text="log.user.name"></span></span>
+                                                </template>
+                                            </p>
+                                            <p class="text-secondary small mt-1 lh-sm mb-0" x-show="log.notes" x-text="log.notes"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="mb-4">
+                    <p class="text-muted mb-2">How would you like to update this delivery?</p>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="deliverAction" id="actionDeliverNow" value="now" x-model="deliverAction">
+                        <label class="form-check-label fw-semibold text-body-emphasis" for="actionDeliverNow">
+                            Mark as Delivered
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="deliverAction" id="actionDeliverSchedule" value="schedule" x-model="deliverAction">
+                        <label class="form-check-label fw-semibold text-body-emphasis" for="actionDeliverSchedule">
+                            Record Failed Attempt & Reschedule
+                        </label>
+                    </div>
+                </div>
+
+                <div x-show="deliverAction === 'schedule'" x-cloak x-transition>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-body-emphasis">Reason for Failure <span class="text-danger">*</span></label>
+                        <select class="form-select" x-model="scheduleDeliveryReason">
+                            <option value="">Select reason...</option>
+                            <option value="Customer unavailable">Customer unavailable</option>
+                            <option value="Customer requested future delivery">Customer requested future delivery</option>
+                            <option value="Address issue/Incomplete">Address issue/Incomplete</option>
+                            <option value="Out of delivery area/Time limit">Out of delivery area/Time limit</option>
+                            <option value="Consignee refused to accept">Consignee refused to accept</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-body-emphasis">Next Follow-up Date <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control" x-model="scheduledDeliveryDate" :min="new Date().toISOString().slice(0,16)">
+                    </div>
+                </div>
+
+
+                
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-body-emphasis">Internal Notes (Optional)</label>
+                    <textarea class="form-control" rows="2" x-model="deliverNotes" placeholder="Any additional notes regarding this action..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" @click="submitDeliverOrder()">
+                    <span x-text="deliverAction === 'schedule' ? 'Save Schedule' : 'Mark Delivered'"></span>
                 </button>
             </div>
         </div>

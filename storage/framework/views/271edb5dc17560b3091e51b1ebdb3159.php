@@ -146,6 +146,7 @@
                 </div>
 
                 
+                <?php if(request()->routeIs('orders.create')): ?>
                 <div class="dropdown h-100 d-flex align-items-center" x-data="headerCart">
                     <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
                             style="width: 40px; height: 40px;"
@@ -200,15 +201,16 @@
                         </div>
                         <div class="p-3 border-top bg-body-secondary bg-opacity-50 rounded-bottom-4" x-show="items.length > 0" x-cloak>
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="m-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Gross Subtotal</h6>
-                                <h5 class="m-0 fw-black text-primary" x-text="'Rs ' + total.toFixed(2)"></h5>
+                                <h6 class="m-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Grand Total</h6>
+                                <h5 class="m-0 fw-black text-primary" x-text="'Rs ' + cartGrandTotal.toFixed(2)"></h5>
                             </div>
-                            <a :href="checkoutHref()" class="btn btn-primary w-100 rounded-pill fw-bold text-uppercase shadow-sm d-flex align-items-center justify-content-center gap-2" style="font-size: 11px; letter-spacing: 1px;">
-                                <i class="bi bi-cart-check"></i> Go to Checkout
-                            </a>
+                            <button type="button" @click="handleCartClick" class="btn btn-primary w-100 rounded-pill fw-bold text-uppercase shadow-sm d-flex align-items-center justify-content-center gap-2" style="font-size: 11px; letter-spacing: 1px;">
+                                <i class="bi bi-cart-check"></i> View Cart For Checkout
+                            </button>
                         </div>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 
                 <div x-data="themeSwitch" class="h-100 d-flex align-items-center d-none d-md-flex">
@@ -454,13 +456,35 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('headerCart', () => ({
         items: [],
+        cartGrandTotal: 0,
         init() {
             this.loadCart();
+            this.loadCartTotal();
             this.syncCustomerContext();
             window.addEventListener('storage', (e) => {
                 if (e.key === 'metis_create_order_cart') this.loadCart();
+                if (e.key === 'metis_create_order_cart_total') this.loadCartTotal();
             });
             window.addEventListener('cart-updated', () => this.loadCart());
+            window.addEventListener('cart-total-updated', (e) => {
+                if (e.detail !== undefined) {
+                    this.cartGrandTotal = parseFloat(e.detail) || 0;
+                } else {
+                    this.loadCartTotal();
+                }
+            });
+        },
+        handleCartClick() {
+            if (document.querySelector('[x-data^="createOrderApp"]')) {
+                window.dispatchEvent(new CustomEvent('toggle-cart-sidebar'));
+                const btn = document.getElementById('cartMenuBtn');
+                if (btn && window.bootstrap && window.bootstrap.Dropdown) {
+                    const dropdown = window.bootstrap.Dropdown.getInstance(btn);
+                    if (dropdown) dropdown.hide();
+                }
+            } else {
+                window.location.href = this.checkoutHref();
+            }
         },
         syncCustomerContext() {
             const match = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
@@ -475,6 +499,9 @@ document.addEventListener('alpine:init', () => {
                 this.items = [];
             }
         },
+        loadCartTotal() {
+            this.cartGrandTotal = parseFloat(localStorage.getItem('metis_create_order_cart_total')) || 0;
+        },
         checkoutHref() {
             const pathMatch = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
             const customerId = (pathMatch && pathMatch[1]) || localStorage.getItem('metis_active_customer_id');
@@ -487,9 +514,6 @@ document.addEventListener('alpine:init', () => {
             this.items.splice(index, 1);
             localStorage.setItem('metis_create_order_cart', JSON.stringify(this.items));
             window.dispatchEvent(new CustomEvent('cart-updated'));
-        },
-        get total() {
-            return this.items.reduce((sum, item) => sum + (item.quantity * parseFloat(item.price)), 0);
         }
     }));
 

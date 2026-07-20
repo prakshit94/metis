@@ -530,10 +530,6 @@
                                 <option value="Other">Other</option>
                             </select>
                         </div>
-                        <div class="mb-3" x-show="statusForm.status === 'delivered'">
-                            <label class="form-label fw-semibold">Delivered By</label>
-                            <input type="text" class="form-control" x-model="statusForm.delivered_by" placeholder="Name of delivery person">
-                        </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Note / Description</label>
                             <textarea class="form-control" rows="3" x-model="statusForm.description" placeholder="Optional details for tracking history"></textarea>
@@ -588,7 +584,38 @@
                         </div>
                     </template>
                     
-                    <h6 class="fw-bold mb-3 ps-2">Tracking History</h6>
+                    <template x-if="selectedShipment?.order?.status_logs && selectedShipment.order.status_logs.length > 0">
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3 ps-2">Order Status History</h6>
+                            <div class="card shadow-sm border-0 rounded-4">
+                                <div class="card-body p-4">
+                                    <div class="timeline">
+                                        <template x-for="log in selectedShipment.order.status_logs" :key="log.id">
+                                            <div class="d-flex mb-4">
+                                                <div class="timeline-badge bg-secondary text-white d-flex align-items-center justify-content-center rounded-circle me-3" style="width: 32px; height: 32px; flex-shrink: 0;">
+                                                    <i class="bi bi-clock-history"></i>
+                                                </div>
+                                                <div class="timeline-panel border-bottom pb-2 w-100">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <h6 class="fw-bold mb-0 text-body text-capitalize" x-text="log.status.replace(/_/g, ' ')"></h6>
+                                                        <small class="text-muted" x-text="new Date(log.created_at).toLocaleString()"></small>
+                                                    </div>
+                                                    <template x-if="log.user">
+                                                        <div class="text-secondary small mt-1">
+                                                            <i class="bi bi-person me-1"></i>by <span class="fw-medium" x-text="log.user.name"></span>
+                                                        </div>
+                                                    </template>
+                                                    <p class="text-muted mt-2 mb-0 small" x-show="log.notes" x-text="log.notes"></p>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <h6 class="fw-bold mb-3 ps-2">Shipment Tracking History</h6>
                     <div class="card shadow-sm border-0 rounded-4">
                         <div class="card-body p-4">
                             <template x-if="trackingEvents.length === 0">

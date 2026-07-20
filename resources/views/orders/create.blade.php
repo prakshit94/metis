@@ -40,8 +40,8 @@
     </div>
     @endif
 
-    <div @customer-updated.window="loadAddresses()" class="row g-4">
-        <div :class="cart.length > 0 ? 'col-xl-8' : 'col-xl-12'" style="transition: all 0.3s ease;">
+    <div @customer-updated.window="loadAddresses()" @toggle-cart-sidebar.window="isCartSidebarOpen = !isCartSidebarOpen" class="row g-4">
+        <div :class="isCartSidebarOpen ? 'col-xl-8' : 'col-xl-12'" style="transition: all 0.3s ease;">
             <div id="customer-workspace" class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                     <div>
@@ -337,7 +337,10 @@
                 <div class="card-header bg-transparent border-bottom py-3">
                     <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
                         <span class="fw-bold fs-5"><i class="bi bi-search me-2 text-info"></i>Product Catalog</span>
-                        <div class="d-flex flex-wrap gap-2 flex-grow-1 justify-content-md-end">
+                        <div class="d-flex flex-wrap gap-2 flex-grow-1 justify-content-md-end align-items-center">
+                            <button type="button" class="btn btn-primary" x-show="cart.length > 0 && !isCartSidebarOpen" @click="isCartSidebarOpen = true" x-cloak>
+                                <i class="bi bi-cart-check"></i> View Cart & Checkout (<span x-text="cart.length"></span>)
+                            </button>
                             <div class="btn-group" role="group">
                                 <button type="button" class="btn btn-sm" :class="viewMode === 'grid' ? 'btn-primary' : 'btn-outline-primary'" @click="viewMode = 'grid'" title="Grid View"><i class="bi bi-grid"></i></button>
                                 <button type="button" class="btn btn-sm" :class="viewMode === 'table' ? 'btn-primary' : 'btn-outline-primary'" @click="viewMode = 'table'" title="Table View"><i class="bi bi-list-ul"></i></button>
@@ -533,7 +536,7 @@
                                         <h6 class="fw-bold text-truncate mb-1" x-text="item.name"></h6>
                                         <div class="font-monospace text-muted" style="font-size: 11px;" x-text="item.sku"></div>
                                     </div>
-                                    <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-muted hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Remove">
+                                    <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-muted hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
                                         <i class="bi bi-trash3"></i>
                                     </button>
                                 </div>
@@ -572,7 +575,7 @@
         </div>
 
         {{-- RIGHT: Cart Summary + Calculations + Offers + Place Order (Glossy Style) --}}
-        <div class="col-xl-4" x-show="cart.length > 0" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 translate-x-4">
+        <div class="col-xl-4" x-show="isCartSidebarOpen" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 translate-x-4">
             <div class="sticky-side-div" style="position: sticky; top: 24px;">
                 <div class="card shadow-sm border-0 mb-4" x-show="cart.length > 0" x-cloak>
                     <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
@@ -597,13 +600,13 @@
                                     <div class="rounded-3 bg-body-tertiary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
                                         <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                     </div>
-                                    <div class="flex-grow-1 min-w-0">
+                                    <div class="flex-grow-1" style="min-width: 0;">
                                         <div class="d-flex align-items-start justify-content-between gap-2">
-                                            <div class="min-w-0">
+                                            <div style="min-width: 0;">
                                                 <h6 class="fw-bold text-truncate mb-1" x-text="item.name"></h6>
-                                                <div class="font-monospace text-muted" style="font-size: 11px;" x-text="item.sku"></div>
+                                                <div class="font-monospace text-muted text-truncate" style="font-size: 11px;" x-text="item.sku"></div>
                                             </div>
-                                            <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-muted hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Remove">
+                                            <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-muted hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
                                                 <i class="bi bi-trash3"></i>
                                             </button>
                                         </div>
@@ -627,7 +630,7 @@
                                             <i class="bi bi-plus"></i>
                                         </button>
                                     </div>
-                                    <div class="flex-grow-1 min-w-0 d-flex justify-content-end align-items-center gap-2">
+                                    <div class="flex-grow-1 d-flex justify-content-end align-items-center gap-2" style="min-width: 0;">
                                         <template x-if="item.discountValue > 0">
                                             <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-flex align-items-center gap-1 px-2 py-1 rounded-3">
                                                 <i class="bi bi-tag-fill"></i>
@@ -1435,6 +1438,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
     return {
         activeTab: 'customer',
         viewMode: 'table',
+        isCartSidebarOpen: false,
         partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '{{ $warehouses->first()->id ?? '' }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale',
         orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
         isDraft: false, futureOrderDate: '',
@@ -1478,6 +1482,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             if (initialOrder) {
                 this.applyOrderForEdit(initialOrder);
                 localStorage.removeItem('metis_create_order_cart');
+                this.isCartSidebarOpen = true;
             } else {
                 const saved = localStorage.getItem('metis_create_order_cart');
                 if (saved) {
@@ -1493,6 +1498,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 if (v.length === 0) {
                     this.removeCoupon();
                     this.appliedOfferId = null;
+                    this.isCartSidebarOpen = false;
                 } else {
                     if (this.couponApplied) {
                         this.applyCoupon();
@@ -1505,6 +1511,12 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     }
                 }
             });
+
+            this.$watch('grandTotal', v => {
+                localStorage.setItem('metis_create_order_cart_total', v);
+                window.dispatchEvent(new CustomEvent('cart-total-updated', { detail: v }));
+            });
+            localStorage.setItem('metis_create_order_cart_total', this.grandTotal);
 
             // Listen for notify events (e.g. address saved, profile updated)
             window.addEventListener('notify', (e) => {
@@ -1995,7 +2007,15 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 this.cart = [];
                 const successMessage = this.editingOrderId ? 'Order updated successfully!' : 'Order placed successfully!';
                 window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:successMessage}}));
-                setTimeout(() => { window.location.href = '/orders?success=' + encodeURIComponent(successMessage); }, 800);
+                this.loadAddresses(); // Refresh the customer's recent orders list
+                if (this.editingOrderId) {
+                    this.editingOrderId = null;
+                    this.editingOrderNo = null;
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('order_id');
+                    url.searchParams.delete('step');
+                    window.history.pushState({}, '', url);
+                }
             } catch(e) { this.formErrors.push('An unexpected error occurred.'); }
             finally { this.placing = false; }
         },

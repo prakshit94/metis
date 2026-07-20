@@ -440,6 +440,9 @@ export default () => {
                 defaultFollowUp = tomorrow.toISOString().split('T')[0];
             }
 
+            const userNameMeta = document.querySelector('meta[name="user-name"]');
+            const userName = userNameMeta ? userNameMeta.content : '';
+
             this.statusForm = {
                 status: shipment.status,
                 location: '',
@@ -447,7 +450,7 @@ export default () => {
                 delivery_attempts: (shipment.delivery_attempts || 0) + 1,
                 next_followup_date: defaultFollowUp,
                 reschedule_reason: shipment.reschedule_reason || '',
-                delivered_by: shipment.delivered_by || ''
+                delivered_by: shipment.delivered_by || userName
             };
             this.statusModal?.show();
         },

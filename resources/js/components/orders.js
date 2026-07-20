@@ -588,6 +588,9 @@ document.addEventListener('alpine:init', () => {
           status: shipment.status || 'N/A',
           shippedAt: shipment.shipped_at || null,
           deliveredAt: shipment.delivered_at || null,
+          delivery_attempts: shipment.delivery_attempts || 0,
+          next_followup_date: shipment.next_followup_date || null,
+          reschedule_reason: shipment.reschedule_reason || null,
           events: Array.isArray(shipment.events) ? shipment.events : [],
         } : null,
         payments: payments.map(payment => ({
@@ -945,27 +948,48 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    async deliverOrder(order) {
-      const confirmed = await Swal.fire({
-        title: 'Deliver Order?',
-        text: `Mark order ${order.orderNumber} as delivered?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, delivered',
-        cancelButtonText: 'Cancel',
-        customClass: {
-          confirmButton: 'btn btn-primary me-2',
-          cancelButton: 'btn btn-secondary',
-          popup: 'rounded-3 shadow-lg',
-          title: 'fs-4 fw-bold'
-        },
-        buttonsStyling: false
-      });
-      if (!confirmed.isConfirmed) return;
+    deliverOrder(order) {
+      const userNameMeta = document.querySelector('meta[name="user-name"]');
+      const userName = userNameMeta ? userNameMeta.content : '';
+
+      this.deliverModalOrder = order;
+      this.deliverAction = 'now';
+      this.scheduledDeliveryDate = '';
+      this.scheduleDeliveryReason = '';
+      this.deliveredBy = userName;
+      this.deliverNotes = '';
+      const modal = getModal('#deliverOrderModal');
+      if (modal) modal.show();
+    },
+
+    async submitDeliverOrder() {
+      if (!this.deliverModalOrder) return;
+      if (this.deliverAction === 'schedule' && !this.scheduledDeliveryDate) {
+        showToast('Please select a scheduled date.', 'warning');
+        return;
+      }
+      if (this.deliverAction === 'schedule' && !this.scheduleDeliveryReason) {
+        showToast('Please select a reason for rescheduling.', 'warning');
+        return;
+      }
 
       try {
-        const res = await apiFetch(`/orders/${order.id}/deliver`, { method: 'POST' });
-        showToast(res.message || 'Order marked as delivered.');
+        const payload = {
+          action: this.deliverAction,
+          scheduled_date: this.deliverAction === 'schedule' ? this.scheduledDeliveryDate : null,
+          reason: this.deliverAction === 'schedule' ? this.scheduleDeliveryReason : null,
+          delivered_by: this.deliverAction === 'now' ? this.deliveredBy : null,
+          notes: this.deliverNotes
+        };
+        
+        const res = await apiFetch(`/orders/${this.deliverModalOrder.id}/deliver`, { 
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        
+        showToast(res.message || 'Order updated successfully.');
+        const modal = getModal('#deliverOrderModal');
+        if (modal) modal.hide();
         this.loadOrders();
       } catch (err) {
         showToast(err.message, 'danger');

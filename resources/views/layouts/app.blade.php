@@ -10,6 +10,7 @@
     <meta name="keywords" content="bootstrap, admin, dashboard, template, modern, responsive">
     <meta name="author" content="Bootstrap Admin Template">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="user-name" content="{{ auth()->user()->name ?? '' }}">
 
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="@yield('title', 'Metis Admin')">
