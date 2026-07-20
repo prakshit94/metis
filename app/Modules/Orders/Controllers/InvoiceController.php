@@ -5,9 +5,19 @@ namespace App\Modules\Orders\Controllers;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Invoice;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class InvoiceController extends Controller
+class InvoiceController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:orders.view', only: ['index', 'show', 'exportSelected']),
+            new Middleware('permission:orders.receipt', only: ['bulkStatus', 'recordPayment']),
+        ];
+    }
+
     public function index(Request $request)
     {
         $query = Invoice::with(['order.party', 'payments']);

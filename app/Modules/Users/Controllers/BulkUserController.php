@@ -38,12 +38,16 @@ class BulkUserController extends Controller
 
         abort_unless($request->user()?->can($ability), 403);
 
-        // Prevent deleting the last Super Admin
-        if ($action === 'delete' || $action === 'force-delete') {
-            $superAdminIds = User::role('Super Admin')->pluck('id')->toArray();
-            $overlapping   = array_intersect($ids, $superAdminIds);
+        // Prevent unauthorized modification of Super Admins
+        $superAdminIds = User::role('Super Admin')->pluck('id')->toArray();
+        $overlapping   = array_intersect($ids, $superAdminIds);
 
-            if (! empty($overlapping) && count($superAdminIds) <= count($overlapping)) {
+        if (! empty($overlapping)) {
+            if (! $request->user()?->hasRole('Super Admin')) {
+                return response()->json(['message' => 'You cannot modify Super Admin users.'], 403);
+            }
+            
+            if (($action === 'delete' || $action === 'force-delete') && count($superAdminIds) <= count($overlapping)) {
                 return response()->json([
                     'message' => $action === 'force-delete'
                         ? 'Cannot permanently delete the last Super Admin user.'

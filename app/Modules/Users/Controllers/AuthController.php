@@ -85,7 +85,15 @@ class AuthController extends Controller
         $user = User::where('email', $email)->first();
 
         // Validate credentials — use Hash::check to avoid timing side-channels
-        if ($user === null || ! Hash::check($request->validated('password'), $user->password)) {
+        $isValid = false;
+        if ($user !== null) {
+            $isValid = Hash::check($request->validated('password'), $user->password);
+        } else {
+            // Dummy hash to prevent timing-based user enumeration attacks
+            Hash::check($request->validated('password'), '$2y$12$R.vP3sZq1WJ/1q0kK8M9V.Qn6Qx.X.vP9Q..');
+        }
+
+        if ($user === null || ! $isValid) {
             // Fire the native Failed event so our listener captures it
             Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
 
@@ -152,91 +160,6 @@ class AuthController extends Controller
         ]);
     }
 
-    // ─── Impersonation ────────────────────────────────────────────────────────
-
-    /**
-     * Generate an impersonation token for the target user.
-     *
-     * Security guardrails:
-     *  - Requires user-impersonate permission on the acting user
-     *  - Cannot impersonate another Super Admin
-     *  - The action is logged in login_histories as 'impersonated_login'
-     *  - The token is short-lived (24 hours)
-     */
-    public function impersonate(Request $request, User $user): JsonResponse
-    {
-        Gate::authorize('user-impersonate');
-
-        /** @var User $actor */
-        $actor = $request->user();
-
-        // Prevent impersonating a Super Admin
-        if ($user->hasRole('Super Admin')) {
-            return response()->json([
-                'message' => 'You cannot impersonate a Super Admin.',
-            ], 403);
-        }
-
-        // Prevent self-impersonation
-        if ($actor->id === $user->id) {
-            return response()->json(['message' => 'You cannot impersonate yourself.'], 422);
-        }
-
-        // Revoke any existing impersonation tokens for this target user
-        $user->tokens()->where('name', 'like', 'impersonation:%')->delete();
-
-        $expiresAt = Carbon::now()->addHours(24);
-
-        $token = $user->createToken(
-            name:       "impersonation:{$actor->id}",
-            abilities:  ['*'],
-            expiresAt:  $expiresAt,
-        );
-
-        // Audit the impersonation
-        LoginHistory::create([
-            'user_id'        => $user->id,
-            'email_attempted' => $user->email,
-            'ip_address'     => $request->ip() ?? '0.0.0.0',
-            'user_agent'     => $request->userAgent(),
-            'device_type'    => $this->deviceType($request),
-            'status'         => 'impersonated',
-            'failure_reason' => "impersonated_by:{$actor->id}",
-            'attempted_at'   => Carbon::now(),
-        ]);
-
-        return response()->json([
-            'message'          => "Impersonation token created for user [{$user->id}] {$user->email}.",
-            'impersonated_user' => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'email' => $user->email,
-            ],
-            'token'            => $token->plainTextToken,
-            'expires_at'       => $expiresAt->toIso8601String(),
-            'acting_as'        => [
-                'id'   => $actor->id,
-                'name' => $actor->name,
-            ],
-        ]);
-    }
-
-    /**
-     * Revoke the current impersonation token (stop impersonating).
-     */
-    public function stopImpersonating(Request $request): JsonResponse
-    {
-        $currentToken = $request->user()?->currentAccessToken();
-
-        if ($currentToken === null || ! str_starts_with((string) $currentToken->name, 'impersonation:')) {
-            return response()->json(['message' => 'No active impersonation session found.'], 422);
-        }
-
-        $currentToken->delete();
-
-        return response()->json(['message' => 'Impersonation ended. Token revoked.']);
-    }
-
     // ─── Private Helpers ──────────────────────────────────────────────────────
 
     /**
@@ -262,7 +185,7 @@ class AuthController extends Controller
      */
     private function issueMobileToken(Request $request, User $user): JsonResponse
     {
-        Auth::login($user); // fires the Login event → LogAuthenticationAttempts
+        Event::dispatch(new \Illuminate\Auth\Events\Login('sanctum', $user, false)); // fires the Login event → LogAuthenticationAttempts
 
         $deviceName = $this->extractDeviceName($request);
         $expiresAt  = Carbon::now()->addDays(self::TOKEN_EXPIRY_DAYS);

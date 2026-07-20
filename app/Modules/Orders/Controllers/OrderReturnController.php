@@ -11,9 +11,19 @@ use App\Services\FinancialService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class OrderReturnController extends Controller
+class OrderReturnController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:orders.view', only: ['index', 'show']),
+            new Middleware('permission:orders.return', only: ['store', 'processQc', 'processFinancials']),
+        ];
+    }
+
     public function index(Request $request)
     {
         $query = OrderReturn::with(['order.party', 'order.payments', 'items.product', 'refunds', 'creditNote']);

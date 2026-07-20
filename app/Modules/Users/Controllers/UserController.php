@@ -58,7 +58,27 @@ class UserController extends Controller implements HasMiddleware
 
         $deletedFilter = $request->input('deleted');
 
+        $activeSessionUserIds = \Illuminate\Support\Facades\DB::table('sessions')
+            ->where('last_activity', '>=', now()->subMinutes(15)->getTimestamp())
+            ->pluck('user_id')
+            ->filter()
+            ->toArray();
+
+        $activeApiUserIds = \Illuminate\Support\Facades\DB::table('personal_access_tokens')
+            ->where('tokenable_type', User::class)
+            ->where(function($query) {
+                $query->where('last_used_at', '>=', now()->subMinutes(15))
+                      ->orWhere('created_at', '>=', now()->subMinutes(15));
+            })
+            ->pluck('tokenable_id')
+            ->filter()
+            ->toArray();
+
+        $allActiveUserIds = array_map('intval', array_unique(array_merge($activeSessionUserIds, $activeApiUserIds)));
+        $activeUserIdsString = empty($allActiveUserIds) ? '0' : implode(',', $allActiveUserIds);
+
         $users = User::query()
+            ->select('users.*')
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
             ->with(['roles', 'permissions'])
@@ -66,13 +86,13 @@ class UserController extends Controller implements HasMiddleware
                 $request->filled('search'),
                 fn ($q) => $q->where(function ($inner) use ($request): void {
                     $term = '%' . $request->input('search') . '%';
-                    $inner->where('name', 'like', $term)
-                        ->orWhere('first_name', 'like', $term)
-                        ->orWhere('middle_name', 'like', $term)
-                        ->orWhere('last_name', 'like', $term)
-                        ->orWhere('email', 'like', $term)
-                        ->orWhere('phone', 'like', $term)
-                        ->orWhere('department', 'like', $term);
+                    $inner->where('users.name', 'like', $term)
+                        ->orWhere('users.first_name', 'like', $term)
+                        ->orWhere('users.middle_name', 'like', $term)
+                        ->orWhere('users.last_name', 'like', $term)
+                        ->orWhere('users.email', 'like', $term)
+                        ->orWhere('users.phone', 'like', $term)
+                        ->orWhere('users.department', 'like', $term);
                 }),
             )
             ->when(
@@ -81,10 +101,34 @@ class UserController extends Controller implements HasMiddleware
             )
             ->when(
                 $request->has('is_active'),
-                fn ($q) => $q->where('is_active', (bool) $request->input('is_active')),
+                fn ($q) => $q->where('users.is_active', (bool) $request->input('is_active')),
             )
-            ->orderBy($sortBy, $sortDir)
+            ->orderByRaw("users.id IN ($activeUserIdsString) DESC")
+            ->orderBy(in_array($sortBy, ['name', 'first_name', 'last_name', 'email', 'created_at', 'updated_at']) ? "users.{$sortBy}" : $sortBy, $sortDir)
             ->paginate($perPage);
+
+        $userIds = $users->getCollection()->pluck('id')->toArray();
+
+        $latestLoginHistories = \Illuminate\Support\Facades\DB::table('login_histories')
+            ->whereIn('id', function($q) use ($userIds) {
+                $q->select(\Illuminate\Support\Facades\DB::raw('MAX(id)'))
+                  ->from('login_histories')
+                  ->whereIn('user_id', $userIds)
+                  ->where('status', 'success')
+                  ->groupBy('user_id');
+            })
+            ->get()
+            ->keyBy('user_id');
+
+        $users->getCollection()->transform(function ($user) use ($allActiveUserIds, $latestLoginHistories) {
+            $user->is_online = in_array($user->id, $allActiveUserIds);
+            
+            $latestLogin = $latestLoginHistories[$user->id] ?? null;
+            $user->last_login_at = $latestLogin ? $latestLogin->attempted_at : null;
+            $user->device_type = $latestLogin ? ucfirst($latestLogin->device_type) : 'Web';
+            
+            return $user;
+        });
 
         return response()->json($users);
     }
@@ -102,17 +146,33 @@ class UserController extends Controller implements HasMiddleware
             'middle_name' => $validated['middle_name'] ?? null,
             'last_name'   => $validated['last_name'] ?? null,
             'email'       => $validated['email'],
-            'password'    => Hash::make($validated['password']),
+            'password'    => \Illuminate\Support\Facades\Hash::make($validated['password']),
             'is_active'   => $validated['is_active'] ?? true,
             'phone'       => $validated['phone'] ?? null,
             'department'  => $validated['department'] ?? null,
+            'employee_id' => $validated['employee_id'] ?? null,
+            'photo'       => $validated['photo'] ?? null,
+            'joining_date'=> $validated['joining_date'] ?? null,
         ]);
 
+        if ($request->hasFile('photo_file')) {
+            $file = $request->file('photo_file');
+            $extension = $file->extension() ?: 'jpg';
+            $filename = 'user-' . $user->id . '-' . time() . '.' . $extension;
+            $user->photo = asset('storage/' . $file->storeAs('users/photos', $filename, 'public'));
+            $user->save();
+        }
+
         if (! empty($validated['roles'])) {
+            abort_unless($request->user()?->can('user-sync-roles'), 403, 'You do not have permission to sync roles.');
+            if (in_array('Super Admin', $validated['roles']) && ! $request->user()?->hasRole('Super Admin')) {
+                return response()->json(['message' => 'You cannot assign the Super Admin role without being a Super Admin.'], 403);
+            }
             $user->syncRoles($validated['roles']);
         }
 
         if (! empty($validated['permissions'])) {
+            abort_unless($request->user()?->can('user-sync-permissions'), 403, 'You do not have permission to sync permissions.');
             $user->syncPermissions($validated['permissions']);
         }
 
@@ -152,10 +212,14 @@ class UserController extends Controller implements HasMiddleware
      */
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
+        if ($user->hasRole('Super Admin') && ! $request->user()?->hasRole('Super Admin')) {
+            return response()->json(['message' => 'You cannot modify a Super Admin user.'], 403);
+        }
+
         $validated = $request->validated();
 
         $fillable = [];
-        foreach (['name', 'first_name', 'middle_name', 'last_name', 'email', 'is_active', 'phone', 'department'] as $field) {
+        foreach (['name', 'first_name', 'middle_name', 'last_name', 'email', 'is_active', 'phone', 'department', 'employee_id', 'photo', 'joining_date'] as $field) {
             if (array_key_exists($field, $validated)) {
                 $fillable[$field] = $validated[$field];
             }
@@ -164,15 +228,27 @@ class UserController extends Controller implements HasMiddleware
             $fillable['password'] = Hash::make($validated['password']);
         }
 
+        if ($request->hasFile('photo_file')) {
+            $file = $request->file('photo_file');
+            $extension = $file->extension() ?: 'jpg';
+            $filename = 'user-' . $user->id . '-' . time() . '.' . $extension;
+            $fillable['photo'] = asset('storage/' . $file->storeAs('users/photos', $filename, 'public'));
+        }
+
         if (! empty($fillable)) {
             $user->update($fillable);
         }
 
         if (array_key_exists('roles', $validated)) {
+            abort_unless($request->user()?->can('user-sync-roles'), 403, 'You do not have permission to sync roles.');
+            if (in_array('Super Admin', $validated['roles']) && ! $request->user()?->hasRole('Super Admin')) {
+                return response()->json(['message' => 'You cannot assign the Super Admin role without being a Super Admin.'], 403);
+            }
             $user->syncRoles($validated['roles']);
         }
 
         if (array_key_exists('permissions', $validated)) {
+            abort_unless($request->user()?->can('user-sync-permissions'), 403, 'You do not have permission to sync permissions.');
             $user->syncPermissions($validated['permissions']);
         }
 
@@ -203,6 +279,9 @@ class UserController extends Controller implements HasMiddleware
         }
 
         if ($user->hasRole('Super Admin')) {
+            if (! $request->user()?->hasRole('Super Admin')) {
+                return response()->json(['message' => 'You cannot delete a Super Admin user.'], 403);
+            }
             $superAdminCount = User::role('Super Admin')->count();
             if ($superAdminCount <= 1) {
                 return response()->json([
@@ -261,6 +340,9 @@ class UserController extends Controller implements HasMiddleware
             ->findOrFail($user);
 
         if ($user->hasRole('Super Admin')) {
+            if (! $request->user()?->hasRole('Super Admin')) {
+                return response()->json(['message' => 'You cannot permanently delete a Super Admin user.'], 403);
+            }
             $superAdminCount = User::role('Super Admin')->count();
             if (! $user->trashed() && $superAdminCount <= 1) {
                 return response()->json([
@@ -287,6 +369,10 @@ class UserController extends Controller implements HasMiddleware
     public function toggleActive(Request $request, User $user): JsonResponse
     {
         abort_unless($request->user()?->can('user-activate'), 403);
+
+        if ($user->hasRole('Super Admin') && ! $request->user()?->hasRole('Super Admin')) {
+            return response()->json(['message' => 'You cannot modify a Super Admin user.'], 403);
+        }
 
         $newState = ! $user->is_active;
 
@@ -316,7 +402,12 @@ class UserController extends Controller implements HasMiddleware
             'roles.*' => ['string', 'exists:roles,name'],
         ]);
 
-        $user->syncRoles($request->input('roles'));
+        $rolesToAssign = $request->input('roles');
+        if (in_array('Super Admin', $rolesToAssign) && ! $request->user()?->hasRole('Super Admin')) {
+            return response()->json(['message' => 'You cannot assign the Super Admin role without being a Super Admin.'], 403);
+        }
+
+        $user->syncRoles($rolesToAssign);
         $user->load('roles');
 
         return response()->json([
@@ -333,6 +424,10 @@ class UserController extends Controller implements HasMiddleware
     public function syncPermissions(Request $request, User $user): JsonResponse
     {
         abort_unless($request->user()?->can('user-sync-permissions'), 403);
+
+        if ($user->hasRole('Super Admin') && ! $request->user()?->hasRole('Super Admin')) {
+            return response()->json(['message' => 'You cannot modify a Super Admin user.'], 403);
+        }
 
         $request->validate([
             'permissions'   => ['required', 'array'],

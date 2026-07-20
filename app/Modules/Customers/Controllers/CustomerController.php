@@ -22,11 +22,12 @@ class CustomerController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:customer-view', only: ['index', 'show']),
+            new Middleware('permission:customer-view', only: ['index', 'show', 'searchByPhone']),
             new Middleware('permission:customer-create', only: ['store']),
             new Middleware('permission:customer-edit', only: ['update', 'toggleActive', 'bulkAction']),
             new Middleware('permission:customer-delete', only: ['destroy', 'forceDelete']),
             new Middleware('permission:customer-restore', only: ['restore']),
+            new Middleware('permission:orders.create', only: ['placeOrder']),
         ];
     }
 
@@ -338,6 +339,7 @@ class CustomerController extends Controller implements HasMiddleware
      */
     public function forceDelete(Request $request, int|string $customer): JsonResponse
     {
+        abort_unless($request->user()?->can('customer-permanent-delete'), 403);
         $customer = Customer::withTrashed()->findOrFail($customer);
 
         $name = $customer->name;
@@ -382,6 +384,7 @@ class CustomerController extends Controller implements HasMiddleware
         $action = $validated['action'];
 
         if ($action === 'restore') {
+            abort_unless($request->user()?->can('customer-restore'), 403);
             Customer::withTrashed()->whereIn('id', $ids)->get()->each(function (Customer $customer): void {
                 if ($customer->trashed()) {
                     $customer->restore();
@@ -395,6 +398,7 @@ class CustomerController extends Controller implements HasMiddleware
         }
 
         if ($action === 'delete') {
+            abort_unless($request->user()?->can('customer-delete'), 403);
             Customer::whereIn('id', $ids)->delete();
 
             return response()->json([
@@ -404,6 +408,7 @@ class CustomerController extends Controller implements HasMiddleware
         }
 
         if ($action === 'force-delete') {
+            abort_unless($request->user()?->can('customer-permanent-delete'), 403);
             Customer::withTrashed()->whereIn('id', $ids)->get()->each(function (Customer $customer): void {
                 $customer->forceDelete();
             });

@@ -15,11 +15,15 @@ use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
 
-class User extends Authenticatable
+class User extends Authenticatable implements Auditable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes, LogsActivity, AuditableTrait;
 
     /**
      * The attributes that are mass assignable.
@@ -32,6 +36,9 @@ class User extends Authenticatable
         'middle_name',
         'last_name',
         'email',
+        'employee_id',
+        'photo',
+        'joining_date',
         'password',
         'phone',
         'department',
@@ -59,12 +66,21 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at'  => 'datetime',
+            'joining_date'       => 'date',
             'password'           => 'hashed',
             'is_active'          => 'boolean',
             'password_changed_at' => 'datetime',
             'suspended_until'    => 'datetime',
             'deleted_at'         => 'datetime',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     // ─── Relationships ────────────────────────────────────────────────────────
@@ -119,5 +135,14 @@ class User extends Authenticatable
     public function unsuspend(): void
     {
         $this->update(['suspended_until' => null]);
+    }
+    public function readActivities(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            \Spatie\Activitylog\Models\Activity::class,
+            'user_read_activities',
+            'user_id',
+            'activity_id'
+        )->withTimestamps();
     }
 }

@@ -103,8 +103,10 @@ class LoginHistory extends Model
     public function scopeRecentFailedFor(Builder $query, string $email, string $ip, int $minutes = 5): Builder
     {
         return $query
-            ->where('email_attempted', $email)
-            ->where('ip_address', $ip)
+            ->where(function (Builder $q) use ($email, $ip) {
+                $q->where('email_attempted', $email)
+                  ->orWhere('ip_address', $ip);
+            })
             ->where('status', 'failed')
             ->where('failure_reason', '!=', 'throttled')
             ->where('attempted_at', '>=', Carbon::now()->subMinutes($minutes));

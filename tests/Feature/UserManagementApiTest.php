@@ -57,7 +57,7 @@ class UserManagementApiTest extends TestCase
             'email' => 'ada@example.com',
             'password' => 'Password123',
             'password_confirmation' => 'Password123',
-            'phone' => '+1 555 0100',
+            'phone' => '1234567890',
             'department' => 'Research',
         ]);
 
@@ -67,7 +67,7 @@ class UserManagementApiTest extends TestCase
             ->assertJsonPath('data.first_name', 'Ada')
             ->assertJsonPath('data.middle_name', 'Byron')
             ->assertJsonPath('data.last_name', 'Lovelace')
-            ->assertJsonPath('data.phone', '+1 555 0100')
+            ->assertJsonPath('data.phone', '1234567890')
             ->assertJsonPath('data.department', 'Research');
 
         $this->assertDatabaseHas('users', [
@@ -76,7 +76,7 @@ class UserManagementApiTest extends TestCase
             'middle_name' => 'Byron',
             'last_name' => 'Lovelace',
             'email' => 'ada@example.com',
-            'phone' => '+1 555 0100',
+            'phone' => '1234567890',
             'department' => 'Research',
         ]);
     }
@@ -87,7 +87,7 @@ class UserManagementApiTest extends TestCase
             'name' => 'Ops User',
             'first_name' => 'Operations',
             'last_name' => 'User',
-            'phone' => '555-7777',
+            'phone' => '5555557777',
             'department' => 'Operations',
         ]);
         $this->createUser('sales@example.com', [

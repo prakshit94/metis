@@ -303,15 +303,11 @@ document.addEventListener('alpine:init', () => {
 
     // Actions
     editCustomer(c) {
-      const form = Alpine.$data(document.querySelector('[x-data="customerForm"]'));
-      if (form) form.loadCustomer(c);
-      getModal('#customerModal')?.show();
+      window.dispatchEvent(new CustomEvent('open-add-customer-modal', { detail: { customer: c } }));
     },
 
     openCreateCustomer() {
-      const form = Alpine.$data(document.querySelector('[x-data="customerForm"]'));
-      if (form) form.resetForm();
-      getModal('#customerModal')?.show();
+      window.dispatchEvent(new CustomEvent('open-add-customer-modal'));
     },
 
     viewCustomer(c) {
@@ -557,151 +553,6 @@ document.addEventListener('alpine:init', () => {
     }
   }));
 
-  // ─── Customer Form Controller ──────────────────────────────────────────────
-  Alpine.data('customerForm', () => ({
-    editingCustomerId: null,
-    saving: false,
-    form: {
-      firstname: '',
-      middlename: '',
-      lastname: '',
-      email: '',
-      phone: '',
-      alternatemobile: '',
-      relative_mobile: '',
-      phone_number_2: '',
-      relative_phone: '',
-      category: 'individual',
-      company_name: '',
-      land_area: '',
-      land_unit: 'acre',
-      crops: [],
-      irrigation_type: [],
-      credit_limit: 0,
-      credit_days: 0,
-      outstanding_balance: 0,
-      credit_valid_till: '',
-      pan_no: '',
-      gst_no: '',
-      aadhaar_last4: '',
-      kyc_completed: false,
-      is_blacklisted: false,
-      status: 'active',
-      internal_notes: '',
-    },
-
-    availableCrops: ['Wheat', 'Cotton', 'Rice/Paddy', 'Sugarcane', 'Maize', 'Soybean', 'Onion', 'Mustard', 'Garlic'],
-    availableIrrigation: ['Drip', 'Sprinkler', 'Tube Well', 'Canal', 'Rainfed', 'Flow Irrigation'],
-
-    loadCustomer(c) {
-      this.editingCustomerId = c.id;
-      this.form = {
-        firstname: c.firstname ?? '',
-        middlename: c.middlename ?? '',
-        lastname: c.lastname ?? '',
-        email: c.email ?? '',
-        phone: c.phone ?? '',
-        alternatemobile: c.alternatemobile ?? '',
-        relative_mobile: c.relative_mobile ?? '',
-        phone_number_2: c.phone_number_2 ?? '',
-        relative_phone: c.relative_phone ?? '',
-        category: c.category ?? 'individual',
-        company_name: c.company_name ?? '',
-        land_area: c.land_area ?? '',
-        land_unit: c.land_unit ?? 'acre',
-        crops: Array.isArray(c.cropsList) ? [...c.cropsList] : [],
-        irrigation_type: Array.isArray(c.irrigationList) ? [...c.irrigationList] : [],
-        credit_limit: c.credit_limit ?? 0,
-        credit_days: c.credit_days ?? 0,
-        outstanding_balance: c.outstanding_balance ?? 0,
-        credit_valid_till: c.credit_valid_till ?? '',
-        pan_no: c.pan_no ?? '',
-        gst_no: c.gst_no ?? '',
-        aadhaar_last4: c.aadhaar_last4 ?? '',
-        kyc_completed: !!c.kyc_completed,
-        is_blacklisted: !!c.is_blacklisted,
-        status: c.status ?? 'active',
-        internal_notes: c.internal_notes ?? '',
-      };
-
-      // Set active tab to Identity
-      const firstTab = document.querySelector('#customerFormTabs button:first-child');
-      if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
-    },
-
-    resetForm() {
-      this.editingCustomerId = null;
-      this.form = {
-        firstname: '',
-        middlename: '',
-        lastname: '',
-        email: '',
-        phone: '',
-        alternatemobile: '',
-        relative_mobile: '',
-        phone_number_2: '',
-        relative_phone: '',
-        category: 'individual',
-        company_name: '',
-        land_area: '',
-        land_unit: 'acre',
-        crops: [],
-        irrigation_type: [],
-        credit_limit: 0,
-        credit_days: 0,
-        outstanding_balance: 0,
-        credit_valid_till: '',
-        pan_no: '',
-        gst_no: '',
-        aadhaar_last4: '',
-        kyc_completed: false,
-        is_blacklisted: false,
-        status: 'active',
-        internal_notes: '',
-      };
-      
-      const firstTab = document.querySelector('#customerFormTabs button:first-child');
-      if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
-    },
-
-    toggleCrop(crop) {
-      if (this.form.crops.includes(crop)) {
-        this.form.crops = this.form.crops.filter(x => x !== crop);
-      } else {
-        this.form.crops.push(crop);
-      }
-    },
-
-    toggleIrrigation(irr) {
-      if (this.form.irrigation_type.includes(irr)) {
-        this.form.irrigation_type = this.form.irrigation_type.filter(x => x !== irr);
-      } else {
-        this.form.irrigation_type.push(irr);
-      }
-    },
-
-    async saveCustomer() {
-      this.saving = true;
-      try {
-        const payload = { ...this.form };
-        const url = this.editingCustomerId ? `/api/customers/${this.editingCustomerId}` : '/api/customers';
-        const method = this.editingCustomerId ? 'PATCH' : 'POST';
-
-        const res = await apiFetch(url, {
-          method,
-          body: JSON.stringify(payload)
-        });
-
-        showToast(res.message || 'Customer saved successfully.', 'success');
-        getModal('#customerModal')?.hide();
-        window.dispatchEvent(new CustomEvent('customer-updated'));
-      } catch (err) {
-        showToast(err.message, 'danger');
-      } finally {
-        this.saving = false;
-      }
-    }
-  }));
 
   // ─── Customer Profile & Address Manager Controller ──────────────────────────
   Alpine.data('customerProfile', () => ({

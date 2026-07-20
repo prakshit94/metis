@@ -5,9 +5,19 @@ namespace App\Modules\Orders\Controllers;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Refund;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class RefundController extends Controller
+class RefundController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:orders.view', only: ['index']),
+            new Middleware('permission:orders.edit', only: ['bulkStatus']),
+        ];
+    }
+
     public function index(Request $request)
     {
         $query = Refund::with(['order.party', 'invoice', 'orderReturn']);

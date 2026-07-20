@@ -20,9 +20,9 @@ return new class extends Migration
             $table->string('ip_address', 45);
             $table->text('user_agent')->nullable();
             $table->enum('device_type', ['web', 'mobile'])->default('web');
-            $table->enum('status', ['success', 'failed', 'impersonated'])->default('failed');
+            $table->enum('status', ['success', 'failed'])->default('failed');
             $table->string('failure_reason')->nullable()
-                ->comment('invalid_credentials | account_suspended | account_inactive | throttled | impersonated_login');
+                ->comment('invalid_credentials | account_suspended | account_inactive | throttled');
             $table->timestamp('attempted_at')->useCurrent();
 
             $table->index(['email_attempted', 'ip_address']);

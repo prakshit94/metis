@@ -239,8 +239,22 @@
                     <i class="bi bi-arrows-fullscreen fs-5" aria-hidden="true"></i>
                 </button>
 
+<?php
+    $initialActivities = \Spatie\Activitylog\Models\Activity::with('causer')->latest()->limit(10)->get()->map(function($a) {
+        return [
+            'id' => $a->id,
+            'description' => $a->description,
+            'subject_type' => class_basename($a->subject_type),
+            'causer_name' => $a->causer->name ?? 'System',
+            'causer_photo' => $a->causer->photo ?? null,
+            'time_ago' => $a->created_at->diffForHumans(),
+            'is_read' => auth()->check() ? in_array($a->id, auth()->user()->readActivities()->pluck('activity_id')->toArray()) : false,
+        ];
+    });
+    $initialUnreadCount = $initialActivities->where('is_read', false)->count();
+?>
                 
-                <div class="dropdown h-100 d-flex align-items-center">
+                <div class="dropdown h-100 d-flex align-items-center" x-data="notificationApp(<?php echo \Illuminate\Support\Js::from($initialActivities)->toHtml() ?>, <?php echo e($initialUnreadCount); ?>)">
                     <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
                             style="width: 40px; height: 40px;"
                             type="button"
@@ -248,23 +262,27 @@
                             data-bs-toggle="dropdown"
                             data-bs-auto-close="outside"
                             data-bs-display="static"
+                            @click="fetchActivities"
                             aria-expanded="false"
                             aria-label="Notifications">
                         <i class="bi bi-bell-fill fs-5" aria-hidden="true"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body" style="font-size: 9px; margin-top: 6px; margin-left: -10px;">4</span>
+                        <span x-show="count > 0" x-cloak class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body" style="font-size: 9px; margin-top: 6px; margin-left: -10px;" x-text="count"></span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3"
                          aria-labelledby="notificationsMenuBtn"
                          style="width: 340px;">
                         <div class="bg-primary rounded-top-4 p-3 text-white">
                             <div class="d-flex align-items-center justify-content-between mb-3">
-                                <h6 class="m-0 fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Notifications</h6>
-                                <span class="badge bg-body text-primary rounded-pill fw-bold" style="font-size: 10px;">4 New</span>
+                                <div>
+                                    <h6 class="m-0 fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Notifications / Activity</h6>
+                                    <button type="button" @click="markAsRead('all')" class="btn btn-sm btn-link text-white-50 text-decoration-none p-0 mt-1" style="font-size: 10px;">Mark all as read</button>
+                                </div>
+                                <span class="badge bg-body text-primary rounded-pill fw-bold" style="font-size: 10px;"><span x-text="count"></span> Recent</span>
                             </div>
                             <ul class="nav nav-tabs nav-tabs-custom border-bottom-0" role="tablist">
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link active py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#all-noti-tab" type="button" role="tab" aria-controls="all-noti-tab" aria-selected="true" style="opacity: 0.8;">
-                                        All (4)
+                                        All Activity
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
@@ -283,35 +301,33 @@
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="all-noti-tab" role="tabpanel">
                                 <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
-                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary" href="#">
-                                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
-                                            <i class="bi bi-award-fill fs-5"></i>
+                                    <template x-if="activities.length === 0">
+                                        <div class="p-4 text-center opacity-75">
+                                            <i class="bi bi-bell-slash fs-2 text-muted mb-2 d-block"></i>
+                                            <p class="text-muted mb-0">No recent activity.</p>
                                         </div>
-                                        <div>
-                                            <p class="mb-1 fw-semibold text-body fs-13">Your <b>Elite</b> author reward is ready!</p>
-                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> Just 30 sec ago</p>
-                                        </div>
-                                    </a>
-                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary" href="#">
-                                        <img src="<?php echo e(asset('assets/images/users/avatar-2.jpg')); ?>" class="rounded-circle flex-shrink-0 object-fit-cover" alt="Angela Bernier" width="40" height="40">
-                                        <div>
-                                            <h6 class="mb-1 fw-bold text-body fs-13">Angela Bernier</h6>
-                                            <p class="mb-1 text-muted fs-13">Answered your comment on the graph.</p>
-                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> 48 min ago</p>
-                                        </div>
-                                    </a>
-                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary" href="#">
-                                        <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
-                                            <i class="bi bi-chat-left-dots-fill fs-5"></i>
-                                        </div>
-                                        <div>
-                                            <p class="mb-1 fw-semibold text-body fs-13">You have received <b>20</b> new messages.</p>
-                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> 2 hrs ago</p>
-                                        </div>
-                                    </a>
+                                    </template>
+                                    <template x-for="activity in activities" :key="activity.id">
+                                        <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary transition-all" href="#" @click.prevent="markAsRead(activity.id)" :class="{'opacity-75': activity.is_read, 'bg-body-secondary': !activity.is_read}">
+                                            <template x-if="activity.causer_photo">
+                                                <img :src="activity.causer_photo" class="rounded-circle flex-shrink-0 object-fit-cover" alt="User" width="40" height="40">
+                                            </template>
+                                            <template x-if="!activity.causer_photo">
+                                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                                    <i class="bi bi-person-fill fs-5"></i>
+                                                </div>
+                                            </template>
+                                            <div>
+                                                <p class="mb-1 fw-semibold text-body fs-13">
+                                                    <b x-text="activity.causer_name"></b> <span x-text="activity.description"></span> a <b x-text="activity.subject_type"></b>.
+                                                </p>
+                                                <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> <span x-text="activity.time_ago"></span></p>
+                                            </div>
+                                        </a>
+                                    </template>
                                 </div>
                                 <div class="p-2 text-center bg-body-secondary bg-opacity-50 rounded-bottom-4">
-                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All Notifications <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All Activity <i class="bi bi-arrow-right-short align-middle"></i></button>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="messages-noti-tab" role="tabpanel">
@@ -549,6 +565,53 @@ document.addEventListener('alpine:init', () => {
                         this.errorMsg = 'Error searching customer. Please try again.';
                         setTimeout(() => { this.errorMsg = ''; }, 3000);
                     });
+            }
+        };
+    };
+
+    window.notificationApp = function(initialActivities, initialCount) {
+        return {
+            activities: initialActivities || [],
+            count: initialCount || 0,
+            init() {
+                // Periodically fetch updates every 15 seconds
+                setInterval(() => {
+                    this.fetchActivities();
+                }, 15000);
+            },
+            fetchActivities() {
+                fetch('/api/activities/recent', {
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.activities) {
+                        this.activities = data.activities;
+                        this.count = data.count;
+                    }
+                })
+                .catch(err => console.error('Failed to fetch activities', err));
+            },
+            markAsRead(id) {
+                if (id === 'all') {
+                    this.activities.forEach(a => a.is_read = true);
+                    this.count = 0;
+                } else {
+                    const activity = this.activities.find(a => a.id === id);
+                    if (activity && !activity.is_read) {
+                        activity.is_read = true;
+                        this.count = Math.max(0, this.count - 1);
+                    }
+                }
+                
+                fetch(`/api/activities/${id}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                }).catch(err => console.error('Failed to mark as read', err));
             }
         };
     };

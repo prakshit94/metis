@@ -15,6 +15,10 @@ return new class extends Migration {
             $table->enum('status', ['pending', 'shipped', 'in_transit', 'delivered', 'failed', 'returned'])->default('pending')->index();
             $table->dateTime('shipped_at')->nullable();
             $table->dateTime('delivered_at')->nullable();
+            $table->string('delivered_by')->nullable();
+            $table->integer('delivery_attempts')->default(0);
+            $table->timestamp('next_followup_date')->nullable();
+            $table->string('reschedule_reason')->nullable();
             $table->timestamps();
             $table->softDeletes()->index();
 

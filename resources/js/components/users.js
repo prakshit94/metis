@@ -11,13 +11,19 @@ function getCsrfToken() {
 
 async function apiFetch(url, options = {}) {
   const { headers, ...otherOptions } = options;
+  const fetchHeaders = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'X-CSRF-TOKEN': getCsrfToken(),
+    ...(headers || {}),
+  };
+
+  if (otherOptions.body instanceof FormData) {
+    delete fetchHeaders['Content-Type'];
+  }
+
   const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'X-CSRF-TOKEN': getCsrfToken(),
-      ...(headers || {}),
-    },
+    headers: fetchHeaders,
     ...otherOptions,
   });
 
@@ -315,6 +321,9 @@ document.addEventListener('alpine:init', () => {
         email:      u.email,
         phone:      u.phone      ?? '',
         department: u.department ?? '',
+        employee_id: u.employee_id ?? '',
+        photo:      u.photo ?? null,
+        joining_date: u.joining_date ?? '',
         role:       roleName,
         roleLabel,
         roleClass:  this.roleBadgeClass(roleName),
@@ -326,6 +335,10 @@ document.addEventListener('alpine:init', () => {
         lastActive: formatDate(u.updated_at),
         lastActiveDateTime: formatDateTime(u.updated_at),
         joinDate:   formatDate(u.created_at),
+        created_at: u.created_at,
+        is_online:  Boolean(u.is_online),
+        last_login_at: u.last_login_at ? new Date(u.last_login_at).toLocaleString() : 'Never',
+        device_type: u.device_type || 'Unknown',
         avatar: '/assets/images/avatar-placeholder.svg',
       };
     },
@@ -437,6 +450,9 @@ document.addEventListener('alpine:init', () => {
       form.form.email      = user.email;
       form.form.phone      = user.phone ?? '';
       form.form.department = user.department ?? '';
+      form.form.employee_id = user.employee_id ?? '';
+      form.form.photo = user.photo ?? '';
+      form.form.joining_date = user.joining_date ?? '';
       form.form.role       = user.roles?.[0]?.name ?? 'User';
       form.form.is_active  = user.is_active ?? true;
       form.form.password   = '';
@@ -766,7 +782,7 @@ document.addEventListener('alpine:init', () => {
         d.setDate(d.getDate() - i);
         dayLabels.push(d.toLocaleDateString('en', period <= 7 ? { weekday: 'short' } : { month: 'short', day: 'numeric' }));
         dayCounts[period - 1 - i] = this.users.filter(u => {
-          const j = new Date(u.joinDate);
+          const j = new Date(u.created_at || new Date());
           return j.toDateString() === d.toDateString();
         }).length;
       }
@@ -825,6 +841,10 @@ document.addEventListener('alpine:init', () => {
       email:      '',
       phone:      '',
       department: '',
+      employee_id: '',
+      photo:      '',
+      photoFile:  null,
+      joining_date: '',
       role:       'User',
       is_active:  true,
       password:              '',
@@ -878,6 +898,9 @@ document.addEventListener('alpine:init', () => {
         email:      '',
         phone:      '',
         department: '',
+        employee_id: '',
+        photoFile:  null,
+        joining_date: new Date().toISOString().split('T')[0],
         role:       'User',
         is_active:  true,
         password:              '',
@@ -885,6 +908,25 @@ document.addEventListener('alpine:init', () => {
       };
       this.editingUserId = null;
       this.saving        = false;
+    },
+
+    generateEmployeeId() {
+      const timestamp = Date.now().toString().slice(-6);
+      this.form.employee_id = `EMP-${timestamp}`;
+    },
+
+    handlePhotoUpload(event) {
+      const file = event?.target?.files?.[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('The selected image exceeds the maximum size limit of 2MB.', 'warning');
+        event.target.value = '';
+        return;
+      }
+
+      this.form.photo = URL.createObjectURL(file);
+      this.form.photoFile = file;
     },
 
     async saveUser() {
@@ -900,32 +942,50 @@ document.addEventListener('alpine:init', () => {
       this.saving = true;
       try {
         const name = buildFullName(this.form.first_name, this.form.middle_name, this.form.last_name);
-        const payload = {
-          name,
-          first_name:  this.form.first_name,
-          middle_name: this.form.middle_name || null,
-          last_name:   this.form.last_name || null,
-          email:       this.form.email,
-          phone:       this.form.phone      || null,
-          department:  this.form.department || null,
-          is_active:   this.form.is_active,
-          roles:       [this.form.role],
-        };
+        
+        let formattedPhone = null;
+        if (this.form.phone) {
+          formattedPhone = String(this.form.phone).replace(/\D/g, '');
+          if (formattedPhone.length !== 10) {
+            showToast('Phone number must be exactly 10 digits.', 'warning');
+            this.saving = false;
+            return;
+          }
+        }
+        
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('first_name', this.form.first_name);
+        if (this.form.middle_name) formData.append('middle_name', this.form.middle_name);
+        if (this.form.last_name) formData.append('last_name', this.form.last_name);
+        formData.append('email', this.form.email);
+        if (formattedPhone) formData.append('phone', formattedPhone);
+        if (this.form.department) formData.append('department', this.form.department);
+        if (this.form.employee_id) formData.append('employee_id', this.form.employee_id);
+        if (this.form.joining_date) formData.append('joining_date', this.form.joining_date);
+        formData.append('is_active', this.form.is_active ? '1' : '0');
+        formData.append('roles[]', this.form.role);
+
         if (this.form.password) {
-          payload.password              = this.form.password;
-          payload.password_confirmation = this.form.password_confirmation;
+          formData.append('password', this.form.password);
+          formData.append('password_confirmation', this.form.password_confirmation);
+        }
+
+        if (this.form.photoFile) {
+          formData.append('photo_file', this.form.photoFile);
         }
 
         if (this.editingUserId) {
+          formData.append('_method', 'PUT');
           const res = await apiFetch(`/api/users/${this.editingUserId}`, {
-            method: 'PUT',
-            body:   JSON.stringify(payload),
+            method: 'POST', // Laravel uses POST + _method=PUT for FormData
+            body:   formData,
           });
           showToast(res.message || 'User updated successfully.', 'success');
         } else {
           const res = await apiFetch('/api/users', {
             method: 'POST',
-            body:   JSON.stringify(payload),
+            body:   formData,
           });
           showToast(res.message || 'User created successfully.', 'success');
         }

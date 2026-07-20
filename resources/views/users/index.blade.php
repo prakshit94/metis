@@ -407,7 +407,9 @@
                                                 <th scope="col">Phone</th>
                                                 <th scope="col">Department</th>
                                                 <th scope="col">Role</th>
+                                                <th scope="col">Online</th>
                                                 <th scope="col">Status</th>
+                                                <th scope="col">Last Login</th>
                                                 <th scope="col"
                                                     role="button"
                                                     tabindex="0"
@@ -435,14 +437,15 @@
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
-                                                            <img :src="user.avatar" 
+                                                            <img :src="user.photo || user.avatar" 
                                                                  class="rounded-circle me-2" 
                                                                  width="32" 
                                                                  height="32"
-                                                                 :alt="user.name">
+                                                                 :alt="user.name"
+                                                                 style="object-fit: cover;">
                                                             <div>
                                                                 <div class="fw-medium" x-text="user.name || '—'"></div>
-                                                                <small class="text-muted" x-text="'ID: ' + user.id"></small>
+                                                                <small class="text-muted" x-text="user.employee_id ? 'Emp ID: ' + user.employee_id : 'Sys ID: ' + user.id"></small>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -455,6 +458,11 @@
                                                               x-text="user.roleLabel"></span>
                                                     </td>
                                                     <td>
+                                                        <span class="badge"
+                                                              :class="user.is_online ? 'bg-success' : 'bg-secondary'"
+                                                              x-text="user.is_online ? 'Online' : 'Offline'"></span>
+                                                    </td>
+                                                    <td>
                                                         <span class="badge" 
                                                               :class="{
                                                                   'bg-danger': user.status === 'deleted',
@@ -462,6 +470,13 @@
                                                                   'bg-secondary': user.status === 'inactive',
                                                               }"
                                                               x-text="user.status"></span>
+                                                    </td>
+                                                    <td>
+                                                        <div x-text="user.last_login_at"></div>
+                                                        <small class="text-muted" x-show="user.last_login_at !== 'Never'">
+                                                            <i class="bi" :class="user.device_type === 'Mobile' ? 'bi-phone' : 'bi-laptop'"></i>
+                                                            <span x-text="user.device_type"></span>
+                                                        </small>
                                                     </td>
                                                     <td x-text="user.lastActive"></td>
                                                     <td>
@@ -571,7 +586,38 @@
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Phone</label>
                             <input type="tel" class="form-control" x-model="form.phone"
-                                   placeholder="+1 (555) 000-0000">
+                                   maxlength="10" minlength="10" pattern="\d{10}"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                   placeholder="5550000000">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Employee ID</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" x-model="form.employee_id"
+                                       placeholder="e.g. EMP-1234">
+                                <button class="btn btn-outline-secondary" type="button" @click="generateEmployeeId" title="Auto Generate">
+                                    <i class="bi bi-magic"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Joining Date</label>
+                            <input type="date" class="form-control" x-model="form.joining_date">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">User Photo</label>
+                            <div class="border border-dashed rounded p-3 text-center bg-body-secondary d-flex flex-column align-items-center justify-content-center" style="min-height: 150px; border-style: dashed !important;">
+                                <div class="mb-2">
+                                    <template x-if="form.photo">
+                                        <img :src="form.photo" alt="Preview" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                                    </template>
+                                    <template x-if="!form.photo">
+                                        <i class="bi bi-cloud-arrow-up fs-2 text-muted"></i>
+                                    </template>
+                                </div>
+                                <input type="file" class="form-control form-control-sm" accept="image/*" @change="handlePhotoUpload($event)">
+                                <small class="text-muted mt-1" style="font-size: 0.7rem;">Click to upload photo (Max 2MB)</small>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Department</label>
@@ -800,33 +846,37 @@
                         </div>
 
                         <!-- Login history -->
-                        <h6 class="fw-semibold mb-2">Recent Login History</h6>
+                        <h6 class="fw-semibold mb-3">Recent Login History</h6>
                         <template x-if="loginHistory.length === 0">
-                            <p class="text-muted small">No login history available.</p>
+                            <div class="text-center p-4 bg-body-tertiary rounded">
+                                <i class="bi bi-clock-history text-muted fs-2 mb-2"></i>
+                                <p class="text-muted small mb-0">No login history available.</p>
+                            </div>
                         </template>
-                        <div class="table-responsive" x-show="loginHistory.length > 0">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Date / Time</th>
-                                        <th>Status</th>
-                                        <th>IP Address</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <template x-for="(h, i) in loginHistory.slice(0,10)" :key="i">
-                                        <tr>
-                                            <td class="small" x-text="h.attempted_at ? new Date(h.attempted_at).toLocaleString() : '—'"></td>
-                                            <td>
-                                                <span class="badge"
-                                                      :class="h.status === 'success' ? 'bg-success' : 'bg-danger'"
-                                                      x-text="h.status"></span>
-                                            </td>
-                                            <td class="small font-monospace" x-text="h.ip_address ?? '—'"></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
+                        <div class="row g-2" x-show="loginHistory.length > 0">
+                            <template x-for="(h, i) in loginHistory.slice(0, 6)" :key="i">
+                                <div class="col-md-6">
+                                    <div class="card border-0 bg-body-tertiary h-100">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="p-2 rounded" :class="h.status === 'success' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
+                                                        <i class="bi" :class="h.status === 'success' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="mb-0 fw-medium small" x-text="h.status === 'success' ? 'Successful Login' : 'Failed Attempt'"></p>
+                                                        <small class="text-muted font-monospace" x-text="h.ip_address ?? 'Unknown IP'"></small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex align-items-center text-muted small mt-2">
+                                                <i class="bi bi-calendar3 me-1"></i>
+                                                <span x-text="h.attempted_at ? new Date(h.attempted_at).toLocaleString() : '—'"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </template>

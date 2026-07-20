@@ -165,7 +165,35 @@ class RolesAndPermissionsSeeder extends Seeder
         'user-activate',
         'user-sync-roles',
         'user-sync-permissions',
-        'user-impersonate',
+        'brand-restore',
+        'brand-permanent-delete',
+        'category-restore',
+        'category-permanent-delete',
+        'hsncode-restore',
+        'hsncode-permanent-delete',
+        'productattribute-restore',
+        'productattribute-permanent-delete',
+        'taxrate-restore',
+        'taxrate-permanent-delete',
+        'unitofmeasure-restore',
+        'unitofmeasure-permanent-delete',
+        'warehouse-restore',
+        'warehouse-permanent-delete',
+        'village-restore',
+        'village-permanent-delete',
+        'customer-permanent-delete',
+        'customeraddress-restore',
+        'customeraddress-permanent-delete',
+        'inventoryadjustment-restore',
+        'inventoryadjustment-permanent-delete',
+        'stockmanagement-restore',
+        'stockmanagement-permanent-delete',
+        'stocktransfer-restore',
+        'stocktransfer-permanent-delete',
+        'coupon-restore',
+        'coupon-permanent-delete',
+        'promotions-restore',
+        'promotions-permanent-delete',
         'audit-log-view',
     ];
 
@@ -289,6 +317,57 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         $this->command->info('✔ Master Admin user seeded (admin@example.com / password).');
+
+        // ── Create Additional Users ──────────────────────────────────────────
+        $users = [
+            [
+                'email' => 'rajesh.kumar@example.com',
+                'first_name' => 'Rajesh',
+                'last_name' => 'Kumar',
+                'name' => 'Rajesh Kumar',
+                'department' => 'Operations',
+                'phone' => '+91 9876543210',
+                'role' => 'Manager'
+            ],
+            [
+                'email' => 'priya.sharma@example.com',
+                'first_name' => 'Priya',
+                'last_name' => 'Sharma',
+                'name' => 'Priya Sharma',
+                'department' => 'Administration',
+                'phone' => '+91 8765432109',
+                'role' => 'Admin'
+            ],
+            [
+                'email' => 'amit.patel@example.com',
+                'first_name' => 'Amit',
+                'last_name' => 'Patel',
+                'name' => 'Amit Patel',
+                'department' => 'Sales',
+                'phone' => '+91 7654321098',
+                'role' => 'User'
+            ],
+        ];
+
+        foreach ($users as $userData) {
+            $role = $userData['role'];
+            unset($userData['role']);
+            
+            $user = \App\Modules\Users\Models\User::firstOrCreate(
+                ['email' => $userData['email']],
+                array_merge($userData, [
+                    'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                    'is_active' => true,
+                    'email_verified_at' => now(),
+                ])
+            );
+
+            if (! $user->hasRole($role)) {
+                $user->assignRole($role);
+            }
+        }
+
+        $this->command->info('✔ Additional users seeded successfully.');
 
         // Reset cache after all changes
         app(PermissionRegistrar::class)->forgetCachedPermissions();

@@ -260,6 +260,7 @@ class VillageController extends Controller implements HasMiddleware
         $action = $validated['action'];
 
         if ($action === 'delete') {
+            abort_unless($request->user()?->can('village-delete'), 403);
             Village::whereIn('id', $ids)->delete();
             return response()->json([
                 'message' => count($ids) . ' village(s) deleted successfully.',
@@ -268,6 +269,7 @@ class VillageController extends Controller implements HasMiddleware
         }
         
         if ($action === 'restore') {
+            abort_unless($request->user()?->can('village-restore'), 403);
             Village::withTrashed()->whereIn('id', $ids)->restore();
             return response()->json([
                 'message' => count($ids) . ' village(s) restored successfully.',
@@ -276,6 +278,7 @@ class VillageController extends Controller implements HasMiddleware
         }
 
         if ($action === 'force-delete') {
+            abort_unless($request->user()?->can('village-permanent-delete'), 403);
             Village::withTrashed()->whereIn('id', $ids)->forceDelete();
             return response()->json([
                 'message' => count($ids) . ' village(s) permanently deleted.',

@@ -13,8 +13,22 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
-class PromotionsController extends Controller
+class PromotionsController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:coupon-view', only: ['coupons', 'couponsIndex']),
+            new Middleware('permission:coupon-create', only: ['couponsStore']),
+            new Middleware('permission:coupon-edit', only: ['couponsUpdate', 'couponsToggle', 'couponsBulk']),
+            new Middleware('permission:coupon-delete', only: ['couponsDestroy', 'couponsBulk']),
+            new Middleware('permission:promotions-view', only: ['offers', 'offersIndex']),
+            new Middleware('permission:promotions-create', only: ['offersStore']),
+            new Middleware('permission:promotions-edit', only: ['offersUpdate', 'offersToggle', 'offersBulk']),
+            new Middleware('permission:promotions-delete', only: ['offersDestroy', 'offersBulk']),
+        ];
+    }
+
     // ─── Page views ──────────────────────────────────────────────────────────
 
     public function coupons()
