@@ -1,9 +1,7 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', '👥 User Management'); ?>
+<?php $__env->startSection('page', 'users'); ?>
 
-@section('title', '👥 User Management')
-@section('page', 'users')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="user-management" x-data="userTable">
 <!-- Page Header -->
                     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
@@ -574,7 +572,7 @@
                         
                     </div> <!-- End Users Management Container -->
 
-{{-- ═══════════════════════ Add / Edit User Modal ═══════════════════════════ --}}
+
 <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel">
     <div class="modal-dialog modal-lg">
         <div class="modal-content" x-data="userForm">
@@ -825,7 +823,7 @@
     </div>
 </div>
 
-{{-- ═══════════════════════ Import Users Modal ═══════════════════════════════ --}}
+
 <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel">
     <div class="modal-dialog" x-data="importForm">
         <div class="modal-content">
@@ -876,7 +874,7 @@
     </div>
 </div>
 
-{{-- ═══════════════════════ View Profile Modal ═══════════════════════════════ --}}
+
 <div class="modal fade" id="viewUserModal" tabindex="-1" aria-labelledby="viewUserModalLabel">
     <div class="modal-dialog modal-lg" x-data="userProfile">
         <div class="modal-content">
@@ -1054,7 +1052,9 @@
     </div>
 </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
-@endpush
+<?php $__env->startPush('scripts'); ?>
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/user/metis/resources/views/users/index.blade.php ENDPATH**/ ?>

@@ -1,6 +1,4 @@
-@extends('layouts.app')
-
-@push('head')
+<?php $__env->startPush('head'); ?>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>[x-cloak] { display: none !important; }</style>
     <script>
@@ -12,18 +10,18 @@
             if (token) axios.defaults.headers.common['X-CSRF-TOKEN'] = token;
         });
     </script>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('title', 'Chat')
+<?php $__env->startSection('title', 'Chat'); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div
         class="bg-body d-flex flex-column"
         style="height: calc(100vh - 80px); min-height: 720px;"
         x-data="chatWorkspace({
-            conversations: @js($conversations),
-            users: @js($users),
-            pollInterval: @js($pollInterval),
+            conversations: <?php echo \Illuminate\Support\Js::from($conversations)->toHtml() ?>,
+            users: <?php echo \Illuminate\Support\Js::from($users)->toHtml() ?>,
+            pollInterval: <?php echo \Illuminate\Support\Js::from($pollInterval)->toHtml() ?>,
         })"
         x-init="init()"
     >
@@ -614,7 +612,7 @@
     <script>
     function chatWorkspace(initial) {
         return {
-            currentUserId: @js(auth()->id()),
+            currentUserId: <?php echo \Illuminate\Support\Js::from(auth()->id())->toHtml() ?>,
             conversations: initial.conversations || [],
             users: initial.users || [],
             pollInterval: initial.pollInterval || 15000,
@@ -1248,4 +1246,6 @@
         };
     }
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/user/metis/resources/views/chat/index.blade.php ENDPATH**/ ?>

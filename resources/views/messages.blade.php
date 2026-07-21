@@ -65,8 +65,13 @@
                                                 <div class="online-indicator" x-show="conversation.online"></div>
                                             </div>
                                             <div class="conversation-info">
-                                                <div class="conversation-header">
-                                                    <h6 class="conversation-name" x-text="conversation.name"></h6>
+                                                <div class="conversation-header mb-1">
+                                                    <div class="d-flex align-items-center flex-wrap gap-1">
+                                                        <h6 class="conversation-name mb-0" x-text="conversation.name"></h6>
+                                                        <small class="text-muted" style="font-size: 0.75rem;" x-show="conversation.location">
+                                                            <i class="bi bi-geo-alt"></i> <span x-text="conversation.location"></span>
+                                                        </small>
+                                                    </div>
                                                     <span class="conversation-time" x-text="conversation.lastMessageTime"></span>
                                                 </div>
                                                 <p class="conversation-preview" x-text="conversation.lastMessage"></p>
@@ -105,9 +110,14 @@
                                                 <div class="online-indicator" x-show="selectedConversation?.online"></div>
                                             </div>
                                             <div class="chat-details">
-                                                <h6 class="chat-name" x-text="selectedConversation?.name"></h6>
-                                                <p class="chat-status" x-show="selectedConversation?.online">● Online</p>
-                                                <p class="chat-status" x-show="!selectedConversation?.online" x-text="`Last seen ${selectedConversation?.lastSeen}`"></p>
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <h6 class="chat-name mb-0" x-text="selectedConversation?.name"></h6>
+                                                    <small class="text-muted fw-normal" style="font-size: 0.8rem;" x-show="selectedConversation?.location">
+                                                        <i class="bi bi-geo-alt"></i> <span x-text="selectedConversation?.location"></span>
+                                                    </small>
+                                                </div>
+                                                <p class="chat-status mb-0" x-show="selectedConversation?.online">● Online</p>
+                                                <p class="chat-status mb-0" x-show="!selectedConversation?.online" x-text="`Last seen ${selectedConversation?.lastSeen}`"></p>
                                             </div>
                                         </div>
                                         <div class="chat-actions">

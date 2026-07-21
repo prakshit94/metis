@@ -300,7 +300,7 @@ class ChatService
             ->limit(1);
 
         $users = User::query()
-            ->select('id', 'name', 'first_name', 'last_name', 'email', 'employee_id', 'photo', 'is_active as status')
+            ->select('id', 'name', 'first_name', 'last_name', 'email', 'employee_id', 'photo', 'is_active as status', 'village_name', 'district', 'state')
             ->selectSub($lastSessionActivity, 'last_session_activity')
             ->selectSub($lastSessionUserAgent, 'last_session_user_agent')
             ->selectSub($presenceStatus, 'presence_status')
@@ -318,14 +318,7 @@ class ChatService
             ->limit(250)
             ->get();
 
-        $emails = $users->pluck('email')->toArray();
-        $parties = Party::query()
-            ->whereIn('email', $emails)
-            ->with(['addresses' => fn ($query) => $query->where('is_active', 1)->latest('is_default')])
-            ->get()
-            ->keyBy('email');
-
-        return $users->map(function (User $user) use ($parties) {
+        return $users->map(function (User $user) {
             $lastSessionAt = $user->last_session_activity
                 ? now()->setTimestamp((int) $user->last_session_activity)
                 : null;
@@ -339,9 +332,7 @@ class ChatService
             $isOnline = $lastSessionAt?->greaterThanOrEqualTo(now()->subMinutes(self::ONLINE_WINDOW_MINUTES)) === true
                 || ($user->presence_status === 'online' && $presenceLastSeenAt?->greaterThanOrEqualTo(now()->subMinutes(self::ONLINE_WINDOW_MINUTES)) === true);
 
-            $party = $parties->get($user->email);
-            $address = $party?->addresses?->first();
-            $location = $address ? collect([$address->city, $address->state, 'India'])->filter()->implode(', ') : null;
+            $location = collect([$user->village_name, $user->district, $user->state])->filter()->implode(', ');
 
             return [
                 'id' => $user->id,
@@ -391,18 +382,7 @@ class ChatService
 
     public function locationForUser(User $user): ?string
     {
-        $address = Party::query()
-            ->where('email', $user->email)
-            ->with(['addresses' => fn ($query) => $query->where('is_active', 1)->latest('is_default')])
-            ->first()
-            ?->addresses
-            ?->first();
-
-        if (! $address) {
-            return null;
-        }
-
-        return collect([$address->city, $address->state, 'India'])->filter()->implode(', ');
+        return collect([$user->village_name, $user->district, $user->state])->filter()->implode(', ');
     }
 
     public function ensureMember(Conversation $conversation, User $user): Member

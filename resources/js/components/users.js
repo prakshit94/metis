@@ -109,10 +109,10 @@ function formatDateTime(value) {
   if (!value) return 'N/A';
 
   return new Date(value).toLocaleString(undefined, {
-    year:   'numeric',
-    month:  'short',
-    day:    'numeric',
-    hour:   'numeric',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
     minute: '2-digit',
   });
 }
@@ -137,9 +137,9 @@ function showToast(message, type = 'success') {
   const id = 'toast-' + Date.now();
   const iconMap = {
     success: 'bi-check-circle-fill',
-    danger:  'bi-x-circle-fill',
+    danger: 'bi-x-circle-fill',
     warning: 'bi-exclamation-triangle-fill',
-    info:    'bi-info-circle-fill',
+    info: 'bi-info-circle-fill',
   };
 
   const el = document.createElement('div');
@@ -180,21 +180,21 @@ document.addEventListener('alpine:init', () => {
 
   // ─── userTable ──────────────────────────────────────────────────────────────
   Alpine.data('userTable', () => ({
-    users:         [],
+    users: [],
     selectedUsers: [],
-    searchQuery:   '',
-    statusFilter:  '',
-    roleFilter:    '',
-    sortField:     'name',
+    searchQuery: '',
+    statusFilter: '',
+    roleFilter: '',
+    sortField: 'name',
     sortDirection: 'asc',
-    isLoading:     false,
+    isLoading: false,
     availableRoles: [],
-    growthPeriod:  7,
+    growthPeriod: 7,
 
     // Server-side pagination meta
-    currentPage:  1,
-    totalPages:   1,
-    totalUsers:   0,
+    currentPage: 1,
+    totalPages: 1,
+    totalUsers: 0,
     itemsPerPage: 10,
 
     // Chart instances
@@ -272,23 +272,23 @@ document.addEventListener('alpine:init', () => {
       this.isLoading = true;
       try {
         const params = new URLSearchParams({
-          page:     this.currentPage,
+          page: this.currentPage,
           per_page: this.itemsPerPage,
-          sort_by:  this.sortField,
+          sort_by: this.sortField,
           sort_dir: this.sortDirection,
         });
-        if (this.searchQuery)  params.set('search',    this.searchQuery);
-        if (this.statusFilter === 'active')   params.set('is_active', '1');
+        if (this.searchQuery) params.set('search', this.searchQuery);
+        if (this.statusFilter === 'active') params.set('is_active', '1');
         if (this.statusFilter === 'inactive') params.set('is_active', '0');
-        if (this.statusFilter === 'deleted')  params.set('deleted', 'only');
-        if (this.roleFilter)   params.set('role',      this.roleFilter);
+        if (this.statusFilter === 'deleted') params.set('deleted', 'only');
+        if (this.roleFilter) params.set('role', this.roleFilter);
 
         const data = await apiFetch(`/api/users?${params}`);
 
         // Map API response to the shape the template expects
-        this.users      = (data.data ?? []).map(u => this._mapUser(u));
-        this.totalUsers = data.total        ?? this.users.length;
-        this.totalPages = data.last_page    ?? 1;
+        this.users = (data.data ?? []).map(u => this._mapUser(u));
+        this.totalUsers = data.total ?? this.users.length;
+        this.totalPages = data.last_page ?? 1;
         this.currentPage = data.current_page ?? 1;
 
         // Rebuild charts with fresh data
@@ -313,32 +313,42 @@ document.addEventListener('alpine:init', () => {
       const lastName = u.last_name ?? fallbackNameParts.last_name;
       const displayName = buildFullName(firstName, middleName, lastName) || u.name;
       return {
-        id:         u.id,
-        name:       displayName,
+        id: u.id,
+        name: displayName,
         first_name: firstName,
         middle_name: middleName,
-        last_name:  lastName,
-        email:      u.email,
-        phone:      u.phone      ?? '',
+        last_name: lastName,
+        email: u.email,
+        phone: u.phone ?? '',
         department: u.department ?? '',
         employee_id: u.employee_id ?? '',
-        photo:      u.photo ?? null,
+        photo: u.photo ?? null,
         joining_date: u.joining_date ?? '',
-        role:       roleName,
+        role: roleName,
         roleLabel,
-        roleClass:  this.roleBadgeClass(roleName),
-        roles:      u.roles      ?? [],
-        status:     u.deleted_at ? 'deleted' : (u.is_active ? 'active' : 'inactive'),
-        is_active:  u.is_active,
-        isDeleted:  Boolean(u.deleted_at),
+        roleClass: this.roleBadgeClass(roleName),
+        roles: u.roles ?? [],
+        status: u.deleted_at ? 'deleted' : (u.is_active ? 'active' : 'inactive'),
+        is_active: u.is_active,
+        isDeleted: Boolean(u.deleted_at),
         deleted_at: u.deleted_at ?? null,
         lastActive: formatDate(u.updated_at),
         lastActiveDateTime: formatDateTime(u.updated_at),
-        joinDate:   formatDate(u.created_at),
+        joinDate: formatDate(u.created_at),
         created_at: u.created_at,
-        is_online:  Boolean(u.is_online),
+        is_online: Boolean(u.is_online),
         last_login_at: u.last_login_at ? new Date(u.last_login_at).toLocaleString() : 'Never',
         device_type: u.device_type || 'Unknown',
+        address_line_1: u.address_line_1,
+        address_line_2: u.address_line_2,
+        village_id: u.village_id,
+        village_name: u.village_name,
+        post_office: u.post_office,
+        taluka: u.taluka,
+        district: u.district,
+        city: u.city,
+        state: u.state,
+        pincode: u.pincode,
         avatar: '/assets/images/avatar-placeholder.svg',
       };
     },
@@ -362,7 +372,7 @@ document.addEventListener('alpine:init', () => {
       if (this.sortField === field) {
         this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
       } else {
-        this.sortField    = field;
+        this.sortField = field;
         this.sortDirection = 'asc';
       }
       this.loadUsers();
@@ -378,7 +388,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     get selectedRows() {
-      return this.users.filter(user => this.selectedUsers.includes(user.id));
+      return this.users.filter(user => this.selectedUsers.includes(String(user.id)));
     },
 
     get hasSelectedDeletedUsers() {
@@ -393,7 +403,7 @@ document.addEventListener('alpine:init', () => {
       const delta = 2;
       const range = [];
       for (let i = Math.max(2, this.currentPage - delta);
-           i <= Math.min(this.totalPages - 1, this.currentPage + delta); i++) {
+        i <= Math.min(this.totalPages - 1, this.currentPage + delta); i++) {
         range.push(i);
       }
       const result = [];
@@ -423,7 +433,7 @@ document.addEventListener('alpine:init', () => {
 
     // ── Selection management ──────────────────────────────────────────────────
     toggleAll(checked) {
-      this.selectedUsers = checked ? this.users.map(u => u.id) : [];
+      this.selectedUsers = checked ? this.users.map(u => String(u.id)) : [];
     },
 
     toggleUser(userId) {
@@ -443,29 +453,29 @@ document.addEventListener('alpine:init', () => {
 
       const form = Alpine.$data(document.querySelector('[x-data="userForm"]'));
       if (!form) return;
-      form.editingUserId   = user.id;
+      form.editingUserId = user.id;
       form.form.first_name = user.first_name ?? '';
       form.form.middle_name = user.middle_name ?? '';
-      form.form.last_name  = user.last_name ?? '';
-      form.form.email      = user.email;
-      form.form.phone      = user.phone ?? '';
+      form.form.last_name = user.last_name ?? '';
+      form.form.email = user.email;
+      form.form.phone = user.phone ?? '';
       form.form.department = user.department ?? '';
       form.form.employee_id = user.employee_id ?? '';
       form.form.photo = user.photo ?? '';
       form.form.joining_date = user.joining_date ?? '';
-      form.form.role       = user.roles?.[0]?.name ?? 'User';
-      form.form.is_active  = user.is_active ?? true;
+      form.form.role = user.roles?.[0]?.name ?? 'User';
+      form.form.is_active = user.is_active ?? true;
       form.form.address_line_1 = user.address_line_1 ?? '';
       form.form.address_line_2 = user.address_line_2 ?? '';
-      form.form.village_id     = user.village_id ?? '';
-      form.form.village_name   = user.village_name ?? '';
-      form.form.post_office    = user.post_office ?? '';
-      form.form.taluka         = user.taluka ?? '';
-      form.form.district       = user.district ?? '';
-      form.form.city           = user.city ?? '';
-      form.form.state          = user.state ?? '';
-      form.form.pincode        = user.pincode ?? '';
-      form.form.password   = '';
+      form.form.village_id = user.village_id ?? '';
+      form.form.village_name = user.village_name ?? '';
+      form.form.post_office = user.post_office ?? '';
+      form.form.taluka = user.taluka ?? '';
+      form.form.district = user.district ?? '';
+      form.form.city = user.city ?? '';
+      form.form.state = user.state ?? '';
+      form.form.pincode = user.pincode ?? '';
+      form.form.password = '';
       form.form.password_confirmation = '';
 
       // Update modal title
@@ -487,13 +497,13 @@ document.addEventListener('alpine:init', () => {
       const form = Alpine.$data(document.querySelector('[x-data="userProfile"]'));
       if (!form) return;
       form.loading = true;
-      form.user    = user;
+      form.user = user;
 
       getModal('#viewUserModal')?.show();
 
       try {
         const data = await apiFetch(`/api/users/${user.id}`);
-        form.user         = this._mapUser(data.data ?? data);
+        form.user = this._mapUser(data.data ?? data);
         form.loginHistory = data.login_history ?? [];
       } catch (err) {
         showToast('Could not load full profile: ' + err.message, 'warning');
@@ -605,9 +615,9 @@ document.addEventListener('alpine:init', () => {
 
     _queryParams(overrides = {}) {
       const params = new URLSearchParams({
-        page:     overrides.page ?? this.currentPage,
+        page: overrides.page ?? this.currentPage,
         per_page: overrides.per_page ?? this.itemsPerPage,
-        sort_by:  this.sortField,
+        sort_by: this.sortField,
         sort_dir: this.sortDirection,
       });
       if (this.searchQuery) params.set('search', this.searchQuery);
@@ -635,7 +645,7 @@ document.addEventListener('alpine:init', () => {
     async exportUsers() {
       try {
         const users = await this.fetchAllFilteredUsers();
-        const headers = ['ID','First Name','Middle Name','Last Name','Full Name','Email','Phone','Department','Role','Status','Join Date','Last Active'];
+        const headers = ['ID', 'First Name', 'Middle Name', 'Last Name', 'Full Name', 'Email', 'Phone', 'Department', 'Role', 'Status', 'Join Date', 'Last Active'];
         const rows = users.map(u => [
           u.id, u.first_name, u.middle_name, u.last_name, u.name, u.email, u.phone,
           u.department, u.roleLabel, u.status, u.joinDate, u.lastActive,
@@ -676,8 +686,8 @@ document.addEventListener('alpine:init', () => {
             status: this.statusFilter || 'all',
             role: this.roleFilter || 'all',
           },
-          totalUsers:  users.length,
-          stats:       this.stats,
+          totalUsers: users.length,
+          stats: this.stats,
           users,
         };
         downloadBlob('user-report.json', JSON.stringify(report, null, 2), 'application/json');
@@ -689,20 +699,20 @@ document.addEventListener('alpine:init', () => {
 
     // ── Computed stats (derived from current page + totals) ───────────────────
     get stats() {
-      const active   = this.users.filter(u => u.status === 'active').length;
+      const active = this.users.filter(u => u.status === 'active').length;
       const inactive = this.users.filter(u => u.status === 'inactive').length;
-      const now      = new Date();
+      const now = new Date();
       const newThisMonth = this.users.filter(u => {
         const d = new Date(u.joinDate);
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       }).length;
 
       return {
-        total:             this.totalUsers,
+        total: this.totalUsers,
         active,
         inactive,
         newThisMonth,
-        activePercentage:  this.users.length > 0 ? Math.round((active / this.users.length) * 100) : 0,
+        activePercentage: this.users.length > 0 ? Math.round((active / this.users.length) * 100) : 0,
       };
     },
 
@@ -712,7 +722,7 @@ document.addEventListener('alpine:init', () => {
         acc[dept] = (acc[dept] || 0) + 1;
         return acc;
       }, {});
-      const colors = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
+      const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
       return Object.entries(counts).map(([name, count], i) => ({
         name, count,
         percentage: this.users.length > 0 ? Math.round((count / this.users.length) * 100) : 0,
@@ -722,12 +732,12 @@ document.addEventListener('alpine:init', () => {
 
     get recentActivities() {
       return this.users.slice(0, 5).map((u, i) => ({
-        id:      i + 1,
-        user:    u.name,
-        action:  u.status === 'active' ? 'logged in' : 'account inactive',
-        time:    formatActivityTimestamp(u.updated_at),
-        type:    u.status === 'active' ? 'login' : 'logout',
-        icon:    u.status === 'active' ? 'box-arrow-in-right' : 'box-arrow-right',
+        id: i + 1,
+        user: u.name,
+        action: u.status === 'active' ? 'logged in' : 'account inactive',
+        time: formatActivityTimestamp(u.updated_at),
+        type: u.status === 'active' ? 'login' : 'logout',
+        icon: u.status === 'active' ? 'box-arrow-in-right' : 'box-arrow-right',
         details: `${u.department || 'No department'} · ${u.email}`,
       }));
     },
@@ -770,8 +780,8 @@ document.addEventListener('alpine:init', () => {
       if (!el || el.hasAttribute('data-chart-initialized')) return;
       el.setAttribute('data-chart-initialized', 'true');
       this.charts.activeUsers = new ApexCharts(el, {
-        series: [{ name: 'Active', data: [65,70,80,85,90,95,88] }],
-        chart:  { type: 'line', height: 50, sparkline: { enabled: true } },
+        series: [{ name: 'Active', data: [65, 70, 80, 85, 90, 95, 88] }],
+        chart: { type: 'line', height: 50, sparkline: { enabled: true } },
         stroke: { curve: 'smooth', width: 2 },
         colors: ['#10b981'],
       });
@@ -799,17 +809,17 @@ document.addEventListener('alpine:init', () => {
 
       this.charts.userGrowth = new ApexCharts(el, {
         series: [{ name: 'New Users', data: dayCounts }],
-        chart:  { type: 'bar', height: 250, width: '100%', toolbar: { show: false }, zoom: { enabled: false } },
+        chart: { type: 'bar', height: 250, width: '100%', toolbar: { show: false }, zoom: { enabled: false } },
         colors: ['#6366f1'],
         plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
         xaxis: {
           categories: dayLabels,
           axisBorder: { show: false },
-          axisTicks:  { show: false },
+          axisTicks: { show: false },
           labels: { style: { fontSize: '12px', colors: '#64748b' } },
         },
         yaxis: { show: false },
-        grid:  { show: false },
+        grid: { show: false },
         dataLabels: { enabled: false },
         tooltip: { theme: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light' },
       });
@@ -830,9 +840,9 @@ document.addEventListener('alpine:init', () => {
 
       this.charts.roleDistribution = new ApexCharts(el, {
         series: Object.values(roleCounts),
-        chart:  { type: 'donut', height: 140 },
+        chart: { type: 'donut', height: 140 },
         labels: Object.keys(roleCounts),
-        colors: ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6'],
+        colors: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
         legend: { show: false },
         plotOptions: { pie: { donut: { size: '70%' } } },
         dataLabels: { enabled: false },
@@ -847,16 +857,16 @@ document.addEventListener('alpine:init', () => {
     form: {
       first_name: '',
       middle_name: '',
-      last_name:  '',
-      email:      '',
-      phone:      '',
+      last_name: '',
+      email: '',
+      phone: '',
       department: '',
       employee_id: '',
-      photo:      '',
-      photoFile:  null,
+      photo: '',
+      photoFile: null,
       joining_date: '',
-      role:       'User',
-      is_active:  true,
+      role: 'User',
+      is_active: true,
       address_line_1: '',
       address_line_2: '',
       village_id: '',
@@ -867,45 +877,45 @@ document.addEventListener('alpine:init', () => {
       city: '',
       state: '',
       pincode: '',
-      password:              '',
+      password: '',
       password_confirmation: '',
     },
     villageSearchQuery: '',
     villageResults: [],
     editingUserId: null,
-    saving:        false,
-    roles:         [],
-    rolesLoading:  false,
-    rolesError:    '',
+    saving: false,
+    roles: [],
+    rolesLoading: false,
+    rolesError: '',
 
     async searchVillages() {
       if (!this.villageSearchQuery || this.villageSearchQuery.length < 3) {
-          this.villageResults = [];
-          return;
+        this.villageResults = [];
+        return;
       }
       try {
-          const res = await fetch(`/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`, {
-              headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-          });
-          const data = await res.json();
-          this.villageResults = data.data || [];
+        const res = await fetch(`/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`, {
+          headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await res.json();
+        this.villageResults = data.data || [];
       } catch (e) {
-          console.error('Village search failed:', e);
+        console.error('Village search failed:', e);
       }
     },
 
     selectVillage(v) {
-        this.form.village_id = v.id;
-        this.form.village_name = v.village_name || v.name || '';
-        this.form.post_office = v.post_so_name || v.post_office || '';
-        this.form.taluka = v.taluka_name || v.taluka || '';
-        this.form.district = v.district_name || v.district || '';
-        this.form.city = v.district_name || v.district || v.city || '';
-        this.form.state = v.state_name || v.state || '';
-        this.form.pincode = v.pincode || '';
-        
-        this.villageSearchQuery = '';
-        this.villageResults = [];
+      this.form.village_id = v.id;
+      this.form.village_name = v.village_name || v.name || '';
+      this.form.post_office = v.post_so_name || v.post_office || '';
+      this.form.taluka = v.taluka_name || v.taluka || '';
+      this.form.district = v.district_name || v.district || '';
+      this.form.city = v.district_name || v.district || v.city || '';
+      this.form.state = v.state_name || v.state || '';
+      this.form.pincode = v.pincode || '';
+
+      this.villageSearchQuery = '';
+      this.villageResults = [];
     },
 
     async init() {
@@ -946,15 +956,15 @@ document.addEventListener('alpine:init', () => {
       this.form = {
         first_name: '',
         middle_name: '',
-        last_name:  '',
-        email:      '',
-        phone:      '',
+        last_name: '',
+        email: '',
+        phone: '',
         department: '',
         employee_id: '',
-        photoFile:  null,
+        photoFile: null,
         joining_date: new Date().toISOString().split('T')[0],
-        role:       'User',
-        is_active:  true,
+        role: 'User',
+        is_active: true,
         address_line_1: '',
         address_line_2: '',
         village_id: '',
@@ -965,13 +975,13 @@ document.addEventListener('alpine:init', () => {
         city: '',
         state: '',
         pincode: '',
-        password:              '',
+        password: '',
         password_confirmation: '',
       };
       this.villageSearchQuery = '';
       this.villageResults = [];
       this.editingUserId = null;
-      this.saving        = false;
+      this.saving = false;
     },
 
     generateEmployeeId() {
@@ -1006,7 +1016,7 @@ document.addEventListener('alpine:init', () => {
       this.saving = true;
       try {
         const name = buildFullName(this.form.first_name, this.form.middle_name, this.form.last_name);
-        
+
         let formattedPhone = null;
         if (this.form.phone) {
           formattedPhone = String(this.form.phone).replace(/\D/g, '');
@@ -1016,7 +1026,7 @@ document.addEventListener('alpine:init', () => {
             return;
           }
         }
-        
+
         const formData = new FormData();
         formData.append('name', name);
         formData.append('first_name', this.form.first_name);
@@ -1032,7 +1042,7 @@ document.addEventListener('alpine:init', () => {
 
         const addressFields = ['address_line_1', 'address_line_2', 'village_id', 'village_name', 'post_office', 'taluka', 'district', 'city', 'state', 'pincode'];
         for (const field of addressFields) {
-            if (this.form[field]) formData.append(field, this.form[field]);
+          if (this.form[field]) formData.append(field, this.form[field]);
         }
 
         if (this.form.password) {
@@ -1048,13 +1058,13 @@ document.addEventListener('alpine:init', () => {
           formData.append('_method', 'PUT');
           const res = await apiFetch(`/api/users/${this.editingUserId}`, {
             method: 'POST', // Laravel uses POST + _method=PUT for FormData
-            body:   formData,
+            body: formData,
           });
           showToast(res.message || 'User updated successfully.', 'success');
         } else {
           const res = await apiFetch('/api/users', {
             method: 'POST',
-            body:   formData,
+            body: formData,
           });
           showToast(res.message || 'User created successfully.', 'success');
         }
@@ -1076,10 +1086,10 @@ document.addEventListener('alpine:init', () => {
 
   // ─── userProfile ────────────────────────────────────────────────────────────
   Alpine.data('userProfile', () => ({
-    user:         null,
+    user: null,
     loginHistory: [],
-    loading:      false,
-    saving:       false,
+    loading: false,
+    saving: false,
 
     editFromProfile() {
       if (!this.user) return;
@@ -1107,9 +1117,9 @@ document.addEventListener('alpine:init', () => {
 
   // ─── importForm ─────────────────────────────────────────────────────────────
   Alpine.data('importForm', () => ({
-    file:     null,
+    file: null,
     importing: false,
-    result:   null,
+    result: null,
 
     async importUsers() {
       if (!this.file) {
@@ -1117,7 +1127,7 @@ document.addEventListener('alpine:init', () => {
         return;
       }
       this.importing = true;
-      this.result    = null;
+      this.result = null;
 
       const text = await this.file.text();
       const lines = text.trim().split('\n').filter(l => l.trim());
@@ -1129,7 +1139,7 @@ document.addEventListener('alpine:init', () => {
 
       // Skip header row; parse: first_name, middle_name, last_name, email, role, status, phone, department
       let created = 0;
-      let errors  = [];
+      let errors = [];
 
       for (let i = 1; i < lines.length; i++) {
         const [firstName, middleName, lastName, email, role, statusRaw, phone, department] = parseCsvLine(lines[i]);
@@ -1150,7 +1160,7 @@ document.addEventListener('alpine:init', () => {
               email,
               phone: phone || null,
               department: department || null,
-              password:              tempPw,
+              password: tempPw,
               password_confirmation: tempPw,
               is_active: isActive,
               roles: [formatRoleName(role)],
@@ -1176,7 +1186,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     handleFile(event) {
-      this.file   = event.target.files[0] ?? null;
+      this.file = event.target.files[0] ?? null;
       this.result = null;
     },
   }));
@@ -1192,12 +1202,12 @@ document.addEventListener('alpine:init', () => {
       }
       const q = query.toLowerCase();
       return [
-        { title: 'Dashboard',  url: '/',          type: 'page' },
-        { title: 'Users',      url: '/users',      type: 'page' },
-        { title: 'Settings',   url: '/settings',   type: 'page' },
-        { title: 'Analytics',  url: '/analytics',  type: 'page' },
-        { title: 'Security',   url: '/security',   type: 'page' },
-        { title: 'Help',       url: '/help',        type: 'page' },
+        { title: 'Dashboard', url: '/', type: 'page' },
+        { title: 'Users', url: '/users', type: 'page' },
+        { title: 'Settings', url: '/settings', type: 'page' },
+        { title: 'Analytics', url: '/analytics', type: 'page' },
+        { title: 'Security', url: '/security', type: 'page' },
+        { title: 'Help', url: '/help', type: 'page' },
       ].filter(item => item.title.toLowerCase().includes(q));
     },
   }));
