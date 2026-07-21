@@ -1,6 +1,6 @@
 {
-  "name": "metis-admin-laravel",
-  "description": "Metis Modern Bootstrap 5 Admin Template - Laravel 12",
+  "name": "ecommerce-admin-laravel",
+  "description": "Ecommerce Modern Bootstrap 5 Admin Template - Laravel 12",
   "version": "1.0.0",
   "private": true,
   "type": "module",

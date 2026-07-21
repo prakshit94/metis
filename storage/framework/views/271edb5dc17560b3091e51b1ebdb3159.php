@@ -614,14 +614,19 @@ document.addEventListener('alpine:init', () => {
             activities: initialActivities || [],
             count: initialCount || 0,
             init() {
-                // Periodically fetch updates every 15 seconds
+                // Periodically fetch updates every 3 seconds for instant-like feel
                 setInterval(() => {
                     this.fetchActivities();
-                }, 15000);
+                }, 3000);
             },
             fetchActivities() {
                 fetch('/api/activities/recent', {
-                    headers: { 'Accept': 'application/json' }
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    },
+                    credentials: 'same-origin'
                 })
                 .then(res => res.json())
                 .then(data => {

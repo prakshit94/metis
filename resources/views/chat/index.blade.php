@@ -72,8 +72,15 @@
                                         </template>
                                         <span class="position-absolute bottom-0 end-0 rounded-circle border border-white" style="width: 10px; height: 10px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
                                     </div>
-                                    <div class="min-w-0">
-                                        <div class="text-truncate fw-bold small mb-0" x-text="user.name"></div>
+                                    <div class="min-w-0 flex-grow-1">
+                                        <div class="d-flex align-items-center mb-1 gap-1">
+                                            <span class="text-truncate fw-bold small mb-0" x-text="user.name"></span>
+                                        </div>
+                                        <div class="text-truncate text-muted mb-1" style="font-size: 10px;">
+                                            <template x-if="user.location">
+                                                <span><i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span></span>
+                                            </template>
+                                        </div>
                                         <div class="text-truncate text-muted small" style="font-size: 11px;" x-text="user.last_seen_label || user.email"></div>
                                     </div>
                                 </button>
@@ -108,14 +115,12 @@
                                       style="width:11px;height:11px;"></span>
                             </div>
                             <div class="min-w-0 flex-grow-1">
-                                <div class="d-flex justify-content-between align-items-baseline mb-1">
-                                    <div class="d-flex align-items-center gap-1 text-truncate">
-                                        <span class="text-truncate fw-semibold" style="font-size:.875rem;" x-text="conversationTitle(conversation)"></span>
-                                        <small class="text-muted flex-shrink-0" style="font-size:10px;" x-show="conversationLocation(conversation)">
-                                            (<i class="bi bi-geo-alt"></i> <span x-text="conversationLocation(conversation)"></span>)
-                                        </small>
-                                    </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1 gap-2">
+                                    <span class="text-truncate fw-semibold flex-grow-1" style="font-size:.875rem;" x-text="conversationTitle(conversation)"></span>
                                     <small class="text-muted flex-shrink-0 ms-2" style="font-size:10px;" x-text="lastTime(conversation)"></small>
+                                </div>
+                                <div class="text-truncate text-muted mb-1" style="font-size: 10px;" x-show="conversationLocation(conversation)">
+                                    <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="conversationLocation(conversation)"></span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center gap-1">
                                     <div class="d-flex align-items-center gap-1 text-truncate flex-grow-1 text-muted" style="font-size:.78rem;">
@@ -152,7 +157,7 @@
                                 </template>
                                 <div class="min-w-0">
                                     <div class="d-flex align-items-center gap-2">
-                                        <h6 class="mb-0 fw-bold text-truncate" x-text="conversationTitle(activeConversation)"></h6>
+                                        <h6 class="mb-0 fw-bold text-truncate flex-grow-1" x-text="conversationTitle(activeConversation)"></h6>
                                         <small class="text-muted flex-shrink-0" style="font-size:12px;" x-show="conversationLocation(activeConversation)">
                                             <i class="bi bi-geo-alt"></i> <span x-text="conversationLocation(activeConversation)"></span>
                                         </small>
@@ -345,12 +350,12 @@
                 </div>
                 <div class="flex-grow-1 overflow-y-auto">
                     <template x-for="user in visibleUsers" :key="user.id">
-                        <button type="button" @click="startDirect(user.id)" class="btn bg-transparent border-0 text-start w-100 d-flex align-items-center gap-2 mb-0 p-3" 
+                        <button type="button" @click="startDirect(user.id)" class="btn bg-transparent border-0 text-start w-100 d-flex align-items-start gap-3 mb-0 p-3" 
                                 style="border-bottom: 1px solid var(--bs-border-color) !important; transition: background 0.15s;"
                                 onmouseover="this.style.backgroundColor='var(--bs-secondary-bg)'" 
                                 onmouseout="this.style.backgroundColor='transparent'"
                                 :disabled="startingUserId === user.id">
-                            <div class="position-relative flex-shrink-0">
+                            <div class="position-relative flex-shrink-0 mt-1">
                                 <template x-if="user.photo">
                                     <img :src="formatAttachmentUrl(user.photo)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px; background: var(--bs-light);">
                                 </template>
@@ -362,14 +367,29 @@
                                 <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-white" style="width: 12px; height: 12px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
                             </div>
                             <div class="min-w-0 flex-grow-1">
-                                <div class="d-flex justify-content-between align-items-center mb-0">
-                                    <span class="text-truncate fw-semibold text-body" style="font-size: .875rem;" x-text="user.name"></span>
-                                    <span class="badge rounded-pill fw-semibold" style="font-size: 9px; padding: 0.25em 0.5em;" :class="user.is_online ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25'" x-text="user.is_online ? 'Live' : 'Away'"></span>
+                                <!-- First Row: Name & Badge -->
+                                <div class="d-flex justify-content-between align-items-center mb-1 gap-2">
+                                    <span class="text-truncate fw-bold text-body" style="font-size: .875rem;" x-text="user.name"></span>
+                                    <span class="badge rounded-pill fw-semibold flex-shrink-0" style="font-size: 9px; padding: 0.25em 0.5em;" :class="user.is_online ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25'" x-text="user.is_online ? 'Live' : 'Away'"></span>
                                 </div>
-                                <div class="text-truncate text-muted mt-1" style="font-size: 11px;" x-text="user.last_seen_label"></div>
-                                <div class="text-truncate text-muted opacity-75 mt-1" style="font-size: 10px;" x-text="[user.location, user.active_device].filter(Boolean).join(' - ') || user.email"></div>
+                                
+                                <!-- Second Row: Location or Email -->
+                                <div class="text-truncate text-muted mb-1" style="font-size: 11px;">
+                                    <template x-if="user.location">
+                                        <span><i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span></span>
+                                    </template>
+                                    <template x-if="!user.location">
+                                        <span><i class="bi bi-envelope me-1 opacity-75"></i><span x-text="user.email"></span></span>
+                                    </template>
+                                </div>
+                                
+                                <!-- Third Row: Last Seen & Device -->
+                                <div class="d-flex justify-content-between align-items-center text-muted opacity-75" style="font-size: 10px;">
+                                    <span class="text-truncate" x-text="user.last_seen_label"></span>
+                                    <span class="text-truncate ms-2 text-end" x-show="user.active_device" x-text="user.active_device"></span>
+                                </div>
                             </div>
-                            <div x-show="startingUserId === user.id" class="spinner-border spinner-border-sm text-primary ms-auto" role="status"></div>
+                            <div x-show="startingUserId === user.id" class="spinner-border spinner-border-sm text-primary ms-auto mt-1" role="status"></div>
                         </button>
                     </template>
                     <div x-show="visibleUsers.length === 0" class="text-center p-5 text-muted">
@@ -436,8 +456,15 @@
                                             <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 28px; height: 28px; font-size: 11px;" x-text="initials(user.name)"></span>
                                         </template>
                                         
-                                        <span class="small fw-semibold text-truncate flex-grow-1" x-text="user.name"></span>
-                                        <span class="badge rounded-pill flex-shrink-0" style="font-size: 9px; padding: 0.25em 0.5em;" :class="user.is_online ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25'" x-text="user.is_online ? 'Live' : 'Away'"></span>
+                                        <div class="min-w-0 flex-grow-1 text-truncate">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <span class="small fw-semibold text-truncate flex-grow-1" x-text="user.name"></span>
+                                                <span class="badge rounded-pill flex-shrink-0" style="font-size: 9px; padding: 0.25em 0.5em;" :class="user.is_online ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25'" x-text="user.is_online ? 'Live' : 'Away'"></span>
+                                            </div>
+                                            <div class="text-muted text-truncate" style="font-size:10px;" x-show="user.location">
+                                                <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span>
+                                            </div>
+                                        </div>
                                     </label>
                                 </div>
                             </template>
@@ -543,7 +570,14 @@
                                                 <template x-if="!user.photo">
                                                     <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center fw-bold" style="width: 28px; height: 28px; font-size: 11px;" x-text="initials(user.name)"></span>
                                                 </template>
-                                                <span class="small fw-semibold text-truncate" style="max-width: 140px;" x-text="user.name"></span>
+                                                <div class="min-w-0 flex-grow-1 text-truncate" style="max-width: 140px;">
+                                                    <div class="d-flex align-items-center gap-1 text-truncate mb-1">
+                                                        <span class="small fw-semibold text-truncate flex-grow-1" x-text="user.name"></span>
+                                                    </div>
+                                                    <div class="text-muted text-truncate" style="font-size:9px;" x-show="user.location">
+                                                        <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <button type="button" @click="addGroupMember(user.id)" class="btn btn-primary btn-sm py-1 px-3 rounded-pill" style="font-size: 10px;" :disabled="groupBusy">Add</button>
                                         </div>
@@ -568,12 +602,17 @@
                                                 </template>
                                                 <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-white" style="width: 12px; height: 12px;" :class="member.user?.is_online ? 'bg-success' : 'bg-secondary'"></span>
                                             </div>
-                                            <div>
-                                                <div class="small fw-semibold mb-1" x-text="member.user?.name"></div>
-                                                <span class="badge" 
-                                                      style="font-size: 9px; padding: 0.25em 0.5em;"
-                                                      :class="member.role === 'owner' ? 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25' : (member.role === 'admin' ? 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25')" 
-                                                      x-text="member.role"></span>
+                                            <div class="min-w-0 flex-grow-1 text-truncate">
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <div class="small fw-semibold text-truncate flex-grow-1" x-text="member.user?.name"></div>
+                                                    <span class="badge flex-shrink-0" 
+                                                          style="font-size: 9px; padding: 0.25em 0.5em;"
+                                                          :class="member.role === 'owner' ? 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25' : (member.role === 'admin' ? 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25')" 
+                                                          x-text="member.role"></span>
+                                                </div>
+                                                <div class="text-muted text-truncate" style="font-size:10px;" x-show="userLocation(member.user_id)">
+                                                    <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="userLocation(member.user_id)"></span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div x-show="canManageSettings && member.user_id !== currentUserId" class="dropdown">
@@ -1212,6 +1251,12 @@
             senderLocation(message) {
                 if (!message || !message.sender_id) return null;
                 const user = this.users.find(u => Number(u.id) === Number(message.sender_id));
+                return user?.location || null;
+            },
+
+            userLocation(userId) {
+                if (!userId) return null;
+                const user = this.users.find(u => Number(u.id) === Number(userId));
                 return user?.location || null;
             },
 

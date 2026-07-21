@@ -1481,10 +1481,10 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
 
             if (initialOrder) {
                 this.applyOrderForEdit(initialOrder);
-                localStorage.removeItem('metis_create_order_cart');
+                localStorage.removeItem('ecommerce_create_order_cart');
                 this.isCartSidebarOpen = true;
             } else {
-                const saved = localStorage.getItem('metis_create_order_cart');
+                const saved = localStorage.getItem('ecommerce_create_order_cart');
                 if (saved) {
                     try {
                         this.cart = JSON.parse(saved);
@@ -1493,7 +1493,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             }
 
             this.$watch('cart', v => {
-                localStorage.setItem('metis_create_order_cart', JSON.stringify(v));
+                localStorage.setItem('ecommerce_create_order_cart', JSON.stringify(v));
                 window.dispatchEvent(new CustomEvent('cart-updated'));
                 if (v.length === 0) {
                     this.removeCoupon();
@@ -1513,10 +1513,10 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             });
 
             this.$watch('grandTotal', v => {
-                localStorage.setItem('metis_create_order_cart_total', v);
+                localStorage.setItem('ecommerce_create_order_cart_total', v);
                 window.dispatchEvent(new CustomEvent('cart-total-updated', { detail: v }));
             });
-            localStorage.setItem('metis_create_order_cart_total', this.grandTotal);
+            localStorage.setItem('ecommerce_create_order_cart_total', this.grandTotal);
 
             // Listen for notify events (e.g. address saved, profile updated)
             window.addEventListener('notify', (e) => {
@@ -1551,7 +1551,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
 
             // Listen to cart changes from header dropdown or other components
             window.addEventListener('cart-updated', () => {
-                const updated = localStorage.getItem('metis_create_order_cart');
+                const updated = localStorage.getItem('ecommerce_create_order_cart');
                 if (updated) {
                     try {
                         const parsed = JSON.parse(updated);
@@ -1639,7 +1639,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             }));
 
             if (this.cart.length > 0) {
-                localStorage.setItem('metis_create_order_cart', JSON.stringify(this.cart));
+                localStorage.setItem('ecommerce_create_order_cart', JSON.stringify(this.cart));
             }
         },
 
@@ -2003,7 +2003,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     if (!this.formErrors.length && json.message) this.formErrors.push(json.message);
                     return;
                 }
-                localStorage.removeItem('metis_create_order_cart');
+                localStorage.removeItem('ecommerce_create_order_cart');
                 this.cart = [];
                 const successMessage = this.editingOrderId ? 'Order updated successfully!' : 'Order placed successfully!';
                 window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:successMessage}}));

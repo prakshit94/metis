@@ -11,7 +11,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Title -->
-    <title>@yield('title', 'Login') - Metis Admin</title>
+    <title>@yield('title', 'Login') - Ecommerce Admin</title>
 
     <!-- Theme Color -->
     <meta name="theme-color" content="#6366f1">

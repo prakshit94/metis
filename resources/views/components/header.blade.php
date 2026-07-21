@@ -4,12 +4,12 @@
         <div class="container-fluid align-items-center h-100 px-3 px-md-4 gap-3">
 
             {{-- ── BRAND ────────────────────────────────────────── --}}
-            <a class="navbar-brand d-flex align-items-center gap-2 me-auto me-lg-4" href="{{ route('dashboard') }}" aria-label="Metis Admin — go to dashboard">
+            <a class="navbar-brand d-flex align-items-center gap-2 me-auto me-lg-4" href="{{ route('dashboard') }}" aria-label="Ecommerce Admin — go to dashboard">
                 <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                     <img src="/assets/images/logo.svg" alt="" width="24" height="24" aria-hidden="true">
                 </div>
                 <div class="d-none d-sm-flex flex-column lh-1">
-                    <span class="fw-bold text-body fs-5 tracking-tight">Metis</span>
+                    <span class="fw-bold text-body fs-5 tracking-tight">Ecommerce</span>
                     <span class="text-primary fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 2px;">Admin</span>
                 </div>
             </a>
@@ -499,8 +499,8 @@ document.addEventListener('alpine:init', () => {
             this.loadCartTotal();
             this.syncCustomerContext();
             window.addEventListener('storage', (e) => {
-                if (e.key === 'metis_create_order_cart') this.loadCart();
-                if (e.key === 'metis_create_order_cart_total') this.loadCartTotal();
+                if (e.key === 'ecommerce_create_order_cart') this.loadCart();
+                if (e.key === 'ecommerce_create_order_cart_total') this.loadCartTotal();
             });
             window.addEventListener('cart-updated', () => this.loadCart());
             window.addEventListener('cart-total-updated', (e) => {
@@ -526,22 +526,22 @@ document.addEventListener('alpine:init', () => {
         syncCustomerContext() {
             const match = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
             if (match && match[1]) {
-                localStorage.setItem('metis_active_customer_id', match[1]);
+                localStorage.setItem('ecommerce_active_customer_id', match[1]);
             }
         },
         loadCart() {
             try {
-                this.items = JSON.parse(localStorage.getItem('metis_create_order_cart')) || [];
+                this.items = JSON.parse(localStorage.getItem('ecommerce_create_order_cart')) || [];
             } catch (e) {
                 this.items = [];
             }
         },
         loadCartTotal() {
-            this.cartGrandTotal = parseFloat(localStorage.getItem('metis_create_order_cart_total')) || 0;
+            this.cartGrandTotal = parseFloat(localStorage.getItem('ecommerce_create_order_cart_total')) || 0;
         },
         checkoutHref() {
             const pathMatch = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
-            const customerId = (pathMatch && pathMatch[1]) || localStorage.getItem('metis_active_customer_id');
+            const customerId = (pathMatch && pathMatch[1]) || localStorage.getItem('ecommerce_active_customer_id');
             if (customerId) {
                 return `/orders/create?customer_id=${encodeURIComponent(customerId)}&step=review`;
             }
@@ -549,7 +549,7 @@ document.addEventListener('alpine:init', () => {
         },
         removeItem(index) {
             this.items.splice(index, 1);
-            localStorage.setItem('metis_create_order_cart', JSON.stringify(this.items));
+            localStorage.setItem('ecommerce_create_order_cart', JSON.stringify(this.items));
             window.dispatchEvent(new CustomEvent('cart-updated'));
         }
     }));
@@ -595,14 +595,19 @@ document.addEventListener('alpine:init', () => {
             activities: initialActivities || [],
             count: initialCount || 0,
             init() {
-                // Periodically fetch updates every 15 seconds
+                // Periodically fetch updates every 3 seconds for instant-like feel
                 setInterval(() => {
                     this.fetchActivities();
-                }, 15000);
+                }, 3000);
             },
             fetchActivities() {
                 fetch('/api/activities/recent', {
-                    headers: { 'Accept': 'application/json' }
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    },
+                    credentials: 'same-origin'
                 })
                 .then(res => res.json())
                 .then(data => {

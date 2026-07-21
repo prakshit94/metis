@@ -190,6 +190,8 @@ document.addEventListener('alpine:init', () => {
     isLoading: false,
     availableRoles: [],
     growthPeriod: 7,
+    realActivities: [],
+    _activityInterval: null,
 
     // Server-side pagination meta
     currentPage: 1,
@@ -210,6 +212,10 @@ document.addEventListener('alpine:init', () => {
         this.initCharts();
         this.initResizeHandler();
       });
+      this.fetchRealActivities();
+      this._activityInterval = setInterval(() => {
+        this.fetchRealActivities();
+      }, 3000);
       window.addEventListener('pagehide', () => this.destroy(), { once: true });
 
       this._themeObserver = new MutationObserver(() => {
@@ -232,6 +238,10 @@ document.addEventListener('alpine:init', () => {
       if (this._themeObserver) {
         this._themeObserver.disconnect();
         this._themeObserver = null;
+      }
+      if (this._activityInterval) {
+        clearInterval(this._activityInterval);
+        this._activityInterval = null;
       }
       this.clearExistingCharts();
     },
@@ -730,15 +740,27 @@ document.addEventListener('alpine:init', () => {
       }));
     },
 
+    async fetchRealActivities() {
+      try {
+        const res = await apiFetch('/api/activities/recent');
+        if (res && res.activities) {
+          this.realActivities = res.activities;
+        }
+      } catch (err) {
+        console.error('Failed to fetch activities', err);
+      }
+    },
+
     get recentActivities() {
-      return this.users.slice(0, 5).map((u, i) => ({
-        id: i + 1,
-        user: u.name,
-        action: u.status === 'active' ? 'logged in' : 'account inactive',
-        time: formatActivityTimestamp(u.updated_at),
-        type: u.status === 'active' ? 'login' : 'logout',
-        icon: u.status === 'active' ? 'box-arrow-in-right' : 'box-arrow-right',
-        details: `${u.department || 'No department'} · ${u.email}`,
+      if (!this.realActivities) return [];
+      return this.realActivities.slice(0, 10).map((a, i) => ({
+        id: a.id || i,
+        user: a.causer_name || 'System',
+        action: `${a.description} a ${a.subject_type}`,
+        time: a.time_ago || '',
+        type: 'info',
+        icon: 'info-circle',
+        details: 'Activity logged',
       }));
     },
 
