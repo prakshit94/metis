@@ -356,7 +356,7 @@ document.addEventListener('alpine:init', () => {
         customerId: null,
         form: {
             firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', phone_number_2: '', relative_mobile: '', relative_phone: '',
-            category: '', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
+            category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
             land_area: '', land_unit: '', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
         },
 
@@ -392,7 +392,7 @@ document.addEventListener('alpine:init', () => {
         resetForm() {
             this.form = {
                 firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', phone_number_2: '', relative_mobile: '', relative_phone: '',
-                category: '', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
+                category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
                 land_area: '', land_unit: '', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
             };
             this.selectedSources = [];

@@ -3,7 +3,7 @@
         <div class="row align-items-center">
             <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
                 <span class="text-muted small fw-medium">
-                    &copy; <?php echo e(date('Y')); ?> <?php echo e(config('app.name', 'Metis')); ?>. All rights reserved.
+                    &copy; <?php echo e(date('Y')); ?> <?php echo e(config('app.name', 'Ecommerce')); ?>. All rights reserved.
                 </span>
                 <span class="text-muted mx-2 d-none d-md-inline">|</span>
                 <span class="text-muted small">

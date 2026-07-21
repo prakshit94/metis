@@ -1,5 +1,5 @@
 <?php $__env->startSection('title', 'Sign In'); ?>
-<?php $__env->startSection('description', 'Sign in to your Metis Admin account'); ?>
+<?php $__env->startSection('description', 'Sign in to your Ecommerce Admin account'); ?>
 <?php $__env->startSection('page', 'login'); ?>
 
 <?php $__env->startSection('content'); ?>
@@ -9,10 +9,10 @@
         
         <div class="auth-logo mb-4">
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <rect width="36" height="36" rx="10" fill="url(#metis-grad)"/>
+                <rect width="36" height="36" rx="10" fill="url(#ecommerce-grad)"/>
                 <path d="M10 26V12l8 8 8-8v14" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                 <defs>
-                    <linearGradient id="metis-grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                    <linearGradient id="ecommerce-grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
                         <stop stop-color="#6366f1"/>
                         <stop offset="1" stop-color="#8b5cf6"/>
                     </linearGradient>

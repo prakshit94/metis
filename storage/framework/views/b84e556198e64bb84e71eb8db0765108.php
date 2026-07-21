@@ -11,7 +11,7 @@
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
 
     <!-- Title -->
-    <title><?php echo $__env->yieldContent('title', 'Login'); ?> - Metis Admin</title>
+    <title><?php echo $__env->yieldContent('title', 'Login'); ?> - Ecommerce Admin</title>
 
     <!-- Theme Color -->
     <meta name="theme-color" content="#6366f1">

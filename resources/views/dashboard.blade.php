@@ -4,34 +4,75 @@
 @section('page', 'dashboard')
 
 @section('content')
-<!-- Page Header -->
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-                    <div>
-                        <h1 class="h3 mb-0">Dashboard</h1>
-                        <p class="text-muted mb-0">Welcome back! Here's what's happening.</p>
+<div x-data="{ activeTab: 'search' }">
+    <!-- Page Header Tabs -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
+        <ul class="nav nav-pills gap-2" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link fw-bold px-4 rounded-pill" :class="activeTab === 'search' ? 'active shadow-sm' : 'text-muted'" @click="activeTab = 'search'">
+                    <i class="bi bi-search me-2"></i> Customer Search
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-bold px-4 rounded-pill" :class="activeTab === 'dashboard' ? 'active shadow-sm' : 'text-muted'" @click="activeTab = 'dashboard'">
+                    <i class="bi bi-grid me-2"></i> Dashboard
+                </button>
+            </li>
+        </ul>
+        <div class="d-flex gap-2 flex-shrink-0" x-show="activeTab === 'dashboard'" x-cloak>
+            <button type="button" class="btn btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#newItemModal" aria-label="New Item">
+                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline">New Item</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary rounded-circle" style="width: 38px; height: 38px; padding: 0;" data-bs-toggle="tooltip" title="Refresh data">
+                <i class="bi bi-arrow-clockwise icon-hover"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary rounded-circle d-none d-sm-inline-block" style="width: 38px; height: 38px; padding: 0;" data-bs-toggle="tooltip" title="Settings">
+                <i class="bi bi-gear icon-hover"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab 1: Customer Search -->
+    <div x-show="activeTab === 'search'" x-transition.opacity.duration.300ms>
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-4" style="background: linear-gradient(145deg, #ffffff, #f8f9fa);">
+            <div class="card-body p-4 p-md-5 text-center">
+                <div class="mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-person-bounding-box fs-1"></i>
                     </div>
-                    <div class="d-flex gap-2 flex-shrink-0">
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newItemModal" aria-label="New Item">
-                            <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>
-                            <span class="d-none d-sm-inline">New Item</span>
+                    <h2 class="h3 fw-bold text-body mb-2">Find a Customer</h2>
+                    <p class="text-muted">Search by mobile number, customer ID, or name to quickly access records.</p>
+                </div>
+                <div class="mx-auto position-relative" style="max-width: 650px;" x-data="customerSearchApp()">
+                    <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden bg-white border border-light-subtle">
+                        <select class="form-select border-0 bg-transparent fw-semibold text-secondary shadow-none px-4" style="max-width: 200px; cursor: pointer; border-right: 1px solid var(--bs-border-color) !important;">
+                            <option value="mobile">Mobile Number</option>
+                            <option value="customer_id">Customer ID</option>
+                            <option value="name">Name</option>
+                        </select>
+                        <input type="text" class="form-control border-0 shadow-none px-4" placeholder="Enter 10-digit mobile number..." style="background: transparent;" x-model="searchPhone" @keydown.enter.prevent="searchCustomer()" maxlength="10">
+                        <button class="btn btn-primary px-4 px-md-5 fw-bold" type="button" @click="searchCustomer()" :disabled="isLoading">
+                            <span x-show="!isLoading"><i class="bi bi-search me-1 d-none d-sm-inline"></i> Search</span>
+                            <span x-show="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
                         </button>
-                        <button type="button" class="btn btn-outline-secondary"
-                                data-bs-toggle="tooltip"
-                                title="Refresh data">
-                            <i class="bi bi-arrow-clockwise icon-hover"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary d-none d-sm-inline-block"
-                                data-bs-toggle="tooltip"
-                                title="Export data">
-                            <i class="bi bi-download icon-hover"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary d-none d-sm-inline-block"
-                                data-bs-toggle="tooltip"
-                                title="Settings">
-                            <i class="bi bi-gear icon-hover"></i>
-                        </button>
+                    </div>
+                    <div x-show="errorMsg" x-cloak class="position-absolute top-100 start-0 w-100 mt-2 text-danger small fw-bold bg-body p-3 rounded-4 shadow-lg border border-danger border-opacity-25" style="z-index: 1000; text-align: left;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span x-text="errorMsg"></span>
+                        </div>
                     </div>
                 </div>
+                <div class="mt-5 text-muted small">
+                    <p class="mb-0"><i class="bi bi-info-circle me-1"></i> Ensure you select the correct search criterion for best results.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 2: Dashboard -->
+    <div x-show="activeTab === 'dashboard'" x-transition.opacity.duration.300ms x-cloak>
 
                 <!-- Stats Cards with Alpine.js -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
@@ -215,7 +256,45 @@
 
                 <script>
                     window.dashboardData = @json($dashboardData);
+
+                    window.customerSearchApp = function() {
+                        return {
+                            searchPhone: '',
+                            isLoading: false,
+                            errorMsg: '',
+                            searchCustomer() {
+                                this.searchPhone = this.searchPhone.replace(/\D/g, '');
+                                if (this.searchPhone.length !== 10) {
+                                    this.errorMsg = 'Please enter exactly 10 digits.';
+                                    setTimeout(() => { this.errorMsg = ''; }, 3000);
+                                    return;
+                                }
+                                
+                                this.errorMsg = '';
+                                this.isLoading = true;
+                                
+                                fetch(`/customers/search-by-phone?phone=${this.searchPhone}`)
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        this.isLoading = false;
+                                        if (data.found && data.redirect) {
+                                            window.location.href = data.redirect;
+                                        } else {
+                                            window.globalSearchPhone = this.searchPhone;
+                                            window.dispatchEvent(new CustomEvent('open-add-customer-modal', { detail: { phone: this.searchPhone } }));
+                                        }
+                                    })
+                                    .catch(err => {
+                                        this.isLoading = false;
+                                        this.errorMsg = 'Error searching customer. Please try again.';
+                                        setTimeout(() => { this.errorMsg = ''; }, 3000);
+                                    });
+                            }
+                        };
+                    };
                 </script>
+    </div> <!-- End Tab 2 -->
+</div> <!-- End x-data -->
 @endsection
 
 @push('modals')

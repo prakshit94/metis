@@ -13,7 +13,7 @@
     <meta name="user-name" content="<?php echo e(auth()->user()->name ?? ''); ?>">
 
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="<?php echo $__env->yieldContent('title', 'Metis Admin'); ?>">
+    <meta property="og:title" content="<?php echo $__env->yieldContent('title', 'Ecommerce Admin'); ?>">
     <meta property="og:description" content="Clean and modern admin dashboard template built with Bootstrap 5">
     <meta property="og:type" content="website">
 
@@ -29,7 +29,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Title -->
-    <title><?php echo $__env->yieldContent('title', 'Dashboard'); ?> - Metis Admin</title>
+    <title><?php echo $__env->yieldContent('title', 'Dashboard'); ?> - Ecommerce Admin</title>
 
     <!-- Theme Color -->
     <meta name="theme-color" content="#6366f1">

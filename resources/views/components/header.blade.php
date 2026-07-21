@@ -28,53 +28,110 @@
             @endif
 
             {{-- ── SEARCH ───────────────────────────────────────── --}}
-            @if(isset($lockSearch) && $lockSearch)
-            {{-- Locked read-only customer display on order creation page --}}
-            <div class="w-100 d-none d-md-flex align-items-center ms-auto" style="max-width: 500px;">
-                <div class="position-relative d-flex align-items-center w-100">
-                    <div class="position-absolute start-0 ps-3 text-muted d-flex align-items-center" style="z-index: 10;">
-                        <i class="bi bi-person-lock fs-5 text-primary" aria-hidden="true"></i>
-                    </div>
-                    <div class="form-control form-control-lg bg-body-secondary border-0 rounded-pill shadow-none fw-semibold pe-4 w-100 d-flex align-items-center"
-                         style="font-size: 14px; letter-spacing: 0.5px; padding-left: 3rem !important; cursor: not-allowed; opacity: 0.75;">
-                        <span class="text-muted">Customer session locked</span>
-                        <span class="badge bg-warning text-dark ms-auto rounded-pill" style="font-size: 10px;">LOCKED</span>
-                    </div>
-                </div>
-            </div>
-            @else
-            <div class="w-100 max-w-md d-none d-md-block ms-auto" x-data="customerSearchApp()" style="max-width: 500px;">
-                <div class="position-relative d-flex align-items-center">
-                    <div class="position-absolute start-0 ps-3 text-muted d-flex align-items-center" style="z-index: 10;">
-                        <i class="bi bi-search fs-5" aria-hidden="true" x-show="!isLoading"></i>
-                        <span x-show="isLoading" class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true" style="display: none;"></span>
-                    </div>
-                    
-                    <input type="search"
-                           class="form-control form-control-lg bg-body-secondary border-0 rounded-pill shadow-none fw-semibold pe-4 w-100"
-                           style="font-size: 14px; letter-spacing: 0.5px; padding-left: 3rem !important;"
-                           placeholder="Enter 10-digit mobile number & press Enter..."
-                           x-model="searchPhone"
-                           @keydown.enter.prevent="searchCustomer()"
-                           maxlength="10"
-                           aria-label="Search Customer">
-                           
-                    <div class="position-absolute end-0 pe-2 d-flex align-items-center" style="z-index: 10;" x-show="searchPhone.length > 0" x-cloak>
-                        <button type="button" class="btn btn-sm btn-link text-muted p-1 text-decoration-none" @click="searchPhone = ''">
-                            <i class="bi bi-x-circle-fill"></i>
-                        </button>
-                    </div>
 
-                    <div x-show="errorMsg" x-cloak class="position-absolute top-100 start-0 w-100 mt-2 text-danger small fw-bold bg-body p-3 rounded-4 shadow-lg border border-danger border-opacity-25" style="z-index: 1000;">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            <span x-text="errorMsg"></span>
+            <div class="w-100 max-w-md d-none d-md-block ms-auto" style="max-width: 500px;">
+                <div class="position-relative w-100" x-data="{
+                    searchQuery: '',
+                    items: [
+                        { name: 'Dashboard', path: '{{ route('dashboard') }}', icon: 'bi bi-grid-1x2-fill', group: 'Main' },
+                        { name: 'Analytics', path: '{{ route('analytics') }}', icon: 'bi bi-bar-chart-line-fill', group: 'Main' },
+                        { name: 'Reports', path: '{{ route('reports') }}', icon: 'bi bi-file-earmark-bar-graph-fill', group: 'Main' },
+                        
+                        { name: 'Orders', path: '{{ route('orders') }}', icon: 'bi bi-bag-check-fill', group: 'Sales & Marketing' },
+                        { name: 'Coupon Codes', path: '{{ route('promotions.coupons') }}', icon: 'bi bi-ticket-perforated-fill', group: 'Sales & Marketing' },
+                        { name: 'Offers & Deals', path: '{{ route('promotions.offers') }}', icon: 'bi bi-star-fill', group: 'Sales & Marketing' },
+                        
+                        { name: 'Invoices', path: '{{ route('invoices.index') }}', icon: 'bi bi-receipt', group: 'Billing & Payments' },
+                        { name: 'Payments', path: '{{ route('payments.index') }}', icon: 'bi bi-credit-card', group: 'Billing & Payments' },
+                        { name: 'Refunds', path: '{{ route('refunds.index') }}', icon: 'bi bi-cash-coin', group: 'Billing & Payments' },
+                        { name: 'Returns', path: '{{ route('returns.index') }}', icon: 'bi bi-arrow-return-left', group: 'Billing & Payments' },
+                        
+                        { name: 'Shipments & Tracking', path: '{{ route('shipping.shipments') }}', icon: 'bi bi-geo-alt-fill', group: 'Logistics & Warehouses' },
+                        { name: 'Shipping Services', path: '{{ route('shipping.services') }}', icon: 'bi bi-gear-wide-connected', group: 'Logistics & Warehouses' },
+                        { name: 'Warehouses', path: '{{ route('catalog.warehouses') }}', icon: 'bi bi-buildings-fill', group: 'Logistics & Warehouses' },
+                        
+                        { name: 'Stock Levels', path: '{{ route('inventory.stock-management') }}', icon: 'bi bi-box-seam-fill', group: 'Inventory & Stock' },
+                        { name: 'Stock Transfers', path: '{{ route('inventory.stock-transfers') }}', icon: 'bi bi-arrow-left-right', group: 'Inventory & Stock' },
+                        { name: 'Adjustments', path: '{{ route('inventory.adjustments') }}', icon: 'bi bi-sliders2', group: 'Inventory & Stock' },
+                        
+                        { name: 'Products', path: '{{ route('catalog.products') }}', icon: 'bi bi-box-seam-fill', group: 'Catalog Management' },
+                        { name: 'Categories', path: '{{ route('catalog.categories') }}', icon: 'bi bi-diagram-3-fill', group: 'Catalog Management' },
+                        { name: 'Brands', path: '{{ route('catalog.brands') }}', icon: 'bi bi-patch-check-fill', group: 'Catalog Management' },
+                        { name: 'Attributes', path: '{{ route('catalog.attributes') }}', icon: 'bi bi-sliders2', group: 'Catalog Management' },
+                        { name: 'Units of Measure', path: '{{ route('catalog.uom') }}', icon: 'bi bi-rulers', group: 'Catalog Management' },
+                        { name: 'Tax Rates', path: '{{ route('catalog.tax-rates') }}', icon: 'bi bi-percent', group: 'Catalog Management' },
+                        { name: 'HSN Codes', path: '{{ route('catalog.hsn-codes') }}', icon: 'bi bi-upc-scan', group: 'Catalog Management' },
+                        
+                        { name: 'Users', path: '{{ route('users') }}', icon: 'bi bi-person-fill-gear', group: 'User & Customer Admin' },
+                        { name: 'Roles & Permissions', path: '{{ route('roles-permissions') }}', icon: 'bi bi-shield-lock-fill', group: 'User & Customer Admin' },
+                        { name: 'Customers', path: '{{ route('customers') }}', icon: 'bi bi-person-lines-fill', group: 'User & Customer Admin' },
+                        { name: 'Villages', path: '{{ route('villages') }}', icon: 'bi bi-geo-alt-fill', group: 'User & Customer Admin' },
+                        
+                        { name: 'Team Chat', path: '{{ route('chat.index') }}', icon: 'bi bi-chat-text-fill', group: 'Utilities & Tools' },
+                        { name: 'Messages', path: '{{ route('messages') }}', icon: 'bi bi-chat-dots-fill', group: 'Utilities & Tools' },
+                        { name: 'Calendar', path: '{{ route('calendar') }}', icon: 'bi bi-calendar-week-fill', group: 'Utilities & Tools' },
+                        { name: 'Files', path: '{{ route('files') }}', icon: 'bi bi-folder2-open', group: 'Utilities & Tools' },
+                        { name: 'Forms', path: '{{ route('forms') }}', icon: 'bi bi-ui-checks-grid', group: 'Utilities & Tools' },
+                        { name: 'Settings', path: '{{ route('settings') }}', icon: 'bi bi-gear-fill', group: 'Utilities & Tools' },
+                        { name: 'Security', path: '{{ route('security') }}', icon: 'bi bi-shield-fill-check', group: 'Utilities & Tools' },
+                        { name: 'Help & Support', path: '{{ route('help') }}', icon: 'bi bi-question-circle-fill', group: 'Utilities & Tools' },
+                        { name: 'API Documentation', path: '/docs/api', icon: 'bi bi-file-earmark-code-fill', group: 'Utilities & Tools' }
+                    ],
+                    get filteredItems() {
+                        if (!this.searchQuery) return [];
+                        return this.items.filter(item => 
+                            item.name.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
+                            item.group.toLowerCase().includes(this.searchQuery.toLowerCase())
+                        );
+                    },
+                    clearSearch() {
+                        this.searchQuery = '';
+                    }
+                }">
+                    <div class="position-relative d-flex align-items-center">
+                        <div class="position-absolute start-0 ps-3 text-muted d-flex align-items-center" style="z-index: 10;">
+                            <i class="bi bi-search fs-5" aria-hidden="true"></i>
+                        </div>
+                        
+                        <input type="text"
+                               class="form-control form-control-lg bg-body-secondary border-0 rounded-pill shadow-none fw-semibold pe-4 w-100"
+                               style="font-size: 14px; letter-spacing: 0.5px; padding-left: 3rem !important;"
+                               placeholder="Search anywhere..."
+                               x-model="searchQuery"
+                               @keydown.escape="clearSearch()"
+                               aria-label="Search pages">
+                               
+                        <div class="position-absolute end-0 pe-2 d-flex align-items-center" style="z-index: 10;" x-show="searchQuery.length > 0" x-cloak>
+                            <button type="button" class="btn btn-sm btn-link text-muted p-1 text-decoration-none" @click="clearSearch()">
+                                <i class="bi bi-x-circle-fill"></i>
+                            </button>
                         </div>
                     </div>
+                    
+                    <!-- Search Results Overlay -->
+                    <div x-show="searchQuery && filteredItems.length > 0" 
+                         class="position-absolute bg-body border rounded shadow-lg p-2 mt-2 w-100" 
+                         style="z-index: 1050; left: 0; right: 0; max-height: 350px; overflow-y: auto;"
+                         x-cloak>
+                        <template x-for="item in filteredItems" :key="item.path">
+                            <a :href="item.path" 
+                               class="dropdown-item py-2 px-3 rounded d-flex align-items-center gap-2"
+                               style="font-size: 0.875rem; transition: background-color 0.15s ease;"
+                               @click="clearSearch()">
+                                <i :class="item.icon" class="text-primary fs-6"></i>
+                                <span class="fw-semibold" x-text="item.name"></span>
+                                <span class="badge text-bg-secondary ms-auto" style="font-size: 0.65rem;" x-text="item.group"></span>
+                            </a>
+                        </template>
+                    </div>
+                    <div x-show="searchQuery && filteredItems.length === 0" 
+                         class="position-absolute bg-body border rounded shadow p-3 mt-2 w-100 text-center text-muted small" 
+                         style="z-index: 1050; left: 0; right: 0;"
+                         x-cloak>
+                        No pages found matching "<span x-text="searchQuery" class="fw-bold"></span>"
+                    </div>
                 </div>
             </div>
-            @endif
-
             {{-- ── RIGHT ACTIONS ─────────────────────────────────── --}}
             <div class="d-flex align-items-center gap-2 gap-sm-3 ms-auto ms-md-3 h-100">
 
@@ -554,41 +611,7 @@ document.addEventListener('alpine:init', () => {
         }
     }));
 
-    window.customerSearchApp = function() {
-        return {
-            searchPhone: '',
-            isLoading: false,
-            errorMsg: '',
-            searchCustomer() {
-                this.searchPhone = this.searchPhone.replace(/\D/g, '');
-                if (this.searchPhone.length !== 10) {
-                    this.errorMsg = 'Please enter exactly 10 digits.';
-                    setTimeout(() => { this.errorMsg = ''; }, 3000);
-                    return;
-                }
-                
-                this.errorMsg = '';
-                this.isLoading = true;
-                
-                fetch(`/customers/search-by-phone?phone=${this.searchPhone}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        this.isLoading = false;
-                        if (data.found && data.redirect) {
-                            window.location.href = data.redirect;
-                        } else {
-                            window.globalSearchPhone = this.searchPhone;
-                            window.dispatchEvent(new CustomEvent('open-add-customer-modal', { detail: { phone: this.searchPhone } }));
-                        }
-                    })
-                    .catch(err => {
-                        this.isLoading = false;
-                        this.errorMsg = 'Error searching customer. Please try again.';
-                        setTimeout(() => { this.errorMsg = ''; }, 3000);
-                    });
-            }
-        };
-    };
+
 
     window.notificationApp = function(initialActivities, initialCount) {
         return {
