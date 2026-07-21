@@ -43,6 +43,7 @@
                 { name: 'Customers', path: '{{ route('customers') }}', icon: 'bi bi-person-lines-fill', group: 'User & Customer Admin' },
                 { name: 'Villages', path: '{{ route('villages') }}', icon: 'bi bi-geo-alt-fill', group: 'User & Customer Admin' },
                 
+                { name: 'Team Chat', path: '{{ route('chat.index') }}', icon: 'bi bi-chat-text-fill', group: 'Utilities & Tools' },
                 { name: 'Messages', path: '{{ route('messages') }}', icon: 'bi bi-chat-dots-fill', group: 'Utilities & Tools' },
                 { name: 'Calendar', path: '{{ route('calendar') }}', icon: 'bi bi-calendar-week-fill', group: 'Utilities & Tools' },
                 { name: 'Files', path: '{{ route('files') }}', icon: 'bi bi-folder2-open', group: 'Utilities & Tools' },
@@ -397,18 +398,25 @@
 
                 {{-- Utilities & Workspace Dropdown --}}
                 <li class="nav-item">
-                    <a class="nav-link {{ $current === 'messages' || $current === 'calendar' || $current === 'files' || $current === 'forms' || Str::startsWith($current, 'elements') || $current === 'settings' || $current === 'security' || $current === 'help' ? 'active' : '' }}"
+                    <a class="nav-link {{ $current === 'chat.index' || $current === 'messages' || $current === 'calendar' || $current === 'files' || $current === 'forms' || Str::startsWith($current, 'elements') || $current === 'settings' || $current === 'security' || $current === 'help' ? 'active' : '' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#toolsSubmenu"
-                       aria-expanded="{{ $current === 'messages' || $current === 'calendar' || $current === 'files' || $current === 'forms' || Str::startsWith($current, 'elements') || $current === 'settings' || $current === 'security' || $current === 'help' ? 'true' : 'false' }}"
+                       aria-expanded="{{ $current === 'chat.index' || $current === 'messages' || $current === 'calendar' || $current === 'files' || $current === 'forms' || Str::startsWith($current, 'elements') || $current === 'settings' || $current === 'security' || $current === 'help' ? 'true' : 'false' }}"
                        aria-controls="toolsSubmenu">
                         <i class="bi bi-wrench-adjustable-circle-fill"></i>
                         <span>Utilities &amp; Workspace</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ $current === 'messages' || $current === 'calendar' || $current === 'files' || $current === 'forms' || Str::startsWith($current, 'elements') || $current === 'settings' || $current === 'security' || $current === 'help' ? 'show' : '' }}" id="toolsSubmenu">
+                    <div class="collapse {{ $current === 'chat.index' || $current === 'messages' || $current === 'calendar' || $current === 'files' || $current === 'forms' || Str::startsWith($current, 'elements') || $current === 'settings' || $current === 'security' || $current === 'help' ? 'show' : '' }}" id="toolsSubmenu">
                         <ul class="nav nav-submenu">
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'chat.index' ? 'active' : '' }}" href="{{ route('chat.index') }}">
+                                    <i class="bi bi-chat-text-fill"></i>
+                                    <span>Team Chat</span>
+                                    <span class="badge bg-primary rounded-pill ms-auto">New</span>
+                                </a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'messages' ? 'active' : '' }}" href="{{ route('messages') }}">
                                     <i class="bi bi-chat-dots-fill"></i>

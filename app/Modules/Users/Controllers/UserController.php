@@ -153,6 +153,16 @@ class UserController extends Controller implements HasMiddleware
             'employee_id' => $validated['employee_id'] ?? null,
             'photo'       => $validated['photo'] ?? null,
             'joining_date'=> $validated['joining_date'] ?? null,
+            'address_line_1' => $validated['address_line_1'] ?? null,
+            'address_line_2' => $validated['address_line_2'] ?? null,
+            'village_id'     => $validated['village_id'] ?? null,
+            'village_name'   => $validated['village_name'] ?? null,
+            'post_office'    => $validated['post_office'] ?? null,
+            'taluka'         => $validated['taluka'] ?? null,
+            'district'       => $validated['district'] ?? null,
+            'city'           => $validated['city'] ?? null,
+            'state'          => $validated['state'] ?? null,
+            'pincode'        => $validated['pincode'] ?? null,
         ]);
 
         if ($request->hasFile('photo_file')) {
@@ -219,7 +229,14 @@ class UserController extends Controller implements HasMiddleware
         $validated = $request->validated();
 
         $fillable = [];
-        foreach (['name', 'first_name', 'middle_name', 'last_name', 'email', 'is_active', 'phone', 'department', 'employee_id', 'photo', 'joining_date'] as $field) {
+        $allowedFields = [
+            'name', 'first_name', 'middle_name', 'last_name', 'email', 'is_active', 'phone', 
+            'department', 'employee_id', 'photo', 'joining_date',
+            'address_line_1', 'address_line_2', 'village_id', 'village_name', 'post_office', 
+            'taluka', 'district', 'city', 'state', 'pincode'
+        ];
+        
+        foreach ($allowedFields as $field) {
             if (array_key_exists($field, $validated)) {
                 $fillable[$field] = $validated[$field];
             }

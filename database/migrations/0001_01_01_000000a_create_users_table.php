@@ -22,6 +22,19 @@ return new class extends Migration
             $table->date('joining_date')->nullable();
             $table->string('phone', 30)->nullable();
             $table->string('department', 100)->nullable();
+            
+            // Address details
+            $table->string('address_line_1')->nullable();
+            $table->string('address_line_2')->nullable();
+            $table->unsignedBigInteger('village_id')->nullable();
+            $table->string('village_name')->nullable();
+            $table->string('post_office')->nullable();
+            $table->string('taluka')->nullable();
+            $table->string('district')->nullable();
+            $table->string('city')->nullable();
+            $table->string('state')->nullable();
+            $table->string('pincode', 20)->nullable();
+
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->boolean('is_active')->default(true);

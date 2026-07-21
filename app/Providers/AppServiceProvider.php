@@ -28,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureSanctum();
 
+        \Illuminate\Support\Facades\RateLimiter::for('chat', function (\Illuminate\Http\Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(config('chat.rate_limits.requests_per_minute', 1200))
+                ->by($request->user()?->id ?: $request->ip());
+        });
+
         Gate::define('viewApiDocs', function ($user) {
             return true; // Allow all authenticated users, or change logic as needed
         });

@@ -455,6 +455,16 @@ document.addEventListener('alpine:init', () => {
       form.form.joining_date = user.joining_date ?? '';
       form.form.role       = user.roles?.[0]?.name ?? 'User';
       form.form.is_active  = user.is_active ?? true;
+      form.form.address_line_1 = user.address_line_1 ?? '';
+      form.form.address_line_2 = user.address_line_2 ?? '';
+      form.form.village_id     = user.village_id ?? '';
+      form.form.village_name   = user.village_name ?? '';
+      form.form.post_office    = user.post_office ?? '';
+      form.form.taluka         = user.taluka ?? '';
+      form.form.district       = user.district ?? '';
+      form.form.city           = user.city ?? '';
+      form.form.state          = user.state ?? '';
+      form.form.pincode        = user.pincode ?? '';
       form.form.password   = '';
       form.form.password_confirmation = '';
 
@@ -847,14 +857,56 @@ document.addEventListener('alpine:init', () => {
       joining_date: '',
       role:       'User',
       is_active:  true,
+      address_line_1: '',
+      address_line_2: '',
+      village_id: '',
+      village_name: '',
+      post_office: '',
+      taluka: '',
+      district: '',
+      city: '',
+      state: '',
+      pincode: '',
       password:              '',
       password_confirmation: '',
     },
+    villageSearchQuery: '',
+    villageResults: [],
     editingUserId: null,
     saving:        false,
     roles:         [],
     rolesLoading:  false,
     rolesError:    '',
+
+    async searchVillages() {
+      if (!this.villageSearchQuery || this.villageSearchQuery.length < 3) {
+          this.villageResults = [];
+          return;
+      }
+      try {
+          const res = await fetch(`/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`, {
+              headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+          });
+          const data = await res.json();
+          this.villageResults = data.data || [];
+      } catch (e) {
+          console.error('Village search failed:', e);
+      }
+    },
+
+    selectVillage(v) {
+        this.form.village_id = v.id;
+        this.form.village_name = v.village_name || v.name || '';
+        this.form.post_office = v.post_so_name || v.post_office || '';
+        this.form.taluka = v.taluka_name || v.taluka || '';
+        this.form.district = v.district_name || v.district || '';
+        this.form.city = v.district_name || v.district || v.city || '';
+        this.form.state = v.state_name || v.state || '';
+        this.form.pincode = v.pincode || '';
+        
+        this.villageSearchQuery = '';
+        this.villageResults = [];
+    },
 
     async init() {
       this.resetForm();
@@ -903,9 +955,21 @@ document.addEventListener('alpine:init', () => {
         joining_date: new Date().toISOString().split('T')[0],
         role:       'User',
         is_active:  true,
+        address_line_1: '',
+        address_line_2: '',
+        village_id: '',
+        village_name: '',
+        post_office: '',
+        taluka: '',
+        district: '',
+        city: '',
+        state: '',
+        pincode: '',
         password:              '',
         password_confirmation: '',
       };
+      this.villageSearchQuery = '';
+      this.villageResults = [];
       this.editingUserId = null;
       this.saving        = false;
     },
@@ -965,6 +1029,11 @@ document.addEventListener('alpine:init', () => {
         if (this.form.joining_date) formData.append('joining_date', this.form.joining_date);
         formData.append('is_active', this.form.is_active ? '1' : '0');
         formData.append('roles[]', this.form.role);
+
+        const addressFields = ['address_line_1', 'address_line_2', 'village_id', 'village_name', 'post_office', 'taluka', 'district', 'city', 'state', 'pincode'];
+        for (const field of addressFields) {
+            if (this.form[field]) formData.append(field, this.form[field]);
+        }
 
         if (this.form.password) {
           formData.append('password', this.form.password);

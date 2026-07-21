@@ -308,20 +308,34 @@
                                         </div>
                                     </template>
                                     <template x-for="activity in activities" :key="activity.id">
-                                        <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary transition-all" href="#" @click.prevent="markAsRead(activity.id)" :class="{'opacity-75': activity.is_read, 'bg-body-secondary': !activity.is_read}">
+                                        <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all" href="#" @click.prevent="markAsRead(activity.id)" :class="{
+                                            'bg-primary bg-opacity-10 position-relative': !activity.is_read,
+                                            'hover-bg-secondary opacity-75': activity.is_read
+                                        }">
+                                            <!-- Unread Dot Indicator -->
+                                            <template x-if="!activity.is_read">
+                                                <div class="position-absolute top-50 start-0 translate-middle-y bg-primary rounded-circle ms-2 shadow-sm" style="width: 8px; height: 8px;"></div>
+                                            </template>
+                                            
                                             <template x-if="activity.causer_photo">
-                                                <img :src="activity.causer_photo" class="rounded-circle flex-shrink-0 object-fit-cover" alt="User" width="40" height="40">
+                                                <img :src="activity.causer_photo" class="rounded-circle flex-shrink-0 object-fit-cover ms-2" :class="!activity.is_read ? 'border border-2 border-primary border-opacity-25' : ''" alt="User" width="40" height="40" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                             </template>
                                             <template x-if="!activity.causer_photo">
-                                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                                <div class="text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2" :class="!activity.is_read ? 'bg-primary bg-opacity-25 border border-2 border-primary border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary'" style="width: 40px; height: 40px;">
                                                     <i class="bi bi-person-fill fs-5"></i>
                                                 </div>
                                             </template>
-                                            <div>
-                                                <p class="mb-1 fw-semibold text-body fs-13">
-                                                    <b x-text="activity.causer_name"></b> <span x-text="activity.description"></span> a <b x-text="activity.subject_type"></b>.
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <h6 class="mb-0 fs-13" :class="!activity.is_read ? 'fw-bold text-primary' : 'fw-semibold text-body'" x-text="activity.causer_name"></h6>
+                                                    <template x-if="!activity.is_read">
+                                                        <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
+                                                    </template>
+                                                </div>
+                                                <p class="mb-1 fs-13" :class="!activity.is_read ? 'text-body fw-bold' : 'text-muted'" style="line-height: 1.4;">
+                                                    <span x-text="activity.description"></span> a <b x-text="activity.subject_type"></b>.
                                                 </p>
-                                                <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> <span x-text="activity.time_ago"></span></p>
+                                                <p class="mb-0 small" :class="!activity.is_read ? 'text-primary text-opacity-75 fw-semibold' : 'text-muted'"><i class="bi bi-clock me-1"></i> <span x-text="activity.time_ago"></span></p>
                                             </div>
                                         </a>
                                     </template>
@@ -332,14 +346,40 @@
                             </div>
                             <div class="tab-pane fade" id="messages-noti-tab" role="tabpanel">
                                 <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
-                                     <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary" href="#">
-                                        <img src="{{ asset('assets/images/users/avatar-3.jpg') }}" class="rounded-circle flex-shrink-0 object-fit-cover" alt="James" width="40" height="40">
-                                        <div>
-                                            <h6 class="mb-1 fw-bold text-body fs-13">James Lemire</h6>
-                                            <p class="mb-1 text-muted fs-13">We talked about a project on linkedin.</p>
-                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> 30 min ago</p>
+                                    
+                                    <!-- Unread Message (Distinct styling) -->
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all bg-primary bg-opacity-10 position-relative" href="#">
+                                        <!-- Unread Dot Indicator -->
+                                        <div class="position-absolute top-50 start-0 translate-middle-y bg-primary rounded-circle ms-2 shadow-sm" style="width: 8px; height: 8px;"></div>
+                                        
+                                        <img src="{{ asset('assets/images/users/avatar-3.jpg') }}" class="rounded-circle flex-shrink-0 object-fit-cover ms-2 border border-2 border-primary border-opacity-25" alt="James" width="40" height="40" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <h6 class="mb-0 fw-bold text-primary fs-13">James Lemire</h6>
+                                                <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
+                                            </div>
+                                            <p class="mb-1 text-body fw-bold fs-13">We talked about a project on linkedin.</p>
+                                            <p class="mb-0 text-primary text-opacity-75 small fw-semibold"><i class="bi bi-clock me-1"></i> 30 min ago</p>
                                         </div>
                                     </a>
+
+                                    <!-- Read Message (Muted styling) -->
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary transition-all" href="#">
+                                        <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-3" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-person-fill fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1 opacity-75">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <h6 class="mb-0 fw-semibold text-body fs-13">Sarah Smith</h6>
+                                            </div>
+                                            <p class="mb-1 text-muted fs-13">Can you send me the latest invoice?</p>
+                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> 2 hours ago</p>
+                                        </div>
+                                    </a>
+
+                                </div>
+                                <div class="p-2 text-center bg-body-secondary bg-opacity-50 rounded-bottom-4">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All Messages <i class="bi bi-arrow-right-short align-middle"></i></button>
                                 </div>
                             </div>
                             <div class="tab-pane fade p-5 text-center" id="alerts-noti-tab" role="tabpanel">

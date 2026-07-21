@@ -106,6 +106,38 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/security', [PageController::class, 'security'])->name('security');
     Route::get('/help', [PageController::class, 'help'])->name('help');
 
+    // ─── Chat ────────────────────────────────────────────────────────────────
+    Route::get('/chat', \App\Http\Controllers\Web\Chat\ChatController::class)->name('chat.index');
+    
+    Route::prefix('api/chat')->middleware('throttle:chat')->group(function () {
+        Route::get('/conversations', [\App\Http\Controllers\Api\Chat\ConversationController::class, 'index']);
+        Route::post('/conversations', [\App\Http\Controllers\Api\Chat\ConversationController::class, 'store']);
+        Route::get('/conversations/{conversation}', [\App\Http\Controllers\Api\Chat\ConversationController::class, 'show']);
+        Route::post('/conversations/{conversation}/archive', [\App\Http\Controllers\Api\Chat\ConversationController::class, 'archive']);
+        Route::post('/conversations/{conversation}/pin', [\App\Http\Controllers\Api\Chat\ConversationController::class, 'pin']);
+        Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\Api\Chat\MessageController::class, 'index']);
+        Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\Api\Chat\MessageController::class, 'store']);
+        Route::post('/conversations/{conversation}/read', [\App\Http\Controllers\Api\Chat\MessageController::class, 'markRead']);
+        Route::put('/messages/{message}', [\App\Http\Controllers\Api\Chat\MessageController::class, 'update']);
+        Route::delete('/messages/{message}', [\App\Http\Controllers\Api\Chat\MessageController::class, 'destroy']);
+        Route::post('/messages/{message}/edit', [\App\Http\Controllers\Api\Chat\MessageController::class, 'update']);
+        Route::post('/messages/{message}/delete', [\App\Http\Controllers\Api\Chat\MessageController::class, 'destroy']);
+        Route::post('/messages/{message}/forward', [\App\Http\Controllers\Api\Chat\MessageController::class, 'forward']);
+        Route::put('/groups/{conversation}', [\App\Http\Controllers\Api\Chat\GroupController::class, 'update']);
+        Route::delete('/groups/{conversation}', [\App\Http\Controllers\Api\Chat\GroupController::class, 'destroy']);
+        Route::post('/groups/{conversation}/members', [\App\Http\Controllers\Api\Chat\GroupController::class, 'addMember']);
+        Route::delete('/groups/{conversation}/members', [\App\Http\Controllers\Api\Chat\GroupController::class, 'removeMember']);
+        Route::post('/groups/{conversation}/members/remove', [\App\Http\Controllers\Api\Chat\GroupController::class, 'removeMember']);
+        Route::put('/groups/{conversation}/members/role', [\App\Http\Controllers\Api\Chat\GroupController::class, 'updateRole']);
+        Route::post('/groups/{conversation}/members/role', [\App\Http\Controllers\Api\Chat\GroupController::class, 'updateRole']);
+        Route::post('/groups/{conversation}/transfer-owner', [\App\Http\Controllers\Api\Chat\GroupController::class, 'transferOwner']);
+        Route::post('/groups/{conversation}/leave', [\App\Http\Controllers\Api\Chat\GroupController::class, 'leave']);
+        Route::get('/active-status', [\App\Http\Controllers\Api\Chat\PresenceController::class, 'index']);
+        Route::post('/active-status', [\App\Http\Controllers\Api\Chat\PresenceController::class, 'update']);
+        Route::get('/users', [\App\Http\Controllers\Api\Chat\UserController::class, 'index']);
+        Route::get('/search', \App\Http\Controllers\Api\Chat\SearchController::class);
+    });
+
     // ─── Promotions ──────────────────────────────────────────────────────────
     Route::get('/promotions/coupons', [\App\Modules\Orders\Controllers\PromotionsController::class, 'coupons'])->name('promotions.coupons');
     Route::get('/promotions/offers', [\App\Modules\Orders\Controllers\PromotionsController::class, 'offers'])->name('promotions.offers');

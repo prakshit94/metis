@@ -45,6 +45,16 @@ class User extends Authenticatable implements Auditable
         'is_active',
         'password_changed_at',
         'suspended_until',
+        'address_line_1',
+        'address_line_2',
+        'village_id',
+        'village_name',
+        'post_office',
+        'taluka',
+        'district',
+        'city',
+        'state',
+        'pincode',
     ];
 
     /**
@@ -144,5 +154,43 @@ class User extends Authenticatable implements Auditable
             'user_id',
             'activity_id'
         )->withTimestamps();
+    }
+
+    public function chatPresence()
+    {
+        return $this->hasOne(\App\Models\Chat\Presence::class);
+    }
+
+    public function isOnline(): bool
+    {
+        return \Illuminate\Support\Facades\DB::table('sessions')
+            ->where('user_id', $this->id)
+            ->where('last_activity', '>=', now()->subMinutes(5)->getTimestamp())
+            ->exists();
+    }
+
+    public function getLastSeenAt(): ?\Illuminate\Support\Carbon
+    {
+        $lastActivity = \Illuminate\Support\Facades\DB::table('sessions')
+            ->where('user_id', $this->id)
+            ->max('last_activity');
+
+        return $lastActivity ? now()->setTimestamp((int) $lastActivity) : null;
+    }
+
+    public function getActiveDevice(): ?string
+    {
+        $session = \Illuminate\Support\Facades\DB::table('sessions')
+            ->where('user_id', $this->id)
+            ->latest('last_activity')
+            ->first();
+
+        if (!$session) return null;
+
+        $ua = $session->user_agent;
+        if (preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', $ua)) {
+            return 'mobile';
+        }
+        return 'desktop';
     }
 }

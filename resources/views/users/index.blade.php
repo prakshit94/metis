@@ -657,6 +657,119 @@
                             </div>
                         </div>
                         <div class="col-12"><hr class="my-1"></div>
+                        
+                        <!-- Address Details -->
+                        <div class="col-12">
+                            <h6 class="fw-bold mb-3">Address Details</h6>
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 1 *</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-house"></i></span>
+                                        <input type="text" name="address_line_1" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_1" required>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 2</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-signpost"></i></span>
+                                        <input type="text" name="address_line_2" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_2">
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Village Search</label>
+                                    <div class="position-relative">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-search"></i></span>
+                                            <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" placeholder="Type 3 letters to search village..." 
+                                                   x-model="villageSearchQuery" @input.debounce.300ms="searchVillages()">
+                                        </div>
+                                        <div class="position-absolute w-100 dropdown-menu show shadow overflow-auto" style="max-height: 200px; z-index: 1060;" x-show="villageResults.length > 0">
+                                            <template x-for="v in villageResults" :key="v.id">
+                                                <button type="button" class="dropdown-item w-100 text-start py-2 px-3 border-bottom border-light-subtle"
+                                                        @click="selectVillage(v)">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <span class="fw-bold text-primary" style="font-size: 12px;" x-text="v.village_name"></span>
+                                                        <span class="badge bg-secondary-subtle text-secondary-emphasis" x-text="v.pincode"></span>
+                                                    </div>
+                                                    <div class="text-muted small" style="font-size: 0.75rem; line-height: 1.4;">
+                                                        <span x-show="v.post_so_name" x-text="'PO: ' + v.post_so_name + ' · '"></span>
+                                                        <span x-show="v.taluka_name" x-text="'Taluka: ' + v.taluka_name + ' · '"></span>
+                                                        <span x-show="v.district_name" x-text="'District: ' + v.district_name + ' · '"></span>
+                                                        <span x-show="v.state_name" x-text="'State: ' + v.state_name"></span>
+                                                    </div>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Selected Village Details -->
+                                <template x-if="form.village_name">
+                                    <div class="col-12">
+                                        <div class="card bg-body border-0 border-start border-4 border-primary shadow-sm mt-2">
+                                            <div class="card-body p-3">
+                                                <div class="row g-2">
+                                                    <div class="col-md-4">
+                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Village</label>
+                                                        <div class="fw-semibold text-truncate text-body" style="font-size: 12px;" x-text="form.village_name || '—'"></div>
+                                                        <input type="hidden" name="village_name" :value="form.village_name">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Post Office</label>
+                                                        <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.post_office || '—'"></div>
+                                                        <input type="hidden" name="post_office" :value="form.post_office">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Taluka</label>
+                                                        <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.taluka || '—'"></div>
+                                                        <input type="hidden" name="taluka" :value="form.taluka">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">District</label>
+                                                        <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.district || '—'"></div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">State</label>
+                                                        <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.state || '—'"></div>
+                                                        <input type="hidden" name="state" :value="form.state">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Pincode</label>
+                                                        <div class="fw-bold text-body" style="font-size: 12px;" x-text="form.pincode || '—'"></div>
+                                                        <input type="hidden" name="pincode" :value="form.pincode">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <input type="hidden" name="village_id" x-model="form.village_id">
+                                        <input type="hidden" name="city" x-model="form.city">
+                                    </div>
+                                </template>
+
+                                <!-- Manual Input Fields (no village selected) -->
+                                <template x-if="!form.village_name">
+                                    <div class="col-12 mt-2">
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">City *</label>
+                                                <input type="text" name="city" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.city" required>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">State *</label>
+                                                <input type="text" name="state" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.state" required>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Pincode *</label>
+                                                <input type="text" name="pincode" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.pincode" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="col-12"><hr class="my-1"></div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 Password

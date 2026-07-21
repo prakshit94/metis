@@ -70,9 +70,10 @@ class BulkUserController extends Controller
         }
 
         if ($action === 'delete') {
-            // Revoke tokens before deleting
-            User::whereIn('id', $ids)->each(fn (User $u) => $u->tokens()->delete());
-            User::whereIn('id', $ids)->delete();
+            User::whereIn('id', $ids)->get()->each(function (User $u) {
+                $u->tokens()->delete();
+                $u->delete();
+            });
 
             return response()->json([
                 'message' => count($ids) . ' user(s) deleted successfully.',
@@ -94,12 +95,12 @@ class BulkUserController extends Controller
 
         $isActive = $action === 'activate';
 
-        User::whereIn('id', $ids)->update(['is_active' => $isActive]);
-
-        // Revoke tokens for deactivated accounts
-        if (! $isActive) {
-            User::whereIn('id', $ids)->each(fn (User $u) => $u->tokens()->delete());
-        }
+        User::whereIn('id', $ids)->get()->each(function (User $u) use ($isActive) {
+            $u->update(['is_active' => $isActive]);
+            if (! $isActive) {
+                $u->tokens()->delete();
+            }
+        });
 
         return response()->json([
             'message'   => count($ids) . ' user(s) ' . ($isActive ? 'activated' : 'deactivated') . ' successfully.',

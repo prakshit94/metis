@@ -90,6 +90,10 @@
 
     </div><!-- /.admin-wrapper -->
 
+    @if(config('chat.enabled'))
+        @include('partials.chat_widget')
+    @endif
+
     <!-- Toast Container -->
     <div aria-live="polite" aria-atomic="true" class="toast-stack position-fixed end-0 p-3">
         <div id="toast-container"></div>
