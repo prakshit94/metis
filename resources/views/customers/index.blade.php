@@ -6,19 +6,19 @@
 @section('content')
 <div class="customer-management" x-data="customerTable" x-init="init()">
     <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
         <div>
-            <h1 class="h3 mb-0">Customer Management</h1>
+            <h1 class="h3 fw-bold mb-0">Customer Management</h1>
             <p class="text-muted mb-0">Manage farmers, corporate customers, and their addresses</p>
         </div>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#importModal">
                 <i class="bi bi-upload me-2"></i>Import Customers
             </button>
-            <button type="button" class="btn btn-outline-secondary" x-on:click="exportCustomers()">
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" x-on:click="exportCustomers()">
                 <i class="bi bi-download me-2"></i>Export
             </button>
-            <button type="button" class="btn btn-primary" @click="$dispatch('open-add-customer-modal')">
+            <button type="button" class="btn btn-primary rounded-pill px-4" @click="$dispatch('open-add-customer-modal')">
                 <i class="bi bi-person-plus me-2"></i>Add Customer
             </button>
         </div>
@@ -27,7 +27,7 @@
     <!-- Customer Stats Widgets -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card border-0 shadow-sm rounded-4 stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -45,7 +45,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card border-0 shadow-sm rounded-4 stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
@@ -63,7 +63,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card border-0 shadow-sm rounded-4 stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
@@ -81,7 +81,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card border-0 shadow-sm rounded-4 stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div id="activeCustomerChart" style="min-height: 40px; width: 50px;"></div>
@@ -102,7 +102,7 @@
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <!-- Customer Growth Chart -->
         <div class="col-lg-8">
-            <div class="card h-100">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h2 class="h5 card-title mb-0">Customer Registration Trends</h2>
                     <div class="btn-group btn-group-sm" role="group" aria-label="Registration trend period">
@@ -122,7 +122,7 @@
 
         <!-- Category & Crop Distribution -->
         <div class="col-lg-4">
-            <div class="card h-100">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
                 <div class="card-header">
                     <h2 class="h5 card-title mb-0">Customer Profiling</h2>
                 </div>
@@ -155,7 +155,7 @@
     </div>
 
     <!-- Main Table Container -->
-    <div class="card">
+    <div class="card border-0 shadow-sm rounded-4">
         <div class="card-header">
             <div class="row align-items-center">
                 <div class="col">
@@ -250,27 +250,27 @@
             </div>
 
             <!-- Table -->
-            <div class="table-responsive">
+            <div class="table-responsive mt-2">
                 <table class="table table-hover align-middle mb-0">
-                    <thead>
+                    <thead class="table-light">
                         <tr>
-                            <th style="width: 40px;" class="ps-3">
+                            <th style="width: 40px;" class="border-0 ps-4 rounded-start">
                                 <input type="checkbox" 
                                        class="user-select-checkbox" 
                                        :checked="customers.length > 0 && selectedCustomers.length === customers.length"
                                        @change="toggleAll($event.target.checked)">
                             </th>
-                            <th @click="sort('name')" style="cursor: pointer;">
+                            <th @click="sort('name')" style="cursor: pointer;" class="border-0">
                                 Name <i class="bi" :class="getSortIcon('name')"></i>
                             </th>
-                            <th>Code</th>
-                            <th>Category</th>
-                            <th>Phone</th>
-                            <th>Outstanding</th>
-                            <th>KYC</th>
-                            <th>Status</th>
-                            <th>Joined</th>
-                            <th style="width: 80px;"></th>
+                            <th class="border-0">Code</th>
+                            <th class="border-0">Category</th>
+                            <th class="border-0">Phone</th>
+                            <th class="border-0">Outstanding</th>
+                            <th class="border-0">KYC</th>
+                            <th class="border-0">Status</th>
+                            <th class="border-0">Joined</th>
+                            <th style="width: 80px;" class="border-0 pe-4 rounded-end"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -294,7 +294,7 @@
                         <!-- Data Rows -->
                         <template x-for="c in customers" :key="c.id">
                             <tr class="user-row" :class="{'table-active': selectedCustomers.includes(c.id), 'opacity-50': c.isDeleted}">
-                                <td class="ps-3">
+                                <td class="ps-4">
                                     <input type="checkbox" 
                                            class="user-select-checkbox" 
                                            :value="c.id" :checked="selectedCustomers.includes(c.id)"
@@ -402,10 +402,10 @@
 <div x-data="customerProfile">
     <div class="modal fade" id="viewCustomerModal" tabindex="-1" aria-labelledby="viewCustomerModalLabel">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-            <div class="modal-header border-bottom-0 pb-0">
+            <div class="modal-content shadow-lg border-0 rounded-4">
+            <div class="modal-header border-bottom-0 pb-0 pt-4 px-4 px-lg-5">
                 <h5 class="modal-title fw-bold" id="viewCustomerModalLabel">
-                    <i class="bi bi-person-badge-fill me-2"></i>Customer Profile
+                    <i class="bi bi-person-badge-fill me-2 text-primary"></i>Customer Profile
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -417,10 +417,10 @@
                 </div>
 
                 <div x-show="!loading && customer">
-                    <div class="row g-4">
+                    <div class="row g-4 px-3 px-lg-4">
                         <!-- Left Panel: Customer Identity Card -->
                         <div class="col-lg-4">
-                            <div class="card border-0 bg-body-tertiary h-100">
+                            <div class="card border-0 bg-body-tertiary rounded-4 h-100">
                                 <div class="card-body p-4">
                                     <!-- Avatar & Name -->
                                     <div class="text-center mb-3">
@@ -716,9 +716,9 @@
     <!-- Address Modal -->
     <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
+            <div class="modal-content shadow-lg border-0 rounded-4">
                 <form @submit.prevent="saveAddress()">
-                    <div class="modal-header border-bottom-0 pb-0">
+                    <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
                         <h5 class="modal-title fw-bold" id="addressModalLabel">
                             <i class="bi bi-geo-alt-fill me-2 text-primary"></i>
                             <span x-text="editingAddressId ? 'Edit Address' : 'Add New Address'"></span>
