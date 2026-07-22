@@ -62,7 +62,13 @@ class Offer extends Model
         'ends_at',
         'priority',
         'is_active',
+        'created_by',
+        'updated_by',
         'used_count',
+        'applicable_categories',
+        'applicable_products',
+        'excluded_categories',
+        'excluded_products',
     ];
 
     protected $casts = [
@@ -76,11 +82,25 @@ class Offer extends Model
         'ends_at' => 'datetime',
         'is_active' => 'boolean',
         'used_count' => 'integer',
+        'applicable_categories' => 'array',
+        'applicable_products' => 'array',
+        'excluded_categories' => 'array',
+        'excluded_products' => 'array',
     ];
 
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(\App\Modules\Users\Models\User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(\App\Modules\Users\Models\User::class, 'updated_by');
     }
 
     public function scopeActive($query)

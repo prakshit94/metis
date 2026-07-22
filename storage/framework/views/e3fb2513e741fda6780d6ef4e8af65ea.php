@@ -296,7 +296,7 @@
                                             <input type="number" name="credit_days" x-model="form.credit_days" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Current Balance</label>
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Wallet Balance</label>
                                             <input type="number" step="0.01" name="outstanding_balance" x-model="form.outstanding_balance" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-6">

@@ -126,7 +126,7 @@
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light text-uppercase small">
+                    <thead class=" text-uppercase small">
                         <tr>
                             <th style="width:40px"><input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event)" :checked="allSelected"></th>
                             <th>Code</th>
@@ -135,6 +135,7 @@
                             <th>Min Spend</th>
                             <th>Usage</th>
                             <th>Expiry</th>
+                            <th>Created</th>
                             <th>Status</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -155,7 +156,7 @@
                                             <i class="fs-5 bi bi-ticket-perforated-fill"></i>
                                         </div>
                                         <div>
-                                            <code class="badge bg-dark fs-6 px-3 py-2 font-monospace" x-text="c.code"></code>
+                                            <code class="badge bg-body-secondary text-body-emphasis fs-6 px-3 py-2 font-monospace" x-text="c.code"></code>
                                         </div>
                                     </div>
                                 </td>
@@ -167,14 +168,14 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="fw-bold text-dark fs-6" x-text="c.type === 'percentage' ? c.value + '%' : 'Rs ' + parseFloat(c.value).toFixed(2)"></span>
+                                    <span class="fw-bold text-body-emphasis fs-6" x-text="c.type === 'percentage' ? c.value + '%' : 'Rs ' + parseFloat(c.value).toFixed(2)"></span>
                                 </td>
                                 <td>
                                     <span class="fw-semibold text-secondary" x-text="c.min_spend > 0 ? 'Rs ' + parseFloat(c.min_spend).toFixed(2) : 'No Min Spend'"></span>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-1">
-                                        <div class="bg-light text-primary border rounded px-2 py-1 fw-bold small">
+                                        <div class="bg-body-tertiary text-primary border rounded px-2 py-1 fw-bold small">
                                             <i class="bi bi-receipt me-1"></i>
                                             <span x-text="c.used_count || 0"></span>
                                             <span class="text-muted fw-normal" x-show="c.usage_limit">/ <span x-text="c.usage_limit"></span></span>
@@ -193,6 +194,12 @@
                                                 <i class="bi bi-clock-history me-1"></i><span x-text="formatDateTime(c.expiry_date)"></span>
                                             </span>
                                         </template>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1 text-muted small">
+                                        <span><i class="bi bi-person me-1"></i><span x-text="c.creator ? c.creator.name : 'System'"></span></span>
+                                        <span style="font-size: 11px;"><i class="bi bi-clock me-1"></i><span x-text="formatDateTime(c.created_at)"></span></span>
                                     </div>
                                 </td>
                                 <td>

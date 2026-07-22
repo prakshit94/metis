@@ -498,7 +498,7 @@
                         <li>
                             <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
                                 <i class="bi bi-wallet2 text-muted fs-5"></i> 
-                                <span>Balance : <span class="fw-bold text-success">$5971.67</span></span>
+                                <span>Wallet Balance : <span class="fw-bold text-success">$5971.67</span></span>
                             </a>
                         </li>
                         <li>

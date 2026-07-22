@@ -43,7 +43,7 @@
                             <p class="mb-0 fs-4 fw-bold text-dark lh-1">{{ $customer->credit_days ?: 0 }} <span class="fs-6 text-muted fw-normal">Days</span></p>
                         </div>
                         <div>
-                            <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Outstanding Balance</p>
+                            <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Wallet Balance</p>
                             <p class="mb-0 fs-3 fw-black {{ ($customer->outstanding_balance ?? 0) > 0 ? 'text-danger' : 'text-dark' }} lh-1">Rs {{ number_format($customer->outstanding_balance ?? 0, 2) }}</p>
                         </div>
                         <div>

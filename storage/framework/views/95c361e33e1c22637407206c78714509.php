@@ -462,12 +462,7 @@
                         <i class="bi bi-x-circle me-1"></i>Cancel
                     </button>
 
-                    <button class="btn btn-sm btn-primary"
-                            x-show="bulkDocumentActions.canGenerateInvoices"
-                            x-transition
-                            @click="generateBulkInvoices()">
-                        <i class="bi bi-receipt-cutoff me-1"></i>Generate Bulk Invoices
-                    </button>
+
 
                     <div class="dropdown d-inline-block" x-show="bulkDocumentActions.canPrint" x-transition>
                         <button class="btn btn-sm btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -688,21 +683,12 @@
                                             <i class="bi bi-arrow-left-right me-2"></i>Revert Status
                                         </a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <template x-if="order.invoice">
-                                            <li><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
-                                                <i class="bi bi-file-pdf me-2"></i>Print Invoice
-                                            </a></li>
-                                        </template>
-                                        <template x-if="order.invoice">
-                                            <li><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
-                                                <i class="bi bi-file-earmark-pdf me-2"></i>Print COD Receipt
-                                            </a></li>
-                                        </template>
-                                        <template x-if="!order.invoice">
-                                            <li><a class="dropdown-item text-primary" href="#" @click.prevent="generateAndPrintInvoice(order)">
-                                                <i class="bi bi-receipt-cutoff me-2"></i>Generate Invoice & Print
-                                            </a></li>
-                                        </template>
+                                        <li><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
+                                            <i class="bi bi-file-pdf me-2"></i>Print Invoice
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
+                                            <i class="bi bi-file-earmark-pdf me-2"></i>Print COD Receipt
+                                        </a></li>
                                         <li><a class="dropdown-item" href="#" @click.prevent="printReceipt(order)">
                                             <i class="bi bi-receipt me-2"></i>Print Receipt
                                         </a></li>

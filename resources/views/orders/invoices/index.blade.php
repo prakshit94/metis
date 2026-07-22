@@ -31,7 +31,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Total Invoiced</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.total_invoiced)"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="formatCurrency(stats.total_invoiced)"></div>
                             <small class="text-success"><i class="bi bi-arrow-up"></i> Live data</small>
                         </div>
                     </div>
@@ -47,7 +47,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Collected Amount</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.collected_amount)"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="formatCurrency(stats.collected_amount)"></div>
                             <small class="text-success-emphasis">Collection rate tracked</small>
                         </div>
                     </div>
@@ -63,7 +63,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Pending Amount</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.pending_amount)"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="formatCurrency(stats.pending_amount)"></div>
                             <small class="text-warning">Follow-up required</small>
                         </div>
                     </div>
@@ -79,7 +79,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Avg. Invoice Value</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.avg_value)"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="formatCurrency(stats.avg_value)"></div>
                             <small class="text-info">Based on total transactions</small>
                         </div>
                     </div>
@@ -173,16 +173,16 @@
                                     <input type="checkbox" class="form-check-input border-secondary" style="cursor: pointer;" :value="String(invoice.id)" x-model="selectedInvoices">
                                 </td>
                                 <td>
-                                    <span class="fw-medium text-white" x-text="invoice.invoice_no"></span>
+                                    <span class="fw-medium text-body-emphasis" x-text="invoice.invoice_no"></span>
                                 </td>
                                 <td>
-                                    <span class="text-white-50 font-monospace" x-text="invoice.order ? invoice.order.order_no : 'N/A'"></span>
+                                    <span class="text-body-secondary font-monospace" x-text="invoice.order ? invoice.order.order_no : 'N/A'"></span>
                                 </td>
                                 <td>
-                                    <div class="small fw-medium text-white" x-text="invoice.order && invoice.order.party ? (invoice.order.party.firstname + ' ' + invoice.order.party.lastname) : 'N/A'"></div>
+                                    <div class="small fw-medium text-body-emphasis" x-text="invoice.order && invoice.order.party ? (invoice.order.party.firstname + ' ' + invoice.order.party.lastname) : 'N/A'"></div>
                                 </td>
                                 <td>
-                                    <div class="fw-bold text-white" x-text="formatCurrency(invoice.net_amount)"></div>
+                                    <div class="fw-bold text-body-emphasis" x-text="formatCurrency(invoice.net_amount)"></div>
                                     <template x-if="invoice.status === 'partially_paid' || invoice.paid_amount > 0">
                                         <div class="small mt-1 lh-sm">
                                             <span class="text-success d-block" style="font-size: 0.75rem;">Paid: <span x-text="formatCurrency(invoice.paid_amount)"></span></span>
@@ -200,7 +200,7 @@
                                           x-text="invoice.status.toUpperCase().replace('_', ' ')"></span>
                                 </td>
                                 <td>
-                                    <div class="small text-white-50" x-text="formatDate(invoice.due_date)"></div>
+                                    <div class="small text-body-secondary" x-text="formatDate(invoice.due_date)"></div>
                                 </td>
                                 <td>
                                     <div class="dropdown">
@@ -296,7 +296,7 @@
                                     <p class="fs-5 fw-bold text-success" x-text="formatCurrency(selectedInvoice.paid_amount)"></p>
                                 </div>
                                 <div class="col-md-6">
-                                    <p class="fw-bold small text-muted text-uppercase mb-1">Remaining Balance Due</p>
+                                    <p class="fw-bold small text-muted text-uppercase mb-1">Remaining Wallet Balance Due</p>
                                     <p class="fs-4 fw-bolder text-primary" x-text="formatCurrency(selectedInvoice.due_amount)"></p>
                                 </div>
                                 <div class="col-md-6">
@@ -352,7 +352,7 @@
                     </div>
                     <div class="modal-body p-4">
                         <div class="alert alert-info py-2 mb-4 d-flex justify-content-between align-items-center">
-                            <span>Balance Due:</span>
+                            <span>Wallet Balance Due:</span>
                             <strong class="fs-5" x-text="formatCurrency(paymentForm.max_amount)"></strong>
                         </div>
                         <div class="row g-3">

@@ -158,6 +158,21 @@ class OrderService
                 \App\Modules\Orders\Models\Offer::whereIn('id', $data['applied_bogo_ids'])->increment('used_count');
             }
 
+            if (!empty($data['use_wallet_balance'])) {
+                $party = \App\Modules\Customers\Models\Party::find($data['party_id']);
+                if ($party && (float) $party->outstanding_balance !== 0.0) {
+                    $netPayable = $order->net_amount + (float) $party->outstanding_balance;
+                    if ($netPayable <= 0) {
+                        $party->outstanding_balance = $netPayable;
+                        $order->update(['net_amount' => 0]);
+                    } else {
+                        $party->outstanding_balance = 0;
+                        $order->update(['net_amount' => $netPayable]);
+                    }
+                    $party->save();
+                }
+            }
+
             return $order->refresh();
         });
     }

@@ -31,7 +31,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Total Volume</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.total_volume)"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="formatCurrency(stats.total_volume)"></div>
                             <small class="text-success"><i class="bi bi-arrow-up"></i> Live data</small>
                         </div>
                     </div>
@@ -47,7 +47,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Completed</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.completed_amount)"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="formatCurrency(stats.completed_amount)"></div>
                             <small class="text-success-emphasis">Successful payments</small>
                         </div>
                     </div>
@@ -63,7 +63,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Authorized/Pending</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.authorized_amount)"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="formatCurrency(stats.authorized_amount)"></div>
                             <small class="text-info">Awaiting capture</small>
                         </div>
                     </div>
@@ -79,7 +79,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Failed/Refunded</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.failed_amount)"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="formatCurrency(stats.failed_amount)"></div>
                             <small class="text-danger">Failed transactions</small>
                         </div>
                     </div>
@@ -181,27 +181,27 @@
                                     <input type="checkbox" class="form-check-input border-secondary" style="cursor: pointer;" :value="String(payment.id)" x-model="selectedPayments">
                                 </td>
                                 <td>
-                                    <span class="fw-medium text-white" x-text="payment.payment_no"></span>
+                                    <span class="fw-medium text-body-emphasis" x-text="payment.payment_no"></span>
                                     <br><small class="text-muted" x-text="payment.transaction_id || 'N/A'"></small>
                                 </td>
                                 <td>
-                                    <span class="text-white-50 font-monospace" x-text="payment.order ? payment.order.order_no : 'N/A'"></span>
+                                    <span class="text-body-secondary font-monospace" x-text="payment.order ? payment.order.order_no : 'N/A'"></span>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="bg-secondary bg-opacity-25 rounded-circle me-2 d-flex align-items-center justify-content-center" style="width:32px;height:32px;">
-                                            <i class="bi text-white-50" :class="{
+                                            <i class="bi text-body-secondary" :class="{
                                                 'bi-credit-card': payment.payment_method === 'credit_card' || payment.payment_method === 'Credit Card',
                                                 'bi-paypal': payment.payment_method === 'paypal' || payment.payment_method === 'PayPal',
                                                 'bi-cash': payment.payment_method === 'cod' || payment.payment_method === 'COD',
                                                 'bi-bank': payment.payment_method === 'bank_transfer'
                                             }"></i>
                                         </div>
-                                        <div class="small fw-medium text-white" x-text="payment.payment_method.toUpperCase().replace('_', ' ')"></div>
+                                        <div class="small fw-medium text-body-emphasis" x-text="payment.payment_method.toUpperCase().replace('_', ' ')"></div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="fw-bold text-white" x-text="formatCurrency(payment.amount)"></span>
+                                    <span class="fw-bold text-body-emphasis" x-text="formatCurrency(payment.amount)"></span>
                                 </td>
                                 <td>
                                     <span class="badge" 
@@ -215,7 +215,7 @@
                                           x-text="payment.status.toUpperCase()"></span>
                                 </td>
                                 <td>
-                                    <div class="small text-white-50" x-text="formatDate(payment.payment_date)"></div>
+                                    <div class="small text-body-secondary" x-text="formatDate(payment.payment_date)"></div>
                                 </td>
                                 <td>
                                     <div class="dropdown">

@@ -793,13 +793,10 @@ document.addEventListener('alpine:init', () => {
 
     get bulkDocumentActions() {
       const selectedOrderObjs = this.orders.filter(o => this.selectedOrders.includes(String(o.id)));
-      const hasCompleteSelection = selectedOrderObjs.length === this.selectedOrders.length;
-      const allHaveInvoices = hasCompleteSelection && selectedOrderObjs.length > 0 && selectedOrderObjs.every(o => o.invoice);
-      const hasOrdersWithoutInvoices = selectedOrderObjs.some(o => !o.invoice);
 
       return {
-        canPrint: allHaveInvoices,
-        canGenerateInvoices: hasOrdersWithoutInvoices,
+        canPrint: selectedOrderObjs.length > 0,
+        canGenerateInvoices: false,
       };
     },
 

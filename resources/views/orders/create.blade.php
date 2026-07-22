@@ -157,7 +157,7 @@
                                                 <h6 class="fw-bold text-warning-emphasis mb-0" style="text-transform: uppercase; font-size: 11px;">Financial & Stats</h6>
                                             </div>
                                             <div class="mb-2"><span class="text-muted d-block small mb-1">Credit Limit</span><span class="fw-bold text-body-emphasis">Rs <span x-text="Number(customerDetails.credit_limit || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
-                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Balance</span><span class="fw-bold fs-6" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">Rs <span x-text="Number(customerDetails.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Wallet Balance</span><span class="fw-bold fs-6" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">Rs <span x-text="Number(customerDetails.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
                                             
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <div><span class="text-muted d-block small mb-1">Cr. Days</span><span class="fw-medium text-body-emphasis" x-text="(customerDetails.credit_days || '0') + ' Days'"></span></div>
@@ -763,6 +763,30 @@
                                 <span class="fw-bold text-uppercase tracking-widest text-body" style="font-size: 14px;">Grand Total</span>
                                 <span class="fw-black text-primary fs-3" x-text="'Rs ' + Number(grandTotal).toFixed(2)"></span>
                             </div>
+
+                            <template x-if="customerDetails && Number(customerDetails.outstanding_balance) !== 0">
+                                <div class="mt-4 p-3 bg-body-tertiary rounded-4 border shadow-sm transition-all" :class="useWalletBalance ? 'border-primary' : ''">
+                                    <div class="form-check form-switch d-flex align-items-center justify-content-between gap-3 p-0 m-0 cursor-pointer" @click="useWalletBalance = !useWalletBalance">
+                                        <div>
+                                            <label class="form-check-label fw-bold mb-0 text-body-emphasis" style="cursor: pointer;">Settle Wallet Balance</label>
+                                            <div class="small text-muted mt-1" style="font-size: 11px;">
+                                                Current Balance: <span :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'" x-text="'Rs ' + Math.abs(Number(customerDetails.outstanding_balance)).toFixed(2)"></span> 
+                                                <span x-text="Number(customerDetails.outstanding_balance) > 0 ? '(Due)' : '(Credit)'"></span>
+                                            </div>
+                                        </div>
+                                        <input class="form-check-input fs-4 m-0" type="checkbox" x-model="useWalletBalance" @click.stop>
+                                    </div>
+                                    <div x-show="useWalletBalance" x-cloak class="mt-3 pt-3 border-top">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="fw-bold text-uppercase tracking-widest text-primary" style="font-size: 14px;">Net Payable</span>
+                                            <span class="fw-black text-primary fs-4" x-text="'Rs ' + Math.max(0, Number(grandTotal) + Number(customerDetails.outstanding_balance)).toFixed(2)"></span>
+                                        </div>
+                                        <div class="small text-muted mt-1" x-show="(Number(grandTotal) + Number(customerDetails.outstanding_balance)) < 0">
+                                            * Remaining credit: Rs <span x-text="Math.abs(Number(grandTotal) + Number(customerDetails.outstanding_balance)).toFixed(2)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
 
                         {{-- Schedule Order Toggle (Merged) --}}
@@ -1430,7 +1454,13 @@
         'get_qty' => (int)$o->get_qty,
         'ends_at' => $o->ends_at,
         'priority' => (int)$o->priority,
-        'product_name' => $o->product ? $o->product->name : 'Any Product'
+        'product_name' => $o->product ? $o->product->name : 'Any Product',
+        'applicable_categories' => $o->applicable_categories,
+        'excluded_categories' => $o->excluded_categories,
+        'applicable_products' => $o->applicable_products,
+        'excluded_products' => $o->excluded_products,
+        'free_product_id' => $o->free_product_id,
+        'free_qty' => (int)$o->free_qty,
     ])->values()->all();
 @endphp
 <script>
@@ -1438,7 +1468,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
     return {
         activeTab: 'customer',
         viewMode: 'table',
-        isCartSidebarOpen: false,
+        isCartSidebarOpen: false, useWalletBalance: false,
         partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '{{ $warehouses->first()->id ?? '' }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale',
         orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
         isDraft: false, futureOrderDate: '',
@@ -1636,6 +1666,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     ? Number(item.discount_amount || item.discountValue || 0) / Number(item.quantity || 1)
                     : 0,
                 discountType: 'flat',
+                category_id: item.product?.category_id || null,
             }));
 
             if (this.cart.length > 0) {
@@ -1784,7 +1815,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+p.available_stock+')'}}));
                     return;
                 }
-                this.cart.push({ id:p.id, name:p.name, sku:p.sku, price:p.selling_price, image_url:p.image_url, quantity:qty, available:p.available_stock, taxRate:parseFloat(p.tax_rate)||0, discountValue:disc, discountType:p.default_discount_type||'percent' });
+                this.cart.push({ id:p.id, name:p.name, sku:p.sku, price:p.selling_price, image_url:p.image_url, quantity:qty, available:p.available_stock, taxRate:parseFloat(p.tax_rate)||0, discountValue:disc, discountType:p.default_discount_type||'percent', category_id:p.category_id });
             }
             window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:'Added '+p.name+' to cart'}}));
         },
@@ -1870,15 +1901,24 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         orderOfferDiscount(offer) {
             if (!offer || this.subtotal <= 0) return 0;
             if ((parseFloat(offer.min_spend) || 0) > this.subtotal) return 0;
-            let eligibleSubtotal = this.subtotal;
-            if (offer.product_id) {
-                eligibleSubtotal = this.cart.reduce((t, item) => {
-                    if (item.id == offer.product_id) {
-                        return t + this.lineTotal(item);
-                    }
-                    return t;
-                }, 0);
-            }
+            
+            let eligibleSubtotal = 0;
+            this.cart.forEach(item => {
+                let isEligible = true;
+                
+                if (offer.product_id && item.id != offer.product_id) isEligible = false;
+                
+                if (offer.applicable_products && offer.applicable_products.length > 0 && !offer.applicable_products.includes(String(item.id))) isEligible = false;
+                if (offer.excluded_products && offer.excluded_products.length > 0 && offer.excluded_products.includes(String(item.id))) isEligible = false;
+                
+                if (offer.applicable_categories && offer.applicable_categories.length > 0 && (!item.category_id || !offer.applicable_categories.includes(String(item.category_id)))) isEligible = false;
+                if (offer.excluded_categories && offer.excluded_categories.length > 0 && item.category_id && offer.excluded_categories.includes(String(item.category_id))) isEligible = false;
+                
+                if (isEligible) {
+                    eligibleSubtotal += this.lineTotal(item);
+                }
+            });
+
             if (eligibleSubtotal <= 0) return 0;
             let discount = String(offer.discount_type) === 'percentage'
                 ? eligibleSubtotal * ((parseFloat(offer.value) || 0) / 100)
@@ -1906,9 +1946,27 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             if (!this.couponApplied || !this.appliedCouponObj) return 0;
             const c = this.appliedCouponObj;
             if ((parseFloat(c.min_spend) || 0) > this.subtotal) return 0;
-            let d = c.type === 'percentage' ? this.subtotal * (parseFloat(c.value) / 100) : parseFloat(c.value);
+            
+            let eligibleSubtotal = 0;
+            this.cart.forEach(item => {
+                let isEligible = true;
+                
+                if (c.applicable_products && c.applicable_products.length > 0 && !c.applicable_products.includes(String(item.id))) isEligible = false;
+                if (c.excluded_products && c.excluded_products.length > 0 && c.excluded_products.includes(String(item.id))) isEligible = false;
+                
+                if (c.applicable_categories && c.applicable_categories.length > 0 && (!item.category_id || !c.applicable_categories.includes(String(item.category_id)))) isEligible = false;
+                if (c.excluded_categories && c.excluded_categories.length > 0 && item.category_id && c.excluded_categories.includes(String(item.category_id))) isEligible = false;
+                
+                if (isEligible) {
+                    eligibleSubtotal += this.lineTotal(item);
+                }
+            });
+            
+            if (eligibleSubtotal <= 0) return 0;
+
+            let d = c.type === 'percentage' ? eligibleSubtotal * (parseFloat(c.value) / 100) : parseFloat(c.value);
             if ((parseFloat(c.max_discount) || 0) > 0) d = Math.min(d, parseFloat(c.max_discount));
-            return Math.min(d, this.subtotal);
+            return Math.min(d, eligibleSubtotal);
         },
         get totalDiscount() { return Math.min(this.subtotal, this.bogoDiscount + this.couponDiscount + this.orderOfferDiscountAmount); },
         get grandTotal() { return Math.max(0, this.subtotal - this.totalDiscount + this.taxAmount); },
@@ -1994,6 +2052,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     tax_amount: parseFloat(this.taxAmount.toFixed(2)),
                     discount_amount: parseFloat(this.totalDiscount.toFixed(2)),
                     net_amount: parseFloat(this.grandTotal.toFixed(2)),
+                    use_wallet_balance: this.useWalletBalance ? 1 : 0,
                 };
                 const url = this.editingOrderId ? `/orders/${this.editingOrderId}` : '/orders';
                 const res = await fetch(url, { method: this.editingOrderId ? 'PUT' : 'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}, body:JSON.stringify(payload) });

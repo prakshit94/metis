@@ -408,6 +408,7 @@ class OrderController extends Controller implements HasMiddleware
             'tax_amount' => 'required|numeric',
             'discount_amount' => 'required|numeric',
             'net_amount' => 'required|numeric',
+            'use_wallet_balance' => 'nullable|boolean',
         ]);
 
         $order = $orderService->createOrder($validated);
@@ -762,9 +763,7 @@ class OrderController extends Controller implements HasMiddleware
     public function downloadInvoice(string $id, InvoiceService $invoiceService)
     {
         $order = Order::findOrFail($id);
-        $invoice = $invoiceService->findForOrder($order);
-
-        abort_unless($invoice, 404, 'Generate an invoice before printing it.');
+        $invoice = $invoiceService->generateForOrder($order);
 
         $pdf = Pdf::loadView('orders.pdf.invoice', compact('invoice'))->setPaper('a5', 'portrait');
         return $pdf->download("invoice-{$invoice->invoice_no}.pdf");
@@ -808,16 +807,17 @@ class OrderController extends Controller implements HasMiddleware
         return response()->json(['success' => true, 'message' => $message, 'generated' => $generated]);
     }
 
-    public function downloadReceipt(string $id)
+    public function downloadReceipt(string $id, InvoiceService $invoiceService)
     {
         $order = Order::with(['party', 'items.product', 'shippingAddress.village', 'invoice'])->findOrFail($id);
-        abort_unless($order->invoice, 404, 'Generate an invoice before printing the COD receipt.');
+        $invoiceService->generateForOrder($order);
+        $order->load('invoice');
 
         $pdf = Pdf::loadView('orders.pdf.cod', compact('order'))->setPaper('a5', 'portrait');
         return $pdf->download("receipt-{$order->order_no}.pdf");
     }
 
-    public function bulkPrint(Request $request)
+    public function bulkPrint(Request $request, InvoiceService $invoiceService)
     {
         $request->validate([
             'order_ids' => 'required|array|min:1',
@@ -829,13 +829,15 @@ class OrderController extends Controller implements HasMiddleware
             ->with('invoice')
             ->get();
 
-        $ordersWithoutInvoices = $orders->filter(fn (Order $order) => !$order->invoice);
-        if ($ordersWithoutInvoices->isNotEmpty()) {
-            return response()->json([
-                'message' => 'Generate invoices for every selected order before bulk printing invoices or COD receipts.',
-                'missing_order_ids' => $ordersWithoutInvoices->pluck('id')->values(),
-            ], 422);
-        }
+        DB::transaction(function () use ($orders, $invoiceService): void {
+            foreach ($orders as $order) {
+                if (!$invoiceService->findForOrder($order)) {
+                    $invoiceService->generateForOrder($order);
+                }
+            }
+        });
+        
+        $orders->load('invoice');
 
         if ($request->type === 'invoice') {
             $invoices = Invoice::with([
@@ -881,6 +883,7 @@ class OrderController extends Controller implements HasMiddleware
             'tax_amount' => 'required|numeric',
             'discount_amount' => 'required|numeric',
             'net_amount' => 'required|numeric',
+            'use_wallet_balance' => 'nullable|boolean',
         ]);
 
         $updated = $orderService->updateCustomerOrder($order, $validated);

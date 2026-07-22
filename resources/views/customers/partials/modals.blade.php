@@ -656,7 +656,7 @@
                             <input type="number" name="credit_days" value="{{ $customer->credit_days }}" class="w-full px-5 py-3 rounded-2xl bg-background/40 border border-border/60 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium">
                         </div>
                         <div class="space-y-2 group">
-                            <label class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Current Balance (Rs )</label>
+                            <label class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Wallet Balance (Rs )</label>
                             <input type="number" name="outstanding_balance" value="{{ $customer->outstanding_balance }}" step="0.01" class="w-full px-5 py-3 rounded-2xl bg-background/40 border border-border/60 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium">
                         </div>
                         <div class="space-y-2 group">

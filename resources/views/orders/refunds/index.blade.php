@@ -28,7 +28,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Total Refunded</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="formatCurrency(stats.total_refunded)"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="formatCurrency(stats.total_refunded)"></div>
                             <small class="text-success"><i class="bi bi-arrow-up"></i> Live data</small>
                         </div>
                     </div>
@@ -44,7 +44,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Pending</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="stats.pending"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="stats.pending"></div>
                             <small class="text-warning">Needs attention</small>
                         </div>
                     </div>
@@ -60,7 +60,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Processed Today</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="stats.processed_today"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="stats.processed_today"></div>
                             <small class="text-success"><i class="bi bi-check2-all"></i> All cleared</small>
                         </div>
                     </div>
@@ -76,7 +76,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Failed</p>
-                            <div class="h3 mb-0 fw-bold text-white" x-text="stats.failed"></div>
+                            <div class="h3 mb-0 fw-bold text-body-emphasis" x-text="stats.failed"></div>
                             <small class="text-danger"><i class="bi bi-exclamation-triangle"></i> Action required</small>
                         </div>
                     </div>
@@ -169,21 +169,21 @@
                                     <input type="checkbox" class="form-check-input border-secondary" style="cursor: pointer;" :value="String(refund.id)" x-model="selectedRefunds">
                                 </td>
                                 <td>
-                                    <span class="fw-medium text-white" x-text="refund.refund_no"></span>
+                                    <span class="fw-medium text-body-emphasis" x-text="refund.refund_no"></span>
                                 </td>
                                 <td>
-                                    <span class="text-white-50 font-monospace" x-text="refund.order ? refund.order.order_no : 'N/A'"></span>
+                                    <span class="text-body-secondary font-monospace" x-text="refund.order ? refund.order.order_no : 'N/A'"></span>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="bg-secondary bg-opacity-25 rounded-circle me-2 d-flex align-items-center justify-content-center" style="width:32px;height:32px;">
-                                            <i class="bi bi-person text-white-50"></i>
+                                            <i class="bi bi-person text-body-secondary"></i>
                                         </div>
-                                        <div class="small fw-medium text-white" x-text="refund.order && refund.order.party ? (refund.order.party.firstname + ' ' + refund.order.party.lastname) : 'N/A'"></div>
+                                        <div class="small fw-medium text-body-emphasis" x-text="refund.order && refund.order.party ? (refund.order.party.firstname + ' ' + refund.order.party.lastname) : 'N/A'"></div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="fw-bold text-white" x-text="formatCurrency(refund.amount)"></span>
+                                    <span class="fw-bold text-body-emphasis" x-text="formatCurrency(refund.amount)"></span>
                                     <br><small class="text-muted" x-text="refund.payment_method ? refund.payment_method.toUpperCase().replace('_', ' ') : 'N/A'"></small>
                                 </td>
                                 <td>
@@ -196,7 +196,7 @@
                                           x-text="refund.status.toUpperCase()"></span>
                                 </td>
                                 <td>
-                                    <div class="small text-white-50" x-text="formatDate(refund.created_at)"></div>
+                                    <div class="small text-body-secondary" x-text="formatDate(refund.created_at)"></div>
                                 </td>
                                 <td>
                                     <div class="dropdown">

@@ -131,7 +131,7 @@
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light text-uppercase small">
+                    <thead class=" text-uppercase small">
                         <tr>
                             <th style="width:40px"><input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event)" :checked="allSelected"></th>
                             <th>Name</th>
@@ -142,6 +142,7 @@
                             <th>Validity Period</th>
                             <th>Priority</th>
                             <th>Usage</th>
+                            <th>Created</th>
                             <th>Status</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -164,7 +165,7 @@
                                             <i class="fs-5" :class="o.type === 'bogo' ? 'bi bi-tags-fill' : 'bi bi-percent'"></i>
                                         </div>
                                         <div>
-                                            <div class="fw-bold text-dark" x-text="o.name"></div>
+                                            <div class="fw-bold text-body-emphasis" x-text="o.name"></div>
                                             <div class="text-muted small" style="font-size: 10px;" x-text="'ID: #' + o.id"></div>
                                         </div>
                                     </div>
@@ -177,7 +178,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="fw-bold text-dark">
+                                    <div class="fw-bold text-body-emphasis">
                                         <template x-if="o.type === 'bogo'">
                                             <span>Buy <span class="text-info" x-text="o.buy_qty"></span> Get <span class="text-info" x-text="o.get_qty"></span> Free</span>
                                         </template>
@@ -191,7 +192,7 @@
                                 </td>
                                 <td>
                                     <template x-if="o.product">
-                                        <span class="badge bg-light text-dark border px-2 py-1 d-inline-flex align-items-center gap-1">
+                                        <span class="badge bg-body-tertiary text-body-emphasis border px-2 py-1 d-inline-flex align-items-center gap-1">
                                             <i class="bi bi-box-seam text-secondary"></i>
                                             <span x-text="o.product?.name"></span>
                                         </span>
@@ -212,20 +213,26 @@
                                         </template>
                                         <template x-if="o.starts_at || o.ends_at">
                                             <div class="small" style="font-size: 11px;">
-                                                <div class="text-nowrap text-muted"><span class="fw-semibold text-dark">From:</span> <span x-text="o.starts_at ? formatDateTime(o.starts_at) : '∞'"></span></div>
-                                                <div class="text-nowrap text-muted"><span class="fw-semibold text-dark">To:</span> <span x-text="o.ends_at ? formatDateTime(o.ends_at) : '∞'"></span></div>
+                                                <div class="text-nowrap text-muted"><span class="fw-semibold text-body-emphasis">From:</span> <span x-text="o.starts_at ? formatDateTime(o.starts_at) : '∞'"></span></div>
+                                                <div class="text-nowrap text-muted"><span class="fw-semibold text-body-emphasis">To:</span> <span x-text="o.ends_at ? formatDateTime(o.ends_at) : '∞'"></span></div>
                                             </div>
                                         </template>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-secondary border rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" x-text="o.priority || 0"></span>
+                                    <span class="badge bg-body-tertiary text-secondary border rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" x-text="o.priority || 0"></span>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-1">
-                                        <div class="bg-light text-primary border rounded px-2 py-1 fw-bold small">
+                                        <div class="bg-body-tertiary text-primary border rounded px-2 py-1 fw-bold small">
                                             <i class="bi bi-receipt me-1"></i><span x-text="o.used_count || 0"></span>
                                         </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1 text-muted small">
+                                        <span><i class="bi bi-person me-1"></i><span x-text="o.creator ? o.creator.name : 'System'"></span></span>
+                                        <span style="font-size: 11px;"><i class="bi bi-clock me-1"></i><span x-text="formatDateTime(o.created_at)"></span></span>
                                     </div>
                                 </td>
                                 <td>

@@ -19,23 +19,12 @@
                 </button>
             </li>
         </ul>
-        <div class="d-flex gap-2 flex-shrink-0" x-show="activeTab === 'dashboard'" x-cloak>
-            <button type="button" class="btn btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#newItemModal" aria-label="New Item">
-                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
-                <span class="d-none d-sm-inline">New Item</span>
-            </button>
-            <button type="button" class="btn btn-outline-secondary rounded-circle" style="width: 38px; height: 38px; padding: 0;" data-bs-toggle="tooltip" title="Refresh data">
-                <i class="bi bi-arrow-clockwise icon-hover"></i>
-            </button>
-            <button type="button" class="btn btn-outline-secondary rounded-circle d-none d-sm-inline-block" style="width: 38px; height: 38px; padding: 0;" data-bs-toggle="tooltip" title="Settings">
-                <i class="bi bi-gear icon-hover"></i>
-            </button>
-        </div>
+
     </div>
 
     <!-- Tab 1: Customer Search -->
     <div x-show="activeTab === 'search'" x-transition.opacity.duration.300ms>
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-4" style="background: linear-gradient(145deg, #ffffff, #f8f9fa);">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-4 bg-body-tertiary">
             <div class="card-body p-4 p-md-5 text-center">
                 <div class="mb-4">
                     <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 80px; height: 80px;">
@@ -45,13 +34,13 @@
                     <p class="text-muted">Search by mobile number, customer ID, or name to quickly access records.</p>
                 </div>
                 <div class="mx-auto position-relative" style="max-width: 650px;" x-data="customerSearchApp()">
-                    <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden bg-white border border-light-subtle">
-                        <select class="form-select border-0 bg-transparent fw-semibold text-secondary shadow-none px-4" style="max-width: 200px; cursor: pointer; border-right: 1px solid var(--bs-border-color) !important;">
+                    <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden bg-body border">
+                        <select class="form-select border-0 bg-transparent fw-semibold text-body shadow-none px-4" style="max-width: 200px; cursor: pointer; border-right: 1px solid var(--bs-border-color) !important;">
                             <option value="mobile">Mobile Number</option>
                             <option value="customer_id">Customer ID</option>
                             <option value="name">Name</option>
                         </select>
-                        <input type="text" class="form-control border-0 shadow-none px-4" placeholder="Enter 10-digit mobile number..." style="background: transparent;" x-model="searchPhone" @keydown.enter.prevent="searchCustomer()" maxlength="10">
+                        <input type="text" class="form-control border-0 shadow-none px-4 bg-transparent text-body" placeholder="Enter 10-digit mobile number..." x-model="searchPhone" @keydown.enter.prevent="searchCustomer()" maxlength="10">
                         <button class="btn btn-primary px-4 px-md-5 fw-bold" type="button" @click="searchCustomer()" :disabled="isLoading">
                             <span x-show="!isLoading"><i class="bi bi-search me-1 d-none d-sm-inline"></i> Search</span>
                             <span x-show="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
@@ -107,7 +96,7 @@
                                         </small>
                                     </div>
                                     <div class="stats-icon bg-success bg-opacity-10 text-success">
-                                        <i class="bi bi-currency-dollar"></i>
+                                        <i class="bi bi-currency-rupee"></i>
                                     </div>
                                 </div>
                             </div>
@@ -329,103 +318,5 @@
                         </div>
                     </div>
 
-<div class="modal fade" id="newItemModal" tabindex="-1" aria-labelledby="newItemModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title" id="newItemModalLabel">
-                        <i class="bi bi-plus-circle text-primary me-2"></i>
-                        Quick Add
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" x-data="quickAddForm()">
-                    <p class="text-muted small mb-4">Create a new item quickly from the dashboard.</p>
 
-                    <!-- Item Type Selection -->
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">What would you like to add?</label>
-                        <div class="btn-group w-100" role="group">
-                            <button type="button" class="btn btn-outline-primary btn-sm"
-                                    :class="{ 'active': itemType === 'task' }"
-                                    @click="itemType = 'task'">
-                                <i class="bi bi-check2-square"></i> Task
-                            </button>
-                            <button type="button" class="btn btn-outline-success btn-sm"
-                                    :class="{ 'active': itemType === 'note' }"
-                                    @click="itemType = 'note'">
-                                <i class="bi bi-sticky"></i> Note
-                            </button>
-                            <button type="button" class="btn btn-outline-info btn-sm"
-                                    :class="{ 'active': itemType === 'event' }"
-                                    @click="itemType = 'event'">
-                                <i class="bi bi-calendar-event"></i> Event
-                            </button>
-                            <button type="button" class="btn btn-outline-warning btn-sm"
-                                    :class="{ 'active': itemType === 'reminder' }"
-                                    @click="itemType = 'reminder'">
-                                <i class="bi bi-bell"></i> Reminder
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Title -->
-                    <div class="mb-3">
-                        <label for="itemTitle" class="form-label fw-semibold">Title</label>
-                        <input type="text" class="form-control" id="itemTitle" x-model="title"
-                               placeholder="Enter a title..." autofocus>
-                    </div>
-
-                    <!-- Description -->
-                    <div class="mb-3">
-                        <label for="itemDescription" class="form-label fw-semibold">Description</label>
-                        <textarea class="form-control" id="itemDescription" rows="3" x-model="description"
-                                  placeholder="Add some details..."></textarea>
-                    </div>
-
-                    <!-- Priority (shown for tasks) -->
-                    <div class="mb-3" x-show="itemType === 'task'" x-transition>
-                        <label class="form-label fw-semibold d-block">Priority</label>
-                        <div class="btn-group" role="group" aria-label="Priority selection">
-                            <input type="radio" class="btn-check" name="priorityRadio" id="priorityLow" value="low" x-model="priority" autocomplete="off">
-                            <label class="btn btn-outline-success btn-sm" for="priorityLow">
-                                <i class="bi bi-flag"></i> Low
-                            </label>
-                            <input type="radio" class="btn-check" name="priorityRadio" id="priorityMedium" value="medium" x-model="priority" autocomplete="off">
-                            <label class="btn btn-outline-warning btn-sm" for="priorityMedium">
-                                <i class="bi bi-flag-fill"></i> Medium
-                            </label>
-                            <input type="radio" class="btn-check" name="priorityRadio" id="priorityHigh" value="high" x-model="priority" autocomplete="off">
-                            <label class="btn btn-outline-danger btn-sm" for="priorityHigh">
-                                <i class="bi bi-flag-fill"></i> High
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Date (shown for events/reminders) -->
-                    <div class="mb-3" x-show="itemType === 'event' || itemType === 'reminder'" x-transition>
-                        <label for="itemDate" class="form-label fw-semibold">Date & Time</label>
-                        <input type="datetime-local" class="form-control" id="itemDate" x-model="dateTime">
-                    </div>
-
-                    <!-- Assign to (shown for tasks) -->
-                    <div class="mb-3" x-show="itemType === 'task'" x-transition>
-                        <label for="assignTo" class="form-label fw-semibold">Assign to</label>
-                        <select class="form-select" id="assignTo" x-model="assignee">
-                            <option value="">Select team member...</option>
-                            <option value="john">John Doe</option>
-                            <option value="jane">Jane Smith</option>
-                            <option value="mike">Mike Johnson</option>
-                            <option value="sarah">Sarah Williams</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" @click="saveItem()" data-bs-dismiss="modal">
-                        <i class="bi bi-check-lg me-1"></i> Create Item
-                    </button>
-                </div>
-            </div>
-        </div>
 @endpush

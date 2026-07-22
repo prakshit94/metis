@@ -564,7 +564,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="border rounded p-3 bg-body-tertiary">
-                                                <div class="text-muted small mb-1"><i class="bi bi-wallet2 me-2"></i>Outstanding Balance</div>
+                                                <div class="text-muted small mb-1"><i class="bi bi-wallet2 me-2"></i>Wallet Balance</div>
                                                 <div class="fw-bold fs-5 text-danger" x-text="customer?.formattedOutstanding || 'Rs 0.00'"></div>
                                             </div>
                                         </div>

@@ -38,6 +38,14 @@ class Coupon extends Model
         'used_count',
         'status',
         'is_active',
+        'created_by',
+        'updated_by',
+        'applicable_categories',
+        'applicable_products',
+        'excluded_categories',
+        'excluded_products',
+        'free_product_id',
+        'free_qty',
     ];
 
     protected $casts = [
@@ -48,5 +56,21 @@ class Coupon extends Model
         'usage_limit' => 'integer',
         'used_count' => 'integer',
         'is_active' => 'boolean',
+        'applicable_categories' => 'array',
+        'applicable_products' => 'array',
+        'excluded_categories' => 'array',
+        'excluded_products' => 'array',
+        'free_product_id' => 'integer',
+        'free_qty' => 'integer',
     ];
+
+    public function creator()
+    {
+        return $this->belongsTo(\App\Modules\Users\Models\User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(\App\Modules\Users\Models\User::class, 'updated_by');
+    }
 }

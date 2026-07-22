@@ -660,6 +660,11 @@ class InventoryService
 
             $order->update(['status' => 'cancelled', 'updated_by' => auth()->id()]);
 
+            $invoice = $order->invoices()->latest()->first();
+            if ($invoice && $invoice->status !== 'cancelled') {
+                $invoice->update(['status' => 'cancelled']);
+            }
+
             foreach ($order->items as $item) {
                 $this->syncProductStatus((int) $item->product_id);
             }
@@ -1172,6 +1177,11 @@ class InventoryService
             }
 
             $order->update(['status' => 'returned', 'updated_by' => auth()->id()]);
+
+            $invoice = $order->invoices()->latest()->first();
+            if ($invoice && $invoice->status !== 'cancelled') {
+                $invoice->update(['status' => 'cancelled']);
+            }
 
             $shipment = $order->shipments()->first();
             if ($shipment) {

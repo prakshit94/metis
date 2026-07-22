@@ -46,7 +46,7 @@ class PromotionsController extends Controller implements HasMiddleware
 
     public function couponsIndex(Request $request): JsonResponse
     {
-        $query = Coupon::query()->latest();
+        $query = Coupon::with(['creator', 'updater'])->latest();
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -94,9 +94,11 @@ class PromotionsController extends Controller implements HasMiddleware
             'is_active'   => 'boolean',
         ]);
 
-        $data['code']    = strtoupper(trim($data['code']));
-        $data['status']  = ($data['is_active'] ?? true) ? 'active' : 'inactive';
-        $coupon          = Coupon::create($data);
+        $data['code']       = strtoupper(trim($data['code']));
+        $data['status']     = ($data['is_active'] ?? true) ? 'active' : 'inactive';
+        $data['created_by'] = auth()->id();
+        $data['updated_by'] = auth()->id();
+        $coupon             = Coupon::create($data);
 
         return response()->json(['message' => 'Coupon created.', 'data' => $coupon], 201);
     }
@@ -124,6 +126,7 @@ class PromotionsController extends Controller implements HasMiddleware
         if (isset($data['is_active'])) {
             $data['status'] = $data['is_active'] ? 'active' : 'inactive';
         }
+        $data['updated_by'] = auth()->id();
 
         $coupon->update($data);
 
@@ -171,7 +174,7 @@ class PromotionsController extends Controller implements HasMiddleware
 
     public function offersIndex(Request $request): JsonResponse
     {
-        $query = Offer::with('product')->latest();
+        $query = Offer::with(['product', 'creator', 'updater'])->latest();
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -224,6 +227,8 @@ class PromotionsController extends Controller implements HasMiddleware
             $offerData = $data;
             unset($offerData['product_ids']);
             $offerData['product_id'] = null;
+            $offerData['created_by'] = auth()->id();
+            $offerData['updated_by'] = auth()->id();
             $offer = Offer::create($offerData);
             return response()->json(['message' => 'Global offer created.', 'data' => $offer->load('product')], 201);
         }
@@ -234,6 +239,8 @@ class PromotionsController extends Controller implements HasMiddleware
             $offerData = $data;
             unset($offerData['product_ids']);
             $offerData['product_id'] = $pId;
+            $offerData['created_by'] = auth()->id();
+            $offerData['updated_by'] = auth()->id();
             $createdOffers->push(Offer::create($offerData)->load('product'));
         }
 
@@ -262,6 +269,7 @@ class PromotionsController extends Controller implements HasMiddleware
             'is_active'     => 'boolean',
         ]);
 
+        $data["updated_by"] = auth()->id();
         $offer->update($data);
 
         return response()->json(['message' => 'Offer updated.', 'data' => $offer->fresh('product')]);
