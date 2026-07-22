@@ -370,7 +370,7 @@
                                 </div>
 
                                 <!-- Table -->
-                                <div class="table-responsive">
+                                <div class="table-responsive" style="min-height: 350px;">
                                     <table class="table table-hover align-middle mb-0">
                                         <thead class="table-light">
                                             <tr>
@@ -485,6 +485,7 @@
                                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                                                     type="button"
                                                                     data-bs-toggle="dropdown"
+                                                                    data-bs-popper-config='{"strategy":"fixed"}'
                                                                     aria-expanded="false"
                                                                     title="User actions">
                                                                 <i class="bi bi-three-dots"></i>
