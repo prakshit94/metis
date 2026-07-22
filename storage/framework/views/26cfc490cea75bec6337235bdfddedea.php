@@ -295,7 +295,7 @@
                                     <p class="fs-5 fw-bold text-success" x-text="formatCurrency(selectedInvoice.paid_amount)"></p>
                                 </div>
                                 <div class="col-md-6">
-                                    <p class="fw-bold small text-muted text-uppercase mb-1">Remaining Balance Due</p>
+                                    <p class="fw-bold small text-muted text-uppercase mb-1">Remaining Wallet Balance Due</p>
                                     <p class="fs-4 fw-bolder text-primary" x-text="formatCurrency(selectedInvoice.due_amount)"></p>
                                 </div>
                                 <div class="col-md-6">
@@ -351,7 +351,7 @@
                     </div>
                     <div class="modal-body p-4">
                         <div class="alert alert-info py-2 mb-4 d-flex justify-content-between align-items-center">
-                            <span>Balance Due:</span>
+                            <span>Wallet Balance Due:</span>
                             <strong class="fs-5" x-text="formatCurrency(paymentForm.max_amount)"></strong>
                         </div>
                         <div class="row g-3">
