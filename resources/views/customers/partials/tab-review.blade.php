@@ -309,17 +309,18 @@
                     <span class="text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;" x-text="cart.length + ' Product Units'"></span>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+                    <table class="table table-striped table-hover align-middle mb-0" style="font-size: 13px;">
                         <thead class="table-light text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">
                             <tr>
                                 <th class="px-4 py-3">Product Specification</th>
                                 <th class="px-4 py-3 text-center">Qty</th>
                                 <th class="px-4 py-3 text-end">Unit Price</th>
                                 <th class="px-4 py-3 text-end">Net Total</th>
+                                <th class="px-4 py-3 text-end" style="width: 50px;"></th>
                             </tr>
                         </thead>
                         <tbody class="border-top-0">
-                            <template x-for="item in cart" :key="item.id">
+                            <template x-for="(item, index) in cart" :key="item.id">
                                 <tr>
                                     <td class="px-4 py-3">
                                         <div class="d-flex align-items-center gap-3">
@@ -354,13 +355,28 @@
                                         </div>
                                     </td>
                                     <td class="px-4 py-3 text-center">
-                                        <span class="badge bg-light text-dark border px-3 py-2 fs-6" x-text="item.quantity"></span>
+                                        <div class="input-group input-group-sm bg-light rounded-3 p-1 mx-auto" style="width: 100px;">
+                                            <button type="button" @click.prevent="updateCartQty(index, -1)"
+                                                class="btn btn-sm btn-white border-0 fw-bold text-dark w-25 p-0">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            <span class="form-control bg-transparent border-0 text-center fw-bold text-dark px-1" x-text="item.quantity"></span>
+                                            <button type="button" @click.prevent="updateCartQty(index, 1)"
+                                                class="btn btn-sm btn-white border-0 fw-bold text-dark w-25 p-0">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                     <td class="px-4 py-3 text-end">
                                         <span class="text-muted fw-bold" style="font-size: 12px;" x-text="'Rs ' + Number(item.price).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                     </td>
                                     <td class="px-4 py-3 text-end">
                                         <span class="fw-bold text-dark fs-6" x-text="'Rs ' + Number(itemLineTotal(item)).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-end">
+                                        <button type="button" @click.prevent="removeFromCart(index)" class="btn btn-sm btn-link text-danger p-0 shadow-none">
+                                            <i class="bi bi-trash fs-6"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             </template>
@@ -427,13 +443,31 @@
                                         <span class="fw-bold text-muted opacity-50" style="font-size: 10px;">—</span>
                                     </template>
                                 </div>
+                                <div x-show="!couponApplied" class="mt-2">
+                                    <div class="input-group input-group-sm bg-white border rounded-3 p-1 shadow-sm">
+                                        <input type="text" x-model="couponCode" @keydown.enter.prevent="applyCoupon()"
+                                            placeholder="Promo code"
+                                            class="form-control border-0 bg-transparent font-monospace text-uppercase shadow-none" style="font-size: 11px;">
+                                        <button type="button" @click.prevent="applyCoupon()"
+                                            class="btn btn-sm btn-primary fw-bold text-uppercase rounded-2 px-3" style="font-size: 9px; letter-spacing: 1px;">
+                                            Apply
+                                        </button>
+                                    </div>
+                                </div>
                                 <template x-if="couponDiscount > 0">
-                                    <div class="d-flex justify-content-between align-items-center text-success">
+                                    <div class="d-flex justify-content-between align-items-center text-success mt-2 p-2 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-25">
                                         <div class="d-flex flex-column">
-                                            <span class="fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Coupon Savings</span>
+                                            <span class="fw-bold text-uppercase d-flex align-items-center gap-1" style="font-size: 10px; letter-spacing: 1px;">
+                                                <i class="bi bi-tag-fill"></i> Coupon Applied
+                                            </span>
                                             <span class="text-muted fw-semibold" style="font-size: 9px;" x-text="'(Code: ' + couponCode + ')'"></span>
                                         </div>
-                                        <span class="fw-bold" x-text="'- Rs ' + Number(couponDiscount).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold" x-text="'- Rs ' + Number(couponDiscount).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                            <button type="button" @click.prevent="removeCoupon()" class="btn btn-sm btn-link text-danger p-0 ms-1 shadow-none">
+                                                <i class="bi bi-x-circle-fill"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </template>
                                 <div class="d-flex justify-content-between align-items-center">
@@ -447,57 +481,96 @@
                                         <span class="fs-2 fw-black text-primary lh-1" style="letter-spacing: -1px;" x-text="'Rs ' + Number(grandTotal).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                     </div>
                                     
-                                    {{-- ── Confirm Button ── --}}
-                                    <form action="{{ route('customers.orders.place', $customer) }}" method="POST" class="w-100 m-0" x-data="{ isFutureOrder: false }">
-                                        @csrf
-                                        <input type="hidden" name="order_id" :value="editingOrderId" :disabled="!editingOrderId">
-                                        <input type="hidden" name="cart" :value="JSON.stringify(cart)">
-                                        <input type="hidden" name="applied_offer_id" :value="appliedOrderOfferId ?? ''">
-                                        <input type="hidden" name="order_discount_amount" :value="orderDiscountAmount">
-                                        <input type="hidden" name="coupon_code" :value="couponApplied ? couponCode : ''">
-                                        <input type="hidden" name="coupon_discount" :value="couponDiscount">
-                                        <input type="hidden" name="tax_amount" :value="taxAmount">
-                                        <input type="hidden" name="subtotal" :value="subtotal">
-                                        <input type="hidden" name="grand_total" :value="grandTotal">
-                                        <input type="hidden" name="warehouse_id" :value="selectedWarehouseId">
-                                        <input type="hidden" name="billing_address_id" :value="selectedBillingAddressId">
-                                        <input type="hidden" name="address_id" :value="selectedShippingAddressId">
-                                        <input type="hidden" name="is_draft" :value="isFutureOrder ? '1' : '0'">
-                                        
-                                        <div class="mb-4 p-3 rounded-4 border bg-white" x-show="!editingOrderId">
-                                            <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
+                                    {{-- ── Confirm Button & Options ── --}}
+                                    <div class="w-100 m-0">
+                                        {{-- Errors --}}
+                                        <template x-if="formErrors && formErrors.length > 0">
+                                            <div class="alert alert-danger shadow-sm rounded-4 border-0 mb-4 p-3">
+                                                <div class="d-flex align-items-center gap-2 text-danger fw-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1px;">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i> Validation Failed
+                                                </div>
+                                                <ul class="mb-0 text-danger small ps-3">
+                                                    <template x-for="err in formErrors" :key="err">
+                                                        <li x-text="err"></li>
+                                                    </template>
+                                                </ul>
+                                            </div>
+                                        </template>
+
+                                        {{-- Wallet Balance --}}
+                                        <template x-if="wallet_balance > 0 && !editingOrderId">
+                                            <div class="mb-4 p-3 rounded-4 border border-success bg-success bg-opacity-10 d-flex align-items-center justify-content-between">
                                                 <div class="d-flex align-items-center gap-3">
-                                                    <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
-                                                        <i class="bi bi-clock"></i>
+                                                    <div class="bg-success text-white rounded-3 d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 32px; height: 32px;">
+                                                        <i class="bi bi-wallet2"></i>
                                                     </div>
                                                     <div>
-                                                        <label class="form-check-label fw-bold text-dark m-0" for="isFutureOrderSwitch">Place as Future Order</label>
-                                                        <p class="mb-0 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Save as draft for later</p>
+                                                        <label class="form-check-label fw-bold text-dark m-0" for="useWalletSwitch">Use Wallet Balance</label>
+                                                        <p class="mb-0 text-success fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Available: Rs <span x-text="Number(wallet_balance).toFixed(2)"></span></p>
                                                     </div>
                                                 </div>
-                                                <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" id="isFutureOrderSwitch" x-model="isFutureOrder">
+                                                <div class="form-check form-switch m-0">
+                                                    <input class="form-check-input fs-4" type="checkbox" role="switch" id="useWalletSwitch" x-model="useWalletBalance">
+                                                </div>
+                                            </div>
+                                        </template>
+                                        
+                                        {{-- Order Details Form --}}
+                                        <div class="mb-4 p-3 rounded-4 border bg-white" x-show="!editingOrderId">
+                                            <div class="d-flex flex-column gap-3">
+                                                <div>
+                                                    <label class="form-label text-muted fw-bold text-uppercase ms-1 mb-1" style="font-size: 9px; letter-spacing: 1px;">Order Type</label>
+                                                    <select x-model="orderType" class="form-select form-select-lg border shadow-sm fw-semibold bg-light fs-6">
+                                                        <option value="sale">Regular Sale</option>
+                                                        <option value="sample">Free Sample</option>
+                                                        <option value="replacement">Replacement</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="form-label text-muted fw-bold text-uppercase ms-1 mb-1" style="font-size: 9px; letter-spacing: 1px;">Order Date</label>
+                                                    <input type="date" x-model="orderDate" max="{{ date('Y-m-d') }}" class="form-control form-control-lg border shadow-sm fw-semibold bg-light fs-6">
+                                                </div>
                                             </div>
                                             
-                                            <div x-show="isFutureOrder" x-collapse>
+                                            <div class="form-check form-switch m-0 mt-4 pt-3 border-top d-flex align-items-center justify-content-between">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                                                        <i class="bi bi-clock-history"></i>
+                                                    </div>
+                                                    <div>
+                                                        <label class="form-check-label fw-bold text-dark m-0" for="isDraftSwitch">Save as Future Order</label>
+                                                        <p class="mb-0 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Draft order for a later date</p>
+                                                    </div>
+                                                </div>
+                                                <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" id="isDraftSwitch" x-model="isDraft">
+                                            </div>
+                                            
+                                            <div x-show="isDraft" x-collapse>
                                                 <div class="pt-3 mt-3 border-top">
-                                                    <label class="form-label text-muted fw-bold text-uppercase d-flex align-items-center gap-2" style="font-size: 9px; letter-spacing: 1px;">
-                                                        <i class="bi bi-calendar3"></i> Future Follow-up Date <span class="text-danger">*</span>
+                                                    <label class="form-label text-muted fw-bold text-uppercase d-flex align-items-center gap-2 ms-1" style="font-size: 9px; letter-spacing: 1px;">
+                                                        <i class="bi bi-calendar-event text-primary"></i> Follow-up Date <span class="text-danger">*</span>
                                                     </label>
-                                                    <input type="date" name="future_order_date" min="{{ date('Y-m-d') }}" :required="isFutureOrder"
-                                                        class="form-control form-control-lg border bg-light shadow-sm fw-semibold fs-6">
+                                                    <input type="date" x-model="futureOrderDate" min="{{ date('Y-m-d') }}"
+                                                        class="form-control form-control-lg border shadow-sm fw-bold bg-light">
                                                 </div>
                                             </div>
                                         </div>
-                                        
-                                        <button type="submit" 
-                                            class="btn btn-lg w-100 rounded-pill fw-bold text-uppercase d-flex align-items-center justify-content-center gap-2 shadow-sm text-white transition-all"
-                                            style="font-size: 12px; letter-spacing: 2px;"
-                                            :class="editingOrderId ? 'btn-warning text-dark' : (isFutureOrder ? 'btn-success' : 'btn-primary')">
-                                            <span x-show="!editingOrderId" x-text="isFutureOrder ? 'Place Future Order' : 'Place Order'"></span>
+
+                                        <button type="button" @click="placeOrder" :disabled="placing"
+                                            class="btn btn-lg w-100 rounded-pill fw-bold text-uppercase d-flex align-items-center justify-content-center gap-2 shadow text-white transition-all position-relative overflow-hidden"
+                                            style="font-size: 13px; letter-spacing: 2px;"
+                                            :class="editingOrderId ? 'btn-warning text-dark' : (isDraft ? 'btn-primary bg-gradient' : 'btn-success bg-gradient')">
+                                            
+                                            {{-- Loading Spinner --}}
+                                            <div class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-25" x-show="placing" x-cloak>
+                                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                            </div>
+                                            
+                                            <span x-show="!editingOrderId" x-text="isDraft ? 'Create Future Order' : 'Place Order Now'"></span>
                                             <span x-show="editingOrderId">Update Existing Order</span>
-                                            <i class="bi bi-lightning-charge-fill"></i>
+                                            <i class="bi bi-lightning-charge-fill" x-show="!placing"></i>
                                         </button>
-                                    </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>

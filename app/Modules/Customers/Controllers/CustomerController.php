@@ -216,13 +216,15 @@ class CustomerController extends Controller implements HasMiddleware
             ->orderByDesc('priority')
             ->orderBy('id')
             ->get());
+            
+        $activeCoupons = \Illuminate\Support\Facades\Cache::remember('active_coupons', 600, fn() => \App\Modules\Orders\Models\Coupon::where('is_active', true)->get());
         
         // Static fallbacks for agricultures parameters
         $crops = collect(['Wheat', 'Rice', 'Cotton', 'Sugarcane', 'Maize', 'Soybean', 'Gram', 'Mustard', 'Bajra', 'Jowar'])->map(fn($name) => (object) ['name' => $name]);
         $irrigationTypes = collect(['Drip', 'Sprinkler', 'Canal', 'Tube Well', 'Rainfed', 'River Pump'])->map(fn($name) => (object) ['name' => $name]);
         $landUnits = collect(['Acre', 'Hectare', 'Bigha', 'Guntha', 'Kanal', 'Marla'])->map(fn($name) => (object) ['name' => $name]);
 
-        return view('customers.show', compact('customer', 'categories', 'warehouses', 'activeOffers', 'crops', 'irrigationTypes', 'landUnits'));
+        return view('customers.show', compact('customer', 'categories', 'warehouses', 'activeOffers', 'activeCoupons', 'crops', 'irrigationTypes', 'landUnits'));
     }
 
     /**

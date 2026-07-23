@@ -307,6 +307,10 @@ document.addEventListener('alpine:init', () => {
           this.initCharts();
         });
       } catch (err) {
+        if (err.message.includes('right permissions')) {
+          window.location.href = '/';
+          return;
+        }
         showToast('Failed to load users: ' + err.message, 'danger');
       } finally {
         this.isLoading = false;

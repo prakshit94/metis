@@ -109,7 +109,6 @@
             </div>
         </div>
 
-        @include('customers.partials.cart-sidebar')
         @include('customers.partials.modals')
 
     </div>

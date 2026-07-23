@@ -1,35 +1,38 @@
 <!-- Header -->
 <header class="admin-header border-bottom shadow-sm sticky-top" role="banner" style="z-index: 1030; min-height: 70px; background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
     <nav class="navbar navbar-expand h-100 py-0" aria-label="Main navigation">
-        <div class="container-fluid align-items-center h-100 px-3 px-md-4 gap-3">
+        <div class="container-fluid align-items-center h-100 px-3 px-md-4 d-flex justify-content-between">
 
             
-            <a class="navbar-brand d-flex align-items-center gap-2 me-auto me-lg-4" href="<?php echo e(route('dashboard')); ?>" aria-label="Ecommerce Admin — go to dashboard">
-                <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                    <img src="/assets/images/logo.svg" alt="" width="24" height="24" aria-hidden="true">
-                </div>
-                <div class="d-none d-sm-flex flex-column lh-1">
-                    <span class="fw-bold text-body fs-5 tracking-tight">Ecommerce</span>
-                    <span class="text-primary fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 2px;">Admin</span>
-                </div>
-            </a>
+            <div class="d-flex align-items-center gap-3" style="flex: 1; min-width: 0;">
+                
+                
+                <?php if(!isset($hideSidebar) || !$hideSidebar): ?>
+                <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary flex-shrink-0"
+                        style="width: 40px; height: 40px;"
+                        type="button"
+                        data-sidebar-toggle
+                        aria-label="Toggle sidebar"
+                        aria-controls="admin-sidebar"
+                        aria-expanded="false">
+                    <i class="bi bi-list fs-4" aria-hidden="true"></i>
+                </button>
+                <?php endif; ?>
+
+                
+                <a class="navbar-brand d-flex align-items-center gap-2 m-0" href="<?php echo e(route('dashboard')); ?>" aria-label="Ecommerce Admin — go to dashboard">
+                    <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                        <img src="/assets/images/logo.svg" alt="" width="24" height="24" aria-hidden="true">
+                    </div>
+                    <div class="d-none d-xl-flex flex-column lh-1 text-truncate">
+                        <span class="fw-bold text-body fs-5 tracking-tight">Ecommerce</span>
+                        <span class="text-primary fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 2px;">Admin</span>
+                    </div>
+                </a>
+            </div>
 
             
-            <?php if(!isset($hideSidebar) || !$hideSidebar): ?>
-            <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary"
-                    style="width: 40px; height: 40px;"
-                    type="button"
-                    data-sidebar-toggle
-                    aria-label="Toggle sidebar"
-                    aria-controls="admin-sidebar"
-                    aria-expanded="false">
-                <i class="bi bi-list fs-4" aria-hidden="true"></i>
-            </button>
-            <?php endif; ?>
-
-            
-
-            <div class="w-100 max-w-md d-none d-md-block ms-auto" style="max-width: 500px;">
+            <div class="d-none d-md-flex justify-content-center px-4" style="flex: 2; max-width: 600px;">
                 <div class="position-relative w-100" x-data="{
                     searchQuery: '',
                     items: [
@@ -133,7 +136,7 @@
                 </div>
             </div>
             
-            <div class="d-flex align-items-center gap-2 gap-sm-3 ms-auto ms-md-3 h-100">
+            <div class="d-flex align-items-center justify-content-end gap-2 gap-sm-3 h-100" style="flex: 1; min-width: 0;">
 
                 
                 <div class="dropdown h-100 d-flex align-items-center">

@@ -39,6 +39,16 @@
     selectedShippingAddressId: '{{ $customer->addresses->where('is_default', true)->first()?->id ?? $customer->addresses->first()?->id ?? '' }}',
     sameAsBilling: localStorage.getItem('customer_same_as_billing_{{ $customer->id }}') === 'false' ? false : true,
     
+    orderType: 'sale',
+    orderDate: '{{ date('Y-m-d') }}',
+    isDraft: false,
+    futureOrderDate: '',
+    useWalletBalance: false,
+    placing: false,
+    formErrors: [],
+    wallet_balance: {{ $customer->wallet_balance ?? 0 }},
+
+    
     editOrder(order) {
         this.editingOrderId = order.id;
         this.editingOrderDetails = order;
@@ -302,7 +312,7 @@
         return (this.activeOffers || []).filter(offer => offer.type === 'order_discount');
     },
     get activeBogoOffers() {
-        return (this.activeOffers || []).filter(offer => offer.type === 'bogo' && offer.product_id);
+        return (this.activeOffers || []).filter(offer => offer.type === 'bogo');
     },
     itemDiscountAmount(item) {
         const base = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
@@ -323,28 +333,40 @@
     itemTaxAmount(item) {
         return this.itemLineTotal(item) * ((parseFloat(item.taxRate) || 0) / 100);
     },
-    bogoDiscountForItem(item) {
-        const offers = this.activeBogoOffers
-            .filter(offer => Number(offer.product_id) === Number(item.id))
-            .sort((a, b) => (b.priority - a.priority) || (a.id - b.id));
-
-        const match = offers[0];
-        if (!match) return 0;
-
-        const buyQty = Math.max(parseInt(match.buy_qty) || 1, 1);
-        const getQty = Math.max(parseInt(match.get_qty) || 1, 1);
-        const qty = parseFloat(item.quantity) || 0;
-        const cycle = buyQty + getQty;
-
-        if (qty < cycle) return 0;
-
-        const freeUnits = Math.floor(qty / cycle) * getQty;
-        const effectiveUnit = qty > 0 ? this.itemLineTotal(item) / qty : 0;
-
-        return Math.min(effectiveUnit * freeUnits, this.itemLineTotal(item));
-    },
     get bogoDiscountTotal() {
-        return this.cart.reduce((t, item) => t + this.bogoDiscountForItem(item), 0);
+        const bogos = this.activeBogoOffers.sort((a,b)=>(b.priority - a.priority) || (a.id - b.id));
+        return this.cart.reduce((t,item)=>{
+            const match = bogos.find(o=> Number(o.product_id)===Number(item.id)) || bogos.find(o=> !o.product_id);
+            if(!match) return t;
+            
+            if ((parseFloat(match.min_spend) || 0) > this.subtotal) return t;
+
+            const buyQty = parseInt(match.buy_qty)||1;
+            const getQty = parseInt(match.get_qty)||1;
+            const cycle = buyQty + getQty;
+            const qty = parseInt(item.quantity)||0;
+            if(qty<cycle) return t;
+            const free = Math.floor(qty/cycle)*getQty;
+            const eff = qty>0 ? this.itemLineTotal(item)/qty : 0;
+            return t + Math.min(eff*free, this.itemLineTotal(item));
+        },0);
+    },
+    get appliedBogoIds() {
+        const bogos = this.activeBogoOffers.sort((a,b)=>(b.priority - a.priority) || (a.id - b.id));
+        const ids = [];
+        this.cart.forEach(item => {
+            const match = bogos.find(o=> Number(o.product_id)===Number(item.id)) || bogos.find(o=> !o.product_id);
+            if (!match) return;
+            
+            if ((parseFloat(match.min_spend) || 0) > this.subtotal) return;
+
+            const buyQty = parseInt(match.buy_qty)||1;
+            const getQty = parseInt(match.get_qty)||1;
+            const cycle = buyQty + getQty;
+            const qty = parseInt(item.quantity)||0;
+            if(qty >= buyQty) ids.push(match.id);
+        });
+        return [...new Set(ids)];
     },
     get subtotal() {
         return this.cart.reduce((t, item) => t + this.itemLineTotal(item), 0);
@@ -527,5 +549,100 @@
         }
         this.villages = [];
         this.villageSearch = v.name;
+    },
+    
+    buildCartPayload() {
+        return this.cart.map(item => {
+            const base = (parseFloat(item.price)||0) * (parseInt(item.quantity)||0);
+            const disc = this.itemLineTotal(item) < base ? base - this.itemLineTotal(item) : 0;
+            const tax = this.itemLineTotal(item) * ((parseFloat(item.taxRate)||0)/100);
+            return { 
+                product_id: item.id, 
+                quantity: item.quantity, 
+                unit_price: item.price, 
+                discount_amount: parseFloat(disc.toFixed(2)), 
+                tax_amount: parseFloat(tax.toFixed(2)), 
+                total_amount: parseFloat(this.itemLineTotal(item).toFixed(2)) 
+            };
+        });
+    },
+
+    async placeOrder() {
+        this.formErrors = [];
+        if (!this.selectedWarehouseId) { this.formErrors.push('Please select a warehouse.'); return; }
+        if (!this.selectedShippingAddressId) { this.formErrors.push('Please select a shipping address.'); return; }
+        if (!this.sameAsBilling && !this.selectedBillingAddressId) { this.formErrors.push('Please select a billing address.'); return; }
+        if (this.cart.length === 0) { this.formErrors.push('Cart is empty.'); return; }
+        if (this.isDraft && !this.futureOrderDate) { this.formErrors.push('Please set future order date.'); return; }
+
+        this.placing = true;
+        try {
+            const payload = {
+                type: this.orderType,
+                party_id: {{ $customer->id }},
+                warehouse_id: this.selectedWarehouseId,
+                shipping_address_id: this.selectedShippingAddressId || null,
+                billing_address_id: this.sameAsBilling ? (this.selectedShippingAddressId || null) : (this.selectedBillingAddressId || null),
+                order_date: this.orderDate,
+                items: this.buildCartPayload(),
+                is_draft: this.isDraft ? 1 : 0,
+                future_order_date: this.isDraft ? this.futureOrderDate : null,
+                coupon_code: this.couponApplied ? this.couponCode : null,
+                applied_offer_id: (this.appliedOrderOfferId && this.appliedOrderOfferId !== 'none') ? this.appliedOrderOfferId : null,
+                applied_bogo_ids: this.appliedBogoIds,
+                total_amount: parseFloat(this.subtotal.toFixed(2)),
+                tax_amount: parseFloat(this.taxAmount.toFixed(2)),
+                discount_amount: parseFloat(this.totalDiscount.toFixed(2)),
+                net_amount: parseFloat(this.grandTotal.toFixed(2)),
+                use_wallet_balance: this.useWalletBalance ? 1 : 0,
+            };
+            const url = this.editingOrderId ? `/orders/${this.editingOrderId}` : '/orders';
+            const res = await fetch(url, { 
+                method: this.editingOrderId ? 'PUT' : 'POST', 
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                    'Accept': 'application/json'
+                }, 
+                body: JSON.stringify(payload) 
+            });
+            const json = await res.json();
+            if (!res.ok) {
+                this.formErrors = Object.values(json.errors||{}).flat();
+                if (!this.formErrors.length && json.message) this.formErrors.push(json.message);
+                if (this.formErrors.length) {
+                    this.notify('error', this.formErrors[0]);
+                }
+                return;
+            }
+            
+            // Success
+            localStorage.removeItem('customer_cart_{{ $customer->id }}');
+            localStorage.removeItem('customer_active_tab_{{ $customer->id }}');
+            localStorage.removeItem('customer_applied_offer_{{ $customer->id }}');
+            this.cart = [];
+            this.appliedOrderOfferId = null;
+            
+            const successMessage = this.editingOrderId ? 'Order updated successfully!' : 'Order placed successfully!';
+            this.notify('success', successMessage);
+            
+            if (this.editingOrderId) {
+                this.editingOrderId = null;
+                this.editingOrderDetails = null;
+            }
+            
+            this.activeTab = 'history';
+            
+            // Wait a moment then reload to ensure order history reflects new order
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+            
+        } catch(e) { 
+            this.formErrors.push('An unexpected error occurred.'); 
+            this.notify('error', 'An unexpected error occurred.');
+        } finally { 
+            this.placing = false; 
+        }
     }
 }

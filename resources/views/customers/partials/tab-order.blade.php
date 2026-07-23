@@ -18,10 +18,10 @@
                         </p>
                     </div>
                 </div>
-                <button type="button" @click="isCartOpen = true"
+                <button type="button" @click="activeTab = 'review'"
                     class="btn btn-outline-success d-flex align-items-center gap-2 position-relative rounded-pill px-4 fw-bold text-uppercase shadow-sm" style="font-size: 11px; letter-spacing: 1px;">
                     <i class="bi bi-cart3 fs-6"></i>
-                    <span>Cart</span>
+                    <span>Review Cart</span>
                     <span x-show="cart.length > 0" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" x-text="cart.length" x-cloak></span>
                 </button>
             </div>
@@ -81,7 +81,7 @@
 
         {{-- Table --}}
         <div class="table-responsive" style="max-height:520px;">
-            <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+            <table class="table table-striped table-hover align-middle mb-0" style="font-size: 13px;">
                 <thead class="table-light sticky-top" style="z-index: 10;">
                     <tr>
                         <th class="py-3 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px; min-width: 250px;">Product</th>
