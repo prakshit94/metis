@@ -46,16 +46,29 @@ class PageController extends Controller
 
         // 1. Top Metrics
         $totalCustomers = (clone $customerQuery)->count();
-        $totalRevenue = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned'])->sum('net_amount');
+        $totalRevenue = (clone $orderQuery)->whereNotIn('status', ['cancelled'])
+            ->whereDoesntHave('orderReturns', function ($q) {
+                $q->where('status', 'completed');
+            })->sum('net_amount');
         $totalOrders = (clone $orderQuery)->count();
 
         $totalProducts = Product::count();
 
         // 1.5 Order Performance Metrics
-        $totalDelivered = (clone $orderQuery)->whereIn('status', ['delivered', 'completed'])->count();
-        $totalReturned = (clone $orderQuery)->whereIn('status', ['returned'])->count();
-        $revDelivered = (clone $orderQuery)->whereIn('status', ['delivered', 'completed'])->sum('net_amount');
-        $revReturned = (clone $orderQuery)->whereIn('status', ['returned'])->sum('net_amount');
+        $totalDelivered = (clone $orderQuery)->whereIn('status', ['delivered', 'completed'])
+            ->whereDoesntHave('orderReturns', function ($q) {
+                $q->where('status', 'completed');
+            })->count();
+        $totalReturned = (clone $orderQuery)->whereHas('orderReturns', function ($q) {
+            $q->where('status', 'completed');
+        })->count();
+        $revDelivered = (clone $orderQuery)->whereIn('status', ['delivered', 'completed'])
+            ->whereDoesntHave('orderReturns', function ($q) {
+                $q->where('status', 'completed');
+            })->sum('net_amount');
+        $revReturned = (clone $orderQuery)->whereHas('orderReturns', function ($q) {
+            $q->where('status', 'completed');
+        })->sum('net_amount');
 
         $deliveredPercent = $totalOrders > 0 ? round(($totalDelivered / $totalOrders) * 100) : 0;
         $returnedPercent = $totalOrders > 0 ? round(($totalReturned / $totalOrders) * 100) : 0;
@@ -166,7 +179,7 @@ class PageController extends Controller
                     'text' => $order->statusLabel(),
                     'class' => $statusClass
                 ],
-                'date' => $order->order_date ? $order->order_date->format('M d, Y') : 'N/A'
+                'date' => $order->order_date ? $order->order_date->format('M d, Y h:i A') : 'N/A'
             ];
         })->toArray();
 
