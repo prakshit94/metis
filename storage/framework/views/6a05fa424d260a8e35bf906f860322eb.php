@@ -310,7 +310,7 @@
                 </li>
 
                 
-                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['user-view', 'role-view', 'customer-view', 'village-view'])): ?>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['user-view', 'role-view', 'village-view'])): ?>
                 <li class="nav-item">
                     <a class="nav-link <?php echo e($current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' ? 'active' : ''); ?>"
                        href="#"
@@ -340,7 +340,7 @@
                                 </a>
                             </li>
                             <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('customer-view')): ?>
+                            <?php if (\Illuminate\Support\Facades\Blade::check('role', 'Super Admin')): ?>
                             <li class="nav-item">
                                 <a class="nav-link <?php echo e($current === 'customers' ? 'active' : ''); ?>" href="<?php echo e(route('customers')); ?>">
                                     <i class="bi bi-person-lines-fill"></i>

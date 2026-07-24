@@ -470,9 +470,7 @@
                                             <div class="text-muted" style="font-size:0.7rem;">Alternate Mobile</div>
                                             <div class="text-body" x-text="customer?.alternatemobile"></div>
                                         </div>
-                                        <div class="col-12" x-show="customer?.phone_number_2">
                                             <div class="text-muted" style="font-size:0.7rem;">Phone 2</div>
-                                            <div class="text-body" x-text="customer?.phone_number_2"></div>
                                         </div>
                                         <div class="col-12" x-show="customer?.relative_mobile || customer?.relative_phone">
                                             <div class="text-muted" style="font-size:0.7rem;">Relative / Emergency</div>

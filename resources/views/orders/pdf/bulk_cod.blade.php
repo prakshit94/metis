@@ -139,7 +139,6 @@
                     @else
                         <strong>Address:</strong> N/A (No Address details available)<br>
                     @endif
-                    <strong>Contact:</strong> {{ $order->party->phone ?? 'N/A' }} @if($order->party->phone_number_2) / {{ $order->party->phone_number_2 }} @endif
                 </div>
 
                 <div class="box">

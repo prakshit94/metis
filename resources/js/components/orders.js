@@ -547,7 +547,6 @@ document.addEventListener('alpine:init', () => {
           email: o.party ? o.party.email : 'N/A',
           avatar: o.party && o.party.avatar ? o.party.avatar : '/assets/images/avatar-placeholder.svg',
           phone: o.party ? o.party.phone : '',
-          secondaryPhone: o.party ? (o.party.alternatemobile || o.party.phone_number_2) : '',
           relativeName: o.party ? (o.party.relative_mobile || o.party.relative_name) : '',
           relativePhone: o.party ? o.party.relative_phone : '',
           company: o.party ? o.party.company_name : '',

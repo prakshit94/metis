@@ -22,7 +22,6 @@ return new class extends Migration {
             $table->string('phone')->nullable()->index();
             $table->string('alternatemobile')->nullable();
             $table->string('relative_mobile')->nullable();
-            $table->string('phone_number_2', 20)->nullable();
             $table->string('relative_phone', 20)->nullable();
 
             // Source / Classification

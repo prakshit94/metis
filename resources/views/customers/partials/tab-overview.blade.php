@@ -26,7 +26,6 @@
                             ['Phone', $customer->phone ?: '—', 'bi-phone'],
                             ['Alternate Mobile', $customer->alternatemobile ?? '—', 'bi-telephone'],
                             ['Relative Contact', ($customer->relative_mobile ?? '—') . ($customer->relative_phone ? " ({$customer->relative_phone})" : ''), 'bi-people'],
-                            ['Secondary Phone', $customer->phone_number_2 ?? '—', 'bi-telephone'],
                             ['Customer ID', '#'.sprintf('%04d',$customer->id), 'bi-hash'],
                             ['Status', ucfirst($customer->status), 'bi-activity'],
                             ['Registered On', $customer->created_at->format('M d, Y'), 'bi-calendar3'],

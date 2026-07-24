@@ -113,24 +113,20 @@
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Primary Phone *</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-phone"></i></span>
-                                                <input type="text" name="phone" x-model="form.phone" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" required maxlength="10">
+                                                <input type="text" name="phone" x-model="form.phone" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" required pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
                                             </div>
                                         </div>
                                         <div class="col-sm-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Alternate Mobile</label>
-                                            <input type="text" name="alternatemobile" x-model="form.alternatemobile" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
-                                        </div>
-                                        <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Landline</label>
-                                            <input type="text" name="phone_number_2" x-model="form.phone_number_2" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                            <input type="text" name="alternatemobile" x-model="form.alternatemobile" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
                                         </div>
                                         <div class="col-sm-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Relative Name</label>
-                                            <input type="text" name="relative_mobile" x-model="form.relative_mobile" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                            <input type="text" name="relative_mobile" x-model="form.relative_mobile" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
                                         </div>
                                         <div class="col-sm-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Relative Phone</label>
-                                            <input type="text" name="relative_phone" x-model="form.relative_phone" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                            <input type="text" name="relative_phone" x-model="form.relative_phone" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
                                         </div>
                                     </div>
                                 </div>
@@ -155,7 +151,7 @@
                         <div class="col-lg-6">
                             
                             
-                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 30;">
+                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 30;" x-show="form.category === 'business'" x-transition x-cloak>
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                         <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -355,7 +351,7 @@ document.addEventListener('alpine:init', () => {
         isEdit: false,
         customerId: null,
         form: {
-            firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', phone_number_2: '', relative_mobile: '', relative_phone: '',
+            firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_mobile: '', relative_phone: '',
             category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
             land_area: '', land_unit: '', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
         },
@@ -391,7 +387,7 @@ document.addEventListener('alpine:init', () => {
 
         resetForm() {
             this.form = {
-                firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', phone_number_2: '', relative_mobile: '', relative_phone: '',
+                firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_mobile: '', relative_phone: '',
                 category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
                 land_area: '', land_unit: '', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
             };

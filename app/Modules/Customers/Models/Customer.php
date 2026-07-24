@@ -30,7 +30,6 @@ class Customer extends Model
         'phone',
         'alternatemobile',
         'relative_mobile',
-        'phone_number_2',
         'relative_phone',
         'source',
         'category',

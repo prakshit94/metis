@@ -106,7 +106,10 @@ class CustomerController extends Controller implements HasMiddleware
         $user = $request->user();
         $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
 
-        $query = Customer::where('phone', $phone);
+        $query = Customer::where(function($q) use ($phone) {
+            $q->where('phone', $phone)
+              ->orWhere('alternatemobile', $phone);
+        });
         if (!$isGlobalView) {
             $query->where('created_by', $user->id);
         }
@@ -150,7 +153,6 @@ class CustomerController extends Controller implements HasMiddleware
             ],
             'alternatemobile'  => ['nullable', 'string', 'max:20'],
             'relative_mobile'  => ['nullable', 'string', 'max:20'],
-            'phone_number_2'   => ['nullable', 'string', 'max:20'],
             'relative_phone'   => ['nullable', 'string', 'max:20'],
             'source'           => ['nullable', 'array'],
             'category'         => ['nullable', 'string', 'max:50', 'in:individual,business'],
@@ -269,7 +271,6 @@ class CustomerController extends Controller implements HasMiddleware
             ],
             'alternatemobile'  => ['nullable', 'string', 'max:20'],
             'relative_mobile'  => ['nullable', 'string', 'max:20'],
-            'phone_number_2'   => ['nullable', 'string', 'max:20'],
             'relative_phone'   => ['nullable', 'string', 'max:20'],
             'source'           => ['nullable', 'array'],
             'category'         => ['nullable', 'string', 'max:50', 'in:individual,business'],

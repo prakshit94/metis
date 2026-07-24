@@ -410,6 +410,40 @@
                 </script>
     </div> <!-- End Tab 2 -->
 </div> <!-- End x-data -->
+
+@if(request()->has('profile_closed'))
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const toastHTML = `
+        <div class="toast show align-items-center text-bg-success border-0 shadow-lg rounded-3 mb-2" role="alert" aria-live="assertive" aria-atomic="true" style="opacity: 1; transition: opacity 0.3s ease;">
+            <div class="d-flex">
+                <div class="toast-body fw-bold">
+                    <i class="bi bi-check-circle-fill me-2"></i>Customer profile successfully closed.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close" onclick="this.closest('.toast').remove()"></button>
+            </div>
+        </div>`;
+        const container = document.getElementById('toast-container');
+        if (container) {
+            container.insertAdjacentHTML('beforeend', toastHTML);
+            setTimeout(() => {
+                const t = container.querySelector('.toast.show');
+                if (t) {
+                    t.style.opacity = '0';
+                    setTimeout(() => t.remove(), 300);
+                }
+            }, 4000);
+        }
+        
+        // Clean up URL so toast doesn't reappear on refresh
+        if (window.history && window.history.replaceState) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('profile_closed');
+            window.history.replaceState({}, document.title, url.toString());
+        }
+    });
+</script>
+@endif
 @endsection
 
 @push('modals')

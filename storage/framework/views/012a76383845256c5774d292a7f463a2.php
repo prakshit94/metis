@@ -25,8 +25,8 @@
                     <i class="bi bi-x-circle me-1"></i> Cancel Edit Mode
                 </a>
             </template>
-            <a href="<?php echo e(route('orders')); ?>" class="btn btn-outline-secondary shadow-sm">
-                <i class="bi bi-arrow-left me-2"></i> Back to Orders
+            <a href="<?php echo e(route('dashboard', ['profile_closed' => 1])); ?>" class="btn btn-outline-secondary shadow-sm">
+                <i class="bi bi-x-circle me-2"></i> Close Profile
             </a>
         </div>
     </div>
@@ -93,10 +93,8 @@
                                             </div>
                                             <div class="mb-2" x-show="customerDetails.phone"><span class="text-muted d-block small mb-1">Primary Phone</span><span class="fw-bold text-body-emphasis"><i class="bi bi-telephone text-primary me-1"></i><span x-text="customerDetails.phone"></span></span></div>
                                             <div class="mb-2" x-show="customerDetails.alternatemobile"><span class="text-muted d-block small mb-1">Alt Phone</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.alternatemobile"></span></div>
-                                            <div class="mb-2" x-show="customerDetails.phone_number_2"><span class="text-muted d-block small mb-1">Landline</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.phone_number_2"></span></div>
                                             <div class="mb-2" x-show="customerDetails.email"><span class="text-muted d-block small mb-1">Email Address</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block w-100" :title="customerDetails.email"><i class="bi bi-envelope text-primary me-1"></i><span x-text="customerDetails.email"></span></span></div>
                                             <div class="mb-2" x-show="customerDetails.relative_mobile"><span class="text-muted d-block small mb-1">Relative</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.relative_mobile + ' (' + customerDetails.relative_phone + ')'"></span></div>
-                                            <div class="text-center mt-3" x-show="!customerDetails.phone && !customerDetails.alternatemobile && !customerDetails.email && !customerDetails.phone_number_2 && !customerDetails.relative_mobile"><span class="text-muted fst-italic">No contact details</span></div>
                                         </div>
                                     </div>
                                 </div>

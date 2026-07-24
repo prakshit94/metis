@@ -310,7 +310,7 @@
                 </li>
 
                 {{-- People & Admin Dropdown --}}
-                @canany(['user-view', 'role-view', 'customer-view', 'village-view'])
+                @canany(['user-view', 'role-view', 'village-view'])
                 <li class="nav-item">
                     <a class="nav-link {{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' ? 'active' : '' }}"
                        href="#"
@@ -340,14 +340,14 @@
                                 </a>
                             </li>
                             @endcan
-                            @can('customer-view')
+                            @role('Super Admin')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'customers' ? 'active' : '' }}" href="{{ route('customers') }}">
                                     <i class="bi bi-person-lines-fill"></i>
                                     <span>Customers</span>
                                 </a>
                             </li>
-                            @endcan
+                            @endrole
                             @can('village-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'villages' ? 'active' : '' }}" href="{{ route('villages') }}">
