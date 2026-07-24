@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Users\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 /**
@@ -105,7 +105,7 @@ class LoginHistory extends Model
         return $query
             ->where(function (Builder $q) use ($email, $ip) {
                 $q->where('email_attempted', $email)
-                  ->orWhere('ip_address', $ip);
+                    ->orWhere('ip_address', $ip);
             })
             ->where('status', 'failed')
             ->where('failure_reason', '!=', 'throttled')

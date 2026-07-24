@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             ReturnReasonsSeeder::class,
             RescheduleReasonsSeeder::class,
             DeliveryFailureReasonsSeeder::class,
+            PromotionSeeder::class,
         ]);
     }
 }

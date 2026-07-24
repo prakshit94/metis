@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Customers\Models;
 
 use App\Modules\Core\Models\Village;
-
-
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PartyAddress extends Model
 {

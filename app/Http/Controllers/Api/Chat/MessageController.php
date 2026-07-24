@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Api\Chat;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
+use App\Modules\Core\Controllers\Controller;
 use App\Services\Chat\ChatService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -34,9 +34,9 @@ class MessageController extends Controller
             'attachments.*.name' => ['nullable', 'string', 'max:255'],
             'attachments.*.path' => ['nullable', 'string', 'max:1000'],
             'attachments.*.mime' => ['nullable', 'string', 'max:120'],
-            'attachments.*.size' => ['nullable', 'integer', 'max:' . (config('chat.uploads.max_size_kb') * 1024)],
+            'attachments.*.size' => ['nullable', 'integer', 'max:'.(config('chat.uploads.max_size_kb') * 1024)],
             'files' => ['nullable', 'array', 'max:10'],
-            'files.*' => ['file', 'max:' . config('chat.uploads.max_size_kb'), 'mimes:' . implode(',', config('chat.uploads.allowed_mimes'))],
+            'files.*' => ['file', 'max:'.config('chat.uploads.max_size_kb'), 'mimes:'.implode(',', config('chat.uploads.allowed_mimes'))],
             'client_id' => ['nullable', 'string', 'max:120'],
         ]);
 
@@ -45,7 +45,7 @@ class MessageController extends Controller
             $disk = config('chat.uploads.disk', 'public');
 
             foreach ($request->file('files') as $file) {
-                $path = $file->store('chat/attachments/' . now()->format('Y/m'), $disk);
+                $path = $file->store('chat/attachments/'.now()->format('Y/m'), $disk);
                 $mime = $file->getMimeType() ?: $file->getClientMimeType();
 
                 $uploadedAttachments[] = [

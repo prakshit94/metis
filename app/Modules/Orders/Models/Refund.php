@@ -4,6 +4,7 @@ namespace App\Modules\Orders\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Refund extends Model
 {
@@ -23,7 +24,7 @@ class Refund extends Model
     {
         static::creating(function ($refund) {
             if (empty($refund->refund_no)) {
-                $refund->refund_no = 'REF-' . strtoupper(\Illuminate\Support\Str::random(8));
+                $refund->refund_no = 'REF-'.strtoupper(Str::random(8));
             }
         });
     }

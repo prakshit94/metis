@@ -6,12 +6,11 @@ use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\Order;
 use App\Services\FinancialService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Response;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Response;
 
 class PaymentImportController extends Controller implements HasMiddleware
 {
@@ -55,7 +54,7 @@ class PaymentImportController extends Controller implements HasMiddleware
 
         $path = $request->file('file')->getRealPath();
         $data = array_map('str_getcsv', file($path));
-        
+
         if (count($data) < 2) {
             return response()->json(['success' => false, 'message' => 'The CSV file is empty or missing headers.'], 400);
         }
@@ -65,7 +64,7 @@ class PaymentImportController extends Controller implements HasMiddleware
         $headers = array_map('strtolower', $headers);
 
         $expectedHeaders = ['reference_type', 'reference_no', 'amount', 'payment_method', 'transaction_id', 'payment_date'];
-        
+
         // Find indexes
         $indexes = [];
         foreach ($expectedHeaders as $header) {
@@ -81,40 +80,45 @@ class PaymentImportController extends Controller implements HasMiddleware
         $errors = [];
 
         foreach ($data as $rowIndex => $row) {
-            if (empty(array_filter($row))) continue; // Skip empty rows
+            if (empty(array_filter($row))) {
+                continue;
+            } // Skip empty rows
 
             $rowNum = $rowIndex + 2;
-            
+
             $refType = isset($row[$indexes['reference_type']]) ? trim($row[$indexes['reference_type']]) : '';
             $refNo = isset($row[$indexes['reference_no']]) ? trim($row[$indexes['reference_no']]) : '';
             $amount = isset($row[$indexes['amount']]) ? trim($row[$indexes['amount']]) : 0;
-            
+
             $methodVal = $indexes['payment_method'] !== -1 && isset($row[$indexes['payment_method']]) ? trim($row[$indexes['payment_method']]) : '';
             $method = $methodVal !== '' ? $methodVal : 'bank_transfer';
-            
+
             $txnVal = $indexes['transaction_id'] !== -1 && isset($row[$indexes['transaction_id']]) ? trim($row[$indexes['transaction_id']]) : '';
-            
+
             $dateVal = $indexes['payment_date'] !== -1 && isset($row[$indexes['payment_date']]) ? trim($row[$indexes['payment_date']]) : '';
             $date = $dateVal !== '' ? $dateVal : now()->toDateTimeString();
 
             if (empty($refType) || empty($refNo) || empty($amount)) {
                 $errors[] = "Row {$rowNum}: Missing reference_type, reference_no, or amount.";
+
                 continue;
             }
 
-            if (!is_numeric($amount) || $amount <= 0) {
+            if (! is_numeric($amount) || $amount <= 0) {
                 $errors[] = "Row {$rowNum}: Invalid amount ({$amount}).";
+
                 continue;
             }
 
             $invoiceId = null;
             $orderId = null;
             $dueAmount = 0;
-            
+
             if (strtolower($refType) === 'invoice') {
                 $invoice = Invoice::where('invoice_no', $refNo)->first();
-                if (!$invoice) {
+                if (! $invoice) {
                     $errors[] = "Row {$rowNum}: Invoice not found ({$refNo}).";
+
                     continue;
                 }
                 $invoiceId = $invoice->id;
@@ -122,12 +126,14 @@ class PaymentImportController extends Controller implements HasMiddleware
                 $dueAmount = $invoice->due_amount;
             } elseif (strtolower($refType) === 'order') {
                 $order = Order::where('order_no', $refNo)->first();
-                if (!$order) {
+                if (! $order) {
                     $errors[] = "Row {$rowNum}: Order not found ({$refNo}).";
+
                     continue;
                 }
-                if (!$order->invoice) {
+                if (! $order->invoice) {
                     $errors[] = "Row {$rowNum}: Order has no associated invoice ({$refNo}).";
+
                     continue;
                 }
                 $invoiceId = $order->invoice->id;
@@ -135,11 +141,13 @@ class PaymentImportController extends Controller implements HasMiddleware
                 $dueAmount = $order->invoice->due_amount;
             } else {
                 $errors[] = "Row {$rowNum}: Invalid reference_type. Must be 'invoice' or 'order'.";
+
                 continue;
             }
 
-            if ((float)$amount > $dueAmount) {
-                $errors[] = "Row {$rowNum}: Payment amount (" . $amount . ") exceeds due amount (" . $dueAmount . ").";
+            if ((float) $amount > $dueAmount) {
+                $errors[] = "Row {$rowNum}: Payment amount (".$amount.') exceeds due amount ('.$dueAmount.').';
+
                 continue;
             }
 
@@ -155,7 +163,7 @@ class PaymentImportController extends Controller implements HasMiddleware
                 'reference_no' => $refNo,
                 'invoice_id' => $invoiceId,
                 'order_id' => $orderId,
-                'amount' => (float)$amount,
+                'amount' => (float) $amount,
                 'due_amount' => $dueAmount,
                 'payment_method' => strtolower($method),
                 'transaction_id' => $txnVal,
@@ -190,7 +198,7 @@ class PaymentImportController extends Controller implements HasMiddleware
                 $invoice = Invoice::findOrFail($paymentData['invoice_id']);
                 $financialService->processPayment(
                     $invoice,
-                    (float)$paymentData['amount'],
+                    (float) $paymentData['amount'],
                     $paymentData['payment_method'],
                     $paymentData['transaction_id'] ?? null,
                     $paymentData['payment_date'] ?? null
@@ -198,14 +206,14 @@ class PaymentImportController extends Controller implements HasMiddleware
                 $successCount++;
             } catch (\Exception $e) {
                 $failedCount++;
-                $errors[] = "Row " . ($index + 1) . " failed: " . $e->getMessage();
+                $errors[] = 'Row '.($index + 1).' failed: '.$e->getMessage();
             }
         }
 
         return response()->json([
             'success' => true,
             'message' => "Import completed. {$successCount} successful, {$failedCount} failed.",
-            'errors' => $errors
+            'errors' => $errors,
         ]);
     }
 }

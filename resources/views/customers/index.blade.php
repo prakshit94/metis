@@ -472,9 +472,9 @@
                                         </div>
                                             <div class="text-muted" style="font-size:0.7rem;">Phone 2</div>
                                         </div>
-                                        <div class="col-12" x-show="customer?.relative_mobile || customer?.relative_phone">
+                                        <div class="col-12" x-show="customer?.relative_name || customer?.relative_phone">
                                             <div class="text-muted" style="font-size:0.7rem;">Relative / Emergency</div>
-                                            <div class="text-body" x-text="customer?.relative_mobile || customer?.relative_phone"></div>
+                                            <div class="text-body" x-text="customer?.relative_name || customer?.relative_phone"></div>
                                         </div>
                                         <div class="col-12" x-show="customer?.email">
                                             <div class="text-muted" style="font-size:0.7rem;">Email</div>

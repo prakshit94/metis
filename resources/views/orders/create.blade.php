@@ -94,7 +94,7 @@
                                             <div class="mb-2" x-show="customerDetails.phone"><span class="text-muted d-block small mb-1">Primary Phone</span><span class="fw-bold text-body-emphasis"><i class="bi bi-telephone text-primary me-1"></i><span x-text="customerDetails.phone"></span></span></div>
                                             <div class="mb-2" x-show="customerDetails.alternatemobile"><span class="text-muted d-block small mb-1">Alt Phone</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.alternatemobile"></span></div>
                                             <div class="mb-2" x-show="customerDetails.email"><span class="text-muted d-block small mb-1">Email Address</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block w-100" :title="customerDetails.email"><i class="bi bi-envelope text-primary me-1"></i><span x-text="customerDetails.email"></span></span></div>
-                                            <div class="mb-2" x-show="customerDetails.relative_mobile"><span class="text-muted d-block small mb-1">Relative</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.relative_mobile + ' (' + customerDetails.relative_phone + ')'"></span></div>
+                                            <div class="mb-2" x-show="customerDetails.relative_name"><span class="text-muted d-block small mb-1">Relative</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.relative_name + ' (' + customerDetails.relative_phone + ')'"></span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -1099,42 +1099,55 @@
                                          :class="offer.type === 'bogo' ? 'border-info border-opacity-25 bg-info bg-opacity-10' : (appliedOfferId === offer.id ? 'border-success bg-success bg-opacity-10' : (orderOfferDiscount(offer) > 0 ? 'border-secondary border-opacity-10 bg-body-tertiary cursor-pointer' : 'border-secondary border-opacity-10 bg-body-secondary opacity-75'))" 
                                          @click="if(offer.type === 'order_discount' && orderOfferDiscount(offer) > 0) appliedOfferId = (appliedOfferId === offer.id) ? 'none' : offer.id">
                                         <div class="card-body p-3 d-flex align-items-center justify-content-between gap-3">
-                                            <div>
-                                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                    <h6 class="fw-bold mb-0" :class="(appliedOfferId === offer.id || offer.type === 'bogo') ? 'text-body-emphasis' : 'text-body'" x-text="offer.name"></h6>
-                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis rounded-pill px-2 py-0.5 small" style="font-size: 0.7rem;" x-text="'Priority: ' + offer.priority"></span>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center d-flex flex-column justify-content-center align-items-center" style="min-width: 90px; height: 90px;">
+                                                    <template x-if="offer.type === 'bogo'">
+                                                        <div>
+                                                            <i class="bi bi-gift-fill text-info fs-3 d-block mb-1"></i>
+                                                            <span class="badge bg-info bg-opacity-10 text-info w-100">BOGO</span>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="offer.type === 'order_discount'">
+                                                        <div>
+                                                            <h5 class="fw-black text-body-emphasis mb-1" x-text="offer.discount_type === 'percentage' ? parseFloat(offer.value) + '%' : 'Rs ' + parseFloat(offer.value)"></h5>
+                                                            <span class="badge bg-primary bg-opacity-10 text-primary w-100">OFF</span>
+                                                        </div>
+                                                    </template>
                                                 </div>
                                                 
-                                                {{-- Common Rules --}}
-                                                <div class="mt-2 mb-2 pe-3 border-start border-2 border-secondary border-opacity-25 ps-2">
-                                                    {{-- BOGO Offer Details --}}
-                                                    <div x-show="offer.type === 'bogo'">
-                                                        <p class="mb-1 small text-muted" x-text="'Rule: Buy ' + offer.buy_qty + ' Get ' + offer.get_qty + ' Free on ' + offer.product_name"></p>
-                                                    </div>
-
-                                                    {{-- Order Discount Details --}}
-                                                    <div x-show="offer.type === 'order_discount'">
-                                                        <p class="mb-1 small text-muted" x-text="'Discount: ' + (offer.discount_type === 'percentage' ? offer.value + '%' : 'Rs ' + Number(offer.value).toFixed(2))"></p>
-                                                        <p class="mb-1 small text-muted" x-show="offer.max_discount > 0" x-text="'Max Discount: Rs ' + Number(offer.max_discount).toFixed(2)"></p>
+                                                <div class="ps-2">
+                                                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                                        <h6 class="fw-bold mb-0" :class="(appliedOfferId === offer.id || offer.type === 'bogo') ? 'text-body-emphasis' : 'text-body'" x-text="offer.name"></h6>
+                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis rounded-pill px-2 py-0.5 small" style="font-size: 0.7rem;" x-text="'Priority: ' + offer.priority"></span>
                                                     </div>
                                                     
-                                                    <p class="mb-1 small text-muted" x-show="offer.min_spend > 0" x-text="'Min. Spend: Rs ' + Number(offer.min_spend).toFixed(2)"></p>
-                                                    <p class="mb-0 small text-muted" x-show="offer.ends_at" x-text="'Valid till ' + new Date(offer.ends_at).toLocaleDateString()"></p>
-                                                </div>
-
-                                                {{-- Savings/Unlock Status --}}
-                                                <div x-show="offer.type === 'bogo'">
-                                                    <p class="mb-0 small text-info"><i class="bi bi-lightning-charge-fill me-1"></i>Auto-applied to eligible items</p>
-                                                </div>
-                                                <div x-show="offer.type === 'order_discount'">
-                                                    <div x-show="orderOfferDiscount(offer) > 0">
-                                                        <p class="mb-0 small fw-medium">You save: <span class="text-success" x-text="'Rs ' + Number(orderOfferDiscount(offer)).toFixed(2)"></span></p>
+                                                    {{-- Common Rules --}}
+                                                    <div class="mb-2 pe-3 ps-2 border-start border-2 border-secondary border-opacity-25">
+                                                        <div x-show="offer.type === 'bogo'">
+                                                            <p class="mb-1 small text-muted" x-text="'Buy ' + offer.buy_qty + ' Get ' + offer.get_qty + ' Free on ' + offer.product_name"></p>
+                                                        </div>
+                                                        <div x-show="offer.type === 'order_discount'">
+                                                            <p class="mb-1 small text-muted" x-show="offer.max_discount > 0" x-text="'Max Discount: Rs ' + Number(offer.max_discount).toFixed(2)"></p>
+                                                        </div>
+                                                        <p class="mb-1 small text-muted" x-show="offer.min_spend > 0" x-text="'Min. Spend: Rs ' + Number(offer.min_spend).toFixed(2)"></p>
+                                                        <p class="mb-0 small text-muted" x-show="offer.ends_at" x-text="'Valid till ' + new Date(offer.ends_at).toLocaleDateString()"></p>
                                                     </div>
-                                                    <div x-show="orderOfferDiscount(offer) === 0">
-                                                        <p class="mb-0 small text-danger"><i class="bi bi-info-circle me-1"></i>Add <span x-text="'Rs ' + Number(offer.min_spend).toFixed(2)"></span> to cart to unlock</p>
+
+                                                    {{-- Savings/Unlock Status --}}
+                                                    <div x-show="offer.type === 'bogo'">
+                                                        <p class="mb-0 small text-info"><i class="bi bi-lightning-charge-fill me-1"></i>Auto-applied to eligible items</p>
+                                                    </div>
+                                                    <div x-show="offer.type === 'order_discount'">
+                                                        <div x-show="orderOfferDiscount(offer) > 0">
+                                                            <p class="mb-0 small fw-medium">You save: <span class="text-success" x-text="'Rs ' + Number(orderOfferDiscount(offer)).toFixed(2)"></span></p>
+                                                        </div>
+                                                        <div x-show="orderOfferDiscount(offer) === 0">
+                                                            <p class="mb-0 small text-danger"><i class="bi bi-info-circle me-1"></i>Add <span x-text="'Rs ' + Number(offer.min_spend).toFixed(2)"></span> to cart to unlock</p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
+
                                             <div class="flex-shrink-0">
                                                 {{-- BOGO Badge --}}
                                                 <template x-if="offer.type === 'bogo'">
@@ -1192,15 +1205,20 @@
                                     <div class="card border-2 rounded-4 transition-all hover-shadow cursor-pointer" :class="(couponApplied && couponCode === c.code) ? 'border-success bg-success bg-opacity-10' : 'border-secondary border-opacity-10 bg-body-tertiary'" @click="applyCoupon(c.code)">
                                         <div class="card-body p-3 d-flex align-items-center justify-content-between gap-3">
                                             <div class="d-flex align-items-center gap-3">
-                                                <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center">
-                                                    <code class="fw-black text-body-emphasis fs-6 d-block mb-1" x-text="c.code"></code>
-                                                    <span class="badge bg-primary bg-opacity-10 text-primary w-100" x-text="c.type === 'percentage' ? c.value + '% OFF' : 'Rs ' + Number(c.value).toFixed(2) + ' OFF'"></span>
+                                                <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center d-flex flex-column justify-content-center align-items-center" style="min-width: 90px; height: 90px;">
+                                                    <h5 class="fw-black text-body-emphasis mb-1" x-text="c.type === 'percentage' ? parseFloat(c.value) + '%' : 'Rs ' + parseFloat(c.value)"></h5>
+                                                    <span class="badge bg-primary bg-opacity-10 text-primary w-100">OFF</span>
                                                 </div>
-                                                <div class="ps-2 border-start border-2 border-secondary border-opacity-25 my-1">
-                                                    <p class="mb-1 small text-muted" x-show="c.min_spend > 0" x-text="'Min. Spend: Rs ' + Number(c.min_spend).toFixed(2)"></p>
-                                                    <p class="mb-1 small text-muted" x-show="c.max_discount > 0" x-text="'Max Discount: Rs ' + Number(c.max_discount).toFixed(2)"></p>
-                                                    <p class="mb-1 small text-muted" x-show="c.usage_limit > 0" x-text="'Remaining Uses: ' + Math.max(0, c.usage_limit - c.used_count)"></p>
-                                                    <p class="mb-0 small text-muted" x-show="c.expiry_date" x-text="'Valid till ' + new Date(c.expiry_date).toLocaleDateString()"></p>
+                                                <div class="ps-2">
+                                                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                                        <code class="fw-black text-body-emphasis fs-6 d-block" x-text="c.code"></code>
+                                                    </div>
+                                                    <div class="pe-3 ps-2 border-start border-2 border-secondary border-opacity-25">
+                                                        <p class="mb-1 small text-muted" x-show="c.min_spend > 0" x-text="'Min. Spend: Rs ' + Number(c.min_spend).toFixed(2)"></p>
+                                                        <p class="mb-1 small text-muted" x-show="c.max_discount > 0" x-text="'Max Discount: Rs ' + Number(c.max_discount).toFixed(2)"></p>
+                                                        <p class="mb-1 small text-muted" x-show="c.usage_limit > 0" x-text="'Remaining Uses: ' + Math.max(0, c.usage_limit - c.used_count)"></p>
+                                                        <p class="mb-0 small text-muted" x-show="c.expiry_date" x-text="'Valid till ' + new Date(c.expiry_date).toLocaleDateString()"></p>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="flex-shrink-0">
@@ -1479,8 +1497,7 @@
         'excluded_categories' => $o->excluded_categories,
         'applicable_products' => $o->applicable_products,
         'excluded_products' => $o->excluded_products,
-        'free_product_id' => $o->free_product_id,
-        'free_qty' => (int)$o->free_qty,
+
     ])->values()->all();
 @endphp
 <script>
@@ -1489,7 +1506,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         activeTab: 'customer',
         viewMode: 'table',
         isCartSidebarOpen: false, useWalletBalance: false,
-        partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '{{ $warehouses->first()->id ?? '' }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale',
+        partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '{{ $warehouses->first()->id ?? '' }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale', shippingFee: 0,
         orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
         isDraft: false, futureOrderDate: '',
         editingOrderId: null,
@@ -1542,7 +1559,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 }
             }
 
-            this.$watch('cart', v => {
+            this.$watch('cart', async (v) => {
                 localStorage.setItem('ecommerce_create_order_cart', JSON.stringify(v));
                 window.dispatchEvent(new CustomEvent('cart-updated'));
                 if (v.length === 0) {
@@ -1560,6 +1577,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                         this.appliedOfferId = this.availableOrderOffers[0].id;
                     }
                 }
+                await this.evaluateFreeProducts();
             });
 
             this.$watch('grandTotal', v => {
@@ -1790,6 +1808,54 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             finally { this.searching = false; }
         },
 
+        async evaluateFreeProducts() {
+            let expectedGifts = [];
+            const fpOffers = this.activeOffers.filter(o => o.type === 'free_product' && o.product_id);
+            fpOffers.forEach(o => {
+                if (this.subtotal >= (parseFloat(o.min_spend)||0)) {
+                    const apps = typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : o.applicable_products;
+                    let hasTrigger = true;
+                    if (apps && apps.length > 0) {
+                        hasTrigger = this.cart.some(item => !item.is_gift && (apps.includes(item.id) || apps.includes(String(item.id))));
+                    }
+                    if (hasTrigger) {
+                        expectedGifts.push({ product_id: o.product_id, qty: parseInt(o.get_qty)||1, source: 'offer_' + o.id });
+                    }
+                }
+            });
+            if (this.couponApplied && this.appliedCouponObj && this.appliedCouponObj.type === 'free_product' && this.appliedCouponObj.free_product_id) {
+                if (this.subtotal >= (parseFloat(this.appliedCouponObj.min_spend)||0)) {
+                    expectedGifts.push({ product_id: this.appliedCouponObj.free_product_id, qty: parseInt(this.appliedCouponObj.free_qty)||1, source: 'coupon_' + this.appliedCouponObj.code });
+                }
+            }
+            const validSources = expectedGifts.map(g => g.source);
+            let cleanedCart = this.cart.filter(item => !item.is_gift || validSources.includes(item.gift_source));
+            for (const gift of expectedGifts) {
+                const existing = cleanedCart.find(i => i.is_gift && i.gift_source === gift.source);
+                if (existing) {
+                    if (existing.quantity !== gift.qty) existing.quantity = gift.qty;
+                } else {
+                    const productObj = this.products.find(p => p.id === gift.product_id) || await this.fetchProductDetails(gift.product_id);
+                    if (productObj) {
+                        cleanedCart.push({
+                            id: productObj.id, name: productObj.name, sku: productObj.sku, price: productObj.selling_price, image_url: productObj.image_url,
+                            quantity: gift.qty, available: productObj.available_stock, taxRate: 0, discountValue: productObj.selling_price, discountType: 'amount', category_id: productObj.category_id, is_gift: true, gift_source: gift.source
+                        });
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: `Free Gift added: ${productObj.name}` }}));
+                    }
+                }
+            }
+            if (JSON.stringify(cleanedCart) !== JSON.stringify(this.cart)) {
+                this.cart = cleanedCart;
+            }
+        },
+        async fetchProductDetails(id) {
+            try {
+                const res = await fetch(`/products/${id}`, { headers: {'Accept':'application/json'} });
+                const json = await res.json();
+                return json.data;
+            } catch(e) { return null; }
+        },
         isInCart(id) { return this.cart.some(i => i.id === id); },
 
         addToCart(p) {
@@ -1797,33 +1863,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             const disc = parseFloat(p._disc)||0;
             if (qty <= 0) return;
 
-            // Auto-BOGO Quantity Injection
-            const bogos = this.activeOffers.filter(o => o.type === 'bogo');
-            const match = bogos.find(o => !o.product_id || Number(o.product_id) === Number(p.id));
-            if (match) {
-                const buyQty = parseInt(match.buy_qty) || 1;
-                const getQty = parseInt(match.get_qty) || 1;
-                
-                // Only auto-add if they added a multiple of buyQty
-                if (qty % buyQty === 0) {
-                    const cycles = qty / buyQty;
-                    const bonusQty = cycles * getQty;
-                    const minSpend = parseFloat(match.min_spend) || 0;
-                    
-                    // The gross subtotal check: (Current Subtotal) + (Price * The paid items they are adding)
-                    // If they are adding exactly 'buyQty', they will pay for 'buyQty'.
-                    // Note: If the item is already in cart, we should ideally check total qty, but 
-                    // this simple Add-To-Cart injection is safe enough for initial clicks.
-                    const estimatedSubtotal = this.subtotal + (parseFloat(p.selling_price) * qty);
-                    
-                    if (estimatedSubtotal >= minSpend) {
-                        qty += bonusQty;
-                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: `BOGO Triggered: Added ${bonusQty} free item(s) automatically!` }}));
-                    }
-                }
-            }
-
-            const existing = this.cart.findIndex(i => i.id === p.id);
+            const existing = this.cart.findIndex(i => i.id === p.id && !i.is_gift);
             if (existing >= 0) {
                 if (p.available_stock !== null && p.available_stock !== undefined && this.cart[existing].quantity + qty > p.available_stock) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+p.available_stock+')'}}));
@@ -1872,7 +1912,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 .filter(o=>o.type==='bogo')
                 .sort((a,b)=>(b.priority - a.priority) || (a.id - b.id));
             return this.cart.reduce((t,item)=>{
-                // Find matching product BOGO, otherwise fallback to global BOGO
+                if (item.is_gift) return t; // Skip gifts
                 const match = bogos.find(o=> Number(o.product_id)===Number(item.id)) || bogos.find(o=> !o.product_id);
                 if(!match) return t;
                 
@@ -1895,93 +1935,74 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 .sort((a,b)=>(b.priority - a.priority) || (a.id - b.id));
             const ids = [];
             this.cart.forEach(item => {
+                if (item.is_gift) return;
                 const match = bogos.find(o=> Number(o.product_id)===Number(item.id)) || bogos.find(o=> !o.product_id);
-                if (!match) return;
-                
-                if ((parseFloat(match.min_spend) || 0) > this.subtotal) return;
-
-                const buyQty = parseInt(match.buy_qty)||1;
-                const getQty = parseInt(match.get_qty)||1;
-                const cycle = buyQty + getQty;
-                const qty = parseInt(item.quantity)||0;
-                if (qty >= cycle) {
-                    ids.push(match.id);
+                if(match && !ids.includes(match.id)) {
+                    const cycle = parseInt(match.buy_qty||1) + parseInt(match.get_qty||1);
+                    if(item.quantity >= cycle) ids.push(match.id);
                 }
             });
-            return [...new Set(ids)];
+            return ids;
         },
         get sortedActiveOffers() {
-            return (this.activeOffers || [])
-                .map(offer => ({ ...offer }))
-                .sort((a, b) => (b.priority - a.priority) || (a.id - b.id));
-        },
-        get activeOrderOffers() {
-            return (this.activeOffers || []).filter(o => o.type === 'order_discount');
-        },
-        orderOfferDiscount(offer) {
-            if (!offer || this.subtotal <= 0) return 0;
-            if ((parseFloat(offer.min_spend) || 0) > this.subtotal) return 0;
-            
-            let eligibleSubtotal = 0;
-            this.cart.forEach(item => {
-                let isEligible = true;
-                
-                if (offer.product_id && item.id != offer.product_id) isEligible = false;
-                
-                if (offer.applicable_products && offer.applicable_products.length > 0 && !offer.applicable_products.includes(String(item.id))) isEligible = false;
-                if (offer.excluded_products && offer.excluded_products.length > 0 && offer.excluded_products.includes(String(item.id))) isEligible = false;
-                
-                if (offer.applicable_categories && offer.applicable_categories.length > 0 && (!item.category_id || !offer.applicable_categories.includes(String(item.category_id)))) isEligible = false;
-                if (offer.excluded_categories && offer.excluded_categories.length > 0 && item.category_id && offer.excluded_categories.includes(String(item.category_id))) isEligible = false;
-                
-                if (isEligible) {
-                    eligibleSubtotal += this.lineTotal(item);
-                }
+            return [...this.activeOffers].sort((a,b) => {
+                if (a.type !== b.type) return (a.type === 'bogo' || a.type === 'free_product') ? -1 : 1;
+                return (b.priority - a.priority) || (a.id - b.id);
             });
-
-            if (eligibleSubtotal <= 0) return 0;
-            let discount = String(offer.discount_type) === 'percentage'
-                ? eligibleSubtotal * ((parseFloat(offer.value) || 0) / 100)
-                : (parseFloat(offer.value) || 0);
-            if ((parseFloat(offer.max_discount) || 0) > 0) {
-                discount = Math.min(discount, parseFloat(offer.max_discount) || 0);
-            }
-            return Math.min(discount, eligibleSubtotal);
         },
         get availableOrderOffers() {
-            return this.activeOrderOffers
-                .map(offer => ({ ...offer, computed_discount: this.orderOfferDiscount(offer) }))
-                .filter(offer => offer.computed_discount > 0)
-                .sort((a, b) => (b.priority - a.priority) || (b.computed_discount - a.computed_discount) || (a.id - b.id));
+            return this.activeOffers.filter(o => ['order_discount', 'category_discount'].includes(o.type) && (parseFloat(o.min_spend)||0) <= this.subtotal);
+        },
+        orderOfferDiscount(o) {
+            if (!o || !['order_discount', 'category_discount'].includes(o.type)) return 0;
+            if ((parseFloat(o.min_spend)||0) > this.subtotal) return 0;
+            
+            let eligibleSubtotal = this.subtotal;
+            if (o.type === 'category_discount' && o.applicable_categories && o.applicable_categories.length > 0) {
+                const cats = typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : o.applicable_categories;
+                eligibleSubtotal = this.cart.reduce((t, item) => {
+                    if (item.is_gift) return t;
+                    if (cats.includes(item.category_id) || cats.includes(String(item.category_id))) {
+                        return t + this.lineTotal(item);
+                    }
+                    return t;
+                }, 0);
+            }
+            
+            if (eligibleSubtotal <= 0) return 0;
+
+            let d = o.discount_type === 'percentage' ? eligibleSubtotal * (parseFloat(o.value) / 100) : parseFloat(o.value);
+            if ((parseFloat(o.max_discount)||0) > 0) d = Math.min(d, parseFloat(o.max_discount));
+            return Math.min(d, eligibleSubtotal);
         },
         get bestOrderOffer() {
-            if (!this.appliedOfferId || this.appliedOfferId === 'none') return null;
-            return this.availableOrderOffers.find(o => o.id === this.appliedOfferId) || null;
+            if (this.appliedOfferId && this.appliedOfferId !== 'none') {
+                return this.availableOrderOffers.find(o => o.id === this.appliedOfferId) || null;
+            }
+            return null;
         },
         get orderOfferDiscountAmount() {
             const best = this.bestOrderOffer;
-            return best ? best.computed_discount : 0;
+            return best ? this.orderOfferDiscount(best) : 0;
         },
         get couponDiscount() {
             if (!this.couponApplied || !this.appliedCouponObj) return 0;
             const c = this.appliedCouponObj;
+            if (c.type === 'free_shipping' || c.type === 'free_product') return 0;
             if ((parseFloat(c.min_spend) || 0) > this.subtotal) return 0;
             
-            let eligibleSubtotal = 0;
-            this.cart.forEach(item => {
-                let isEligible = true;
-                
-                if (c.applicable_products && c.applicable_products.length > 0 && !c.applicable_products.includes(String(item.id))) isEligible = false;
-                if (c.excluded_products && c.excluded_products.length > 0 && c.excluded_products.includes(String(item.id))) isEligible = false;
-                
-                if (c.applicable_categories && c.applicable_categories.length > 0 && (!item.category_id || !c.applicable_categories.includes(String(item.category_id)))) isEligible = false;
-                if (c.excluded_categories && c.excluded_categories.length > 0 && item.category_id && c.excluded_categories.includes(String(item.category_id))) isEligible = false;
-                
-                if (isEligible) {
-                    eligibleSubtotal += this.lineTotal(item);
-                }
-            });
-            
+            // Check applicable/excluded
+            let eligibleSubtotal = this.cart.reduce((t, item) => {
+                if (item.is_gift) return t;
+                const apps = typeof c.applicable_products === 'string' ? JSON.parse(c.applicable_products) : c.applicable_products;
+                const excs = typeof c.excluded_products === 'string' ? JSON.parse(c.excluded_products) : c.excluded_products;
+                const appCats = typeof c.applicable_categories === 'string' ? JSON.parse(c.applicable_categories) : c.applicable_categories;
+                if (apps && apps.length > 0 && !apps.includes(item.id) && !apps.includes(String(item.id))) return t;
+                if (excs && excs.length > 0 && (excs.includes(item.id) || excs.includes(String(item.id)))) return t;
+                if (appCats && appCats.length > 0 && !appCats.includes(item.category_id) && !appCats.includes(String(item.category_id))) return t;
+                return t + this.lineTotal(item);
+            }, 0);
+
             if (eligibleSubtotal <= 0) return 0;
 
             let d = c.type === 'percentage' ? eligibleSubtotal * (parseFloat(c.value) / 100) : parseFloat(c.value);
@@ -1989,7 +2010,15 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             return Math.min(d, eligibleSubtotal);
         },
         get totalDiscount() { return Math.min(this.subtotal, this.bogoDiscount + this.couponDiscount + this.orderOfferDiscountAmount); },
-        get grandTotal() { return Math.max(0, this.subtotal - this.totalDiscount + this.taxAmount); },
+        get grandTotal() { 
+            let shipping = this.shippingFee;
+            if (this.couponApplied && this.appliedCouponObj && this.appliedCouponObj.type === 'free_shipping') {
+                if (this.subtotal >= (parseFloat(this.appliedCouponObj.min_spend) || 0)) {
+                    shipping = 0;
+                }
+            }
+            return Math.max(0, this.subtotal - this.totalDiscount + this.taxAmount + shipping); 
+        },
 
         async applyCoupon(codeToApply = null) {
             const code = (codeToApply || this.couponInputTemp || this.couponCode).toUpperCase().trim();
@@ -2002,14 +2031,16 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 this.couponApplied = true; 
                 this.couponInputTemp = ''; // clear temp
                 bootstrap.Modal.getInstance(document.getElementById('promotionsModal'))?.hide();
+                await this.evaluateFreeProducts();
             } else { 
                 this.appliedCouponObj = null;
                 this.couponApplied = false; 
+                await this.evaluateFreeProducts();
             }
             window.dispatchEvent(new CustomEvent('notify',{detail:{type:json.valid?'success':'error',message:json.message}}));
         },
 
-        removeCoupon() { this.couponCode=''; this.appliedCouponObj=null; this.couponApplied=false; },
+        async removeCoupon() { this.couponCode=''; this.appliedCouponObj=null; this.couponApplied=false; await this.evaluateFreeProducts(); },
 
         editOrder(orderId) {
             const query = new URLSearchParams();

@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Customers\Models;
 
 use App\Modules\Orders\Models\Order;
-
-
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends Model
 {
@@ -29,7 +27,7 @@ class Customer extends Model
         'email',
         'phone',
         'alternatemobile',
-        'relative_mobile',
+        'relative_name',
         'relative_phone',
         'source',
         'category',
@@ -62,24 +60,24 @@ class Customer extends Model
     ];
 
     protected $casts = [
-        'credit_limit'        => 'decimal:2',
+        'credit_limit' => 'decimal:2',
         'outstanding_balance' => 'decimal:2',
-        'land_area'           => 'decimal:2',
-        'credit_days'         => 'integer',
-        'orders_count'        => 'integer',
-        'is_active'           => 'boolean',
-        'is_blacklisted'      => 'boolean',
-        'kyc_completed'       => 'boolean',
-        'crops'               => 'array',
-        'tags'                => 'array',
-        'source'              => 'array',
-        'irrigation_type'     => 'array',
-        'credit_valid_till'   => 'date',
-        'first_purchase_at'   => 'date',
-        'last_purchase_at'    => 'date',
-        'kyc_verified_at'     => 'datetime',
-        'created_at'          => 'datetime',
-        'updated_at'          => 'datetime',
+        'land_area' => 'decimal:2',
+        'credit_days' => 'integer',
+        'orders_count' => 'integer',
+        'is_active' => 'boolean',
+        'is_blacklisted' => 'boolean',
+        'kyc_completed' => 'boolean',
+        'crops' => 'array',
+        'tags' => 'array',
+        'source' => 'array',
+        'irrigation_type' => 'array',
+        'credit_valid_till' => 'date',
+        'first_purchase_at' => 'date',
+        'last_purchase_at' => 'date',
+        'kyc_verified_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     protected $appends = ['name'];
@@ -112,9 +110,10 @@ class Customer extends Model
 
     public function orders(): HasMany
     {
-        if (class_exists(\App\Modules\Orders\Models\Order::class)) {
-            return $this->hasMany(\App\Modules\Orders\Models\Order::class, 'party_id');
+        if (class_exists(Order::class)) {
+            return $this->hasMany(Order::class, 'party_id');
         }
+
         return $this->hasMany(self::class, 'id')->whereRaw('0=1'); // empty relation fallback
     }
 
@@ -129,12 +128,12 @@ class Customer extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('firstname', 'like', "%{$search}%")
-              ->orWhere('lastname', 'like', "%{$search}%")
-              ->orWhere('email', 'like', "%{$search}%")
-              ->orWhere('phone', 'like', "%{$search}%")
-              ->orWhere('gst_no', 'like', "%{$search}%")
-              ->orWhere('company_name', 'like', "%{$search}%")
-              ->orWhere('party_code', 'like', "%{$search}%");
+                ->orWhere('lastname', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%")
+                ->orWhere('gst_no', 'like', "%{$search}%")
+                ->orWhere('company_name', 'like', "%{$search}%")
+                ->orWhere('party_code', 'like', "%{$search}%");
         });
     }
 
@@ -148,7 +147,8 @@ class Customer extends Model
     public function initials(): string
     {
         $first = $this->firstname[0] ?? '';
-        $last  = $this->lastname[0]  ?? '';
-        return strtoupper($first . $last);
+        $last = $this->lastname[0] ?? '';
+
+        return strtoupper($first.$last);
     }
 }

@@ -6,13 +6,12 @@ use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Models\OrderReturnItem;
-use App\Services\InventoryService;
 use App\Services\FinancialService;
+use App\Services\InventoryService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 
 class OrderReturnController extends Controller implements HasMiddleware
 {
@@ -34,10 +33,10 @@ class OrderReturnController extends Controller implements HasMiddleware
                 $subQuery->where('return_no', 'LIKE', "%{$s}%")
                     ->orWhereHas('order', function ($q) use ($s) {
                         $q->where('order_no', 'LIKE', "%{$s}%")
-                          ->orWhereHas('party', function ($q2) use ($s) {
-                              $q2->where('firstname', 'LIKE', "%{$s}%")
-                                 ->orWhere('lastname', 'LIKE', "%{$s}%");
-                          });
+                            ->orWhereHas('party', function ($q2) use ($s) {
+                                $q2->where('firstname', 'LIKE', "%{$s}%")
+                                    ->orWhere('lastname', 'LIKE', "%{$s}%");
+                            });
                     });
             });
         }
@@ -52,9 +51,9 @@ class OrderReturnController extends Controller implements HasMiddleware
 
         $sortField = $request->input('sort_field', 'id');
         $sortDirection = $request->input('sort_direction', 'desc');
-        
+
         $query->orderBy($sortField, $sortDirection === 'asc' ? 'asc' : 'desc');
-        
+
         $returns = $query->paginate($request->integer('limit', 15));
 
         if ($request->wantsJson() || $request->ajax()) {
@@ -91,10 +90,10 @@ class OrderReturnController extends Controller implements HasMiddleware
         $return = DB::transaction(function () use ($validated, $order) {
             $baseNo = str_replace('ORD-', 'RET-', $order->order_no);
             if ($baseNo === $order->order_no) {
-                $baseNo = 'RET-' . $order->order_no;
+                $baseNo = 'RET-'.$order->order_no;
             }
             $count = OrderReturn::where('order_id', $order->id)->count();
-            $returnNo = $count > 0 ? $baseNo . '-' . ($count + 1) : $baseNo;
+            $returnNo = $count > 0 ? $baseNo.'-'.($count + 1) : $baseNo;
 
             $return = OrderReturn::create([
                 'order_id' => $order->id,
@@ -158,8 +157,8 @@ class OrderReturnController extends Controller implements HasMiddleware
                     $inventoryService->processReturnItem(
                         $item->product_id,
                         $return->order->warehouse_id,
-                        (float)$itemData['restocked_qty'],
-                        (float)$itemData['damaged_qty'],
+                        (float) $itemData['restocked_qty'],
+                        (float) $itemData['damaged_qty'],
                         $return->id
                     );
                 }
@@ -184,18 +183,18 @@ class OrderReturnController extends Controller implements HasMiddleware
             if ($validated['action'] === 'refund') {
                 $financialService->processRefund(
                     $return,
-                    (float)$validated['amount'],
+                    (float) $validated['amount'],
                     $validated['payment_method'],
                     $validated['transaction_id'] ?? null
                 );
                 $message = 'Refund processed successfully.';
             } else {
-                $financialService->issueCreditNote($return, (float)$validated['amount']);
+                $financialService->issueCreditNote($return, (float) $validated['amount']);
                 $message = 'Credit Note issued successfully.';
             }
 
             return response()->json(['success' => true, 'message' => $message]);
-            
+
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 400);
         }

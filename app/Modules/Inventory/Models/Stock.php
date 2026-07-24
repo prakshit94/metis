@@ -6,12 +6,12 @@ namespace App\Modules\Inventory\Models;
 
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Warehouse;
-
-
+use App\Modules\Orders\Models\OrderItem;
+use App\Modules\Orders\Models\OrderReturnItem;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Stock extends Model
 {
@@ -27,15 +27,16 @@ class Stock extends Model
         'in_transit_qty',
         'damaged_qty',
         'status',
+        'deleted_at',
     ];
 
     protected $casts = [
-        'quantity'        => 'float',
-        'reserved_qty'    => 'float',
-        'dispatched_qty'  => 'float',
-        'committed_qty'   => 'float',
-        'in_transit_qty'  => 'float',
-        'damaged_qty'     => 'float',
+        'quantity' => 'float',
+        'reserved_qty' => 'float',
+        'dispatched_qty' => 'float',
+        'committed_qty' => 'float',
+        'in_transit_qty' => 'float',
+        'damaged_qty' => 'float',
     ];
 
     // ─── Computed Attributes ───────────────────────────────────────────────
@@ -50,16 +51,28 @@ class Stock extends Model
     }
 
     /**
-     * Delivered qty = sum of delivered and completed order items for this product and warehouse.
+     * Delivered qty = sum of delivered/completed order items minus processed returned items.
      */
     public function getDeliveredQtyAttribute(): float
     {
-        return (float) \App\Modules\Orders\Models\OrderItem::where('product_id', $this->product_id)
+        $delivered = (float) OrderItem::where('product_id', $this->product_id)
             ->whereHas('order', function ($q) {
                 $q->where('warehouse_id', $this->warehouse_id)
-                  ->whereIn('status', ['delivered', 'completed']);
+                    ->whereIn('status', ['delivered', 'completed']);
             })
             ->sum('quantity');
+
+        $returned = (float) OrderReturnItem::where('product_id', $this->product_id)
+            ->whereHas('orderReturn', function ($q) {
+                $q->where('status', 'completed')
+                    ->whereHas('order', function ($q2) {
+                        $q2->where('warehouse_id', $this->warehouse_id)
+                            ->whereIn('status', ['delivered', 'completed']);
+                    });
+            })
+            ->sum('received_qty');
+
+        return max(0.0, $delivered - $returned);
     }
 
     // ─── Relationships ─────────────────────────────────────────────────────
@@ -88,19 +101,31 @@ class Stock extends Model
 
     public function pendingOrderItems(): HasMany
     {
-        return $this->hasMany(\App\Modules\Orders\Models\OrderItem::class, 'product_id', 'product_id')
+        return $this->hasMany(OrderItem::class, 'product_id', 'product_id')
             ->whereHas('order', function ($query) {
                 $query->whereColumn('orders.warehouse_id', 'stocks.warehouse_id')
-                      ->where('orders.status', 'pending');
+                    ->where('orders.status', 'pending');
             });
     }
 
     public function deliveredOrderItems(): HasMany
     {
-        return $this->hasMany(\App\Modules\Orders\Models\OrderItem::class, 'product_id', 'product_id')
+        return $this->hasMany(OrderItem::class, 'product_id', 'product_id')
             ->whereHas('order', function ($query) {
                 $query->whereColumn('orders.warehouse_id', 'stocks.warehouse_id')
-                      ->whereIn('orders.status', ['delivered', 'completed']);
+                    ->whereIn('orders.status', ['delivered', 'completed']);
+            });
+    }
+
+    public function returnedOrderItems(): HasMany
+    {
+        return $this->hasMany(OrderReturnItem::class, 'product_id', 'product_id')
+            ->whereHas('orderReturn', function ($query) {
+                $query->where('status', 'completed')
+                    ->whereHas('order', function ($q) {
+                        $q->whereColumn('orders.warehouse_id', 'stocks.warehouse_id')
+                            ->whereIn('orders.status', ['delivered', 'completed']);
+                    });
             });
     }
 }

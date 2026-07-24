@@ -29,10 +29,10 @@ class RefundController extends Controller implements HasMiddleware
                     ->orWhere('transaction_id', 'LIKE', "%{$s}%")
                     ->orWhereHas('order', function ($q) use ($s) {
                         $q->where('order_no', 'LIKE', "%{$s}%")
-                          ->orWhereHas('party', function ($q2) use ($s) {
-                              $q2->where('firstname', 'LIKE', "%{$s}%")
-                                 ->orWhere('lastname', 'LIKE', "%{$s}%");
-                          });
+                            ->orWhereHas('party', function ($q2) use ($s) {
+                                $q2->where('firstname', 'LIKE', "%{$s}%")
+                                    ->orWhere('lastname', 'LIKE', "%{$s}%");
+                            });
                     });
             });
         }
@@ -62,6 +62,7 @@ class RefundController extends Controller implements HasMiddleware
             if ($refund->status === 'completed') {
                 $refund->status = 'processed';
             }
+
             return $refund;
         });
 

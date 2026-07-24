@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Users\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Http\Requests\Roles\StoreRoleRequest;
 use App\Http\Requests\Roles\UpdateRoleRequest;
+use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -61,7 +61,7 @@ class RoleController extends Controller implements HasMiddleware
             ->with('permissions')
             ->when(
                 $request->filled('search'),
-                fn ($q) => $q->where('name', 'like', '%' . $request->input('search') . '%'),
+                fn ($q) => $q->where('name', 'like', '%'.$request->input('search').'%'),
             )
             ->when(
                 $request->filled('guard_name'),
@@ -79,7 +79,7 @@ class RoleController extends Controller implements HasMiddleware
     public function store(StoreRoleRequest $request): JsonResponse
     {
         $role = Role::create([
-            'name'       => $request->validated('name'),
+            'name' => $request->validated('name'),
             'guard_name' => $request->validated('guard_name', 'web'),
         ]);
 
@@ -91,7 +91,7 @@ class RoleController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "Role [{$role->name}] created successfully.",
-            'data'    => $role,
+            'data' => $role,
         ], 201);
     }
 
@@ -120,7 +120,7 @@ class RoleController extends Controller implements HasMiddleware
         $this->guardSystemRole($role);
 
         $role->update([
-            'name'       => $request->validated('name'),
+            'name' => $request->validated('name'),
             'guard_name' => $request->validated('guard_name', $role->guard_name),
         ]);
 
@@ -132,7 +132,7 @@ class RoleController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "Role [{$role->name}] updated successfully.",
-            'data'    => $role,
+            'data' => $role,
         ]);
     }
 
@@ -164,7 +164,7 @@ class RoleController extends Controller implements HasMiddleware
         if (! $role->trashed()) {
             return response()->json([
                 'message' => "Role [{$role->name}] is not deleted.",
-                'data'    => $role,
+                'data' => $role,
             ]);
         }
 
@@ -173,7 +173,7 @@ class RoleController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "Role [{$role->name}] restored successfully.",
-            'data'    => $role,
+            'data' => $role,
         ]);
     }
 

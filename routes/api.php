@@ -41,6 +41,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
             ->name('revoke-other-tokens');
     });
 
+    // ── Dashboard & Analytics ────────────────────────────────────────────────
+    Route::get('/dashboard', [\App\Modules\Core\Controllers\PageController::class, 'dashboard'])->name('api.dashboard');
+    Route::get('/reports', [\App\Modules\Core\Controllers\PageController::class, 'reports'])->name('api.reports');
+
     // ── Notifications / Activities ───────────────────────────────────────────
     Route::get('/activities/recent', function () {
         $user = auth()->user();
@@ -167,6 +171,52 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('users/{user}/login-history', [UserController::class, 'loginHistory'])
             ->name('api.users.login-history');
+    });
+
+    // ── Financial & Sales APIs ─────────────────────────────────────────────
+    Route::prefix('orders')->name('api.orders.')->group(function (): void {
+        Route::get('/', [\App\Modules\Orders\Controllers\OrderController::class, 'index'])->name('index');
+        Route::post('/', [\App\Modules\Orders\Controllers\OrderController::class, 'store'])->name('store');
+        Route::get('/{order}', [\App\Modules\Orders\Controllers\OrderController::class, 'show'])->name('show');
+        Route::patch('/{order}', [\App\Modules\Orders\Controllers\OrderController::class, 'update'])->name('update');
+        Route::delete('/{order}', [\App\Modules\Orders\Controllers\OrderController::class, 'destroy'])->name('destroy');
+        Route::post('/{order}/status', [\App\Modules\Orders\Controllers\OrderController::class, 'updateStatus'])->name('update-status');
+    });
+
+    Route::prefix('invoices')->name('api.invoices.')->group(function (): void {
+        Route::get('/', [\App\Modules\Orders\Controllers\InvoiceController::class, 'index'])->name('index');
+        Route::post('/bulk-status', [\App\Modules\Orders\Controllers\InvoiceController::class, 'bulkStatus'])->name('bulk-status');
+        Route::get('/{invoice}', [\App\Modules\Orders\Controllers\InvoiceController::class, 'show'])->name('show');
+        Route::get('/{invoice}/pdf', [\App\Modules\Orders\Controllers\InvoiceController::class, 'downloadPdf'])->name('pdf');
+    });
+
+    Route::prefix('payments')->name('api.payments.')->group(function (): void {
+        Route::get('/', [\App\Modules\Orders\Controllers\PaymentController::class, 'index'])->name('index');
+        Route::post('/bulk-status', [\App\Modules\Orders\Controllers\PaymentController::class, 'bulkStatus'])->name('bulk-status');
+        Route::post('/', [\App\Modules\Orders\Controllers\PaymentController::class, 'store'])->name('store');
+        Route::get('/{payment}', [\App\Modules\Orders\Controllers\PaymentController::class, 'show'])->name('show');
+    });
+
+    Route::prefix('refunds')->name('api.refunds.')->group(function (): void {
+        Route::get('/', [\App\Modules\Orders\Controllers\RefundController::class, 'index'])->name('index');
+        Route::post('/bulk-status', [\App\Modules\Orders\Controllers\RefundController::class, 'bulkStatus'])->name('bulk-status');
+        Route::get('/{refund}', [\App\Modules\Orders\Controllers\RefundController::class, 'show'])->name('show');
+    });
+
+    Route::prefix('returns')->name('api.returns.')->group(function (): void {
+        Route::get('/', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'index'])->name('index');
+        Route::post('/', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'store'])->name('store');
+        Route::get('/{orderReturn}', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'show'])->name('show');
+        Route::post('/{orderReturn}/process', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'process'])->name('process');
+    });
+
+    // ── Reason Codes API (Returns, Cancellations, Reschedules) ───────────────
+    Route::prefix('order-reasons/{type}')->name('api.order-reasons.')->group(function (): void {
+        Route::get('/', [\App\Modules\Orders\Controllers\OrderReasonController::class, 'list'])->name('list');
+        Route::post('/', [\App\Modules\Orders\Controllers\OrderReasonController::class, 'store'])->name('store');
+        Route::put('/{id}', [\App\Modules\Orders\Controllers\OrderReasonController::class, 'update'])->name('update');
+        Route::delete('/{id}', [\App\Modules\Orders\Controllers\OrderReasonController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/toggle', [\App\Modules\Orders\Controllers\OrderReasonController::class, 'toggleActive'])->name('toggle');
     });
 
     // Promotions JSON API

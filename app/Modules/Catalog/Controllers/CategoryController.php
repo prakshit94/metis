@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Core\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class CategoryController extends Controller implements HasMiddleware
 {
@@ -28,32 +28,32 @@ class CategoryController extends Controller implements HasMiddleware
     public function index(Request $request): JsonResponse
     {
         $this->authorize('product-view');
-        
+
         $query = Category::query()->with('parent')->withCount('products');
-        
+
         if ($search = $request->query('search')) {
             $query->where('name', 'like', "%{$search}%");
         }
-        
+
         $sortBy = $request->query('sort_by', 'id');
         $sortDir = $request->query('sort_dir', 'desc');
-        
+
         if (in_array($sortBy, ['id', 'name', 'status', 'parent_id', 'is_active'])) {
             $query->orderBy($sortBy, $sortDir);
         }
-        
+
         $perPage = (int) $request->query('per_page', 10);
         $perPage = min(max($perPage, 1), 1000);
-        
+
         $paginator = $query->paginate($perPage);
-        
+
         return response()->json($paginator);
     }
 
     public function store(Request $request): JsonResponse
     {
         $this->authorize('product-create');
-        
+
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:categories,name',
             'parent_id' => 'nullable',
@@ -61,11 +61,11 @@ class CategoryController extends Controller implements HasMiddleware
             'is_active' => 'nullable',
             'image' => 'nullable|image|max:2048',
         ]);
-        
+
         $validated['slug'] = Str::slug($validated['name']);
-        
-        $validated['is_active'] = $request->has('is_active') 
-            ? filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN) 
+
+        $validated['is_active'] = $request->has('is_active')
+            ? filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN)
             : true;
 
         if ($request->has('parent_id') && ($request->input('parent_id') === '' || $request->input('parent_id') === 'null' || $request->input('parent_id') === null)) {
@@ -73,43 +73,44 @@ class CategoryController extends Controller implements HasMiddleware
         } elseif ($request->has('parent_id')) {
             $validated['parent_id'] = (int) $request->input('parent_id');
         }
-        
+
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('categories', 'public');
         }
 
         $model = Category::create($validated);
-        
+
         return response()->json([
             'message' => 'Category created successfully.',
-            'data' => $model->load('parent')->loadCount('products')
+            'data' => $model->load('parent')->loadCount('products'),
         ], 201);
     }
 
     public function show(Category $model): JsonResponse
     {
         $this->authorize('product-view');
+
         return response()->json(['data' => $model->load('parent')->loadCount('products')]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
         $this->authorize('product-edit');
-        
+
         $model = Category::findOrFail($id);
-        
+
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255|unique:categories,name,' . $model->id,
+            'name' => 'sometimes|required|string|max:255|unique:categories,name,'.$model->id,
             'parent_id' => 'nullable',
             'status' => 'sometimes|required|in:active,inactive',
             'is_active' => 'nullable',
             'image' => 'nullable|image|max:2048',
         ]);
-        
+
         if (isset($validated['name'])) {
             $validated['slug'] = Str::slug($validated['name']);
         }
-        
+
         if ($request->has('is_active')) {
             $validated['is_active'] = filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN);
         }
@@ -121,7 +122,7 @@ class CategoryController extends Controller implements HasMiddleware
                 $validated['parent_id'] = (int) $request->input('parent_id');
             }
         }
-        
+
         if ($request->hasFile('image')) {
             // Delete old image if exists
             if ($model->image) {
@@ -134,12 +135,12 @@ class CategoryController extends Controller implements HasMiddleware
             }
             $validated['image'] = null;
         }
-        
+
         $model->update($validated);
-        
+
         return response()->json([
             'message' => 'Category updated successfully.',
-            'data' => $model->load('parent')->loadCount('products')
+            'data' => $model->load('parent')->loadCount('products'),
         ]);
     }
 
@@ -147,16 +148,16 @@ class CategoryController extends Controller implements HasMiddleware
     {
         $this->authorize('product-delete');
         $model = Category::findOrFail($id);
-        
+
         // Delete image if exists
         if ($model->image) {
             Storage::disk('public')->delete($model->image);
         }
-        
+
         $model->delete();
-        
+
         return response()->json([
-            'message' => 'Category deleted successfully.'
+            'message' => 'Category deleted successfully.',
         ]);
     }
 }

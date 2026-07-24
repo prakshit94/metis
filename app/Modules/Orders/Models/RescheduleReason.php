@@ -2,8 +2,8 @@
 
 namespace App\Modules\Orders\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Modules\Users\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class RescheduleReason extends Model

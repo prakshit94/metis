@@ -2,23 +2,27 @@
 
 namespace App\Jobs\Chat;
 
+use App\Models\Chat\ChatNotification;
+use App\Models\Chat\Conversation;
+use App\Models\Chat\MessageDelivery;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Chat\Conversation;
-use App\Models\Chat\MessageDelivery;
-use App\Models\Chat\ChatNotification;
 
 class ProcessMessageDeliveries implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $messageId;
+
     public $conversationId;
+
     public $senderId;
+
     public $senderName;
+
     public $preview;
 
     public function __construct(int $messageId, int $conversationId, int $senderId, string $senderName, string $preview)
@@ -33,7 +37,7 @@ class ProcessMessageDeliveries implements ShouldQueue
     public function handle()
     {
         $conversation = Conversation::find($this->conversationId);
-        if (!$conversation) {
+        if (! $conversation) {
             return;
         }
 

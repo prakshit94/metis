@@ -8,8 +8,6 @@ use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Coupon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 
 class CouponController extends Controller
 {
@@ -20,20 +18,20 @@ class CouponController extends Controller
     public function validateApi(Request $request): JsonResponse
     {
         $request->validate([
-            'code'     => 'required|string',
+            'code' => 'required|string',
             'subtotal' => 'required|numeric|min:0',
         ]);
 
-        $code    = strtoupper(trim($request->code));
+        $code = strtoupper(trim($request->code));
         $subtotal = (float) $request->subtotal;
 
         $coupon = Coupon::where('code', $code)->first();
 
-        if (!$coupon) {
+        if (! $coupon) {
             return response()->json(['valid' => false, 'message' => 'Invalid promo code.']);
         }
 
-        if (!$coupon->is_active) {
+        if (! $coupon->is_active) {
             return response()->json(['valid' => false, 'message' => 'This promo code is inactive.']);
         }
 
@@ -47,15 +45,15 @@ class CouponController extends Controller
 
         if ((float) $coupon->min_spend > 0 && $subtotal < (float) $coupon->min_spend) {
             return response()->json([
-                'valid'   => false,
-                'message' => 'Minimum spend of ₹' . number_format((float) $coupon->min_spend, 2) . ' required.',
+                'valid' => false,
+                'message' => 'Minimum spend of ₹'.number_format((float) $coupon->min_spend, 2).' required.',
             ]);
         }
 
         $discount = 0.0;
         if ($coupon->type === 'percentage') {
-            $discount = $subtotal * ((float)$coupon->value / 100);
-            if ((float)$coupon->max_discount > 0 && $discount > (float)$coupon->max_discount) {
+            $discount = $subtotal * ((float) $coupon->value / 100);
+            if ((float) $coupon->max_discount > 0 && $discount > (float) $coupon->max_discount) {
                 $discount = (float) $coupon->max_discount;
             }
         } else {
@@ -64,16 +62,16 @@ class CouponController extends Controller
         $discount = min($discount, $subtotal);
 
         return response()->json([
-            'valid'    => true,
+            'valid' => true,
             'discount' => (float) $discount,
-            'coupon'   => [
+            'coupon' => [
                 'code' => $coupon->code,
                 'type' => $coupon->type,
-                'value' => (float)$coupon->value,
-                'min_spend' => (float)$coupon->min_spend,
-                'max_discount' => $coupon->max_discount ? (float)$coupon->max_discount : null,
+                'value' => (float) $coupon->value,
+                'min_spend' => (float) $coupon->min_spend,
+                'max_discount' => $coupon->max_discount ? (float) $coupon->max_discount : null,
             ],
-            'message'  => 'Promo code applied!',
+            'message' => 'Promo code applied!',
         ]);
     }
 }

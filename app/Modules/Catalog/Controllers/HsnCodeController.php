@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Modules\Catalog\Models\HsnCode;
+use App\Modules\Core\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -33,11 +33,11 @@ class HsnCodeController extends Controller implements HasMiddleware
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('code', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
-        $sortBy  = $request->query('sort_by', 'id');
+        $sortBy = $request->query('sort_by', 'id');
         $sortDir = $request->query('sort_dir', 'desc');
 
         if (in_array($sortBy, ['id', 'code', 'description', 'status'], true)) {
@@ -58,23 +58,24 @@ class HsnCodeController extends Controller implements HasMiddleware
         $this->authorize('product-create');
 
         $validated = $request->validate([
-            'code'        => 'required|string|max:255',
+            'code' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'rate'        => 'nullable|numeric|min:0|max:100',
-            'status'      => 'required|in:active,inactive',
+            'rate' => 'nullable|numeric|min:0|max:100',
+            'status' => 'required|in:active,inactive',
         ]);
 
         $model = HsnCode::create($validated);
 
         return response()->json([
             'message' => 'HSN code created successfully.',
-            'data'    => $model,
+            'data' => $model,
         ], 201);
     }
 
     public function show(HsnCode $hsnCode): JsonResponse
     {
         $this->authorize('product-view');
+
         return response()->json(['data' => $hsnCode]);
     }
 
@@ -85,17 +86,17 @@ class HsnCodeController extends Controller implements HasMiddleware
         $model = HsnCode::findOrFail($id);
 
         $validated = $request->validate([
-            'code'        => 'sometimes|required|string|max:255',
+            'code' => 'sometimes|required|string|max:255',
             'description' => 'sometimes|nullable|string|max:1000',
-            'rate'        => 'sometimes|nullable|numeric|min:0|max:100',
-            'status'      => 'sometimes|required|in:active,inactive',
+            'rate' => 'sometimes|nullable|numeric|min:0|max:100',
+            'status' => 'sometimes|required|in:active,inactive',
         ]);
 
         $model->update($validated);
 
         return response()->json([
             'message' => 'HSN code updated successfully.',
-            'data'    => $model,
+            'data' => $model,
         ]);
     }
 

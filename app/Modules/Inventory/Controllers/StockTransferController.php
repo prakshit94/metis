@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Modules\Catalog\Models\Product;
-use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Core\Controllers\Controller;
+use App\Modules\Inventory\Models\StockTransfer;
 use App\Services\InventoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class StockTransferController extends Controller implements HasMiddleware
 {
@@ -46,7 +46,7 @@ class StockTransferController extends Controller implements HasMiddleware
             $query->where('status', $status);
         }
 
-        $sortBy  = $request->query('sort_by', 'id');
+        $sortBy = $request->query('sort_by', 'id');
         $sortDir = $request->query('sort_dir', 'desc');
 
         if (in_array($sortBy, ['id', 'transfer_no', 'status', 'created_at'])) {
@@ -58,19 +58,19 @@ class StockTransferController extends Controller implements HasMiddleware
         $paginator = $query->paginate($perPage);
 
         $stats = [
-            'total'    => StockTransfer::count(),
-            'draft'    => StockTransfer::where('status', 'draft')->count(),
-            'pending'  => StockTransfer::where('status', 'sent')->count(),
+            'total' => StockTransfer::count(),
+            'draft' => StockTransfer::where('status', 'draft')->count(),
+            'pending' => StockTransfer::where('status', 'sent')->count(),
             'received' => StockTransfer::where('status', 'received')->count(),
         ];
 
         return response()->json([
-            'data'  => $paginator->items(),
-            'meta'  => [
-                'total'        => $paginator->total(),
-                'per_page'     => $paginator->perPage(),
+            'data' => $paginator->items(),
+            'meta' => [
+                'total' => $paginator->total(),
+                'per_page' => $paginator->perPage(),
                 'current_page' => $paginator->currentPage(),
-                'last_page'    => $paginator->lastPage(),
+                'last_page' => $paginator->lastPage(),
             ],
             'stats' => $stats,
         ]);
@@ -81,25 +81,25 @@ class StockTransferController extends Controller implements HasMiddleware
         $this->authorize('product-create');
 
         $validated = $request->validate([
-            'from_warehouse_id'      => 'required|exists:warehouses,id',
-            'to_warehouse_id'        => 'required|exists:warehouses,id|different:from_warehouse_id',
-            'items'                  => 'required|array|min:1',
-            'items.*.product_id'     => 'required|exists:products,id',
-            'items.*.quantity'       => 'required|numeric|min:0.01',
+            'from_warehouse_id' => 'required|exists:warehouses,id',
+            'to_warehouse_id' => 'required|exists:warehouses,id|different:from_warehouse_id',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
         ]);
 
         $transfer = \DB::transaction(function () use ($validated) {
             $transfer = StockTransfer::create([
-                'transfer_no'       => 'TRF-' . strtoupper(Str::random(10)),
+                'transfer_no' => 'TRF-'.strtoupper(Str::random(10)),
                 'from_warehouse_id' => $validated['from_warehouse_id'],
-                'to_warehouse_id'   => $validated['to_warehouse_id'],
-                'status'            => 'draft',
+                'to_warehouse_id' => $validated['to_warehouse_id'],
+                'status' => 'draft',
             ]);
 
             foreach ($validated['items'] as $item) {
                 $transfer->items()->create([
                     'product_id' => $item['product_id'],
-                    'quantity'   => $item['quantity'],
+                    'quantity' => $item['quantity'],
                 ]);
             }
 
@@ -108,7 +108,7 @@ class StockTransferController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => 'Stock transfer created successfully.',
-            'data'    => $transfer->load(['fromWarehouse:id,name,code', 'toWarehouse:id,name,code', 'items.product:id,name,sku']),
+            'data' => $transfer->load(['fromWarehouse:id,name,code', 'toWarehouse:id,name,code', 'items.product:id,name,sku']),
         ], 201);
     }
 
@@ -130,17 +130,17 @@ class StockTransferController extends Controller implements HasMiddleware
         }
 
         $validated = $request->validate([
-            'from_warehouse_id'      => 'required|exists:warehouses,id',
-            'to_warehouse_id'        => 'required|exists:warehouses,id|different:from_warehouse_id',
-            'items'                  => 'required|array|min:1',
-            'items.*.product_id'     => 'required|exists:products,id',
-            'items.*.quantity'       => 'required|numeric|min:0.01',
+            'from_warehouse_id' => 'required|exists:warehouses,id',
+            'to_warehouse_id' => 'required|exists:warehouses,id|different:from_warehouse_id',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
         ]);
 
         \DB::transaction(function () use ($validated, $stockTransfer) {
             $stockTransfer->update([
                 'from_warehouse_id' => $validated['from_warehouse_id'],
-                'to_warehouse_id'   => $validated['to_warehouse_id'],
+                'to_warehouse_id' => $validated['to_warehouse_id'],
             ]);
 
             $stockTransfer->items()->delete();
@@ -148,14 +148,14 @@ class StockTransferController extends Controller implements HasMiddleware
             foreach ($validated['items'] as $item) {
                 $stockTransfer->items()->create([
                     'product_id' => $item['product_id'],
-                    'quantity'   => $item['quantity'],
+                    'quantity' => $item['quantity'],
                 ]);
             }
         });
 
         return response()->json([
             'message' => 'Stock transfer updated successfully.',
-            'data'    => $stockTransfer->fresh()->load(['fromWarehouse:id,name,code', 'toWarehouse:id,name,code', 'items.product:id,name,sku']),
+            'data' => $stockTransfer->fresh()->load(['fromWarehouse:id,name,code', 'toWarehouse:id,name,code', 'items.product:id,name,sku']),
         ]);
     }
 
@@ -180,8 +180,8 @@ class StockTransferController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'action' => 'required|string|in:send,receive,cancel,delete',
-            'ids'    => 'required|array|min:1',
-            'ids.*'  => 'required|integer|exists:stock_transfers,id',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer|exists:stock_transfers,id',
         ]);
 
         $action = $validated['action'];
@@ -209,7 +209,7 @@ class StockTransferController extends Controller implements HasMiddleware
                         $this->inventoryService->cancelSentTransfer($transfer);
                     } elseif ($action === 'delete') {
                         if ($transfer->status !== 'draft') {
-                            throw new \Exception("Only draft transfers can be deleted.");
+                            throw new \Exception('Only draft transfers can be deleted.');
                         }
                         $transfer->items()->delete();
                         $transfer->delete();
@@ -217,7 +217,7 @@ class StockTransferController extends Controller implements HasMiddleware
                     $processedCount++;
                 } catch (\Throwable $e) {
                     $failedCount++;
-                    $errors[] = "Transfer {$transfer->transfer_no}: " . $e->getMessage();
+                    $errors[] = "Transfer {$transfer->transfer_no}: ".$e->getMessage();
                 }
             }
         });
@@ -245,13 +245,13 @@ class StockTransferController extends Controller implements HasMiddleware
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => collect($e->errors())->flatten()->first(),
-                'errors'  => $e->errors(),
+                'errors' => $e->errors(),
             ], 422);
         }
 
         return response()->json([
             'message' => 'Transfer marked as sent.',
-            'data'    => $stockTransfer->fresh(),
+            'data' => $stockTransfer->fresh(),
         ]);
     }
 
@@ -267,13 +267,13 @@ class StockTransferController extends Controller implements HasMiddleware
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => collect($e->errors())->flatten()->first(),
-                'errors'  => $e->errors(),
+                'errors' => $e->errors(),
             ], 422);
         }
 
         return response()->json([
             'message' => 'Transfer received and stock updated.',
-            'data'    => $stockTransfer->fresh(),
+            'data' => $stockTransfer->fresh(),
         ]);
     }
 
@@ -289,13 +289,13 @@ class StockTransferController extends Controller implements HasMiddleware
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => collect($e->errors())->flatten()->first(),
-                'errors'  => $e->errors(),
+                'errors' => $e->errors(),
             ], 422);
         }
 
         return response()->json([
             'message' => 'Transfer cancelled.',
-            'data'    => $stockTransfer->fresh(),
+            'data' => $stockTransfer->fresh(),
         ]);
     }
 
@@ -308,7 +308,7 @@ class StockTransferController extends Controller implements HasMiddleware
 
         return response()->json([
             'warehouses' => Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name', 'code', 'is_default']),
-            'products'   => Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']),
+            'products' => Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']),
         ]);
     }
 }

@@ -122,7 +122,7 @@
                                         </div>
                                         <div class="col-sm-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Relative Name</label>
-                                            <input type="text" name="relative_mobile" x-model="form.relative_mobile" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
+                                            <input type="text" name="relative_name" x-model="form.relative_name" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Relative Phone</label>
@@ -351,7 +351,7 @@ document.addEventListener('alpine:init', () => {
         isEdit: false,
         customerId: null,
         form: {
-            firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_mobile: '', relative_phone: '',
+            firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
             category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
             land_area: '', land_unit: '', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
         },
@@ -387,7 +387,7 @@ document.addEventListener('alpine:init', () => {
 
         resetForm() {
             this.form = {
-                firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_mobile: '', relative_phone: '',
+                firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
                 category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
                 land_area: '', land_unit: '', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
             };

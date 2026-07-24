@@ -28,12 +28,14 @@ class FinancialsApiTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
         $this->user = User::create([
             'name' => 'Test User',
             'email' => 'test_' . uniqid() . '@example.com',
             'password' => \Illuminate\Support\Facades\Hash::make('password123'),
             'is_active' => true,
         ]);
+        $this->user->assignRole('Super Admin');
         $this->customer = Party::create([
             'firstname' => 'John',
             'lastname' => 'Doe',
@@ -97,12 +99,12 @@ class FinancialsApiTest extends TestCase
     public function test_can_fetch_invoices_list_with_search_and_stats()
     {
         $response = $this->actingAs($this->user)
-            ->getJson('/invoices?search=INV-TEST-99');
+            ->getJson('/api/invoices?search=INV-TEST-99');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'invoices' => ['data'],
-                'stats' => ['total_invoiced', 'paid', 'unpaid', 'avg_value'],
+                'stats' => ['total_invoiced', 'collected_amount', 'pending_amount', 'avg_value'],
             ]);
 
         $this->assertEquals('INV-TEST-99', $response->json('invoices.data.0.invoice_no'));
@@ -111,7 +113,7 @@ class FinancialsApiTest extends TestCase
     public function test_can_bulk_update_invoice_status()
     {
         $response = $this->actingAs($this->user)
-            ->postJson('/invoices/bulk-status', [
+            ->postJson('/api/invoices/bulk-status', [
                 'ids' => [$this->invoice->id],
                 'status' => 'paid',
             ]);
@@ -125,12 +127,12 @@ class FinancialsApiTest extends TestCase
     public function test_can_fetch_payments_list_with_search_and_stats()
     {
         $response = $this->actingAs($this->user)
-            ->getJson('/payments?search=PAY-TEST-99');
+            ->getJson('/api/payments?search=PAY-TEST-99');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'payments' => ['data'],
-                'stats' => ['total_volume', 'captured', 'authorized', 'failed'],
+                'stats' => ['total_volume', 'completed_amount', 'authorized_amount', 'failed_amount'],
             ]);
 
         $this->assertEquals('PAY-TEST-99', $response->json('payments.data.0.payment_no'));
@@ -141,15 +143,15 @@ class FinancialsApiTest extends TestCase
         // Initially, the payment is authorized (not captured).
         // Let's capture the payment. This should update the invoice paid amount and status.
         $response = $this->actingAs($this->user)
-            ->postJson('/payments/bulk-status', [
+            ->postJson('/api/payments/bulk-status', [
                 'ids' => [$this->payment->id],
-                'status' => 'captured',
+                'status' => 'completed',
             ]);
 
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
 
-        $this->assertEquals('captured', $this->payment->refresh()->status);
+        $this->assertEquals('completed', $this->payment->refresh()->status);
         
         // Check that invoice status is synced. Invoice has total 1000.00. Payment is 500.00.
         // Paid 500 out of 1000 means invoice status should be partially_paid.
@@ -160,7 +162,7 @@ class FinancialsApiTest extends TestCase
     public function test_can_fetch_refunds_list_with_search_and_stats()
     {
         $response = $this->actingAs($this->user)
-            ->getJson('/refunds?search=REF-TEST-99');
+            ->getJson('/api/refunds?search=REF-TEST-99');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -175,7 +177,7 @@ class FinancialsApiTest extends TestCase
     public function test_can_bulk_update_refund_status()
     {
         $response = $this->actingAs($this->user)
-            ->postJson('/refunds/bulk-status', [
+            ->postJson('/api/refunds/bulk-status', [
                 'ids' => [$this->refund->id],
                 'status' => 'processed', // processed maps to completed in DB
             ]);

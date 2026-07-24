@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\Chat;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Models\Chat\Conversation;
+use App\Modules\Core\Controllers\Controller;
 use App\Services\Chat\ChatService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;

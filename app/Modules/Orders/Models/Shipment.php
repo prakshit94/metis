@@ -2,6 +2,7 @@
 
 namespace App\Modules\Orders\Models;
 
+use App\Modules\Catalog\Models\Service;
 use Illuminate\Database\Eloquent\Model;
 
 class Shipment extends Model
@@ -33,7 +34,7 @@ class Shipment extends Model
 
     public function service()
     {
-        return $this->belongsTo(\App\Modules\Catalog\Models\Service::class, 'carrier_name', 'name');
+        return $this->belongsTo(Service::class, 'carrier_name', 'name');
     }
 
     public function events()
@@ -46,17 +47,18 @@ class Shipment extends Model
         if ($order && $order->order_no) {
             $baseNo = str_replace('ORD-', 'SHP-', $order->order_no);
             if ($baseNo === $order->order_no) {
-                $baseNo = 'SHP-' . $order->order_no;
+                $baseNo = 'SHP-'.$order->order_no;
             }
             $count = self::where('order_id', $order->id)->count();
             if ($count > 0) {
-                return $baseNo . '-' . ($count + 1);
+                return $baseNo.'-'.($count + 1);
             }
+
             return $baseNo;
         }
 
-        $prefix = 'SHP-' . now()->format('dmYHi');
-        $lastShipment = self::where('shipment_no', 'like', $prefix . '-%')
+        $prefix = 'SHP-'.now()->format('dmYHi');
+        $lastShipment = self::where('shipment_no', 'like', $prefix.'-%')
             ->orderBy('shipment_no', 'desc')
             ->first();
 
@@ -64,9 +66,10 @@ class Shipment extends Model
             $parts = explode('-', $lastShipment->shipment_no);
             $lastNum = (int) end($parts);
             $nextNum = str_pad($lastNum + 1, 2, '0', STR_PAD_LEFT);
-            return $prefix . '-' . $nextNum;
+
+            return $prefix.'-'.$nextNum;
         }
 
-        return $prefix . '-01';
+        return $prefix.'-01';
     }
 }

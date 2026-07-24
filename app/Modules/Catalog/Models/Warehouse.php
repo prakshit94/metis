@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Models;
 
-use App\Modules\Inventory\Models\Stock;
 use App\Modules\Core\Models\Village;
-
-
+use App\Modules\Inventory\Models\Stock;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -19,7 +17,7 @@ class Warehouse extends Model
         'name', 'company_name', 'gstin', 'phone', 'email', 'reference_no', 'seed_lic_no', 'pesti_lic_no',
         'code', 'address', 'address_line_1', 'address_line_2',
         'village_id', 'village_name', 'post_office', 'taluka', 'city',
-        'state', 'pincode', 'status', 'is_default', 'is_active'
+        'state', 'pincode', 'status', 'is_default', 'is_active',
     ];
 
     protected $casts = [

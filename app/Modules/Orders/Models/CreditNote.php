@@ -2,9 +2,9 @@
 
 namespace App\Modules\Orders\Models;
 
+use App\Modules\Customers\Models\Party;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Modules\Customers\Models\Party;
 
 class CreditNote extends Model
 {

@@ -7,6 +7,7 @@ use App\Modules\Orders\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Response;
 
 class PaymentController extends Controller implements HasMiddleware
 {
@@ -29,10 +30,10 @@ class PaymentController extends Controller implements HasMiddleware
                     ->orWhere('transaction_id', 'LIKE', "%{$s}%")
                     ->orWhereHas('order', function ($q) use ($s) {
                         $q->where('order_no', 'LIKE', "%{$s}%")
-                          ->orWhereHas('party', function ($q2) use ($s) {
-                              $q2->where('firstname', 'LIKE', "%{$s}%")
-                                 ->orWhere('lastname', 'LIKE', "%{$s}%");
-                          });
+                            ->orWhereHas('party', function ($q2) use ($s) {
+                                $q2->where('firstname', 'LIKE', "%{$s}%")
+                                    ->orWhere('lastname', 'LIKE', "%{$s}%");
+                            });
                     });
             });
         }
@@ -125,7 +126,7 @@ class PaymentController extends Controller implements HasMiddleware
         return response()->json([
             'success' => true,
             'message' => 'Payment updated successfully.',
-            'payment' => $payment
+            'payment' => $payment,
         ]);
     }
 
@@ -145,25 +146,25 @@ class PaymentController extends Controller implements HasMiddleware
 
         $columns = [
             'payment_no', 'reference_type', 'reference_no', 'amount', 'payment_method', 'transaction_id', 'payment_date', 'status',
-            'customer_name'
+            'customer_name',
         ];
 
         $callback = function () use ($columns, $payments) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
-            
+
             foreach ($payments as $payment) {
                 $refType = $payment->invoice_id ? 'invoice' : ($payment->order_id ? 'order' : '');
                 $refNo = $payment->invoice ? $payment->invoice->invoice_no : ($payment->order ? $payment->order->order_no : '');
-                
+
                 $party = null;
                 if ($payment->invoice && $payment->invoice->order) {
                     $party = $payment->invoice->order->party;
                 } elseif ($payment->order) {
                     $party = $payment->order->party;
                 }
-                
-                $customerName = $party ? trim($party->firstname . ' ' . $party->lastname) : '';
+
+                $customerName = $party ? trim($party->firstname.' '.$party->lastname) : '';
 
                 $row = [
                     $payment->payment_no,
@@ -174,13 +175,13 @@ class PaymentController extends Controller implements HasMiddleware
                     $payment->transaction_id,
                     $payment->payment_date ? $payment->payment_date->format('Y-m-d H:i:s') : '',
                     $payment->status,
-                    $customerName
+                    $customerName,
                 ];
                 fputcsv($file, $row);
             }
             fclose($file);
         };
 
-        return \Illuminate\Support\Facades\Response::stream($callback, 200, $headers);
+        return Response::stream($callback, 200, $headers);
     }
 }

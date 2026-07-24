@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Modules\Catalog\Models\TaxRate;
+use App\Modules\Core\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -33,7 +33,7 @@ class TaxRateController extends Controller implements HasMiddleware
             $query->where('name', 'like', "%{$search}%");
         }
 
-        $sortBy  = $request->query('sort_by', 'id');
+        $sortBy = $request->query('sort_by', 'id');
         $sortDir = $request->query('sort_dir', 'desc');
 
         if (in_array($sortBy, ['id', 'name', 'rate', 'status'], true)) {
@@ -54,8 +54,8 @@ class TaxRateController extends Controller implements HasMiddleware
         $this->authorize('product-create');
 
         $validated = $request->validate([
-            'name'   => 'required|string|max:255',
-            'rate'   => 'nullable|numeric|min:0|max:100',
+            'name' => 'required|string|max:255',
+            'rate' => 'nullable|numeric|min:0|max:100',
             'status' => 'required|in:active,inactive',
         ]);
 
@@ -65,13 +65,14 @@ class TaxRateController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => 'Tax rate created successfully.',
-            'data'    => $model,
+            'data' => $model,
         ], 201);
     }
 
     public function show(TaxRate $taxRate): JsonResponse
     {
         $this->authorize('product-view');
+
         return response()->json(['data' => $taxRate]);
     }
 
@@ -82,8 +83,8 @@ class TaxRateController extends Controller implements HasMiddleware
         $model = TaxRate::findOrFail($id);
 
         $validated = $request->validate([
-            'name'   => 'sometimes|required|string|max:255',
-            'rate'   => 'sometimes|nullable|numeric|min:0|max:100',
+            'name' => 'sometimes|required|string|max:255',
+            'rate' => 'sometimes|nullable|numeric|min:0|max:100',
             'status' => 'sometimes|required|in:active,inactive',
         ]);
 
@@ -95,7 +96,7 @@ class TaxRateController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => 'Tax rate updated successfully.',
-            'data'    => $model,
+            'data' => $model,
         ]);
     }
 

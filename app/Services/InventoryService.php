@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Modules\Inventory\Models\InventoryAdjustment;
-use App\Modules\Orders\Models\Order;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockReservation;
 use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderReturn;
+use App\Modules\Orders\Models\Shipment;
+use App\Notifications\LowStockNotification;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -38,9 +42,9 @@ class InventoryService
         }
 
         $primary = $stocks->first();
-        $primary->quantity       = $stocks->sum('quantity');
-        $primary->reserved_qty   = $stocks->sum('reserved_qty');
-        $primary->committed_qty  = $stocks->sum('committed_qty');
+        $primary->quantity = $stocks->sum('quantity');
+        $primary->reserved_qty = $stocks->sum('reserved_qty');
+        $primary->committed_qty = $stocks->sum('committed_qty');
         $primary->in_transit_qty = $stocks->sum('in_transit_qty');
         $primary->save();
 
@@ -67,6 +71,7 @@ class InventoryService
             if ($stock->trashed()) {
                 $stock->restore();
             }
+
             return $stock;
         }
 
@@ -76,12 +81,12 @@ class InventoryService
         // Fall back to the legacy product stock value so older records can be reserved
         // even when the dedicated stocks table has not been initialized yet.
         return Stock::create([
-            'warehouse_id'   => $warehouseId,
-            'product_id'     => $productId,
-            'quantity'       => max(0.0, (float) ($product?->total_stock ?? 0)),
-            'reserved_qty'   => 0,
+            'warehouse_id' => $warehouseId,
+            'product_id' => $productId,
+            'quantity' => max(0.0, (float) ($product?->total_stock ?? 0)),
+            'reserved_qty' => 0,
             'dispatched_qty' => 0,
-            'committed_qty'  => 0,
+            'committed_qty' => 0,
             'in_transit_qty' => 0,
         ]);
     }
@@ -90,22 +95,22 @@ class InventoryService
      * Write a StockMovement audit record.
      */
     private function logMovement(
-        int     $productId,
-        int     $warehouseId,
-        float   $quantity,
-        string  $type,
+        int $productId,
+        int $warehouseId,
+        float $quantity,
+        string $type,
         ?string $referenceType = null,
-        ?int    $referenceId   = null
+        ?int $referenceId = null
     ): void {
         StockMovement::create([
-            'product_id'     => $productId,
-            'warehouse_id'   => $warehouseId,
-            'quantity'       => $quantity,
-            'type'           => $type,
+            'product_id' => $productId,
+            'warehouse_id' => $warehouseId,
+            'quantity' => $quantity,
+            'type' => $type,
             'reference_type' => $referenceType,
-            'reference_id'   => $referenceId,
-            'status'         => 'active',
-            'performed_by'   => auth()->id(),
+            'reference_id' => $referenceId,
+            'status' => 'active',
+            'performed_by' => auth()->id(),
         ]);
     }
 
@@ -123,22 +128,25 @@ class InventoryService
      */
     private function syncProductStatus(int $productId): void
     {
-        $product = \App\Modules\Catalog\Models\Product::find($productId);
-        if (!$product) return;
+        $product = Product::find($productId);
+        if (! $product) {
+            return;
+        }
 
         // Never auto-activate a draft product
         if ($product->status === 'draft') {
             $product->saveQuietly();
+
             return;
         }
 
-        $totalAvailable = \App\Modules\Inventory\Models\Stock::where('product_id', $productId)
+        $totalAvailable = Stock::where('product_id', $productId)
             ->get()
-            ->sum(fn($s) => (float) $s->quantity - (float) $s->reserved_qty);
+            ->sum(fn ($s) => (float) $s->quantity - (float) $s->reserved_qty);
 
         $newStatus = $product->status;
 
-        if ($totalAvailable <= 0 && !$product->allow_overselling) {
+        if ($totalAvailable <= 0 && ! $product->allow_overselling) {
             $newStatus = 'out_of_stock';
         } else {
             // If it was out of stock but now has stock or overselling is enabled, activate it
@@ -150,7 +158,7 @@ class InventoryService
         if ($newStatus !== $product->status) {
             $product->status = $newStatus;
         }
-        
+
         $product->saveQuietly();
     }
 
@@ -185,20 +193,21 @@ class InventoryService
                     if ($existing->trashed()) {
                         $existing->restore();
                     }
+
                     continue;
                 }
 
                 Stock::create([
-                    'product_id'     => $productId,
-                    'warehouse_id'   => $warehouseId,
-                    'quantity'       => 0,
-                    'reserved_qty'   => 0,
+                    'product_id' => $productId,
+                    'warehouse_id' => $warehouseId,
+                    'quantity' => 0,
+                    'reserved_qty' => 0,
                     'dispatched_qty' => 0,
-                    'committed_qty'  => 0,
+                    'committed_qty' => 0,
                     'in_transit_qty' => 0,
                 ]);
             }
-        });
+        }, 3);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -212,7 +221,7 @@ class InventoryService
     {
         return DB::transaction(function () use ($productId, $warehouseId) {
             return $this->getStockForUpdate($productId, $warehouseId);
-        });
+        }, 3);
     }
 
     /**
@@ -224,7 +233,7 @@ class InventoryService
             ->where('warehouse_id', $warehouseId)
             ->first();
 
-        if (!$stock) {
+        if (! $stock) {
             return 0.0;
         }
 
@@ -238,7 +247,7 @@ class InventoryService
     /**
      * Hard-set a stock quantity (used by adjustments & imports).
      */
-    public function setStock(int $productId, int $warehouseId, float $newQuantity, float $newDamagedQuantity = null): Stock
+    public function setStock(int $productId, int $warehouseId, float $newQuantity, ?float $newDamagedQuantity = null): Stock
     {
         if ($newQuantity < 0) {
             throw ValidationException::withMessages([
@@ -267,7 +276,7 @@ class InventoryService
             if ($newDamagedQuantity !== null) {
                 $diffDamaged = $newDamagedQuantity - (float) $stock->damaged_qty;
                 $stock->damaged_qty = $newDamagedQuantity;
-                
+
                 if ($diffDamaged != 0) {
                     $this->logMovement(
                         $productId,
@@ -292,18 +301,18 @@ class InventoryService
             $this->syncProductStatus($productId);
 
             return $stock->refresh();
-        });
+        }, 3);
     }
 
     /**
      * Add stock (e.g. purchase received, transfer in).
      */
     public function addStock(
-        int    $productId,
-        int    $warehouseId,
-        float  $quantity,
-        string $referenceType = null,
-        int    $referenceId   = null
+        int $productId,
+        int $warehouseId,
+        float $quantity,
+        ?string $referenceType = null,
+        ?int $referenceId = null
     ): Stock {
         $this->ensurePositive($quantity);
 
@@ -317,18 +326,18 @@ class InventoryService
             $this->syncProductStatus($productId);
 
             return $stock->refresh();
-        });
+        }, 3);
     }
 
     /**
      * Deduct stock (e.g. sale shipped, transfer out).
      */
     public function deductStock(
-        int    $productId,
-        int    $warehouseId,
-        float  $quantity,
-        string $referenceType = null,
-        int    $referenceId   = null
+        int $productId,
+        int $warehouseId,
+        float $quantity,
+        ?string $referenceType = null,
+        ?int $referenceId = null
     ): Stock {
         $this->ensurePositive($quantity);
 
@@ -356,28 +365,40 @@ class InventoryService
 
             $this->syncProductStatus($productId);
 
+            // Dispatch Low Stock Notification if quantity is below threshold (fail-safe)
+            if ($newQty <= 5) {
+                try {
+                    $admins = \App\Modules\Users\Models\User::role(['Admin', 'Super Admin', 'Inventory Manager'])->get();
+                    $productName = $stock->product->name ?? 'Unknown Product';
+                    $warehouseName = clone $stock->warehouse ? clone $stock->warehouse->name : 'Unknown Warehouse';
+                    Notification::send($admins, new LowStockNotification($productName, (int) $newQty, $warehouseName));
+                } catch (\Throwable) {
+                    // Silently fail — notification delivery is non-critical
+                }
+            }
+
             return $stock->refresh();
-        });
+        }, 3);
     }
 
     /**
      * Reserve stock for a confirmed sale order.
      */
     public function reserveStock(
-        int    $productId,
-        int    $warehouseId,
-        float  $quantity,
-        int    $orderId = null
+        int $productId,
+        int $warehouseId,
+        float $quantity,
+        ?int $orderId = null
     ): Stock {
         $this->ensurePositive($quantity);
 
         return DB::transaction(function () use ($productId, $warehouseId, $quantity, $orderId) {
-            $stock        = $this->getStockForUpdate($productId, $warehouseId);
+            $stock = $this->getStockForUpdate($productId, $warehouseId);
             $rawAvailable = (float) $stock->quantity - (float) $stock->reserved_qty;
             $maxReservable = $rawAvailable;
 
             if ($maxReservable < $quantity) {
-                $productName = \App\Modules\Catalog\Models\Product::where('id', $productId)->value('name') ?? "ID: {$productId}";
+                $productName = Product::where('id', $productId)->value('name') ?? "ID: {$productId}";
                 throw ValidationException::withMessages([
                     'quantity' => "Not enough stock for product '{$productName}'. Available: {$maxReservable}, Requested: {$quantity}.",
                 ]);
@@ -388,11 +409,11 @@ class InventoryService
 
             // Write a reservation record
             StockReservation::create([
-                'product_id'   => $productId,
+                'product_id' => $productId,
                 'warehouse_id' => $warehouseId,
-                'order_id'     => $orderId,
-                'quantity'     => $quantity,
-                'status'       => 'active',
+                'order_id' => $orderId,
+                'quantity' => $quantity,
+                'status' => 'active',
             ]);
 
             $this->logMovement($productId, $warehouseId, $quantity, 'reserve', Order::class, $orderId);
@@ -400,18 +421,18 @@ class InventoryService
             $this->syncProductStatus($productId);
 
             return $stock->refresh();
-        });
+        }, 3);
     }
 
     /**
      * Release a reservation.
      */
     public function releaseReservedStock(
-        int    $productId,
-        int    $warehouseId,
-        float  $quantity,
-        int    $orderId = null,
-        string $reason  = 'cancelled'
+        int $productId,
+        int $warehouseId,
+        float $quantity,
+        ?int $orderId = null,
+        string $reason = 'cancelled'
     ): Stock {
         $this->ensurePositive($quantity);
 
@@ -443,18 +464,18 @@ class InventoryService
             $this->syncProductStatus($productId);
 
             return $stock->refresh();
-        });
+        }, 3);
     }
 
     /**
      * Inner work of a transfer.
      */
     private function _executeTransfer(
-        int   $productId,
-        int   $fromWarehouseId,
-        int   $toWarehouseId,
+        int $productId,
+        int $fromWarehouseId,
+        int $toWarehouseId,
         float $quantity,
-        int   $transferId = null
+        ?int $transferId = null
     ): void {
         // Lock both rows in deterministic order to prevent deadlocks
         $ids = [$fromWarehouseId, $toWarehouseId];
@@ -478,7 +499,7 @@ class InventoryService
         $to->save();
 
         $this->logMovement($productId, $fromWarehouseId, $quantity, 'transfer', StockTransfer::class, $transferId);
-        $this->logMovement($productId, $toWarehouseId,   $quantity, 'in',       StockTransfer::class, $transferId);
+        $this->logMovement($productId, $toWarehouseId, $quantity, 'in', StockTransfer::class, $transferId);
         $this->syncProductStatus($productId);
     }
 
@@ -486,17 +507,17 @@ class InventoryService
      * Transfer stock between two warehouses atomically.
      */
     public function transferStock(
-        int   $productId,
-        int   $fromWarehouseId,
-        int   $toWarehouseId,
+        int $productId,
+        int $fromWarehouseId,
+        int $toWarehouseId,
         float $quantity,
-        int   $transferId = null
+        ?int $transferId = null
     ): void {
         $this->ensurePositive($quantity);
 
         DB::transaction(function () use ($productId, $fromWarehouseId, $toWarehouseId, $quantity, $transferId) {
             $this->_executeTransfer($productId, $fromWarehouseId, $toWarehouseId, $quantity, $transferId);
-        });
+        }, 3);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -517,7 +538,7 @@ class InventoryService
                 ]);
             }
 
-            if (!$order->warehouse_id) {
+            if (! $order->warehouse_id) {
                 throw ValidationException::withMessages([
                     'warehouse_id' => 'Order must have a warehouse assigned before confirmation.',
                 ]);
@@ -539,7 +560,7 @@ class InventoryService
             foreach ($order->items as $item) {
                 $this->syncProductStatus((int) $item->product_id);
             }
-        });
+        }, 3);
     }
 
     /**
@@ -547,25 +568,25 @@ class InventoryService
      */
     public function shipOrder(Order $order, ?string $carrierName = null, ?string $trackingNo = null): void
     {
-        DB::transaction(function () use ($order, $carrierName, $trackingNo) {
+        DB::transaction(function () use ($order) {
             $order = Order::with('items')->lockForUpdate()->findOrFail($order->id);
 
-            if (!in_array($order->status, ['confirmed', 'processing'])) {
+            if (! in_array($order->status, ['confirmed', 'processing'])) {
                 throw ValidationException::withMessages([
                     'status' => 'Only confirmed or processing orders can be shipped.',
                 ]);
             }
 
-            if (!$order->warehouse_id) {
+            if (! $order->warehouse_id) {
                 throw ValidationException::withMessages([
                     'warehouse_id' => 'Order must have a warehouse assigned.',
                 ]);
             }
 
             foreach ($order->items as $item) {
-                $productId   = (int) $item->product_id;
+                $productId = (int) $item->product_id;
                 $warehouseId = (int) $order->warehouse_id;
-                $qty         = (float) $item->quantity;
+                $qty = (float) $item->quantity;
 
                 if ($order->type === 'sale') {
                     $stock = $this->getStockForUpdate($productId, $warehouseId);
@@ -577,14 +598,14 @@ class InventoryService
                     }
 
                     $product = Product::find($productId);
-                    if (!$product?->allow_overselling && (float) $stock->quantity < $qty) {
+                    if (! $product?->allow_overselling && (float) $stock->quantity < $qty) {
                         throw ValidationException::withMessages([
                             'quantity' => "Insufficient physical stock for product ID {$productId}.",
                         ]);
                     }
 
-                    $stock->reserved_qty   = (float) $stock->reserved_qty - $qty;
-                    $stock->quantity       = (float) $stock->quantity      - $qty;
+                    $stock->reserved_qty = (float) $stock->reserved_qty - $qty;
+                    $stock->quantity = (float) $stock->quantity - $qty;
                     $stock->dispatched_qty = (float) $stock->dispatched_qty + $qty;
                     $stock->save();
 
@@ -613,7 +634,7 @@ class InventoryService
             foreach ($order->items as $item) {
                 $this->syncProductStatus((int) $item->product_id);
             }
-        });
+        }, 3);
     }
 
     /**
@@ -634,9 +655,9 @@ class InventoryService
                 && $order->type === 'sale'
                 && $order->warehouse_id) {
                 foreach ($order->items as $item) {
-                    $productId   = (int) $item->product_id;
+                    $productId = (int) $item->product_id;
                     $warehouseId = (int) $order->warehouse_id;
-                    $qty         = (float) $item->quantity;
+                    $qty = (float) $item->quantity;
 
                     $stock = $this->getStockForUpdate($productId, $warehouseId);
                     $releaseQty = min($qty, (float) $stock->reserved_qty);
@@ -668,7 +689,7 @@ class InventoryService
             foreach ($order->items as $item) {
                 $this->syncProductStatus((int) $item->product_id);
             }
-        });
+        }, 3);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -692,9 +713,9 @@ class InventoryService
             }
 
             foreach ($adjustment->items as $item) {
-                $productId   = (int) $item->product_id;
+                $productId = (int) $item->product_id;
                 $warehouseId = (int) $adjustment->warehouse_id;
-                $newQty      = (float) $item->new_qty;
+                $newQty = (float) $item->new_qty;
 
                 $stock = $this->getStockForUpdate($productId, $warehouseId);
 
@@ -723,7 +744,7 @@ class InventoryService
             foreach ($adjustment->items as $item) {
                 $this->syncProductStatus((int) $item->product_id);
             }
-        });
+        }, 3);
     }
 
     /**
@@ -751,10 +772,10 @@ class InventoryService
             }
 
             $transfer->update([
-                'status'  => 'sent',
+                'status' => 'sent',
                 'sent_at' => now(),
             ]);
-        });
+        }, 3);
     }
 
     /**
@@ -790,10 +811,10 @@ class InventoryService
             }
 
             $transfer->update([
-                'status'      => 'received',
+                'status' => 'received',
                 'received_at' => now(),
             ]);
-        });
+        }, 3);
     }
 
     /**
@@ -808,6 +829,7 @@ class InventoryService
 
             if ($transfer->status === 'draft') {
                 $transfer->update(['status' => 'cancelled']);
+
                 return;
             }
 
@@ -826,7 +848,7 @@ class InventoryService
             }
 
             $transfer->update(['status' => 'cancelled']);
-        });
+        }, 3);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -841,7 +863,7 @@ class InventoryService
         DB::transaction(function () use ($order) {
             $order = Order::with(['items'])->lockForUpdate()->findOrFail($order->id);
 
-            if (!in_array($order->status, ['confirmed', 'processing', 'cancelled', 'ready_to_ship'], true)) {
+            if (! in_array($order->status, ['confirmed', 'processing', 'cancelled', 'ready_to_ship'], true)) {
                 throw ValidationException::withMessages([
                     'status' => 'Cannot revert this order to pending.',
                 ]);
@@ -851,11 +873,11 @@ class InventoryService
                 && $order->type === 'sale'
                 && $order->warehouse_id) {
                 foreach ($order->items as $item) {
-                    $productId   = (int) $item->product_id;
+                    $productId = (int) $item->product_id;
                     $warehouseId = (int) $order->warehouse_id;
-                    $qty         = (float) $item->quantity;
+                    $qty = (float) $item->quantity;
 
-                    $stock      = $this->getStockForUpdate($productId, $warehouseId);
+                    $stock = $this->getStockForUpdate($productId, $warehouseId);
                     $releaseQty = min($qty, (float) $stock->reserved_qty);
 
                     if ($releaseQty > 0) {
@@ -877,7 +899,7 @@ class InventoryService
             }
 
             $order->update(['status' => 'pending', 'updated_by' => auth()->id()]);
-        });
+        }, 3);
     }
 
     /**
@@ -888,25 +910,25 @@ class InventoryService
         DB::transaction(function () use ($order) {
             $order = Order::with(['items'])->lockForUpdate()->findOrFail($order->id);
 
-            if (!in_array($order->status, array_merge(Order::inTransitStatuses(), ['ready_to_ship']), true)) {
+            if (! in_array($order->status, array_merge(Order::inTransitStatuses(), ['ready_to_ship']), true)) {
                 throw ValidationException::withMessages([
                     'status' => 'Only dispatched or ready to ship orders can be reverted.',
                 ]);
             }
 
             $statusWasPhysical = in_array($order->status, Order::inTransitStatuses(), true);
-            $revertToStatus    = $statusWasPhysical ? 'ready_to_ship' : 'processing';
+            $revertToStatus = $statusWasPhysical ? 'ready_to_ship' : 'processing';
 
             if ($statusWasPhysical) {
                 if ($order->type === 'sale' && $order->warehouse_id) {
                     foreach ($order->items as $item) {
-                        $productId   = (int) $item->product_id;
+                        $productId = (int) $item->product_id;
                         $warehouseId = (int) $order->warehouse_id;
-                        $qty         = (float) $item->quantity;
+                        $qty = (float) $item->quantity;
 
                         $stock = $this->getStockForUpdate($productId, $warehouseId);
-                        $stock->quantity       = (float) $stock->quantity + $qty;
-                        $stock->reserved_qty   = (float) $stock->reserved_qty + $qty;
+                        $stock->quantity = (float) $stock->quantity + $qty;
+                        $stock->reserved_qty = (float) $stock->reserved_qty + $qty;
                         $stock->dispatched_qty = max(0.0, (float) $stock->dispatched_qty - $qty);
                         $stock->save();
 
@@ -920,12 +942,12 @@ class InventoryService
                     }
                 } elseif ($order->type === 'purchase' && $order->warehouse_id) {
                     foreach ($order->items as $item) {
-                        $productId   = (int) $item->product_id;
+                        $productId = (int) $item->product_id;
                         $warehouseId = (int) $order->warehouse_id;
-                        $qty         = (float) $item->quantity;
+                        $qty = (float) $item->quantity;
 
-                        $stock           = $this->getStockForUpdate($productId, $warehouseId);
-                        $stock->quantity  = max(0.0, (float) $stock->quantity - $qty);
+                        $stock = $this->getStockForUpdate($productId, $warehouseId);
+                        $stock->quantity = max(0.0, (float) $stock->quantity - $qty);
                         $stock->save();
 
                         $this->logMovement($productId, $warehouseId, $qty, 'out', Order::class, $order->id);
@@ -950,7 +972,7 @@ class InventoryService
                     ]);
                 }
             }
-        });
+        }, 3);
     }
 
     /**
@@ -970,9 +992,9 @@ class InventoryService
             $order->update(['status' => 'ready_to_ship', 'updated_by' => auth()->id()]);
 
             $shipment = $order->shipments()->first();
-            if (!$shipment) {
-                $shipment = new \App\Modules\Orders\Models\Shipment([
-                    'shipment_no' => \App\Modules\Orders\Models\Shipment::generateShipmentNo(),
+            if (! $shipment) {
+                $shipment = new Shipment([
+                    'shipment_no' => Shipment::generateShipmentNo(),
                     'order_id' => $order->id,
                 ]);
             }
@@ -982,7 +1004,7 @@ class InventoryService
                 'status' => 'pending',
             ]);
             $shipment->save();
-        });
+        }, 3);
     }
 
     /**
@@ -999,16 +1021,16 @@ class InventoryService
                 ]);
             }
 
-            if (!$order->warehouse_id) {
+            if (! $order->warehouse_id) {
                 throw ValidationException::withMessages([
                     'warehouse_id' => 'Order must have a warehouse assigned.',
                 ]);
             }
 
             foreach ($order->items as $item) {
-                $productId   = (int) $item->product_id;
+                $productId = (int) $item->product_id;
                 $warehouseId = (int) $order->warehouse_id;
-                $qty         = (float) $item->quantity;
+                $qty = (float) $item->quantity;
 
                 if ($order->type === 'sale') {
                     $stock = $this->getStockForUpdate($productId, $warehouseId);
@@ -1020,14 +1042,14 @@ class InventoryService
                     }
 
                     $product = Product::find($productId);
-                    if (!$product?->allow_overselling && (float) $stock->quantity < $qty) {
+                    if (! $product?->allow_overselling && (float) $stock->quantity < $qty) {
                         throw ValidationException::withMessages([
                             'quantity' => "Insufficient physical stock for product ID {$productId}.",
                         ]);
                     }
 
-                    $stock->reserved_qty   = (float) $stock->reserved_qty - $qty;
-                    $stock->quantity       = (float) $stock->quantity      - $qty;
+                    $stock->reserved_qty = (float) $stock->reserved_qty - $qty;
+                    $stock->quantity = (float) $stock->quantity - $qty;
                     $stock->dispatched_qty = (float) $stock->dispatched_qty + $qty;
                     $stock->save();
 
@@ -1063,7 +1085,7 @@ class InventoryService
             foreach ($order->items as $item) {
                 $this->syncProductStatus((int) $item->product_id);
             }
-        });
+        }, 3);
     }
 
     /**
@@ -1079,9 +1101,9 @@ class InventoryService
                 $order->loadMissing('items');
 
                 foreach ($order->items as $item) {
-                    $productId   = (int) $item->product_id;
+                    $productId = (int) $item->product_id;
                     $warehouseId = (int) $order->warehouse_id;
-                    $qty         = (float) $item->quantity;
+                    $qty = (float) $item->quantity;
 
                     $stock = $this->getStockForUpdate($productId, $warehouseId);
 
@@ -1100,7 +1122,7 @@ class InventoryService
                     'delivered_by' => auth()->user()?->name ?? 'System',
                 ]);
             }
-        });
+        }, 3);
     }
 
     /**
@@ -1120,9 +1142,9 @@ class InventoryService
             if ($order->type === 'sale' && $order->warehouse_id) {
                 $order->loadMissing('items');
                 foreach ($order->items as $item) {
-                    $productId   = (int) $item->product_id;
+                    $productId = (int) $item->product_id;
                     $warehouseId = (int) $order->warehouse_id;
-                    $qty         = (float) $item->quantity;
+                    $qty = (float) $item->quantity;
 
                     $stock = $this->getStockForUpdate($productId, $warehouseId);
                     $stock->dispatched_qty = (float) $stock->dispatched_qty + $qty;
@@ -1141,7 +1163,7 @@ class InventoryService
                     'delivered_at' => null,
                 ]);
             }
-        });
+        }, 3);
     }
 
     /**
@@ -1152,7 +1174,7 @@ class InventoryService
         DB::transaction(function () use ($order) {
             $order = Order::with(['items'])->lockForUpdate()->findOrFail($order->id);
 
-            if (!in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
+            if (! in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
                 throw ValidationException::withMessages([
                     'status' => 'Only delivered or dispatched orders can be marked as returned.',
                 ]);
@@ -1160,9 +1182,9 @@ class InventoryService
 
             if ($order->type === 'sale' && $order->warehouse_id) {
                 foreach ($order->items as $item) {
-                    $productId   = (int) $item->product_id;
+                    $productId = (int) $item->product_id;
                     $warehouseId = (int) $order->warehouse_id;
-                    $qty         = (float) $item->quantity;
+                    $qty = (float) $item->quantity;
 
                     $stock = $this->getStockForUpdate($productId, $warehouseId);
                     $stock->quantity = (float) $stock->quantity + $qty;
@@ -1189,7 +1211,7 @@ class InventoryService
                     'status' => 'returned',
                 ]);
             }
-        });
+        }, 3);
     }
 
     /**
@@ -1200,25 +1222,25 @@ class InventoryService
         int $warehouseId,
         float $restockQty,
         float $damageQty,
-        int $orderReturnId = null
+        ?int $orderReturnId = null
     ): void {
         DB::transaction(function () use ($productId, $warehouseId, $restockQty, $damageQty, $orderReturnId) {
             if ($restockQty > 0 || $damageQty > 0) {
                 $stock = $this->getStockForUpdate($productId, $warehouseId);
-                
+
                 if ($restockQty > 0) {
                     $stock->quantity = (float) $stock->quantity + $restockQty;
-                    $this->logMovement($productId, $warehouseId, $restockQty, 'in', \App\Modules\Orders\Models\OrderReturn::class, $orderReturnId);
+                    $this->logMovement($productId, $warehouseId, $restockQty, 'in', OrderReturn::class, $orderReturnId);
                 }
-                
+
                 if ($damageQty > 0) {
                     $stock->damaged_qty = (float) $stock->damaged_qty + $damageQty;
-                    $this->logMovement($productId, $warehouseId, $damageQty, 'damage', \App\Modules\Orders\Models\OrderReturn::class, $orderReturnId);
+                    $this->logMovement($productId, $warehouseId, $damageQty, 'damage', OrderReturn::class, $orderReturnId);
                 }
-                
+
                 $stock->save();
                 $this->syncProductStatus($productId);
             }
-        });
+        }, 3);
     }
 }

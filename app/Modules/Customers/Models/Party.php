@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Customers\Models;
 
 use App\Modules\Orders\Models\Order;
-
-
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Party extends Model
 {
@@ -27,7 +25,7 @@ class Party extends Model
         'email',
         'phone',
         'alternatemobile',
-        'relative_mobile',
+        'relative_name',
         'relative_phone',
         'source',
         'category',
@@ -60,24 +58,24 @@ class Party extends Model
     ];
 
     protected $casts = [
-        'credit_limit'        => 'decimal:2',
+        'credit_limit' => 'decimal:2',
         'outstanding_balance' => 'decimal:2',
-        'land_area'           => 'decimal:2',
-        'credit_days'         => 'integer',
-        'orders_count'        => 'integer',
-        'is_active'           => 'boolean',
-        'is_blacklisted'      => 'boolean',
-        'kyc_completed'       => 'boolean',
-        'crops'               => 'array',
-        'irrigation_type'     => 'array',
-        'source'              => 'array',
-        'tags'                => 'array',
-        'credit_valid_till'   => 'date',
-        'first_purchase_at'   => 'date',
-        'last_purchase_at'    => 'date',
-        'kyc_verified_at'     => 'datetime',
-        'created_at'          => 'datetime',
-        'updated_at'          => 'datetime',
+        'land_area' => 'decimal:2',
+        'credit_days' => 'integer',
+        'orders_count' => 'integer',
+        'is_active' => 'boolean',
+        'is_blacklisted' => 'boolean',
+        'kyc_completed' => 'boolean',
+        'crops' => 'array',
+        'irrigation_type' => 'array',
+        'source' => 'array',
+        'tags' => 'array',
+        'credit_valid_till' => 'date',
+        'first_purchase_at' => 'date',
+        'last_purchase_at' => 'date',
+        'kyc_verified_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     protected $appends = ['name'];

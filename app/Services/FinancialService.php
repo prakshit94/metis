@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Modules\Orders\Models\CreditNote;
 use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\OrderReturn;
+use App\Notifications\FinancialAlertNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Modules\Orders\Models\Payment;
 use App\Modules\Orders\Models\Refund;
-use App\Modules\Orders\Models\CreditNote;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Str;
 
 class FinancialService
 {
@@ -20,22 +22,23 @@ class FinancialService
      */
     public function processPayment(Invoice $invoice, float $amount, string $method, ?string $transactionId = null, ?string $paymentDate = null): Payment
     {
-        if ($amount <= 0) {
-            throw ValidationException::withMessages(['amount' => 'Payment amount must be greater than zero.']);
-        }
-
-        if ($amount > $invoice->due_amount) {
-            throw ValidationException::withMessages(['amount' => 'Payment amount cannot exceed the due amount.']);
-        }
-
         return DB::transaction(function () use ($invoice, $amount, $method, $transactionId, $paymentDate) {
+            $invoice = Invoice::lockForUpdate()->findOrFail($invoice->id);
+
+            if ($amount <= 0) {
+                throw ValidationException::withMessages(['amount' => 'Payment amount must be greater than zero.']);
+            }
+
+            if ($amount > $invoice->due_amount) {
+                throw ValidationException::withMessages(['amount' => 'Payment amount cannot exceed the due amount.']);
+            }
             $order = $invoice->order;
             $baseNo = str_replace('ORD-', 'PAY-', $order->order_no);
             if ($baseNo === $order->order_no) {
-                $baseNo = 'PAY-' . $order->order_no;
+                $baseNo = 'PAY-'.$order->order_no;
             }
             $count = Payment::where('order_id', $order->id)->count();
-            $paymentNo = $count > 0 ? $baseNo . '-' . ($count + 1) : $baseNo;
+            $paymentNo = $count > 0 ? $baseNo.'-'.($count + 1) : $baseNo;
 
             $payment = Payment::create([
                 'payment_no' => $paymentNo,
@@ -44,12 +47,12 @@ class FinancialService
                 'amount' => $amount,
                 'payment_method' => $method,
                 'transaction_id' => $transactionId,
-                'payment_date' => $paymentDate ? \Carbon\Carbon::parse($paymentDate) : now(),
+                'payment_date' => $paymentDate ? Carbon::parse($paymentDate) : now(),
                 'status' => 'completed',
             ]);
 
             return $payment;
-        });
+        }, 3);
     }
 
     /**
@@ -57,20 +60,21 @@ class FinancialService
      */
     public function processRefund(OrderReturn $return, float $amount, string $method, ?string $transactionId = null): Refund
     {
-        if ($amount <= 0) {
-            throw ValidationException::withMessages(['amount' => 'Refund amount must be greater than zero.']);
-        }
-
         return DB::transaction(function () use ($return, $amount, $method, $transactionId) {
+            $return = OrderReturn::lockForUpdate()->findOrFail($return->id);
+
+            if ($amount <= 0) {
+                throw ValidationException::withMessages(['amount' => 'Refund amount must be greater than zero.']);
+            }
             $order = $return->order;
             $invoice = $order->invoice;
 
             $baseNo = str_replace('ORD-', 'REF-', $order->order_no);
             if ($baseNo === $order->order_no) {
-                $baseNo = 'REF-' . $order->order_no;
+                $baseNo = 'REF-'.$order->order_no;
             }
             $count = Refund::where('order_id', $order->id)->count();
-            $refundNo = $count > 0 ? $baseNo . '-' . ($count + 1) : $baseNo;
+            $refundNo = $count > 0 ? $baseNo.'-'.($count + 1) : $baseNo;
 
             $refund = Refund::create([
                 'refund_no' => $refundNo,
@@ -83,17 +87,25 @@ class FinancialService
                 'status' => 'completed',
             ]);
 
-            $return->refund_amount = (float)$return->refund_amount + $amount;
-            
+            $return->refund_amount = (float) $return->refund_amount + $amount;
+
             // Basic financial status logic
             if ($return->refund_amount > 0) {
                 $return->financial_status = 'partial_refund';
             }
-            
+
             $return->save();
 
+            // Dispatch Notification (fail-safe: never break core flow)
+            try {
+                $admins = \App\Modules\Users\Models\User::role(['Admin', 'Super Admin', 'Finance Admin'])->get();
+                Notification::send($admins, new FinancialAlertNotification('refund', (float) $amount, $refund->refund_no));
+            } catch (\Throwable) {
+                // Silently fail — notification delivery is non-critical
+            }
+
             return $refund;
-        });
+        }, 3);
     }
 
     /**
@@ -101,11 +113,12 @@ class FinancialService
      */
     public function issueCreditNote(OrderReturn $return, float $amount): CreditNote
     {
-        if ($amount <= 0) {
-            throw ValidationException::withMessages(['amount' => 'Credit Note amount must be greater than zero.']);
-        }
-
         return DB::transaction(function () use ($return, $amount) {
+            $return = OrderReturn::lockForUpdate()->findOrFail($return->id);
+
+            if ($amount <= 0) {
+                throw ValidationException::withMessages(['amount' => 'Credit Note amount must be greater than zero.']);
+            }
             $order = $return->order;
             $invoice = $order->invoice;
 
@@ -118,11 +131,11 @@ class FinancialService
                 'status' => 'active',
             ]);
 
-            $return->credit_note_amount = (float)$return->credit_note_amount + $amount;
+            $return->credit_note_amount = (float) $return->credit_note_amount + $amount;
             $return->financial_status = 'credited';
             $return->save();
 
             return $creditNote;
-        });
+        }, 3);
     }
 }

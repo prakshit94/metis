@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Controllers;
 
+use App\Modules\Catalog\Models\Product;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Coupon;
 use App\Modules\Orders\Models\Offer;
-use App\Modules\Catalog\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -38,7 +38,8 @@ class PromotionsController extends Controller implements HasMiddleware
 
     public function offers()
     {
-        $products = \App\Modules\Catalog\Models\Product::where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku']);
+        $products = Product::where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku']);
+
         return view('promotions.offers', compact('products'));
     }
 
@@ -56,8 +57,8 @@ class PromotionsController extends Controller implements HasMiddleware
             $query->where('status', $request->status);
         }
 
-        $perPage  = min((int) $request->input('per_page', 15), 100);
-        $coupons  = $query->paginate($perPage);
+        $perPage = min((int) $request->input('per_page', 15), 100);
+        $coupons = $query->paginate($perPage);
 
         $now = now();
         $stats = [
@@ -84,21 +85,32 @@ class PromotionsController extends Controller implements HasMiddleware
         }
 
         $data = $request->validate([
-            'code'        => 'required|string|max:50|unique:coupons,code',
-            'type'        => 'required|in:percentage,fixed',
-            'value'       => 'required|numeric|min:0',
-            'min_spend'   => 'nullable|numeric|min:0',
-            'max_discount'=> 'nullable|numeric|min:0',
+            'code' => 'required|string|max:50|unique:coupons,code',
+            'type' => 'required|in:percentage,fixed,free_shipping,free_product',
+            'value' => 'required_if:type,percentage,fixed|numeric|min:0',
+            'min_spend' => 'nullable|numeric|min:0',
+            'max_discount' => 'nullable|numeric|min:0',
+            'applicable_categories' => 'nullable|array',
+            'applicable_products' => 'nullable|array',
+            'free_product_id' => 'required_if:type,free_product|nullable|exists:products,id',
+            'free_qty' => 'required_if:type,free_product|nullable|integer|min:1',
             'expiry_date' => 'nullable|date',
             'usage_limit' => 'nullable|integer|min:0',
-            'is_active'   => 'boolean',
+            'is_active' => 'boolean',
         ]);
 
-        $data['code']       = strtoupper(trim($data['code']));
-        $data['status']     = ($data['is_active'] ?? true) ? 'active' : 'inactive';
+        if (isset($data['applicable_categories'])) {
+            $data['applicable_categories'] = json_encode($data['applicable_categories']);
+        }
+        if (isset($data['applicable_products'])) {
+            $data['applicable_products'] = json_encode($data['applicable_products']);
+        }
+
+        $data['code'] = strtoupper(trim($data['code']));
+        $data['status'] = ($data['is_active'] ?? true) ? 'active' : 'inactive';
         $data['created_by'] = auth()->id();
         $data['updated_by'] = auth()->id();
-        $coupon             = Coupon::create($data);
+        $coupon = Coupon::create($data);
 
         return response()->json(['message' => 'Coupon created.', 'data' => $coupon], 201);
     }
@@ -110,15 +122,26 @@ class PromotionsController extends Controller implements HasMiddleware
         }
 
         $data = $request->validate([
-            'code'        => 'sometimes|required|string|max:50|unique:coupons,code,' . $coupon->id,
-            'type'        => 'sometimes|required|in:percentage,fixed',
-            'value'       => 'sometimes|required|numeric|min:0',
-            'min_spend'   => 'nullable|numeric|min:0',
-            'max_discount'=> 'nullable|numeric|min:0',
+            'code' => 'sometimes|required|string|max:50|unique:coupons,code,'.$coupon->id,
+            'type' => 'sometimes|required|in:percentage,fixed,free_shipping,free_product',
+            'value' => 'sometimes|numeric|min:0',
+            'min_spend' => 'nullable|numeric|min:0',
+            'max_discount' => 'nullable|numeric|min:0',
+            'applicable_categories' => 'nullable|array',
+            'applicable_products' => 'nullable|array',
+            'free_product_id' => 'nullable|exists:products,id',
+            'free_qty' => 'nullable|integer|min:1',
             'expiry_date' => 'nullable|date',
             'usage_limit' => 'nullable|integer|min:0',
-            'is_active'   => 'boolean',
+            'is_active' => 'boolean',
         ]);
+
+        if (array_key_exists('applicable_categories', $data)) {
+            $data['applicable_categories'] = $data['applicable_categories'] ? json_encode($data['applicable_categories']) : null;
+        }
+        if (array_key_exists('applicable_products', $data)) {
+            $data['applicable_products'] = $data['applicable_products'] ? json_encode($data['applicable_products']) : null;
+        }
 
         if (isset($data['code'])) {
             $data['code'] = strtoupper(trim($data['code']));
@@ -136,15 +159,17 @@ class PromotionsController extends Controller implements HasMiddleware
     public function couponsDestroy(Coupon $coupon): JsonResponse
     {
         $coupon->delete();
+
         return response()->json(['message' => 'Coupon deleted.']);
     }
 
     public function couponsToggle(Coupon $coupon): JsonResponse
     {
         $coupon->update([
-            'is_active' => !$coupon->is_active,
-            'status'    => $coupon->is_active ? 'inactive' : 'active',
+            'is_active' => ! $coupon->is_active,
+            'status' => $coupon->is_active ? 'inactive' : 'active',
         ]);
+
         return response()->json(['message' => 'Coupon status toggled.', 'data' => $coupon->fresh()]);
     }
 
@@ -152,11 +177,11 @@ class PromotionsController extends Controller implements HasMiddleware
     {
         $data = $request->validate([
             'action' => 'required|in:delete,activate,deactivate',
-            'ids'    => 'required|array|min:1',
-            'ids.*'  => 'integer|exists:coupons,id',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:coupons,id',
         ]);
 
-        $ids    = $data['ids'];
+        $ids = $data['ids'];
         $action = $data['action'];
 
         if ($action === 'delete') {
@@ -167,7 +192,7 @@ class PromotionsController extends Controller implements HasMiddleware
             Coupon::whereIn('id', $ids)->update(['is_active' => false, 'status' => 'inactive']);
         }
 
-        return response()->json(['message' => count($ids) . ' coupon(s) ' . $action . 'd successfully.']);
+        return response()->json(['message' => count($ids).' coupon(s) '.$action.'d successfully.']);
     }
 
     // ─── Offers JSON API ──────────────────────────────────────────────────────
@@ -192,7 +217,7 @@ class PromotionsController extends Controller implements HasMiddleware
         }
 
         $perPage = min((int) $request->input('per_page', 15), 100);
-        $offers  = $query->paginate($perPage);
+        $offers = $query->paginate($perPage);
 
         return response()->json(['data' => $offers]);
     }
@@ -204,25 +229,31 @@ class PromotionsController extends Controller implements HasMiddleware
         }
 
         $data = $request->validate([
-            'name'          => 'required|string|max:255',
-            'type'          => 'required|in:order_discount,bogo',
-            'discount_type' => 'required_if:type,order_discount|nullable|in:percentage,fixed',
-            'value'         => 'required_if:type,order_discount|nullable|numeric|min:0',
-            'min_spend'     => 'nullable|numeric|min:0',
-            'max_discount'  => 'nullable|numeric|min:0',
-            'product_ids'   => 'nullable|array',
+            'name' => 'required|string|max:255',
+            'type' => 'required|in:order_discount,bogo,category_discount,free_product',
+            'discount_type' => 'required_if:type,order_discount,category_discount|nullable|in:percentage,fixed',
+            'value' => 'required_if:type,order_discount,category_discount|nullable|numeric|min:0',
+            'min_spend' => 'nullable|numeric|min:0',
+            'max_discount' => 'nullable|numeric|min:0',
+            'applicable_categories' => 'required_if:type,category_discount|nullable|array',
+            'product_ids' => 'nullable|array',
             'product_ids.*' => 'exists:products,id',
-            'buy_qty'       => 'required_if:type,bogo|nullable|integer|min:1',
-            'get_qty'       => 'required_if:type,bogo|nullable|integer|min:1',
-            'starts_at'     => 'nullable|date',
-            'ends_at'       => 'nullable|date|after_or_equal:starts_at',
-            'priority'      => 'nullable|integer|min:0',
-            'is_active'     => 'boolean',
+            'product_id' => 'required_if:type,free_product|nullable|exists:products,id',
+            'buy_qty' => 'required_if:type,bogo|nullable|integer|min:1',
+            'get_qty' => 'required_if:type,bogo,free_product|nullable|integer|min:1',
+            'starts_at' => 'nullable|date',
+            'ends_at' => 'nullable|date|after_or_equal:starts_at',
+            'priority' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
         ]);
 
-        $productIds = $request->input('product_ids', []);
+        if (isset($data['applicable_categories'])) {
+            $data['applicable_categories'] = json_encode($data['applicable_categories']);
+        }
         
-        if (empty($productIds)) {
+        $productIds = $request->input('product_ids', []);
+
+        if (empty($productIds) || $data['type'] === 'free_product') {
             // Create a single global offer
             $offerData = $data;
             unset($offerData['product_ids']);
@@ -230,6 +261,7 @@ class PromotionsController extends Controller implements HasMiddleware
             $offerData['created_by'] = auth()->id();
             $offerData['updated_by'] = auth()->id();
             $offer = Offer::create($offerData);
+
             return response()->json(['message' => 'Global offer created.', 'data' => $offer->load('product')], 201);
         }
 
@@ -254,22 +286,27 @@ class PromotionsController extends Controller implements HasMiddleware
         }
 
         $data = $request->validate([
-            'name'          => 'sometimes|required|string|max:255',
-            'type'          => 'sometimes|required|in:order_discount,bogo',
-            'discount_type' => 'required_if:type,order_discount|nullable|in:percentage,fixed',
-            'value'         => 'required_if:type,order_discount|nullable|numeric|min:0',
-            'min_spend'     => 'nullable|numeric|min:0',
-            'max_discount'  => 'nullable|numeric|min:0',
-            'product_id'    => 'nullable|exists:products,id',
-            'buy_qty'       => 'required_if:type,bogo|nullable|integer|min:1',
-            'get_qty'       => 'required_if:type,bogo|nullable|integer|min:1',
-            'starts_at'     => 'nullable|date',
-            'ends_at'       => 'nullable|date',
-            'priority'      => 'nullable|integer|min:0',
-            'is_active'     => 'boolean',
+            'name' => 'sometimes|required|string|max:255',
+            'type' => 'sometimes|required|in:order_discount,bogo,category_discount,free_product',
+            'discount_type' => 'required_if:type,order_discount,category_discount|nullable|in:percentage,fixed',
+            'value' => 'required_if:type,order_discount,category_discount|nullable|numeric|min:0',
+            'min_spend' => 'nullable|numeric|min:0',
+            'max_discount' => 'nullable|numeric|min:0',
+            'applicable_categories' => 'nullable|array',
+            'product_id' => 'nullable|exists:products,id',
+            'buy_qty' => 'required_if:type,bogo|nullable|integer|min:1',
+            'get_qty' => 'required_if:type,bogo,free_product|nullable|integer|min:1',
+            'starts_at' => 'nullable|date',
+            'ends_at' => 'nullable|date',
+            'priority' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
         ]);
 
-        $data["updated_by"] = auth()->id();
+        if (array_key_exists('applicable_categories', $data)) {
+            $data['applicable_categories'] = $data['applicable_categories'] ? json_encode($data['applicable_categories']) : null;
+        }
+
+        $data['updated_by'] = auth()->id();
         $offer->update($data);
 
         return response()->json(['message' => 'Offer updated.', 'data' => $offer->fresh('product')]);
@@ -278,12 +315,14 @@ class PromotionsController extends Controller implements HasMiddleware
     public function offersDestroy(Offer $offer): JsonResponse
     {
         $offer->delete();
+
         return response()->json(['message' => 'Offer deleted.']);
     }
 
     public function offersToggle(Offer $offer): JsonResponse
     {
-        $offer->update(['is_active' => !$offer->is_active]);
+        $offer->update(['is_active' => ! $offer->is_active]);
+
         return response()->json(['message' => 'Offer status toggled.', 'data' => $offer->fresh()]);
     }
 
@@ -291,11 +330,11 @@ class PromotionsController extends Controller implements HasMiddleware
     {
         $data = $request->validate([
             'action' => 'required|in:delete,activate,deactivate',
-            'ids'    => 'required|array|min:1',
-            'ids.*'  => 'integer|exists:offers,id',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:offers,id',
         ]);
 
-        $ids    = $data['ids'];
+        $ids = $data['ids'];
         $action = $data['action'];
 
         if ($action === 'delete') {
@@ -306,6 +345,6 @@ class PromotionsController extends Controller implements HasMiddleware
             Offer::whereIn('id', $ids)->update(['is_active' => false]);
         }
 
-        return response()->json(['message' => count($ids) . ' offer(s) ' . $action . 'd successfully.']);
+        return response()->json(['message' => count($ids).' offer(s) '.$action.'d successfully.']);
     }
 }

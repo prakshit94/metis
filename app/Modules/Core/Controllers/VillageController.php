@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\Core\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
-use App\Modules\Core\Models\Village;
 use App\Modules\Catalog\Models\Service;
+use App\Modules\Core\Models\Village;
 use App\Modules\Core\Models\VillageServiceMapping;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\LazyCollection;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\LazyCollection;
 
 class VillageController extends Controller implements HasMiddleware
 {
@@ -33,12 +33,12 @@ class VillageController extends Controller implements HasMiddleware
     public function index(Request $request): JsonResponse
     {
         $sortMap = [
-            'id'            => 'id',
-            'village_name'  => 'village_name',
-            'pincode'       => 'pincode',
-            'taluka_name'   => 'taluka_name',
+            'id' => 'id',
+            'village_name' => 'village_name',
+            'pincode' => 'pincode',
+            'taluka_name' => 'taluka_name',
             'district_name' => 'district_name',
-            'state_name'    => 'state_name',
+            'state_name' => 'state_name',
         ];
 
         $sortBy = $sortMap[$request->input('sort_by', 'id')] ?? 'id';
@@ -51,36 +51,36 @@ class VillageController extends Controller implements HasMiddleware
             $search = trim((string) $request->input('search'));
             $query->where(function ($q) use ($search): void {
                 $q->where('village_name', 'like', "%{$search}%")
-                  ->orWhere('pincode', 'like', "{$search}%")
-                  ->orWhere('taluka_name', 'like', "%{$search}%")
-                  ->orWhere('district_name', 'like', "%{$search}%");
+                    ->orWhere('pincode', 'like', "{$search}%")
+                    ->orWhere('taluka_name', 'like', "%{$search}%")
+                    ->orWhere('district_name', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('state')) {
             $states = array_filter(array_map('trim', explode(',', (string) $request->input('state'))));
-            if (!empty($states)) {
+            if (! empty($states)) {
                 $query->whereIn('state_name', $states);
             }
         }
 
         if ($request->filled('district')) {
             $districts = array_filter(array_map('trim', explode(',', (string) $request->input('district'))));
-            if (!empty($districts)) {
+            if (! empty($districts)) {
                 $query->whereIn('district_name', $districts);
             }
         }
 
         if ($request->filled('taluka')) {
             $talukas = array_filter(array_map('trim', explode(',', (string) $request->input('taluka'))));
-            if (!empty($talukas)) {
+            if (! empty($talukas)) {
                 $query->whereIn('taluka_name', $talukas);
             }
         }
 
         if ($request->filled('village')) {
             $villageNames = array_filter(array_map('trim', explode(',', (string) $request->input('village'))));
-            if (!empty($villageNames)) {
+            if (! empty($villageNames)) {
                 $query->whereIn('village_name', $villageNames);
             }
         }
@@ -104,53 +104,53 @@ class VillageController extends Controller implements HasMiddleware
         // Stats calculation
         $statsQuery = clone $query;
         $counts = $statsQuery->select([
-            DB::raw("COUNT(*) as total"),
-            DB::raw("COUNT(DISTINCT pincode) as pincodes"),
-            DB::raw("COUNT(DISTINCT district_name) as districts_count"),
+            DB::raw('COUNT(*) as total'),
+            DB::raw('COUNT(DISTINCT pincode) as pincodes'),
+            DB::raw('COUNT(DISTINCT district_name) as districts_count'),
         ])->toBase()->first();
 
         $stats = [
-            'total'           => (int) ($counts->total ?? 0),
-            'pincodes'        => (int) ($counts->pincodes ?? 0),
+            'total' => (int) ($counts->total ?? 0),
+            'pincodes' => (int) ($counts->pincodes ?? 0),
             'districts_count' => (int) ($counts->districts_count ?? 0),
-            'services'        => Service::active()->count(),
+            'services' => Service::active()->count(),
         ];
 
         $villages = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
 
         // Include filters lists with caching
-        $statesList = \Illuminate\Support\Facades\Cache::remember('geo_states', 3600, function () {
+        $statesList = Cache::remember('geo_states', 3600, function () {
             return Village::distinct()->pluck('state_name')->filter()->sort()->values();
         });
 
-        $districtsList = $request->filled('state') ? \Illuminate\Support\Facades\Cache::remember('geo_districts_' . md5($request->state), 3600, function () use ($request) {
+        $districtsList = $request->filled('state') ? Cache::remember('geo_districts_'.md5($request->state), 3600, function () use ($request) {
             return Village::whereIn('state_name', array_map('trim', explode(',', $request->state)))
                 ->distinct()->pluck('district_name')->filter()->sort()->values();
         }) : [];
 
-        $talukasList = $request->filled('district') ? \Illuminate\Support\Facades\Cache::remember('geo_talukas_' . md5($request->state . '_' . $request->district), 3600, function () use ($request) {
+        $talukasList = $request->filled('district') ? Cache::remember('geo_talukas_'.md5($request->state.'_'.$request->district), 3600, function () use ($request) {
             return Village::when($request->filled('state'), function ($q) use ($request) {
                 $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
             })->whereIn('district_name', array_map('trim', explode(',', $request->district)))
-            ->distinct()->pluck('taluka_name')->filter()->sort()->values();
+                ->distinct()->pluck('taluka_name')->filter()->sort()->values();
         }) : [];
 
-        $villagesList = $request->filled('taluka') ? \Illuminate\Support\Facades\Cache::remember('geo_villages_' . md5($request->state . '_' . $request->district . '_' . $request->taluka), 3600, function () use ($request) {
+        $villagesList = $request->filled('taluka') ? Cache::remember('geo_villages_'.md5($request->state.'_'.$request->district.'_'.$request->taluka), 3600, function () use ($request) {
             return Village::when($request->filled('state'), function ($q) use ($request) {
                 $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
             })->when($request->filled('district'), function ($q) use ($request) {
                 $q->whereIn('district_name', array_map('trim', explode(',', $request->district)));
             })->whereIn('taluka_name', array_map('trim', explode(',', $request->taluka)))
-            ->distinct()->pluck('village_name')->filter()->sort()->values();
+                ->distinct()->pluck('village_name')->filter()->sort()->values();
         }) : [];
 
         return response()->json([
             'pagination' => $villages,
-            'stats'      => $stats,
-            'states'     => $statesList,
-            'districts'  => $districtsList,
-            'talukas'    => $talukasList,
-            'villages'   => $villagesList,
+            'stats' => $stats,
+            'states' => $statesList,
+            'districts' => $districtsList,
+            'talukas' => $talukasList,
+            'villages' => $villagesList,
         ]);
     }
 
@@ -160,19 +160,19 @@ class VillageController extends Controller implements HasMiddleware
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'village_name'  => ['required', 'string', 'max:255'],
-            'pincode'       => ['required', 'string', 'max:10'],
-            'post_so_name'  => ['nullable', 'string', 'max:255'],
-            'taluka_name'   => ['nullable', 'string', 'max:255'],
+            'village_name' => ['required', 'string', 'max:255'],
+            'pincode' => ['required', 'string', 'max:10'],
+            'post_so_name' => ['nullable', 'string', 'max:255'],
+            'taluka_name' => ['nullable', 'string', 'max:255'],
             'district_name' => ['nullable', 'string', 'max:255'],
-            'state_name'    => ['nullable', 'string', 'max:255'],
+            'state_name' => ['nullable', 'string', 'max:255'],
         ]);
 
         $village = Village::create($validated);
 
         return response()->json([
             'message' => "Village [{$village->village_name}] created successfully.",
-            'data'    => $village,
+            'data' => $village,
         ], 201);
     }
 
@@ -192,12 +192,12 @@ class VillageController extends Controller implements HasMiddleware
     public function update(Request $request, Village $village): JsonResponse
     {
         $validated = $request->validate([
-            'village_name'  => ['required', 'string', 'max:255'],
-            'pincode'       => ['required', 'string', 'max:10'],
-            'post_so_name'  => ['nullable', 'string', 'max:255'],
-            'taluka_name'   => ['nullable', 'string', 'max:255'],
+            'village_name' => ['required', 'string', 'max:255'],
+            'pincode' => ['required', 'string', 'max:10'],
+            'post_so_name' => ['nullable', 'string', 'max:255'],
+            'taluka_name' => ['nullable', 'string', 'max:255'],
             'district_name' => ['nullable', 'string', 'max:255'],
-            'state_name'    => ['nullable', 'string', 'max:255'],
+            'state_name' => ['nullable', 'string', 'max:255'],
         ]);
 
         $village->update($validated);
@@ -205,15 +205,15 @@ class VillageController extends Controller implements HasMiddleware
         if ($request->has('services')) {
             $services = $request->input('services'); // e.g. [service_id => [is_available => 1, priority => 10, remarks => '...']]
             foreach ($services as $serviceId => $data) {
-                if (!empty($data['is_available'])) {
+                if (! empty($data['is_available'])) {
                     VillageServiceMapping::updateOrCreate(
                         ['village_id' => $village->id, 'service_id' => (int) $serviceId],
                         [
-                            'is_available'          => true,
-                            'priority'              => (int) ($data['priority'] ?? 0),
-                            'remarks'               => $data['remarks'] ?? null,
+                            'is_available' => true,
+                            'priority' => (int) ($data['priority'] ?? 0),
+                            'remarks' => $data['remarks'] ?? null,
                             'serviceable_from_date' => $data['serviceable_from_date'] ?? null,
-                            'serviceable_to_date'   => $data['serviceable_to_date'] ?? null,
+                            'serviceable_to_date' => $data['serviceable_to_date'] ?? null,
                         ]
                     );
                 } else {
@@ -226,7 +226,7 @@ class VillageController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "Village [{$village->village_name}] updated successfully.",
-            'data'    => $village->load(['services', 'mappings.service']),
+            'data' => $village->load(['services', 'mappings.service']),
         ]);
     }
 
@@ -249,11 +249,11 @@ class VillageController extends Controller implements HasMiddleware
     public function bulkAction(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'action'     => ['required', 'string', 'in:delete,service-update,restore,force-delete'],
-            'ids'        => ['required', 'array', 'min:1'],
-            'ids.*'      => ['integer', 'exists:villages,id'],
+            'action' => ['required', 'string', 'in:delete,service-update,restore,force-delete'],
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:villages,id'],
             'service_id' => ['required_if:action,service-update', 'nullable', 'integer', 'exists:services,id'],
-            'status'     => ['required_if:action,service-update', 'nullable', 'string', 'in:available,unavailable'],
+            'status' => ['required_if:action,service-update', 'nullable', 'string', 'in:available,unavailable'],
         ]);
 
         $ids = $validated['ids'];
@@ -262,17 +262,19 @@ class VillageController extends Controller implements HasMiddleware
         if ($action === 'delete') {
             abort_unless($request->user()?->can('village-delete'), 403);
             Village::whereIn('id', $ids)->delete();
+
             return response()->json([
-                'message' => count($ids) . ' village(s) deleted successfully.',
+                'message' => count($ids).' village(s) deleted successfully.',
                 'deleted' => $ids,
             ]);
         }
-        
+
         if ($action === 'restore') {
             abort_unless($request->user()?->can('village-restore'), 403);
             Village::withTrashed()->whereIn('id', $ids)->restore();
+
             return response()->json([
-                'message' => count($ids) . ' village(s) restored successfully.',
+                'message' => count($ids).' village(s) restored successfully.',
                 'restored' => $ids,
             ]);
         }
@@ -280,8 +282,9 @@ class VillageController extends Controller implements HasMiddleware
         if ($action === 'force-delete') {
             abort_unless($request->user()?->can('village-permanent-delete'), 403);
             Village::withTrashed()->whereIn('id', $ids)->forceDelete();
+
             return response()->json([
-                'message' => count($ids) . ' village(s) permanently deleted.',
+                'message' => count($ids).' village(s) permanently deleted.',
                 'deleted' => $ids,
             ]);
         }
@@ -293,15 +296,15 @@ class VillageController extends Controller implements HasMiddleware
             $mappings = [];
             foreach ($ids as $id) {
                 $mappings[] = [
-                    'village_id'            => $id,
-                    'service_id'            => $serviceId,
-                    'is_available'          => $isAvailable,
+                    'village_id' => $id,
+                    'service_id' => $serviceId,
+                    'is_available' => $isAvailable,
                     'serviceable_from_date' => null,
-                    'serviceable_to_date'   => null,
-                    'remarks'               => 'Bulk updated via admin',
-                    'priority'              => 0,
-                    'created_at'            => now(),
-                    'updated_at'            => now(),
+                    'serviceable_to_date' => null,
+                    'remarks' => 'Bulk updated via admin',
+                    'priority' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
             }
 
@@ -313,8 +316,8 @@ class VillageController extends Controller implements HasMiddleware
             );
 
             return response()->json([
-                'message' => 'Service status updated successfully for ' . count($ids) . ' village(s).',
-                'ids'     => $ids,
+                'message' => 'Service status updated successfully for '.count($ids).' village(s).',
+                'ids' => $ids,
             ]);
         }
 
@@ -327,6 +330,7 @@ class VillageController extends Controller implements HasMiddleware
     public function servicesOptions(): JsonResponse
     {
         $services = Service::active()->get();
+
         return response()->json($services);
     }
 
@@ -335,7 +339,7 @@ class VillageController extends Controller implements HasMiddleware
      */
     public function search(Request $request): JsonResponse
     {
-        if (!$request->filled('q') || strlen((string) $request->input('q')) < 3) {
+        if (! $request->filled('q') || strlen((string) $request->input('q')) < 3) {
             return response()->json(['data' => []]);
         }
 
@@ -373,9 +377,10 @@ class VillageController extends Controller implements HasMiddleware
                 }
                 fclose($handle);
             }
+
             return response()->json([
                 'preview' => true,
-                'rows'    => $rows,
+                'rows' => $rows,
             ]);
         }
 
@@ -390,29 +395,30 @@ class VillageController extends Controller implements HasMiddleware
                     fclose($handle);
                 }
             })
-            ->chunk(1000)
-            ->each(function ($chunk): void {
-                $data = $chunk->map(function ($row) {
-                    if (count($row) < 2) {
-                        return null;
-                    }
-                    return [
-                        'village_name'    => $row[0],
-                        'normalized_name' => strtolower(trim($row[0])),
-                        'pincode'         => $row[1],
-                        'post_so_name'    => ($row[2] ?? null) === '#N/A' ? null : ($row[2] ?? null),
-                        'taluka_name'     => ($row[3] ?? null) === '#N/A' ? null : ($row[3] ?? null),
-                        'district_name'   => ($row[4] ?? null) === '#N/A' ? null : ($row[4] ?? null),
-                        'state_name'      => ($row[5] ?? null) === '#N/A' ? null : ($row[5] ?? null),
-                        'created_at'      => now(),
-                        'updated_at'      => now(),
-                    ];
-                })->filter()->values()->toArray();
+                ->chunk(1000)
+                ->each(function ($chunk): void {
+                    $data = $chunk->map(function ($row) {
+                        if (count($row) < 2) {
+                            return null;
+                        }
 
-                if (!empty($data)) {
-                    DB::table('villages')->insert($data);
-                }
-            });
+                        return [
+                            'village_name' => $row[0],
+                            'normalized_name' => strtolower(trim($row[0])),
+                            'pincode' => $row[1],
+                            'post_so_name' => ($row[2] ?? null) === '#N/A' ? null : ($row[2] ?? null),
+                            'taluka_name' => ($row[3] ?? null) === '#N/A' ? null : ($row[3] ?? null),
+                            'district_name' => ($row[4] ?? null) === '#N/A' ? null : ($row[4] ?? null),
+                            'state_name' => ($row[5] ?? null) === '#N/A' ? null : ($row[5] ?? null),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    })->filter()->values()->toArray();
+
+                    if (! empty($data)) {
+                        DB::table('villages')->insert($data);
+                    }
+                });
         });
 
         return response()->json([
@@ -446,30 +452,38 @@ class VillageController extends Controller implements HasMiddleware
             $search = trim((string) $request->input('search'));
             $query->where(function ($q) use ($search): void {
                 $q->where('village_name', 'like', "%{$search}%")
-                  ->orWhere('pincode', 'like', "{$search}%")
-                  ->orWhere('taluka_name', 'like', "%{$search}%")
-                  ->orWhere('district_name', 'like', "%{$search}%");
+                    ->orWhere('pincode', 'like', "{$search}%")
+                    ->orWhere('taluka_name', 'like', "%{$search}%")
+                    ->orWhere('district_name', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('state')) {
             $states = array_filter(array_map('trim', explode(',', (string) $request->input('state'))));
-            if (!empty($states)) $query->whereIn('state_name', $states);
+            if (! empty($states)) {
+                $query->whereIn('state_name', $states);
+            }
         }
 
         if ($request->filled('district')) {
             $districts = array_filter(array_map('trim', explode(',', (string) $request->input('district'))));
-            if (!empty($districts)) $query->whereIn('district_name', $districts);
+            if (! empty($districts)) {
+                $query->whereIn('district_name', $districts);
+            }
         }
 
         if ($request->filled('taluka')) {
             $talukas = array_filter(array_map('trim', explode(',', (string) $request->input('taluka'))));
-            if (!empty($talukas)) $query->whereIn('taluka_name', $talukas);
+            if (! empty($talukas)) {
+                $query->whereIn('taluka_name', $talukas);
+            }
         }
 
         if ($request->filled('village')) {
             $villageNames = array_filter(array_map('trim', explode(',', (string) $request->input('village'))));
-            if (!empty($villageNames)) $query->whereIn('village_name', $villageNames);
+            if (! empty($villageNames)) {
+                $query->whereIn('village_name', $villageNames);
+            }
         }
 
         if ($request->filled('service_id')) {
@@ -489,7 +503,7 @@ class VillageController extends Controller implements HasMiddleware
         }
 
         $villages = $query->with(['mappings.service'])->get();
-        $filename = 'villages-export-' . now()->format('Ymd_His') . '.csv';
+        $filename = 'villages-export-'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload($this->generateCsvExportCallback($villages), $filename, [
             'Content-Type' => 'text/csv',
@@ -506,7 +520,7 @@ class VillageController extends Controller implements HasMiddleware
         ]);
 
         $villages = Village::withTrashed()->with(['mappings.service'])->whereIn('id', $validated['ids'])->get();
-        $filename = 'villages-export-selected-' . now()->format('Ymd_His') . '.csv';
+        $filename = 'villages-export-selected-'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload($this->generateCsvExportCallback($villages), $filename, [
             'Content-Type' => 'text/csv',
@@ -536,7 +550,7 @@ class VillageController extends Controller implements HasMiddleware
                     ->sortBy('priority');
 
                 $serviceNames = $availableMappings
-                    ->map(fn($m) => $m->service?->name)
+                    ->map(fn ($m) => $m->service?->name)
                     ->filter()
                     ->implode(', ');
 

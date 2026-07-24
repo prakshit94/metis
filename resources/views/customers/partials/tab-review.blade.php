@@ -61,7 +61,7 @@
                         </div>
                         <div class="col-sm-6 col-lg-3">
                             <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Relative Mobile</p>
-                            <p class="mb-0 fw-bold text-dark fs-6">{{ $customer->relative_mobile ?? '—' }}</p>
+                            <p class="mb-0 fw-bold text-dark fs-6">{{ $customer->relative_name ?? '—' }}</p>
                         </div>
                     </div>
                 </div>

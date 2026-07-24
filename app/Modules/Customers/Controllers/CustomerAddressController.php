@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Customers\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
+use App\Modules\Core\Models\Village;
 use App\Modules\Customers\Models\Customer;
 use App\Modules\Customers\Models\PartyAddress;
 use Illuminate\Http\JsonResponse;
@@ -26,15 +27,15 @@ class CustomerAddressController extends Controller implements HasMiddleware
     public function store(Request $request, Customer $customer): JsonResponse
     {
         $validated = $request->validate([
-            'label'          => ['required', 'string', 'max:255'],
-            'status'         => ['nullable', 'string', 'in:active,inactive'],
+            'label' => ['required', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'in:active,inactive'],
             'address_line_1' => ['required', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
-            'village_id'     => ['nullable', 'exists:villages,id'],
-            'city'           => ['nullable', 'string', 'max:255'],
-            'state'          => ['nullable', 'string', 'max:255'],
-            'pincode'        => ['nullable', 'string', 'max:20'],
-            'is_default'     => ['nullable', 'boolean'],
+            'village_id' => ['nullable', 'exists:villages,id'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'state' => ['nullable', 'string', 'max:255'],
+            'pincode' => ['nullable', 'string', 'max:20'],
+            'is_default' => ['nullable', 'boolean'],
         ]);
 
         // Defaults
@@ -48,9 +49,9 @@ class CustomerAddressController extends Controller implements HasMiddleware
 
         $address = new PartyAddress($validated);
         $address->is_default = $isDefault;
-        
-        if (!empty($validated['village_id'])) {
-            $village = \App\Modules\Core\Models\Village::find($validated['village_id']);
+
+        if (! empty($validated['village_id'])) {
+            $village = Village::find($validated['village_id']);
             if ($village) {
                 $address->village_name = $village->village_name;
                 $address->post_office = $village->post_so_name;
@@ -60,12 +61,12 @@ class CustomerAddressController extends Controller implements HasMiddleware
                 $address->pincode = $address->pincode ?? $village->pincode;
             }
         }
-        
+
         $customer->addresses()->save($address);
 
         return response()->json([
             'message' => "Address [{$address->label}] created successfully.",
-            'data'    => $address->load('village'),
+            'data' => $address->load('village'),
         ], 201);
     }
 
@@ -76,15 +77,15 @@ class CustomerAddressController extends Controller implements HasMiddleware
         }
 
         $validated = $request->validate([
-            'label'          => ['required', 'string', 'max:255'],
-            'status'         => ['nullable', 'string', 'in:active,inactive'],
+            'label' => ['required', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'in:active,inactive'],
             'address_line_1' => ['required', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
-            'village_id'     => ['nullable', 'exists:villages,id'],
-            'city'           => ['nullable', 'string', 'max:255'],
-            'state'          => ['nullable', 'string', 'max:255'],
-            'pincode'        => ['nullable', 'string', 'max:20'],
-            'is_default'     => ['nullable', 'boolean'],
+            'village_id' => ['nullable', 'exists:villages,id'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'state' => ['nullable', 'string', 'max:255'],
+            'pincode' => ['nullable', 'string', 'max:20'],
+            'is_default' => ['nullable', 'boolean'],
         ]);
 
         // Defaults
@@ -97,9 +98,9 @@ class CustomerAddressController extends Controller implements HasMiddleware
         }
 
         $validated['is_default'] = $isDefault;
-        
-        if (!empty($validated['village_id'])) {
-            $village = \App\Modules\Core\Models\Village::find($validated['village_id']);
+
+        if (! empty($validated['village_id'])) {
+            $village = Village::find($validated['village_id']);
             if ($village) {
                 $validated['village_name'] = $village->village_name;
                 $validated['post_office'] = $village->post_so_name;
@@ -109,12 +110,12 @@ class CustomerAddressController extends Controller implements HasMiddleware
                 $validated['pincode'] = $validated['pincode'] ?? $village->pincode;
             }
         }
-        
+
         $address->update($validated);
 
         return response()->json([
             'message' => "Address [{$address->label}] updated successfully.",
-            'data'    => $address->load('village'),
+            'data' => $address->load('village'),
         ]);
     }
 
@@ -127,7 +128,7 @@ class CustomerAddressController extends Controller implements HasMiddleware
         $address->delete();
 
         return response()->json([
-            'message' => "Address deleted successfully.",
+            'message' => 'Address deleted successfully.',
         ]);
     }
 }

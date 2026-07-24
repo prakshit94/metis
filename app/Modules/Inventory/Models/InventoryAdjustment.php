@@ -6,8 +6,6 @@ namespace App\Modules\Inventory\Models;
 
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Users\Models\User;
-
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;

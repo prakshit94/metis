@@ -337,8 +337,10 @@
                                             <select class="form-select form-select-sm fw-semibold" x-model="form.type">
                                                 <option value="order_discount">Order Discount</option>
                                                 <option value="bogo">Buy X Get Y (BOGO)</option>
+                                                <option value="free_product">Free Product</option>
+                                                <option value="category_discount">Category Discount</option>
                                             </select>
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Select Order Discount or BOGO.</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Select the promotion mechanic.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-warning">Use Case:</strong> "Order Discount" for cart subtotal. "BOGO" for same-product deals. "Free Product" for gift items. "Category Discount" for category-wide sales.</div>
                                         </div>
                                     </div>
                                 </div>
@@ -355,8 +357,8 @@
                                     </div>
                                     
                                     {{-- Order Discount Config --}}
-                                    <div class="row g-3" x-show="form.type === 'order_discount'">
-                                        <div class="col-md-6" x-show="form.type === 'order_discount'">
+                                    <div class="row g-3" x-show="form.type === 'order_discount' || form.type === 'category_discount'">
+                                        <div class="col-md-6" x-show="form.type === 'order_discount' || form.type === 'category_discount'">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Type *</label>
                                             <select class="form-select form-select-sm fw-semibold" x-model="form.discount_type">
                                                 <option value="percentage">Percentage (%)</option>
@@ -364,7 +366,7 @@
                                             </select>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Choose percentage or fixed rate.</small>
                                         </div>
-                                        <div class="col-md-6" x-show="form.type === 'order_discount'">
+                                        <div class="col-md-6" x-show="form.type === 'order_discount' || form.type === 'category_discount'">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Value *</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text" x-text="form.discount_type === 'percentage' ? '%' : 'Rs '"></span>
@@ -378,7 +380,7 @@
                                                 <span class="input-group-text">Rs </span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.min_spend" min="0" step="0.01" placeholder="0">
                                             </div>
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Minimum purchase requirement to unlock offer.</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Minimum purchase requirement to unlock offer.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-success">Use Case:</strong> Encourage customers to add more items to their cart to reach the threshold (increases Average Order Value).</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Max Discount</label>
@@ -386,16 +388,16 @@
                                                 <span class="input-group-text">Rs </span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.max_discount" min="0" step="0.01" placeholder="Unlimited">
                                             </div>
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Maximum cap. Leave empty/0 for unlimited.</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Maximum cap. Leave empty/0 for unlimited.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-success">Use Case:</strong> Crucial when using Percentage discounts to protect your margins on very large bulk orders (e.g. 50% off up to Rs 1000).</div>
                                         </div>
                                     </div>
 
                                     {{-- BOGO Config --}}
-                                    <div class="row g-3" x-show="form.type === 'bogo'">
+                                    <div class="row g-3" x-show="form.type === 'bogo' || form.type === 'free_product'">
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Buy Qty *</label>
                                             <input type="number" class="form-control form-control-sm fw-semibold" x-model="form.buy_qty" min="1">
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Quantity customer must buy.</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Quantity customer must buy.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-success">Use Case:</strong> E.g. Set to 2 for a "Buy 2 Get 1" deal.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Get Qty Free *</label>
@@ -416,7 +418,13 @@
                                         <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Targeting & Scope</h6>
                                     </div>
                                     <div class="row g-3">
-                                        <div class="col-12 position-relative" @click.away="showProductsDropdown = false">
+                                        <div class="col-12" x-show="form.type === 'category_discount'">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Applicable Category IDs (Comma Separated)</label>
+                                            <input type="text" class="form-control form-control-sm fw-semibold" x-model="form.applicable_categories" placeholder="e.g. 1,2,3">
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Enter Category IDs that get the discount.</small>
+                                        </div>
+                                        <div class="col-12 position-relative" @click.away="showProductsDropdown = false" x-show="form.type !== 'category_discount'">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Required Products (Trigger)</label>
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Applicable Products</label>
                                             <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1 bg-body cursor-pointer" style="min-height: 33px; cursor: text;" @click="showProductsDropdown = true; $refs.productSearch.focus()">
                                                 
@@ -439,7 +447,18 @@
                                                     <input x-ref="productSearch" type="text" x-model="productSearch" @focus="showProductsDropdown = true" placeholder="Search..." class="border-0 w-100 outline-none bg-transparent" style="font-size: 12px; outline: none !important; box-shadow: none;">
                                                 </div>
                                             </div>
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Select specific products, or leave empty for global offer.</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Select specific products, or leave empty for global offer.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-warning">Use Case:</strong> If left empty, the offer applies globally or is triggered by Min Spend.</div>
+                                            
+                                        <div class="col-12 mt-3" x-show="form.type === 'free_product'">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Gift Product (Free Item) *</label>
+                                            <select class="form-select form-select-sm fw-semibold" x-model="form.product_id">
+                                                <option value="">Select Free Product...</option>
+                                                <template x-for="p in allProducts" :key="p.id">
+                                                    <option :value="p.id" x-text="p.name + ' (' + p.sku + ')'"></option>
+                                                </template>
+                                            </select>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">The specific product given away for free.</small>
+                                        </div>
                                             
                                             <!-- Dropdown List -->
                                             <div x-show="showProductsDropdown" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 180px; overflow-y: auto; z-index: 1050;">
@@ -484,7 +503,7 @@
                                         <div class="col-md-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Priority</label>
                                             <input type="number" class="form-control form-control-sm fw-semibold" x-model="form.priority" min="0" placeholder="0">
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Application priority rank.</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Application priority rank.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-info">Use Case:</strong> When multiple offers could apply to a cart, the system evaluates the one with the highest priority number first.</div>
                                         </div>
                                         <div class="col-12 mt-2">
                                             <div class="d-flex align-items-center gap-2 pt-2 border-top">
@@ -536,7 +555,7 @@ function offersModule() {
         search: '', filterType: '', filterStatus: '', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0,
         selected: [], stats: { total: 0, active: 0, bogo: 0, order_discount: 0 },
-        form: { id: null, name: '', type: 'order_discount', discount_type: 'percentage', value: '', min_spend: '', max_discount: '', product_ids: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true },
+        form: { id: null, name: '', type: 'order_discount', discount_type: 'percentage', value: '', min_spend: '', max_discount: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true },
         formError: null,
 
         formatDateTime(dateStr) {
@@ -569,9 +588,9 @@ function offersModule() {
         openModal(o = null) {
             this.formError = null;
             if (o) {
-                this.form = { id: o.id, name: o.name, type: o.type, discount_type: o.discount_type, value: o.value, min_spend: o.min_spend || '', max_discount: o.max_discount || '', product_ids: o.product_id ? [o.product_id] : [], buy_qty: o.buy_qty || 1, get_qty: o.get_qty || 1, starts_at: o.starts_at ? o.starts_at.substring(0,16) : '', ends_at: o.ends_at ? o.ends_at.substring(0,16) : '', priority: o.priority || 0, is_active: o.is_active };
+                this.form = { id: o.id, name: o.name, type: o.type, discount_type: o.discount_type, value: o.value, min_spend: o.min_spend || '', max_discount: o.max_discount || '', product_ids: (o.type === 'bogo' && o.product_id) ? [o.product_id] : (o.type !== 'bogo' ? (typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : (o.applicable_products || [])) : []), product_id: o.type === 'free_product' ? o.product_id : '', applicable_categories: typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : (o.applicable_categories || []), buy_qty: o.buy_qty || 1, get_qty: o.get_qty || 1, starts_at: o.starts_at ? o.starts_at.substring(0,16) : '', ends_at: o.ends_at ? o.ends_at.substring(0,16) : '', priority: o.priority || 0, is_active: o.is_active };
             } else {
-                this.form = { id: null, name: '', type: 'order_discount', discount_type: 'percentage', value: '', min_spend: '', max_discount: '', product_ids: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true };
+                this.form = { id: null, name: '', type: 'order_discount', discount_type: 'percentage', value: '', min_spend: '', max_discount: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true };
             }
             new bootstrap.Modal(document.getElementById('offerModal')).show();
         },
@@ -579,9 +598,13 @@ function offersModule() {
         async saveOffer() {
             this.saving = true; this.formError = null;
             try {
+                let payload = JSON.parse(JSON.stringify(this.form));
+                if (typeof payload.applicable_categories === "string") {
+                    payload.applicable_categories = payload.applicable_categories.split(",").map(i => parseInt(i.trim())).filter(i => !isNaN(i));
+                }
                 const url = this.form.id ? `/api/promotions/offers/${this.form.id}` : '/api/promotions/offers';
                 const method = this.form.id ? 'PATCH' : 'POST';
-                const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }, body: JSON.stringify(this.form) });
+                const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }, body: JSON.stringify(payload) });
                 const json = await res.json();
                 if (!res.ok) { this.formError = Object.values(json.errors || {}).flat().join(' ') || json.message; return; }
                 bootstrap.Modal.getInstance(document.getElementById('offerModal'))?.hide();

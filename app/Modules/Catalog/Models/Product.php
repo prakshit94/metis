@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Models;
 
 use App\Modules\Inventory\Models\Stock;
-use App\Modules\Inventory\Models\StockReservation;
 use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Models\StockReservation;
 use App\Modules\Orders\Models\OrderItem;
-
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -146,7 +144,7 @@ class Product extends Model
     }
 
     /**
-     * Alias for total_stock to maintain backwards compatibility 
+     * Alias for total_stock to maintain backwards compatibility
      * with APIs/frontend expecting stock_quantity.
      */
     public function getStockQuantityAttribute(): float
@@ -180,6 +178,6 @@ class Product extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        return $this->image_path ? asset('storage/' . $this->image_path) : null;
+        return $this->image_path ? asset('storage/'.$this->image_path) : null;
     }
 }

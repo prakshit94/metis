@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Gate;
-use Laravel\Sanctum\Sanctum;
 use Dedoc\Scramble\Scramble;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
-
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\PersonalAccessToken;
+use Laravel\Sanctum\Sanctum;
+use Illuminate\Database\Eloquent\Model;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,10 +30,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Model::shouldBeStrict(!app()->isProduction());
+
         $this->configureSanctum();
 
-        \Illuminate\Support\Facades\RateLimiter::for('chat', function (\Illuminate\Http\Request $request) {
-            return \Illuminate\Cache\RateLimiting\Limit::perMinute(config('chat.rate_limits.requests_per_minute', 1200))
+        RateLimiter::for('chat', function (Request $request) {
+            return Limit::perMinute(config('chat.rate_limits.requests_per_minute', 1200))
                 ->by($request->user()?->id ?: $request->ip());
         });
 
@@ -55,7 +61,6 @@ class AppServiceProvider extends ServiceProvider
             return preg_match('/^(orders|returns|refunds|payments|invoices|promotions|customers|catalog|inventory|shipping|villages|products)/', $uri);
         });
 
-
     }
 
     // ─── Private ──────────────────────────────────────────────────────────────
@@ -69,8 +74,7 @@ class AppServiceProvider extends ServiceProvider
     private function configureSanctum(): void
     {
         Sanctum::usePersonalAccessTokenModel(
-            \Laravel\Sanctum\PersonalAccessToken::class,
+            PersonalAccessToken::class,
         );
     }
-
 }

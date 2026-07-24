@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\Users\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
-use App\Modules\Users\Models\LoginHistory;
+use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * Full CRUD for Users, including role/permission syncing, account activation
@@ -43,12 +43,12 @@ class UserController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('user-view'), 403);
 
         $sortMap = [
-            'name'       => 'name',
-            'firstName'  => 'first_name',
-            'lastName'   => 'last_name',
-            'email'      => 'email',
+            'name' => 'name',
+            'firstName' => 'first_name',
+            'lastName' => 'last_name',
+            'email' => 'email',
             'lastActive' => 'updated_at',
-            'joinDate'   => 'created_at',
+            'joinDate' => 'created_at',
             'created_at' => 'created_at',
             'updated_at' => 'updated_at',
         ];
@@ -58,17 +58,17 @@ class UserController extends Controller implements HasMiddleware
 
         $deletedFilter = $request->input('deleted');
 
-        $activeSessionUserIds = \Illuminate\Support\Facades\DB::table('sessions')
+        $activeSessionUserIds = DB::table('sessions')
             ->where('last_activity', '>=', now()->subMinutes(15)->getTimestamp())
             ->pluck('user_id')
             ->filter()
             ->toArray();
 
-        $activeApiUserIds = \Illuminate\Support\Facades\DB::table('personal_access_tokens')
+        $activeApiUserIds = DB::table('personal_access_tokens')
             ->where('tokenable_type', User::class)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->where('last_used_at', '>=', now()->subMinutes(15))
-                      ->orWhere('created_at', '>=', now()->subMinutes(15));
+                    ->orWhere('created_at', '>=', now()->subMinutes(15));
             })
             ->pluck('tokenable_id')
             ->filter()
@@ -85,7 +85,7 @@ class UserController extends Controller implements HasMiddleware
             ->when(
                 $request->filled('search'),
                 fn ($q) => $q->where(function ($inner) use ($request): void {
-                    $term = '%' . $request->input('search') . '%';
+                    $term = '%'.$request->input('search').'%';
                     $inner->where('users.name', 'like', $term)
                         ->orWhere('users.first_name', 'like', $term)
                         ->orWhere('users.middle_name', 'like', $term)
@@ -109,24 +109,24 @@ class UserController extends Controller implements HasMiddleware
 
         $userIds = $users->getCollection()->pluck('id')->toArray();
 
-        $latestLoginHistories = \Illuminate\Support\Facades\DB::table('login_histories')
-            ->whereIn('id', function($q) use ($userIds) {
-                $q->select(\Illuminate\Support\Facades\DB::raw('MAX(id)'))
-                  ->from('login_histories')
-                  ->whereIn('user_id', $userIds)
-                  ->where('status', 'success')
-                  ->groupBy('user_id');
+        $latestLoginHistories = DB::table('login_histories')
+            ->whereIn('id', function ($q) use ($userIds) {
+                $q->select(DB::raw('MAX(id)'))
+                    ->from('login_histories')
+                    ->whereIn('user_id', $userIds)
+                    ->where('status', 'success')
+                    ->groupBy('user_id');
             })
             ->get()
             ->keyBy('user_id');
 
         $users->getCollection()->transform(function ($user) use ($allActiveUserIds, $latestLoginHistories) {
             $user->is_online = in_array($user->id, $allActiveUserIds);
-            
+
             $latestLogin = $latestLoginHistories[$user->id] ?? null;
             $user->last_login_at = $latestLogin ? $latestLogin->attempted_at : null;
             $user->device_type = $latestLogin ? ucfirst($latestLogin->device_type) : 'Web';
-            
+
             return $user;
         });
 
@@ -141,35 +141,35 @@ class UserController extends Controller implements HasMiddleware
         $validated = $request->validated();
 
         $user = User::create([
-            'name'        => $validated['name'],
-            'first_name'  => $validated['first_name'] ?? null,
+            'name' => $validated['name'],
+            'first_name' => $validated['first_name'] ?? null,
             'middle_name' => $validated['middle_name'] ?? null,
-            'last_name'   => $validated['last_name'] ?? null,
-            'email'       => $validated['email'],
-            'password'    => \Illuminate\Support\Facades\Hash::make($validated['password']),
-            'is_active'   => $validated['is_active'] ?? true,
-            'phone'       => $validated['phone'] ?? null,
-            'department'  => $validated['department'] ?? null,
+            'last_name' => $validated['last_name'] ?? null,
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'is_active' => $validated['is_active'] ?? true,
+            'phone' => $validated['phone'] ?? null,
+            'department' => $validated['department'] ?? null,
             'employee_id' => $validated['employee_id'] ?? null,
-            'photo'       => $validated['photo'] ?? null,
-            'joining_date'=> $validated['joining_date'] ?? null,
+            'photo' => $validated['photo'] ?? null,
+            'joining_date' => $validated['joining_date'] ?? null,
             'address_line_1' => $validated['address_line_1'] ?? null,
             'address_line_2' => $validated['address_line_2'] ?? null,
-            'village_id'     => $validated['village_id'] ?? null,
-            'village_name'   => $validated['village_name'] ?? null,
-            'post_office'    => $validated['post_office'] ?? null,
-            'taluka'         => $validated['taluka'] ?? null,
-            'district'       => $validated['district'] ?? null,
-            'city'           => $validated['city'] ?? null,
-            'state'          => $validated['state'] ?? null,
-            'pincode'        => $validated['pincode'] ?? null,
+            'village_id' => $validated['village_id'] ?? null,
+            'village_name' => $validated['village_name'] ?? null,
+            'post_office' => $validated['post_office'] ?? null,
+            'taluka' => $validated['taluka'] ?? null,
+            'district' => $validated['district'] ?? null,
+            'city' => $validated['city'] ?? null,
+            'state' => $validated['state'] ?? null,
+            'pincode' => $validated['pincode'] ?? null,
         ]);
 
         if ($request->hasFile('photo_file')) {
             $file = $request->file('photo_file');
             $extension = $file->extension() ?: 'jpg';
-            $filename = 'user-' . $user->id . '-' . time() . '.' . $extension;
-            $user->photo = asset('storage/' . $file->storeAs('users/photos', $filename, 'public'));
+            $filename = 'user-'.$user->id.'-'.time().'.'.$extension;
+            $user->photo = asset('storage/'.$file->storeAs('users/photos', $filename, 'public'));
             $user->save();
         }
 
@@ -190,7 +190,7 @@ class UserController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "User [{$user->email}] created successfully.",
-            'data'    => $user,
+            'data' => $user,
         ], 201);
     }
 
@@ -211,7 +211,7 @@ class UserController extends Controller implements HasMiddleware
             ->get();
 
         return response()->json([
-            'data'          => $user,
+            'data' => $user,
             'login_history' => $loginHistory,
         ]);
     }
@@ -230,12 +230,12 @@ class UserController extends Controller implements HasMiddleware
 
         $fillable = [];
         $allowedFields = [
-            'name', 'first_name', 'middle_name', 'last_name', 'email', 'is_active', 'phone', 
+            'name', 'first_name', 'middle_name', 'last_name', 'email', 'is_active', 'phone',
             'department', 'employee_id', 'photo', 'joining_date',
-            'address_line_1', 'address_line_2', 'village_id', 'village_name', 'post_office', 
-            'taluka', 'district', 'city', 'state', 'pincode'
+            'address_line_1', 'address_line_2', 'village_id', 'village_name', 'post_office',
+            'taluka', 'district', 'city', 'state', 'pincode',
         ];
-        
+
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $validated)) {
                 $fillable[$field] = $validated[$field];
@@ -248,8 +248,8 @@ class UserController extends Controller implements HasMiddleware
         if ($request->hasFile('photo_file')) {
             $file = $request->file('photo_file');
             $extension = $file->extension() ?: 'jpg';
-            $filename = 'user-' . $user->id . '-' . time() . '.' . $extension;
-            $fillable['photo'] = asset('storage/' . $file->storeAs('users/photos', $filename, 'public'));
+            $filename = 'user-'.$user->id.'-'.time().'.'.$extension;
+            $fillable['photo'] = asset('storage/'.$file->storeAs('users/photos', $filename, 'public'));
         }
 
         if (! empty($fillable)) {
@@ -273,7 +273,7 @@ class UserController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "User [{$user->email}] updated successfully.",
-            'data'    => $user,
+            'data' => $user,
         ]);
     }
 
@@ -332,7 +332,7 @@ class UserController extends Controller implements HasMiddleware
         if (! $user->trashed()) {
             return response()->json([
                 'message' => "User [{$user->email}] is not deleted.",
-                'data'    => $user,
+                'data' => $user,
             ]);
         }
 
@@ -341,7 +341,7 @@ class UserController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "User [{$user->email}] restored successfully.",
-            'data'    => $user,
+            'data' => $user,
         ]);
     }
 
@@ -401,9 +401,9 @@ class UserController extends Controller implements HasMiddleware
         }
 
         return response()->json([
-            'message'   => "User account " . ($newState ? 'activated' : 'deactivated') . ".",
+            'message' => 'User account '.($newState ? 'activated' : 'deactivated').'.',
             'is_active' => $newState,
-            'user_id'   => $user->id,
+            'user_id' => $user->id,
         ]);
     }
 
@@ -415,7 +415,7 @@ class UserController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('user-sync-roles'), 403);
 
         $request->validate([
-            'roles'   => ['required', 'array'],
+            'roles' => ['required', 'array'],
             'roles.*' => ['string', 'exists:roles,name'],
         ]);
 
@@ -429,7 +429,7 @@ class UserController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "Roles synced for user [{$user->email}].",
-            'data'    => $user->roles,
+            'data' => $user->roles,
         ]);
     }
 
@@ -447,7 +447,7 @@ class UserController extends Controller implements HasMiddleware
         }
 
         $request->validate([
-            'permissions'   => ['required', 'array'],
+            'permissions' => ['required', 'array'],
             'permissions.*' => ['string', 'exists:permissions,name'],
         ]);
 
@@ -456,7 +456,7 @@ class UserController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "Direct permissions synced for user [{$user->email}].",
-            'data'    => $user->permissions,
+            'data' => $user->permissions,
         ]);
     }
 

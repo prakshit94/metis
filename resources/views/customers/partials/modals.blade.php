@@ -492,7 +492,7 @@
                         </div>
                         <div class="space-y-2 group">
                             <label class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Relative Contact Name</label>
-                            <input type="text" name="relative_mobile" value="{{ $customer->relative_mobile }}" class="w-full px-5 py-3 rounded-2xl bg-background/40 border border-border/60 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium">
+                            <input type="text" name="relative_name" value="{{ $customer->relative_name }}" class="w-full px-5 py-3 rounded-2xl bg-background/40 border border-border/60 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium">
                         </div>
                         <div class="space-y-2 group">
                             <label class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Relative Contact Phone</label>

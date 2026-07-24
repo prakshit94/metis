@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
-use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Core\Controllers\Controller;
+use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Services\InventoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class InventoryAdjustmentController extends Controller implements HasMiddleware
 {
@@ -41,8 +41,8 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('reference_no', 'like', "%{$search}%")
-                  ->orWhere('reason', 'like', "%{$search}%")
-                  ->orWhereHas('warehouse', fn($w) => $w->where('name', 'like', "%{$search}%"));
+                    ->orWhere('reason', 'like', "%{$search}%")
+                    ->orWhereHas('warehouse', fn ($w) => $w->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -54,7 +54,7 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
             $query->where('warehouse_id', $warehouseId);
         }
 
-        $sortBy  = $request->query('sort_by', 'id');
+        $sortBy = $request->query('sort_by', 'id');
         $sortDir = $request->query('sort_dir', 'desc');
 
         if (in_array($sortBy, ['id', 'reference_no', 'status', 'created_at'])) {
@@ -66,19 +66,19 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
         $paginator = $query->paginate($perPage);
 
         $stats = [
-            'total'    => InventoryAdjustment::count(),
-            'pending'  => InventoryAdjustment::where('status', 'pending')->count(),
+            'total' => InventoryAdjustment::count(),
+            'pending' => InventoryAdjustment::where('status', 'pending')->count(),
             'approved' => InventoryAdjustment::where('status', 'approved')->count(),
             'rejected' => InventoryAdjustment::where('status', 'rejected')->count(),
         ];
 
         return response()->json([
-            'data'  => $paginator->items(),
-            'meta'  => [
-                'total'        => $paginator->total(),
-                'per_page'     => $paginator->perPage(),
+            'data' => $paginator->items(),
+            'meta' => [
+                'total' => $paginator->total(),
+                'per_page' => $paginator->perPage(),
                 'current_page' => $paginator->currentPage(),
-                'last_page'    => $paginator->lastPage(),
+                'last_page' => $paginator->lastPage(),
             ],
             'stats' => $stats,
         ]);
@@ -89,29 +89,29 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
         $this->authorize('product-create');
 
         $validated = $request->validate([
-            'warehouse_id'              => 'required|exists:warehouses,id',
-            'reason'                    => 'required|string|max:255',
-            'items'                     => 'required|array|min:1',
-            'items.*.product_id'        => 'required|exists:products,id',
-            'items.*.current_qty'       => 'required|numeric|min:0',
-            'items.*.new_qty'           => 'required|numeric|min:0',
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'reason' => 'required|string|max:255',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.current_qty' => 'required|numeric|min:0',
+            'items.*.new_qty' => 'required|numeric|min:0',
         ]);
 
         $adjustment = \DB::transaction(function () use ($validated) {
             $adjustment = InventoryAdjustment::create([
-                'reference_no' => 'ADJ-' . strtoupper(Str::random(8)),
+                'reference_no' => 'ADJ-'.strtoupper(Str::random(8)),
                 'warehouse_id' => $validated['warehouse_id'],
-                'reason'       => $validated['reason'],
-                'status'       => 'pending',
-                'adjusted_by'  => auth()->id(),
+                'reason' => $validated['reason'],
+                'status' => 'pending',
+                'adjusted_by' => auth()->id(),
             ]);
 
             foreach ($validated['items'] as $item) {
                 $adjustment->items()->create([
-                    'product_id'  => $item['product_id'],
+                    'product_id' => $item['product_id'],
                     'current_qty' => $item['current_qty'],
-                    'new_qty'     => $item['new_qty'],
-                    'difference'  => $item['new_qty'] - $item['current_qty'],
+                    'new_qty' => $item['new_qty'],
+                    'difference' => $item['new_qty'] - $item['current_qty'],
                 ]);
             }
 
@@ -120,7 +120,7 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => 'Inventory adjustment created successfully.',
-            'data'    => $adjustment->load(['warehouse:id,name,code', 'items.product:id,name,sku']),
+            'data' => $adjustment->load(['warehouse:id,name,code', 'items.product:id,name,sku']),
         ], 201);
     }
 
@@ -142,35 +142,35 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
         }
 
         $validated = $request->validate([
-            'warehouse_id'              => 'required|exists:warehouses,id',
-            'reason'                    => 'required|string|max:255',
-            'items'                     => 'required|array|min:1',
-            'items.*.product_id'        => 'required|exists:products,id',
-            'items.*.current_qty'       => 'required|numeric|min:0',
-            'items.*.new_qty'           => 'required|numeric|min:0',
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'reason' => 'required|string|max:255',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.current_qty' => 'required|numeric|min:0',
+            'items.*.new_qty' => 'required|numeric|min:0',
         ]);
 
         \DB::transaction(function () use ($validated, $inventoryAdjustment) {
             $inventoryAdjustment->update([
                 'warehouse_id' => $validated['warehouse_id'],
-                'reason'       => $validated['reason'],
+                'reason' => $validated['reason'],
             ]);
 
             $inventoryAdjustment->items()->delete();
 
             foreach ($validated['items'] as $item) {
                 $inventoryAdjustment->items()->create([
-                    'product_id'  => $item['product_id'],
+                    'product_id' => $item['product_id'],
                     'current_qty' => $item['current_qty'],
-                    'new_qty'     => $item['new_qty'],
-                    'difference'  => $item['new_qty'] - $item['current_qty'],
+                    'new_qty' => $item['new_qty'],
+                    'difference' => $item['new_qty'] - $item['current_qty'],
                 ]);
             }
         });
 
         return response()->json([
             'message' => 'Inventory adjustment updated successfully.',
-            'data'    => $inventoryAdjustment->fresh()->load(['warehouse:id,name,code', 'items.product:id,name,sku']),
+            'data' => $inventoryAdjustment->fresh()->load(['warehouse:id,name,code', 'items.product:id,name,sku']),
         ]);
     }
 
@@ -184,6 +184,7 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
 
         $inventoryAdjustment->items()->delete();
         $inventoryAdjustment->delete();
+
         return response()->json(['message' => 'Inventory adjustment deleted successfully.']);
     }
 
@@ -194,8 +195,8 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'action' => 'required|string|in:approve,reject,delete',
-            'ids'    => 'required|array|min:1',
-            'ids.*'  => 'required|integer|exists:inventory_adjustments,id',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer|exists:inventory_adjustments,id',
         ]);
 
         $action = $validated['action'];
@@ -219,14 +220,14 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
                         $this->inventoryService->applyAdjustment($adjustment);
                     } elseif ($action === 'reject') {
                         if ($adjustment->status !== 'pending') {
-                            throw new \Exception("Only pending adjustments can be rejected.");
+                            throw new \Exception('Only pending adjustments can be rejected.');
                         }
                         $adjustment->update([
                             'status' => 'rejected',
                         ]);
                     } elseif ($action === 'delete') {
                         if ($adjustment->status !== 'pending') {
-                            throw new \Exception("Only pending adjustments can be deleted.");
+                            throw new \Exception('Only pending adjustments can be deleted.');
                         }
                         $adjustment->items()->delete();
                         $adjustment->delete();
@@ -234,7 +235,7 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
                     $processedCount++;
                 } catch (\Throwable $e) {
                     $failedCount++;
-                    $errors[] = "Adjustment {$adjustment->reference_no}: " . $e->getMessage();
+                    $errors[] = "Adjustment {$adjustment->reference_no}: ".$e->getMessage();
                 }
             }
         });
@@ -263,13 +264,13 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => collect($e->errors())->flatten()->first(),
-                'errors'  => $e->errors(),
+                'errors' => $e->errors(),
             ], 422);
         }
 
         return response()->json([
             'message' => 'Adjustment approved and stock levels updated.',
-            'data'    => $inventoryAdjustment->fresh(),
+            'data' => $inventoryAdjustment->fresh(),
         ]);
     }
 
@@ -289,13 +290,13 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
         $inventoryAdjustment->update([
             'status' => 'rejected',
             'reason' => $request->input('reason')
-                ? ($inventoryAdjustment->reason . ' | Rejected: ' . $request->input('reason'))
+                ? ($inventoryAdjustment->reason.' | Rejected: '.$request->input('reason'))
                 : $inventoryAdjustment->reason,
         ]);
 
         return response()->json([
             'message' => 'Adjustment rejected.',
-            'data'    => $inventoryAdjustment->fresh(),
+            'data' => $inventoryAdjustment->fresh(),
         ]);
     }
 
@@ -308,7 +309,7 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
 
         return response()->json([
             'warehouses' => Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name', 'code']),
-            'products'   => Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']),
+            'products' => Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']),
         ]);
     }
 }

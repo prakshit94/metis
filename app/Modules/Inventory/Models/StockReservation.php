@@ -7,11 +7,9 @@ namespace App\Modules\Inventory\Models;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Orders\Models\Order;
-
-
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StockReservation extends Model
 {
@@ -28,7 +26,7 @@ class StockReservation extends Model
 
     protected $casts = [
         'expires_at' => 'datetime',
-        'quantity'   => 'float',
+        'quantity' => 'float',
     ];
 
     public function product(): BelongsTo
@@ -52,9 +50,9 @@ class StockReservation extends Model
     public function scopeActive($query)
     {
         return $query->where('status', 'active')
-                     ->where(function ($q) {
-                         $q->whereNull('expires_at')
-                           ->orWhere('expires_at', '>', now());
-                     });
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            });
     }
 }

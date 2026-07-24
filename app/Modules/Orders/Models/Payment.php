@@ -3,10 +3,10 @@
 namespace App\Modules\Orders\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class Payment extends Model
@@ -48,7 +48,7 @@ class Payment extends Model
         };
 
         $syncAccounting = function ($payment) {
-            if (!Schema::hasTable('accounting_transactions')) {
+            if (! Schema::hasTable('accounting_transactions')) {
                 return;
             }
 
@@ -67,7 +67,7 @@ class Payment extends Model
                     $orderNo = $order ? $order->order_no : 'Unknown';
 
                     $txnId = DB::table('accounting_transactions')->insertGetId([
-                        'transaction_no' => 'ACC-' . strtoupper(Str::random(8)),
+                        'transaction_no' => 'ACC-'.strtoupper(Str::random(8)),
                         'reference_no' => $payment->id,
                         'transaction_date' => now(),
                         'description' => "Payment received for Order #{$orderNo}",
@@ -84,7 +84,7 @@ class Payment extends Model
         };
 
         $deleteAccounting = function ($payment) {
-            if (!Schema::hasTable('accounting_transactions')) {
+            if (! Schema::hasTable('accounting_transactions')) {
                 return;
             }
 

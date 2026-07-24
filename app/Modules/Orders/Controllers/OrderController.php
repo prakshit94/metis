@@ -2,25 +2,31 @@
 
 namespace App\Modules\Orders\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
-use App\Modules\Orders\Models\Invoice;
-use App\Modules\Orders\Models\Order;
-use App\Modules\Orders\Models\OrderItem;
-use App\Modules\Customers\Models\Party;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Service;
 use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Core\Controllers\Controller;
+use App\Modules\Core\Models\Village;
+use App\Modules\Customers\Models\Party;
+use App\Modules\Orders\Models\Coupon;
+use App\Modules\Orders\Models\DeliveryFailureReason;
+use App\Modules\Orders\Models\Invoice;
+use App\Modules\Orders\Models\Offer;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\RescheduleReason;
+use App\Modules\Orders\Models\ReturnReason;
 use App\Services\InventoryService;
 use App\Services\InvoiceService;
 use App\Services\OrderService;
-use App\Modules\Orders\Models\ReturnReason;
-use App\Modules\Orders\Models\RescheduleReason;
-use App\Modules\Orders\Models\DeliveryFailureReason;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller implements HasMiddleware
 {
@@ -85,12 +91,12 @@ class OrderController extends Controller implements HasMiddleware
         if ($request->filled('status')) {
             $requestedStatuses = array_filter(array_map('trim', explode(',', $request->status)));
             $hasFutureOrder = in_array('future_order', $requestedStatuses, true);
-            $hasPending     = in_array('pending', $requestedStatuses, true);
+            $hasPending = in_array('pending', $requestedStatuses, true);
 
-            $realStatuses = array_values(array_filter($requestedStatuses, fn($s) => !in_array($s, ['future_order', 'pending'])));
+            $realStatuses = array_values(array_filter($requestedStatuses, fn ($s) => ! in_array($s, ['future_order', 'pending'])));
             if (in_array('dispatched', $realStatuses, true)) {
                 $realStatuses[] = 'shipped';
-                $realStatuses   = array_values(array_unique($realStatuses));
+                $realStatuses = array_values(array_unique($realStatuses));
             }
 
             $query->where(function ($q) use ($hasFutureOrder, $hasPending, $realStatuses) {
@@ -114,7 +120,7 @@ class OrderController extends Controller implements HasMiddleware
                     $first = false;
                 }
 
-                if (!empty($realStatuses)) {
+                if (! empty($realStatuses)) {
                     $method = $first ? 'whereIn' : 'orWhereIn';
                     $q->$method('status', $realStatuses);
                 }
@@ -123,7 +129,7 @@ class OrderController extends Controller implements HasMiddleware
 
         if ($request->filled('product')) {
             $productIds = array_filter(array_map('intval', explode(',', $request->product)));
-            if (!empty($productIds)) {
+            if (! empty($productIds)) {
                 $query->whereHas('items', function ($q) use ($productIds) {
                     $q->whereIn('product_id', $productIds);
                 });
@@ -133,18 +139,18 @@ class OrderController extends Controller implements HasMiddleware
         if ($request->filled('fulfillment')) {
             if ($request->fulfillment === 'unfulfillable') {
                 $query->where('status', 'pending')
-                      ->whereHas('items', function ($q) {
-                          $q->whereRaw('quantity > (IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = order_items.product_id AND stocks.warehouse_id = orders.warehouse_id AND stocks.deleted_at IS NULL), 0))');
-                      });
+                    ->whereHas('items', function ($q) {
+                        $q->whereRaw('quantity > (IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = order_items.product_id AND stocks.warehouse_id = orders.warehouse_id AND stocks.deleted_at IS NULL), 0))');
+                    });
             } elseif ($request->fulfillment === 'fulfillable') {
                 $query->where(function ($query) {
                     $query->whereIn('status', ['confirmed', 'processing'])
-                          ->orWhere(function ($q) {
-                              $q->where('status', 'pending')
+                        ->orWhere(function ($q) {
+                            $q->where('status', 'pending')
                                 ->whereDoesntHave('items', function ($iq) {
                                     $iq->whereRaw('quantity > (IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = order_items.product_id AND stocks.warehouse_id = orders.warehouse_id AND stocks.deleted_at IS NULL), 0))');
                                 });
-                          });
+                        });
                 });
             }
         }
@@ -168,7 +174,7 @@ class OrderController extends Controller implements HasMiddleware
 
         if ($request->filled('carrier')) {
             $carriers = array_filter(array_map('trim', explode(',', $request->carrier)));
-            if (!empty($carriers)) {
+            if (! empty($carriers)) {
                 $query->whereHas('shipments', function ($q) use ($carriers) {
                     $q->whereIn('carrier_name', $carriers);
                 });
@@ -182,52 +188,55 @@ class OrderController extends Controller implements HasMiddleware
             $query->whereDate('order_date', '<=', $request->to_date);
         }
 
-        // Stats Query
+        // Stats Query (Cached)
         $statsQuery = clone $query;
-        $counts = $statsQuery->select([
-            DB::raw("COUNT(*) as total"),
-            DB::raw("SUM(orders.net_amount) as total_amount"),
-            DB::raw("SUM(CASE WHEN orders.status = 'pending' AND orders.is_draft = 1 THEN 1 ELSE 0 END) as future_order"),
-            DB::raw("SUM(CASE WHEN orders.status = 'pending' AND orders.is_draft = 1 THEN orders.net_amount ELSE 0 END) as future_order_amount"),
-            DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN 1 ELSE 0 END) as pending"),
-            DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN orders.net_amount ELSE 0 END) as pending_amount"),
-            DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN 1 ELSE 0 END) as confirmed"),
-            DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN orders.net_amount ELSE 0 END) as confirmed_amount"),
-            DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN 1 ELSE 0 END) as processing"),
-            DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN orders.net_amount ELSE 0 END) as processing_amount"),
-            DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN 1 ELSE 0 END) as ready_to_ship"),
-            DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN orders.net_amount ELSE 0 END) as ready_to_ship_amount"),
-            DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN 1 ELSE 0 END) as dispatched"),
-            DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN orders.net_amount ELSE 0 END) as dispatched_amount"),
-            DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN 1 ELSE 0 END) as delivered"),
-            DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN orders.net_amount ELSE 0 END) as delivered_amount"),
-            DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN 1 ELSE 0 END) as returned"),
-            DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN orders.net_amount ELSE 0 END) as returned_amount"),
-            DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled"),
-            DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN orders.net_amount ELSE 0 END) as cancelled_amount")
-        ])->toBase()->first();
+        $cacheKey = 'order_stats_'.auth()->id().'_'.md5(json_encode($request->all()));
+        $counts = Cache::remember($cacheKey, 300, function () use ($statsQuery) {
+            return $statsQuery->select([
+                DB::raw('COUNT(*) as total'),
+                DB::raw('SUM(orders.net_amount) as total_amount'),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending' AND orders.is_draft = 1 THEN 1 ELSE 0 END) as future_order"),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending' AND orders.is_draft = 1 THEN orders.net_amount ELSE 0 END) as future_order_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN 1 ELSE 0 END) as pending"),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN orders.net_amount ELSE 0 END) as pending_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN 1 ELSE 0 END) as confirmed"),
+                DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN orders.net_amount ELSE 0 END) as confirmed_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN 1 ELSE 0 END) as processing"),
+                DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN orders.net_amount ELSE 0 END) as processing_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN 1 ELSE 0 END) as ready_to_ship"),
+                DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN orders.net_amount ELSE 0 END) as ready_to_ship_amount"),
+                DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN 1 ELSE 0 END) as dispatched"),
+                DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN orders.net_amount ELSE 0 END) as dispatched_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN 1 ELSE 0 END) as delivered"),
+                DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN orders.net_amount ELSE 0 END) as delivered_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN 1 ELSE 0 END) as returned"),
+                DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN orders.net_amount ELSE 0 END) as returned_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled"),
+                DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN orders.net_amount ELSE 0 END) as cancelled_amount"),
+            ])->toBase()->first();
+        });
 
         $stats = [
-            'total'                 => (int) ($counts->total ?? 0),
-            'total_amount'          => (float) ($counts->total_amount ?? 0),
-            'future_order'          => (int) ($counts->future_order ?? 0),
-            'future_order_amount'   => (float) ($counts->future_order_amount ?? 0),
-            'pending'               => (int) ($counts->pending ?? 0),
-            'pending_amount'        => (float) ($counts->pending_amount ?? 0),
-            'confirmed'             => (int) ($counts->confirmed ?? 0),
-            'confirmed_amount'      => (float) ($counts->confirmed_amount ?? 0),
-            'processing'            => (int) ($counts->processing ?? 0),
-            'processing_amount'     => (float) ($counts->processing_amount ?? 0),
-            'ready_to_ship'         => (int) ($counts->ready_to_ship ?? 0),
-            'ready_to_ship_amount'  => (float) ($counts->ready_to_ship_amount ?? 0),
-            'dispatched'            => (int) ($counts->dispatched ?? 0),
-            'dispatched_amount'     => (float) ($counts->dispatched_amount ?? 0),
-            'delivered'             => (int) ($counts->delivered ?? 0),
-            'delivered_amount'      => (float) ($counts->delivered_amount ?? 0),
-            'returned'              => (int) ($counts->returned ?? 0),
-            'returned_amount'       => (float) ($counts->returned_amount ?? 0),
-            'cancelled'             => (int) ($counts->cancelled ?? 0),
-            'cancelled_amount'      => (float) ($counts->cancelled_amount ?? 0),
+            'total' => (int) ($counts->total ?? 0),
+            'total_amount' => (float) ($counts->total_amount ?? 0),
+            'future_order' => (int) ($counts->future_order ?? 0),
+            'future_order_amount' => (float) ($counts->future_order_amount ?? 0),
+            'pending' => (int) ($counts->pending ?? 0),
+            'pending_amount' => (float) ($counts->pending_amount ?? 0),
+            'confirmed' => (int) ($counts->confirmed ?? 0),
+            'confirmed_amount' => (float) ($counts->confirmed_amount ?? 0),
+            'processing' => (int) ($counts->processing ?? 0),
+            'processing_amount' => (float) ($counts->processing_amount ?? 0),
+            'ready_to_ship' => (int) ($counts->ready_to_ship ?? 0),
+            'ready_to_ship_amount' => (float) ($counts->ready_to_ship_amount ?? 0),
+            'dispatched' => (int) ($counts->dispatched ?? 0),
+            'dispatched_amount' => (float) ($counts->dispatched_amount ?? 0),
+            'delivered' => (int) ($counts->delivered ?? 0),
+            'delivered_amount' => (float) ($counts->delivered_amount ?? 0),
+            'returned' => (int) ($counts->returned ?? 0),
+            'returned_amount' => (float) ($counts->returned_amount ?? 0),
+            'cancelled' => (int) ($counts->cancelled ?? 0),
+            'cancelled_amount' => (float) ($counts->cancelled_amount ?? 0),
         ];
 
         $sortField = $request->input('sort_field', 'id');
@@ -241,34 +250,36 @@ class OrderController extends Controller implements HasMiddleware
         $orders = $query->paginate($perPage);
 
         $statusesList = $this->allowedOrderFilterStatuses($user);
-        $productsList = Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']);
-
-        $statesList = \Illuminate\Support\Facades\Cache::remember('geo_states', 3600, function () {
-            return \App\Modules\Core\Models\Village::distinct()->pluck('state_name')->filter()->sort()->values();
+        $productsList = Cache::remember('active_products_list', 3600, function () {
+            return Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']);
         });
 
-        $districtsList = $request->filled('state') ? \Illuminate\Support\Facades\Cache::remember('geo_districts_' . md5($request->state), 3600, function () use ($request) {
-            return \App\Modules\Core\Models\Village::whereIn('state_name', array_map('trim', explode(',', $request->state)))
+        $statesList = Cache::remember('geo_states', 3600, function () {
+            return Village::distinct()->pluck('state_name')->filter()->sort()->values();
+        });
+
+        $districtsList = $request->filled('state') ? Cache::remember('geo_districts_'.md5($request->state), 3600, function () use ($request) {
+            return Village::whereIn('state_name', array_map('trim', explode(',', $request->state)))
                 ->distinct()->pluck('district_name')->filter()->sort()->values();
         }) : [];
 
-        $talukasList = $request->filled('district') ? \Illuminate\Support\Facades\Cache::remember('geo_talukas_' . md5($request->state . '_' . $request->district), 3600, function () use ($request) {
-            return \App\Modules\Core\Models\Village::when($request->filled('state'), function ($q) use ($request) {
+        $talukasList = $request->filled('district') ? Cache::remember('geo_talukas_'.md5($request->state.'_'.$request->district), 3600, function () use ($request) {
+            return Village::when($request->filled('state'), function ($q) use ($request) {
                 $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
             })->whereIn('district_name', array_map('trim', explode(',', $request->district)))
-            ->distinct()->pluck('taluka_name')->filter()->sort()->values();
+                ->distinct()->pluck('taluka_name')->filter()->sort()->values();
         }) : [];
 
-        $villagesList = $request->filled('taluka') ? \Illuminate\Support\Facades\Cache::remember('geo_villages_' . md5($request->state . '_' . $request->district . '_' . $request->taluka), 3600, function () use ($request) {
-            return \App\Modules\Core\Models\Village::when($request->filled('state'), function ($q) use ($request) {
+        $villagesList = $request->filled('taluka') ? Cache::remember('geo_villages_'.md5($request->state.'_'.$request->district.'_'.$request->taluka), 3600, function () use ($request) {
+            return Village::when($request->filled('state'), function ($q) use ($request) {
                 $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
             })->when($request->filled('district'), function ($q) use ($request) {
                 $q->whereIn('district_name', array_map('trim', explode(',', $request->district)));
             })->whereIn('taluka_name', array_map('trim', explode(',', $request->taluka)))
-            ->distinct()->pluck('village_name')->filter()->sort()->values();
+                ->distinct()->pluck('village_name')->filter()->sort()->values();
         }) : [];
 
-        $services = \App\Modules\Catalog\Models\Service::active()->get();
+        $services = Service::active()->get();
         $carriersList = $services->pluck('name')
             ->filter()
             ->unique()
@@ -286,7 +297,7 @@ class OrderController extends Controller implements HasMiddleware
             ->get([
                 DB::raw('DATE(order_date) as date'),
                 DB::raw('COUNT(*) as orders'),
-                DB::raw('SUM(net_amount) as revenue')
+                DB::raw('SUM(net_amount) as revenue'),
             ]);
 
         $trendsData = [];
@@ -294,9 +305,9 @@ class OrderController extends Controller implements HasMiddleware
             $date = now()->subDays($i)->format('Y-m-d');
             $record = $trendsQuery->firstWhere('date', $date);
             $trendsData[] = [
-                'date' => \Carbon\Carbon::parse($date)->format('D'),
-                'orders' => $record ? (int)$record->orders : 0,
-                'revenue' => $record ? (float)$record->revenue : 0,
+                'date' => Carbon::parse($date)->format('D'),
+                'orders' => $record ? (int) $record->orders : 0,
+                'revenue' => $record ? (float) $record->revenue : 0,
             ];
         }
 
@@ -332,11 +343,11 @@ class OrderController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $warehouses   = Warehouse::orderBy('name')->get();
-        $parties      = Party::orderBy('firstname')->get();
-        $activeOffers = \App\Modules\Orders\Models\Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
-        $activeCoupons = \App\Modules\Orders\Models\Coupon::where('is_active', true)->get();
-        $categories   = \App\Modules\Catalog\Models\Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
+        $warehouses = Warehouse::orderBy('name')->get();
+        $parties = Party::orderBy('firstname')->get();
+        $activeOffers = Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
+        $activeCoupons = Coupon::where('is_active', true)->get();
+        $categories = Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
         $initialCustomer = null;
         $initialOrder = null;
 
@@ -367,7 +378,7 @@ class OrderController extends Controller implements HasMiddleware
                 'appliedOffer:id,name,discount_type,value',
             ])->find(request()->integer('order_id'));
 
-            if ($initialOrder && !$initialCustomer) {
+            if ($initialOrder && ! $initialCustomer) {
                 $initialCustomer = Party::with([
                     'addresses.village.services',
                     'orders' => function ($q) {
@@ -390,36 +401,9 @@ class OrderController extends Controller implements HasMiddleware
         return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder'));
     }
 
-    public function store(Request $request, OrderService $orderService)
+    public function store(\App\Modules\Orders\Requests\StoreOrderRequest $request, OrderService $orderService)
     {
-        $validated = $request->validate([
-            'type' => 'required|string|in:sale,purchase',
-            'party_id' => 'required|exists:parties,id',
-            'warehouse_id' => 'required|exists:warehouses,id',
-            'shipping_address_id' => 'required|exists:party_addresses,id',
-            'billing_address_id' => 'required|exists:party_addresses,id',
-            'order_date' => 'required|date',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.product_variant_id' => 'nullable|integer',
-            'items.*.quantity' => 'required|numeric|gt:0',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'items.*.tax_rate' => 'nullable|numeric|min:0',
-            'items.*.discount_amount' => 'nullable|numeric|min:0',
-            'items.*.tax_amount' => 'nullable|numeric|min:0',
-            'items.*.total_amount' => 'nullable|numeric|min:0',
-            'is_draft' => 'nullable|boolean',
-            'future_order_date' => 'nullable|date',
-            'coupon_code' => 'nullable|string',
-            'applied_offer_id' => 'nullable|integer|exists:offers,id',
-            'applied_bogo_ids' => 'nullable|array',
-            'applied_bogo_ids.*' => 'integer|exists:offers,id',
-            'total_amount' => 'required|numeric',
-            'tax_amount' => 'required|numeric',
-            'discount_amount' => 'required|numeric',
-            'net_amount' => 'required|numeric',
-            'use_wallet_balance' => 'nullable|boolean',
-        ]);
+        $validated = $request->validated();
 
         $order = $orderService->createOrder($validated);
 
@@ -439,6 +423,7 @@ class OrderController extends Controller implements HasMiddleware
         $warehouses = Warehouse::orderBy('name')->get();
         $parties = Party::orderBy('firstname')->get();
         $products = Product::orderBy('name')->get();
+
         return view('orders.edit', compact('order', 'warehouses', 'parties', 'products'));
     }
 
@@ -478,16 +463,16 @@ class OrderController extends Controller implements HasMiddleware
             $request->validate([
                 'scheduled_date' => 'required|date',
             ]);
-            
+
             $order->scheduled_confirmation_date = $request->input('scheduled_date');
             $order->increment('confirmation_attempts');
             $order->save();
-            
-            $reasonText = $request->filled('reason') ? 'Reason: ' . ucfirst(str_replace('_', ' ', $request->input('reason'))) . '. ' : '';
+
+            $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
             $order->statusLogs()->create([
                 'status' => 'pending (scheduled)',
-                'notes' => $reasonText . ($request->input('notes') ?? 'Scheduled for future confirmation.'),
-                'changed_by' => auth()->id()
+                'notes' => $reasonText.($request->input('notes') ?? 'Scheduled for future confirmation.'),
+                'changed_by' => auth()->id(),
             ]);
 
             return response()->json(['success' => true, 'message' => 'Order scheduled for confirmation.']);
@@ -495,13 +480,13 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->confirmOrder($order);
-            
+
             $order->statusLogs()->create([
                 'status' => 'confirmed',
                 'notes' => $request->input('notes') ?? 'Order confirmed.',
-                'changed_by' => auth()->id()
+                'changed_by' => auth()->id(),
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
@@ -524,7 +509,7 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no']);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
@@ -541,13 +526,13 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         $shipment = $order->shipments()->first();
-        if (!$shipment || !$shipment->carrier_name || !$shipment->tracking_no) {
+        if (! $shipment || ! $shipment->carrier_name || ! $shipment->tracking_no) {
             return response()->json(['error' => 'Order cannot be dispatched without valid carrier and tracking details.'], 400);
         }
 
         try {
             $inventoryService->dispatchOrder($order);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
@@ -565,7 +550,7 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $orderService->updateStatus($order, 'processing');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
@@ -577,7 +562,7 @@ class OrderController extends Controller implements HasMiddleware
     public function markDelivered(string $id, Request $request, InventoryService $inventoryService)
     {
         $order = Order::findOrFail($id);
-        if (!in_array($order->status, ['dispatched', 'shipped'], true)) {
+        if (! in_array($order->status, ['dispatched', 'shipped'], true)) {
             return response()->json(['error' => 'Only dispatched orders can be marked as delivered.'], 400);
         }
 
@@ -585,7 +570,7 @@ class OrderController extends Controller implements HasMiddleware
             $request->validate([
                 'scheduled_date' => 'required|date',
             ]);
-            
+
             $shipment = $order->shipments()->latest()->first();
             if ($shipment) {
                 $shipment->next_followup_date = $request->input('scheduled_date');
@@ -594,11 +579,11 @@ class OrderController extends Controller implements HasMiddleware
                 $shipment->save();
             }
 
-            $reasonText = $request->filled('reason') ? 'Reason: ' . ucfirst(str_replace('_', ' ', $request->input('reason'))) . '. ' : '';
+            $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
             $order->statusLogs()->create([
                 'status' => 'delivery_rescheduled',
-                'notes' => $reasonText . ($request->input('notes') ?? 'Scheduled for future delivery attempt.'),
-                'changed_by' => auth()->id()
+                'notes' => $reasonText.($request->input('notes') ?? 'Scheduled for future delivery attempt.'),
+                'changed_by' => auth()->id(),
             ]);
 
             return response()->json(['success' => true, 'message' => 'Delivery attempt rescheduled.']);
@@ -606,7 +591,7 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->deliverOrder($order);
-            
+
             $shipment = $order->shipments()->latest()->first();
             if ($shipment) {
                 $shipment->delivered_by = $request->filled('delivered_by') ? $request->input('delivered_by') : auth()->user()->name;
@@ -616,9 +601,9 @@ class OrderController extends Controller implements HasMiddleware
             $order->statusLogs()->create([
                 'status' => 'delivered',
                 'notes' => $request->input('notes') ?? 'Order delivered.',
-                'changed_by' => auth()->id()
+                'changed_by' => auth()->id(),
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
@@ -636,7 +621,7 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->cancelOrder($order);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
@@ -648,13 +633,13 @@ class OrderController extends Controller implements HasMiddleware
     public function markReturned(string $id, InventoryService $inventoryService)
     {
         $order = Order::findOrFail($id);
-        if (!in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
+        if (! in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
             return response()->json(['error' => 'Only delivered or dispatched orders can be marked as returned.'], 400);
         }
 
         try {
             $inventoryService->returnOrder($order);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
@@ -666,6 +651,7 @@ class OrderController extends Controller implements HasMiddleware
     public function receipt(string $id, OrderService $orderService)
     {
         $order = $orderService->getOrderForReceipt((int) $id);
+
         return view('orders.receipt', compact('order'));
     }
 
@@ -733,22 +719,22 @@ class OrderController extends Controller implements HasMiddleware
                             $skipped++;
                         }
                     }
-                } catch (\Illuminate\Validation\ValidationException $e) {
-                    $errors[] = "Order #{$order->order_no}: " . collect($e->validator->errors()->all())->first();
+                } catch (ValidationException $e) {
+                    $errors[] = "Order #{$order->order_no}: ".collect($e->validator->errors()->all())->first();
                     $skipped++;
                 } catch (\Exception $e) {
-                    $errors[] = "Order #{$order->order_no}: " . $e->getMessage();
+                    $errors[] = "Order #{$order->order_no}: ".$e->getMessage();
                     $skipped++;
                 }
             }
         });
 
         $msg = "Bulk status update completed. Success: {$count}, Skipped: {$skipped}.";
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             // Include up to 3 errors to avoid excessively long toast messages
-            $msg .= " Errors: " . implode(' ', array_slice($errors, 0, 3));
+            $msg .= ' Errors: '.implode(' ', array_slice($errors, 0, 3));
             if (count($errors) > 3) {
-                $msg .= " (and " . (count($errors) - 3) . " more)";
+                $msg .= ' (and '.(count($errors) - 3).' more)';
             }
         }
 
@@ -776,6 +762,7 @@ class OrderController extends Controller implements HasMiddleware
         $invoice = $invoiceService->generateForOrder($order);
 
         $pdf = Pdf::loadView('orders.pdf.invoice', compact('invoice'))->setPaper('a5', 'portrait');
+
         return $pdf->download("invoice-{$invoice->invoice_no}.pdf");
     }
 
@@ -803,7 +790,7 @@ class OrderController extends Controller implements HasMiddleware
 
         DB::transaction(function () use ($orders, $invoiceService, &$generated): void {
             foreach ($orders as $order) {
-                if (!$invoiceService->findForOrder($order)) {
+                if (! $invoiceService->findForOrder($order)) {
                     $invoiceService->generateForOrder($order);
                     $generated++;
                 }
@@ -824,6 +811,7 @@ class OrderController extends Controller implements HasMiddleware
         $order->load('invoice');
 
         $pdf = Pdf::loadView('orders.pdf.cod', compact('order'))->setPaper('a5', 'portrait');
+
         return $pdf->download("receipt-{$order->order_no}.pdf");
     }
 
@@ -841,12 +829,12 @@ class OrderController extends Controller implements HasMiddleware
 
         DB::transaction(function () use ($orders, $invoiceService): void {
             foreach ($orders as $order) {
-                if (!$invoiceService->findForOrder($order)) {
+                if (! $invoiceService->findForOrder($order)) {
                     $invoiceService->generateForOrder($order);
                 }
             }
         });
-        
+
         $orders->load('invoice');
 
         if ($request->type === 'invoice') {
@@ -858,43 +846,18 @@ class OrderController extends Controller implements HasMiddleware
                 'order.billingAddress.village',
             ])->whereIn('order_id', $orders->pluck('id'))->get();
             $pdf = Pdf::loadView('orders.pdf.bulk_invoice', compact('invoices'))->setPaper('a5', 'portrait');
+
             return $pdf->download('bulk-invoices.pdf');
         } else {
             $pdf = Pdf::loadView('orders.pdf.bulk_cod', compact('orders'))->setPaper('a5', 'portrait');
+
             return $pdf->download('bulk-cod-receipts.pdf');
         }
     }
 
-    public function update(Request $request, Order $order, OrderService $orderService)
+    public function update(\App\Modules\Orders\Requests\UpdateOrderRequest $request, Order $order, OrderService $orderService)
     {
-        $validated = $request->validate([
-            'type' => 'required|string|in:sale,purchase',
-            'party_id' => 'required|exists:parties,id',
-            'warehouse_id' => 'required|exists:warehouses,id',
-            'shipping_address_id' => 'required|exists:party_addresses,id',
-            'billing_address_id' => 'required|exists:party_addresses,id',
-            'order_date' => 'required|date',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.product_variant_id' => 'nullable|integer',
-            'items.*.quantity' => 'required|numeric|gt:0',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'items.*.tax_rate' => 'nullable|numeric|min:0',
-            'items.*.discount_amount' => 'nullable|numeric|min:0',
-            'items.*.tax_amount' => 'nullable|numeric|min:0',
-            'items.*.total_amount' => 'nullable|numeric|min:0',
-            'is_draft' => 'nullable|boolean',
-            'future_order_date' => 'nullable|date',
-            'coupon_code' => 'nullable|string',
-            'applied_offer_id' => 'nullable|integer|exists:offers,id',
-            'applied_bogo_ids' => 'nullable|array',
-            'applied_bogo_ids.*' => 'integer|exists:offers,id',
-            'total_amount' => 'required|numeric',
-            'tax_amount' => 'required|numeric',
-            'discount_amount' => 'required|numeric',
-            'net_amount' => 'required|numeric',
-            'use_wallet_balance' => 'nullable|boolean',
-        ]);
+        $validated = $request->validated();
 
         $updated = $orderService->updateCustomerOrder($order, $validated);
 
@@ -914,10 +877,10 @@ class OrderController extends Controller implements HasMiddleware
         $query = Order::with(['party', 'warehouse', 'items.product', 'shipments', 'billingAddress', 'shippingAddress']);
 
         $user = auth()->user();
-        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !(($user->can('view_all_order') || $user->can('view-all-data')) || $user->can('view-all-data'))) {
+        if ($user && ! $user->hasAnyRole(['Super Admin', 'Admin']) && ! (($user->can('view_all_order') || $user->can('view-all-data')) || $user->can('view-all-data'))) {
             $query->where('created_by', $user->id);
         }
-        if ($user && ($user->can('view_all_order') || $user->can('view-all-data')) && !$user->hasAnyRole(['Super Admin', 'Admin'])) {
+        if ($user && ($user->can('view_all_order') || $user->can('view-all-data')) && ! $user->hasAnyRole(['Super Admin', 'Admin'])) {
             $query->where('status', '!=', 'pending');
         }
         $this->applyOrderActionPermissionScope($query, $user);
@@ -942,7 +905,7 @@ class OrderController extends Controller implements HasMiddleware
 
         if ($request->filled('product')) {
             $productIds = array_filter(array_map('intval', explode(',', $request->product)));
-            if (!empty($productIds)) {
+            if (! empty($productIds)) {
                 $query->whereHas('items', function ($q) use ($productIds) {
                     $q->whereIn('product_id', $productIds);
                 });
@@ -951,7 +914,7 @@ class OrderController extends Controller implements HasMiddleware
 
         $orders = $query->orderBy('id')->get();
 
-        $filename = 'orders-export-' . now()->format('Ymd_His') . '.csv';
+        $filename = 'orders-export-'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload($this->generateCsvExportCallback($orders), $filename, [
             'Content-Type' => 'text/csv',
@@ -969,18 +932,24 @@ class OrderController extends Controller implements HasMiddleware
         $handle = fopen($file->getRealPath(), 'r');
 
         if ($handle === false) {
-            if ($isPreview) return response()->json(['error' => 'Unable to read uploaded file.'], 400);
+            if ($isPreview) {
+                return response()->json(['error' => 'Unable to read uploaded file.'], 400);
+            }
+
             return back()->with('error', 'Unable to read uploaded file.');
         }
 
         $firstRow = fgetcsv($handle);
         if ($firstRow === false) {
             fclose($handle);
-            if ($isPreview) return response()->json(['error' => 'CSV file is empty.'], 400);
+            if ($isPreview) {
+                return response()->json(['error' => 'CSV file is empty.'], 400);
+            }
+
             return back()->with('error', 'CSV file is empty.');
         }
 
-        $normalized = array_map(fn($v) => strtolower(trim((string)$v)), $firstRow);
+        $normalized = array_map(fn ($v) => strtolower(trim((string) $v)), $firstRow);
         $hasHeader = in_array('order_no', $normalized, true) || in_array('order_id', $normalized, true);
 
         $updated = 0;
@@ -991,9 +960,10 @@ class OrderController extends Controller implements HasMiddleware
             foreach ($keys as $key) {
                 $index = array_search($key, $header, true);
                 if ($index !== false) {
-                    return isset($row[$index]) ? trim((string)$row[$index]) : null;
+                    return isset($row[$index]) ? trim((string) $row[$index]) : null;
                 }
             }
+
             return null;
         };
 
@@ -1005,12 +975,12 @@ class OrderController extends Controller implements HasMiddleware
                     $carrierName = $extractByHeader($row, $normalized, ['carrier_name']);
                     $trackingNo = $extractByHeader($row, $normalized, ['tracking_no']);
                 } else {
-                    $orderNo = trim((string)($row[0] ?? ''));
-                    $carrierName = trim((string)($row[1] ?? ''));
-                    $trackingNo = trim((string)($row[2] ?? ''));
+                    $orderNo = trim((string) ($row[0] ?? ''));
+                    $carrierName = trim((string) ($row[1] ?? ''));
+                    $trackingNo = trim((string) ($row[2] ?? ''));
                 }
 
-                if (!$orderNo) {
+                if (! $orderNo) {
                     continue;
                 }
 
@@ -1023,38 +993,42 @@ class OrderController extends Controller implements HasMiddleware
                         'csv_carrier' => $carrierName ?: 'N/A',
                         'csv_tracking' => $trackingNo ?: 'N/A',
                         'is_valid' => $order && $order->status === 'processing',
-                        'customer' => $order ? ($order->party ? trim($order->party->firstname . ' ' . $order->party->lastname) : 'N/A') : 'Not Found',
+                        'customer' => $order ? ($order->party ? trim($order->party->firstname.' '.$order->party->lastname) : 'N/A') : 'Not Found',
                         'current_status' => $order ? $order->status : 'Not Found',
                         'upcoming_status' => ($order && $order->status === 'processing') ? 'ready_to_ship' : 'N/A',
                         'existing_carrier' => $shipment && $shipment->carrier_name ? $shipment->carrier_name : 'N/A',
                         'existing_tracking' => $shipment && $shipment->tracking_no ? $shipment->tracking_no : 'N/A',
                     ];
+
                     continue;
                 }
 
-                if (!$order || $order->status !== 'processing') {
+                if (! $order || $order->status !== 'processing') {
                     $skipped++;
+
                     continue;
                 }
 
                 $inventoryService->readyToShipOrder($order, $carrierName, $trackingNo);
                 $updated++;
             }
-            
+
             if ($isPreview) {
                 DB::rollBack();
                 fclose($handle);
+
                 return response()->json(['preview' => $previewData]);
             }
-            
+
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
             fclose($handle);
             if ($isPreview) {
-                return response()->json(['error' => 'Error processing CSV: ' . $e->getMessage()], 400);
+                return response()->json(['error' => 'Error processing CSV: '.$e->getMessage()], 400);
             }
-            return back()->with('error', 'Error processing CSV: ' . $e->getMessage());
+
+            return back()->with('error', 'Error processing CSV: '.$e->getMessage());
         }
 
         fclose($handle);
@@ -1095,7 +1069,7 @@ class OrderController extends Controller implements HasMiddleware
             ->orderBy('id')
             ->get();
 
-        $filename = 'orders-export-selected-' . now()->format('Ymd_His') . '.csv';
+        $filename = 'orders-export-selected-'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload($this->generateCsvExportCallback($orders), $filename, [
             'Content-Type' => 'text/csv',
@@ -1143,8 +1117,9 @@ class OrderController extends Controller implements HasMiddleware
 
     private function applyOrderActionPermissionScope($query, $user): void
     {
-        if (!$user) {
+        if (! $user) {
             $query->whereRaw('1 = 0');
+
             return;
         }
 
@@ -1157,7 +1132,7 @@ class OrderController extends Controller implements HasMiddleware
 
     private function allowedOrderFilterStatuses($user): array
     {
-        if (!$user) {
+        if (! $user) {
             return [];
         }
 
@@ -1244,15 +1219,15 @@ class OrderController extends Controller implements HasMiddleware
                 'Billing Address 1', 'Billing Address 2', 'Billing Village', 'Billing PO/BO', 'Billing Taluka', 'Billing District', 'Billing City', 'Billing State', 'Billing Pincode',
                 'Shipping Address 1', 'Shipping Address 2', 'Shipping Village', 'Shipping PO/BO', 'Shipping Taluka', 'Shipping District', 'Shipping City', 'Shipping State', 'Shipping Pincode',
                 'Warehouse Name', 'Carrier Name', 'Tracking No',
-                'Product Name', 'Product SKU', 'Quantity', 'Unit Price', 'Item Tax', 'Item Discount', 'Item Net'
+                'Product Name', 'Product SKU', 'Quantity', 'Unit Price', 'Item Tax', 'Item Discount', 'Item Net',
             ]);
 
             foreach ($orders as $order) {
                 $shipment = $order->shipments->first();
-                $customerName = $order->party ? trim($order->party->firstname . ' ' . $order->party->lastname) : '';
+                $customerName = $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : '';
                 $customerEmail = $order->party->email ?? '';
                 $customerPhone = $order->party->phone ?? '';
-                
+
                 $billingAdd1 = $order->billing_address_line_1 ?? '';
                 $billingAdd2 = $order->billing_address_line_2 ?? '';
                 $billingVillage = $order->billing_village_name ?? '';
@@ -1285,7 +1260,7 @@ class OrderController extends Controller implements HasMiddleware
                         $billingAdd1, $billingAdd2, $billingVillage, $billingPO, $billingTaluka, $billingDistrict, $billingCity, $billingState, $billingPin,
                         $shippingAdd1, $shippingAdd2, $shippingVillage, $shippingPO, $shippingTaluka, $shippingDistrict, $shippingCity, $shippingState, $shippingPin,
                         $warehouseName, $carrierName, $trackingNo,
-                        '', '', '', '', '', '', ''
+                        '', '', '', '', '', '', '',
                     ]);
                 } else {
                     foreach ($order->items as $item) {
@@ -1298,7 +1273,7 @@ class OrderController extends Controller implements HasMiddleware
                             $billingAdd1, $billingAdd2, $billingVillage, $billingPO, $billingTaluka, $billingDistrict, $billingCity, $billingState, $billingPin,
                             $shippingAdd1, $shippingAdd2, $shippingVillage, $shippingPO, $shippingTaluka, $shippingDistrict, $shippingCity, $shippingState, $shippingPin,
                             $warehouseName, $carrierName, $trackingNo,
-                            $productName, $productSku, $item->quantity, $item->unit_price, $item->tax_amount, $item->discount_amount, $item->net_amount
+                            $productName, $productSku, $item->quantity, $item->unit_price, $item->tax_amount, $item->discount_amount, $item->net_amount,
                         ]);
                     }
                 }

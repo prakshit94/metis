@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\HsnCode;
@@ -14,10 +13,10 @@ use App\Modules\Catalog\Models\ProductAttributeValue;
 use App\Modules\Catalog\Models\TaxRate;
 use App\Modules\Catalog\Models\UnitOfMeasure;
 use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Core\Controllers\Controller;
+use App\Modules\Inventory\Models\Stock;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Modules\Inventory\Models\Stock;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -60,7 +59,7 @@ class ProductController extends Controller
 
         $data = $this->validatePayload($request);
 
-        $product = new Product();
+        $product = new Product;
         $this->fillProduct($product, $data, $request);
         $product->save();
         $this->syncAttributes($product, $data['attributes'] ?? []);
@@ -201,7 +200,7 @@ class ProductController extends Controller
             $q = $request->q;
             $query->where(function ($qb) use ($q) {
                 $qb->where('name', 'like', "%{$q}%")
-                   ->orWhere('sku', 'like', "%{$q}%");
+                    ->orWhere('sku', 'like', "%{$q}%");
             });
         }
 
@@ -221,10 +220,10 @@ class ProductController extends Controller
         $paginator = $query->latest()->paginate($perPage);
 
         $data = $paginator->through(function (Product $p) {
-            $totalQty      = (float) ($p->stocks_sum_quantity ?? 0);
-            $reservedQty   = (float) ($p->stocks_sum_reserved_qty ?? 0);
+            $totalQty = (float) ($p->stocks_sum_quantity ?? 0);
+            $reservedQty = (float) ($p->stocks_sum_reserved_qty ?? 0);
             $dispatchedQty = (float) ($p->stocks_sum_dispatched_qty ?? 0);
-            $pendingQty    = (float) ($p->pending_orders_qty ?? 0);
+            $pendingQty = (float) ($p->pending_orders_qty ?? 0);
 
             $rawAvailable = $totalQty - $reservedQty - $pendingQty;
             $netAvailable = max(0.0, $rawAvailable);
@@ -236,44 +235,44 @@ class ProductController extends Controller
             }
 
             return [
-                'id'                   => $p->id,
-                'name'                 => $p->name,
-                'sku'                  => $p->sku,
-                'barcode'              => $p->barcode,
-                'selling_price'        => (float) $p->selling_price,
-                'purchase_price'       => (float) $p->purchase_price,
-                'mrp'                  => (float) $p->mrp,
-                'image_url'            => $p->image_path ? asset('storage/' . $p->image_path) : null,
-                'stock_qty'            => $totalQty,
-                'reserved_qty'         => $reservedQty,
-                'pending_qty'          => $pendingQty,
-                'dispatched_qty'       => $dispatchedQty,
-                'available_stock'      => $maxAllowedQty,
-                'physical_available'   => $netAvailable,
-                'overselling_qty'      => (int) ($p->overselling_qty ?? 0),
-                'allow_overselling'    => (bool) $p->allow_overselling,
-                'status'               => $p->status,
-                'category'             => $p->category?->name,
-                'category_id'          => $p->category_id,
-                'brand'                => $p->brand?->name,
-                'tax_rate'             => (float) ($p->taxRate?->rate ?? 0),
-                'tax_label'            => $p->taxRate?->name,
-                'min_stock_level'      => $p->min_stock_level ?? 0,
-                'weight'               => $p->weight,
-                'is_sku_enabled'       => (bool) $p->is_sku_enabled,
-                'default_discount'     => (float) ($p->default_discount ?? 0),
+                'id' => $p->id,
+                'name' => $p->name,
+                'sku' => $p->sku,
+                'barcode' => $p->barcode,
+                'selling_price' => (float) $p->selling_price,
+                'purchase_price' => (float) $p->purchase_price,
+                'mrp' => (float) $p->mrp,
+                'image_url' => $p->image_path ? asset('storage/'.$p->image_path) : null,
+                'stock_qty' => $totalQty,
+                'reserved_qty' => $reservedQty,
+                'pending_qty' => $pendingQty,
+                'dispatched_qty' => $dispatchedQty,
+                'available_stock' => $maxAllowedQty,
+                'physical_available' => $netAvailable,
+                'overselling_qty' => (int) ($p->overselling_qty ?? 0),
+                'allow_overselling' => (bool) $p->allow_overselling,
+                'status' => $p->status,
+                'category' => $p->category?->name,
+                'category_id' => $p->category_id,
+                'brand' => $p->brand?->name,
+                'tax_rate' => (float) ($p->taxRate?->rate ?? 0),
+                'tax_label' => $p->taxRate?->name,
+                'min_stock_level' => $p->min_stock_level ?? 0,
+                'weight' => $p->weight,
+                'is_sku_enabled' => (bool) $p->is_sku_enabled,
+                'default_discount' => (float) ($p->default_discount ?? 0),
                 'default_discount_type' => $p->default_discount_type ?? 'percent',
             ];
         });
 
         return response()->json([
-            'data'         => $data->items(),
+            'data' => $data->items(),
             'current_page' => $paginator->currentPage(),
-            'last_page'    => $paginator->lastPage(),
-            'per_page'     => $paginator->perPage(),
-            'total'        => $paginator->total(),
-            'from'         => $paginator->firstItem(),
-            'to'           => $paginator->lastItem(),
+            'last_page' => $paginator->lastPage(),
+            'per_page' => $paginator->perPage(),
+            'total' => $paginator->total(),
+            'from' => $paginator->firstItem(),
+            'to' => $paginator->lastItem(),
         ]);
     }
 
@@ -288,7 +287,7 @@ class ProductController extends Controller
             'updated_at',
             'deleted_at',
         ]);
-        $clone->name = $product->name . ' (Copy)';
+        $clone->name = $product->name.' (Copy)';
         $clone->sku = $this->generateUniqueSku($product->sku);
         $clone->slug = $this->generateUniqueSlug($clone->name);
         $clone->status = 'draft';
@@ -324,6 +323,7 @@ class ProductController extends Controller
                     fn ($value) => Str::of((string) $value)->trim()->lower()->toString(),
                     $row,
                 );
+
                 continue;
             }
 
@@ -391,7 +391,7 @@ class ProductController extends Controller
     {
         abort_unless($request->user()?->can('product-export') || $request->user()?->can('product-view'), 403);
 
-        $filename = 'products-' . now()->format('Y-m-d-His') . '.csv';
+        $filename = 'products-'.now()->format('Y-m-d-His').'.csv';
 
         return response()->streamDownload(function () {
             $handle = fopen('php://output', 'w');
@@ -450,7 +450,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:255', 'unique:products,sku' . ($product ? ',' . $product->id : '')],
+            'sku' => ['required', 'string', 'max:255', 'unique:products,sku'.($product ? ','.$product->id : '')],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
             'uom_id' => ['nullable', 'integer', 'exists:units_of_measure,id'],
@@ -521,11 +521,11 @@ class ProductController extends Controller
 
         if ($request?->hasFile('image')) {
             $this->deleteImage($product);
-            
+
             $file = $request->file('image');
             $extension = $file->extension() ?: 'jpg';
-            $filename = \Illuminate\Support\Str::slug($product->sku) . '-' . time() . '.' . $extension;
-            
+            $filename = Str::slug($product->sku).'-'.time().'.'.$extension;
+
             $product->image_path = $file->storeAs('products', $filename, 'public');
         }
     }
@@ -666,7 +666,7 @@ class ProductController extends Controller
 
         // If no warehouse is assigned, try to use the first available warehouse
         if (! $warehouseId) {
-            $warehouseId = \App\Modules\Catalog\Models\Warehouse::query()->value('id');
+            $warehouseId = Warehouse::query()->value('id');
             if ($warehouseId) {
                 $product->default_warehouse_id = $warehouseId;
                 $product->saveQuietly();
@@ -681,13 +681,13 @@ class ProductController extends Controller
         Stock::withTrashed()->updateOrCreate(
             ['product_id' => $product->id, 'warehouse_id' => $warehouseId],
             [
-                'quantity'       => $qty,
-                'reserved_qty'   => 0,
+                'quantity' => $qty,
+                'reserved_qty' => 0,
                 'dispatched_qty' => 0,
-                'committed_qty'  => 0,
+                'committed_qty' => 0,
                 'in_transit_qty' => 0,
-                'status'         => 'active',
-                'deleted_at'     => null,
+                'status' => 'active',
+                'deleted_at' => null,
             ]
         );
     }
@@ -704,9 +704,9 @@ class ProductController extends Controller
 
         $name = trim((string) $value);
         $slug = Str::slug($name);
-        
+
         $category = Category::query()->where('slug', $slug)->first();
-        if (!$category) {
+        if (! $category) {
             $category = Category::create([
                 'name' => $name,
                 'slug' => $slug,
@@ -730,11 +730,11 @@ class ProductController extends Controller
         $status = Str::of($status)->lower()->trim()->toString();
 
         return match ($status) {
-            'published'    => 'published',
-            'active'       => 'active',
+            'published' => 'published',
+            'active' => 'active',
             'out_of_stock' => 'out_of_stock',
             'pending', 'review' => 'pending',
-            default        => 'draft',
+            default => 'draft',
         };
     }
 
@@ -750,7 +750,7 @@ class ProductController extends Controller
                 ->where('slug', $slug)
                 ->exists()
         ) {
-            $slug = $base . '-' . ++$counter;
+            $slug = $base.'-'.++$counter;
         }
 
         return $slug;
@@ -759,11 +759,11 @@ class ProductController extends Controller
     private function generateUniqueSku(string $sku): string
     {
         $base = Str::upper(Str::slug($sku));
-        $candidate = $base . '-COPY';
+        $candidate = $base.'-COPY';
         $counter = 1;
 
         while (Product::where('sku', $candidate)->exists()) {
-            $candidate = $base . '-COPY-' . $counter++;
+            $candidate = $base.'-COPY-'.$counter++;
         }
 
         return $candidate;

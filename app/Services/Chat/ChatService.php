@@ -2,23 +2,21 @@
 
 namespace App\Services\Chat;
 
+use App\Jobs\Chat\ProcessMessageDeliveries;
 use App\Models\Chat\AuditLog;
-use App\Models\Chat\ChatNotification;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Member;
 use App\Models\Chat\Message;
-use App\Models\Chat\MessageDelivery;
 use App\Models\Chat\MessageRead;
 use App\Models\Chat\Presence;
-use App\Modules\Customers\Models\Party;
 use App\Modules\Users\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use App\Jobs\Chat\ProcessMessageDeliveries;
 
 class ChatService
 {
@@ -76,7 +74,7 @@ class ChatService
             $this->audit($creator, 'conversation.created', $conversation);
 
             return $conversation->load('activeMembers.user');
-        });
+        }, 3);
     }
 
     public function createGroup(User $creator, array $data): Conversation
@@ -104,7 +102,7 @@ class ChatService
             $this->audit($creator, 'group.created', $conversation, null, $conversation->toArray());
 
             return $conversation->load('activeMembers.user');
-        });
+        }, 3);
     }
 
     public function sendMessage(User $sender, Conversation $conversation, array $data): Message
@@ -145,7 +143,7 @@ class ChatService
             $this->audit($sender, 'message.sent', $conversation, null, $message->only(['id', 'type', 'content']));
 
             return $message->load('sender:id,name,photo');
-        });
+        }, 3);
     }
 
     public function messages(User $user, Conversation $conversation, int $perPage = 30): LengthAwarePaginator
@@ -200,12 +198,17 @@ class ChatService
             $query->where('id', '<=', $messageId);
         }
 
-        $query->pluck('id')->each(function ($id) use ($user) {
-            MessageRead::updateOrCreate(
-                ['message_id' => $id, 'user_id' => $user->id],
-                ['read_at' => now()]
-            );
-        });
+        $ids = $query->pluck('id');
+        if ($ids->isNotEmpty()) {
+            $now = now();
+            $reads = $ids->map(fn ($id) => [
+                'message_id' => $id,
+                'user_id' => $user->id,
+                'read_at' => $now,
+            ])->toArray();
+
+            MessageRead::upsert($reads, ['message_id', 'user_id'], ['read_at']);
+        }
 
         Member::where('conversation_id', $conversation->id)
             ->where('user_id', $user->id)
@@ -323,7 +326,7 @@ class ChatService
                 ? now()->setTimestamp((int) $user->last_session_activity)
                 : null;
             $presenceLastSeenAt = $user->presence_last_seen_at
-                ? \Illuminate\Support\Carbon::parse($user->presence_last_seen_at)
+                ? Carbon::parse($user->presence_last_seen_at)
                 : null;
             $lastSeenAt = collect([$lastSessionAt, $presenceLastSeenAt])
                 ->filter()
@@ -344,7 +347,7 @@ class ChatService
                 'is_online' => $isOnline,
                 'presence_status' => $isOnline ? 'online' : 'offline',
                 'last_seen_at' => $lastSeenAt?->toIso8601String(),
-                'last_seen_label' => $isOnline ? 'Active now' : ($lastSeenAt ? 'Last seen ' . $lastSeenAt->diffForHumans() : 'Not seen yet'),
+                'last_seen_label' => $isOnline ? 'Active now' : ($lastSeenAt ? 'Last seen '.$lastSeenAt->diffForHumans() : 'Not seen yet'),
                 'active_device' => $this->deviceFromUserAgent($user->last_session_user_agent),
             ];
         })->sortBy([

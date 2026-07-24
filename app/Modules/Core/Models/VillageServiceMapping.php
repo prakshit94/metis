@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Core\Models;
 
 use App\Modules\Catalog\Models\Service;
-
-
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
 
 class VillageServiceMapping extends Model
 {
@@ -52,18 +50,20 @@ class VillageServiceMapping extends Model
         if (is_numeric($service)) {
             return $query->where('service_id', $service);
         }
-        return $query->whereHas('service', fn($q) => $q->where('code', $service));
+
+        return $query->whereHas('service', fn ($q) => $q->where('code', $service));
     }
 
     public function scopeActiveDateRange(Builder $query): Builder
     {
         $today = now()->toDateString();
+
         return $query->where(function ($q) use ($today) {
             $q->whereNull('serviceable_from_date')
-              ->orWhere('serviceable_from_date', '<=', $today);
+                ->orWhere('serviceable_from_date', '<=', $today);
         })->where(function ($q) use ($today) {
             $q->whereNull('serviceable_to_date')
-              ->orWhere('serviceable_to_date', '>=', $today);
+                ->orWhere('serviceable_to_date', '>=', $today);
         });
     }
 }

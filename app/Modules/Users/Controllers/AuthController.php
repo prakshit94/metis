@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Users\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\LoginHistory;
 use App\Modules\Users\Models\User;
 use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -29,10 +29,13 @@ class AuthController extends Controller
 {
     // ─── Constants ────────────────────────────────────────────────────────────
 
-    private const int MAX_ATTEMPTS       = 5;
+    private const int MAX_ATTEMPTS = 5;
+
     private const int LOCKOUT_WINDOW_MIN = 5;
-    private const int SUSPENSION_MIN     = 15;
-    private const int TOKEN_EXPIRY_DAYS  = 30;
+
+    private const int SUSPENSION_MIN = 15;
+
+    private const int TOKEN_EXPIRY_DAYS = 30;
 
     private const string GENERIC_ERROR = 'These credentials do not match our records.';
 
@@ -52,7 +55,7 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse|RedirectResponse
     {
         $email = $request->validated('email');
-        $ip    = $request->ip() ?? '0.0.0.0';
+        $ip = $request->ip() ?? '0.0.0.0';
 
         // ── 1. Check rate limit BEFORE attempting auth ──────────────────────
         $recentFailures = LoginHistory::recentFailedFor($email, $ip, self::LOCKOUT_WINDOW_MIN)->count();
@@ -66,14 +69,14 @@ class AuthController extends Controller
 
             // Log the throttled attempt directly (no Auth::attempt needed)
             LoginHistory::create([
-                'user_id'        => $target?->id,
+                'user_id' => $target?->id,
                 'email_attempted' => $email,
-                'ip_address'     => $ip,
-                'user_agent'     => $request->userAgent(),
-                'device_type'    => $this->deviceType($request),
-                'status'         => 'failed',
+                'ip_address' => $ip,
+                'user_agent' => $request->userAgent(),
+                'device_type' => $this->deviceType($request),
+                'status' => 'failed',
                 'failure_reason' => 'throttled',
-                'attempted_at'   => Carbon::now(),
+                'attempted_at' => Carbon::now(),
             ]);
 
             return $this->isMobileRequest($request)
@@ -103,11 +106,13 @@ class AuthController extends Controller
         // ── 3. Guard: suspended or inactive accounts ─────────────────────────
         if ($user->isSuspended()) {
             Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
+
             return $this->genericFailure($request);
         }
 
         if (! $user->isActive()) {
             Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
+
             return $this->genericFailure($request);
         }
 
@@ -128,6 +133,7 @@ class AuthController extends Controller
     {
         if ($this->isMobileRequest($request)) {
             $request->user()?->currentAccessToken()?->delete();
+
             return response()->json(['message' => 'Logged out successfully.']);
         }
 
@@ -147,7 +153,7 @@ class AuthController extends Controller
      */
     public function revokeOtherTokens(Request $request): JsonResponse
     {
-        $user         = $request->user();
+        $user = $request->user();
         $currentToken = $user->currentAccessToken();
 
         $revokedCount = $user->tokens()
@@ -155,7 +161,7 @@ class AuthController extends Controller
             ->delete();
 
         return response()->json([
-            'message'       => 'Other tokens revoked successfully.',
+            'message' => 'Other tokens revoked successfully.',
             'revoked_count' => $revokedCount,
         ]);
     }
@@ -185,24 +191,24 @@ class AuthController extends Controller
      */
     private function issueMobileToken(Request $request, User $user): JsonResponse
     {
-        Event::dispatch(new \Illuminate\Auth\Events\Login('sanctum', $user, false)); // fires the Login event → LogAuthenticationAttempts
+        Event::dispatch(new Login('sanctum', $user, false)); // fires the Login event → LogAuthenticationAttempts
 
         $deviceName = $this->extractDeviceName($request);
-        $expiresAt  = Carbon::now()->addDays(self::TOKEN_EXPIRY_DAYS);
+        $expiresAt = Carbon::now()->addDays(self::TOKEN_EXPIRY_DAYS);
 
         $token = $user->createToken(
-            name:      $deviceName,
+            name: $deviceName,
             abilities: ['*'],
             expiresAt: $expiresAt,
         );
 
         return response()->json([
-            'message'    => 'Login successful.',
-            'token'      => $token->plainTextToken,
+            'message' => 'Login successful.',
+            'token' => $token->plainTextToken,
             'expires_at' => $expiresAt->toIso8601String(),
-            'user'       => [
-                'id'    => $user->id,
-                'name'  => $user->name,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
                 'email' => $user->email,
                 'roles' => $user->getRoleNames(),
             ],
@@ -253,6 +259,7 @@ class AuthController extends Controller
     private function extractDeviceName(Request $request): string
     {
         $ua = $request->userAgent() ?? 'Unknown Device';
+
         return mb_substr($ua, 0, 255);
     }
 }

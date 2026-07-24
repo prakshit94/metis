@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 
 class CatalogController extends Controller
 {

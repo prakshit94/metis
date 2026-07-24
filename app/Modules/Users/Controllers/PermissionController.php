@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Users\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Http\Requests\Permissions\StorePermissionRequest;
 use App\Http\Requests\Permissions\UpdatePermissionRequest;
+use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\Permission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -56,7 +56,7 @@ class PermissionController extends Controller implements HasMiddleware
             ->withCount('roles')
             ->when(
                 $request->filled('search'),
-                fn ($q) => $q->where('name', 'like', '%' . $request->input('search') . '%'),
+                fn ($q) => $q->where('name', 'like', '%'.$request->input('search').'%'),
             )
             ->when(
                 $request->filled('guard_name'),
@@ -74,19 +74,19 @@ class PermissionController extends Controller implements HasMiddleware
     public function store(StorePermissionRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        
+
         $permission = Permission::create([
-            'name'       => $validated['name'],
+            'name' => $validated['name'],
             'guard_name' => $validated['guard_name'] ?? 'web',
         ]);
-        
+
         if (array_key_exists('roles', $validated)) {
             $permission->syncRoles($validated['roles']);
         }
 
         return response()->json([
             'message' => "Permission [{$permission->name}] created successfully.",
-            'data'    => $permission,
+            'data' => $permission,
         ], 201);
     }
 
@@ -113,19 +113,19 @@ class PermissionController extends Controller implements HasMiddleware
     public function update(UpdatePermissionRequest $request, Permission $permission): JsonResponse
     {
         $validated = $request->validated();
-        
+
         $permission->update([
-            'name'       => $validated['name'],
+            'name' => $validated['name'],
             'guard_name' => $validated['guard_name'] ?? $permission->guard_name,
         ]);
-        
+
         if (array_key_exists('roles', $validated)) {
             $permission->syncRoles($validated['roles']);
         }
 
         return response()->json([
             'message' => "Permission [{$permission->name}] updated successfully.",
-            'data'    => $permission,
+            'data' => $permission,
         ]);
     }
 
@@ -158,7 +158,7 @@ class PermissionController extends Controller implements HasMiddleware
         if (! $permission->trashed()) {
             return response()->json([
                 'message' => "Permission [{$permission->name}] is not deleted.",
-                'data'    => $permission,
+                'data' => $permission,
             ]);
         }
 
@@ -167,7 +167,7 @@ class PermissionController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "Permission [{$permission->name}] restored successfully.",
-            'data'    => $permission,
+            'data' => $permission,
         ]);
     }
 

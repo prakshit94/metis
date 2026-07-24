@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Modules\Customers\Controllers;
 
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Customers\Models\Customer;
 use App\Modules\Customers\Models\Party;
+use App\Modules\Orders\Models\Coupon;
+use App\Modules\Orders\Models\Offer;
 use App\Modules\Orders\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class CustomerController extends Controller implements HasMiddleware
 {
@@ -38,32 +43,31 @@ class CustomerController extends Controller implements HasMiddleware
     public function index(Request $request): JsonResponse
     {
         $sortMap = [
-            'name'       => 'firstname',
-            'email'      => 'email',
-            'phone'      => 'phone',
+            'name' => 'firstname',
+            'email' => 'email',
+            'phone' => 'phone',
             'created_at' => 'created_at',
             'updated_at' => 'updated_at',
         ];
-        
+
         $sortBy = $sortMap[$request->input('sort_by', 'name')] ?? 'firstname';
         $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
         $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
 
         $deletedFilter = $request->input('deleted');
 
-
         $user = $request->user();
         $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
 
         $customers = Customer::query()
-            ->when(!$isGlobalView, fn ($q) => $q->where('created_by', $user->id))
+            ->when(! $isGlobalView, fn ($q) => $q->where('created_by', $user->id))
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
             ->with(['addresses.village'])
             ->when(
                 $request->filled('search'),
                 fn ($q) => $q->where(function ($inner) use ($request): void {
-                    $term = '%' . $request->input('search') . '%';
+                    $term = '%'.$request->input('search').'%';
                     $inner->where('firstname', 'like', $term)
                         ->orWhere('middlename', 'like', $term)
                         ->orWhere('lastname', 'like', $term)
@@ -93,7 +97,7 @@ class CustomerController extends Controller implements HasMiddleware
     public function searchByPhone(Request $request): JsonResponse
     {
         $phone = $request->input('phone');
-        if (!$phone) {
+        if (! $phone) {
             return response()->json(['found' => false]);
         }
 
@@ -102,24 +106,23 @@ class CustomerController extends Controller implements HasMiddleware
             $phone = substr($phone, -10);
         }
 
-
         $user = $request->user();
         $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
 
-        $query = Customer::where(function($q) use ($phone) {
+        $query = Customer::where(function ($q) use ($phone) {
             $q->where('phone', $phone)
-              ->orWhere('alternatemobile', $phone);
+                ->orWhere('alternatemobile', $phone);
         });
-        if (!$isGlobalView) {
+        if (! $isGlobalView) {
             $query->where('created_by', $user->id);
         }
-        
+
         $customer = $query->first();
-        
+
         if ($customer) {
             return response()->json([
                 'found' => true,
-                'redirect' => route('orders.create', ['customer_id' => $customer->id])
+                'redirect' => route('orders.create', ['customer_id' => $customer->id]),
             ]);
         }
 
@@ -140,46 +143,46 @@ class CustomerController extends Controller implements HasMiddleware
         }
 
         $validated = $request->validate([
-            'party_code'       => ['nullable', 'string', 'max:50', 'unique:parties,party_code'],
-            'firstname'        => ['required', 'string', 'max:100'],
-            'middlename'       => ['nullable', 'string', 'max:100'],
-            'lastname'         => ['required', 'string', 'max:100'],
-            'email'            => ['nullable', 'email', 'max:255'],
-            'phone'            => [
+            'party_code' => ['nullable', 'string', 'max:50', 'unique:parties,party_code'],
+            'firstname' => ['required', 'string', 'max:100'],
+            'middlename' => ['nullable', 'string', 'max:100'],
+            'lastname' => ['required', 'string', 'max:100'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => [
                 'nullable',
                 'string',
                 'max:20',
-                Rule::unique('parties', 'phone')->where(fn($q) => $q->where('type', 'customer')->whereNull('deleted_at'))
+                Rule::unique('parties', 'phone')->where(fn ($q) => $q->where('type', 'customer')->whereNull('deleted_at')),
             ],
-            'alternatemobile'  => ['nullable', 'string', 'max:20'],
-            'relative_mobile'  => ['nullable', 'string', 'max:20'],
-            'relative_phone'   => ['nullable', 'string', 'max:20'],
-            'source'           => ['nullable', 'array'],
-            'category'         => ['nullable', 'string', 'max:50', 'in:individual,business'],
-            'company_name'     => ['nullable', 'string', 'max:255'],
-            'gst_no'           => ['nullable', 'string', 'max:20'],
-            'pan_no'           => ['nullable', 'string', 'max:10'],
-            'tax_no'           => ['nullable', 'string', 'max:30'],
-            'land_area'        => ['nullable', 'numeric', 'min:0'],
-            'land_unit'        => ['nullable', 'string', 'max:20'],
-            'crops'            => ['nullable', 'array'],
-            'irrigation_type'  => ['nullable', 'array'],
-            'credit_limit'     => ['nullable', 'numeric', 'min:0'],
-            'credit_days'      => ['nullable', 'integer', 'min:0'],
+            'alternatemobile' => ['nullable', 'string', 'max:20'],
+            'relative_name' => ['nullable', 'string', 'max:100'],
+            'relative_phone' => ['nullable', 'string', 'max:20'],
+            'source' => ['nullable', 'array'],
+            'category' => ['nullable', 'string', 'max:50', 'in:individual,business'],
+            'company_name' => ['nullable', 'string', 'max:255'],
+            'gst_no' => ['nullable', 'string', 'max:20'],
+            'pan_no' => ['nullable', 'string', 'max:10'],
+            'tax_no' => ['nullable', 'string', 'max:30'],
+            'land_area' => ['nullable', 'numeric', 'min:0'],
+            'land_unit' => ['nullable', 'string', 'max:20'],
+            'crops' => ['nullable', 'array'],
+            'irrigation_type' => ['nullable', 'array'],
+            'credit_limit' => ['nullable', 'numeric', 'min:0'],
+            'credit_days' => ['nullable', 'integer', 'min:0'],
             'outstanding_balance' => ['nullable', 'numeric'],
-            'credit_valid_till'=> ['nullable', 'date'],
-            'aadhaar_last4'    => ['nullable', 'digits:4'],
-            'kyc_completed'    => ['nullable', 'boolean'],
-            'status'           => ['required', 'in:active,inactive,suspended'],
-            'is_active'        => ['nullable', 'boolean'],
-            'is_blacklisted'   => ['nullable', 'boolean'],
-            'internal_notes'   => ['nullable', 'string'],
-            'tags'             => ['nullable', 'array'],
+            'credit_valid_till' => ['nullable', 'date'],
+            'aadhaar_last4' => ['nullable', 'digits:4'],
+            'kyc_completed' => ['nullable', 'boolean'],
+            'status' => ['required', 'in:active,inactive,suspended'],
+            'is_active' => ['nullable', 'boolean'],
+            'is_blacklisted' => ['nullable', 'boolean'],
+            'internal_notes' => ['nullable', 'string'],
+            'tags' => ['nullable', 'array'],
         ]);
 
         $validated['type'] = 'customer';
         $validated['uuid'] = Str::uuid()->toString();
-        $validated['party_code'] = $validated['party_code'] ?? 'CUST-' . strtoupper(Str::random(6));
+        $validated['party_code'] = $validated['party_code'] ?? 'CUST-'.strtoupper(Str::random(6));
         $validated['land_unit'] = $validated['land_unit'] ?? 'acre';
         $validated['credit_limit'] = $validated['credit_limit'] ?? 0.00;
         $validated['credit_days'] = $validated['credit_days'] ?? 0;
@@ -196,7 +199,7 @@ class CustomerController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "Customer [{$customer->name}] created successfully.",
-            'data'    => $customer,
+            'data' => $customer,
         ], 201);
     }
 
@@ -226,20 +229,20 @@ class CustomerController extends Controller implements HasMiddleware
             ]);
         }
 
-        $categories = \Illuminate\Support\Facades\Cache::remember('categories_parent_null', 600, fn() => \App\Modules\Catalog\Models\Category::whereNull('parent_id')->get());
-        $warehouses = \Illuminate\Support\Facades\Cache::remember('warehouses_active_village', 600, fn() => \App\Modules\Catalog\Models\Warehouse::with('village')->where('status', 'active')->get());
-        $activeOffers = \Illuminate\Support\Facades\Cache::remember('active_offers_with_product', 600, fn() => \App\Modules\Orders\Models\Offer::active()
+        $categories = Cache::remember('categories_parent_null', 600, fn () => Category::whereNull('parent_id')->get());
+        $warehouses = Cache::remember('warehouses_active_village', 600, fn () => Warehouse::with('village')->where('status', 'active')->get());
+        $activeOffers = Cache::remember('active_offers_with_product', 600, fn () => Offer::active()
             ->with('product:id,name,sku')
             ->orderByDesc('priority')
             ->orderBy('id')
             ->get());
-            
-        $activeCoupons = \Illuminate\Support\Facades\Cache::remember('active_coupons', 600, fn() => \App\Modules\Orders\Models\Coupon::where('is_active', true)->get());
-        
+
+        $activeCoupons = Cache::remember('active_coupons', 600, fn () => Coupon::where('is_active', true)->get());
+
         // Static fallbacks for agricultures parameters
-        $crops = collect(['Wheat', 'Rice', 'Cotton', 'Sugarcane', 'Maize', 'Soybean', 'Gram', 'Mustard', 'Bajra', 'Jowar'])->map(fn($name) => (object) ['name' => $name]);
-        $irrigationTypes = collect(['Drip', 'Sprinkler', 'Canal', 'Tube Well', 'Rainfed', 'River Pump'])->map(fn($name) => (object) ['name' => $name]);
-        $landUnits = collect(['Acre', 'Hectare', 'Bigha', 'Guntha', 'Kanal', 'Marla'])->map(fn($name) => (object) ['name' => $name]);
+        $crops = collect(['Wheat', 'Rice', 'Cotton', 'Sugarcane', 'Maize', 'Soybean', 'Gram', 'Mustard', 'Bajra', 'Jowar'])->map(fn ($name) => (object) ['name' => $name]);
+        $irrigationTypes = collect(['Drip', 'Sprinkler', 'Canal', 'Tube Well', 'Rainfed', 'River Pump'])->map(fn ($name) => (object) ['name' => $name]);
+        $landUnits = collect(['Acre', 'Hectare', 'Bigha', 'Guntha', 'Kanal', 'Marla'])->map(fn ($name) => (object) ['name' => $name]);
 
         return view('customers.show', compact('customer', 'categories', 'warehouses', 'activeOffers', 'activeCoupons', 'crops', 'irrigationTypes', 'landUnits'));
     }
@@ -258,41 +261,41 @@ class CustomerController extends Controller implements HasMiddleware
         }
 
         $validated = $request->validate([
-            'party_code'       => ['nullable', 'string', 'max:50', 'unique:parties,party_code,' . $customer->id],
-            'firstname'        => ['required', 'string', 'max:100'],
-            'middlename'       => ['nullable', 'string', 'max:100'],
-            'lastname'         => ['required', 'string', 'max:100'],
-            'email'            => ['nullable', 'email', 'max:255'],
-            'phone'            => [
+            'party_code' => ['nullable', 'string', 'max:50', 'unique:parties,party_code,'.$customer->id],
+            'firstname' => ['required', 'string', 'max:100'],
+            'middlename' => ['nullable', 'string', 'max:100'],
+            'lastname' => ['required', 'string', 'max:100'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => [
                 'nullable',
                 'string',
                 'max:20',
-                Rule::unique('parties', 'phone')->where(fn($q) => $q->where('type', 'customer')->whereNull('deleted_at'))->ignore($customer->id)
+                Rule::unique('parties', 'phone')->where(fn ($q) => $q->where('type', 'customer')->whereNull('deleted_at'))->ignore($customer->id),
             ],
-            'alternatemobile'  => ['nullable', 'string', 'max:20'],
-            'relative_mobile'  => ['nullable', 'string', 'max:20'],
-            'relative_phone'   => ['nullable', 'string', 'max:20'],
-            'source'           => ['nullable', 'array'],
-            'category'         => ['nullable', 'string', 'max:50', 'in:individual,business'],
-            'company_name'     => ['nullable', 'string', 'max:255'],
-            'gst_no'           => ['nullable', 'string', 'max:20'],
-            'pan_no'           => ['nullable', 'string', 'max:10'],
-            'tax_no'           => ['nullable', 'string', 'max:30'],
-            'land_area'        => ['nullable', 'numeric', 'min:0'],
-            'land_unit'        => ['nullable', 'string', 'max:20'],
-            'crops'            => ['nullable', 'array'],
-            'irrigation_type'  => ['nullable', 'array'],
-            'credit_limit'     => ['nullable', 'numeric', 'min:0'],
-            'credit_days'      => ['nullable', 'integer', 'min:0'],
+            'alternatemobile' => ['nullable', 'string', 'max:20'],
+            'relative_name' => ['nullable', 'string', 'max:100'],
+            'relative_phone' => ['nullable', 'string', 'max:20'],
+            'source' => ['nullable', 'array'],
+            'category' => ['nullable', 'string', 'max:50', 'in:individual,business'],
+            'company_name' => ['nullable', 'string', 'max:255'],
+            'gst_no' => ['nullable', 'string', 'max:20'],
+            'pan_no' => ['nullable', 'string', 'max:10'],
+            'tax_no' => ['nullable', 'string', 'max:30'],
+            'land_area' => ['nullable', 'numeric', 'min:0'],
+            'land_unit' => ['nullable', 'string', 'max:20'],
+            'crops' => ['nullable', 'array'],
+            'irrigation_type' => ['nullable', 'array'],
+            'credit_limit' => ['nullable', 'numeric', 'min:0'],
+            'credit_days' => ['nullable', 'integer', 'min:0'],
             'outstanding_balance' => ['nullable', 'numeric'],
-            'credit_valid_till'=> ['nullable', 'date'],
-            'aadhaar_last4'    => ['nullable', 'digits:4'],
-            'kyc_completed'    => ['nullable', 'boolean'],
-            'status'           => ['required', 'in:active,inactive,suspended'],
-            'is_active'        => ['nullable', 'boolean'],
-            'is_blacklisted'   => ['nullable', 'boolean'],
-            'internal_notes'   => ['nullable', 'string'],
-            'tags'             => ['nullable', 'array'],
+            'credit_valid_till' => ['nullable', 'date'],
+            'aadhaar_last4' => ['nullable', 'digits:4'],
+            'kyc_completed' => ['nullable', 'boolean'],
+            'status' => ['required', 'in:active,inactive,suspended'],
+            'is_active' => ['nullable', 'boolean'],
+            'is_blacklisted' => ['nullable', 'boolean'],
+            'internal_notes' => ['nullable', 'string'],
+            'tags' => ['nullable', 'array'],
         ]);
 
         if ($request->user()) {
@@ -305,7 +308,7 @@ class CustomerController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "Customer [{$customer->name}] updated successfully.",
-            'data'    => $customer->load('addresses.village'),
+            'data' => $customer->load('addresses.village'),
         ]);
     }
 
@@ -337,10 +340,10 @@ class CustomerController extends Controller implements HasMiddleware
     {
         $customer = Customer::withTrashed()->findOrFail($customer);
 
-        if (!$customer->trashed()) {
+        if (! $customer->trashed()) {
             return response()->json([
                 'message' => "Customer [{$customer->name}] is not deleted.",
-                'data'    => $customer,
+                'data' => $customer,
             ]);
         }
 
@@ -348,7 +351,7 @@ class CustomerController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => "Customer [{$customer->name}] restored successfully.",
-            'data'    => $customer,
+            'data' => $customer,
         ]);
     }
 
@@ -373,17 +376,17 @@ class CustomerController extends Controller implements HasMiddleware
      */
     public function toggleActive(Request $request, Customer $customer): JsonResponse
     {
-        $newState = !$customer->is_active;
+        $newState = ! $customer->is_active;
 
         $customer->update([
             'is_active' => $newState,
-            'status'    => $newState ? 'active' : 'inactive'
+            'status' => $newState ? 'active' : 'inactive',
         ]);
 
         return response()->json([
-            'message'   => "Customer account " . ($newState ? 'activated' : 'deactivated') . ".",
+            'message' => 'Customer account '.($newState ? 'activated' : 'deactivated').'.',
             'is_active' => $newState,
-            'id'        => $customer->id,
+            'id' => $customer->id,
         ]);
     }
 
@@ -394,11 +397,11 @@ class CustomerController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'action' => ['required', 'string', 'in:activate,deactivate,delete,restore,force-delete'],
-            'ids'    => ['required', 'array', 'min:1'],
-            'ids.*'  => ['integer', 'exists:parties,id'],
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:parties,id'],
         ]);
 
-        $ids    = $validated['ids'];
+        $ids = $validated['ids'];
         $action = $validated['action'];
 
         if ($action === 'restore') {
@@ -410,8 +413,8 @@ class CustomerController extends Controller implements HasMiddleware
             });
 
             return response()->json([
-                'message' => count($ids) . ' customer(s) restored successfully.',
-                'ids'     => $ids,
+                'message' => count($ids).' customer(s) restored successfully.',
+                'ids' => $ids,
             ]);
         }
 
@@ -420,7 +423,7 @@ class CustomerController extends Controller implements HasMiddleware
             Customer::whereIn('id', $ids)->delete();
 
             return response()->json([
-                'message' => count($ids) . ' customer(s) deleted successfully.',
+                'message' => count($ids).' customer(s) deleted successfully.',
                 'deleted' => $ids,
             ]);
         }
@@ -432,7 +435,7 @@ class CustomerController extends Controller implements HasMiddleware
             });
 
             return response()->json([
-                'message' => count($ids) . ' customer(s) permanently deleted successfully.',
+                'message' => count($ids).' customer(s) permanently deleted successfully.',
                 'deleted' => $ids,
             ]);
         }
@@ -441,13 +444,13 @@ class CustomerController extends Controller implements HasMiddleware
 
         Customer::whereIn('id', $ids)->update([
             'is_active' => $isActive,
-            'status'    => $isActive ? 'active' : 'inactive'
+            'status' => $isActive ? 'active' : 'inactive',
         ]);
 
         return response()->json([
-            'message'   => count($ids) . ' customer(s) ' . ($isActive ? 'activated' : 'deactivated') . ' successfully.',
+            'message' => count($ids).' customer(s) '.($isActive ? 'activated' : 'deactivated').' successfully.',
             'is_active' => $isActive,
-            'ids'       => $ids,
+            'ids' => $ids,
         ]);
     }
 
@@ -458,51 +461,52 @@ class CustomerController extends Controller implements HasMiddleware
     {
         try {
             $data = $request->validate([
-                'order_id'              => [
+                'order_id' => [
                     'nullable',
-                    \Illuminate\Validation\Rule::exists('orders', 'id')->where('party_id', $customer->id)
+                    Rule::exists('orders', 'id')->where('party_id', $customer->id),
                 ],
-                'cart'                  => 'required|string',
-                'applied_offer_id'      => 'nullable|exists:offers,id',
+                'cart' => 'required|string',
+                'applied_offer_id' => 'nullable|exists:offers,id',
                 'order_discount_amount' => 'nullable|numeric',
-                'coupon_code'           => 'nullable|string',
-                'coupon_discount'       => 'nullable|numeric',
-                'tax_amount'            => 'required|numeric',
-                'subtotal'              => 'required|numeric',
-                'grand_total'           => 'required|numeric',
-                'warehouse_id'          => 'required|exists:warehouses,id',
-                'address_id'            => [
+                'coupon_code' => 'nullable|string',
+                'coupon_discount' => 'nullable|numeric',
+                'tax_amount' => 'required|numeric',
+                'subtotal' => 'required|numeric',
+                'grand_total' => 'required|numeric',
+                'warehouse_id' => 'required|exists:warehouses,id',
+                'address_id' => [
                     'required',
-                    \Illuminate\Validation\Rule::exists('party_addresses', 'id')->where('party_id', $customer->id),
+                    Rule::exists('party_addresses', 'id')->where('party_id', $customer->id),
                 ],
-                'billing_address_id'    => [
+                'billing_address_id' => [
                     'nullable',
-                    \Illuminate\Validation\Rule::exists('party_addresses', 'id')->where('party_id', $customer->id),
+                    Rule::exists('party_addresses', 'id')->where('party_id', $customer->id),
                 ],
-                'is_draft'              => 'nullable|boolean',
-                'future_order_date'     => 'required_if:is_draft,1|nullable|date_format:Y-m-d',
+                'is_draft' => 'nullable|boolean',
+                'future_order_date' => 'required_if:is_draft,1|nullable|date_format:Y-m-d',
             ]);
 
             // Map Customer to Party
-            $party = \App\Modules\Customers\Models\Party::findOrFail($customer->id);
+            $party = Party::findOrFail($customer->id);
 
-            if (!empty($data['order_id'])) {
+            if (! empty($data['order_id'])) {
                 $order = Order::where('party_id', $customer->id)->findOrFail($data['order_id']);
                 $orderService->updateCustomerOrder($order, $data);
                 $msg = 'Order updated successfully!';
             } else {
                 $order = $orderService->placeCustomerOrder($party, $data);
-                $msg   = 'Order placed successfully!';
+                $msg = 'Order placed successfully!';
             }
 
             return redirect()->route('customers.show', $customer)
                 ->with('success', $msg)
                 ->with('active_tab', 'history');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             $firstError = collect($e->errors())->flatten()->first() ?? $e->getMessage();
+
             return back()->with('error', $firstError);
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to process order: ' . $e->getMessage());
+            return back()->with('error', 'Failed to process order: '.$e->getMessage());
         }
     }
 }

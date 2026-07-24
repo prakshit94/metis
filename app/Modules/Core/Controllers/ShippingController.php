@@ -4,19 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\Core\Controllers;
 
-use App\Services\InventoryService;
-
-
-use App\Modules\Core\Controllers\Controller;
+use App\Modules\Catalog\Models\Service;
 use App\Modules\Orders\Models\Shipment;
 use App\Modules\Orders\Models\ShipmentTrackingEvent;
-use App\Modules\Catalog\Models\Service;
 use App\Modules\Users\Models\User;
+use App\Services\InventoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 
 class ShippingController extends Controller implements HasMiddleware
 {
@@ -39,11 +36,11 @@ class ShippingController extends Controller implements HasMiddleware
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('shipment_no', 'like', "%{$search}%")
-                  ->orWhere('tracking_no', 'like', "%{$search}%")
-                  ->orWhere('carrier_name', 'like', "%{$search}%")
-                  ->orWhereHas('order', function ($oq) use ($search) {
-                      $oq->where('order_no', 'like', "%{$search}%");
-                  });
+                    ->orWhere('tracking_no', 'like', "%{$search}%")
+                    ->orWhere('carrier_name', 'like', "%{$search}%")
+                    ->orWhereHas('order', function ($oq) use ($search) {
+                        $oq->where('order_no', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -102,14 +99,14 @@ class ShippingController extends Controller implements HasMiddleware
 
             $updateData = ['status' => $newStatus];
 
-            if ($newStatus === 'in_transit' && !$shipment->shipped_at) {
+            if ($newStatus === 'in_transit' && ! $shipment->shipped_at) {
                 $updateData['shipped_at'] = now();
             }
 
-            if ($newStatus === 'delivered' && !$shipment->delivered_at) {
+            if ($newStatus === 'delivered' && ! $shipment->delivered_at) {
                 $updateData['delivered_at'] = now();
             }
-            
+
             if (isset($validated['delivery_attempts'])) {
                 $updateData['delivery_attempts'] = $validated['delivery_attempts'];
             }
@@ -130,7 +127,7 @@ class ShippingController extends Controller implements HasMiddleware
             // Create tracking event
             ShipmentTrackingEvent::create([
                 'shipment_id' => $shipment->id,
-                'event_name' => 'Status Updated to ' . ucfirst($newStatus),
+                'event_name' => 'Status Updated to '.ucfirst($newStatus),
                 'location' => $validated['location'] ?? 'Hub Location',
                 'description' => $validated['description'] ?? "Shipment status changed from {$oldStatus} to {$newStatus}.",
                 'reschedule_reason' => $validated['reschedule_reason'] ?? null,
@@ -140,7 +137,7 @@ class ShippingController extends Controller implements HasMiddleware
             // Sync with Order Status if needed
             $order = $shipment->order;
             if ($order) {
-                $inventoryService = app(\App\Services\InventoryService::class);
+                $inventoryService = app(InventoryService::class);
                 if ($newStatus === 'in_transit' && $order->status === 'ready_to_ship') {
                     $inventoryService->dispatchOrder($order);
                 } elseif ($newStatus === 'delivered' && in_array($order->status, ['dispatched', 'shipped'], true)) {
@@ -148,19 +145,19 @@ class ShippingController extends Controller implements HasMiddleware
                     $order->statusLogs()->create([
                         'status' => 'delivered',
                         'notes' => 'Shipment delivered.',
-                        'changed_by' => auth()->id()
+                        'changed_by' => auth()->id(),
                     ]);
-                } elseif ($newStatus === 'returned' && !in_array($order->status, ['returned', 'cancelled'], true)) {
+                } elseif ($newStatus === 'returned' && ! in_array($order->status, ['returned', 'cancelled'], true)) {
                     $inventoryService->returnOrder($order);
                 }
-                
+
                 // Add status log for rescheduling if applicable
                 if (isset($validated['next_followup_date'])) {
-                    $reasonText = isset($validated['reschedule_reason']) ? 'Reason: ' . ucfirst(str_replace('_', ' ', $validated['reschedule_reason'])) . '. ' : '';
+                    $reasonText = isset($validated['reschedule_reason']) ? 'Reason: '.ucfirst(str_replace('_', ' ', $validated['reschedule_reason'])).'. ' : '';
                     $order->statusLogs()->create([
                         'status' => 'delivery_rescheduled',
-                        'notes' => $reasonText . ($validated['description'] ?? 'Scheduled for future delivery attempt.'),
-                        'changed_by' => auth()->id()
+                        'notes' => $reasonText.($validated['description'] ?? 'Scheduled for future delivery attempt.'),
+                        'changed_by' => auth()->id(),
                     ]);
                 }
             }
@@ -178,6 +175,7 @@ class ShippingController extends Controller implements HasMiddleware
     public function trackingEvents(Shipment $shipment): JsonResponse
     {
         $shipment->load('order.statusLogs.user');
+
         return response()->json([
             'shipment' => $shipment,
             'events' => $shipment->events()->orderBy('occurred_at', 'desc')->get(),
@@ -246,16 +244,18 @@ class ShippingController extends Controller implements HasMiddleware
                 ];
 
                 $newStatus = $statusMap[$action] ?? $shipment->status;
-                
-                if ($shipment->status === $newStatus) continue;
+
+                if ($shipment->status === $newStatus) {
+                    continue;
+                }
 
                 $updateData = ['status' => $newStatus];
 
-                if ($newStatus === 'in_transit' && !$shipment->shipped_at) {
+                if ($newStatus === 'in_transit' && ! $shipment->shipped_at) {
                     $updateData['shipped_at'] = now();
                 }
 
-                if ($newStatus === 'delivered' && !$shipment->delivered_at) {
+                if ($newStatus === 'delivered' && ! $shipment->delivered_at) {
                     $updateData['delivered_at'] = now();
                 }
 
@@ -264,21 +264,21 @@ class ShippingController extends Controller implements HasMiddleware
                 // Create tracking event
                 ShipmentTrackingEvent::create([
                     'shipment_id' => $shipment->id,
-                    'event_name' => 'Status Updated to ' . ucfirst($newStatus) . ' (Bulk)',
+                    'event_name' => 'Status Updated to '.ucfirst($newStatus).' (Bulk)',
                     'location' => 'Bulk Update',
                     'description' => "Shipment status changed to {$newStatus} via bulk action.",
                     'occurred_at' => now(),
                 ]);
-                
+
                 // Sync with Order Status if needed
                 $order = $shipment->order;
                 if ($order) {
-                    $inventoryService = app(\App\Services\InventoryService::class);
+                    $inventoryService = app(InventoryService::class);
                     if ($newStatus === 'in_transit' && $order->status === 'ready_to_ship') {
                         $inventoryService->dispatchOrder($order);
                     } elseif ($newStatus === 'delivered' && in_array($order->status, ['dispatched', 'shipped'], true)) {
                         $inventoryService->deliverOrder($order);
-                    } elseif ($newStatus === 'returned' && !in_array($order->status, ['returned', 'cancelled'], true)) {
+                    } elseif ($newStatus === 'returned' && ! in_array($order->status, ['returned', 'cancelled'], true)) {
                         $inventoryService->returnOrder($order);
                     }
                 }
@@ -301,7 +301,7 @@ class ShippingController extends Controller implements HasMiddleware
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
 
@@ -361,7 +361,7 @@ class ShippingController extends Controller implements HasMiddleware
     {
 
         $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:services,code,' . $service->id,
+            'code' => 'required|string|max:50|unique:services,code,'.$service->id,
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'required|boolean',
@@ -385,7 +385,7 @@ class ShippingController extends Controller implements HasMiddleware
     public function toggleService(Service $service): JsonResponse
     {
 
-        $service->update(['is_active' => !$service->is_active]);
+        $service->update(['is_active' => ! $service->is_active]);
 
         return response()->json([
             'message' => 'Shipping Service status toggled successfully.',
@@ -402,7 +402,7 @@ class ShippingController extends Controller implements HasMiddleware
         $service->delete();
 
         return response()->json([
-            'message' => 'Shipping Service deleted successfully.'
+            'message' => 'Shipping Service deleted successfully.',
         ]);
     }
 

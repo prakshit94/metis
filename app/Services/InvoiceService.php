@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\Order;
-use Illuminate\Support\Str;
 
 /**
  * InvoiceService – SINGLE SOURCE OF TRUTH for invoice creation.
@@ -28,17 +27,17 @@ class InvoiceService
 
         $invoiceNo = str_replace('ORD-', 'INV-', $order->order_no);
         if ($invoiceNo === $order->order_no) {
-            $invoiceNo = 'INV-' . $order->order_no;
+            $invoiceNo = 'INV-'.$order->order_no;
         }
 
         $invoice = Invoice::create([
-            'invoice_no'    => $invoiceNo,
-            'order_id'      => $order->id,
-            'invoice_date'  => now(),
-            'total_amount'  => $order->total_amount,
-            'tax_amount'    => $order->tax_amount,
-            'net_amount'    => $order->net_amount,
-            'status'        => 'unpaid',
+            'invoice_no' => $invoiceNo,
+            'order_id' => $order->id,
+            'invoice_date' => now(),
+            'total_amount' => $order->total_amount,
+            'tax_amount' => $order->tax_amount,
+            'net_amount' => $order->net_amount,
+            'status' => 'unpaid',
         ]);
 
         return $invoice;

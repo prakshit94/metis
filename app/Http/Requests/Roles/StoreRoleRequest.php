@@ -20,9 +20,9 @@ class StoreRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'          => ['required', 'string', 'max:100', Rule::unique('roles', 'name')],
-            'guard_name'    => ['sometimes', 'string', 'max:100'],
-            'permissions'   => ['sometimes', 'array'],
+            'name' => ['required', 'string', 'max:100', Rule::unique('roles', 'name')],
+            'guard_name' => ['sometimes', 'string', 'max:100'],
+            'permissions' => ['sometimes', 'array'],
             'permissions.*' => ['string', 'exists:permissions,name'],
         ];
     }

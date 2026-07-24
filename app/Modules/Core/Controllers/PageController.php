@@ -2,12 +2,14 @@
 
 namespace App\Modules\Core\Controllers;
 
-use Illuminate\Http\Request;
-use App\Modules\Orders\Models\Order;
-use App\Modules\Customers\Models\Party;
 use App\Modules\Catalog\Models\Product;
-use Illuminate\Support\Facades\DB;
+use App\Modules\Catalog\Models\Service;
+use App\Modules\Customers\Models\Party;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderItem;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PageController extends Controller
 {
@@ -15,16 +17,15 @@ class PageController extends Controller
     {
         $user = auth()->user();
         $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
-        
+
         $customerQuery = Party::where('type', 'customer');
         $orderQuery = Order::query();
-        
 
-        if (!$isGlobalView) {
+        if (! $isGlobalView) {
             $customerQuery->where('created_by', $user->id);
             $orderQuery->where('created_by', $user->id);
         }
-        
+
         $filter = $request->input('filter', 'today');
         if ($filter === 'today') {
             $orderQuery->whereDate('order_date', Carbon::today());
@@ -42,7 +43,6 @@ class PageController extends Controller
             $orderQuery->whereYear('order_date', Carbon::now()->year);
             $customerQuery->whereYear('created_at', Carbon::now()->year);
         }
-
 
         // 1. Top Metrics
         $totalCustomers = (clone $customerQuery)->count();
@@ -73,9 +73,8 @@ class PageController extends Controller
         $deliveredPercent = $totalOrders > 0 ? round(($totalDelivered / $totalOrders) * 100) : 0;
         $returnedPercent = $totalOrders > 0 ? round(($totalReturned / $totalOrders) * 100) : 0;
 
-
         // 2. Chart Data
-        
+
         // Revenue (Last 12 Months for simplicity)
         $revenueData = [];
         for ($i = 11; $i >= 0; $i--) {
@@ -85,11 +84,11 @@ class PageController extends Controller
                 ->whereMonth('order_date', $month->month)
                 ->sum('net_amount');
             $profit = $revenue * 0.2; // Simulated profit margin for UI
-            
+
             $revenueData[] = [
                 'month' => $month->format('M Y'),
                 'revenue' => round($revenue, 2),
-                'profit' => round($profit, 2)
+                'profit' => round($profit, 2),
             ];
         }
 
@@ -101,11 +100,11 @@ class PageController extends Controller
                 ->whereDate('order_date', $date->toDateString())
                 ->sum('net_amount');
             $profit = $revenue * 0.2;
-            
+
             $dailyRevenueData[] = [
                 'month' => $date->format('M d'),
                 'revenue' => round($revenue, 2),
-                'profit' => round($profit, 2)
+                'profit' => round($profit, 2),
             ];
         }
 
@@ -116,11 +115,11 @@ class PageController extends Controller
             $newUsers = (clone $customerQuery)
                 ->whereDate('created_at', $date->toDateString())
                 ->count();
-            
+
             $customerGrowth[] = [
                 'day' => 30 - $i,
                 'newUsers' => $newUsers,
-                'activeUsers' => rand(100, 500) // Keep some simulation for active users if not tracked
+                'activeUsers' => rand(100, 500), // Keep some simulation for active users if not tracked
             ];
         }
 
@@ -130,7 +129,7 @@ class PageController extends Controller
             ->get()
             ->pluck('total', 'status')
             ->toArray();
-            
+
         $orderStatusDistribution = [
             'completed' => ($orderStatusRaw['delivered'] ?? 0) + ($orderStatusRaw['completed'] ?? 0),
             'processing' => ($orderStatusRaw['processing'] ?? 0) + ($orderStatusRaw['ready_to_ship'] ?? 0) + ($orderStatusRaw['dispatched'] ?? 0),
@@ -139,20 +138,20 @@ class PageController extends Controller
         ];
 
         // Sales by Location
-        $salesByLocationRaw = (clone $orderQuery)->where(function($q) {
-                $q->whereNotNull('shipping_district')->orWhereNotNull('shipping_city')->orWhereNotNull('shipping_state');
-            })
+        $salesByLocationRaw = (clone $orderQuery)->where(function ($q) {
+            $q->whereNotNull('shipping_district')->orWhereNotNull('shipping_city')->orWhereNotNull('shipping_state');
+        })
             ->select(DB::raw('COALESCE(shipping_district, shipping_city, shipping_state) as location_name'), DB::raw('SUM(net_amount) as total_sales'))
             ->whereNotIn('status', ['cancelled', 'returned'])
             ->groupBy('location_name')
             ->orderByDesc('total_sales')
             ->limit(10)
             ->get();
-            
+
         $salesByLocation = $salesByLocationRaw->map(function ($item) {
             return [
                 'name' => $item->location_name,
-                'value' => round($item->total_sales, 2)
+                'value' => round($item->total_sales, 2),
             ];
         })->toArray();
 
@@ -161,25 +160,25 @@ class PageController extends Controller
             ->latest('order_date')
             ->take(5)
             ->get();
-            
+
         $recentOrders = $recentOrdersRaw->map(function ($order) {
-            $statusClass = match($order->lifecycleStatus()) {
+            $statusClass = match ($order->lifecycleStatus()) {
                 'delivered', 'completed' => 'bg-success',
                 'pending', 'confirmed' => 'bg-warning',
                 'dispatched', 'shipped', 'ready_to_ship', 'processing' => 'bg-info',
                 'cancelled', 'returned' => 'bg-danger',
                 default => 'bg-secondary',
             };
-            
+
             return [
                 'id' => $order->order_no,
                 'customer' => $order->party ? $order->party->name : 'Unknown',
-                'amount' => 'Rs ' . number_format($order->net_amount, 2),
+                'amount' => 'Rs '.number_format($order->net_amount, 2),
                 'status' => [
                     'text' => $order->statusLabel(),
-                    'class' => $statusClass
+                    'class' => $statusClass,
                 ],
-                'date' => $order->order_date ? $order->order_date->format('M d, Y h:i A') : 'N/A'
+                'date' => $order->order_date ? $order->order_date->format('M d, Y h:i A') : 'N/A',
             ];
         })->toArray();
 
@@ -191,6 +190,26 @@ class PageController extends Controller
             'salesByLocation' => $salesByLocation,
             'recentOrders' => $recentOrders,
         ];
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'filter' => $filter,
+                'metrics' => [
+                    'totalCustomers' => $totalCustomers,
+                    'totalRevenue' => $totalRevenue,
+                    'totalOrders' => $totalOrders,
+                    'totalProducts' => $totalProducts,
+                    'totalDelivered' => $totalDelivered,
+                    'totalReturned' => $totalReturned,
+                    'revDelivered' => $revDelivered,
+                    'revReturned' => $revReturned,
+                    'deliveredPercent' => $deliveredPercent,
+                    'returnedPercent' => $returnedPercent,
+                ],
+                'dashboardData' => $dashboardData,
+                'orderStatusRaw' => $orderStatusRaw,
+            ]);
+        }
 
         return view('dashboard', compact(
             'filter',
@@ -269,9 +288,13 @@ class PageController extends Controller
         if ($request->wantsJson() || $request->ajax()) {
             $period = $request->get('period', '30d');
             $days = 30;
-            if ($period == '7d') $days = 7;
-            elseif ($period == '90d') $days = 90;
-            elseif ($period == '1y') $days = 365;
+            if ($period == '7d') {
+                $days = 7;
+            } elseif ($period == '90d') {
+                $days = 90;
+            } elseif ($period == '1y') {
+                $days = 365;
+            }
 
             $startDate = now()->subDays($days)->startOfDay();
 
@@ -292,7 +315,7 @@ class PageController extends Controller
             $customersChange = $prevCustomers > 0 ? round((($customersCount - $prevCustomers) / $prevCustomers) * 100, 1) : ($customersCount > 0 ? 100 : 0);
 
             // Top Products
-            $topProducts = \App\Modules\Orders\Models\OrderItem::select('product_id', DB::raw('SUM(order_items.total_amount) as revenue'), DB::raw('SUM(order_items.quantity) as units'))
+            $topProducts = OrderItem::select('product_id', DB::raw('SUM(order_items.total_amount) as revenue'), DB::raw('SUM(order_items.quantity) as units'))
                 ->join('orders', 'orders.id', '=', 'order_items.order_id')
                 ->where('orders.order_date', '>=', $startDate)
                 ->whereNotIn('orders.status', ['cancelled', 'returned'])
@@ -305,7 +328,7 @@ class PageController extends Controller
                     return [
                         'name' => $item->product ? $item->product->name : 'Unknown Product',
                         'revenue' => round($item->revenue, 2),
-                        'units' => $item->units . ' sold'
+                        'units' => $item->units.' sold',
                     ];
                 });
 
@@ -317,13 +340,13 @@ class PageController extends Controller
                 ->orderBy(DB::raw('DATE(order_date)'))
                 ->get([
                     DB::raw('DATE(order_date) as date'),
-                    DB::raw('SUM(net_amount) as revenue')
+                    DB::raw('SUM(net_amount) as revenue'),
                 ]);
 
             // Region Sales
             $regionSales = DB::table('orders')
                 ->where('order_date', '>=', $startDate)
-                ->where(function($q) {
+                ->where(function ($q) {
                     $q->whereNotNull('shipping_district')->orWhereNotNull('shipping_city')->orWhereNotNull('shipping_state');
                 })
                 ->whereNotIn('status', ['cancelled', 'returned'])
@@ -332,7 +355,7 @@ class PageController extends Controller
                 ->limit(6)
                 ->get([
                     DB::raw('COALESCE(shipping_district, shipping_city, shipping_state) as shipping_state'), // Alias kept for frontend compatibility if needed
-                    DB::raw('SUM(net_amount) as revenue')
+                    DB::raw('SUM(net_amount) as revenue'),
                 ]);
 
             return response()->json([
@@ -432,7 +455,7 @@ class PageController extends Controller
 
     public function shipments()
     {
-        $services = \App\Modules\Catalog\Models\Service::active()->get();
+        $services = Service::active()->get();
         $carriersList = $services->pluck('name')
             ->filter()
             ->unique()

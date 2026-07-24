@@ -296,15 +296,17 @@
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Coupon Code *</label>
                                             <input type="text" class="form-control form-control-sm text-uppercase font-monospace fw-semibold" x-model="form.code" placeholder="e.g. SAVE20" style="letter-spacing:2px">
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">The promo code customers type in to redeem.</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">The promo code customers type in to redeem.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-primary">Use Case:</strong> Share this code in marketing emails (e.g. WELCOME10) to track campaign success.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Type *</label>
                                             <select class="form-select form-select-sm fw-semibold" x-model="form.type">
                                                 <option value="percentage">Percentage (%)</option>
                                                 <option value="flat">Flat Amount (Rs )</option>
+                                                <option value="free_shipping">Free Shipping</option>
+                                                <option value="free_product">Free Product</option>
                                             </select>
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Choose percentage or fixed rate.</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Choose percentage or fixed rate.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-primary">Use Case:</strong> Percentage discounts scale with cart size. Flat discounts are better for maintaining predictable profit margins on high-value carts.</div>
                                         </div>
                                     </div>
                                 </div>
@@ -334,7 +336,7 @@
                                                 <span class="input-group-text">Rs </span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.min_spend" min="0" step="0.01" placeholder="0">
                                             </div>
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Minimum purchase requirement to unlock coupon.</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Minimum purchase requirement to unlock coupon.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-primary">Use Case:</strong> Encourage customers to add more items to their cart to reach the threshold (increases Average Order Value).</div>
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Max Discount</label>
@@ -342,7 +344,7 @@
                                                 <span class="input-group-text">Rs </span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.max_discount" min="0" step="0.01" placeholder="Unlimited">
                                             </div>
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Maximum cap. Leave empty/0 for unlimited.</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Maximum cap. Leave empty/0 for unlimited.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-primary">Use Case:</strong> Crucial when using Percentage discounts to protect your margins on very large bulk orders (e.g. 50% off up to Rs 1000).</div>
                                         </div>
                                     </div>
                                 </div>
@@ -361,12 +363,12 @@
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Expiry Date</label>
                                             <input type="date" class="form-control form-control-sm fw-semibold" x-model="form.expiry_date">
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Date when this coupon becomes invalid.</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Date when this coupon becomes invalid.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-primary">Use Case:</strong> Drive urgency by creating time-limited promotions (e.g. "Sale ends Sunday!").</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Usage Limit</label>
                                             <input type="number" class="form-control form-control-sm fw-semibold" x-model="form.usage_limit" min="0" placeholder="Unlimited">
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Total times code can be redeemed (empty = unlimited).</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Total times code can be redeemed (empty = unlimited).</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-primary">Use Case:</strong> Create scarcity and FOMO (e.g. "Valid only for the first 100 buyers!").</div>
                                         </div>
                                         <div class="col-12 mt-2">
                                             <div class="d-flex align-items-center gap-2 pt-2 border-top">
@@ -414,7 +416,7 @@ function couponsModule() {
         search: '', filterStatus: '', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0,
         selected: [], stats: { total: 0, active: 0, inactive: 0, expiring_soon: 0 },
-        form: { id: null, code: '', type: 'percentage', value: '', min_spend: '', max_discount: '', expiry_date: '', usage_limit: '', is_active: true },
+        form: { id: null, code: '', type: 'percentage', value: '', min_spend: '', max_discount: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true },
         formError: null,
 
         formatDateTime(dateStr) {
@@ -447,9 +449,9 @@ function couponsModule() {
         openModal(c = null) {
             this.formError = null;
             if (c) {
-                this.form = { id: c.id, code: c.code, type: c.type, value: c.value, min_spend: c.min_spend || '', max_discount: c.max_discount || '', expiry_date: c.expiry_date || '', usage_limit: c.usage_limit || '', is_active: c.is_active };
+                this.form = { id: c.id, code: c.code, type: c.type, value: c.value, min_spend: c.min_spend || '', max_discount: c.max_discount || '', free_product_id: c.free_product_id || '', free_qty: c.free_qty || 1, expiry_date: c.expiry_date || '', usage_limit: c.usage_limit || '', is_active: c.is_active };
             } else {
-                this.form = { id: null, code: '', type: 'percentage', value: '', min_spend: '', max_discount: '', expiry_date: '', usage_limit: '', is_active: true };
+                this.form = { id: null, code: '', type: 'percentage', value: '', min_spend: '', max_discount: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true };
             }
             new bootstrap.Modal(document.getElementById('couponModal')).show();
         },

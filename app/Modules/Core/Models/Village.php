@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Core\Models;
 
 use App\Modules\Catalog\Models\Service;
-
-
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Village extends Model
@@ -67,8 +65,9 @@ class Village extends Model
     public function scopeSearch(Builder $query, string $term): Builder
     {
         $term = strtolower(trim($term));
+
         return $query->where('normalized_name', 'like', "%{$term}%")
-                     ->orWhere('pincode', 'like', "{$term}%");
+            ->orWhere('pincode', 'like', "{$term}%");
     }
 
     /**
@@ -77,7 +76,7 @@ class Village extends Model
     public function hasService(string $serviceCode): bool
     {
         return $this->mappings()
-            ->whereHas('service', fn($q) => $q->where('code', $serviceCode))
+            ->whereHas('service', fn ($q) => $q->where('code', $serviceCode))
             ->where('is_available', true)
             ->exists();
     }

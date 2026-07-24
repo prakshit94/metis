@@ -20,7 +20,7 @@
     "isDynamicEntry": true
   },
   "resources/js/components/analytics-legacy.js": {
-    "file": "assets/analytics-legacy-J48tnnEi.js",
+    "file": "assets/analytics-legacy-DCkmO97T.js",
     "name": "analytics",
     "src": "resources/js/components/analytics-legacy.js",
     "isDynamicEntry": true,
@@ -30,7 +30,7 @@
     ]
   },
   "resources/js/components/analytics.js": {
-    "file": "assets/analytics-DRnnQD2_.js",
+    "file": "assets/analytics-B5ngLQOz.js",
     "name": "analytics",
     "src": "resources/js/components/analytics.js",
     "isDynamicEntry": true,
@@ -46,7 +46,7 @@
     ]
   },
   "resources/js/components/calendar-legacy.js": {
-    "file": "assets/calendar-legacy-VY0biLk-.js",
+    "file": "assets/calendar-legacy-B-5X0V8_.js",
     "name": "calendar",
     "src": "resources/js/components/calendar-legacy.js",
     "isDynamicEntry": true,
@@ -56,7 +56,7 @@
     ]
   },
   "resources/js/components/calendar.js": {
-    "file": "assets/calendar-DJv17eyL.js",
+    "file": "assets/calendar-C8_2KMXE.js",
     "name": "calendar",
     "src": "resources/js/components/calendar.js",
     "isDynamicEntry": true,
@@ -72,7 +72,7 @@
     ]
   },
   "resources/js/components/catalog/attributes-legacy.js": {
-    "file": "assets/attributes-legacy-DdWRM_bL.js",
+    "file": "assets/attributes-legacy-CPdAxjw_.js",
     "name": "attributes",
     "src": "resources/js/components/catalog/attributes-legacy.js",
     "isDynamicEntry": true,
@@ -82,7 +82,7 @@
     ]
   },
   "resources/js/components/catalog/attributes.js": {
-    "file": "assets/attributes-jSGD1RIg.js",
+    "file": "assets/attributes-CzhJGc6T.js",
     "name": "attributes",
     "src": "resources/js/components/catalog/attributes.js",
     "isDynamicEntry": true,
@@ -98,7 +98,7 @@
     ]
   },
   "resources/js/components/catalog/brands-legacy.js": {
-    "file": "assets/brands-legacy-D-CbnTzY.js",
+    "file": "assets/brands-legacy-Ko11qUeH.js",
     "name": "brands",
     "src": "resources/js/components/catalog/brands-legacy.js",
     "isDynamicEntry": true,
@@ -108,7 +108,7 @@
     ]
   },
   "resources/js/components/catalog/brands.js": {
-    "file": "assets/brands-O64yjf0A.js",
+    "file": "assets/brands-CCkqES1i.js",
     "name": "brands",
     "src": "resources/js/components/catalog/brands.js",
     "isDynamicEntry": true,
@@ -124,7 +124,7 @@
     ]
   },
   "resources/js/components/catalog/categories-legacy.js": {
-    "file": "assets/categories-legacy-CX_zc6Pf.js",
+    "file": "assets/categories-legacy-Csav3-xg.js",
     "name": "categories",
     "src": "resources/js/components/catalog/categories-legacy.js",
     "isDynamicEntry": true,
@@ -134,7 +134,7 @@
     ]
   },
   "resources/js/components/catalog/categories.js": {
-    "file": "assets/categories-BjICC0U7.js",
+    "file": "assets/categories-CjqBPHiZ.js",
     "name": "categories",
     "src": "resources/js/components/catalog/categories.js",
     "isDynamicEntry": true,
@@ -150,7 +150,7 @@
     ]
   },
   "resources/js/components/catalog/hsn-codes-legacy.js": {
-    "file": "assets/hsn-codes-legacy-CjHf1IEO.js",
+    "file": "assets/hsn-codes-legacy-CK2exYzc.js",
     "name": "hsn-codes",
     "src": "resources/js/components/catalog/hsn-codes-legacy.js",
     "isDynamicEntry": true,
@@ -160,7 +160,7 @@
     ]
   },
   "resources/js/components/catalog/hsn-codes.js": {
-    "file": "assets/hsn-codes-BlfDPV2w.js",
+    "file": "assets/hsn-codes-DbkX1wUn.js",
     "name": "hsn-codes",
     "src": "resources/js/components/catalog/hsn-codes.js",
     "isDynamicEntry": true,
@@ -176,7 +176,7 @@
     ]
   },
   "resources/js/components/catalog/tax-rates-legacy.js": {
-    "file": "assets/tax-rates-legacy-B_tV5Q80.js",
+    "file": "assets/tax-rates-legacy-CSwiLOtH.js",
     "name": "tax-rates",
     "src": "resources/js/components/catalog/tax-rates-legacy.js",
     "isDynamicEntry": true,
@@ -186,7 +186,7 @@
     ]
   },
   "resources/js/components/catalog/tax-rates.js": {
-    "file": "assets/tax-rates-CRfZrA0K.js",
+    "file": "assets/tax-rates-B9tQjeH9.js",
     "name": "tax-rates",
     "src": "resources/js/components/catalog/tax-rates.js",
     "isDynamicEntry": true,
@@ -202,7 +202,7 @@
     ]
   },
   "resources/js/components/catalog/uom-legacy.js": {
-    "file": "assets/uom-legacy-BMY0JWUV.js",
+    "file": "assets/uom-legacy-nKwHfPJ9.js",
     "name": "uom",
     "src": "resources/js/components/catalog/uom-legacy.js",
     "isDynamicEntry": true,
@@ -212,7 +212,7 @@
     ]
   },
   "resources/js/components/catalog/uom.js": {
-    "file": "assets/uom-BrPjFB-s.js",
+    "file": "assets/uom-DSfWhy6J.js",
     "name": "uom",
     "src": "resources/js/components/catalog/uom.js",
     "isDynamicEntry": true,
@@ -228,7 +228,7 @@
     ]
   },
   "resources/js/components/catalog/warehouses-legacy.js": {
-    "file": "assets/warehouses-legacy-Bmv9wBfm.js",
+    "file": "assets/warehouses-legacy-DvQg-8iJ.js",
     "name": "warehouses",
     "src": "resources/js/components/catalog/warehouses-legacy.js",
     "isDynamicEntry": true,
@@ -238,7 +238,7 @@
     ]
   },
   "resources/js/components/catalog/warehouses.js": {
-    "file": "assets/warehouses-C2mh64bS.js",
+    "file": "assets/warehouses-VKPZyebM.js",
     "name": "warehouses",
     "src": "resources/js/components/catalog/warehouses.js",
     "isDynamicEntry": true,
@@ -254,7 +254,7 @@
     ]
   },
   "resources/js/components/customers-legacy.js": {
-    "file": "assets/customers-legacy-C7VFc_y4.js",
+    "file": "assets/customers-legacy-B-7r6MA0.js",
     "name": "customers",
     "src": "resources/js/components/customers-legacy.js",
     "isDynamicEntry": true,
@@ -264,7 +264,7 @@
     ]
   },
   "resources/js/components/customers.js": {
-    "file": "assets/customers-CnLoD3wp.js",
+    "file": "assets/customers-vz53OJtd.js",
     "name": "customers",
     "src": "resources/js/components/customers.js",
     "isDynamicEntry": true,
@@ -280,7 +280,7 @@
     ]
   },
   "resources/js/components/elements-legacy.js": {
-    "file": "assets/elements-legacy-DJJBtcPZ.js",
+    "file": "assets/elements-legacy-DQvxIVM4.js",
     "name": "elements",
     "src": "resources/js/components/elements-legacy.js",
     "isDynamicEntry": true,
@@ -290,7 +290,7 @@
     ]
   },
   "resources/js/components/elements.js": {
-    "file": "assets/elements-BhsDpNro.js",
+    "file": "assets/elements-BpD3fdCJ.js",
     "name": "elements",
     "src": "resources/js/components/elements.js",
     "isDynamicEntry": true,
@@ -306,7 +306,7 @@
     ]
   },
   "resources/js/components/files-legacy.js": {
-    "file": "assets/files-legacy-Dy8JN2oL.js",
+    "file": "assets/files-legacy-4092bd1-.js",
     "name": "files",
     "src": "resources/js/components/files-legacy.js",
     "isDynamicEntry": true,
@@ -316,7 +316,7 @@
     ]
   },
   "resources/js/components/files.js": {
-    "file": "assets/files-CTXSFgug.js",
+    "file": "assets/files-EwnqhwvM.js",
     "name": "files",
     "src": "resources/js/components/files.js",
     "isDynamicEntry": true,
@@ -332,7 +332,7 @@
     ]
   },
   "resources/js/components/forms-legacy.js": {
-    "file": "assets/forms-legacy-p7bf-fAI.js",
+    "file": "assets/forms-legacy-Dtg_HEgv.js",
     "name": "forms",
     "src": "resources/js/components/forms-legacy.js",
     "isDynamicEntry": true,
@@ -342,7 +342,7 @@
     ]
   },
   "resources/js/components/forms.js": {
-    "file": "assets/forms-BGn_3J3Q.js",
+    "file": "assets/forms-CY7iwr08.js",
     "name": "forms",
     "src": "resources/js/components/forms.js",
     "isDynamicEntry": true,
@@ -358,7 +358,7 @@
     ]
   },
   "resources/js/components/help-legacy.js": {
-    "file": "assets/help-legacy-TzWvQAGE.js",
+    "file": "assets/help-legacy-Bc81RA7G.js",
     "name": "help",
     "src": "resources/js/components/help-legacy.js",
     "isDynamicEntry": true,
@@ -368,7 +368,7 @@
     ]
   },
   "resources/js/components/help.js": {
-    "file": "assets/help-CKkg3kEo.js",
+    "file": "assets/help-DXPex5yc.js",
     "name": "help",
     "src": "resources/js/components/help.js",
     "isDynamicEntry": true,
@@ -384,7 +384,7 @@
     ]
   },
   "resources/js/components/inventory/adjustments-legacy.js": {
-    "file": "assets/adjustments-legacy-inuLhz4O.js",
+    "file": "assets/adjustments-legacy-DPz2ls28.js",
     "name": "adjustments",
     "src": "resources/js/components/inventory/adjustments-legacy.js",
     "isDynamicEntry": true,
@@ -394,7 +394,7 @@
     ]
   },
   "resources/js/components/inventory/adjustments.js": {
-    "file": "assets/adjustments-2w191-e_.js",
+    "file": "assets/adjustments-DMeXeKJk.js",
     "name": "adjustments",
     "src": "resources/js/components/inventory/adjustments.js",
     "isDynamicEntry": true,
@@ -410,7 +410,7 @@
     ]
   },
   "resources/js/components/inventory/stock-management-legacy.js": {
-    "file": "assets/stock-management-legacy-BoU1-iEi.js",
+    "file": "assets/stock-management-legacy-D-01pJXZ.js",
     "name": "stock-management",
     "src": "resources/js/components/inventory/stock-management-legacy.js",
     "isDynamicEntry": true,
@@ -420,7 +420,7 @@
     ]
   },
   "resources/js/components/inventory/stock-management.js": {
-    "file": "assets/stock-management-5VOwm8oo.js",
+    "file": "assets/stock-management-IrBP67Fq.js",
     "name": "stock-management",
     "src": "resources/js/components/inventory/stock-management.js",
     "isDynamicEntry": true,
@@ -436,7 +436,7 @@
     ]
   },
   "resources/js/components/inventory/stock-transfers-legacy.js": {
-    "file": "assets/stock-transfers-legacy-BzhnzD7g.js",
+    "file": "assets/stock-transfers-legacy-Ben8Z9X2.js",
     "name": "stock-transfers",
     "src": "resources/js/components/inventory/stock-transfers-legacy.js",
     "isDynamicEntry": true,
@@ -446,7 +446,7 @@
     ]
   },
   "resources/js/components/inventory/stock-transfers.js": {
-    "file": "assets/stock-transfers-C3KzVdf2.js",
+    "file": "assets/stock-transfers-BqKwnPNc.js",
     "name": "stock-transfers",
     "src": "resources/js/components/inventory/stock-transfers.js",
     "isDynamicEntry": true,
@@ -462,7 +462,7 @@
     ]
   },
   "resources/js/components/invoices-legacy.js": {
-    "file": "assets/invoices-legacy-BflIh6SH.js",
+    "file": "assets/invoices-legacy-CVf7wvhQ.js",
     "name": "invoices",
     "src": "resources/js/components/invoices-legacy.js",
     "isDynamicEntry": true,
@@ -472,7 +472,7 @@
     ]
   },
   "resources/js/components/invoices.js": {
-    "file": "assets/invoices-CizpN19Q.js",
+    "file": "assets/invoices-DJJbhCZf.js",
     "name": "invoices",
     "src": "resources/js/components/invoices.js",
     "isDynamicEntry": true,
@@ -488,7 +488,7 @@
     ]
   },
   "resources/js/components/messages-legacy.js": {
-    "file": "assets/messages-legacy-Dj_eI7S0.js",
+    "file": "assets/messages-legacy-RIrnu9Ag.js",
     "name": "messages",
     "src": "resources/js/components/messages-legacy.js",
     "isDynamicEntry": true,
@@ -498,7 +498,7 @@
     ]
   },
   "resources/js/components/messages.js": {
-    "file": "assets/messages-C0f7fMjc.js",
+    "file": "assets/messages-DxpX-P9c.js",
     "name": "messages",
     "src": "resources/js/components/messages.js",
     "isDynamicEntry": true,
@@ -514,7 +514,7 @@
     ]
   },
   "resources/js/components/order-reasons-legacy.js": {
-    "file": "assets/order-reasons-legacy-_Y_A98n4.js",
+    "file": "assets/order-reasons-legacy-g3xCs49l.js",
     "name": "order-reasons",
     "src": "resources/js/components/order-reasons-legacy.js",
     "isDynamicEntry": true,
@@ -524,7 +524,7 @@
     ]
   },
   "resources/js/components/order-reasons.js": {
-    "file": "assets/order-reasons-DgQ42wl6.js",
+    "file": "assets/order-reasons-CizAnfha.js",
     "name": "order-reasons",
     "src": "resources/js/components/order-reasons.js",
     "isDynamicEntry": true,
@@ -540,7 +540,7 @@
     ]
   },
   "resources/js/components/orders-legacy.js": {
-    "file": "assets/orders-legacy-lfrVB4Ut.js",
+    "file": "assets/orders-legacy-CsZ89cXq.js",
     "name": "orders",
     "src": "resources/js/components/orders-legacy.js",
     "isDynamicEntry": true,
@@ -550,7 +550,7 @@
     ]
   },
   "resources/js/components/orders.js": {
-    "file": "assets/orders-BGpPwjVy.js",
+    "file": "assets/orders-D7f-Tk1j.js",
     "name": "orders",
     "src": "resources/js/components/orders.js",
     "isDynamicEntry": true,
@@ -566,7 +566,7 @@
     ]
   },
   "resources/js/components/payments-legacy.js": {
-    "file": "assets/payments-legacy-DXwCUKRo.js",
+    "file": "assets/payments-legacy-NCLR1k-L.js",
     "name": "payments",
     "src": "resources/js/components/payments-legacy.js",
     "isDynamicEntry": true,
@@ -576,7 +576,7 @@
     ]
   },
   "resources/js/components/payments.js": {
-    "file": "assets/payments-CFw0xJ8E.js",
+    "file": "assets/payments-DIX8cOuJ.js",
     "name": "payments",
     "src": "resources/js/components/payments.js",
     "isDynamicEntry": true,
@@ -592,7 +592,7 @@
     ]
   },
   "resources/js/components/products-legacy.js": {
-    "file": "assets/products-legacy-CMynFiKI.js",
+    "file": "assets/products-legacy-ChfkCsi7.js",
     "name": "products",
     "src": "resources/js/components/products-legacy.js",
     "isDynamicEntry": true,
@@ -602,7 +602,7 @@
     ]
   },
   "resources/js/components/products.js": {
-    "file": "assets/products-CEVG0UBl.js",
+    "file": "assets/products-B0GWF4cZ.js",
     "name": "products",
     "src": "resources/js/components/products.js",
     "isDynamicEntry": true,
@@ -618,7 +618,7 @@
     ]
   },
   "resources/js/components/refunds-legacy.js": {
-    "file": "assets/refunds-legacy-DrMolXqn.js",
+    "file": "assets/refunds-legacy-CNdOdpVU.js",
     "name": "refunds",
     "src": "resources/js/components/refunds-legacy.js",
     "isDynamicEntry": true,
@@ -628,7 +628,7 @@
     ]
   },
   "resources/js/components/refunds.js": {
-    "file": "assets/refunds-B680Wk1p.js",
+    "file": "assets/refunds-DfXKaTeY.js",
     "name": "refunds",
     "src": "resources/js/components/refunds.js",
     "isDynamicEntry": true,
@@ -644,7 +644,7 @@
     ]
   },
   "resources/js/components/reports-legacy.js": {
-    "file": "assets/reports-legacy-tHFOC9gX.js",
+    "file": "assets/reports-legacy-B_1mHs_N.js",
     "name": "reports",
     "src": "resources/js/components/reports-legacy.js",
     "isDynamicEntry": true,
@@ -654,7 +654,7 @@
     ]
   },
   "resources/js/components/reports.js": {
-    "file": "assets/reports-B92ENMaA.js",
+    "file": "assets/reports-BnFpZCiA.js",
     "name": "reports",
     "src": "resources/js/components/reports.js",
     "isDynamicEntry": true,
@@ -670,7 +670,7 @@
     ]
   },
   "resources/js/components/returns-legacy.js": {
-    "file": "assets/returns-legacy-DtSsy8AE.js",
+    "file": "assets/returns-legacy-Bc-HuypL.js",
     "name": "returns",
     "src": "resources/js/components/returns-legacy.js",
     "isDynamicEntry": true,
@@ -680,7 +680,7 @@
     ]
   },
   "resources/js/components/returns.js": {
-    "file": "assets/returns-CjrwuGPW.js",
+    "file": "assets/returns-BUMSw7-S.js",
     "name": "returns",
     "src": "resources/js/components/returns.js",
     "isDynamicEntry": true,
@@ -696,7 +696,7 @@
     ]
   },
   "resources/js/components/roles-permissions-legacy.js": {
-    "file": "assets/roles-permissions-legacy-C889SlF9.js",
+    "file": "assets/roles-permissions-legacy-35VauCKS.js",
     "name": "roles-permissions",
     "src": "resources/js/components/roles-permissions-legacy.js",
     "isDynamicEntry": true,
@@ -706,7 +706,7 @@
     ]
   },
   "resources/js/components/roles-permissions.js": {
-    "file": "assets/roles-permissions-C5-z3KXx.js",
+    "file": "assets/roles-permissions-DCQyvJGd.js",
     "name": "roles-permissions",
     "src": "resources/js/components/roles-permissions.js",
     "isDynamicEntry": true,
@@ -722,7 +722,7 @@
     ]
   },
   "resources/js/components/security-legacy.js": {
-    "file": "assets/security-legacy-DhEXcNmX.js",
+    "file": "assets/security-legacy-LL1ZY9-J.js",
     "name": "security",
     "src": "resources/js/components/security-legacy.js",
     "isDynamicEntry": true,
@@ -732,7 +732,7 @@
     ]
   },
   "resources/js/components/security.js": {
-    "file": "assets/security-CjaZedRL.js",
+    "file": "assets/security-DzSkp_dA.js",
     "name": "security",
     "src": "resources/js/components/security.js",
     "isDynamicEntry": true,
@@ -748,7 +748,7 @@
     ]
   },
   "resources/js/components/settings-legacy.js": {
-    "file": "assets/settings-legacy-BnecbME6.js",
+    "file": "assets/settings-legacy-BfaAbJ9n.js",
     "name": "settings",
     "src": "resources/js/components/settings-legacy.js",
     "isDynamicEntry": true,
@@ -758,7 +758,7 @@
     ]
   },
   "resources/js/components/settings.js": {
-    "file": "assets/settings-Byd1aUy0.js",
+    "file": "assets/settings-BxoPLYEf.js",
     "name": "settings",
     "src": "resources/js/components/settings.js",
     "isDynamicEntry": true,
@@ -774,7 +774,7 @@
     ]
   },
   "resources/js/components/shipping/services-legacy.js": {
-    "file": "assets/services-legacy-LPmDuMKk.js",
+    "file": "assets/services-legacy-BnQGJMra.js",
     "name": "services",
     "src": "resources/js/components/shipping/services-legacy.js",
     "isDynamicEntry": true,
@@ -784,7 +784,7 @@
     ]
   },
   "resources/js/components/shipping/services.js": {
-    "file": "assets/services-CbOTKWOs.js",
+    "file": "assets/services-gAQEP7Zl.js",
     "name": "services",
     "src": "resources/js/components/shipping/services.js",
     "isDynamicEntry": true,
@@ -800,7 +800,7 @@
     ]
   },
   "resources/js/components/shipping/shipments-legacy.js": {
-    "file": "assets/shipments-legacy-Ddy5gnTW.js",
+    "file": "assets/shipments-legacy-D2rKpD9f.js",
     "name": "shipments",
     "src": "resources/js/components/shipping/shipments-legacy.js",
     "isDynamicEntry": true,
@@ -810,7 +810,7 @@
     ]
   },
   "resources/js/components/shipping/shipments.js": {
-    "file": "assets/shipments-CbcTw-Jp.js",
+    "file": "assets/shipments-BZlYYcKD.js",
     "name": "shipments",
     "src": "resources/js/components/shipping/shipments.js",
     "isDynamicEntry": true,
@@ -826,7 +826,7 @@
     ]
   },
   "resources/js/components/users-legacy.js": {
-    "file": "assets/users-legacy-9RxCUvzr.js",
+    "file": "assets/users-legacy-BEuo42io.js",
     "name": "users",
     "src": "resources/js/components/users-legacy.js",
     "isDynamicEntry": true,
@@ -836,7 +836,7 @@
     ]
   },
   "resources/js/components/users.js": {
-    "file": "assets/users-CZ67SpNs.js",
+    "file": "assets/users-B7PUkp6j.js",
     "name": "users",
     "src": "resources/js/components/users.js",
     "isDynamicEntry": true,
@@ -852,7 +852,7 @@
     ]
   },
   "resources/js/components/villages-legacy.js": {
-    "file": "assets/villages-legacy-CjuUmu7v.js",
+    "file": "assets/villages-legacy-Dkg0DU9D.js",
     "name": "villages",
     "src": "resources/js/components/villages-legacy.js",
     "isDynamicEntry": true,
@@ -862,7 +862,7 @@
     ]
   },
   "resources/js/components/villages.js": {
-    "file": "assets/villages-AIcs10t1.js",
+    "file": "assets/villages-BGhG1czu.js",
     "name": "villages",
     "src": "resources/js/components/villages.js",
     "isDynamicEntry": true,
@@ -878,7 +878,7 @@
     ]
   },
   "resources/js/main-legacy.js": {
-    "file": "assets/main-legacy-B0-7l3d8.js",
+    "file": "assets/main-legacy-C_Yy9S0a.js",
     "name": "main",
     "src": "resources/js/main-legacy.js",
     "isEntry": true,
@@ -923,7 +923,7 @@
     ]
   },
   "resources/js/main.js": {
-    "file": "assets/main-D2ERbvFc.js",
+    "file": "assets/main-qPkFpj2A.js",
     "name": "main",
     "src": "resources/js/main.js",
     "isEntry": true,

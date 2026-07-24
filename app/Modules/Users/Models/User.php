@@ -4,26 +4,29 @@ declare(strict_types=1);
 
 namespace App\Modules\Users\Models;
 
+use App\Models\Chat\Presence;
+use App\Modules\Catalog\Models\Service;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use App\Modules\Catalog\Models\Service;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
-use OwenIt\Auditing\Contracts\Auditable;
 use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Models\Activity;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements Auditable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes, LogsActivity, AuditableTrait;
+    use AuditableTrait, HasApiTokens, HasFactory, HasRoles, LogsActivity, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -40,9 +43,10 @@ class User extends Authenticatable implements Auditable
         'photo',
         'joining_date',
         'password',
+        'is_active',
+        'email_verified_at',
         'phone',
         'department',
-        'is_active',
         'password_changed_at',
         'suspended_until',
         'address_line_1',
@@ -75,13 +79,13 @@ class User extends Authenticatable implements Auditable
     protected function casts(): array
     {
         return [
-            'email_verified_at'  => 'datetime',
-            'joining_date'       => 'date',
-            'password'           => 'hashed',
-            'is_active'          => 'boolean',
+            'email_verified_at' => 'datetime',
+            'joining_date' => 'date',
+            'password' => 'hashed',
+            'is_active' => 'boolean',
             'password_changed_at' => 'datetime',
-            'suspended_until'    => 'datetime',
-            'deleted_at'         => 'datetime',
+            'suspended_until' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 
@@ -146,10 +150,11 @@ class User extends Authenticatable implements Auditable
     {
         $this->update(['suspended_until' => null]);
     }
+
     public function readActivities(): BelongsToMany
     {
         return $this->belongsToMany(
-            \Spatie\Activitylog\Models\Activity::class,
+            Activity::class,
             'user_read_activities',
             'user_id',
             'activity_id'
@@ -158,20 +163,20 @@ class User extends Authenticatable implements Auditable
 
     public function chatPresence()
     {
-        return $this->hasOne(\App\Models\Chat\Presence::class);
+        return $this->hasOne(Presence::class);
     }
 
     public function isOnline(): bool
     {
-        return \Illuminate\Support\Facades\DB::table('sessions')
+        return DB::table('sessions')
             ->where('user_id', $this->id)
             ->where('last_activity', '>=', now()->subMinutes(5)->getTimestamp())
             ->exists();
     }
 
-    public function getLastSeenAt(): ?\Illuminate\Support\Carbon
+    public function getLastSeenAt(): ?Carbon
     {
-        $lastActivity = \Illuminate\Support\Facades\DB::table('sessions')
+        $lastActivity = DB::table('sessions')
             ->where('user_id', $this->id)
             ->max('last_activity');
 
@@ -180,17 +185,20 @@ class User extends Authenticatable implements Auditable
 
     public function getActiveDevice(): ?string
     {
-        $session = \Illuminate\Support\Facades\DB::table('sessions')
+        $session = DB::table('sessions')
             ->where('user_id', $this->id)
             ->latest('last_activity')
             ->first();
 
-        if (!$session) return null;
+        if (! $session) {
+            return null;
+        }
 
         $ua = $session->user_agent;
         if (preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', $ua)) {
             return 'mobile';
         }
+
         return 'desktop';
     }
 }

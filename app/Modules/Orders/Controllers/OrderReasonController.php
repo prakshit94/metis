@@ -3,11 +3,10 @@
 namespace App\Modules\Orders\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Modules\Orders\Models\DeliveryFailureReason;
 use App\Modules\Orders\Models\RescheduleReason;
 use App\Modules\Orders\Models\ReturnReason;
-use App\Modules\Orders\Models\DeliveryFailureReason;
-
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -41,24 +40,25 @@ class OrderReasonController extends Controller implements HasMiddleware
     public function list(string $type)
     {
         $model = $this->getModel($type);
-        if (!$model) {
+        if (! $model) {
             return response()->json(['error' => 'Invalid reason type.'], 400);
         }
 
         $reasons = $model::with(['creator', 'updater'])->orderBy('id')->get();
+
         return response()->json(['reasons' => $reasons]);
     }
 
     public function store(Request $request, string $type)
     {
         $model = $this->getModel($type);
-        if (!$model) {
+        if (! $model) {
             return response()->json(['error' => 'Invalid reason type.'], 400);
         }
 
         $validated = $request->validate([
-            'reason' => 'required|string|max:255|unique:' . (new $model)->getTable() . ',reason',
-            'is_active' => 'boolean'
+            'reason' => 'required|string|max:255|unique:'.(new $model)->getTable().',reason',
+            'is_active' => 'boolean',
         ]);
 
         $reason = $model::create([
@@ -72,15 +72,15 @@ class OrderReasonController extends Controller implements HasMiddleware
     public function update(Request $request, string $type, string $id)
     {
         $model = $this->getModel($type);
-        if (!$model) {
+        if (! $model) {
             return response()->json(['error' => 'Invalid reason type.'], 400);
         }
 
         $reason = $model::findOrFail($id);
 
         $validated = $request->validate([
-            'reason' => 'required|string|max:255|unique:' . (new $model)->getTable() . ',reason,' . $id,
-            'is_active' => 'boolean'
+            'reason' => 'required|string|max:255|unique:'.(new $model)->getTable().',reason,'.$id,
+            'is_active' => 'boolean',
         ]);
 
         $reason->update([
@@ -94,7 +94,7 @@ class OrderReasonController extends Controller implements HasMiddleware
     public function destroy(string $type, string $id)
     {
         $model = $this->getModel($type);
-        if (!$model) {
+        if (! $model) {
             return response()->json(['error' => 'Invalid reason type.'], 400);
         }
 
@@ -107,12 +107,12 @@ class OrderReasonController extends Controller implements HasMiddleware
     public function toggleActive(string $type, string $id)
     {
         $model = $this->getModel($type);
-        if (!$model) {
+        if (! $model) {
             return response()->json(['error' => 'Invalid reason type.'], 400);
         }
 
         $reason = $model::findOrFail($id);
-        $reason->is_active = !$reason->is_active;
+        $reason->is_active = ! $reason->is_active;
         $reason->save();
 
         return response()->json(['success' => true, 'message' => 'Reason status toggled.', 'is_active' => $reason->is_active]);

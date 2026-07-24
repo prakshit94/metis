@@ -4,9 +4,13 @@ namespace App\Modules\Orders\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Invoice;
+use App\Modules\Orders\Models\Payment;
+use App\Services\FinancialService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Validation\ValidationException;
 
 class InvoiceController extends Controller implements HasMiddleware
 {
@@ -28,10 +32,10 @@ class InvoiceController extends Controller implements HasMiddleware
                 $subQuery->where('invoice_no', 'LIKE', "%{$s}%")
                     ->orWhereHas('order', function ($q) use ($s) {
                         $q->where('order_no', 'LIKE', "%{$s}%")
-                          ->orWhereHas('party', function ($q2) use ($s) {
-                              $q2->where('firstname', 'LIKE', "%{$s}%")
-                                 ->orWhere('lastname', 'LIKE', "%{$s}%");
-                          });
+                            ->orWhereHas('party', function ($q2) use ($s) {
+                                $q2->where('firstname', 'LIKE', "%{$s}%")
+                                    ->orWhere('lastname', 'LIKE', "%{$s}%");
+                            });
                     });
             });
         }
@@ -54,7 +58,7 @@ class InvoiceController extends Controller implements HasMiddleware
 
         if ($request->wantsJson() || $request->ajax()) {
             $totalInvoiced = (float) Invoice::sum('net_amount');
-            $collectedAmount = (float) \App\Modules\Orders\Models\Payment::where('status', 'completed')->sum('amount');
+            $collectedAmount = (float) Payment::where('status', 'completed')->sum('amount');
             $pendingAmount = max(0, $totalInvoiced - $collectedAmount);
 
             $stats = [
@@ -83,7 +87,7 @@ class InvoiceController extends Controller implements HasMiddleware
         return response()->json(['invoice' => $invoice]);
     }
 
-    public function bulkStatus(Request $request, \App\Services\FinancialService $financialService)
+    public function bulkStatus(Request $request, FinancialService $financialService)
     {
         $validated = $request->validate([
             'ids' => 'required|array',
@@ -107,7 +111,7 @@ class InvoiceController extends Controller implements HasMiddleware
         ]);
     }
 
-    public function recordPayment(Request $request, Invoice $invoice, \App\Services\FinancialService $financialService)
+    public function recordPayment(Request $request, Invoice $invoice, FinancialService $financialService)
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
@@ -119,7 +123,7 @@ class InvoiceController extends Controller implements HasMiddleware
         try {
             $payment = $financialService->processPayment(
                 $invoice,
-                (float)$validated['amount'],
+                (float) $validated['amount'],
                 $validated['payment_method'],
                 $validated['transaction_id'] ?? null,
                 $validated['payment_date'] ?? null
@@ -128,12 +132,12 @@ class InvoiceController extends Controller implements HasMiddleware
             return response()->json([
                 'success' => true,
                 'message' => 'Payment recorded successfully.',
-                'payment' => $payment
+                'payment' => $payment,
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Failed to record payment: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Failed to record payment: '.$e->getMessage()], 500);
         }
     }
 
@@ -153,17 +157,17 @@ class InvoiceController extends Controller implements HasMiddleware
 
         $columns = [
             'reference_type', 'reference_no', 'amount', 'payment_method', 'transaction_id', 'payment_date',
-            'order_no', 'customer_name', 'invoice_date', 'due_date', 'total_amount', 'tax_amount', 'net_amount', 'paid_amount', 'status'
+            'order_no', 'customer_name', 'invoice_date', 'due_date', 'total_amount', 'tax_amount', 'net_amount', 'paid_amount', 'status',
         ];
 
         $callback = function () use ($columns, $invoices) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
-            
+
             foreach ($invoices as $invoice) {
                 $order = $invoice->order;
                 $party = $order ? $order->party : null;
-                $customerName = $party ? trim($party->firstname . ' ' . $party->lastname) : '';
+                $customerName = $party ? trim($party->firstname.' '.$party->lastname) : '';
 
                 $latestPayment = $invoice->payments()->latest('payment_date')->first();
 
@@ -189,6 +193,6 @@ class InvoiceController extends Controller implements HasMiddleware
             fclose($file);
         };
 
-        return \Illuminate\Support\Facades\Response::stream($callback, 200, $headers);
+        return Response::stream($callback, 200, $headers);
     }
 }

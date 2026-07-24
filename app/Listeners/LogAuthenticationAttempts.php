@@ -36,14 +36,14 @@ class LogAuthenticationAttempts
         $user = $event->user;
 
         LoginHistory::create([
-            'user_id'        => $user->id,
+            'user_id' => $user->id,
             'email_attempted' => $user->email,
-            'ip_address'     => $this->request->ip() ?? '0.0.0.0',
-            'user_agent'     => $this->request->userAgent(),
-            'device_type'    => $this->resolveDeviceType(),
-            'status'         => 'success',
+            'ip_address' => $this->request->ip() ?? '0.0.0.0',
+            'user_agent' => $this->request->userAgent(),
+            'device_type' => $this->resolveDeviceType(),
+            'status' => 'success',
             'failure_reason' => null,
-            'attempted_at'   => Carbon::now(),
+            'attempted_at' => Carbon::now(),
         ]);
     }
 
@@ -61,14 +61,14 @@ class LogAuthenticationAttempts
         $user = $event->user instanceof User ? $event->user : null;
 
         LoginHistory::create([
-            'user_id'        => $user?->id,
+            'user_id' => $user?->id,
             'email_attempted' => $email,
-            'ip_address'     => $this->request->ip() ?? '0.0.0.0',
-            'user_agent'     => $this->request->userAgent(),
-            'device_type'    => $this->resolveDeviceType(),
-            'status'         => 'failed',
+            'ip_address' => $this->request->ip() ?? '0.0.0.0',
+            'user_agent' => $this->request->userAgent(),
+            'device_type' => $this->resolveDeviceType(),
+            'status' => 'failed',
             'failure_reason' => $this->resolveFailureReason($user),
-            'attempted_at'   => Carbon::now(),
+            'attempted_at' => Carbon::now(),
         ]);
     }
 
@@ -82,7 +82,7 @@ class LogAuthenticationAttempts
     public function subscribe(): array
     {
         return [
-            Login::class  => 'handleLogin',
+            Login::class => 'handleLogin',
             Failed::class => 'handleFailed',
         ];
     }

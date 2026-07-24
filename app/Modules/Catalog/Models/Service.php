@@ -7,12 +7,10 @@ namespace App\Modules\Catalog\Models;
 use App\Modules\Core\Models\Village;
 use App\Modules\Core\Models\VillageServiceMapping;
 use App\Modules\Users\Models\User;
-
-
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 
 class Service extends Model
 {

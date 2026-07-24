@@ -2,9 +2,9 @@
 
 namespace App\Modules\Orders\Models;
 
+use App\Modules\Catalog\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Modules\Catalog\Models\Product;
 
 class OrderReturnItem extends Model
 {

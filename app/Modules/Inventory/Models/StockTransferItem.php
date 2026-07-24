@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Models;
 
 use App\Modules\Catalog\Models\Product;
-
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
