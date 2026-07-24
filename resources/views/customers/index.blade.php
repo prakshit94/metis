@@ -12,15 +12,21 @@
             <p class="text-muted mb-0">Manage farmers, corporate customers, and their addresses</p>
         </div>
         <div class="d-flex gap-2">
+            @can('customer-import')
             <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#importModal">
                 <i class="bi bi-upload me-2"></i>Import Customers
             </button>
+            @endcan
+            @can('customer-export')
             <button type="button" class="btn btn-outline-secondary rounded-pill px-3" x-on:click="exportCustomers()">
                 <i class="bi bi-download me-2"></i>Export
             </button>
+            @endcan
+            @can('customer-create')
             <button type="button" class="btn btn-primary rounded-pill px-4" @click="$dispatch('open-add-customer-modal')">
                 <i class="bi bi-person-plus me-2"></i>Add Customer
             </button>
+            @endcan
         </div>
     </div>
 
@@ -227,21 +233,29 @@
                         </span>
                     </div>
                     <div class="d-flex gap-2">
+                        @can('customer-activate')
                         <button class="btn btn-sm btn-success" @click="bulkAction('activate')" x-show="hasSelectedActiveCustomers">
                             <i class="bi bi-check-circle me-1"></i>Activate
                         </button>
                         <button class="btn btn-sm btn-warning" @click="bulkAction('deactivate')" x-show="hasSelectedActiveCustomers">
                             <i class="bi bi-x-circle me-1"></i>Deactivate
                         </button>
+                        @endcan
+                        @can('customer-delete')
                         <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" x-show="hasSelectedActiveCustomers">
                             <i class="bi bi-trash me-1"></i>Delete
                         </button>
+                        @endcan
+                        @can('customer-restore')
                         <button class="btn btn-sm btn-success" @click="bulkAction('restore')" x-show="hasSelectedDeletedCustomers">
                             <i class="bi bi-arrow-counterclockwise me-1"></i>Restore
                         </button>
+                        @endcan
+                        @can('customer-permanent-delete')
                         <button class="btn btn-sm btn-danger" @click="bulkAction('force-delete')" x-show="hasSelectedDeletedCustomers">
                             <i class="bi bi-trash3 me-1"></i>Permanent Delete
                         </button>
+                        @endcan
                         <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selectedCustomers = []" title="Clear selection">
                             <i class="bi bi-x-lg" style="margin-left: 7px"></i>
                         </button>
@@ -339,32 +353,42 @@
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
+                                            @can('customer-view')
                                             <li>
                                                 <a class="dropdown-item" :href="'/customers/' + c.id">
                                                     <i class="bi bi-eye me-2"></i>View Profile
                                                 </a>
                                             </li>
+                                            @endcan
+                                            @can('customer-edit')
                                             <li>
                                                 <a class="dropdown-item" href="#" @click.prevent="editCustomer(c)" x-show="!c.isDeleted">
                                                     <i class="bi bi-pencil me-2"></i>Edit Details
                                                 </a>
                                             </li>
+                                            @endcan
                                             <li><hr class="dropdown-divider"></li>
+                                            @can('customer-delete')
                                             <li>
                                                 <a class="dropdown-item text-danger" href="#" @click.prevent="deleteCustomer(c)" x-show="!c.isDeleted">
                                                     <i class="bi bi-trash me-2"></i>Delete
                                                 </a>
                                             </li>
+                                            @endcan
+                                            @can('customer-restore')
                                             <li>
                                                 <a class="dropdown-item text-success" href="#" @click.prevent="restoreCustomer(c)" x-show="c.isDeleted">
                                                     <i class="bi bi-arrow-counterclockwise me-2"></i>Restore
                                                 </a>
                                             </li>
+                                            @endcan
+                                            @can('customer-permanent-delete')
                                             <li>
                                                 <a class="dropdown-item text-danger" href="#" @click.prevent="forceDeleteCustomer(c)" x-show="c.isDeleted">
                                                     <i class="bi bi-trash3 me-2"></i>Permanent Delete
                                                 </a>
                                             </li>
+                                            @endcan
                                         </ul>
                                     </div>
                                 </td>

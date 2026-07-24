@@ -12,9 +12,11 @@
             <p class="text-muted mb-0">Manage geolocations, pincodes, and service coverage</p>
         </div>
         <div class="d-flex gap-2">
+            @can('village-export')
             <button type="button" class="btn btn-outline-secondary" @click="exportVillages()">
                 <i class="bi bi-download me-2"></i>Export
             </button>
+            @endcan
             <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-upload me-2"></i>Import

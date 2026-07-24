@@ -12,15 +12,21 @@
                             <p class="text-muted mb-0">Manage users, roles, and permissions</p>
                         </div>
                         <div class="d-flex gap-2">
+                            @can('user-import')
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                                 <i class="bi bi-upload me-2"></i>Import Users
                             </button>
+                            @endcan
+                            @can('user-export')
                             <button type="button" class="btn btn-outline-secondary" x-on:click="exportUsers()">
                                 <i class="bi bi-download me-2"></i>Export
                             </button>
+                            @endcan
+                            @can('user-create')
                             <button type="button" class="btn btn-primary" @click="openCreateUser()">
                                 <i class="bi bi-person-plus me-2"></i>Add User
                             </button>
+                            @endcan
                         </div>
                     </div>
 
@@ -236,6 +242,7 @@
                                             </div>
                                             <div class="card-body p-3 p-lg-4">
                                                 <div class="row g-2 g-lg-3">
+                                                    @can('user-create')
                                                     <div class="col-6">
                                                         <button class="btn btn-outline-primary btn-sm w-100" 
                                                                 type="button" @click="openCreateUser()">
@@ -243,6 +250,8 @@
                                                             Add User
                                                         </button>
                                                     </div>
+                                                    @endcan
+                                                    @can('user-import')
                                                     <div class="col-6">
                                                         <button class="btn btn-outline-info btn-sm w-100"
                                                                 data-bs-toggle="modal" data-bs-target="#importModal">
@@ -250,6 +259,8 @@
                                                             Import
                                                         </button>
                                                     </div>
+                                                    @endcan
+                                                    @can('user-export')
                                                     <div class="col-6">
                                                         <button class="btn btn-outline-success btn-sm w-100"
                                                                 @click="exportUsers()">
@@ -257,6 +268,8 @@
                                                             Export
                                                         </button>
                                                     </div>
+                                                    @endcan
+                                                    @can('user-invite')
                                                     <div class="col-6">
                                                         <button class="btn btn-outline-warning btn-sm w-100"
                                                                 @click="sendBulkInvites()">
@@ -264,6 +277,8 @@
                                                             Invites
                                                         </button>
                                                     </div>
+                                                    @endcan
+                                                    @can('user-report')
                                                     <div class="col-12">
                                                         <button class="btn btn-outline-secondary btn-sm w-100"
                                                                 @click="generateReport()">
@@ -271,6 +286,7 @@
                                                             Generate Report
                                                         </button>
                                                     </div>
+                                                    @endcan
                                                 </div>
                                             </div>
                                         </div>
@@ -347,21 +363,29 @@
                                             </span>
                                         </div>
                                         <div class="d-flex gap-2">
+                                            @can('user-activate')
                                             <button class="btn btn-sm btn-success" @click="bulkAction('activate')" x-show="hasSelectedActiveUsers">
                                                 <i class="bi bi-check-circle me-1"></i>Activate
                                             </button>
                                             <button class="btn btn-sm btn-warning" @click="bulkAction('deactivate')" x-show="hasSelectedActiveUsers">
                                                 <i class="bi bi-x-circle me-1"></i>Deactivate
                                             </button>
+                                            @endcan
+                                            @can('user-delete')
                                             <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" x-show="hasSelectedActiveUsers">
                                                 <i class="bi bi-trash me-1"></i>Delete
                                             </button>
+                                            @endcan
+                                            @can('user-restore')
                                             <button class="btn btn-sm btn-success" @click="bulkAction('restore')" x-show="hasSelectedDeletedUsers">
                                                 <i class="bi bi-arrow-counterclockwise me-1"></i>Restore
                                             </button>
+                                            @endcan
+                                            @can('user-permanent-delete')
                                             <button class="btn btn-sm btn-danger" @click="bulkAction('force-delete')" x-show="hasSelectedDeletedUsers">
                                                 <i class="bi bi-trash3 me-1"></i>Permanent Delete
                                             </button>
+                                            @endcan
                                             <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selectedUsers = []" title="Clear selection">
                                                 <i class="bi bi-x-lg" style="margin-left: 7px"></i>
                                             </button>
@@ -491,37 +515,49 @@
                                                                 <i class="bi bi-three-dots"></i>
                                                             </button>
                                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                                @can('user-view')
                                                                 <li>
                                                                     <a class="dropdown-item" href="#" @click.prevent="viewUser(user)">
                                                                         <i class="bi bi-eye me-2"></i>View Profile
                                                                     </a>
                                                                 </li>
+                                                                @endcan
+                                                                @can('user-edit')
                                                                 <li>
                                                                     <a class="dropdown-item" href="#" @click.prevent="editUser(user)" x-show="!user.isDeleted">
                                                                         <i class="bi bi-pencil me-2"></i>Edit
                                                                     </a>
                                                                 </li>
+                                                                @endcan
+                                                                @can('user-activate')
                                                                 <li>
                                                                     <a class="dropdown-item" href="#" @click.prevent="toggleActive(user)" x-show="!user.isDeleted">
                                                                         <i class="bi me-2" :class="user.is_active ? 'bi-x-circle' : 'bi-check-circle'"></i><span x-text="user.is_active ? 'Deactivate' : 'Activate'"></span>
                                                                     </a>
                                                                 </li>
+                                                                @endcan
                                                                 <li><hr class="dropdown-divider"></li>
+                                                                @can('user-delete')
                                                                 <li>
                                                                     <a class="dropdown-item text-danger" href="#" @click.prevent="deleteUser(user)" x-show="!user.isDeleted">
                                                                         <i class="bi bi-trash me-2"></i>Delete
                                                                     </a>
                                                                 </li>
+                                                                @endcan
+                                                                @can('user-restore')
                                                                 <li>
                                                                     <a class="dropdown-item text-success" href="#" @click.prevent="restoreUser(user)" x-show="user.isDeleted">
                                                                         <i class="bi bi-arrow-counterclockwise me-2"></i>Restore
                                                                     </a>
                                                                 </li>
+                                                                @endcan
+                                                                @can('user-permanent-delete')
                                                                 <li>
                                                                     <a class="dropdown-item text-danger" href="#" @click.prevent="forceDeleteUser(user)" x-show="user.isDeleted">
                                                                         <i class="bi bi-trash3 me-2"></i>Permanent Delete
                                                                     </a>
                                                                 </li>
+                                                                @endcan
                                                             </ul>
                                                         </div>
                                                     </td>
@@ -679,6 +715,49 @@
                                 </label>
                             </div>
                         </div>
+                        
+                        <div class="col-12 mt-4">
+                            <label class="form-label fw-semibold">Direct Permissions (Optional)</label>
+                            <p class="text-muted small mb-2">Assign specific permissions to this user directly, in addition to their role.</p>
+                            
+                            <template x-if="rolesLoading">
+                                <div class="border rounded p-3 text-center text-muted small">
+                                    <span class="spinner-border spinner-border-sm me-2"></span>Loading permissions...
+                                </div>
+                            </template>
+                            
+                            <template x-if="!rolesLoading && availablePermissions.length > 0">
+                                <div class="border rounded p-3 bg-body-tertiary" style="max-height: 400px; overflow-y: auto;">
+                                    <template x-for="group in groupedAvailablePermissions" :key="group.key">
+                                        <div class="mb-4 bg-body border rounded p-3 shadow-sm">
+                                            <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+                                                <i class="bi fs-5 text-primary me-2" :class="`bi-${group.icon}`"></i>
+                                                <h6 class="mb-0 fw-bold text-body" x-text="group.label"></h6>
+                                            </div>
+                                            <template x-for="(subGroup, index) in group.subGroups" :key="index">
+                                                <div :class="index > 0 ? 'mt-3 pt-3 border-top border-light-subtle' : ''">
+                                                    <h6 class="fw-semibold text-muted small mb-2 text-uppercase" style="letter-spacing: 0.05em;" x-text="subGroup.label"></h6>
+                                                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2 w-100 m-0">
+                                                        <template x-for="perm in subGroup.items" :key="perm.id">
+                                                            <div class="col px-1">
+                                                                <div class="form-check d-flex align-items-start mb-0">
+                                                                    <input class="form-check-input shadow-sm flex-shrink-0" type="checkbox" :value="perm.name" :id="'perm_' + perm.id" x-model="form.permissions" style="margin-top: 0.2em;">
+                                                                    <label class="form-check-label ms-2 cursor-pointer w-100" :for="'perm_' + perm.id">
+                                                                        <span class="fw-medium text-body d-block" style="font-size: 0.85rem;" x-text="perm.actionLabel"></span>
+                                                                        <span class="text-muted d-block" style="font-size: 0.7rem; line-height: 1.1;" x-text="perm.name"></span>
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                        
                         <div class="col-12"><hr class="my-1"></div>
                         
                         <!-- Address Details -->

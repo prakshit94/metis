@@ -1,0 +1,967 @@
+{
+  "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff": {
+    "file": "assets/bootstrap-icons-BeopsB42.woff",
+    "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff"
+  },
+  "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2": {
+    "file": "assets/bootstrap-icons-mSm7cUeB.woff2",
+    "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2"
+  },
+  "node_modules/lucide/dist/esm/lucide-legacy.mjs": {
+    "file": "assets/lucide-legacy-BVLY4AhP.js",
+    "name": "lucide",
+    "src": "node_modules/lucide/dist/esm/lucide-legacy.mjs",
+    "isDynamicEntry": true
+  },
+  "node_modules/lucide/dist/esm/lucide.mjs": {
+    "file": "assets/lucide-D3yBFBax.js",
+    "name": "lucide",
+    "src": "node_modules/lucide/dist/esm/lucide.mjs",
+    "isDynamicEntry": true
+  },
+  "resources/js/components/analytics-legacy.js": {
+    "file": "assets/analytics-legacy-DESSQkBF.js",
+    "name": "analytics",
+    "src": "resources/js/components/analytics-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/analytics.js": {
+    "file": "assets/analytics-BHaIWcWK.js",
+    "name": "analytics",
+    "src": "resources/js/components/analytics.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/calendar-legacy.js": {
+    "file": "assets/calendar-legacy-C1VON6vz.js",
+    "name": "calendar",
+    "src": "resources/js/components/calendar-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/calendar.js": {
+    "file": "assets/calendar-QwkVZbUQ.js",
+    "name": "calendar",
+    "src": "resources/js/components/calendar.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/attributes-legacy.js": {
+    "file": "assets/attributes-legacy-CLsBQZE7.js",
+    "name": "attributes",
+    "src": "resources/js/components/catalog/attributes-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/catalog/attributes.js": {
+    "file": "assets/attributes-Cs12MqIL.js",
+    "name": "attributes",
+    "src": "resources/js/components/catalog/attributes.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/brands-legacy.js": {
+    "file": "assets/brands-legacy-C6fJo0AB.js",
+    "name": "brands",
+    "src": "resources/js/components/catalog/brands-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/catalog/brands.js": {
+    "file": "assets/brands-0nIUXKfq.js",
+    "name": "brands",
+    "src": "resources/js/components/catalog/brands.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/categories-legacy.js": {
+    "file": "assets/categories-legacy-CDrFDhMh.js",
+    "name": "categories",
+    "src": "resources/js/components/catalog/categories-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/catalog/categories.js": {
+    "file": "assets/categories-B2wavxHX.js",
+    "name": "categories",
+    "src": "resources/js/components/catalog/categories.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/hsn-codes-legacy.js": {
+    "file": "assets/hsn-codes-legacy-BRbr9cgk.js",
+    "name": "hsn-codes",
+    "src": "resources/js/components/catalog/hsn-codes-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/catalog/hsn-codes.js": {
+    "file": "assets/hsn-codes-CSyv4PF3.js",
+    "name": "hsn-codes",
+    "src": "resources/js/components/catalog/hsn-codes.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/tax-rates-legacy.js": {
+    "file": "assets/tax-rates-legacy-Dzz2MD4r.js",
+    "name": "tax-rates",
+    "src": "resources/js/components/catalog/tax-rates-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/catalog/tax-rates.js": {
+    "file": "assets/tax-rates-B9ZRjOd1.js",
+    "name": "tax-rates",
+    "src": "resources/js/components/catalog/tax-rates.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/uom-legacy.js": {
+    "file": "assets/uom-legacy-DxvstODd.js",
+    "name": "uom",
+    "src": "resources/js/components/catalog/uom-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/catalog/uom.js": {
+    "file": "assets/uom-nXOCtLiD.js",
+    "name": "uom",
+    "src": "resources/js/components/catalog/uom.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/catalog/warehouses-legacy.js": {
+    "file": "assets/warehouses-legacy-DdZjHXlL.js",
+    "name": "warehouses",
+    "src": "resources/js/components/catalog/warehouses-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/catalog/warehouses.js": {
+    "file": "assets/warehouses-BkYOhBS-.js",
+    "name": "warehouses",
+    "src": "resources/js/components/catalog/warehouses.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/customers-legacy.js": {
+    "file": "assets/customers-legacy-DAj8qAIs.js",
+    "name": "customers",
+    "src": "resources/js/components/customers-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/customers.js": {
+    "file": "assets/customers-BPG0cRpb.js",
+    "name": "customers",
+    "src": "resources/js/components/customers.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/elements-legacy.js": {
+    "file": "assets/elements-legacy-BaNje9_D.js",
+    "name": "elements",
+    "src": "resources/js/components/elements-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/elements.js": {
+    "file": "assets/elements-BhX6miLj.js",
+    "name": "elements",
+    "src": "resources/js/components/elements.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/files-legacy.js": {
+    "file": "assets/files-legacy-L9Hi1BgP.js",
+    "name": "files",
+    "src": "resources/js/components/files-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/files.js": {
+    "file": "assets/files-Qn0ZRs3X.js",
+    "name": "files",
+    "src": "resources/js/components/files.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/forms-legacy.js": {
+    "file": "assets/forms-legacy-BRQQ89Xe.js",
+    "name": "forms",
+    "src": "resources/js/components/forms-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/forms.js": {
+    "file": "assets/forms-BV9W_Ca-.js",
+    "name": "forms",
+    "src": "resources/js/components/forms.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/help-legacy.js": {
+    "file": "assets/help-legacy-Dr-FiEJ5.js",
+    "name": "help",
+    "src": "resources/js/components/help-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/help.js": {
+    "file": "assets/help-QjZ1ga6a.js",
+    "name": "help",
+    "src": "resources/js/components/help.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/inventory/adjustments-legacy.js": {
+    "file": "assets/adjustments-legacy-UHGrXzb1.js",
+    "name": "adjustments",
+    "src": "resources/js/components/inventory/adjustments-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/inventory/adjustments.js": {
+    "file": "assets/adjustments-CgMqaeMk.js",
+    "name": "adjustments",
+    "src": "resources/js/components/inventory/adjustments.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/inventory/stock-management-legacy.js": {
+    "file": "assets/stock-management-legacy-31HaCvMp.js",
+    "name": "stock-management",
+    "src": "resources/js/components/inventory/stock-management-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/inventory/stock-management.js": {
+    "file": "assets/stock-management-VqMOvoe5.js",
+    "name": "stock-management",
+    "src": "resources/js/components/inventory/stock-management.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/inventory/stock-transfers-legacy.js": {
+    "file": "assets/stock-transfers-legacy-CsXvQ6sj.js",
+    "name": "stock-transfers",
+    "src": "resources/js/components/inventory/stock-transfers-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/inventory/stock-transfers.js": {
+    "file": "assets/stock-transfers-BPtv0KPJ.js",
+    "name": "stock-transfers",
+    "src": "resources/js/components/inventory/stock-transfers.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/invoices-legacy.js": {
+    "file": "assets/invoices-legacy-DRW0h9WD.js",
+    "name": "invoices",
+    "src": "resources/js/components/invoices-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/invoices.js": {
+    "file": "assets/invoices-DG00Ajaq.js",
+    "name": "invoices",
+    "src": "resources/js/components/invoices.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/messages-legacy.js": {
+    "file": "assets/messages-legacy-xxGD8d3-.js",
+    "name": "messages",
+    "src": "resources/js/components/messages-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/messages.js": {
+    "file": "assets/messages-8pty3-vn.js",
+    "name": "messages",
+    "src": "resources/js/components/messages.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/orders-legacy.js": {
+    "file": "assets/orders-legacy-VLxjxc3X.js",
+    "name": "orders",
+    "src": "resources/js/components/orders-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/orders.js": {
+    "file": "assets/orders-CHcTNDp8.js",
+    "name": "orders",
+    "src": "resources/js/components/orders.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/payments-legacy.js": {
+    "file": "assets/payments-legacy-DxB3aXRP.js",
+    "name": "payments",
+    "src": "resources/js/components/payments-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/payments.js": {
+    "file": "assets/payments-DASqLMQ3.js",
+    "name": "payments",
+    "src": "resources/js/components/payments.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/products-legacy.js": {
+    "file": "assets/products-legacy-Bv_OKZjK.js",
+    "name": "products",
+    "src": "resources/js/components/products-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/products.js": {
+    "file": "assets/products-Dr0Z6Zvf.js",
+    "name": "products",
+    "src": "resources/js/components/products.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/refunds-legacy.js": {
+    "file": "assets/refunds-legacy---CTW2AO.js",
+    "name": "refunds",
+    "src": "resources/js/components/refunds-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/refunds.js": {
+    "file": "assets/refunds-BiYGG9m8.js",
+    "name": "refunds",
+    "src": "resources/js/components/refunds.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/reports-legacy.js": {
+    "file": "assets/reports-legacy-BYgE_9Sz.js",
+    "name": "reports",
+    "src": "resources/js/components/reports-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/reports.js": {
+    "file": "assets/reports-CdyD2mPY.js",
+    "name": "reports",
+    "src": "resources/js/components/reports.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/returns-legacy.js": {
+    "file": "assets/returns-legacy-CkW08BRO.js",
+    "name": "returns",
+    "src": "resources/js/components/returns-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/returns.js": {
+    "file": "assets/returns-4zEtowoU.js",
+    "name": "returns",
+    "src": "resources/js/components/returns.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/roles-permissions-legacy.js": {
+    "file": "assets/roles-permissions-legacy-GKnQmn0O.js",
+    "name": "roles-permissions",
+    "src": "resources/js/components/roles-permissions-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/roles-permissions.js": {
+    "file": "assets/roles-permissions-DpVWAIEK.js",
+    "name": "roles-permissions",
+    "src": "resources/js/components/roles-permissions.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/security-legacy.js": {
+    "file": "assets/security-legacy-BUEwE8VF.js",
+    "name": "security",
+    "src": "resources/js/components/security-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/security.js": {
+    "file": "assets/security-BlZXyBuR.js",
+    "name": "security",
+    "src": "resources/js/components/security.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/settings-legacy.js": {
+    "file": "assets/settings-legacy-CNGRvjBb.js",
+    "name": "settings",
+    "src": "resources/js/components/settings-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/settings.js": {
+    "file": "assets/settings-D3HjEr7Q.js",
+    "name": "settings",
+    "src": "resources/js/components/settings.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/shipping/services-legacy.js": {
+    "file": "assets/services-legacy-DzgVGRsI.js",
+    "name": "services",
+    "src": "resources/js/components/shipping/services-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/shipping/services.js": {
+    "file": "assets/services-BVvFh7Yn.js",
+    "name": "services",
+    "src": "resources/js/components/shipping/services.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/shipping/shipments-legacy.js": {
+    "file": "assets/shipments-legacy-DnFr7nP-.js",
+    "name": "shipments",
+    "src": "resources/js/components/shipping/shipments-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/shipping/shipments.js": {
+    "file": "assets/shipments-BlXDK0rH.js",
+    "name": "shipments",
+    "src": "resources/js/components/shipping/shipments.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/users-legacy.js": {
+    "file": "assets/users-legacy-ChVRIB4u.js",
+    "name": "users",
+    "src": "resources/js/components/users-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/users.js": {
+    "file": "assets/users-DmiuhBgg.js",
+    "name": "users",
+    "src": "resources/js/components/users.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/components/villages-legacy.js": {
+    "file": "assets/villages-legacy-BYIowQab.js",
+    "name": "villages",
+    "src": "resources/js/components/villages-legacy.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main-legacy.js",
+      "resources/scss/main-legacy.scss"
+    ]
+  },
+  "resources/js/components/villages.js": {
+    "file": "assets/villages-Cynhr0M1.js",
+    "name": "villages",
+    "src": "resources/js/components/villages.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/main.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/js/main-legacy.js": {
+    "file": "assets/main-legacy-FHrs-KE4.js",
+    "name": "main",
+    "src": "resources/js/main-legacy.js",
+    "isEntry": true,
+    "imports": [
+      "resources/scss/main-legacy.scss"
+    ],
+    "dynamicImports": [
+      "node_modules/lucide/dist/esm/lucide-legacy.mjs",
+      "resources/js/components/forms-legacy.js",
+      "resources/js/components/users-legacy.js",
+      "resources/js/components/customers-legacy.js",
+      "resources/js/components/villages-legacy.js",
+      "resources/js/components/roles-permissions-legacy.js",
+      "resources/js/components/analytics-legacy.js",
+      "resources/js/components/catalog/brands-legacy.js",
+      "resources/js/components/catalog/categories-legacy.js",
+      "resources/js/components/catalog/uom-legacy.js",
+      "resources/js/components/catalog/tax-rates-legacy.js",
+      "resources/js/components/catalog/hsn-codes-legacy.js",
+      "resources/js/components/catalog/warehouses-legacy.js",
+      "resources/js/components/catalog/attributes-legacy.js",
+      "resources/js/components/inventory/stock-management-legacy.js",
+      "resources/js/components/inventory/stock-transfers-legacy.js",
+      "resources/js/components/inventory/adjustments-legacy.js",
+      "resources/js/components/products-legacy.js",
+      "resources/js/components/orders-legacy.js",
+      "resources/js/components/returns-legacy.js",
+      "resources/js/components/invoices-legacy.js",
+      "resources/js/components/payments-legacy.js",
+      "resources/js/components/refunds-legacy.js",
+      "resources/js/components/reports-legacy.js",
+      "resources/js/components/messages-legacy.js",
+      "resources/js/components/calendar-legacy.js",
+      "resources/js/components/settings-legacy.js",
+      "resources/js/components/security-legacy.js",
+      "resources/js/components/files-legacy.js",
+      "resources/js/components/help-legacy.js",
+      "resources/js/components/elements-legacy.js",
+      "resources/js/components/shipping/shipments-legacy.js",
+      "resources/js/components/shipping/services-legacy.js"
+    ]
+  },
+  "resources/js/main.js": {
+    "file": "assets/main-BmBajAiV.js",
+    "name": "main",
+    "src": "resources/js/main.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "node_modules/lucide/dist/esm/lucide.mjs",
+      "resources/js/components/forms.js",
+      "resources/js/components/users.js",
+      "resources/js/components/customers.js",
+      "resources/js/components/villages.js",
+      "resources/js/components/roles-permissions.js",
+      "resources/js/components/analytics.js",
+      "resources/js/components/catalog/brands.js",
+      "resources/js/components/catalog/categories.js",
+      "resources/js/components/catalog/uom.js",
+      "resources/js/components/catalog/tax-rates.js",
+      "resources/js/components/catalog/hsn-codes.js",
+      "resources/js/components/catalog/warehouses.js",
+      "resources/js/components/catalog/attributes.js",
+      "resources/js/components/inventory/stock-management.js",
+      "resources/js/components/inventory/stock-transfers.js",
+      "resources/js/components/inventory/adjustments.js",
+      "resources/js/components/products.js",
+      "resources/js/components/orders.js",
+      "resources/js/components/returns.js",
+      "resources/js/components/invoices.js",
+      "resources/js/components/payments.js",
+      "resources/js/components/refunds.js",
+      "resources/js/components/reports.js",
+      "resources/js/components/messages.js",
+      "resources/js/components/calendar.js",
+      "resources/js/components/settings.js",
+      "resources/js/components/security.js",
+      "resources/js/components/files.js",
+      "resources/js/components/help.js",
+      "resources/js/components/elements.js",
+      "resources/js/components/shipping/shipments.js",
+      "resources/js/components/shipping/services.js"
+    ],
+    "css": [
+      "assets/main-CW012iUM.css"
+    ],
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/scss/main-legacy.scss": {
+    "file": "assets/main-legacy-BrRHhIGd.js",
+    "name": "main",
+    "src": "resources/scss/main-legacy.scss",
+    "isEntry": true,
+    "assets": [
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff"
+    ]
+  },
+  "resources/scss/main.scss": {
+    "file": "assets/main-CW012iUM.css",
+    "src": "resources/scss/main.scss",
+    "isEntry": true
+  },
+  "vite/legacy-polyfills-legacy": {
+    "file": "assets/polyfills-legacy-Chvc9onx.js",
+    "name": "polyfills",
+    "src": "vite/legacy-polyfills-legacy",
+    "isEntry": true
+  }
+}

@@ -49,9 +49,11 @@
                         <p class="mb-0 small text-muted">Profile, addresses, and order build steps in one place.</p>
                     </div>
                     <div class="d-flex align-items-center gap-2" x-show="customerDetails" x-cloak>
+                        @can('customer-edit')
                         <button type="button" class="btn btn-sm btn-outline-secondary" @click="$dispatch('open-add-customer-modal', {customer: customerDetails})">
                             <i class="bi bi-pencil-square me-1"></i>Edit Profile
                         </button>
+                        @endcan
                     </div>
                 </div>
                 <div class="card-body p-4 p-lg-4">
@@ -203,9 +205,11 @@
                     <div id="addresses-section" x-show="partyId" x-cloak class="mt-4 pt-4 border-top transition-all">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Shipping Addresses</h6>
+                            @can('customeraddress-create')
                             <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 shadow-sm hover-shadow transition-all" @click="$dispatch('open-address-modal', {customerId: partyId})">
                                 <i class="bi bi-plus-lg me-2"></i>Add Address
                             </button>
+                            @endcan
                         </div>
                         
                         <div class="row g-4">
@@ -219,9 +223,11 @@
                                                             <span class="badge bg-secondary me-1" x-text="addr.label || 'Address'"></span>
                                                             <span x-show="addr.is_default" class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Default</span>
                                                         </div>
+                                                        @can('customeraddress-edit')
                                                         <button type="button" class="btn btn-sm btn-light border rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 12px; right: 12px; width: 28px; height: 28px; z-index: 20;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
                                                             <i class="bi bi-pencil text-primary" style="font-size: 12px;"></i>
                                                         </button>
+                                                        @endcan
                                                     </div>
                                                     <p class="mb-1 small fw-bold" x-text="addr.address_line_1"></p>
                                                     <p class="mb-1 small text-muted" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
@@ -283,9 +289,11 @@
                                                             <span class="badge bg-secondary me-1" x-text="addr.label || 'Address'"></span>
                                                             <span x-show="addr.is_default" class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Default</span>
                                                         </div>
+                                                        @can('customeraddress-edit')
                                                         <button type="button" class="btn btn-sm btn-light border rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 12px; right: 12px; width: 28px; height: 28px; z-index: 20;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
                                                             <i class="bi bi-pencil text-primary" style="font-size: 12px;"></i>
                                                         </button>
+                                                        @endcan
                                                     </div>
                                                     <p class="mb-1 small fw-bold" x-text="addr.address_line_1"></p>
                                                     <p class="mb-1 small text-muted" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>

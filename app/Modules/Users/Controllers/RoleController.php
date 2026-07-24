@@ -51,7 +51,7 @@ class RoleController extends Controller implements HasMiddleware
         ];
         $sortBy = $sortMap[$request->input('sort_by', 'name')] ?? 'name';
         $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
-        $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+        $perPage = min(max((int) $request->input('per_page', 15), 1), 500);
         $deletedFilter = $request->input('deleted');
 
         $roles = Role::query()

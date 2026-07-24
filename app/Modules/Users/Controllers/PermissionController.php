@@ -46,7 +46,7 @@ class PermissionController extends Controller implements HasMiddleware
         ];
         $sortBy = $sortMap[$request->input('sort_by', 'name')] ?? 'name';
         $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
-        $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+        $perPage = min(max((int) $request->input('per_page', 15), 1), 500);
         $deletedFilter = $request->input('deleted');
 
         $permissions = Permission::query()
@@ -73,10 +73,16 @@ class PermissionController extends Controller implements HasMiddleware
      */
     public function store(StorePermissionRequest $request): JsonResponse
     {
+        $validated = $request->validated();
+        
         $permission = Permission::create([
-            'name'       => $request->validated('name'),
-            'guard_name' => $request->validated('guard_name', 'web'),
+            'name'       => $validated['name'],
+            'guard_name' => $validated['guard_name'] ?? 'web',
         ]);
+        
+        if (array_key_exists('roles', $validated)) {
+            $permission->syncRoles($validated['roles']);
+        }
 
         return response()->json([
             'message' => "Permission [{$permission->name}] created successfully.",
@@ -106,10 +112,16 @@ class PermissionController extends Controller implements HasMiddleware
      */
     public function update(UpdatePermissionRequest $request, Permission $permission): JsonResponse
     {
+        $validated = $request->validated();
+        
         $permission->update([
-            'name'       => $request->validated('name'),
-            'guard_name' => $request->validated('guard_name', $permission->guard_name),
+            'name'       => $validated['name'],
+            'guard_name' => $validated['guard_name'] ?? $permission->guard_name,
         ]);
+        
+        if (array_key_exists('roles', $validated)) {
+            $permission->syncRoles($validated['roles']);
+        }
 
         return response()->json([
             'message' => "Permission [{$permission->name}] updated successfully.",

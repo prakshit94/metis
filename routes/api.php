@@ -93,6 +93,33 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('permissions/{permission}/force', [PermissionController::class, 'forceDelete'])
             ->name('api.permissions.force-delete');
 
+        Route::get('/roles/options', function () {
+            abort_unless(
+                request()->user()?->can('role-view')
+                || request()->user()?->can('user-create')
+                || request()->user()?->can('user-edit')
+                || request()->user()?->can('role-create')
+                || request()->user()?->can('role-edit'),
+                403,
+            );
+
+            return response()->json(\App\Modules\Users\Models\Role::query()
+                ->orderBy('name')
+                ->get(['id', 'name', 'guard_name']));
+        })->name('api.roles.options');
+        Route::get('/permissions/options', function () {
+            abort_unless(
+                request()->user()?->can('permission-view')
+                || request()->user()?->can('user-create')
+                || request()->user()?->can('user-edit')
+                || request()->user()?->can('role-create')
+                || request()->user()?->can('role-edit'),
+                403,
+            );
+
+            return response()->json(\App\Modules\Users\Models\Permission::orderBy('name')->get(['id', 'name']));
+        })->name('api.permissions.options');
+
         Route::apiResource('roles', RoleController::class)
             ->names([
                 'index'   => 'api.roles.index',
@@ -210,32 +237,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('/', [CatalogProductController::class, 'store'])->name('store');
         });
 
-        Route::get('/roles/options', function () {
-            abort_unless(
-                request()->user()?->can('role-view')
-                || request()->user()?->can('user-create')
-                || request()->user()?->can('user-edit')
-                || request()->user()?->can('role-create')
-                || request()->user()?->can('role-edit'),
-                403,
-            );
-
-            return response()->json(\App\Modules\Users\Models\Role::query()
-                ->orderBy('name')
-                ->get(['id', 'name', 'guard_name']));
-        })->name('api.roles.options');
-        Route::get('/permissions/options', function () {
-            abort_unless(
-                request()->user()?->can('permission-view')
-                || request()->user()?->can('user-create')
-                || request()->user()?->can('user-edit')
-                || request()->user()?->can('role-create')
-                || request()->user()?->can('role-edit'),
-                403,
-            );
-
-            return response()->json(\App\Modules\Users\Models\Permission::orderBy('name')->get(['id', 'name']));
-        })->name('api.permissions.options');
+        
 
         // Bulk action must be defined before the resource to avoid route conflict
         Route::post('/users/bulk-action', \App\Modules\Users\Controllers\BulkUserController::class)->name('api.users.bulk');

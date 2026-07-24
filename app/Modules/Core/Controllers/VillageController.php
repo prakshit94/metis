@@ -20,7 +20,7 @@ class VillageController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:village-view', only: ['index', 'show', 'servicesOptions', 'search']),
+            new Middleware('permission:village-view', only: ['index', 'show', 'servicesOptions']),
             new Middleware('permission:village-create', only: ['store', 'import']),
             new Middleware('permission:village-edit', only: ['update', 'bulkAction']),
             new Middleware('permission:village-delete', only: ['destroy']),

@@ -4,7 +4,7 @@
 @section('page', 'dashboard')
 
 @section('content')
-<div x-data="{ activeTab: 'search' }">
+<div x-data="{ activeTab: new URLSearchParams(window.location.search).has('filter') ? 'dashboard' : 'search' }">
     <!-- Page Header Tabs -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
         <ul class="nav nav-pills gap-2" role="tablist">
@@ -18,6 +18,16 @@
                     <i class="bi bi-grid me-2"></i> Dashboard
                 </button>
             </li>
+
+        <div x-show="activeTab === 'dashboard'" x-transition.opacity.duration.300ms class="d-flex align-items-center gap-2">
+            <label class="text-muted small fw-bold mb-0 text-nowrap"><i class="bi bi-calendar3 me-1"></i> Date Filter:</label>
+            <select class="form-select form-select-sm fw-semibold shadow-sm border-0 bg-body-tertiary rounded-pill px-3" style="min-width: 140px; cursor: pointer;" onchange="window.location.href = '?filter=' + this.value">
+                <option value="today" {{ ($filter ?? 'today') === 'today' ? 'selected' : '' }}>Today</option>
+                <option value="yesterday" {{ ($filter ?? 'today') === 'yesterday' ? 'selected' : '' }}>Yesterday</option>
+                <option value="this_week" {{ ($filter ?? 'today') === 'this_week' ? 'selected' : '' }}>This Week</option>
+                <option value="this_month" {{ ($filter ?? 'today') === 'this_month' ? 'selected' : '' }}>This Month</option>
+            </select>
+        </div>
         </ul>
 
     </div>
@@ -140,6 +150,77 @@
                             </div>
                         </div>
                     </div>
+
+                <!-- Fulfillment & Returns Summary -->
+                <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
+                    <div class="col-xl-6">
+                        <div class="card metric-card border-0 shadow-sm rounded-4 overflow-hidden h-100">
+                            <div class="card-body p-4 p-lg-5 position-relative">
+                                <div class="position-absolute top-0 end-0 mt-4 me-4 text-success opacity-25">
+                                    <i class="bi bi-box-seam" style="font-size: 4rem;"></i>
+                                </div>
+                                <div class="d-flex align-items-center mb-4 pb-3 border-bottom position-relative" style="z-index: 1;">
+                                    <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle me-3" style="width: 48px; height: 48px;">
+                                        <i class="bi bi-check-circle-fill fs-5"></i>
+                                    </div>
+                                    <h6 class="text-body-secondary mb-0 fw-bold text-uppercase" style="letter-spacing: 1px;">Fulfillment Performance</h6>
+                                </div>
+                                
+                                <div class="row g-4 position-relative" style="z-index: 1;">
+                                    <div class="col-6 border-end">
+                                        <span class="text-muted d-block small mb-2 fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Delivered Orders</span>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <span class="display-6 fw-bold text-success mb-0">{{ number_format($totalDelivered) }}</span>
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 fw-bold" style="font-size: 0.85rem;">
+                                                <i class="bi bi-pie-chart-fill me-1"></i> {{ $deliveredPercent }}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 ps-4">
+                                        <span class="text-muted d-block small mb-2 fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Rev. Delivered</span>
+                                        <div class="h3 fw-bold text-success mb-0">
+                                            Rs {{ number_format($revDelivered, 2) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-6">
+                        <div class="card metric-card border-0 shadow-sm rounded-4 overflow-hidden h-100">
+                            <div class="card-body p-4 p-lg-5 position-relative">
+                                <div class="position-absolute top-0 end-0 mt-4 me-4 text-danger opacity-25">
+                                    <i class="bi bi-arrow-return-left" style="font-size: 4rem;"></i>
+                                </div>
+                                <div class="d-flex align-items-center mb-4 pb-3 border-bottom position-relative" style="z-index: 1;">
+                                    <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle me-3" style="width: 48px; height: 48px;">
+                                        <i class="bi bi-x-circle-fill fs-5"></i>
+                                    </div>
+                                    <h6 class="text-body-secondary mb-0 fw-bold text-uppercase" style="letter-spacing: 1px;">Returns Performance</h6>
+                                </div>
+                                
+                                <div class="row g-4 position-relative" style="z-index: 1;">
+                                    <div class="col-6 border-end">
+                                        <span class="text-muted d-block small mb-2 fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Returned Orders</span>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <span class="display-6 fw-bold text-danger mb-0">{{ number_format($totalReturned) }}</span>
+                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2 fw-bold" style="font-size: 0.85rem;">
+                                                <i class="bi bi-pie-chart-fill me-1"></i> {{ $returnedPercent }}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 ps-4">
+                                        <span class="text-muted d-block small mb-2 fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Rev. Returned</span>
+                                        <div class="h3 fw-bold text-danger mb-0">
+                                            Rs {{ number_format($revReturned, 2) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 </div>
 
                 <!-- Charts Row 1 -->
@@ -262,8 +343,19 @@
                                 this.errorMsg = '';
                                 this.isLoading = true;
                                 
-                                fetch(`/customers/search-by-phone?phone=${this.searchPhone}`)
-                                    .then(res => res.json())
+                                fetch(`/customers/search-by-phone?phone=${this.searchPhone}`, {
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                })
+                                    .then(async res => {
+                                        if (!res.ok) {
+                                            if (res.status === 403) throw new Error('You do not have permission to search customers.');
+                                            throw new Error('Error searching customer.');
+                                        }
+                                        return res.json();
+                                    })
                                     .then(data => {
                                         this.isLoading = false;
                                         if (data.found && data.redirect) {
@@ -275,7 +367,7 @@
                                     })
                                     .catch(err => {
                                         this.isLoading = false;
-                                        this.errorMsg = 'Error searching customer. Please try again.';
+                                        this.errorMsg = err.message || 'Error searching customer. Please try again.';
                                         setTimeout(() => { this.errorMsg = ''; }, 3000);
                                     });
                             }

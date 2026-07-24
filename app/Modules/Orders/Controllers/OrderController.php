@@ -904,10 +904,10 @@ class OrderController extends Controller implements HasMiddleware
         $query = Order::with(['party', 'warehouse', 'items.product', 'shipments', 'billingAddress', 'shippingAddress']);
 
         $user = auth()->user();
-        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view_all_order')) {
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !(($user->can('view_all_order') || $user->can('view-all-data')) || $user->can('view-all-data'))) {
             $query->where('created_by', $user->id);
         }
-        if ($user && $user->can('view_all_order') && !$user->hasAnyRole(['Super Admin', 'Admin'])) {
+        if ($user && ($user->can('view_all_order') || $user->can('view-all-data')) && !$user->hasAnyRole(['Super Admin', 'Admin'])) {
             $query->where('status', '!=', 'pending');
         }
         $this->applyOrderActionPermissionScope($query, $user);
@@ -1138,87 +1138,11 @@ class OrderController extends Controller implements HasMiddleware
             return;
         }
 
-        if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view_all_order')) {
+        if ($user->hasAnyRole(['Super Admin', 'Admin']) || ($user->can('view_all_order') || $user->can('view-all-data'))) {
             return;
         }
 
-        $query->where(function ($q) use ($user) {
-            // 1. User can ALWAYS see their own orders
-            $q->where('created_by', $user->id);
-
-            // 2. Explicit view permissions for specific statuses
-            if ($user->can('orders.view.future_order')) {
-                $q->orWhere(function ($sub) {
-                    $sub->where('status', 'pending')->where('is_draft', true);
-                });
-            }
-            if ($user->can('orders.view.pending')) {
-                $q->orWhere(function ($sub) {
-                    $sub->where('status', 'pending')->where(function ($draft) {
-                        $draft->where('is_draft', false)->orWhereNull('is_draft');
-                    });
-                });
-            }
-            if ($user->can('orders.view.confirmed')) {
-                $q->orWhere('status', 'confirmed');
-            }
-            if ($user->can('orders.view.processing')) {
-                $q->orWhere('status', 'processing');
-            }
-            if ($user->can('orders.view.ready_to_ship')) {
-                $q->orWhere('status', 'ready_to_ship');
-            }
-            if ($user->can('orders.view.dispatched')) {
-                $q->orWhereIn('status', ['dispatched', 'shipped']);
-            }
-            if ($user->can('orders.view.delivered')) {
-                $q->orWhere('status', 'delivered');
-            }
-            if ($user->can('orders.view.returned')) {
-                $q->orWhere('status', 'returned');
-            }
-            if ($user->can('orders.view.cancelled')) {
-                $q->orWhere('status', 'cancelled');
-            }
-
-            // 3. Legacy action permissions that grant visibility
-            if ($user->can('orders.confirm')) {
-                $q->orWhere(function ($sub) {
-                    $sub->where('status', 'pending')
-                        ->where(function ($draft) {
-                            $draft->where('is_draft', false)->orWhereNull('is_draft');
-                        });
-                });
-            }
-
-            if ($user->can('orders.processing')) {
-                $q->orWhere('status', 'confirmed');
-            }
-
-            if ($user->can('orders.ship')) {
-                $q->orWhereIn('status', ['confirmed', 'processing']);
-            }
-
-            if ($user->can('orders.dispatch')) {
-                $q->orWhere('status', 'ready_to_ship');
-            }
-
-            if ($user->can('orders.deliver')) {
-                $q->orWhereIn('status', Order::inTransitStatuses());
-            }
-
-            if ($user->can('orders.return')) {
-                $q->orWhereIn('status', ['delivered', 'dispatched', 'shipped']);
-            }
-
-            if ($user->can('orders.cancel')) {
-                $q->orWhereIn('status', ['pending', 'confirmed', 'processing', 'ready_to_ship']);
-            }
-
-            if ($user->can('orders.revert_status')) {
-                $q->orWhereIn('status', ['confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'returned', 'cancelled']);
-            }
-        });
+        $query->where('created_by', $user->id);
     }
 
     private function allowedOrderFilterStatuses($user): array
@@ -1227,7 +1151,7 @@ class OrderController extends Controller implements HasMiddleware
             return [];
         }
 
-        if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view_all_order') || $user->can('orders.view')) {
+        if ($user->hasAnyRole(['Super Admin', 'Admin']) || ($user->can('view_all_order') || $user->can('view-all-data')) || $user->can('orders.view')) {
             return ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'];
         }
 

@@ -11,13 +11,55 @@ use Carbon\Carbon;
 
 class PageController extends Controller
 {
-    public function dashboard()
+    public function dashboard(Request $request)
     {
+        $user = auth()->user();
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
+        
+        $customerQuery = Party::where('type', 'customer');
+        $orderQuery = Order::query();
+        
+
+        if (!$isGlobalView) {
+            $customerQuery->where('created_by', $user->id);
+            $orderQuery->where('created_by', $user->id);
+        }
+        
+        $filter = $request->input('filter', 'today');
+        if ($filter === 'today') {
+            $orderQuery->whereDate('order_date', Carbon::today());
+            $customerQuery->whereDate('created_at', Carbon::today());
+        } elseif ($filter === 'yesterday') {
+            $orderQuery->whereDate('order_date', Carbon::yesterday());
+            $customerQuery->whereDate('created_at', Carbon::yesterday());
+        } elseif ($filter === 'this_week') {
+            $orderQuery->whereBetween('order_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+            $customerQuery->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+        } elseif ($filter === 'this_month') {
+            $orderQuery->whereMonth('order_date', Carbon::now()->month)->whereYear('order_date', Carbon::now()->year);
+            $customerQuery->whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year);
+        } elseif ($filter === 'this_year') {
+            $orderQuery->whereYear('order_date', Carbon::now()->year);
+            $customerQuery->whereYear('created_at', Carbon::now()->year);
+        }
+
+
         // 1. Top Metrics
-        $totalCustomers = Party::where('type', 'customer')->count();
-        $totalRevenue = Order::whereNotIn('status', ['cancelled', 'returned'])->sum('net_amount');
-        $totalOrders = Order::count();
+        $totalCustomers = (clone $customerQuery)->count();
+        $totalRevenue = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned'])->sum('net_amount');
+        $totalOrders = (clone $orderQuery)->count();
+
         $totalProducts = Product::count();
+
+        // 1.5 Order Performance Metrics
+        $totalDelivered = (clone $orderQuery)->whereIn('status', ['delivered', 'completed'])->count();
+        $totalReturned = (clone $orderQuery)->whereIn('status', ['returned'])->count();
+        $revDelivered = (clone $orderQuery)->whereIn('status', ['delivered', 'completed'])->sum('net_amount');
+        $revReturned = (clone $orderQuery)->whereIn('status', ['returned'])->sum('net_amount');
+
+        $deliveredPercent = $totalOrders > 0 ? round(($totalDelivered / $totalOrders) * 100) : 0;
+        $returnedPercent = $totalOrders > 0 ? round(($totalReturned / $totalOrders) * 100) : 0;
+
 
         // 2. Chart Data
         
@@ -25,7 +67,7 @@ class PageController extends Controller
         $revenueData = [];
         for ($i = 11; $i >= 0; $i--) {
             $month = Carbon::now()->subMonths($i);
-            $revenue = Order::whereNotIn('status', ['cancelled', 'returned'])
+            $revenue = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned'])
                 ->whereYear('order_date', $month->year)
                 ->whereMonth('order_date', $month->month)
                 ->sum('net_amount');
@@ -42,7 +84,7 @@ class PageController extends Controller
         $dailyRevenueData = [];
         for ($i = 29; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
-            $revenue = Order::whereNotIn('status', ['cancelled', 'returned'])
+            $revenue = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned'])
                 ->whereDate('order_date', $date->toDateString())
                 ->sum('net_amount');
             $profit = $revenue * 0.2;
@@ -58,7 +100,7 @@ class PageController extends Controller
         $customerGrowth = [];
         for ($i = 29; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
-            $newUsers = Party::where('type', 'customer')
+            $newUsers = (clone $customerQuery)
                 ->whereDate('created_at', $date->toDateString())
                 ->count();
             
@@ -70,7 +112,7 @@ class PageController extends Controller
         }
 
         // Order Status Distribution
-        $orderStatusRaw = Order::select('status', DB::raw('count(*) as total'))
+        $orderStatusRaw = (clone $orderQuery)->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
             ->get()
             ->pluck('total', 'status')
@@ -84,7 +126,7 @@ class PageController extends Controller
         ];
 
         // Sales by Location
-        $salesByLocationRaw = Order::whereNotNull('shipping_state')
+        $salesByLocationRaw = (clone $orderQuery)->whereNotNull('shipping_state')
             ->select('shipping_state', DB::raw('SUM(net_amount) as total_sales'))
             ->whereNotIn('status', ['cancelled', 'returned'])
             ->groupBy('shipping_state')
@@ -100,7 +142,7 @@ class PageController extends Controller
         })->toArray();
 
         // Recent Orders
-        $recentOrdersRaw = Order::with('party')
+        $recentOrdersRaw = (clone $orderQuery)->with('party')
             ->latest('order_date')
             ->take(5)
             ->get();
@@ -136,10 +178,17 @@ class PageController extends Controller
         ];
 
         return view('dashboard', compact(
+            'filter',
             'totalCustomers',
             'totalRevenue',
             'totalOrders',
             'totalProducts',
+            'totalDelivered',
+            'totalReturned',
+            'revDelivered',
+            'revReturned',
+            'deliveredPercent',
+            'returnedPercent',
             'dashboardData'
         ));
     }

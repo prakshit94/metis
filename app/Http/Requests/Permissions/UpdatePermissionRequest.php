@@ -29,6 +29,8 @@ class UpdatePermissionRequest extends FormRequest
                 Rule::unique('permissions', 'name')->ignore($permissionId),
             ],
             'guard_name' => ['sometimes', 'string', 'max:100'],
+            'roles'      => ['sometimes', 'array'],
+            'roles.*'    => ['string', 'exists:roles,name'],
         ];
     }
 }

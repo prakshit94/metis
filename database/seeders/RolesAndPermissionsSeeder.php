@@ -29,35 +29,65 @@ class RolesAndPermissionsSeeder extends Seeder
      * @var list<string>
      */
     private const array PERMISSIONS = [
+        // ── Catalog & Products ──
+
+        // Brands
         'brand-view',
         'brand-create',
         'brand-edit',
         'brand-delete',
+        'brand-restore',
+        'brand-permanent-delete',
+
+        // Catalogs
         'catalog-view',
+        'catalog-create',
+        'catalog-edit',
+        'catalog-delete',
+        'catalog-restore',
+        'catalog-permanent-delete',
+
+        // Categories
         'category-view',
         'category-create',
         'category-edit',
         'category-delete',
-        'hsncode-view',
-        'hsncode-create',
-        'hsncode-edit',
-        'hsncode-delete',
+        'category-restore',
+        'category-permanent-delete',
+
+        // Product Attributes
         'productattribute-view',
         'productattribute-create',
         'productattribute-edit',
         'productattribute-delete',
+        'productattribute-restore',
+        'productattribute-permanent-delete',
+
+        // HSN Codes
+        'hsncode-view',
+        'hsncode-create',
+        'hsncode-edit',
+        'hsncode-delete',
+        'hsncode-restore',
+        'hsncode-permanent-delete',
+
+        // Tax Rates
         'taxrate-view',
         'taxrate-create',
         'taxrate-edit',
         'taxrate-delete',
+        'taxrate-restore',
+        'taxrate-permanent-delete',
+
+        // Units of Measure
         'unitofmeasure-view',
         'unitofmeasure-create',
         'unitofmeasure-edit',
         'unitofmeasure-delete',
-        'warehouse-view',
-        'warehouse-create',
-        'warehouse-edit',
-        'warehouse-delete',
+        'unitofmeasure-restore',
+        'unitofmeasure-permanent-delete',
+
+        // Products
         'product-view',
         'product-create',
         'product-edit',
@@ -66,64 +96,197 @@ class RolesAndPermissionsSeeder extends Seeder
         'product-permanent-delete',
         'product-import',
         'product-export',
-        'dashboard-view',
-        'analytics-view',
-            'reports-view',
-        'reports-view',
-        'settings-view',
-        'settings-edit',
-        'shipping-view',
-        'shipping-manage',
-        'village-view',
-        'village-create',
-        'village-edit',
-        'village-delete',
+
+        // ── Inventory & Warehousing ──
+
+        // Warehouses
+        'warehouse-view',
+        'warehouse-create',
+        'warehouse-edit',
+        'warehouse-delete',
+        'warehouse-restore',
+        'warehouse-permanent-delete',
+
+        // Inventory Adjustments
+        'inventoryadjustment-view',
+        'inventoryadjustment-create',
+        'inventoryadjustment-edit',
+        'inventoryadjustment-delete',
+        'inventoryadjustment-restore',
+        'inventoryadjustment-permanent-delete',
+
+        // Stock Management
+        'stockmanagement-view',
+        'stockmanagement-create',
+        'stockmanagement-edit',
+        'stockmanagement-delete',
+        'stockmanagement-restore',
+        'stockmanagement-permanent-delete',
+
+        // Stock Transfers
+        'stocktransfer-view',
+        'stocktransfer-create',
+        'stocktransfer-edit',
+        'stocktransfer-delete',
+        'stocktransfer-restore',
+        'stocktransfer-permanent-delete',
+
+        // ── Marketing ──
+
+        // Coupons
+        'coupon-view',
+        'coupon-create',
+        'coupon-edit',
+        'coupon-delete',
+        'coupon-restore',
+        'coupon-permanent-delete',
+
+        // Promotions
+        'promotions-view',
+        'promotions-create',
+        'promotions-edit',
+        'promotions-delete',
+        'promotions-restore',
+        'promotions-permanent-delete',
+
+        // ── Customers & Addresses ──
+
+        // Customers
         'customer-view',
         'customer-create',
         'customer-edit',
         'customer-delete',
         'customer-restore',
+        'customer-permanent-delete',
+        'customer-import',
+        'customer-export',
+        'customer-activate',
+
+        // Customer Addresses
         'customeraddress-view',
         'customeraddress-create',
         'customeraddress-edit',
         'customeraddress-delete',
-        'inventoryadjustment-view',
-        'inventoryadjustment-create',
-        'inventoryadjustment-edit',
-        'inventoryadjustment-delete',
-        'stockmanagement-view',
-        'stockmanagement-create',
-        'stockmanagement-edit',
-        'stockmanagement-delete',
-        'stocktransfer-view',
-        'stocktransfer-create',
-        'stocktransfer-edit',
-        'stocktransfer-delete',
-        'coupon-view',
-        'coupon-create',
-        'coupon-edit',
-        'coupon-delete',
-        'promotions-view',
-        'promotions-create',
-        'promotions-edit',
-        'promotions-delete',
+        'customeraddress-restore',
+        'customeraddress-permanent-delete',
+
+        // ── Core & System ──
+
+        // Villages
+        'village-view',
+        'village-create',
+        'village-edit',
+        'village-delete',
+        'village-restore',
+        'village-permanent-delete',
+        'village-import',
+        'village-export',
+
+        // Shipping
+        'shipping-view',
+        'shipping-create',
+        'shipping-edit',
+        'shipping-delete',
+        'shipping-restore',
+        'shipping-permanent-delete',
+        'shipping-manage',
+
+        // Roles
+        'role-view',
+        'role-create',
+        'role-edit',
+        'role-delete',
+        'role-restore',
+        'role-permanent-delete',
+        'role-import',
+        'role-export',
+
+        // Permissions
+        'permission-view',
+        'permission-create',
+        'permission-edit',
+        'permission-delete',
+        'permission-restore',
+        'permission-permanent-delete',
+        'permission-import',
+        'permission-export',
+
+        // Users
+        'user-view',
+        'user-create',
+        'user-edit',
+        'user-delete',
+        'user-restore',
+        'user-permanent-delete',
+        'user-import',
+        'user-export',
+        'user-activate',
+        'user-sync-roles',
+        'user-sync-permissions',
+        'user-invite',
+        'user-report',
+
+        // Bulk Users
+        'bulkuser-view',
+        'bulkuser-create',
+        'bulkuser-edit',
+        'bulkuser-delete',
+        'bulkuser-restore',
+        'bulkuser-permanent-delete',
+
+        // Audit Logs
+        'audit-log-view',
+        'audit-log-create',
+        'audit-log-edit',
+        'audit-log-delete',
+        'audit-log-restore',
+        'audit-log-permanent-delete',
+
+        // ── Sales & Orders (Dot Notation) ──
+
+        // Orders
         'orders.view',
+        'orders.create',
+        'orders.edit',
+        'orders.delete',
+        'orders.restore',
+        'orders.permanent-delete',
+
+        // Invoices
         'invoices.view',
         'invoices.create',
         'invoices.edit',
         'invoices.delete',
+        'invoices.restore',
+        'invoices.permanent-delete',
+
+        // Payments
         'payments.view',
         'payments.create',
         'payments.edit',
         'payments.delete',
+        'payments.restore',
+        'payments.permanent-delete',
+
+        // Refunds
         'refunds.view',
         'refunds.create',
         'refunds.edit',
         'refunds.delete',
+        'refunds.restore',
+        'refunds.permanent-delete',
+
+        // Returns
         'returns.view',
         'returns.create',
         'returns.edit',
         'returns.delete',
+        'returns.restore',
+        'returns.permanent-delete',
+
+        // ── Additional Order Specifics ──
+
+        // Order Views
         'orders.view.future_order',
         'orders.view.pending',
         'orders.view.confirmed',
@@ -133,9 +296,8 @@ class RolesAndPermissionsSeeder extends Seeder
         'orders.view.delivered',
         'orders.view.returned',
         'orders.view.cancelled',
-        'orders.create',
-        'orders.edit',
-        'orders.delete',
+
+        // Order Actions
         'orders.confirm',
         'orders.ship',
         'orders.dispatch',
@@ -160,59 +322,77 @@ class RolesAndPermissionsSeeder extends Seeder
         'orders.filter_carrier',
         'orders.filter_date',
         'view_all_order',
-        'bulkuser-view',
-        'bulkuser-manage',
-        'permission-view',
-        'permission-create',
-        'permission-edit',
-        'permission-delete',
-        'permission-restore',
-        'permission-permanent-delete',
-        'role-view',
-        'role-create',
-        'role-edit',
-        'role-delete',
-        'role-restore',
-        'role-permanent-delete',
-        'user-view',
-        'user-create',
-        'user-edit',
-        'user-delete',
-        'user-restore',
-        'user-permanent-delete',
-        'user-activate',
-        'user-sync-roles',
-        'user-sync-permissions',
-        'brand-restore',
-        'brand-permanent-delete',
-        'category-restore',
-        'category-permanent-delete',
-        'hsncode-restore',
-        'hsncode-permanent-delete',
-        'productattribute-restore',
-        'productattribute-permanent-delete',
-        'taxrate-restore',
-        'taxrate-permanent-delete',
-        'unitofmeasure-restore',
-        'unitofmeasure-permanent-delete',
-        'warehouse-restore',
-        'warehouse-permanent-delete',
-        'village-restore',
-        'village-permanent-delete',
-        'customer-permanent-delete',
-        'customeraddress-restore',
-        'customeraddress-permanent-delete',
-        'inventoryadjustment-restore',
-        'inventoryadjustment-permanent-delete',
-        'stockmanagement-restore',
-        'stockmanagement-permanent-delete',
-        'stocktransfer-restore',
-        'stocktransfer-permanent-delete',
-        'coupon-restore',
-        'coupon-permanent-delete',
-        'promotions-restore',
-        'promotions-permanent-delete',
-        'audit-log-view',
+
+        // ── General System Views ──
+
+
+        // ── Utilities & Tools ──
+
+        // Chat
+        'chat-view',
+        'chat-create',
+        'chat-edit',
+        'chat-delete',
+        'chat-restore',
+        'chat-permanent-delete',
+
+        // Messages
+        'messages-view',
+        'messages-create',
+        'messages-edit',
+        'messages-delete',
+        'messages-restore',
+        'messages-permanent-delete',
+
+        // Calendar
+        'calendar-view',
+        'calendar-create',
+        'calendar-edit',
+        'calendar-delete',
+        'calendar-restore',
+        'calendar-permanent-delete',
+
+        // Files
+        'files-view',
+        'files-create',
+        'files-edit',
+        'files-delete',
+        'files-restore',
+        'files-permanent-delete',
+
+        // Forms
+        'forms-view',
+        'forms-create',
+        'forms-edit',
+        'forms-delete',
+        'forms-restore',
+        'forms-permanent-delete',
+
+        // Security
+        'security-view',
+        'security-create',
+        'security-edit',
+        'security-delete',
+        'security-restore',
+        'security-permanent-delete',
+
+        // Help
+        'help-view',
+        'help-create',
+        'help-edit',
+        'help-delete',
+        'help-restore',
+        'help-permanent-delete',
+
+        // Dashboards & Reports
+        'dashboard-view',
+        'view-all-data',
+        'analytics-view',
+        'reports-view',
+
+        // System Settings
+        'settings-view',
+        'settings-edit',
     ];
 
     /**
@@ -290,8 +470,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_all_order',
             'bulkuser-view',
             'permission-view',
+            'permission-export',
             'role-view',
+            'role-export',
             'user-view',
+            'user-export',
+            'user-report',
+            'customer-export',
+            'customer-activate',
             'audit-log-view',
         ],
         'User'        => [
@@ -299,6 +485,11 @@ class RolesAndPermissionsSeeder extends Seeder
         ],
         'Order Varification 1' => [
             'dashboard-view',
+            'customer-view',
+            'customeraddress-view',
+            'customeraddress-create',
+            'customeraddress-edit',
+            'customeraddress-delete',
             'orders.view',
             'orders.create',
             'orders.edit',
@@ -307,6 +498,11 @@ class RolesAndPermissionsSeeder extends Seeder
         ],
         'Order Varification 2' => [
             'dashboard-view',
+            'customer-view',
+            'customeraddress-view',
+            'customeraddress-create',
+            'customeraddress-edit',
+            'customeraddress-delete',
             'orders.view',
             'orders.create',
             'orders.edit',
@@ -315,6 +511,11 @@ class RolesAndPermissionsSeeder extends Seeder
         ],
         'Agent' => [
             'dashboard-view',
+            'customer-view',
+            'customeraddress-view',
+            'customeraddress-create',
+            'customeraddress-edit',
+            'customeraddress-delete',
             'customer-create',
             'customer-edit',
             'orders.view',

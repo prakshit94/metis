@@ -176,6 +176,114 @@ async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it'
 }
 
 // ─── Alpine components ────────────────────────────────────────────────────────
+// ─── Permission Helpers ─────────────────────────────────────────────────────────────
+function permissionActionLabel(name) {
+  if (name === 'view_all_order') return 'Bulk View';
+
+  const parts = String(name ?? '').split(/[-.]/);
+  if (parts.length <= 1) return String(name ?? '');
+
+  return parts.slice(1)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).replace(/_/g, ' '))
+    .join(' ');
+}
+
+const permissionGroupMeta = {
+  catalog_products: { label: 'Catalog & Products', icon: 'collection', order: 10 },
+  inventory_warehousing: { label: 'Inventory & Warehousing', icon: 'boxes', order: 20 },
+  sales_orders: { label: 'Sales & Orders', icon: 'cart', order: 30 },
+  customers: { label: 'Customers', icon: 'people', order: 40 },
+  marketing: { label: 'Marketing', icon: 'megaphone', order: 50 },
+  core_system: { label: 'Core & System', icon: 'gear', order: 60 },
+  utilities_tools: { label: 'Utilities & Tools', icon: 'tools', order: 70 },
+  other: { label: 'Other', icon: 'grid', order: 99 },
+};
+
+function permissionGroupFor(name) {
+  let prefix = String(name ?? '').split(/[-.]/)[0] || 'other';
+  if (name === 'view_all_order') prefix = 'orders';
+  if (prefix === 'bulkuser') prefix = 'user';
+  if (prefix === 'audit-log') prefix = 'audit';
+
+  const groups = {
+    catalog_products: ['brand', 'catalog', 'category', 'productattribute', 'hsncode', 'taxrate', 'unitofmeasure', 'product'],
+    inventory_warehousing: ['warehouse', 'inventoryadjustment', 'stockmanagement', 'stocktransfer'],
+    sales_orders: ['orders', 'invoices', 'payments', 'refunds', 'returns'],
+    customers: ['customer', 'customeraddress'],
+    marketing: ['coupon', 'promotions'],
+    utilities_tools: ['chat', 'messages', 'calendar', 'files', 'forms', 'security', 'help'],
+    core_system: ['village', 'shipping', 'role', 'permission', 'user', 'dashboard', 'analytics', 'reports', 'settings', 'audit']
+  };
+
+  let groupKey = 'other';
+  for (const [key, prefixes] of Object.entries(groups)) {
+    if (prefixes.includes(prefix)) {
+      groupKey = key;
+      break;
+    }
+  }
+
+  const defaultLabel = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+  const meta = permissionGroupMeta[groupKey] ?? { label: defaultLabel, icon: 'grid', order: 999 };
+
+  return { key: groupKey, ...meta };
+}
+
+function getEntityLabel(name) {
+  let prefix = String(name ?? '').split(/[-.]/)[0] || 'other';
+  if (name === 'view_all_order') prefix = 'orders';
+  if (prefix === 'bulkuser') prefix = 'user';
+  if (prefix === 'audit-log') prefix = 'audit';
+  
+  const labels = {
+    brand: 'Brands', catalog: 'Catalogs', category: 'Categories', productattribute: 'Product Attributes',
+    hsncode: 'HSN Codes', taxrate: 'Tax Rates', unitofmeasure: 'Units of Measure', product: 'Products',
+    warehouse: 'Warehouses', inventoryadjustment: 'Inventory Adjustments', stockmanagement: 'Stock Management',
+    stocktransfer: 'Stock Transfers', orders: 'Orders', invoices: 'Invoices', payments: 'Payments',
+    refunds: 'Refunds', returns: 'Returns', customer: 'Customers', customeraddress: 'Customer Addresses',
+    coupon: 'Coupons', promotions: 'Promotions', village: 'Villages', shipping: 'Shipping', role: 'Roles',
+    permission: 'Permissions', user: 'Users', audit: 'Audit Logs', dashboard: 'Dashboard', view_all_data: 'Global Data Visibility',
+    chat: 'Team Chat', messages: 'Messages', calendar: 'Calendar', files: 'Files', forms: 'Forms', security: 'Security', help: 'Help & Support',
+    analytics: 'Analytics', reports: 'Reports', settings: 'Settings'
+  };
+  return labels[prefix] || (prefix.charAt(0).toUpperCase() + prefix.slice(1));
+}
+
+function groupPermissions(permissions) {
+  const groups = new Map();
+
+  [...permissions]
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+    .forEach(permission => {
+      const group = permissionGroupFor(permission.name);
+      if (!groups.has(group.key)) {
+        groups.set(group.key, {
+          ...group,
+          items: [],
+          subGroups: [],
+        });
+      }
+      
+      const permObj = {
+        ...permission,
+        actionLabel: permissionActionLabel(permission.name),
+      };
+      
+      const groupData = groups.get(group.key);
+      groupData.items.push(permObj);
+      
+      const subLabel = getEntityLabel(permission.name);
+      let subGroup = groupData.subGroups.find(s => s.label === subLabel);
+      if (!subGroup) {
+        subGroup = { label: subLabel, items: [] };
+        groupData.subGroups.push(subGroup);
+      }
+      subGroup.items.push(permObj);
+    });
+
+  return [...groups.values()].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+}
+
 document.addEventListener('alpine:init', () => {
 
   // ─── userTable ──────────────────────────────────────────────────────────────
@@ -255,7 +363,7 @@ document.addEventListener('alpine:init', () => {
 
     async loadRoles() {
       try {
-        this.availableRoles = await apiFetch('/api/roles/options');
+        this.availableRoles = await apiFetch(`/api/roles/options?_t=${Date.now()}`);
         this.availableRoles = this.availableRoles.data ?? this.availableRoles;
       } catch {
         this.availableRoles = [
@@ -477,7 +585,8 @@ document.addEventListener('alpine:init', () => {
       form.form.employee_id = user.employee_id ?? '';
       form.form.photo = user.photo ?? '';
       form.form.joining_date = user.joining_date ?? '';
-      form.form.role = user.roles?.[0]?.name ?? 'User';
+      form.form.role = user.roles && user.roles.length ? user.roles[0].name : 'User';
+      form.form.permissions = (user.permissions ?? []).map(p => p.name);
       form.form.is_active = user.is_active ?? true;
       form.form.address_line_1 = user.address_line_1 ?? '';
       form.form.address_line_2 = user.address_line_2 ?? '';
@@ -905,7 +1014,14 @@ document.addEventListener('alpine:init', () => {
       pincode: '',
       password: '',
       password_confirmation: '',
+      permissions: [],
     },
+    availablePermissions: [],
+    
+    get groupedAvailablePermissions() {
+      return groupPermissions(this.availablePermissions);
+    },
+    
     villageSearchQuery: '',
     villageResults: [],
     editingUserId: null,
@@ -960,7 +1076,7 @@ document.addEventListener('alpine:init', () => {
       this.rolesLoading = true;
       this.rolesError = '';
       try {
-        const data = await apiFetch('/api/roles/options');
+        const data = await apiFetch(`/api/roles/options?_t=${Date.now()}`);
         this.roles = data.data ?? data;
       } catch (err) {
         try {
@@ -971,10 +1087,19 @@ document.addEventListener('alpine:init', () => {
           this.rolesError = fallbackErr.message || err.message;
         }
       } finally {
+        this.form.is_active = true;
+        this.form.permissions = [];
         if (this.roles.length > 0 && !this.roles.some(role => role.name === this.form.role)) {
           this.form.role = this.roles[0].name;
         }
         this.rolesLoading = false;
+      }
+      
+      try {
+        const pData = await apiFetch(`/api/permissions/options?_t=${Date.now()}`);
+        this.availablePermissions = pData.data ?? pData;
+      } catch (err) {
+        this.availablePermissions = [];
       }
     },
 
@@ -1065,6 +1190,10 @@ document.addEventListener('alpine:init', () => {
         if (this.form.joining_date) formData.append('joining_date', this.form.joining_date);
         formData.append('is_active', this.form.is_active ? '1' : '0');
         formData.append('roles[]', this.form.role);
+        
+        if (this.form.permissions && this.form.permissions.length > 0) {
+          this.form.permissions.forEach(p => formData.append('permissions[]', p));
+        }
 
         const addressFields = ['address_line_1', 'address_line_2', 'village_id', 'village_name', 'post_office', 'taluka', 'district', 'city', 'state', 'pincode'];
         for (const field of addressFields) {

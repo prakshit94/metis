@@ -22,7 +22,8 @@ class CustomerController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:customer-view', only: ['index', 'show', 'searchByPhone']),
+            new Middleware('permission:customer-view', only: ['index', 'show']),
+            new Middleware('permission:customer-view|orders.create', only: ['searchByPhone']),
             new Middleware('permission:customer-create', only: ['store']),
             new Middleware('permission:customer-edit', only: ['update', 'toggleActive', 'bulkAction']),
             new Middleware('permission:customer-delete', only: ['destroy', 'forceDelete']),
@@ -50,7 +51,12 @@ class CustomerController extends Controller implements HasMiddleware
 
         $deletedFilter = $request->input('deleted');
 
+
+        $user = $request->user();
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
+
         $customers = Customer::query()
+            ->when(!$isGlobalView, fn ($q) => $q->where('created_by', $user->id))
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
             ->with(['addresses.village'])
@@ -96,7 +102,16 @@ class CustomerController extends Controller implements HasMiddleware
             $phone = substr($phone, -10);
         }
 
-        $customer = Customer::where('phone', $phone)->first();
+
+        $user = $request->user();
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
+
+        $query = Customer::where('phone', $phone);
+        if (!$isGlobalView) {
+            $query->where('created_by', $user->id);
+        }
+        
+        $customer = $query->first();
         
         if ($customer) {
             return response()->json([
