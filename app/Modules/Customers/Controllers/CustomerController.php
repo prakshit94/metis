@@ -53,7 +53,7 @@ class CustomerController extends Controller implements HasMiddleware
 
 
         $user = $request->user();
-        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
 
         $customers = Customer::query()
             ->when(!$isGlobalView, fn ($q) => $q->where('created_by', $user->id))
@@ -104,7 +104,7 @@ class CustomerController extends Controller implements HasMiddleware
 
 
         $user = $request->user();
-        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
 
         $query = Customer::where('phone', $phone);
         if (!$isGlobalView) {

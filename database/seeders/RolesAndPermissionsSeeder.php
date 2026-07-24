@@ -152,6 +152,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // ── Customers & Addresses ──
 
         // Customers
+        'view_all_customer',
         'customer-view',
         'customer-create',
         'customer-edit',
@@ -511,6 +512,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ],
         'Agent' => [
             'dashboard-view',
+            'view_all_customer',
             'customer-view',
             'customeraddress-view',
             'customeraddress-create',

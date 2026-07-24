@@ -126,17 +126,19 @@ class PageController extends Controller
         ];
 
         // Sales by Location
-        $salesByLocationRaw = (clone $orderQuery)->whereNotNull('shipping_state')
-            ->select('shipping_state', DB::raw('SUM(net_amount) as total_sales'))
+        $salesByLocationRaw = (clone $orderQuery)->where(function($q) {
+                $q->whereNotNull('shipping_district')->orWhereNotNull('shipping_city')->orWhereNotNull('shipping_state');
+            })
+            ->select(DB::raw('COALESCE(shipping_district, shipping_city, shipping_state) as location_name'), DB::raw('SUM(net_amount) as total_sales'))
             ->whereNotIn('status', ['cancelled', 'returned'])
-            ->groupBy('shipping_state')
+            ->groupBy('location_name')
             ->orderByDesc('total_sales')
             ->limit(10)
             ->get();
             
         $salesByLocation = $salesByLocationRaw->map(function ($item) {
             return [
-                'name' => $item->shipping_state,
+                'name' => $item->location_name,
                 'value' => round($item->total_sales, 2)
             ];
         })->toArray();
@@ -189,7 +191,8 @@ class PageController extends Controller
             'revReturned',
             'deliveredPercent',
             'returnedPercent',
-            'dashboardData'
+            'dashboardData',
+            'orderStatusRaw'
         ));
     }
 
@@ -307,13 +310,15 @@ class PageController extends Controller
             // Region Sales
             $regionSales = DB::table('orders')
                 ->where('order_date', '>=', $startDate)
-                ->whereNotNull('shipping_state')
+                ->where(function($q) {
+                    $q->whereNotNull('shipping_district')->orWhereNotNull('shipping_city')->orWhereNotNull('shipping_state');
+                })
                 ->whereNotIn('status', ['cancelled', 'returned'])
-                ->groupBy('shipping_state')
+                ->groupBy(DB::raw('COALESCE(shipping_district, shipping_city, shipping_state)'))
                 ->orderByDesc(DB::raw('SUM(net_amount)'))
                 ->limit(6)
                 ->get([
-                    'shipping_state',
+                    DB::raw('COALESCE(shipping_district, shipping_city, shipping_state) as shipping_state'), // Alias kept for frontend compatibility if needed
                     DB::raw('SUM(net_amount) as revenue')
                 ]);
 

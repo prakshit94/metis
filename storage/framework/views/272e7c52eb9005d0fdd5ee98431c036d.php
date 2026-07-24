@@ -1,9 +1,7 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Dashboard'); ?>
+<?php $__env->startSection('page', 'dashboard'); ?>
 
-@section('title', 'Dashboard')
-@section('page', 'dashboard')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div x-data="{ activeTab: new URLSearchParams(window.location.search).has('filter') ? 'dashboard' : 'search' }">
     <!-- Page Header Tabs -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
@@ -22,10 +20,10 @@
         <div x-show="activeTab === 'dashboard'" x-transition.opacity.duration.300ms class="d-flex align-items-center gap-2">
             <label class="text-muted small fw-bold mb-0 text-nowrap"><i class="bi bi-calendar3 me-1"></i> Date Filter:</label>
             <select class="form-select form-select-sm fw-semibold shadow-sm border-0 bg-body-tertiary rounded-pill px-3" style="min-width: 140px; cursor: pointer;" onchange="window.location.href = '?filter=' + this.value">
-                <option value="today" {{ ($filter ?? 'today') === 'today' ? 'selected' : '' }}>Today</option>
-                <option value="yesterday" {{ ($filter ?? 'today') === 'yesterday' ? 'selected' : '' }}>Yesterday</option>
-                <option value="this_week" {{ ($filter ?? 'today') === 'this_week' ? 'selected' : '' }}>This Week</option>
-                <option value="this_month" {{ ($filter ?? 'today') === 'this_month' ? 'selected' : '' }}>This Month</option>
+                <option value="today" <?php echo e(($filter ?? 'today') === 'today' ? 'selected' : ''); ?>>Today</option>
+                <option value="yesterday" <?php echo e(($filter ?? 'today') === 'yesterday' ? 'selected' : ''); ?>>Yesterday</option>
+                <option value="this_week" <?php echo e(($filter ?? 'today') === 'this_week' ? 'selected' : ''); ?>>This Week</option>
+                <option value="this_month" <?php echo e(($filter ?? 'today') === 'this_month' ? 'selected' : ''); ?>>This Month</option>
             </select>
         </div>
         </ul>
@@ -75,13 +73,13 @@
 
                 <!-- Stats Cards with Alpine.js -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
-                    <div class="col-xl-3 col-lg-6" x-data="statsCounter({{ $totalCustomers }}, 5)">
+                    <div class="col-xl-3 col-lg-6" x-data="statsCounter(<?php echo e($totalCustomers); ?>, 5)">
                         <div class="card metric-card visitors">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
                                         <h6 class="text-muted mb-1">Total Customers</h6>
-                                        <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()">{{ number_format($totalCustomers) }}</span></div>
+                                        <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()"><?php echo e(number_format($totalCustomers)); ?></span></div>
                                         <small class="trend-up">
                                             <i class="bi bi-arrow-up"></i> +12.5% from last month
                                         </small>
@@ -94,13 +92,13 @@
                         </div>
                     </div>
 
-                    <div class="col-xl-3 col-lg-6" x-data="statsCounter({{ $totalRevenue }}, 5)">
+                    <div class="col-xl-3 col-lg-6" x-data="statsCounter(<?php echo e($totalRevenue); ?>, 5)">
                         <div class="card metric-card revenue">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
                                         <h6 class="text-muted mb-1">Total Revenue</h6>
-                                        <div class="h3 mb-0" aria-live="polite"><span x-text="'Rs ' + value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})">Rs {{ number_format($totalRevenue, 2) }}</span></div>
+                                        <div class="h3 mb-0" aria-live="polite"><span x-text="'Rs ' + value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})">Rs <?php echo e(number_format($totalRevenue, 2)); ?></span></div>
                                         <small class="trend-up">
                                             <i class="bi bi-arrow-up"></i> +8.2% from last month
                                         </small>
@@ -113,13 +111,13 @@
                         </div>
                     </div>
 
-                    <div class="col-xl-3 col-lg-6" x-data="statsCounter({{ $totalOrders }}, 5)">
+                    <div class="col-xl-3 col-lg-6" x-data="statsCounter(<?php echo e($totalOrders); ?>, 5)">
                         <div class="card metric-card conversion">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
                                         <h6 class="text-muted mb-1">Total Orders</h6>
-                                        <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()">{{ number_format($totalOrders) }}</span></div>
+                                        <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()"><?php echo e(number_format($totalOrders)); ?></span></div>
                                         <small class="trend-down">
                                             <i class="bi bi-arrow-down"></i> -2.1% from last month
                                         </small>
@@ -132,13 +130,13 @@
                         </div>
                     </div>
 
-                    <div class="col-xl-3 col-lg-6" x-data="statsCounter({{ $totalProducts }}, 5)">
+                    <div class="col-xl-3 col-lg-6" x-data="statsCounter(<?php echo e($totalProducts); ?>, 5)">
                         <div class="card metric-card bounce">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
                                         <h6 class="text-muted mb-1">Total Products</h6>
-                                        <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()">{{ number_format($totalProducts) }}</span></div>
+                                        <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()"><?php echo e(number_format($totalProducts)); ?></span></div>
                                         <small class="trend-up">
                                             <i class="bi bi-arrow-up"></i> +5.4% from last month
                                         </small>
@@ -163,15 +161,15 @@
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Pending</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['pending'] ?? 0 }}</span>
+                                    <span class="fw-bold text-body-emphasis fs-6"><?php echo e($orderStatusRaw['pending'] ?? 0); ?></span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Confirmed</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['confirmed'] ?? 0 }}</span>
+                                    <span class="fw-bold text-body-emphasis fs-6"><?php echo e($orderStatusRaw['confirmed'] ?? 0); ?></span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Processing</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['processing'] ?? 0 }}</span>
+                                    <span class="fw-bold text-body-emphasis fs-6"><?php echo e($orderStatusRaw['processing'] ?? 0); ?></span>
                                 </div>
                             </div>
                         </div>
@@ -187,15 +185,15 @@
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Ready to Ship</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['ready_to_ship'] ?? 0 }}</span>
+                                    <span class="fw-bold text-body-emphasis fs-6"><?php echo e($orderStatusRaw['ready_to_ship'] ?? 0); ?></span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Dispatched</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['dispatched'] ?? 0 }}</span>
+                                    <span class="fw-bold text-body-emphasis fs-6"><?php echo e($orderStatusRaw['dispatched'] ?? 0); ?></span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Shipped</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['shipped'] ?? 0 }}</span>
+                                    <span class="fw-bold text-body-emphasis fs-6"><?php echo e($orderStatusRaw['shipped'] ?? 0); ?></span>
                                 </div>
                             </div>
                         </div>
@@ -212,17 +210,17 @@
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Delivered</span>
                                     <div class="d-flex align-items-center gap-2">
-                                        <span class="fw-bold text-body-emphasis fs-6">{{ number_format($totalDelivered) }}</span>
-                                        <span class="badge bg-success bg-opacity-25 text-success-emphasis border border-success border-opacity-50" style="font-size: 9px;">{{ $deliveredPercent }}%</span>
+                                        <span class="fw-bold text-body-emphasis fs-6"><?php echo e(number_format($totalDelivered)); ?></span>
+                                        <span class="badge bg-success bg-opacity-25 text-success-emphasis border border-success border-opacity-50" style="font-size: 9px;"><?php echo e($deliveredPercent); ?>%</span>
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Completed</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['completed'] ?? 0 }}</span>
+                                    <span class="fw-bold text-body-emphasis fs-6"><?php echo e($orderStatusRaw['completed'] ?? 0); ?></span>
                                 </div>
                                 <div class="mt-3 pt-2 border-top border-success border-opacity-25">
                                     <span class="text-muted d-block small mb-1 fw-semibold">Rev. Delivered</span>
-                                    <span class="fw-bold text-success fs-5">Rs {{ number_format($revDelivered, 2) }}</span>
+                                    <span class="fw-bold text-success fs-5">Rs <?php echo e(number_format($revDelivered, 2)); ?></span>
                                 </div>
                             </div>
                         </div>
@@ -239,17 +237,17 @@
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Returned</span>
                                     <div class="d-flex align-items-center gap-2">
-                                        <span class="fw-bold text-body-emphasis fs-6">{{ number_format($totalReturned) }}</span>
-                                        <span class="badge bg-danger bg-opacity-25 text-danger-emphasis border border-danger border-opacity-50" style="font-size: 9px;">{{ $returnedPercent }}%</span>
+                                        <span class="fw-bold text-body-emphasis fs-6"><?php echo e(number_format($totalReturned)); ?></span>
+                                        <span class="badge bg-danger bg-opacity-25 text-danger-emphasis border border-danger border-opacity-50" style="font-size: 9px;"><?php echo e($returnedPercent); ?>%</span>
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Cancelled</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['cancelled'] ?? 0 }}</span>
+                                    <span class="fw-bold text-body-emphasis fs-6"><?php echo e($orderStatusRaw['cancelled'] ?? 0); ?></span>
                                 </div>
                                 <div class="mt-3 pt-2 border-top border-danger border-opacity-25">
                                     <span class="text-muted d-block small mb-1 fw-semibold">Rev. Returned</span>
-                                    <span class="fw-bold text-danger fs-5">Rs {{ number_format($revReturned, 2) }}</span>
+                                    <span class="fw-bold text-danger fs-5">Rs <?php echo e(number_format($revReturned, 2)); ?></span>
                                 </div>
                             </div>
                         </div>
@@ -359,7 +357,7 @@
                 </div>
 
                 <script>
-                    window.dashboardData = @json($dashboardData);
+                    window.dashboardData = <?php echo json_encode($dashboardData, 15, 512) ?>;
 
                     window.customerSearchApp = function() {
                         return {
@@ -410,9 +408,9 @@
                 </script>
     </div> <!-- End Tab 2 -->
 </div> <!-- End x-data -->
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('modals')
+<?php $__env->startPush('modals'); ?>
 <div class="modal fade" id="iconDemoModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -445,4 +443,6 @@
                     </div>
 
 
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/user/metis/resources/views/dashboard.blade.php ENDPATH**/ ?>
