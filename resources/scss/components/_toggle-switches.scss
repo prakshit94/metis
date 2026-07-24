@@ -3,7 +3,7 @@
 // ==========================================================================
 
 /* Enhanced Toggle Switches */
-.form-check-input {
+.form-switch .form-check-input {
   width: 3rem !important;
   height: 1.5rem !important;
   border-radius: 0.75rem !important;
@@ -56,7 +56,7 @@
 
 /* Dark theme toggle switches */
 [data-bs-theme="dark"] {
-  .form-check-input {
+  .form-switch .form-check-input {
     background-color: var(--bs-gray-600) !important;
     
     &:checked {

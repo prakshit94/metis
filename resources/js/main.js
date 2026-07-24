@@ -160,6 +160,9 @@ class AdminApp {
       case 'analytics':
         await this.initAnalyticsPage();
         break;
+      case 'order.reasons':
+        await this.initOrderReasonsPage();
+        break;
       case 'forms':
         await this.initFormsPage();
         break;
@@ -279,6 +282,15 @@ class AdminApp {
       console.log('📊 Analytics page script loaded successfully');
     } catch (error) {
       console.error('Failed to load analytics page script:', error);
+    }
+  }
+
+  async initOrderReasonsPage() {
+    try {
+      await import('./components/order-reasons.js');
+      console.log('📋 Order Reasons page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load order reasons page script:', error);
     }
   }
 
@@ -567,18 +579,43 @@ class AdminApp {
   initAlpine() {
     // Shared navbar search — uses the factory from search-component.js
     const navbarPages = [
-      { title: 'Dashboard',  url: '/',             type: 'page' },
-      { title: 'Users',      url: '/users',         type: 'page' },
-      { title: 'Analytics',  url: '/analytics',     type: 'page' },
-      { title: 'Products',   url: '/products',      type: 'page' },
-      { title: 'Orders',     url: '/orders',        type: 'page' },
-      { title: 'Reports',    url: '/reports',       type: 'page' },
-      { title: 'Messages',   url: '/messages',      type: 'page' },
-      { title: 'Calendar',   url: '/calendar',      type: 'page' },
-      { title: 'Files',      url: '/files',         type: 'page' },
-      { title: 'Settings',   url: '/settings',      type: 'page' },
-      { title: 'Security',   url: '/security',      type: 'page' },
-      { title: 'Help',       url: '/help',          type: 'page' },
+      { title: 'Dashboard',             url: '/',                               type: 'page' },
+      { title: 'Analytics',             url: '/analytics',                      type: 'page' },
+      { title: 'Reports',               url: '/reports',                        type: 'page' },
+      { title: 'Orders',                url: '/orders',                         type: 'page' },
+      { title: 'Coupon Codes',          url: '/promotions/coupons',             type: 'page' },
+      { title: 'Offers & Deals',        url: '/promotions/offers',              type: 'page' },
+      { title: 'Invoices',              url: '/invoices',                       type: 'page' },
+      { title: 'Payments',              url: '/payments',                       type: 'page' },
+      { title: 'Refunds',               url: '/refunds',                        type: 'page' },
+      { title: 'Returns',               url: '/returns',                        type: 'page' },
+      { title: 'Shipments & Tracking',  url: '/shipping/shipments',             type: 'page' },
+      { title: 'Shipping Services',     url: '/shipping/services',              type: 'page' },
+      { title: 'Warehouses',            url: '/catalog/warehouses',             type: 'page' },
+      { title: 'Stock Levels',          url: '/inventory/stock-management',     type: 'page' },
+      { title: 'Stock Transfers',       url: '/inventory/stock-transfers',      type: 'page' },
+      { title: 'Adjustments',           url: '/inventory/adjustments',          type: 'page' },
+      { title: 'Products',              url: '/catalog/products',               type: 'page' },
+      { title: 'Categories',            url: '/catalog/categories',             type: 'page' },
+      { title: 'Brands',                url: '/catalog/brands',                 type: 'page' },
+      { title: 'Attributes',            url: '/catalog/attributes',             type: 'page' },
+      { title: 'Units of Measure',      url: '/catalog/uom',                    type: 'page' },
+      { title: 'Tax Rates',             url: '/catalog/tax-rates',              type: 'page' },
+      { title: 'HSN Codes',             url: '/catalog/hsn-codes',              type: 'page' },
+      { title: 'Users',                 url: '/users',                          type: 'page' },
+      { title: 'Roles & Permissions',   url: '/roles-permissions',              type: 'page' },
+      { title: 'Customers',             url: '/customers',                      type: 'page' },
+      { title: 'Villages',              url: '/villages',                       type: 'page' },
+      { title: 'Order Reasons',         url: '/order-reasons',                  type: 'page' },
+      { title: 'Team Chat',             url: '/chat',                           type: 'page' },
+      { title: 'Messages',              url: '/messages',                       type: 'page' },
+      { title: 'Calendar',              url: '/calendar',                       type: 'page' },
+      { title: 'Files',                 url: '/files',                          type: 'page' },
+      { title: 'Forms',                 url: '/forms',                          type: 'page' },
+      { title: 'UI Elements',           url: '/elements',                       type: 'page' },
+      { title: 'Settings',              url: '/settings',                       type: 'page' },
+      { title: 'Security',              url: '/security',                       type: 'page' },
+      { title: 'Help & Support',        url: '/help',                           type: 'page' },
     ];
 
     Alpine.data('searchComponent', createSearchComponent({

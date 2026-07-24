@@ -243,6 +243,15 @@ class RolesAndPermissionsSeeder extends Seeder
         'audit-log-restore',
         'audit-log-permanent-delete',
 
+        // Order Reasons
+        'orderreason-view',
+        'orderreason-create',
+        'orderreason-edit',
+        'orderreason-delete',
+        'orderreason-restore',
+        'orderreason-permanent-delete',
+
+
         // ── Sales & Orders (Dot Notation) ──
 
         // Orders

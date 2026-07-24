@@ -61,6 +61,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('orders/{order}/return', [\App\Modules\Orders\Controllers\OrderController::class, 'markReturned'])->name('orders.return');
     Route::post('orders/{order}/revert-status', [\App\Modules\Orders\Controllers\OrderController::class, 'revertStatus'])->name('orders.revert-status');
     Route::get('orders/{order}/receipt', [\App\Modules\Orders\Controllers\OrderController::class, 'receipt'])->name('orders.receipt');
+    Route::get('/order-reasons', [\App\Modules\Orders\Controllers\OrderReasonController::class, 'index'])->name('order.reasons');
+    Route::get('/api/order-reasons/{type}', [\App\Modules\Orders\Controllers\OrderReasonController::class, 'list'])->name('api.order-reasons.list');
+    Route::post('/api/order-reasons/{type}', [\App\Modules\Orders\Controllers\OrderReasonController::class, 'store'])->name('api.order-reasons.store');
+    Route::put('/api/order-reasons/{type}/{id}', [\App\Modules\Orders\Controllers\OrderReasonController::class, 'update'])->name('api.order-reasons.update');
+    Route::delete('/api/order-reasons/{type}/{id}', [\App\Modules\Orders\Controllers\OrderReasonController::class, 'destroy'])->name('api.order-reasons.destroy');
+    Route::patch('/api/order-reasons/{type}/{id}/toggle', [\App\Modules\Orders\Controllers\OrderReasonController::class, 'toggleActive'])->name('api.order-reasons.toggle');
+
     Route::get('/orders', [\App\Modules\Orders\Controllers\OrderController::class, 'index'])->name('orders');
     Route::resource('orders', \App\Modules\Orders\Controllers\OrderController::class)->except(['index']);
 

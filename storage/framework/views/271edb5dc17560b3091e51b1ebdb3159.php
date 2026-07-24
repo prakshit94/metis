@@ -69,6 +69,7 @@
                         { name: 'Roles & Permissions', path: '<?php echo e(route('roles-permissions')); ?>', icon: 'bi bi-shield-lock-fill', group: 'User & Customer Admin' },
                         { name: 'Customers', path: '<?php echo e(route('customers')); ?>', icon: 'bi bi-person-lines-fill', group: 'User & Customer Admin' },
                         { name: 'Villages', path: '<?php echo e(route('villages')); ?>', icon: 'bi bi-geo-alt-fill', group: 'User & Customer Admin' },
+                        { name: 'Order Reasons', path: '<?php echo e(route('order.reasons')); ?>', icon: 'bi bi-list-task', group: 'User & Customer Admin' },
                         
                         { name: 'Team Chat', path: '<?php echo e(route('chat.index')); ?>', icon: 'bi bi-chat-text-fill', group: 'Utilities & Tools' },
                         { name: 'Messages', path: '<?php echo e(route('messages')); ?>', icon: 'bi bi-chat-dots-fill', group: 'Utilities & Tools' },

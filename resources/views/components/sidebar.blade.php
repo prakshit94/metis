@@ -312,17 +312,17 @@
                 {{-- People & Admin Dropdown --}}
                 @canany(['user-view', 'role-view', 'village-view'])
                 <li class="nav-item">
-                    <a class="nav-link {{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' ? 'active' : '' }}"
+                    <a class="nav-link {{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' ? 'active' : '' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#peopleSubmenu"
-                       aria-expanded="{{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' ? 'true' : 'false' }}"
+                       aria-expanded="{{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' ? 'true' : 'false' }}"
                        aria-controls="peopleSubmenu">
                         <i class="bi bi-people-fill"></i>
                         <span>People &amp; Admin</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' ? 'show' : '' }}" id="peopleSubmenu">
+                    <div class="collapse {{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' ? 'show' : '' }}" id="peopleSubmenu">
                         <ul class="nav nav-submenu">
                             @can('user-view')
                             <li class="nav-item">
@@ -353,6 +353,14 @@
                                 <a class="nav-link {{ $current === 'villages' ? 'active' : '' }}" href="{{ route('villages') }}">
                                     <i class="bi bi-geo-alt-fill"></i>
                                     <span>Villages</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('orderreason-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'order.reasons' ? 'active' : '' }}" href="{{ route('order.reasons') }}">
+                                    <i class="bi bi-list-task"></i>
+                                    <span>Order Reasons</span>
                                 </a>
                             </li>
                             @endcan
