@@ -12,6 +12,9 @@ use App\Modules\Catalog\Models\Warehouse;
 use App\Services\InventoryService;
 use App\Services\InvoiceService;
 use App\Services\OrderService;
+use App\Modules\Orders\Models\ReturnReason;
+use App\Modules\Orders\Models\RescheduleReason;
+use App\Modules\Orders\Models\DeliveryFailureReason;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
@@ -272,6 +275,10 @@ class OrderController extends Controller implements HasMiddleware
             ->sort()
             ->values();
 
+        $returnReasons = ReturnReason::where('is_active', true)->orderBy('id')->get();
+        $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
+        $deliveryFailureReasons = DeliveryFailureReason::where('is_active', true)->orderBy('id')->get();
+
         // 7 Day Trends Data
         $trendsQuery = Order::whereDate('order_date', '>=', now()->subDays(6))
             ->groupBy(DB::raw('DATE(order_date)'))
@@ -316,7 +323,10 @@ class OrderController extends Controller implements HasMiddleware
             'talukasList',
             'villagesList',
             'services',
-            'carriersList'
+            'carriersList',
+            'returnReasons',
+            'rescheduleReasons',
+            'deliveryFailureReasons'
         ));
     }
 

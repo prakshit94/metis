@@ -1395,12 +1395,10 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-body-emphasis">Reason for Reschedule <span class="text-danger">*</span></label>
                         <select class="form-select" x-model="scheduleReason">
-                            <option value="">Select reason...</option>
-                            <option value="customer_not_reachable">Customer Not Reachable</option>
-                            <option value="waiting_for_payment">Waiting for Payment Confirmation</option>
-                            <option value="customer_requested_delay">Customer Requested Delay</option>
-                            <option value="stock_verification_pending">Stock Verification Pending</option>
-                            <option value="other">Other</option>
+                            <option value="" disabled selected>Select a reason...</option>
+                            @foreach($rescheduleReasons as $reason)
+                                <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
+                            @endforeach
                         </select>
                     </div>
 
@@ -1498,13 +1496,10 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-body-emphasis">Reason for Failure <span class="text-danger">*</span></label>
                         <select class="form-select" x-model="scheduleDeliveryReason">
-                            <option value="">Select reason...</option>
-                            <option value="Customer unavailable">Customer unavailable</option>
-                            <option value="Customer requested future delivery">Customer requested future delivery</option>
-                            <option value="Address issue/Incomplete">Address issue/Incomplete</option>
-                            <option value="Out of delivery area/Time limit">Out of delivery area/Time limit</option>
-                            <option value="Consignee refused to accept">Consignee refused to accept</option>
-                            <option value="Other">Other</option>
+                            <option value="" disabled selected>Select a reason...</option>
+                            @foreach($deliveryFailureReasons as $reason)
+                                <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
+                            @endforeach
                         </select>
                     </div>
 
@@ -1545,12 +1540,10 @@
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Reason for Return <span class="text-danger">*</span></label>
                     <select class="form-select" x-model="returnReason">
-                        <option value="">Select reason...</option>
-                        <option value="damaged">Damaged in transit</option>
-                        <option value="defective">Defective product</option>
-                        <option value="wrong_item">Wrong item received</option>
-                        <option value="not_needed">No longer needed</option>
-                        <option value="other">Other</option>
+                        <option value="" disabled selected>Select a reason...</option>
+                        @foreach($returnReasons as $reason)
+                            <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
+                        @endforeach
                     </select>
                 </div>
                 

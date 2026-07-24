@@ -26,6 +26,9 @@ class DatabaseSeeder extends Seeder
             VillageSeeder::class,
             PartyDataSeeder::class,
             ServiceSeeder::class,
+            ReturnReasonsSeeder::class,
+            RescheduleReasonsSeeder::class,
+            DeliveryFailureReasonsSeeder::class,
         ]);
     }
 }
