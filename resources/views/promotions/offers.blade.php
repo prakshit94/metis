@@ -172,9 +172,9 @@
                                 </td>
                                 <td>
                                     <span class="badge rounded-pill px-3 py-2 fw-medium border"
-                                          :class="o.type === 'bogo' ? 'bg-info-subtle text-info-emphasis border-info-subtle' : 'bg-primary-subtle text-primary-emphasis border-primary-subtle'">
-                                        <i class="bi me-1" :class="o.type === 'bogo' ? 'bi-gift-fill' : 'bi-tag-fill'"></i>
-                                        <span x-text="o.type === 'bogo' ? 'BOGO' : 'Order Discount'"></span>
+                                          :class="o.type === 'bogo' ? 'bg-info-subtle text-info-emphasis border-info-subtle' : (o.type === 'free_product' ? 'bg-success-subtle text-success-emphasis border-success-subtle' : (o.type === 'category_discount' ? 'bg-warning-subtle text-warning-emphasis border-warning-subtle' : 'bg-primary-subtle text-primary-emphasis border-primary-subtle'))">
+                                        <i class="bi me-1" :class="o.type === 'bogo' ? 'bi-gift-fill' : (o.type === 'free_product' ? 'bi-box2-heart-fill' : (o.type === 'category_discount' ? 'bi-tags-fill' : 'bi-tag-fill'))"></i>
+                                        <span x-text="o.type === 'bogo' ? 'BOGO' : (o.type === 'free_product' ? 'Free Product' : (o.type === 'category_discount' ? 'Category Discount' : 'Order Discount'))"></span>
                                     </span>
                                 </td>
                                 <td>
@@ -182,8 +182,11 @@
                                         <template x-if="o.type === 'bogo'">
                                             <span>Buy <span class="text-info" x-text="o.buy_qty"></span> Get <span class="text-info" x-text="o.get_qty"></span> Free</span>
                                         </template>
-                                        <template x-if="o.type !== 'bogo'">
-                                            <span x-text="o.discount_type === 'percentage' ? o.value + '%' : 'Rs ' + parseFloat(o.value).toFixed(2)"></span>
+                                        <template x-if="o.type === 'free_product'">
+                                            <span>Buy <span class="text-success" x-text="o.buy_qty"></span> Get <span class="text-success" x-text="o.get_qty"></span> Free Item</span>
+                                        </template>
+                                        <template x-if="o.type === 'order_discount' || o.type === 'category_discount'">
+                                            <span x-text="o.discount_type === 'percentage' ? parseFloat(o.value).toFixed(2) + '%' : 'Rs ' + parseFloat(o.value).toFixed(2)"></span>
                                         </template>
                                     </div>
                                 </td>
@@ -292,22 +295,22 @@
 
     {{-- Modal --}}
     {{-- Modal --}}
-    <div class="modal fade" id="offerModal" tabindex="-1" style="backdrop-filter: blur(5px); background: rgba(0,0,0,0.4);">
+    <div class="modal fade" id="offerModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-0 shadow-xl overflow-hidden" style="border-radius: 24px; background: rgba(var(--bs-body-bg-rgb), 0.95); backdrop-filter: blur(20px);">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden bg-body">
                 
                 {{-- GLOSSY STYLE HEADER WITH BOOTSTRAP --}}
-                <div class="modal-header border-0 d-flex align-items-center justify-content-between p-4 pb-3 position-relative" style="background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.05) 0%, rgba(var(--bs-primary-rgb), 0) 100%); border-bottom: 1px solid rgba(var(--bs-primary-rgb), 0.1) !important;">
-                    <div class="d-flex align-items-center gap-3 position-relative z-1">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width: 56px; height: 56px; transition: transform 0.3s ease;" x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false" :style="hovered ? 'transform: translateY(-2px) scale(1.05);' : ''">
-                            <i class="bi bi-magic fs-3 text-primary"></i>
+                <div class="modal-header bg-body-tertiary border-bottom d-flex align-items-center justify-content-between p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
+                            <i class="bi bi-magic fs-4 text-primary"></i>
                         </div>
                         <div>
-                            <h4 class="mb-0 fw-bolder text-body" style="letter-spacing: -0.5px;"><span x-text="form.id ? 'Edit Offer Details' : 'Create New Offer'"></span></h4>
+                            <h4 class="mb-0 fw-bold text-body"><span x-text="form.id ? 'Edit Offer Details' : 'Create New Offer'"></span></h4>
                             <p class="mb-0 small text-muted">Configure promotion rules, rewards, and product scopes</p>
                         </div>
                     </div>
-                    <button type="button" class="btn-close shadow-sm bg-body position-relative z-1 rounded-circle p-2" data-bs-dismiss="modal" aria-label="Close" style="transition: all 0.2s ease; opacity: 1;" onmouseover="this.style.transform='rotate(90deg) scale(1.1)'" onmouseout="this.style.transform='none'"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
                 <div class="modal-body p-4 p-md-5 pt-4">
@@ -322,24 +325,23 @@
                         <div class="col-12">
                             
                             {{-- Card 1: Basic Information --}}
-                            <div class="card mb-4 border-0 shadow-sm rounded-4 bg-body overflow-hidden position-relative transition-all" style="transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 .125rem .25rem rgba(var(--bs-body-color-rgb), .075)'">
-                                <div class="position-absolute top-0 start-0 w-100" style="height: 3px; background: linear-gradient(90deg, var(--bs-primary), rgba(var(--bs-primary-rgb), 0.2));"></div>
+                            <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
                                 <div class="card-body p-4">
-                                    <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-light">
+                                    <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                         <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
-                                            <i class="bi bi-tag-fill fs-6 text-primary"></i>
+                                            <i class="bi bi-tag-fill fs-6"></i>
                                         </div>
                                         <h6 class="mb-0 fw-bolder text-uppercase text-body" style="font-size: 11px; letter-spacing: 1.5px;">Basic Information</h6>
                                     </div>
                                     <div class="row g-4">
                                         <div class="col-md-8">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Offer Name *</label>
-                                            <input type="text" class="form-control form-control-lg fw-semibold rounded-3 bg-body-tertiary border-0 shadow-none px-3" x-model="form.name" placeholder="e.g. Summer Seeds 20%" style="font-size: 14px;">
+                                            <input type="text" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.name" placeholder="e.g. Summer Seeds 20%" style="font-size: 14px;">
                                             <small class="text-muted d-block mt-2" style="font-size: 11px;">A friendly title for the promotion.</small>
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Offer Type *</label>
-                                            <select class="form-select form-select-lg fw-semibold rounded-3 bg-body-tertiary border-0 shadow-none px-3" x-model="form.type" style="font-size: 14px;">
+                                            <select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.type" style="font-size: 14px;">
                                                 <option value="order_discount">Order Discount</option>
                                                 <option value="bogo">Buy X Get Y (BOGO)</option>
                                                 <option value="free_product">Free Product</option>
@@ -358,35 +360,34 @@
                             </div>
 
                             {{-- Card 2: Discount Rules --}}
-                            <div class="card mb-4 border-0 shadow-sm rounded-4 bg-body overflow-hidden position-relative transition-all" style="transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 .125rem .25rem rgba(var(--bs-body-color-rgb), .075)'">
-                                <div class="position-absolute top-0 start-0 w-100" style="height: 3px; background: linear-gradient(90deg, var(--bs-success), rgba(var(--bs-success-rgb), 0.2));"></div>
+                            <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
                                 <div class="card-body p-4">
-                                    <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-light">
+                                    <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                         <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
-                                            <i class="bi bi-percent fs-6 text-success"></i>
+                                            <i class="bi bi-percent fs-6"></i>
                                         </div>
                                         <h6 class="mb-0 fw-bolder text-uppercase text-body" style="font-size: 11px; letter-spacing: 1.5px;">Discount Rules</h6>
                                     </div>
                                     
                                     {{-- Order Discount Config --}}
-                                    <div class="row g-4" x-show="form.type === 'order_discount' || form.type === 'category_discount'" x-collapse>
+                                    <div class="row g-4" x-show="form.type === 'order_discount' || form.type === 'category_discount'" style="display: none;">
                                         <div class="col-md-6" x-show="form.type === 'order_discount' || form.type === 'category_discount'">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Discount Type *</label>
-                                            <select class="form-select form-select-lg fw-semibold rounded-3 bg-body-tertiary border-0 shadow-none px-3" x-model="form.discount_type" style="font-size: 14px;">
+                                            <select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.discount_type" style="font-size: 14px;">
                                                 <option value="percentage">Percentage (%)</option>
                                                 <option value="fixed">Flat Amount (Rs )</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6" x-show="form.type === 'order_discount' || form.type === 'category_discount'">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Value *</label>
-                                            <div class="input-group input-group-lg bg-body-tertiary rounded-3 overflow-hidden">
+                                            <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
                                                 <span class="input-group-text border-0 bg-transparent text-muted fw-bold" x-text="form.discount_type === 'percentage' ? '%' : 'Rs '"></span>
                                                 <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" x-model="form.value" min="0" step="0.01" style="font-size: 14px;">
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Min Spend</label>
-                                            <div class="input-group input-group-lg bg-body-tertiary rounded-3 overflow-hidden">
+                                            <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
                                                 <span class="input-group-text border-0 bg-transparent text-muted fw-bold">Rs</span>
                                                 <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" x-model="form.min_spend" min="0" step="0.01" placeholder="0" style="font-size: 14px;">
                                             </div>
@@ -394,7 +395,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Max Discount</label>
-                                            <div class="input-group input-group-lg bg-body-tertiary rounded-3 overflow-hidden">
+                                            <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
                                                 <span class="input-group-text border-0 bg-transparent text-muted fw-bold">Rs</span>
                                                 <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" x-model="form.max_discount" min="0" step="0.01" placeholder="Unlimited" style="font-size: 14px;">
                                             </div>
@@ -403,15 +404,15 @@
                                     </div>
 
                                     {{-- BOGO Config --}}
-                                    <div class="row g-4" x-show="form.type === 'bogo' || form.type === 'free_product'" x-collapse>
+                                    <div class="row g-4" x-show="form.type === 'bogo' || form.type === 'free_product'" style="display: none;">
                                         <div class="col-md-6">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Buy Qty *</label>
-                                            <input type="number" class="form-control form-control-lg fw-semibold rounded-3 bg-body-tertiary border-0 shadow-none px-3" x-model="form.buy_qty" min="1" style="font-size: 14px;">
+                                            <input type="number" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.buy_qty" min="1" style="font-size: 14px;">
                                             <small class="text-muted d-block mt-2" style="font-size: 11px;">Quantity customer must buy (e.g., 2 for Buy 2 Get 1).</small>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Get Qty Free *</label>
-                                            <input type="number" class="form-control form-control-lg fw-semibold rounded-3 bg-body-tertiary border-0 shadow-none px-3" x-model="form.get_qty" min="1" style="font-size: 14px;">
+                                            <input type="number" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.get_qty" min="1" style="font-size: 14px;">
                                             <small class="text-muted d-block mt-2" style="font-size: 11px;">Quantity rewarded for free.</small>
                                         </div>
                                     </div>
@@ -419,51 +420,74 @@
                             </div>
 
                             {{-- Card 3: Targeting & Scope --}}
-                            <div class="card mb-4 border-0 shadow-sm rounded-4 bg-body overflow-visible position-relative transition-all" style="z-index: 20; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 .125rem .25rem rgba(var(--bs-body-color-rgb), .075)'">
-                                <div class="position-absolute top-0 start-0 w-100" style="height: 3px; background: linear-gradient(90deg, var(--bs-warning), rgba(var(--bs-warning-rgb), 0.2));"></div>
+                            <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary position-relative" style="z-index: 20;">
                                 <div class="card-body p-4">
-                                    <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-light">
+                                    <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                         <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
-                                            <i class="bi bi-box-seam fs-6 text-warning"></i>
+                                            <i class="bi bi-box-seam fs-6"></i>
                                         </div>
                                         <h6 class="mb-0 fw-bolder text-uppercase text-body" style="font-size: 11px; letter-spacing: 1.5px;">Targeting & Scope</h6>
                                     </div>
                                     <div class="row g-4">
-                                        <div class="col-12" x-show="form.type === 'category_discount'" x-collapse>
+                                        <div class="col-12" x-show="form.type === 'category_discount'" style="display: none;">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Applicable Category IDs (Comma Separated)</label>
-                                            <input type="text" class="form-control form-control-lg fw-semibold rounded-3 bg-body-tertiary border-0 shadow-none px-3" x-model="form.applicable_categories" placeholder="e.g. 1,2,3" style="font-size: 14px;">
+                                            <input type="text" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.applicable_categories" placeholder="e.g. 1,2,3" style="font-size: 14px;">
                                             <small class="text-muted d-block mt-2" style="font-size: 11px;">Enter Category IDs that get the discount.</small>
                                         </div>
-                                        <div class="col-12 position-relative" @click.away="showProductsDropdown = false" x-show="form.type !== 'category_discount'" x-collapse>
+                                        <div class="col-12" @click.away="showProductsDropdown = false" x-show="form.type !== 'category_discount'">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" x-text="form.type === 'free_product' ? 'Required Products (Trigger)' : 'Applicable Products'"></label>
                                             
-                                            <div class="form-control form-control-lg d-flex flex-wrap align-items-center gap-2 bg-body-tertiary border-0 shadow-none cursor-pointer rounded-3 px-3 py-2" style="min-height: 48px; cursor: text;" @click="showProductsDropdown = true; $refs.productSearch.focus()">
+                                            <div class="position-relative">
+                                                <div class="form-control form-control-lg d-flex flex-wrap align-items-center gap-2 bg-body border border-secondary border-opacity-25 shadow-none cursor-pointer rounded-3 px-3 py-2" style="min-height: 48px; cursor: text;" @click="showProductsDropdown = true; $refs.productSearch.focus()">
+                                                    
+                                                    <!-- Selected Chips -->
+                                                    <template x-for="pId in form.product_ids" :key="pId">
+                                                        <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 d-flex align-items-center gap-2 rounded-pill px-3 py-2 shadow-sm transition-all">
+                                                            <span x-text="(allProducts.find(p => p.id == pId) || {}).name || 'Unknown Product'" style="font-size: 12px; font-weight: 600;"></span>
+                                                            <i class="bi bi-x-circle-fill cursor-pointer opacity-75 custom-hover-opacity" @click.stop="form.product_ids = form.product_ids.filter(id => id != pId)" style="font-size: 14px;"></i>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Any Product Chip -->
+                                                    <template x-if="form.product_ids.length === 0">
+                                                        <div class="badge bg-secondary bg-opacity-10 text-secondary d-flex align-items-center gap-2 rounded-pill px-3 py-2 border border-secondary border-opacity-25">
+                                                            <i class="bi bi-globe2"></i>
+                                                            <span style="font-size: 12px; font-weight: 600;">Any Product (Global)</span>
+                                                        </div>
+                                                    </template>
+
+                                                    <div class="flex-grow-1" style="min-width: 150px;">
+                                                        <input x-ref="productSearch" type="text" x-model="productSearch" @focus="showProductsDropdown = true" placeholder="Search to add..." class="border-0 w-100 outline-none bg-transparent fw-semibold text-body" style="font-size: 14px; outline: none !important; box-shadow: none;">
+                                                    </div>
+                                                </div>
                                                 
-                                                <!-- Selected Chips -->
-                                                <template x-for="pId in form.product_ids" :key="pId">
-                                                    <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-2 rounded-pill px-3 py-2 shadow-sm transition-all">
-                                                        <span x-text="(allProducts.find(p => p.id == pId) || {}).name || 'Unknown Product'" style="font-size: 12px; font-weight: 600;"></span>
-                                                        <i class="bi bi-x-circle-fill cursor-pointer opacity-75 custom-hover-opacity" @click.stop="form.product_ids = form.product_ids.filter(id => id != pId)" style="font-size: 14px;"></i>
+                                                <!-- Dropdown List -->
+                                                <div x-show="showProductsDropdown" x-transition.opacity.duration.200ms class="position-absolute w-100 bg-body border border-secondary border-opacity-25 rounded-4 shadow-sm mt-2 overflow-auto" style="max-height: 350px; z-index: 1050; top: 100%; left: 0; display: none;">
+                                                    <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.product_ids = []">
+                                                        <div class="form-check m-0 d-flex align-items-center w-100">
+                                                            <input type="checkbox" :checked="form.product_ids.length === 0" class="form-check-input border-secondary border-opacity-50 bg-body-tertiary me-3" style="cursor: pointer; transform: scale(1.2);">
+                                                            <span class="text-muted fw-bold" style="font-size: 13px;">Any Product (Global)</span>
+                                                        </div>
                                                     </div>
-                                                </template>
-
-                                                <!-- Any Product Chip -->
-                                                <template x-if="form.product_ids.length === 0">
-                                                    <div class="badge bg-secondary bg-opacity-10 text-secondary d-flex align-items-center gap-2 rounded-pill px-3 py-2 border border-secondary border-opacity-25">
-                                                        <i class="bi bi-globe2"></i>
-                                                        <span style="font-size: 12px; font-weight: 600;">Any Product (Global)</span>
-                                                    </div>
-                                                </template>
-
-                                                <div class="flex-grow-1 position-relative" style="min-width: 150px;">
-                                                    <input x-ref="productSearch" type="text" x-model="productSearch" @focus="showProductsDropdown = true" placeholder="Search to add..." class="border-0 w-100 outline-none bg-transparent fw-semibold text-body" style="font-size: 14px; outline: none !important; box-shadow: none;">
+                                                    <hr class="dropdown-divider my-0 border-secondary border-opacity-25">
+                                                    <template x-for="p in allProducts.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()) || (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase())))" :key="p.id">
+                                                        <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.product_ids.includes(p.id) ? form.product_ids = form.product_ids.filter(id => id != p.id) : form.product_ids.push(p.id)">
+                                                            <div class="form-check m-0 d-flex align-items-center w-100">
+                                                                <input type="checkbox" :checked="form.product_ids.includes(p.id)" class="form-check-input border-secondary border-opacity-50 bg-body-tertiary me-3" style="cursor: pointer; transform: scale(1.2);">
+                                                                <div>
+                                                                    <div style="font-size: 13px; font-weight: 600;" class="text-body" x-text="p.name"></div>
+                                                                    <small class="text-muted" style="font-size: 11px;" x-text="'SKU: ' + p.sku"></small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
                                                 </div>
                                             </div>
                                             <small class="text-muted d-block mt-2" style="font-size: 11px;">Select specific products, or leave empty for a global offer.</small>
                                             
-                                            <div class="col-12 mt-4" x-show="form.type === 'free_product'">
+                                            <div class="col-12 mt-4" x-show="form.type === 'free_product'" style="display: none;">
                                                 <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Gift Product (Free Item) *</label>
-                                                <select class="form-select form-select-lg fw-semibold rounded-3 bg-body-tertiary border-0 shadow-none px-3" x-model="form.product_id" style="font-size: 14px;">
+                                                <select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.product_id" style="font-size: 14px;">
                                                     <option value="">Select Free Product...</option>
                                                     <template x-for="p in allProducts" :key="p.id">
                                                         <option :value="p.id" x-text="p.name + ' (' + p.sku + ')'"></option>
@@ -471,64 +495,41 @@
                                                 </select>
                                                 <small class="text-muted d-block mt-2" style="font-size: 11px;">The specific product given away for free.</small>
                                             </div>
-                                            
-                                            <!-- Dropdown List -->
-                                            <div x-show="showProductsDropdown" x-transition.opacity.duration.200ms class="position-absolute w-100 bg-body border-0 rounded-4 shadow-lg mt-2 overflow-hidden" style="max-height: 250px; overflow-y: auto; z-index: 1050; top: 100%;">
-                                                <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.product_ids = []">
-                                                    <div class="form-check m-0 d-flex align-items-center w-100">
-                                                        <input type="checkbox" :checked="form.product_ids.length === 0" class="form-check-input me-3" style="cursor: pointer; transform: scale(1.2);">
-                                                        <span class="text-muted fw-bold" style="font-size: 13px;">Any Product (Global)</span>
-                                                    </div>
-                                                </div>
-                                                <hr class="dropdown-divider my-0 opacity-25">
-                                                <template x-for="p in allProducts.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()) || (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase())))" :key="p.id">
-                                                    <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.product_ids.includes(p.id) ? form.product_ids = form.product_ids.filter(id => id != p.id) : form.product_ids.push(p.id)">
-                                                        <div class="form-check m-0 d-flex align-items-center w-100">
-                                                            <input type="checkbox" :checked="form.product_ids.includes(p.id)" class="form-check-input me-3" style="cursor: pointer; transform: scale(1.2);">
-                                                            <div>
-                                                                <div style="font-size: 13px; font-weight: 600;" class="text-body" x-text="p.name"></div>
-                                                                <small class="text-muted" style="font-size: 11px;" x-text="'SKU: ' + p.sku"></small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </template>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             {{-- Card 4: Validity & Settings --}}
-                            <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden position-relative transition-all" style="z-index: 10; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 .125rem .25rem rgba(var(--bs-body-color-rgb), .075)'">
-                                <div class="position-absolute top-0 start-0 w-100" style="height: 3px; background: linear-gradient(90deg, var(--bs-info), rgba(var(--bs-info-rgb), 0.2));"></div>
+                            <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary position-relative" style="z-index: 10;">
                                 <div class="card-body p-4">
-                                    <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-light">
+                                    <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                         <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
-                                            <i class="bi bi-calendar-event fs-6 text-info"></i>
+                                            <i class="bi bi-calendar-event fs-6"></i>
                                         </div>
                                         <h6 class="mb-0 fw-bolder text-uppercase text-body" style="font-size: 11px; letter-spacing: 1.5px;">Validity & Priority</h6>
                                     </div>
                                     <div class="row g-4">
                                         <div class="col-md-4">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Starts At</label>
-                                            <input type="datetime-local" class="form-control form-control-lg fw-semibold rounded-3 bg-body-tertiary border-0 shadow-none px-3" x-model="form.starts_at" style="font-size: 14px;">
+                                            <input type="datetime-local" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.starts_at" style="font-size: 14px;">
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Ends At</label>
-                                            <input type="datetime-local" class="form-control form-control-lg fw-semibold rounded-3 bg-body-tertiary border-0 shadow-none px-3" x-model="form.ends_at" style="font-size: 14px;">
+                                            <input type="datetime-local" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.ends_at" style="font-size: 14px;">
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Priority</label>
-                                            <input type="number" class="form-control form-control-lg fw-semibold rounded-3 bg-body-tertiary border-0 shadow-none px-3" x-model="form.priority" min="0" placeholder="0" style="font-size: 14px;">
+                                            <input type="number" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.priority" min="0" placeholder="0" style="font-size: 14px;">
                                         </div>
-                                        <div class="col-12 mt-4 pt-3 border-top border-light">
-                                            <div class="d-flex align-items-center justify-content-between p-3 rounded-3" style="background: rgba(var(--bs-primary-rgb), 0.05);">
+                                        <div class="col-12 mt-4 pt-3 border-top border-secondary border-opacity-25">
+                                            <div class="d-flex align-items-center justify-content-between p-3 rounded-3 border border-secondary border-opacity-10 bg-body">
                                                 <div>
                                                     <h6 class="mb-1 fw-bold text-body" style="font-size: 14px;">Offer Status</h6>
                                                     <p class="mb-0 text-muted" style="font-size: 12px;">Toggle to activate or deactivate this offer.</p>
                                                 </div>
                                                 <div class="form-check form-switch cursor-pointer m-0">
-                                                    <input class="form-check-input" type="checkbox" id="offerActive" x-model="form.is_active" style="width: 2.5em; height: 1.25em; cursor: pointer;">
+                                                    <input class="form-check-input border-secondary border-opacity-50" type="checkbox" id="offerActive" x-model="form.is_active" style="width: 2.5em; height: 1.25em; cursor: pointer;">
                                                     <label class="form-check-label fw-bold ms-2" for="offerActive" style="cursor: pointer;" :class="form.is_active ? 'text-success' : 'text-muted'" x-text="form.is_active ? 'Active' : 'Inactive'"></label>
                                                 </div>
                                             </div>
@@ -542,11 +543,11 @@
                 </div>
 
                 {{-- Form Actions --}}
-                <div class="modal-footer border-0 p-4 pt-3" style="background: rgba(var(--bs-body-bg-rgb), 0.8);">
+                <div class="modal-footer bg-body-tertiary border-top p-4">
                     <div class="d-flex w-100 justify-content-between align-items-center">
-                        <button type="button" data-bs-dismiss="modal" class="btn btn-light rounded-pill px-4 fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 1px; transition: all 0.2s;">Cancel</button>
-                        <button class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm d-flex align-items-center" @click="saveOffer()" :disabled="saving" style="transition: all 0.2s; background: linear-gradient(45deg, var(--bs-primary), #0d6efd);">
-                            <span x-show="saving" class="spinner-border spinner-border-sm me-2" style="width: 1rem; height: 1rem;"></span>
+                        <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary rounded-pill px-4 fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 1px;">Cancel</button>
+                        <button class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm d-flex align-items-center" @click="saveOffer()" :disabled="saving">
+                            <span x-show="saving" class="spinner-border spinner-border-sm me-2" style="width: 1rem; height: 1rem; display: none;"></span>
                             <span x-text="form.id ? 'Save Changes' : 'Create Offer'"></span>
                             <i class="bi bi-arrow-right ms-2" x-show="!saving"></i>
                         </button>

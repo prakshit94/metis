@@ -161,13 +161,26 @@
                                 </td>
                                 <td>
                                     <span class="badge rounded-pill px-3 py-2 fw-medium border"
-                                          :class="c.type === 'percentage' ? 'bg-info-subtle text-info-emphasis border-info-subtle' : 'bg-primary-subtle text-primary-emphasis border-primary-subtle'">
-                                        <i class="bi me-1" :class="c.type === 'percentage' ? 'bi-percent' : 'bi-currency-rupee'"></i>
-                                        <span x-text="c.type === 'percentage' ? 'Percentage' : 'Flat Discount'"></span>
+                                          :class="c.type === 'percentage' ? 'bg-info-subtle text-info-emphasis border-info-subtle' : (c.type === 'free_shipping' ? 'bg-success-subtle text-success-emphasis border-success-subtle' : (c.type === 'free_product' ? 'bg-warning-subtle text-warning-emphasis border-warning-subtle' : 'bg-primary-subtle text-primary-emphasis border-primary-subtle'))">
+                                        <i class="bi me-1" :class="c.type === 'percentage' ? 'bi-percent' : (c.type === 'free_shipping' ? 'bi-truck' : (c.type === 'free_product' ? 'bi-box2-heart-fill' : 'bi-currency-rupee'))"></i>
+                                        <span x-text="c.type === 'percentage' ? 'Percentage' : (c.type === 'free_shipping' ? 'Free Shipping' : (c.type === 'free_product' ? 'Free Product' : 'Flat Discount'))"></span>
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="fw-bold text-body-emphasis fs-6" x-text="c.type === 'percentage' ? c.value + '%' : 'Rs ' + parseFloat(c.value).toFixed(2)"></span>
+                                    <span class="fw-bold text-body-emphasis fs-6">
+                                        <template x-if="c.type === 'percentage'">
+                                            <span x-text="c.value + '%'"></span>
+                                        </template>
+                                        <template x-if="c.type === 'fixed'">
+                                            <span x-text="'Rs ' + parseFloat(c.value).toFixed(2)"></span>
+                                        </template>
+                                        <template x-if="c.type === 'free_shipping'">
+                                            <span class="text-success"><i class="bi bi-truck me-1"></i>Free</span>
+                                        </template>
+                                        <template x-if="c.type === 'free_product'">
+                                            <span class="text-warning"><i class="bi bi-gift me-1"></i>Gift</span>
+                                        </template>
+                                    </span>
                                 </td>
                                 <td>
                                     <span class="fw-semibold text-secondary" x-text="c.min_spend > 0 ? 'Rs ' + parseFloat(c.min_spend).toFixed(2) : 'No Min Spend'"></span>
@@ -322,13 +335,23 @@
                                         <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Value & Limits</h6>
                                     </div>
                                     <div class="row g-3">
-                                        <div class="col-md-4">
+                                        <div class="col-md-4" x-show="form.type === 'percentage' || form.type === 'fixed'">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Value *</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text" x-text="form.type === 'percentage' ? '%' : 'Rs '"></span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.value" min="0" step="0.01">
                                             </div>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Numeric value of the discount.</small>
+                                        </div>
+                                        <div class="col-md-4" x-show="form.type === 'free_product'" style="display: none;">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Free Product *</label>
+                                            <select class="form-select form-select-sm fw-semibold" x-model="form.free_product_id">
+                                                <option value="">Select Product...</option>
+                                                <template x-for="p in allProducts" :key="p.id">
+                                                    <option :value="p.id" x-text="p.name + ' (' + p.sku + ')'"></option>
+                                                </template>
+                                            </select>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Product to give away.</small>
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Min Spend</label>
@@ -410,8 +433,11 @@ input[type="text"]:focus, input[type="email"]:focus, input[type="number"]:focus,
 
 <?php $__env->startPush('scripts'); ?>
 <script>
+const INITIAL_PRODUCTS = <?php echo json_encode($products ?? [], 15, 512) ?>;
+
 function couponsModule() {
     return {
+        allProducts: INITIAL_PRODUCTS || [],
         coupons: [], loading: false, saving: false,
         search: '', filterStatus: '', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0,

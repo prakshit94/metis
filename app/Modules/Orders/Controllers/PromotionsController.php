@@ -33,7 +33,9 @@ class PromotionsController extends Controller implements HasMiddleware
 
     public function coupons()
     {
-        return view('promotions.coupons');
+        $products = Product::where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku']);
+
+        return view('promotions.coupons', compact('products'));
     }
 
     public function offers()
@@ -106,9 +108,9 @@ class PromotionsController extends Controller implements HasMiddleware
             $data['applicable_products'] = json_encode($data['applicable_products']);
         }
 
-        $data['value'] = $data['value'] ?? 0;
-        $data['min_spend'] = $data['min_spend'] ?? 0;
-        $data['max_discount'] = $data['max_discount'] ?? 0;
+        $data['value'] = isset($data['value']) && $data['value'] !== '' ? (float) $data['value'] : 0;
+        $data['min_spend'] = isset($data['min_spend']) && $data['min_spend'] !== '' ? (float) $data['min_spend'] : 0;
+        $data['max_discount'] = isset($data['max_discount']) && $data['max_discount'] !== '' ? (float) $data['max_discount'] : null;
 
         $data['code'] = strtoupper(trim($data['code']));
         $data['status'] = ($data['is_active'] ?? true) ? 'active' : 'inactive';
@@ -148,13 +150,13 @@ class PromotionsController extends Controller implements HasMiddleware
         }
 
         if (array_key_exists('value', $data) || in_array($request->input('type', $coupon->type), ['free_shipping', 'free_product'])) {
-            $data['value'] = $data['value'] ?? 0;
+            $data['value'] = $data['value'] !== '' && $data['value'] !== null ? (float) $data['value'] : 0;
         }
         if (array_key_exists('min_spend', $data)) {
-            $data['min_spend'] = $data['min_spend'] ?? 0;
+            $data['min_spend'] = $data['min_spend'] !== '' && $data['min_spend'] !== null ? (float) $data['min_spend'] : 0;
         }
         if (array_key_exists('max_discount', $data)) {
-            $data['max_discount'] = $data['max_discount'] ?? 0;
+            $data['max_discount'] = $data['max_discount'] !== '' && $data['max_discount'] !== null ? (float) $data['max_discount'] : null;
         }
 
         if (isset($data['code'])) {
@@ -265,9 +267,9 @@ class PromotionsController extends Controller implements HasMiddleware
             $data['applicable_categories'] = json_encode($data['applicable_categories']);
         }
         
-        $data['value'] = $data['value'] ?? 0;
-        $data['min_spend'] = $data['min_spend'] ?? 0;
-        $data['max_discount'] = $data['max_discount'] ?? 0;
+        $data['value'] = isset($data['value']) && $data['value'] !== '' ? (float) $data['value'] : 0;
+        $data['min_spend'] = isset($data['min_spend']) && $data['min_spend'] !== '' ? (float) $data['min_spend'] : 0;
+        $data['max_discount'] = isset($data['max_discount']) && $data['max_discount'] !== '' ? (float) $data['max_discount'] : null;
         
         $productIds = $request->input('product_ids', []);
         
@@ -326,13 +328,13 @@ class PromotionsController extends Controller implements HasMiddleware
         }
 
         if (array_key_exists('value', $data) || in_array($request->input('type', $offer->type), ['bogo', 'free_product'])) {
-            $data['value'] = $data['value'] ?? 0;
+            $data['value'] = isset($data['value']) && $data['value'] !== '' ? (float) $data['value'] : 0;
         }
         if (array_key_exists('min_spend', $data)) {
-            $data['min_spend'] = $data['min_spend'] ?? 0;
+            $data['min_spend'] = isset($data['min_spend']) && $data['min_spend'] !== '' ? (float) $data['min_spend'] : 0;
         }
         if (array_key_exists('max_discount', $data)) {
-            $data['max_discount'] = $data['max_discount'] ?? 0;
+            $data['max_discount'] = isset($data['max_discount']) && $data['max_discount'] !== '' ? (float) $data['max_discount'] : null;
         }
 
         $data['updated_by'] = auth()->id();
