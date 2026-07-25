@@ -103,6 +103,11 @@ class Customer extends Model
         return $this->hasMany(PartyAddress::class, 'party_id');
     }
 
+    public function callLogs(): HasMany
+    {
+        return $this->hasMany(\App\Models\CallLog::class, 'customer_id');
+    }
+
     public function defaultAddress(): HasOne
     {
         return $this->hasOne(PartyAddress::class, 'party_id')->where('is_default', true);

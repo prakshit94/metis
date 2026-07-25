@@ -27,6 +27,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/analytics', [PageController::class, 'analytics'])->name('analytics');
     Route::get('/users', [PageController::class, 'users'])->name('users');
     Route::get('/roles-permissions', [PageController::class, 'rolesPermissions'])->name('roles-permissions');
+    
+    // Call Tags Admin CRUD
+    Route::get('/call-tags-admin', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'index'])->name('call-tags.index')->middleware('permission:settings-view');
+    Route::post('/call-tags-admin', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'store'])->middleware('permission:settings-view');
+    Route::put('/call-tags-admin/{callTag}', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'update'])->middleware('permission:settings-view');
+    Route::delete('/call-tags-admin/{callTag}', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'destroy'])->middleware('permission:settings-view');
+    
     Route::prefix('catalog')->name('catalog.')->group(function (): void {
         Route::get('/products', [\App\Modules\Catalog\Controllers\CatalogController::class, 'products'])->name('products');
         Route::get('/brands', [\App\Modules\Catalog\Controllers\CatalogController::class, 'brands'])->name('brands');
@@ -163,5 +170,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/coupons/validate', [\App\Modules\Orders\Controllers\CouponController::class, 'validateApi'])
         ->name('coupons.validate')
         ->middleware('permission:orders.create');
+
+    // Call Tagging Ajax Routes
+    Route::get('/call-tags', [\App\Modules\Orders\Controllers\CallTaggingController::class, 'getTags']);
+    Route::get('/call-tags/{tag}/form', [\App\Modules\Orders\Controllers\CallTaggingController::class, 'getFormFields']);
+    Route::post('/call-logs', [\App\Modules\Orders\Controllers\CallTaggingController::class, 'storeCallLog']);
 
 });

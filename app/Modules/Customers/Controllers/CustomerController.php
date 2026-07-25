@@ -220,6 +220,9 @@ class CustomerController extends Controller implements HasMiddleware
                         'appliedOffer:id,name,discount_type,value',
                     ]);
                 },
+                'callLogs' => function ($q) {
+                    $q->latest()->limit(15)->with(['agent', 'tagL1', 'tagL2', 'tagL3', 'metas']);
+                },
             ])
             ->findOrFail($customer);
 

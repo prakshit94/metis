@@ -354,6 +354,9 @@ class OrderController extends Controller implements HasMiddleware
         if (request()->filled('customer_id')) {
             $initialCustomer = Party::with([
                 'addresses.village.services',
+                'callLogs' => function ($q) {
+                    $q->latest()->limit(15)->with(['agent', 'tagL1', 'tagL2', 'tagL3', 'metas']);
+                },
                 'orders' => function ($q) {
                     $q->latest()->limit(10)->with([
                         'items.product:id,name,sku,image_path,tax_rate_id',

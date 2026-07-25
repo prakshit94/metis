@@ -90,6 +90,11 @@ class Party extends Model
         return $this->hasMany(PartyAddress::class, 'party_id');
     }
 
+    public function callLogs(): HasMany
+    {
+        return $this->hasMany(\App\Models\CallLog::class, 'customer_id');
+    }
+
     public function getNameAttribute(): string
     {
         return trim(collect([$this->firstname, $this->middlename, $this->lastname])

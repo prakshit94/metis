@@ -343,5 +343,4 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::delete('/services/{service}', [\App\Modules\Core\Controllers\ShippingController::class, 'destroyService'])->name('services.delete');
         });
 
-
 });

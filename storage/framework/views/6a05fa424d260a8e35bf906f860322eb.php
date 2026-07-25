@@ -310,19 +310,19 @@
                 </li>
 
                 
-                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['user-view', 'role-view', 'village-view'])): ?>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['user-view', 'role-view', 'village-view', 'settings-view'])): ?>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo e($current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' ? 'active' : ''); ?>"
+                    <a class="nav-link <?php echo e($current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' ? 'active' : ''); ?>"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#peopleSubmenu"
-                       aria-expanded="<?php echo e($current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' ? 'true' : 'false'); ?>"
+                       aria-expanded="<?php echo e($current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' ? 'true' : 'false'); ?>"
                        aria-controls="peopleSubmenu">
                         <i class="bi bi-people-fill"></i>
                         <span>People &amp; Admin</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse <?php echo e($current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' ? 'show' : ''); ?>" id="peopleSubmenu">
+                    <div class="collapse <?php echo e($current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' ? 'show' : ''); ?>" id="peopleSubmenu">
                         <ul class="nav nav-submenu">
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-view')): ?>
                             <li class="nav-item">
@@ -361,6 +361,14 @@
                                 <a class="nav-link <?php echo e($current === 'order.reasons' ? 'active' : ''); ?>" href="<?php echo e(route('order.reasons')); ?>">
                                     <i class="bi bi-list-task"></i>
                                     <span>Order Reasons</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('settings-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'call-tags.index' ? 'active' : ''); ?>" href="<?php echo e(route('call-tags.index')); ?>">
+                                    <i class="bi bi-tags"></i>
+                                    <span>Call Tags</span>
                                 </a>
                             </li>
                             <?php endif; ?>

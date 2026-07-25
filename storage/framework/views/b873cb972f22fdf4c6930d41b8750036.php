@@ -115,6 +115,20 @@
                 responsiveContainer.style.overflow = '';
             }
         });
+
+        // Check for pending toasts from previous pages
+        document.addEventListener('DOMContentLoaded', function() {
+            var pendingToast = sessionStorage.getItem('pending_toast');
+            if (pendingToast) {
+                // Wait a tiny bit for AdminApp to be fully initialized
+                setTimeout(function() {
+                    if (window.AdminApp && window.AdminApp.notificationManager) {
+                        window.AdminApp.notificationManager.success(pendingToast);
+                    }
+                }, 100);
+                sessionStorage.removeItem('pending_toast');
+            }
+        });
     </script>
 </body>
 </html>
