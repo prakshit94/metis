@@ -207,7 +207,7 @@
                 </div>
 
                 
-                <?php if(request()->routeIs('orders.create')): ?>
+                <?php if(request()->routeIs('orders.create', 'promotions.coupons', 'promotions.offers')): ?>
                 <div class="dropdown h-100 d-flex align-items-center" x-data="headerCart">
                     <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
                             style="width: 40px; height: 40px;"

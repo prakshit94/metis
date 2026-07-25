@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitejs/plugin-legacy": "^8.0.1",
+    "@vitejs/plugin-legacy": "^6.0.0",
     "autoprefixer": "^10.5.0",
     "eslint": "^10.2.1",
     "globals": "^17.5.0",

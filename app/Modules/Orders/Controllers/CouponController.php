@@ -65,11 +65,17 @@ class CouponController extends Controller
             'valid' => true,
             'discount' => (float) $discount,
             'coupon' => [
+                'id' => $coupon->id,
                 'code' => $coupon->code,
                 'type' => $coupon->type,
                 'value' => (float) $coupon->value,
                 'min_spend' => (float) $coupon->min_spend,
                 'max_discount' => $coupon->max_discount ? (float) $coupon->max_discount : null,
+                'applicable_products' => $coupon->applicable_products,
+                'excluded_products' => $coupon->excluded_products,
+                'applicable_categories' => $coupon->applicable_categories,
+                'free_product_id' => $coupon->free_product_id,
+                'free_qty' => $coupon->free_qty,
             ],
             'message' => 'Promo code applied!',
         ]);

@@ -54,9 +54,13 @@
                             <i class="bi bi-pencil-square me-1"></i>Edit Profile
                         </button>
                         @endcan
+                        <button type="button" class="btn btn-sm btn-outline-secondary px-2" @click="showCustomerWorkspace = !showCustomerWorkspace" title="Toggle Workspace">
+                            <template x-if="showCustomerWorkspace"><i class="bi bi-chevron-up"></i></template>
+                            <template x-if="!showCustomerWorkspace"><i class="bi bi-chevron-down"></i></template>
+                        </button>
                     </div>
                 </div>
-                <div class="card-body p-4 p-lg-4">
+                <div class="card-body p-4 p-lg-4" x-show="showCustomerWorkspace">
                     <div class="card border shadow-sm mb-4" x-show="customerDetails" x-cloak>
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-start mb-3">
@@ -100,7 +104,7 @@
                                 </div>
 
                                 <!-- Business Details -->
-                                <div class="col-md-6 col-lg-3">
+                                <div class="col-md-6 col-lg-3" x-show="customerDetails.category === 'business'" x-cloak>
                                     <div class="card h-100 border-0 bg-info bg-opacity-10 shadow-sm rounded-4">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center mb-3 border-bottom border-info border-opacity-25 pb-2">
@@ -358,9 +362,7 @@
                     <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
                         <span class="fw-bold fs-5"><i class="bi bi-search me-2 text-info"></i>Product Catalog</span>
                         <div class="d-flex flex-wrap gap-2 flex-grow-1 justify-content-md-end align-items-center">
-                            <button type="button" class="btn btn-primary" x-show="cart.length > 0 && !isCartSidebarOpen" @click="isCartSidebarOpen = true" x-cloak>
-                                <i class="bi bi-cart-check"></i> View Cart & Checkout (<span x-text="cart.length"></span>)
-                            </button>
+
                             <div class="btn-group" role="group">
                                 <button type="button" class="btn btn-sm" :class="viewMode === 'grid' ? 'btn-primary' : 'btn-outline-primary'" @click="viewMode = 'grid'" title="Grid View"><i class="bi bi-grid"></i></button>
                                 <button type="button" class="btn btn-sm" :class="viewMode === 'table' ? 'btn-primary' : 'btn-outline-primary'" @click="viewMode = 'table'" title="Table View"><i class="bi bi-list-ul"></i></button>
@@ -508,9 +510,14 @@
                     {{-- Pagination --}}
                     <div class="d-flex justify-content-between align-items-center px-3 pb-3 border-top pt-3" x-show="productTotal > 0">
                         <small class="text-muted"><span x-text="productFrom"></span>–<span x-text="productTo"></span> of <span x-text="productTotal"></span></small>
-                        <div class="d-flex gap-1">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="productPage--; searchProducts()" :disabled="productPage <= 1"><i class="bi bi-chevron-left"></i></button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="productPage++; searchProducts()" :disabled="productPage >= productLastPage"><i class="bi bi-chevron-right"></i></button>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-primary btn-sm" x-show="cart.length > 0 && !isCartSidebarOpen" @click="isCartSidebarOpen = true" x-cloak>
+                                <i class="bi bi-cart-check"></i> View Cart & Checkout (<span x-text="cart.length"></span>)
+                            </button>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @click="productPage--; searchProducts()" :disabled="productPage <= 1"><i class="bi bi-chevron-left"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @click="productPage++; searchProducts()" :disabled="productPage >= productLastPage"><i class="bi bi-chevron-right"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1505,6 +1512,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
     return {
         activeTab: 'customer',
         viewMode: 'table',
+        showCustomerWorkspace: true,
         isCartSidebarOpen: false, useWalletBalance: false,
         partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '{{ $warehouses->first()->id ?? '' }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale', shippingFee: 0,
         orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
@@ -1810,22 +1818,26 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
 
         async evaluateFreeProducts() {
             let expectedGifts = [];
-            const fpOffers = this.activeOffers.filter(o => o.type === 'free_product' && o.product_id);
-            fpOffers.forEach(o => {
-                if (this.subtotal >= (parseFloat(o.min_spend)||0)) {
-                    const apps = typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : o.applicable_products;
-                    let hasTrigger = true;
-                    if (apps && apps.length > 0) {
-                        hasTrigger = this.cart.some(item => !item.is_gift && (apps.includes(item.id) || apps.includes(String(item.id))));
+            
+            // Only evaluate free products if there are actual items in the cart
+            if (this.cart.some(item => !item.is_gift)) {
+                const fpOffers = this.activeOffers.filter(o => o.type === 'free_product' && o.product_id);
+                fpOffers.forEach(o => {
+                    if (this.subtotal >= (parseFloat(o.min_spend)||0)) {
+                        const apps = typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : o.applicable_products;
+                        let hasTrigger = true;
+                        if (apps && apps.length > 0) {
+                            hasTrigger = this.cart.some(item => !item.is_gift && (apps.includes(item.id) || apps.includes(String(item.id))));
+                        }
+                        if (hasTrigger) {
+                            expectedGifts.push({ product_id: o.product_id, qty: parseInt(o.get_qty)||1, source: 'offer_' + o.id });
+                        }
                     }
-                    if (hasTrigger) {
-                        expectedGifts.push({ product_id: o.product_id, qty: parseInt(o.get_qty)||1, source: 'offer_' + o.id });
+                });
+                if (this.couponApplied && this.appliedCouponObj && this.appliedCouponObj.type === 'free_product' && this.appliedCouponObj.free_product_id) {
+                    if (this.subtotal >= (parseFloat(this.appliedCouponObj.min_spend)||0)) {
+                        expectedGifts.push({ product_id: this.appliedCouponObj.free_product_id, qty: parseInt(this.appliedCouponObj.free_qty)||1, source: 'coupon_' + this.appliedCouponObj.code });
                     }
-                }
-            });
-            if (this.couponApplied && this.appliedCouponObj && this.appliedCouponObj.type === 'free_product' && this.appliedCouponObj.free_product_id) {
-                if (this.subtotal >= (parseFloat(this.appliedCouponObj.min_spend)||0)) {
-                    expectedGifts.push({ product_id: this.appliedCouponObj.free_product_id, qty: parseInt(this.appliedCouponObj.free_qty)||1, source: 'coupon_' + this.appliedCouponObj.code });
                 }
             }
             const validSources = expectedGifts.map(g => g.source);
@@ -1859,23 +1871,49 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         isInCart(id) { return this.cart.some(i => i.id === id); },
 
         addToCart(p) {
-            let qty = parseInt(p._qty)||1;
+            let qtyToAdd = parseInt(p._qty)||1;
             const disc = parseFloat(p._disc)||0;
-            if (qty <= 0) return;
+            if (qtyToAdd <= 0) return;
 
             const existing = this.cart.findIndex(i => i.id === p.id && !i.is_gift);
+            const bogos = this.activeOffers.filter(o=>o.type==='bogo');
+            const match = bogos.find(o=> Number(o.product_id)===Number(p.id)) || bogos.find(o=> !o.product_id);
+
+            let newQty;
             if (existing >= 0) {
-                if (p.available_stock !== null && p.available_stock !== undefined && this.cart[existing].quantity + qty > p.available_stock) {
+                let item = this.cart[existing];
+                if (match) {
+                    const buyQty = parseInt(match.buy_qty)||1;
+                    const getQty = parseInt(match.get_qty)||1;
+                    const cycle = buyQty + getQty;
+                    const cycles = Math.floor(item.quantity / cycle);
+                    const rem = item.quantity % cycle;
+                    let paidQty = cycles * buyQty + Math.min(rem, buyQty);
+                    
+                    paidQty += qtyToAdd;
+                    newQty = paidQty + Math.floor(paidQty / buyQty) * getQty;
+                } else {
+                    newQty = item.quantity + qtyToAdd;
+                }
+
+                if (p.available_stock !== null && p.available_stock !== undefined && newQty > p.available_stock) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+p.available_stock+')'}}));
                     return;
                 }
-                this.cart[existing].quantity += qty;
+                this.cart[existing].quantity = newQty;
             } else {
-                if (p.available_stock !== null && p.available_stock !== undefined && qty > p.available_stock) {
+                if (match) {
+                    const buyQty = parseInt(match.buy_qty)||1;
+                    const getQty = parseInt(match.get_qty)||1;
+                    newQty = qtyToAdd + Math.floor(qtyToAdd / buyQty) * getQty;
+                } else {
+                    newQty = qtyToAdd;
+                }
+                if (p.available_stock !== null && p.available_stock !== undefined && newQty > p.available_stock) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+p.available_stock+')'}}));
                     return;
                 }
-                this.cart.push({ id:p.id, name:p.name, sku:p.sku, price:p.selling_price, image_url:p.image_url, quantity:qty, available:p.available_stock, taxRate:parseFloat(p.tax_rate)||0, discountValue:disc, discountType:p.default_discount_type||'percent', category_id:p.category_id });
+                this.cart.push({ id:p.id, name:p.name, sku:p.sku, price:p.selling_price, image_url:p.image_url, quantity:newQty, available:p.available_stock, taxRate:parseFloat(p.tax_rate)||0, discountValue:disc, discountType:p.default_discount_type||'percent', category_id:p.category_id });
             }
             window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:'Added '+p.name+' to cart'}}));
         },
@@ -1883,7 +1921,31 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         updateQty(idx, delta) {
             const item = this.cart[idx];
             if (!item) return;
-            const newQty = item.quantity + delta;
+            
+            const bogos = this.activeOffers.filter(o=>o.type==='bogo');
+            const match = bogos.find(o=> Number(o.product_id)===Number(item.id)) || bogos.find(o=> !o.product_id);
+            
+            let newQty;
+            if (match) {
+                const buyQty = parseInt(match.buy_qty)||1;
+                const getQty = parseInt(match.get_qty)||1;
+                const cycle = buyQty + getQty;
+                
+                const cycles = Math.floor(item.quantity / cycle);
+                const rem = item.quantity % cycle;
+                let paidQty = cycles * buyQty + Math.min(rem, buyQty);
+                
+                paidQty += delta;
+                
+                if (paidQty <= 0) {
+                    newQty = 0;
+                } else {
+                    newQty = paidQty + Math.floor(paidQty / buyQty) * getQty;
+                }
+            } else {
+                newQty = item.quantity + delta;
+            }
+
             if (newQty <= 0) {
                 this.cart.splice(idx,1);
             } else {
@@ -2118,6 +2180,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 const successMessage = this.editingOrderId ? 'Order updated successfully!' : 'Order placed successfully!';
                 window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:successMessage}}));
                 this.loadAddresses(); // Refresh the customer's recent orders list
+                this.searchProducts(); // Refresh the products list to update inventory stock
                 if (this.editingOrderId) {
                     this.editingOrderId = null;
                     this.editingOrderNo = null;

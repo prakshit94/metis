@@ -362,7 +362,7 @@
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Type *</label>
                                             <select class="form-select form-select-sm fw-semibold" x-model="form.discount_type">
                                                 <option value="percentage">Percentage (%)</option>
-                                                <option value="flat">Flat Amount (Rs )</option>
+                                                <option value="fixed">Flat Amount (Rs )</option>
                                             </select>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Choose percentage or fixed rate.</small>
                                         </div>

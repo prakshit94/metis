@@ -303,7 +303,7 @@
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Type *</label>
                                             <select class="form-select form-select-sm fw-semibold" x-model="form.type">
                                                 <option value="percentage">Percentage (%)</option>
-                                                <option value="flat">Flat Amount (Rs )</option>
+                                                <option value="fixed">Flat Amount (Rs )</option>
                                                 <option value="free_shipping">Free Shipping</option>
                                                 <option value="free_product">Free Product</option>
                                             </select>
