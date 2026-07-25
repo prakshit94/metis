@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             RescheduleReasonsSeeder::class,
             DeliveryFailureReasonsSeeder::class,
             PromotionSeeder::class,
+            CallTagSeeder::class,
         ]);
     }
 }

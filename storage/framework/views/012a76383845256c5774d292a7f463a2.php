@@ -857,14 +857,14 @@
     <div class="card border-0 shadow-sm rounded-5 overflow-hidden glass-panel mt-2 mb-4" x-show="partyId" x-cloak>
         <div class="card-header bg-body-tertiary border-bottom-0 p-3 p-lg-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-                <div>
-                    <h5 class="mb-1 fw-bold text-body-emphasis"><i class="bi bi-layers me-2 text-primary"></i>Order Center</h5>
-                    <p class="mb-0 small text-muted">Tap an order to expand its details.</p>
-                </div>
                 <div class="d-flex flex-wrap gap-2">
                     <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'history' ? 'btn-primary border-primary' : 'btn-light text-body-secondary'" @click="bottomTab = 'history'; expandedOrderId = null">History</button>
                     <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'future' ? 'btn-primary border-primary' : 'btn-light text-body-secondary'" @click="bottomTab = 'future'; expandedOrderId = null">Future Orders</button>
                     <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'tags' ? 'btn-primary border-primary' : 'btn-light text-body-secondary'" @click="bottomTab = 'tags'; expandedOrderId = null">Call History</button>
+                </div>
+                <div class="text-lg-end">
+                    <h5 class="mb-1 fw-bold text-body-emphasis"><i class="bi bi-layers me-2 text-primary"></i>Order Center</h5>
+                    <p class="mb-0 small text-muted">Tap an order to expand its details.</p>
                 </div>
             </div>
         </div>

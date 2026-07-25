@@ -1,3 +1,7 @@
+<style>
+    .custom-hover-bg { transition: background-color 0.2s; }
+    .custom-hover-bg:hover { background-color: var(--bs-secondary-bg); }
+</style>
 <div class="modal fade" id="callTaggingModal" tabindex="-1" aria-hidden="true" x-data="callTaggingApp()" @open-call-tagging-modal.window="openModal($event.detail.customerId)">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
@@ -89,7 +93,7 @@
                                                     <span x-show="field.is_required"> *</span>
                                                 </label>
                                                 
-                                                <template x-if="field.type === 'text' || field.type === 'date'">
+                                                <template x-if="['text', 'date', 'datetime-local', 'number'].includes(field.type)">
                                                     <input :type="field.type" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="formData[field.name]" :required="field.is_required">
                                                 </template>
 
@@ -115,7 +119,7 @@
                                                                 </div>
                                                             </template>
                                                         </div>
-                                                        <div x-show="showDropdown" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
+                                                        <div x-show="showDropdown" class="position-absolute w-100 bg-body-tertiary border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
                                                             <template x-for="opt in (field.options ? JSON.parse(field.options) : [])" :key="opt">
                                                                 <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleItem(opt)">
                                                                     <input type="checkbox" :checked="selectedItems.includes(opt)" class="me-2" style="cursor: pointer;">
@@ -149,7 +153,7 @@
                                                                
                                                         <input type="hidden" x-model="formData[field.name]" :required="field.is_required">
                                                         
-                                                        <div class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" 
+                                                        <div class="position-absolute w-100 bg-body-tertiary border rounded shadow-lg mt-1" 
                                                              style="max-height: 200px; overflow-y: auto; z-index: 1050;" 
                                                              x-show="searchResults[field.name] && searchResults[field.name].length > 0"
                                                              x-transition>
@@ -298,10 +302,14 @@ document.addEventListener('alpine:init', () => {
         async fetchL1Tags() {
             this.loadingL1 = true;
             try {
-                const res = await fetch('/call-tags?level=1');
-                this.l1Tags = await res.json();
+                const res = await fetch('/call-tags?level=1', {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (res.ok) {
+                    this.l1Tags = await res.json();
+                }
             } catch (e) {
-                console.error(e);
+                console.error('Failed to fetch L1 tags:', e);
             }
             this.loadingL1 = false;
         },
@@ -323,10 +331,14 @@ document.addEventListener('alpine:init', () => {
             
             this.loadingL2 = true;
             try {
-                const res = await fetch(`/call-tags?parent_id=${id}`);
-                this.l2Tags = await res.json();
+                const res = await fetch(`/call-tags?parent_id=${id}`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (res.ok) {
+                    this.l2Tags = await res.json();
+                }
             } catch (e) {
-                console.error(e);
+                console.error('Failed to fetch L2 tags:', e);
             }
             this.loadingL2 = false;
         },
@@ -347,23 +359,31 @@ document.addEventListener('alpine:init', () => {
             this.loadingL3 = true;
             try {
                 // Fetch L3 Tags
-                const resTags = await fetch(`/call-tags?parent_id=${id}`);
-                this.l3Tags = await resTags.json();
+                const resTags = await fetch(`/call-tags?parent_id=${id}`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (resTags.ok) {
+                    this.l3Tags = await resTags.json();
+                }
                 
                 // Fetch Form Fields
-                const resFields = await fetch(`/call-tags/${id}/form`);
-                this.formFields = await resFields.json();
-                
-                // Initialize form data
-                this.formFields.forEach(f => {
-                    this.formData[f.name] = (f.type === 'multi_select' || f.type === 'product_search' || f.type === 'agent_search') ? [] : '';
-                    this.searchQuery[f.name] = '';
-                    this.searchResults[f.name] = [];
-                    this.selectedSearchItems[f.name] = [];
+                const resFields = await fetch(`/call-tags/${id}/form`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                 });
+                if (resFields.ok) {
+                    this.formFields = await resFields.json();
+                    
+                    // Initialize form data
+                    this.formFields.forEach(f => {
+                        this.formData[f.name] = (f.type === 'multi_select' || f.type === 'product_search' || f.type === 'agent_search') ? [] : '';
+                        this.searchQuery[f.name] = '';
+                        this.searchResults[f.name] = [];
+                        this.selectedSearchItems[f.name] = [];
+                    });
+                }
                 
             } catch (e) {
-                console.error(e);
+                console.error('Failed to fetch L3 tags and fields:', e);
             }
             this.loadingL3 = false;
         },
