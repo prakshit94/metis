@@ -761,8 +761,9 @@ class OrderController extends Controller implements HasMiddleware
 
     public function downloadInvoice(string $id, InvoiceService $invoiceService)
     {
-        $order = Order::findOrFail($id);
+        $order = Order::with(['party', 'items.product.taxRate', 'shippingAddress.village', 'billingAddress.village'])->findOrFail($id);
         $invoice = $invoiceService->generateForOrder($order);
+        $invoice->load(['order.party', 'order.items.product.taxRate', 'order.shippingAddress.village', 'order.billingAddress.village']);
 
         $pdf = Pdf::loadView('orders.pdf.invoice', compact('invoice'))->setPaper('a5', 'portrait');
 
@@ -809,7 +810,7 @@ class OrderController extends Controller implements HasMiddleware
 
     public function downloadReceipt(string $id, InvoiceService $invoiceService)
     {
-        $order = Order::with(['party', 'items.product', 'shippingAddress.village', 'invoice'])->findOrFail($id);
+        $order = Order::with(['party', 'items.product.taxRate', 'shippingAddress.village', 'invoice'])->findOrFail($id);
         $invoiceService->generateForOrder($order);
         $order->load('invoice');
 
@@ -844,7 +845,7 @@ class OrderController extends Controller implements HasMiddleware
             $invoices = Invoice::with([
                 'order.party',
                 'order.warehouse',
-                'order.items.product',
+                'order.items.product.taxRate',
                 'order.shippingAddress.village',
                 'order.billingAddress.village',
             ])->whereIn('order_id', $orders->pluck('id'))->get();
@@ -852,6 +853,11 @@ class OrderController extends Controller implements HasMiddleware
 
             return $pdf->download('bulk-invoices.pdf');
         } else {
+            $orders->load([
+                'party',
+                'items.product.taxRate',
+                'shippingAddress.village',
+            ]);
             $pdf = Pdf::loadView('orders.pdf.bulk_cod', compact('orders'))->setPaper('a5', 'portrait');
 
             return $pdf->download('bulk-cod-receipts.pdf');
@@ -1228,8 +1234,8 @@ class OrderController extends Controller implements HasMiddleware
             foreach ($orders as $order) {
                 $shipment = $order->shipments->first();
                 $customerName = $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : '';
-                $customerEmail = $order->party->email ?? '';
-                $customerPhone = $order->party->phone ?? '';
+                $customerEmail = $order->party?->email ?? '';
+                $customerPhone = $order->party?->phone ?? '';
 
                 $billingAdd1 = $order->billing_address_line_1 ?? '';
                 $billingAdd2 = $order->billing_address_line_2 ?? '';
@@ -1251,9 +1257,9 @@ class OrderController extends Controller implements HasMiddleware
                 $shippingState = $order->shipping_state ?? '';
                 $shippingPin = $order->shipping_pincode ?? '';
 
-                $warehouseName = $order->warehouse->name ?? '';
-                $carrierName = $shipment->carrier_name ?? '';
-                $trackingNo = $shipment->tracking_no ?? '';
+                $warehouseName = $order->warehouse?->name ?? '';
+                $carrierName = $shipment?->carrier_name ?? '';
+                $trackingNo = $shipment?->tracking_no ?? '';
 
                 if ($order->items->isEmpty()) {
                     fputcsv($out, [
@@ -1276,7 +1282,7 @@ class OrderController extends Controller implements HasMiddleware
                             $billingAdd1, $billingAdd2, $billingVillage, $billingPO, $billingTaluka, $billingDistrict, $billingCity, $billingState, $billingPin,
                             $shippingAdd1, $shippingAdd2, $shippingVillage, $shippingPO, $shippingTaluka, $shippingDistrict, $shippingCity, $shippingState, $shippingPin,
                             $warehouseName, $carrierName, $trackingNo,
-                            $productName, $productSku, $item->quantity, $item->unit_price, $item->tax_amount, $item->discount_amount, $item->net_amount,
+                            $productName, $productSku, $item->quantity, $item->unit_price, $item->tax_amount, $item->discount_amount, $item->total_amount,
                         ]);
                     }
                 }

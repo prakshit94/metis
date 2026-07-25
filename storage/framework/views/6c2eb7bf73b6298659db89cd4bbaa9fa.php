@@ -1,8 +1,7 @@
-@extends('layouts.app')
-@section('title', '⭐ Offers & Deals')
-@section('page', 'promotions.offers')
+<?php $__env->startSection('title', '⭐ Offers & Deals'); ?>
+<?php $__env->startSection('page', 'promotions.offers'); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="user-management" x-data="offersModule()" x-init="init()">
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
@@ -191,13 +190,13 @@
                                     <span class="fw-semibold text-secondary" x-text="o.min_spend > 0 ? 'Rs ' + parseFloat(o.min_spend).toFixed(2) : 'No Min Spend'"></span>
                                 </td>
                                 <td>
-                                    <template x-if="o.applicable_products && (typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products).length > 0 : o.applicable_products.length > 0)">
+                                    <template x-if="o.product">
                                         <span class="badge bg-body-tertiary text-body-emphasis border px-2 py-1 d-inline-flex align-items-center gap-1">
                                             <i class="bi bi-box-seam text-secondary"></i>
-                                            <span x-text="(typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products).length : o.applicable_products.length) + ' Specific Product(s)'"></span>
+                                            <span x-text="o.product?.name"></span>
                                         </span>
                                     </template>
-                                    <template x-if="!o.applicable_products || (typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products).length === 0 : o.applicable_products.length === 0)">
+                                    <template x-if="!o.product">
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 d-inline-flex align-items-center gap-1">
                                             <i class="bi bi-globe2 text-secondary"></i>
                                             <span>Global (Any Product)</span>
@@ -290,13 +289,13 @@
         </div>
     </div>
 
-    {{-- Modal --}}
-    {{-- Modal --}}
+    
+    
     <div class="modal fade" id="offerModal" tabindex="-1" style="backdrop-filter: blur(5px); background: rgba(0,0,0,0.4);">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-xl overflow-hidden" style="border-radius: 24px; background: rgba(var(--bs-body-bg-rgb), 0.95); backdrop-filter: blur(20px);">
                 
-                {{-- GLOSSY STYLE HEADER WITH BOOTSTRAP --}}
+                
                 <div class="modal-header border-0 d-flex align-items-center justify-content-between p-4 pb-3 position-relative" style="background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.05) 0%, rgba(var(--bs-primary-rgb), 0) 100%); border-bottom: 1px solid rgba(var(--bs-primary-rgb), 0.1) !important;">
                     <div class="d-flex align-items-center gap-3 position-relative z-1">
                         <div class="bg-primary bg-opacity-10 text-primary rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width: 56px; height: 56px; transition: transform 0.3s ease;" x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false" :style="hovered ? 'transform: translateY(-2px) scale(1.05);' : ''">
@@ -321,7 +320,7 @@
                     <div class="row g-4">
                         <div class="col-12">
                             
-                            {{-- Card 1: Basic Information --}}
+                            
                             <div class="card mb-4 border-0 shadow-sm rounded-4 bg-body overflow-hidden position-relative transition-all" style="transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 .125rem .25rem rgba(var(--bs-body-color-rgb), .075)'">
                                 <div class="position-absolute top-0 start-0 w-100" style="height: 3px; background: linear-gradient(90deg, var(--bs-primary), rgba(var(--bs-primary-rgb), 0.2));"></div>
                                 <div class="card-body p-4">
@@ -357,7 +356,7 @@
                                 </div>
                             </div>
 
-                            {{-- Card 2: Discount Rules --}}
+                            
                             <div class="card mb-4 border-0 shadow-sm rounded-4 bg-body overflow-hidden position-relative transition-all" style="transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 .125rem .25rem rgba(var(--bs-body-color-rgb), .075)'">
                                 <div class="position-absolute top-0 start-0 w-100" style="height: 3px; background: linear-gradient(90deg, var(--bs-success), rgba(var(--bs-success-rgb), 0.2));"></div>
                                 <div class="card-body p-4">
@@ -368,7 +367,7 @@
                                         <h6 class="mb-0 fw-bolder text-uppercase text-body" style="font-size: 11px; letter-spacing: 1.5px;">Discount Rules</h6>
                                     </div>
                                     
-                                    {{-- Order Discount Config --}}
+                                    
                                     <div class="row g-4" x-show="form.type === 'order_discount' || form.type === 'category_discount'" x-collapse>
                                         <div class="col-md-6" x-show="form.type === 'order_discount' || form.type === 'category_discount'">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Discount Type *</label>
@@ -402,7 +401,7 @@
                                         </div>
                                     </div>
 
-                                    {{-- BOGO Config --}}
+                                    
                                     <div class="row g-4" x-show="form.type === 'bogo' || form.type === 'free_product'" x-collapse>
                                         <div class="col-md-6">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Buy Qty *</label>
@@ -418,7 +417,7 @@
                                 </div>
                             </div>
 
-                            {{-- Card 3: Targeting & Scope --}}
+                            
                             <div class="card mb-4 border-0 shadow-sm rounded-4 bg-body overflow-visible position-relative transition-all" style="z-index: 20; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 .125rem .25rem rgba(var(--bs-body-color-rgb), .075)'">
                                 <div class="position-absolute top-0 start-0 w-100" style="height: 3px; background: linear-gradient(90deg, var(--bs-warning), rgba(var(--bs-warning-rgb), 0.2));"></div>
                                 <div class="card-body p-4">
@@ -498,7 +497,7 @@
                                 </div>
                             </div>
 
-                            {{-- Card 4: Validity & Settings --}}
+                            
                             <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden position-relative transition-all" style="z-index: 10; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 .125rem .25rem rgba(var(--bs-body-color-rgb), .075)'">
                                 <div class="position-absolute top-0 start-0 w-100" style="height: 3px; background: linear-gradient(90deg, var(--bs-info), rgba(var(--bs-info-rgb), 0.2));"></div>
                                 <div class="card-body p-4">
@@ -541,7 +540,7 @@
                     </div>
                 </div>
 
-                {{-- Form Actions --}}
+                
                 <div class="modal-footer border-0 p-4 pt-3" style="background: rgba(var(--bs-body-bg-rgb), 0.8);">
                     <div class="d-flex w-100 justify-content-between align-items-center">
                         <button type="button" data-bs-dismiss="modal" class="btn btn-light rounded-pill px-4 fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 1px; transition: all 0.2s;">Cancel</button>
@@ -568,9 +567,9 @@ input[type="text"]:focus, input[type="email"]:focus, input[type="number"]:focus,
 .cursor-pointer { cursor: pointer; }
 </style>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
-const INITIAL_PRODUCTS = @json($products ?? []);
+const INITIAL_PRODUCTS = <?php echo json_encode($products ?? [], 15, 512) ?>;
 
 function offersModule() {
     return {
@@ -613,7 +612,7 @@ function offersModule() {
         openModal(o = null) {
             this.formError = null;
             if (o) {
-                this.form = { id: o.id, name: o.name, type: o.type, discount_type: o.discount_type, value: o.value, min_spend: o.min_spend || '', max_discount: o.max_discount || '', product_ids: typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : (o.applicable_products || []), product_id: o.type === 'free_product' ? o.product_id : '', applicable_categories: typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : (o.applicable_categories || []), buy_qty: o.buy_qty || 1, get_qty: o.get_qty || 1, starts_at: o.starts_at ? o.starts_at.substring(0,16) : '', ends_at: o.ends_at ? o.ends_at.substring(0,16) : '', priority: o.priority || 0, is_active: o.is_active };
+                this.form = { id: o.id, name: o.name, type: o.type, discount_type: o.discount_type, value: o.value, min_spend: o.min_spend || '', max_discount: o.max_discount || '', product_ids: (o.type === 'bogo' && o.product_id) ? [o.product_id] : (o.type !== 'bogo' ? (typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : (o.applicable_products || [])) : []), product_id: o.type === 'free_product' ? o.product_id : '', applicable_categories: typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : (o.applicable_categories || []), buy_qty: o.buy_qty || 1, get_qty: o.get_qty || 1, starts_at: o.starts_at ? o.starts_at.substring(0,16) : '', ends_at: o.ends_at ? o.ends_at.substring(0,16) : '', priority: o.priority || 0, is_active: o.is_active };
             } else {
                 this.form = { id: null, name: '', type: 'order_discount', discount_type: 'percentage', value: '', min_spend: '', max_discount: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true };
             }
@@ -660,5 +659,7 @@ function offersModule() {
     };
 }
 </script>
-@endpush
-@endsection
+<?php $__env->stopPush(); ?>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/user/metis/resources/views/promotions/offers.blade.php ENDPATH**/ ?>

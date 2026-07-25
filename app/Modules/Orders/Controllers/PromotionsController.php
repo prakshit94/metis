@@ -106,6 +106,10 @@ class PromotionsController extends Controller implements HasMiddleware
             $data['applicable_products'] = json_encode($data['applicable_products']);
         }
 
+        $data['value'] = $data['value'] ?? 0;
+        $data['min_spend'] = $data['min_spend'] ?? 0;
+        $data['max_discount'] = $data['max_discount'] ?? 0;
+
         $data['code'] = strtoupper(trim($data['code']));
         $data['status'] = ($data['is_active'] ?? true) ? 'active' : 'inactive';
         $data['created_by'] = auth()->id();
@@ -141,6 +145,16 @@ class PromotionsController extends Controller implements HasMiddleware
         }
         if (array_key_exists('applicable_products', $data)) {
             $data['applicable_products'] = $data['applicable_products'] ? json_encode($data['applicable_products']) : null;
+        }
+
+        if (array_key_exists('value', $data) || in_array($request->input('type', $coupon->type), ['free_shipping', 'free_product'])) {
+            $data['value'] = $data['value'] ?? 0;
+        }
+        if (array_key_exists('min_spend', $data)) {
+            $data['min_spend'] = $data['min_spend'] ?? 0;
+        }
+        if (array_key_exists('max_discount', $data)) {
+            $data['max_discount'] = $data['max_discount'] ?? 0;
         }
 
         if (isset($data['code'])) {
@@ -251,32 +265,26 @@ class PromotionsController extends Controller implements HasMiddleware
             $data['applicable_categories'] = json_encode($data['applicable_categories']);
         }
         
+        $data['value'] = $data['value'] ?? 0;
+        $data['min_spend'] = $data['min_spend'] ?? 0;
+        $data['max_discount'] = $data['max_discount'] ?? 0;
+        
         $productIds = $request->input('product_ids', []);
-
-        if (empty($productIds) || $data['type'] === 'free_product') {
-            // Create a single global offer
-            $offerData = $data;
-            unset($offerData['product_ids']);
+        
+        $offerData = $data;
+        $offerData['applicable_products'] = empty($productIds) ? null : json_encode($productIds);
+        
+        if ($data['type'] !== 'free_product') {
             $offerData['product_id'] = null;
-            $offerData['created_by'] = auth()->id();
-            $offerData['updated_by'] = auth()->id();
-            $offer = Offer::create($offerData);
-
-            return response()->json(['message' => 'Global offer created.', 'data' => $offer->load('product')], 201);
         }
 
-        // Bulk create offers for each selected product
-        $createdOffers = collect();
-        foreach ($productIds as $pId) {
-            $offerData = $data;
-            unset($offerData['product_ids']);
-            $offerData['product_id'] = $pId;
-            $offerData['created_by'] = auth()->id();
-            $offerData['updated_by'] = auth()->id();
-            $createdOffers->push(Offer::create($offerData)->load('product'));
-        }
+        unset($offerData['product_ids']);
+        $offerData['created_by'] = auth()->id();
+        $offerData['updated_by'] = auth()->id();
+        
+        $offer = Offer::create($offerData);
 
-        return response()->json(['message' => 'Offers created for selected products.', 'data' => $createdOffers->first()], 201);
+        return response()->json(['message' => 'Offer created successfully.', 'data' => $offer->load('product')], 201);
     }
 
     public function offersUpdate(Request $request, Offer $offer): JsonResponse
@@ -293,6 +301,8 @@ class PromotionsController extends Controller implements HasMiddleware
             'min_spend' => 'nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
             'applicable_categories' => 'nullable|array',
+            'product_ids' => 'nullable|array',
+            'product_ids.*' => 'exists:products,id',
             'product_id' => 'nullable|exists:products,id',
             'buy_qty' => 'required_if:type,bogo|nullable|integer|min:1',
             'get_qty' => 'required_if:type,bogo,free_product|nullable|integer|min:1',
@@ -304,6 +314,25 @@ class PromotionsController extends Controller implements HasMiddleware
 
         if (array_key_exists('applicable_categories', $data)) {
             $data['applicable_categories'] = $data['applicable_categories'] ? json_encode($data['applicable_categories']) : null;
+        }
+        
+        if ($request->has('product_ids')) {
+            $productIds = $request->input('product_ids', []);
+            $data['applicable_products'] = empty($productIds) ? null : json_encode($productIds);
+        }
+        
+        if (isset($data['type']) && $data['type'] !== 'free_product') {
+            $data['product_id'] = null;
+        }
+
+        if (array_key_exists('value', $data) || in_array($request->input('type', $offer->type), ['bogo', 'free_product'])) {
+            $data['value'] = $data['value'] ?? 0;
+        }
+        if (array_key_exists('min_spend', $data)) {
+            $data['min_spend'] = $data['min_spend'] ?? 0;
+        }
+        if (array_key_exists('max_discount', $data)) {
+            $data['max_discount'] = $data['max_discount'] ?? 0;
         }
 
         $data['updated_by'] = auth()->id();
