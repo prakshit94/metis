@@ -353,7 +353,16 @@ document.addEventListener('alpine:init', () => {
 
     // Selection
     toggleAll(checked) {
-      this.selectedVillages = checked ? this.villages.map(v => v.id) : [];
+      if (checked) {
+        this.villages.forEach(item => {
+          if (!this.selectedVillages.includes(String(item.id))) {
+            this.selectedVillages.push(String(item.id));
+          }
+        });
+      } else {
+        const currentIds = this.villages.map(item => String(item.id));
+        this.selectedVillages = this.selectedVillages.filter(id => !currentIds.includes(id));
+      }
     },
 
     toggleVillage(id) {

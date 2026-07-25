@@ -88,6 +88,12 @@
                             <option value="completed">Completed</option>
                             <option value="rejected">Rejected</option>
                         </select>
+                        <select class="form-select form-select-sm" x-model="serviceFilter" @change="filterReturns()" style="width:160px;" x-show="shippingServices.length > 0">
+                            <option value="">All Carriers</option>
+                            <template x-for="svc in shippingServices" :key="svc">
+                                <option :value="svc" x-text="svc"></option>
+                            </template>
+                        </select>
                         <button class="btn btn-sm btn-outline-secondary" @click="clearFilters()" title="Clear filters"><i class="bi bi-x-circle"></i></button>
                     </div>
                 </div>
@@ -130,6 +136,7 @@
                             </th>
                             <th><i class="bi bi-hash me-1 text-secondary"></i>Order #</th>
                             <th><i class="bi bi-person me-1 text-secondary"></i>Customer</th>
+                            <th><i class="bi bi-truck me-1 text-secondary"></i>Carrier</th>
                             <th><i class="bi bi-chat-left-text me-1 text-secondary"></i>Reason</th>
                             <th><i class="bi bi-box-seam me-1 text-secondary"></i>Items</th>
                             <th><i class="bi bi-shield-check me-1 text-secondary"></i>QC Status</th>
@@ -148,6 +155,9 @@
                                 <td><span class="fw-semibold font-monospace small" x-text="ret.return_no"></span></td>
                                 <td><span class="text-muted font-monospace small" x-text="ret.order_no"></span></td>
                                 <td><span class="small" x-text="ret.customer?.name"></span></td>
+                                <td>
+                                    <span class="badge bg-light text-dark border small" x-text="ret.order?.shipments?.length ? ret.order.shipments[ret.order.shipments.length - 1].carrier_name || '—' : '—'"></span>
+                                </td>
                                 <td>
                                     <span class="badge bg-secondary bg-opacity-25 text-body small text-capitalize"
                                           x-text="(ret.reason||'N/A').replace(/_/g,' ')"></span>

@@ -133,7 +133,7 @@ document.addEventListener('alpine:init', () => {
 
     filterPayments() {
       this.currentPage = 1;
-      this.selectedPayments = [];
+      
       this.loadPayments();
     },
 
@@ -168,7 +168,16 @@ document.addEventListener('alpine:init', () => {
     },
 
     toggleAll(checked) {
-      this.selectedPayments = checked ? this.payments.map(p => String(p.id)) : [];
+      if (checked) {
+        this.payments.forEach(item => {
+          if (!this.selectedPayments.includes(String(item.id))) {
+            this.selectedPayments.push(String(item.id));
+          }
+        });
+      } else {
+        const currentIds = this.payments.map(item => String(item.id));
+        this.selectedPayments = this.selectedPayments.filter(id => !currentIds.includes(id));
+      }
     },
 
     async bulkUpdateStatus(status) {

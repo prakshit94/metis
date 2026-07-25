@@ -25,7 +25,7 @@ class OrderReturnController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = OrderReturn::with(['order.party', 'order.payments', 'items.product', 'refunds', 'creditNote']);
+        $query = OrderReturn::with(['order.party', 'order.payments', 'order.shipments', 'items.product', 'refunds', 'creditNote']);
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -47,6 +47,12 @@ class OrderReturnController extends Controller implements HasMiddleware
 
         if ($request->filled('financial_status')) {
             $query->where('financial_status', $request->financial_status);
+        }
+
+        if ($request->filled('shipping_service')) {
+            $query->whereHas('order.shipments', function ($q) use ($request) {
+                $q->where('carrier_name', $request->shipping_service);
+            });
         }
 
         $sortField = $request->input('sort_field', 'id');
@@ -71,6 +77,7 @@ class OrderReturnController extends Controller implements HasMiddleware
                 'stats' => $stats,
                 'statuses' => ['pending', 'received', 'qc_in_progress', 'completed', 'rejected'],
                 'financial_statuses' => ['pending', 'partial_refund', 'fully_refunded', 'credited'],
+                'shipping_services' => \App\Modules\Catalog\Models\Service::active()->select('name')->pluck('name'),
             ]);
         }
 

@@ -171,7 +171,7 @@ document.addEventListener('alpine:init', () => {
         goToPage(page) {
             if (page >= 1 && page <= this.totalPages) {
                 this.currentPage = page;
-                this.selectedReasons = []; // Clear selection when changing page
+                 // Clear selection when changing page
             }
         },
 

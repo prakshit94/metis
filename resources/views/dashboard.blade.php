@@ -4,7 +4,9 @@
 @section('page', 'dashboard')
 
 @section('content')
-<div x-data="{ activeTab: new URLSearchParams(window.location.search).has('filter') ? 'dashboard' : 'search' }">
+<div x-data="{ 
+    activeTab: new URLSearchParams(window.location.search).has('filter') ? 'dashboard' : (localStorage.getItem('dashboard_active_tab') || 'search') 
+}" x-init="$watch('activeTab', val => localStorage.setItem('dashboard_active_tab', val))">
     <!-- Page Header Tabs -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
         <ul class="nav nav-pills gap-2" role="tablist">
@@ -163,15 +165,24 @@
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Pending</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['pending'] ?? 0 }}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['pending'] ?? 0 }}</span>
+                                        <span class="badge bg-info bg-opacity-25 text-info-emphasis border border-info border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['pending'] ?? 0 }}%</span>
+                                    </div>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Confirmed</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['confirmed'] ?? 0 }}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['confirmed'] ?? 0 }}</span>
+                                        <span class="badge bg-info bg-opacity-25 text-info-emphasis border border-info border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['confirmed'] ?? 0 }}%</span>
+                                    </div>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Processing</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['processing'] ?? 0 }}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['processing'] ?? 0 }}</span>
+                                        <span class="badge bg-info bg-opacity-25 text-info-emphasis border border-info border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['processing'] ?? 0 }}%</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -187,15 +198,24 @@
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Ready to Ship</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['ready_to_ship'] ?? 0 }}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['ready_to_ship'] ?? 0 }}</span>
+                                        <span class="badge bg-primary bg-opacity-25 text-primary-emphasis border border-primary border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['ready_to_ship'] ?? 0 }}%</span>
+                                    </div>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Dispatched</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['dispatched'] ?? 0 }}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['dispatched'] ?? 0 }}</span>
+                                        <span class="badge bg-primary bg-opacity-25 text-primary-emphasis border border-primary border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['dispatched'] ?? 0 }}%</span>
+                                    </div>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Shipped</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['shipped'] ?? 0 }}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['shipped'] ?? 0 }}</span>
+                                        <span class="badge bg-primary bg-opacity-25 text-primary-emphasis border border-primary border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['shipped'] ?? 0 }}%</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -218,7 +238,10 @@
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Completed</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['completed'] ?? 0 }}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['completed'] ?? 0 }}</span>
+                                        <span class="badge bg-success bg-opacity-25 text-success-emphasis border border-success border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['completed'] ?? 0 }}%</span>
+                                    </div>
                                 </div>
                                 <div class="mt-3 pt-2 border-top border-success border-opacity-25">
                                     <span class="text-muted d-block small mb-1 fw-semibold">Rev. Delivered</span>
@@ -245,7 +268,10 @@
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Cancelled</span>
-                                    <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['cancelled'] ?? 0 }}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['cancelled'] ?? 0 }}</span>
+                                        <span class="badge bg-danger bg-opacity-25 text-danger-emphasis border border-danger border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['cancelled'] ?? 0 }}%</span>
+                                    </div>
                                 </div>
                                 <div class="mt-3 pt-2 border-top border-danger border-opacity-25">
                                     <span class="text-muted d-block small mb-1 fw-semibold">Rev. Returned</span>

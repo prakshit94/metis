@@ -338,6 +338,7 @@ class PromotionsController extends Controller implements HasMiddleware
         }
 
         $data['updated_by'] = auth()->id();
+        unset($data['product_ids']);
         $offer->update($data);
 
         return response()->json(['message' => 'Offer updated.', 'data' => $offer->fresh('product')]);

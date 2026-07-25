@@ -273,8 +273,7 @@ export default () => {
 
         filterData() {
             this.currentPage = 1;
-            this.selectedItems = [];
-            this.loadData();
+                        this.loadData();
         },
 
         clearFilters() {

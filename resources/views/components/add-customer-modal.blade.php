@@ -216,7 +216,6 @@
                                             <div class="input-group input-group-sm">
                                                 <input type="number" step="0.01" name="land_area" x-model="form.land_area" class="form-control w-50 fw-semibold" style="font-size: 12px;">
                                                 <select name="land_unit" x-model="form.land_unit" class="form-select w-50 fw-semibold" style="font-size: 12px;">
-                                                    <option value="">Unit</option>
                                                     <template x-for="unit in landUnits" :key="unit">
                                                         <option :value="unit" x-text="unit"></option>
                                                     </template>
@@ -353,7 +352,7 @@ document.addEventListener('alpine:init', () => {
         form: {
             firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
             category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
-            land_area: '', land_unit: '', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
+            land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
         },
 
         get filteredCrops() {
@@ -389,7 +388,7 @@ document.addEventListener('alpine:init', () => {
             this.form = {
                 firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
                 category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
-                land_area: '', land_unit: '', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
+                land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
             };
             this.selectedSources = [];
             this.selectedIrrigation = [];
@@ -432,6 +431,13 @@ document.addEventListener('alpine:init', () => {
         async submitForm(e) {
             this.formError = '';
             this.isSubmitting = true;
+            
+            if (this.form.phone && this.form.alternatemobile && this.form.phone === this.form.alternatemobile) {
+                this.formError = 'Primary Phone and Alternate Mobile cannot be the same.';
+                this.isSubmitting = false;
+                return;
+            }
+            
             const formData = new FormData(e.target);
             
             // Bug Fix: Send to /api/customers to hit the correct RESTful POST endpoint

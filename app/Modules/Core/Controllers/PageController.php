@@ -123,12 +123,27 @@ class PageController extends Controller
             ];
         }
 
-        // Order Status Distribution
+        $returnedByStatus = (clone $orderQuery)->whereHas('orderReturns', function ($q) {
+            $q->where('status', 'completed');
+        })
+            ->select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->get()
+            ->pluck('total', 'status')
+            ->toArray();
+
         $orderStatusRaw = (clone $orderQuery)->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
             ->get()
             ->pluck('total', 'status')
             ->toArray();
+
+        foreach ($returnedByStatus as $status => $count) {
+            if ($status !== 'returned') {
+                $orderStatusRaw[$status] = max(0, ($orderStatusRaw[$status] ?? 0) - $count);
+                $orderStatusRaw['returned'] = ($orderStatusRaw['returned'] ?? 0) + $count;
+            }
+        }
 
         $orderStatusDistribution = [
             'completed' => ($orderStatusRaw['delivered'] ?? 0) + ($orderStatusRaw['completed'] ?? 0),
@@ -136,6 +151,12 @@ class PageController extends Controller
             'pending' => ($orderStatusRaw['pending'] ?? 0) + ($orderStatusRaw['confirmed'] ?? 0),
             'cancelled' => ($orderStatusRaw['cancelled'] ?? 0) + ($orderStatusRaw['returned'] ?? 0),
         ];
+
+        $orderStatusPercent = [];
+        $statusesToTrack = ['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'completed', 'cancelled'];
+        foreach ($statusesToTrack as $s) {
+            $orderStatusPercent[$s] = $totalOrders > 0 ? round((($orderStatusRaw[$s] ?? 0) / $totalOrders) * 100) : 0;
+        }
 
         // Sales by Location
         $salesByLocationRaw = (clone $orderQuery)->where(function ($q) {
@@ -208,6 +229,7 @@ class PageController extends Controller
                 ],
                 'dashboardData' => $dashboardData,
                 'orderStatusRaw' => $orderStatusRaw,
+                'orderStatusPercent' => $orderStatusPercent,
             ]);
         }
 
@@ -224,7 +246,8 @@ class PageController extends Controller
             'deliveredPercent',
             'returnedPercent',
             'dashboardData',
-            'orderStatusRaw'
+            'orderStatusRaw',
+            'orderStatusPercent'
         ));
     }
 

@@ -290,7 +290,16 @@ document.addEventListener('alpine:init', () => {
 
     // Selection
     toggleAll(checked) {
-      this.selectedCustomers = checked ? this.customers.map(c => c.id) : [];
+      if (checked) {
+        this.customers.forEach(item => {
+          if (!this.selectedCustomers.includes(String(item.id))) {
+            this.selectedCustomers.push(String(item.id));
+          }
+        });
+      } else {
+        const currentIds = this.customers.map(item => String(item.id));
+        this.selectedCustomers = this.selectedCustomers.filter(id => !currentIds.includes(id));
+      }
     },
 
     toggleCustomer(id) {

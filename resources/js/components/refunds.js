@@ -119,7 +119,7 @@ document.addEventListener('alpine:init', () => {
 
     filterRefunds() {
       this.currentPage = 1;
-      this.selectedRefunds = [];
+      
       this.loadRefunds();
     },
 
@@ -154,7 +154,16 @@ document.addEventListener('alpine:init', () => {
     },
 
     toggleAll(checked) {
-      this.selectedRefunds = checked ? this.refunds.map(r => String(r.id)) : [];
+      if (checked) {
+        this.refunds.forEach(item => {
+          if (!this.selectedRefunds.includes(String(item.id))) {
+            this.selectedRefunds.push(String(item.id));
+          }
+        });
+      } else {
+        const currentIds = this.refunds.map(item => String(item.id));
+        this.selectedRefunds = this.selectedRefunds.filter(id => !currentIds.includes(id));
+      }
     },
 
     async bulkUpdateStatus(status) {

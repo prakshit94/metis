@@ -418,9 +418,16 @@
                                                     <div class="text-muted text-truncate font-monospace mt-1" style="font-size:11px;" x-text="p.sku"></div>
                                                 </div>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-3 px-2 py-1 bg-body-tertiary rounded">
+                                            <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-1 bg-body-tertiary rounded">
                                                 <span class="fw-bold text-primary fs-5" x-text="'Rs ' + parseFloat(p.selling_price).toFixed(2)"></span>
                                                 <span class="badge" :class="p.available_stock > 10 ? 'bg-success' : (p.available_stock > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + p.available_stock"></span>
+                                            </div>
+                                            <div class="d-flex flex-wrap gap-1 mb-3" x-show="getProductPromotions(p).length > 0">
+                                                <template x-for="promo in getProductPromotions(p)">
+                                                    <span class="badge border" :class="promo.class" style="font-size: 10px;">
+                                                        <i class="bi me-1" :class="promo.icon"></i><span x-text="promo.text"></span>
+                                                    </span>
+                                                </template>
                                             </div>
                                             <div class="row g-2">
                                                 <div class="col-8">
@@ -478,6 +485,13 @@
                                                 <div class="fw-bold text-primary fs-6 mb-1" x-text="'Rs ' + parseFloat(p.selling_price).toFixed(2)"></div>
                                                 <div class="small text-muted text-decoration-line-through mb-1" x-show="p.mrp > p.selling_price" x-text="'MRP Rs ' + parseFloat(p.mrp).toFixed(2)"></div>
                                                 <div class="badge bg-success" x-show="p.default_discount > 0"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
+                                                <div class="d-flex flex-wrap gap-1 mt-1" x-show="getProductPromotions(p).length > 0">
+                                                    <template x-for="promo in getProductPromotions(p)">
+                                                        <span class="badge border" :class="promo.class" style="font-size: 10px;">
+                                                            <i class="bi me-1" :class="promo.icon"></i><span x-text="promo.text"></span>
+                                                        </span>
+                                                    </template>
+                                                </div>
                                             </td>
                                             <td>
                                                 <div class="d-flex align-items-center gap-2 mb-1">
@@ -1610,7 +1624,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         viewMode: 'table',
         showCustomerWorkspace: true,
         isCartSidebarOpen: false, useWalletBalance: false,
-        partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '{{ $warehouses->first()->id ?? '' }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale', shippingFee: 0,
+        partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale', shippingFee: 0,
         orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
         isDraft: false, futureOrderDate: '',
         editingOrderId: null,
@@ -1735,6 +1749,19 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     this.cart = [];
                 }
             });
+        },
+
+        getProductPromotions(p) {
+            let promos = [];
+            this.activeOffers.forEach(o => {
+                if (o.type === 'bogo' && String(o.product_id) === String(p.id)) promos.push({text: 'BOGO', icon: 'bi-gift-fill', class: 'bg-info bg-opacity-10 text-info border-info'});
+                if (o.type === 'free_product' && String(o.product_id) === String(p.id)) promos.push({text: 'Free Gift', icon: 'bi-gift', class: 'bg-success bg-opacity-10 text-success border-success'});
+                if (o.type === 'category_discount' && o.applicable_categories && o.applicable_categories.includes(String(p.category_id))) promos.push({text: (o.discount_type === 'percentage' ? parseFloat(o.value) + '%' : 'Rs ' + parseFloat(o.value)) + ' OFF', icon: 'bi-tags', class: 'bg-primary bg-opacity-10 text-primary border-primary'});
+            });
+            this.activeCoupons.forEach(c => {
+                if (c.type === 'free_product' && String(c.product_id) === String(p.id)) promos.push({text: 'Coupon Gift', icon: 'bi-ticket-perforated', class: 'bg-warning bg-opacity-10 text-warning-emphasis border-warning'});
+            });
+            return promos;
         },
 
         async loadAddresses() {

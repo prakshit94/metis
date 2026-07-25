@@ -486,7 +486,7 @@ document.addEventListener('alpine:init', () => {
     // ── Filtering helpers (trigger server reload) ────────────────────────────
     filterUsers() {
       this.currentPage = 1;
-      this.selectedUsers = [];
+      
       this.loadUsers();
     },
 
@@ -555,7 +555,16 @@ document.addEventListener('alpine:init', () => {
 
     // ── Selection management ──────────────────────────────────────────────────
     toggleAll(checked) {
-      this.selectedUsers = checked ? this.users.map(u => String(u.id)) : [];
+      if (checked) {
+        this.users.forEach(item => {
+          if (!this.selectedUsers.includes(String(item.id))) {
+            this.selectedUsers.push(String(item.id));
+          }
+        });
+      } else {
+        const currentIds = this.users.map(item => String(item.id));
+        this.selectedUsers = this.selectedUsers.filter(id => !currentIds.includes(id));
+      }
     },
 
     toggleUser(userId) {

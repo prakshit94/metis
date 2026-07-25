@@ -71,6 +71,7 @@ document.addEventListener('alpine:init', () => {
     // --- Table state ---
     returns: [],
     selectedReturns: [],
+    selectedReturnsMap: {},
     currentPage: 1,
     totalPages: 1,
     totalReturns: 0,
@@ -82,6 +83,7 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     statusFilter: '',
     financialFilter: '',
+    serviceFilter: '',
     sortField: 'id',
     sortDirection: 'desc',
 
@@ -94,6 +96,7 @@ document.addEventListener('alpine:init', () => {
       total_refunded: 0,
       total_credited: 0,
     },
+    shippingServices: [],
 
     // --- QC Modal state ---
     selectedReturn: null,
@@ -124,6 +127,7 @@ document.addEventListener('alpine:init', () => {
       if (this.searchQuery) params.append('search', this.searchQuery);
       if (this.statusFilter) params.append('status', this.statusFilter);
       if (this.financialFilter) params.append('financial_status', this.financialFilter);
+      if (this.serviceFilter) params.append('shipping_service', this.serviceFilter);
 
       params.append('limit', this.itemsPerPage);
       params.append('page', this.currentPage);
@@ -139,6 +143,9 @@ document.addEventListener('alpine:init', () => {
 
           if (data.stats) {
             this.stats = { ...this.stats, ...data.stats };
+          }
+          if (data.shipping_services) {
+            this.shippingServices = data.shipping_services;
           }
         })
         .catch(err => showToast(err.message, 'danger'))
@@ -194,7 +201,6 @@ document.addEventListener('alpine:init', () => {
 
     filterReturns() {
       this.currentPage = 1;
-      this.selectedReturns = [];
       this.loadReturns();
     },
 
@@ -202,6 +208,7 @@ document.addEventListener('alpine:init', () => {
       this.searchQuery    = '';
       this.statusFilter   = '';
       this.financialFilter = '';
+      this.serviceFilter  = '';
       this.sortField      = 'id';
       this.sortDirection  = 'desc';
       this.currentPage    = 1;
@@ -241,11 +248,36 @@ document.addEventListener('alpine:init', () => {
     // ─── Selection / Bulk ─────────────────────────────────────────────────────
 
     toggleAll(checked) {
-      this.selectedReturns = checked ? this.returns.map(r => String(r.id)) : [];
+      if (checked) {
+        this.returns.forEach(r => {
+          if (!this.selectedReturns.includes(String(r.id))) {
+            this.selectedReturns.push(String(r.id));
+          }
+          this.selectedReturnsMap[r.id] = r;
+        });
+      } else {
+        this.returns.forEach(r => {
+          this.selectedReturns = this.selectedReturns.filter(id => id !== String(r.id));
+          delete this.selectedReturnsMap[r.id];
+        });
+      }
+    },
+
+    toggleReturn(ret, checked) {
+        const idStr = String(ret.id);
+        if (checked) {
+            if (!this.selectedReturns.includes(idStr)) {
+                this.selectedReturns.push(idStr);
+            }
+            this.selectedReturnsMap[ret.id] = ret;
+        } else {
+            this.selectedReturns = this.selectedReturns.filter(id => id !== idStr);
+            delete this.selectedReturnsMap[ret.id];
+        }
     },
 
     get allSelected() {
-      return this.returns.length > 0 && this.selectedReturns.length === this.returns.length;
+      return this.returns.length > 0 && this.returns.every(r => this.selectedReturns.includes(String(r.id)));
     },
 
     /**
@@ -255,9 +287,9 @@ document.addEventListener('alpine:init', () => {
     async bulkUpdateStatus(action) {
       if (!this.selectedReturns.length) return;
 
-      const pendingReturns = this.returns.filter(r =>
-        this.selectedReturns.includes(String(r.id)) && r.status === 'pending'
-      );
+      const pendingReturns = this.selectedReturns
+        .map(id => this.selectedReturnsMap[id])
+        .filter(r => r && r.status === 'pending');
 
       if (!pendingReturns.length) {
         showToast('No pending returns selected.', 'warning');
@@ -290,6 +322,7 @@ document.addEventListener('alpine:init', () => {
 
       this.isSubmitting = false;
       this.selectedReturns = [];
+      this.selectedReturnsMap = {};
 
       if (successCount) showToast(`${successCount} return(s) processed successfully.`);
       if (failCount)    showToast(`${failCount} return(s) failed.`, 'warning');
@@ -417,9 +450,9 @@ document.addEventListener('alpine:init', () => {
     // ─── Bulk QC Inspect Modal ────────────────────────────────────────────────
     openBulkQcModal() {
       // Find selected pending returns
-      this.selectedReturnsForBulk = this.returns.filter(r =>
-        this.selectedReturns.includes(String(r.id)) && r.status === 'pending'
-      );
+      this.selectedReturnsForBulk = this.selectedReturns
+        .map(id => this.selectedReturnsMap[id])
+        .filter(r => r && r.status === 'pending');
 
       if (!this.selectedReturnsForBulk.length) {
         showToast('No pending returns selected.', 'warning');
@@ -586,6 +619,7 @@ document.addEventListener('alpine:init', () => {
 
       this.isSubmitting = false;
       this.selectedReturns = [];
+      this.selectedReturnsMap = {};
 
       if (successCount) showToast(`${successCount} return(s) processed successfully.`);
       if (failCount)    showToast(`${failCount} return(s) failed.`, 'warning');

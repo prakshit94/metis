@@ -390,7 +390,7 @@ document.addEventListener('alpine:init', () => {
 
     filterItems() {
       this.currentPage = 1;
-      this.selectedItems = [];
+      
       this.loadCurrent();
     },
 
@@ -452,7 +452,16 @@ document.addEventListener('alpine:init', () => {
     },
 
     toggleAll(checked) {
-      this.selectedItems = checked ? this.currentItems.map(item => item.id) : [];
+      if (checked) {
+        this.currentItems.forEach(item => {
+          if (!this.selectedItems.includes(String(item.id))) {
+            this.selectedItems.push(String(item.id));
+          }
+        });
+      } else {
+        const currentIds = this.currentItems.map(item => String(item.id));
+        this.selectedItems = this.selectedItems.filter(id => !currentIds.includes(id));
+      }
     },
 
     toggleItem(itemId) {

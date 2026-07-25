@@ -133,7 +133,7 @@ document.addEventListener('alpine:init', () => {
 
     filterInvoices() {
       this.currentPage = 1;
-      this.selectedInvoices = [];
+      
       this.loadInvoices();
     },
 
@@ -168,7 +168,16 @@ document.addEventListener('alpine:init', () => {
     },
 
     toggleAll(checked) {
-      this.selectedInvoices = checked ? this.invoices.map(i => String(i.id)) : [];
+      if (checked) {
+        this.invoices.forEach(item => {
+          if (!this.selectedInvoices.includes(String(item.id))) {
+            this.selectedInvoices.push(String(item.id));
+          }
+        });
+      } else {
+        const currentIds = this.invoices.map(item => String(item.id));
+        this.selectedInvoices = this.selectedInvoices.filter(id => !currentIds.includes(id));
+      }
     },
 
     async bulkUpdateStatus(status) {
