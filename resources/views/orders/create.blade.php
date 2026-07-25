@@ -720,7 +720,17 @@
                                         </div>
                                         <div>
                                             <p class="mb-0 fw-bold text-success-emphasis fs-6" x-text="'Coupon: ' + couponCode"></p>
-                                            <p class="mb-0 fw-semibold text-success opacity-75 small" x-text="'Saving Rs ' + Number(couponDiscount).toFixed(2)"></p>
+                                            <p class="mb-0 fw-semibold text-success opacity-75 small">
+                                                <template x-if="appliedCouponObj && appliedCouponObj.type === 'free_shipping'">
+                                                    <span>Free Shipping Applied</span>
+                                                </template>
+                                                <template x-if="appliedCouponObj && appliedCouponObj.type === 'free_product'">
+                                                    <span>Free Gift Applied</span>
+                                                </template>
+                                                <template x-if="appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product'">
+                                                    <span x-text="'Saving Rs ' + Number(couponDiscount).toFixed(2)"></span>
+                                                </template>
+                                            </p>
                                         </div>
                                     </div>
                                     <button type="button" @click.prevent="removeCoupon()" class="btn btn-sm btn-light text-muted hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
@@ -772,12 +782,13 @@
                                 <span class="fw-bold align-top" x-text="'- Rs ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
                             </div>
 
-                            <div class="d-flex justify-content-between fw-medium text-success" style="font-size: 13px;" x-show="couponDiscount > 0" x-cloak>
+                            <div class="d-flex justify-content-between fw-medium text-success" style="font-size: 13px;" x-show="appliedCouponObj !== null" x-cloak>
                                 <div>
                                     <span>Coupon Savings</span>
                                     <span class="text-muted d-block" style="font-size: 10px;" x-text="'(Code: ' + couponCode + ')'"></span>
                                 </div>
-                                <span class="fw-bold align-top" x-text="'- Rs ' + Number(couponDiscount).toFixed(2)"></span>
+                                <span class="fw-bold align-top" x-show="appliedCouponObj && (appliedCouponObj.type === 'free_shipping' || appliedCouponObj.type === 'free_product')" x-text="appliedCouponObj.type === 'free_shipping' ? 'Free Shipping' : 'Free Gift'"></span>
+                                <span class="fw-bold align-top" x-show="appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product'" x-text="'- Rs ' + Number(couponDiscount).toFixed(2)"></span>
                             </div>
 
                             <div class="d-flex justify-content-between fw-medium text-muted" style="font-size: 13px;">
@@ -1185,18 +1196,18 @@
                             <div class="space-y-3">
                                 <template x-for="offer in sortedActiveOffers" :key="offer.id">
                                     <div class="card border-2 rounded-4 transition-all hover-shadow" 
-                                         :class="offer.type === 'bogo' ? 'border-info border-opacity-25 bg-info bg-opacity-10' : (appliedOfferId === offer.id ? 'border-success bg-success bg-opacity-10' : (orderOfferDiscount(offer) > 0 ? 'border-secondary border-opacity-10 bg-body-tertiary cursor-pointer' : 'border-secondary border-opacity-10 bg-body-secondary opacity-75'))" 
-                                         @click="if(offer.type === 'order_discount' && orderOfferDiscount(offer) > 0) appliedOfferId = (appliedOfferId === offer.id) ? 'none' : offer.id">
+                                         :class="['bogo', 'free_product'].includes(offer.type) ? 'border-info border-opacity-25 bg-info bg-opacity-10' : (appliedOfferId === offer.id ? 'border-success bg-success bg-opacity-10' : (orderOfferDiscount(offer) > 0 ? 'border-secondary border-opacity-10 bg-body-tertiary cursor-pointer' : 'border-secondary border-opacity-10 bg-body-secondary opacity-75'))" 
+                                         @click="if(['order_discount', 'category_discount'].includes(offer.type) && orderOfferDiscount(offer) > 0) appliedOfferId = (appliedOfferId === offer.id) ? 'none' : offer.id">
                                         <div class="card-body p-3 d-flex align-items-center justify-content-between gap-3">
                                             <div class="d-flex align-items-center gap-3">
                                                 <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center d-flex flex-column justify-content-center align-items-center" style="min-width: 90px; height: 90px;">
-                                                    <template x-if="offer.type === 'bogo'">
+                                                    <template x-if="['bogo', 'free_product'].includes(offer.type)">
                                                         <div>
                                                             <i class="bi bi-gift-fill text-info fs-3 d-block mb-1"></i>
-                                                            <span class="badge bg-info bg-opacity-10 text-info w-100">BOGO</span>
+                                                            <span class="badge bg-info bg-opacity-10 text-info w-100" x-text="offer.type === 'bogo' ? 'BOGO' : 'GIFT'"></span>
                                                         </div>
                                                     </template>
-                                                    <template x-if="offer.type === 'order_discount'">
+                                                    <template x-if="['order_discount', 'category_discount'].includes(offer.type)">
                                                         <div>
                                                             <h5 class="fw-black text-body-emphasis mb-1" x-text="offer.discount_type === 'percentage' ? parseFloat(offer.value) + '%' : 'Rs ' + parseFloat(offer.value)"></h5>
                                                             <span class="badge bg-primary bg-opacity-10 text-primary w-100">OFF</span>
@@ -1206,7 +1217,7 @@
                                                 
                                                 <div class="ps-2">
                                                     <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                                                        <h6 class="fw-bold mb-0" :class="(appliedOfferId === offer.id || offer.type === 'bogo') ? 'text-body-emphasis' : 'text-body'" x-text="offer.name"></h6>
+                                                        <h6 class="fw-bold mb-0" :class="(appliedOfferId === offer.id || ['bogo', 'free_product'].includes(offer.type)) ? 'text-body-emphasis' : 'text-body'" x-text="offer.name"></h6>
                                                         <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis rounded-pill px-2 py-0.5 small" style="font-size: 0.7rem;" x-text="'Priority: ' + offer.priority"></span>
                                                     </div>
                                                     
@@ -1215,7 +1226,10 @@
                                                         <div x-show="offer.type === 'bogo'">
                                                             <p class="mb-1 small text-muted" x-text="'Buy ' + offer.buy_qty + ' Get ' + offer.get_qty + ' Free on ' + offer.product_name"></p>
                                                         </div>
-                                                        <div x-show="offer.type === 'order_discount'">
+                                                        <div x-show="offer.type === 'free_product'">
+                                                            <p class="mb-1 small text-muted" x-text="'Free Gift: ' + offer.product_name"></p>
+                                                        </div>
+                                                        <div x-show="['order_discount', 'category_discount'].includes(offer.type)">
                                                             <p class="mb-1 small text-muted" x-show="offer.max_discount > 0" x-text="'Max Discount: Rs ' + Number(offer.max_discount).toFixed(2)"></p>
                                                         </div>
                                                         <p class="mb-1 small text-muted" x-show="offer.min_spend > 0" x-text="'Min. Spend: Rs ' + Number(offer.min_spend).toFixed(2)"></p>
@@ -1223,10 +1237,10 @@
                                                     </div>
 
                                                     {{-- Savings/Unlock Status --}}
-                                                    <div x-show="offer.type === 'bogo'">
+                                                    <div x-show="['bogo', 'free_product'].includes(offer.type)">
                                                         <p class="mb-0 small text-info"><i class="bi bi-lightning-charge-fill me-1"></i>Auto-applied to eligible items</p>
                                                     </div>
-                                                    <div x-show="offer.type === 'order_discount'">
+                                                    <div x-show="['order_discount', 'category_discount'].includes(offer.type)">
                                                         <div x-show="orderOfferDiscount(offer) > 0">
                                                             <p class="mb-0 small fw-medium">You save: <span class="text-success" x-text="'Rs ' + Number(orderOfferDiscount(offer)).toFixed(2)"></span></p>
                                                         </div>
@@ -1238,13 +1252,13 @@
                                             </div>
 
                                             <div class="flex-shrink-0">
-                                                {{-- BOGO Badge --}}
-                                                <template x-if="offer.type === 'bogo'">
+                                                {{-- Auto Applied Badge --}}
+                                                <template x-if="['bogo', 'free_product'].includes(offer.type)">
                                                     <span class="badge bg-info bg-opacity-25 text-info-emphasis rounded-pill px-3 py-2 fw-medium">Active</span>
                                                 </template>
                                                 
                                                 {{-- Order Discount Actions --}}
-                                                <template x-if="offer.type === 'order_discount'">
+                                                <template x-if="['order_discount', 'category_discount'].includes(offer.type)">
                                                     <div>
                                                         <template x-if="appliedOfferId === offer.id">
                                                             <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm mx-auto" style="width: 28px; height: 28px;">
