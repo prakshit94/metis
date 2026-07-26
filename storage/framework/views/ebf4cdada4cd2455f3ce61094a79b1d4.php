@@ -18,7 +18,7 @@
             </div>
             
             <div class="modal-body p-4 bg-body-tertiary">
-                <form @submit.prevent="submitForm">
+                <form @submit.prevent="submitForm" autocomplete="off">
                     <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-3" style="z-index: 30;">
                         <div class="card-body p-3">
                             <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">

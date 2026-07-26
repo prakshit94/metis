@@ -95,6 +95,7 @@ document.addEventListener('alpine:init', () => {
                 case 'reschedule': return 'Reschedule Reasons Directory';
                 case 'return': return 'Return Reasons Directory';
                 case 'failure': return 'Delivery Failure Reasons Directory';
+                case 'cancel': return 'Cancellation Reasons Directory';
                 default: return 'Directory';
             }
         },

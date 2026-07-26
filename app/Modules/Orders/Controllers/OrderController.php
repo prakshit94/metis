@@ -11,6 +11,7 @@ use App\Modules\Core\Models\Village;
 use App\Modules\Customers\Models\Party;
 use App\Modules\Orders\Models\Coupon;
 use App\Modules\Orders\Models\DeliveryFailureReason;
+use App\Modules\Orders\Models\CancelReason;
 use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\Offer;
 use App\Modules\Orders\Models\Order;
@@ -289,6 +290,7 @@ class OrderController extends Controller implements HasMiddleware
         $returnReasons = ReturnReason::where('is_active', true)->orderBy('id')->get();
         $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
         $deliveryFailureReasons = DeliveryFailureReason::where('is_active', true)->orderBy('id')->get();
+        $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
         // 7 Day Trends Data
         $trendsQuery = Order::whereDate('order_date', '>=', now()->subDays(6))
@@ -337,7 +339,8 @@ class OrderController extends Controller implements HasMiddleware
             'carriersList',
             'returnReasons',
             'rescheduleReasons',
-            'deliveryFailureReasons'
+            'deliveryFailureReasons',
+            'cancelReasons'
         ));
     }
 
@@ -622,7 +625,7 @@ class OrderController extends Controller implements HasMiddleware
         return response()->json(['success' => true, 'message' => 'Order marked as delivered.']);
     }
 
-    public function cancel(string $id, InventoryService $inventoryService)
+    public function cancel(string $id, Request $request, InventoryService $inventoryService)
     {
         $order = Order::findOrFail($id);
         if (in_array($order->status, ['delivered', 'cancelled', 'returned'], true)) {
@@ -631,6 +634,13 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->cancelOrder($order);
+
+            $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
+            $order->statusLogs()->create([
+                'status' => 'cancelled',
+                'notes' => $reasonText.($request->input('notes') ?? 'Order cancelled.'),
+                'changed_by' => auth()->id(),
+            ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
@@ -640,7 +650,7 @@ class OrderController extends Controller implements HasMiddleware
         return response()->json(['success' => true, 'message' => 'Order cancelled and stock released.']);
     }
 
-    public function markReturned(string $id, InventoryService $inventoryService)
+    public function markReturned(string $id, Request $request, InventoryService $inventoryService)
     {
         $order = Order::findOrFail($id);
         if (! in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
@@ -649,6 +659,13 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->returnOrder($order);
+
+            $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
+            $order->statusLogs()->create([
+                'status' => 'returned',
+                'notes' => $reasonText.($request->input('notes') ?? 'Order returned.'),
+                'changed_by' => auth()->id(),
+            ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
@@ -1105,17 +1122,19 @@ class OrderController extends Controller implements HasMiddleware
         if ($targetStatus === 'pending' && in_array($order->status, ['confirmed', 'processing', 'cancelled', 'ready_to_ship'])) {
             $inventoryService->revertOrderToPending($order);
         } elseif ($targetStatus === 'confirmed' && $order->status === 'processing') {
-            $order->loadMissing('shipments');
-            foreach ($order->shipments as $shipment) {
-                if ($shipment->status === 'pending') {
-                    $shipment->events()->delete();
-                    $shipment->delete();
+            \DB::transaction(function () use ($order) {
+                $order->loadMissing('shipments');
+                foreach ($order->shipments as $shipment) {
+                    if ($shipment->status === 'pending') {
+                        $shipment->events()->delete();
+                        $shipment->delete();
+                    }
                 }
-            }
-            $order->update([
-                'status' => 'confirmed',
-                'updated_by' => auth()->id(),
-            ]);
+                $order->update([
+                    'status' => 'confirmed',
+                    'updated_by' => auth()->id(),
+                ]);
+            });
         } elseif ($targetStatus === 'processing' && $order->status === 'ready_to_ship') {
             $inventoryService->revertOrderToProcessing($order);
         } elseif ($targetStatus === 'ready_to_ship' && in_array($order->status, Order::inTransitStatuses(), true)) {

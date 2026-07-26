@@ -1,9 +1,7 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', '📋 Order Reasons Management'); ?>
+<?php $__env->startSection('page', 'order.reasons'); ?>
 
-@section('title', '📋 Order Reasons Management')
-@section('page', 'order.reasons')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="order-reasons-management" x-data="orderReasonsTable()" x-init="init()">
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
@@ -12,11 +10,11 @@
             <p class="text-muted mb-0">Manage dropdown options for reschedule, return, and delivery failure</p>
         </div>
         <div class="d-flex gap-2">
-            @can('orderreason-create')
+            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orderreason-create')): ?>
             <button type="button" class="btn btn-primary" @click="openCreateModal()">
                 <i class="bi bi-plus-circle me-2"></i>Add Reason
             </button>
-            @endcan
+            <?php endif; ?>
         </div>
     </div>
 
@@ -136,19 +134,19 @@
                         </span>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
-                        @can('orderreason-edit')
+                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orderreason-edit')): ?>
                         <button class="btn btn-sm btn-success" @click="bulkAction('activate')" :disabled="isLoading" title="Activate selected reasons">
                             <i class="bi bi-check-circle me-1"></i>Activate
                         </button>
                         <button class="btn btn-sm btn-warning" @click="bulkAction('deactivate')" :disabled="isLoading" title="Deactivate selected reasons">
                             <i class="bi bi-x-circle me-1"></i>Deactivate
                         </button>
-                        @endcan
-                        @can('orderreason-delete')
+                        <?php endif; ?>
+                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orderreason-delete')): ?>
                         <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" :disabled="isLoading" title="Delete selected reasons">
                             <i class="bi bi-trash me-1"></i>Delete
                         </button>
-                        @endcan
+                        <?php endif; ?>
                         <button class="btn btn-sm btn-outline-secondary" @click="selectedReasons = []" title="Clear selection">
                             <i class="bi bi-x-lg"></i>
                         </button>
@@ -251,7 +249,7 @@
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
-                                            @can('orderreason-edit')
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orderreason-edit')): ?>
                                             <li>
                                                 <a class="dropdown-item" href="#" @click.prevent="openEditModal(r)">
                                                     <i class="bi bi-pencil-square me-2"></i>Edit
@@ -263,15 +261,15 @@
                                                     <span x-text="r.is_active ? 'Deactivate' : 'Activate'"></span>
                                                 </a>
                                             </li>
-                                            @endcan
-                                            @can('orderreason-delete')
+                                            <?php endif; ?>
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orderreason-delete')): ?>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
                                                 <a class="dropdown-item text-danger" href="#" @click.prevent="deleteReason(r)">
                                                     <i class="bi bi-trash me-2"></i>Delete
                                                 </a>
                                             </li>
-                                            @endcan
+                                            <?php endif; ?>
                                         </ul>
                                     </div>
                                 </td>
@@ -349,4 +347,6 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/user/metis/resources/views/order-reasons/index.blade.php ENDPATH**/ ?>

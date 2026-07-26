@@ -6,6 +6,7 @@ use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\DeliveryFailureReason;
 use App\Modules\Orders\Models\RescheduleReason;
 use App\Modules\Orders\Models\ReturnReason;
+use App\Modules\Orders\Models\CancelReason;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -33,6 +34,7 @@ class OrderReasonController extends Controller implements HasMiddleware
             'reschedule' => RescheduleReason::class,
             'return' => ReturnReason::class,
             'failure' => DeliveryFailureReason::class,
+            'cancel' => CancelReason::class,
             default => null,
         };
     }

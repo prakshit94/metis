@@ -663,9 +663,11 @@
                                         <li><a class="dropdown-item" href="#" @click.prevent="viewOrder(order)">
                                             <i class="bi bi-eye me-2"></i>View Details
                                         </a></li>
-                                        <li><a class="dropdown-item" href="#" @click.prevent="editOrder(order)">
-                                            <i class="bi bi-pencil-square me-2"></i>Edit Order
-                                        </a></li>
+                                        <template x-if="!['cancelled', 'delivered', 'returned'].includes(order.status)">
+                                            <li><a class="dropdown-item" href="#" @click.prevent="editOrder(order)">
+                                                <i class="bi bi-pencil-square me-2"></i>Edit Order
+                                            </a></li>
+                                        </template>
                                         
                                         <!-- Context Actions -->
                                         <template x-if="order.status === 'pending'">
@@ -1630,6 +1632,49 @@
             <div class="modal-footer border-top-0 pt-0">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-warning" @click="submitReturn()">Initiate Return</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ═══════════════════════ Cancel Order Modal ═══════════════════════════ -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="cancelOrderModalLabel">
+                    <i class="bi bi-x-circle me-2 text-danger"></i>Cancel Order <span class="text-danger" x-text="cancelModalOrder?.orderNumber"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 shadow-sm rounded-3">
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 me-2 text-danger"></i>
+                        <h6 class="fw-bold text-danger mb-0">Warning</h6>
+                    </div>
+                    <div class="small ms-4 ps-1 text-danger-emphasis">
+                        Are you sure you want to cancel this order? This action will release inventory.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Reason for Cancellation <span class="text-danger">*</span></label>
+                    <select class="form-select" x-model="cancelReason">
+                        <option value="" disabled selected>Select a reason...</option>
+                        <?php $__currentLoopData = $cancelReasons; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $reason): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($reason->reason); ?>"><?php echo e($reason->reason); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Internal Notes (Optional)</label>
+                    <textarea class="form-control" rows="2" x-model="cancelNotes" placeholder="Any additional notes..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" @click="submitCancelOrder()">Confirm Cancel</button>
             </div>
         </div>
     </div>

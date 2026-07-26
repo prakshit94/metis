@@ -162,6 +162,11 @@ document.addEventListener('alpine:init', () => {
     scheduleReason: '',
     confirmNotes: '',
 
+    // Cancel Modal state
+    cancelModalOrder: null,
+    cancelReason: '',
+    cancelNotes: '',
+
     showStatusDropdown: false,
 
     // Multi-select dropdown states
@@ -1047,26 +1052,31 @@ document.addEventListener('alpine:init', () => {
     },
 
     async cancelOrder(order) {
-      const confirmed = await Swal.fire({
-        title: 'Cancel Order?',
-        text: `Are you sure you want to cancel order ${order.orderNumber}? This will release inventory.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, cancel it',
-        cancelButtonText: 'Cancel',
-        customClass: {
-          confirmButton: 'btn btn-danger me-2',
-          cancelButton: 'btn btn-secondary',
-          popup: 'rounded-3 shadow-lg',
-          title: 'fs-4 fw-bold'
-        },
-        buttonsStyling: false
-      });
-      if (!confirmed.isConfirmed) return;
+      this.cancelModalOrder = order;
+      this.cancelReason = '';
+      this.cancelNotes = '';
+      getModal('#cancelOrderModal')?.show();
+    },
 
+    async submitCancelOrder() {
+      if (!this.cancelReason) {
+        showToast('Please select a cancellation reason.', 'warning');
+        return;
+      }
+      
       try {
-        const res = await apiFetch(`/orders/${order.id}/cancel`, { method: 'POST' });
+        const payload = {
+          reason: this.cancelReason,
+          notes: this.cancelNotes
+        };
+        
+        const res = await apiFetch(`/orders/${this.cancelModalOrder.id}/cancel`, { 
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        
         showToast(res.message || 'Order cancelled successfully.');
+        getModal('#cancelOrderModal')?.hide();
         this.loadOrders();
       } catch (err) {
         showToast(err.message, 'danger');
@@ -1082,6 +1092,7 @@ document.addEventListener('alpine:init', () => {
         case 'dispatched':
         case 'shipped': options = { ready_to_ship: 'Ready to Ship' }; break;
         case 'delivered': options = { dispatched: 'Dispatched' }; break;
+        case 'cancelled': options = { pending: 'Pending' }; break;
         default:
           showToast('Cannot revert from this status.', 'warning');
           return;
