@@ -13,17 +13,30 @@
     
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
-            <h1 class="h3 mb-1">
+            <h1 class="h3 mb-1 d-flex align-items-center">
                 <template x-if="isConfirmMode"><i class="bi bi-check-circle me-2"></i> Confirm Order</template>
                 <template x-if="!isConfirmMode"><i class="bi bi-cart-check me-2"></i> <span x-text="editingOrderId ? 'Edit Order' : 'Create New Order'"></span></template>
+                <template x-if="editingOrderId && originalOrder">
+                    <span class="ms-2 text-primary">#<span x-text="originalOrder.order_no"></span></span>
+                </template>
             </h1>
-            <p class="text-muted mb-0">
+            <div class="text-muted mb-0 d-flex align-items-center flex-wrap gap-2 mt-2">
                 <span x-show="!editingOrderId && !isConfirmMode" x-cloak>Select customer, add products, and checkout.</span>
-                <span x-show="editingOrderId && !isConfirmMode" x-cloak>Edit an existing order.</span>
-                <span x-show="isConfirmMode" x-cloak>Review order details and confirm or schedule follow-up.</span>
-                <span class="badge text-bg-warning ms-2" x-show="editingOrderId && !isConfirmMode" x-cloak>Edit Mode</span>
-                <span class="badge text-bg-info ms-2" x-show="isConfirmMode" x-cloak>Confirmation Mode</span>
-            </p>
+                <template x-if="editingOrderId && originalOrder">
+                    <div class="d-flex align-items-center flex-wrap gap-3" x-cloak>
+                        <div>
+                            <span class="badge text-bg-warning" x-show="!isConfirmMode">Edit Mode</span>
+                            <span class="badge text-bg-info" x-show="isConfirmMode">Confirmation Mode</span>
+                        </div>
+                        <div class="vr bg-secondary opacity-25"></div>
+                        <div><i class="bi bi-tag me-1"></i><strong>Status:</strong> <span class="text-capitalize ms-1" x-text="(originalOrder.status || '').replace(/_/g, ' ')"></span></div>
+                        <div class="vr bg-secondary opacity-25"></div>
+                        <div><i class="bi bi-calendar3 me-1"></i><strong>Date:</strong> <span class="ms-1" x-text="new Date(originalOrder.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year:'numeric' })"></span></div>
+                        <div class="vr bg-secondary opacity-25"></div>
+                        <div><i class="bi bi-currency-rupee me-1"></i><strong>Net Total:</strong> <span class="ms-1" x-text="parseFloat(originalOrder.net_amount).toFixed(2)"></span></div>
+                    </div>
+                </template>
+            </div>
         </div>
         <div class="d-flex gap-2">
             <template x-if="editingOrderId || isConfirmMode">
@@ -57,7 +70,7 @@
                     <div class="card-body p-4 pt-0 row">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <template x-if="originalOrder.scheduled_confirmation_date">
-                                <div class="alert bg-white shadow-sm mb-0 rounded-3 border-0">
+                                <div class="alert bg-body shadow-sm mb-0 rounded-3 border-0">
                                     <div class="d-flex align-items-center mb-1">
                                         <i class="bi bi-calendar-event fs-5 me-2 text-info"></i>
                                         <h6 class="fw-bold text-info-emphasis mb-0">Currently Scheduled</h6>
@@ -2393,50 +2406,15 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             });
         },
 
-        async submitConfirmation() {
+        async saveOrderData() {
             this.formErrors = [];
-            if (this.confirmAction === 'schedule') {
-                if (!this.scheduleReason) this.formErrors.push('Please provide a reason for rescheduling.');
-                if (!this.scheduledConfirmDate) this.formErrors.push('Please select a scheduled date.');
-            }
-            if (this.formErrors.length > 0) return;
+            if (!this.partyId) { this.formErrors.push('Please select a customer.'); return false; }
+            if (!this.warehouseId) { this.formErrors.push('Please select a warehouse.'); return false; }
+            if (!this.shippingAddressId) { this.formErrors.push('Please select a shipping address.'); return false; }
+            if (!this.sameAsShipping && !this.billingAddressId) { this.formErrors.push('Please select a billing address.'); return false; }
+            if (this.cart.length === 0) { this.formErrors.push('Cart is empty.'); return false; }
+            if (this.isDraft && !this.futureOrderDate) { this.formErrors.push('Please set future order date.'); return false; }
 
-            this.placing = true;
-            try {
-                const payload = {
-                    action: this.confirmAction,
-                    reason: this.scheduleReason,
-                    scheduled_date: this.scheduledConfirmDate,
-                    notes: this.confirmNotes,
-                    _token: '<?php echo e(csrf_token()); ?>'
-                };
-                
-                const response = await fetch(`/orders/${this.editingOrderId}/confirm`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.error || 'Failed to confirm order');
-                
-                window.location.href = '<?php echo e(route("orders")); ?>';
-            } catch (error) {
-                this.formErrors.push(error.message);
-                this.placing = false;
-            }
-        },
-
-        async placeOrder() {
-            this.formErrors = [];
-            if (!this.partyId) { this.formErrors.push('Please select a customer.'); return; }
-            if (!this.warehouseId) { this.formErrors.push('Please select a warehouse.'); return; }
-            if (!this.shippingAddressId) { this.formErrors.push('Please select a shipping address.'); return; }
-            if (!this.sameAsShipping && !this.billingAddressId) { this.formErrors.push('Please select a billing address.'); return; }
-            if (this.cart.length === 0) { this.formErrors.push('Cart is empty.'); return; }
-            if (this.isDraft && !this.futureOrderDate) { this.formErrors.push('Please set future order date.'); return; }
-
-            this.placing = true;
             try {
                 const payload = {
                     type: this.orderType,
@@ -2458,13 +2436,91 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     use_wallet_balance: this.useWalletBalance ? 1 : 0,
                 };
                 const url = this.editingOrderId ? `/orders/${this.editingOrderId}` : '/orders';
-                const res = await fetch(url, { method: this.editingOrderId ? 'PUT' : 'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}, body:JSON.stringify(payload) });
+                const res = await fetch(url, { 
+                    method: this.editingOrderId ? 'PUT' : 'POST', 
+                    headers: {
+                        'Content-Type':'application/json',
+                        'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,
+                        'Accept':'application/json'
+                    }, 
+                    body:JSON.stringify(payload) 
+                });
+                
                 const json = await res.json();
                 if (!res.ok) {
                     this.formErrors = Object.values(json.errors||{}).flat();
                     if (!this.formErrors.length && json.message) this.formErrors.push(json.message);
+                    return false;
+                }
+                
+                return true;
+            } catch(e) {
+                this.formErrors.push('An unexpected error occurred while saving the order data.');
+                return false;
+            }
+        },
+
+        async submitConfirmation() {
+            this.formErrors = [];
+            if (this.confirmAction === 'schedule') {
+                if (!this.scheduleReason) this.formErrors.push('Please provide a reason for rescheduling.');
+                if (!this.scheduledConfirmDate) this.formErrors.push('Please select a scheduled date.');
+            }
+            if (this.formErrors.length > 0) return;
+
+            this.placing = true;
+            try {
+                // FIRST: Save the order changes (if any)
+                const isSaved = await this.saveOrderData();
+                if (!isSaved) return; // Halt if save failed
+
+                // SECOND: Confirm the order
+                const payload = {
+                    action: this.confirmAction,
+                    reason: this.scheduleReason,
+                    scheduled_date: this.scheduledConfirmDate,
+                    notes: this.confirmNotes
+                };
+                
+                const response = await fetch(`/orders/${this.editingOrderId}/confirm`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    this.formErrors = Object.values(data.errors || {}).flat();
+                    if (!this.formErrors.length && data.error) this.formErrors.push(data.error);
+                    if (!this.formErrors.length && data.message) this.formErrors.push(data.message);
+                    if (!this.formErrors.length) this.formErrors.push('Failed to confirm order.');
                     return;
                 }
+
+                let finalMessage = this.confirmAction === 'schedule' 
+                    ? 'Order updated and scheduled for follow-up!' 
+                    : 'Order updated and successfully confirmed!';
+                    
+                window.location.href = '<?php echo e(route("orders")); ?>?success=' + encodeURIComponent(finalMessage);
+            } catch (error) {
+                this.formErrors.push(error.message);
+            } finally {
+                this.placing = false;
+            }
+        },
+
+        async placeOrder() {
+            this.placing = true;
+            try {
+                const isSaved = await this.saveOrderData();
+                if (!isSaved) return;
+                
                 localStorage.removeItem('ecommerce_create_order_cart');
                 this.cart = [];
                 const successMessage = this.editingOrderId ? 'Order updated successfully!' : 'Order placed successfully!';
@@ -2479,8 +2535,11 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     url.searchParams.delete('step');
                     window.history.pushState({}, '', url);
                 }
-            } catch(e) { this.formErrors.push('An unexpected error occurred.'); }
-            finally { this.placing = false; }
+            } catch(e) { 
+                this.formErrors.push('An unexpected error occurred.'); 
+            } finally { 
+                this.placing = false; 
+            }
         },
     };
 }

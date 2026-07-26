@@ -564,80 +564,6 @@ class InventoryService
     }
 
     /**
-     * Ship a confirmed order.
-     */
-    public function shipOrder(Order $order, ?string $carrierName = null, ?string $trackingNo = null): void
-    {
-        DB::transaction(function () use ($order) {
-            $order = Order::with('items')->lockForUpdate()->findOrFail($order->id);
-
-            if (! in_array($order->status, ['confirmed', 'processing'])) {
-                throw ValidationException::withMessages([
-                    'status' => 'Only confirmed or processing orders can be shipped.',
-                ]);
-            }
-
-            if (! $order->warehouse_id) {
-                throw ValidationException::withMessages([
-                    'warehouse_id' => 'Order must have a warehouse assigned.',
-                ]);
-            }
-
-            foreach ($order->items as $item) {
-                $productId = (int) $item->product_id;
-                $warehouseId = (int) $order->warehouse_id;
-                $qty = (float) $item->quantity;
-
-                if ($order->type === 'sale') {
-                    $stock = $this->getStockForUpdate($productId, $warehouseId);
-
-                    if ((float) $stock->reserved_qty < $qty) {
-                        throw ValidationException::withMessages([
-                            'quantity' => "Reserved stock mismatch for product ID {$productId}.",
-                        ]);
-                    }
-
-                    $product = Product::find($productId);
-                    if (! $product?->allow_overselling && (float) $stock->quantity < $qty) {
-                        throw ValidationException::withMessages([
-                            'quantity' => "Insufficient physical stock for product ID {$productId}.",
-                        ]);
-                    }
-
-                    $stock->reserved_qty = (float) $stock->reserved_qty - $qty;
-                    $stock->quantity = (float) $stock->quantity - $qty;
-                    $stock->dispatched_qty = (float) $stock->dispatched_qty + $qty;
-                    $stock->save();
-
-                    StockReservation::where('order_id', $order->id)
-                        ->where('product_id', $productId)
-                        ->where('warehouse_id', $warehouseId)
-                        ->where('status', 'active')
-                        ->orderBy('id')
-                        ->first()
-                        ?->update(['status' => 'used']);
-
-                    $this->logMovement($productId, $warehouseId, $qty, 'out', Order::class, $order->id);
-
-                } else {
-                    // Purchase order → receive stock into warehouse
-                    $stock = $this->getStockForUpdate($productId, $warehouseId);
-                    $stock->quantity = (float) $stock->quantity + $qty;
-                    $stock->save();
-
-                    $this->logMovement($productId, $warehouseId, $qty, 'in', Order::class, $order->id);
-                }
-            }
-
-            $order->update(['status' => 'dispatched', 'updated_by' => auth()->id()]);
-
-            foreach ($order->items as $item) {
-                $this->syncProductStatus((int) $item->product_id);
-            }
-        }, 3);
-    }
-
-    /**
      * Cancel an order.
      */
     public function cancelOrder(Order $order): void
@@ -684,6 +610,11 @@ class InventoryService
             $invoice = $order->invoices()->latest()->first();
             if ($invoice && $invoice->status !== 'cancelled') {
                 $invoice->update(['status' => 'cancelled']);
+            }
+
+            $shipment = $order->shipments()->latest()->first();
+            if ($shipment && $shipment->status !== 'cancelled') {
+                $shipment->update(['status' => 'cancelled']);
             }
 
             foreach ($order->items as $item) {
