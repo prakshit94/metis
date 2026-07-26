@@ -19,7 +19,7 @@
             </div>
             
             <div class="modal-body p-4 bg-body-tertiary">
-                <form id="addCustomerForm" @submit.prevent="submitForm">
+                <form id="addCustomerForm" @submit.prevent="submitForm" autocomplete="off">
                     <div class="row g-4">
                         {{-- LEFT COLUMN --}}
                         <div class="col-lg-6">
