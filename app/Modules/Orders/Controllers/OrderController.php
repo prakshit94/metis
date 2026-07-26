@@ -1145,7 +1145,7 @@ class OrderController extends Controller implements HasMiddleware
             return [];
         }
 
-        if ($user->hasAnyRole(['Super Admin', 'Admin']) || ($user->can('view_all_order') || $user->can('view-all-data')) || $user->can('orders.view')) {
+        if ($user->hasAnyRole(['Super Admin', 'Admin']) || ($user->can('view_all_order') || $user->can('view-all-data'))) {
             return ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'];
         }
 

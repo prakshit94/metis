@@ -84,7 +84,7 @@ document.addEventListener('alpine:init', () => {
     
     // Filters state
     searchQuery: '',
-    statusFilter: '',
+    statusFilter: [],
     dateFilter: '',
     productFilter: '',
     fulfillmentFilter: '',
@@ -137,6 +137,7 @@ document.addEventListener('alpine:init', () => {
     villagesList: [],
     carriersList: [],
     allowedFilterStatuses: [],
+    allFilterStatuses: ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'],
 
     // Modal data state
     selectedOrder: null,
@@ -160,6 +161,8 @@ document.addEventListener('alpine:init', () => {
     scheduledConfirmDate: '',
     scheduleReason: '',
     confirmNotes: '',
+
+    showStatusDropdown: false,
 
     // Multi-select dropdown states
     showStateDropdown: false,
@@ -196,7 +199,10 @@ document.addEventListener('alpine:init', () => {
     },
 
     toggleFilter(type, value) {
-        if (type === 'state') {
+        if (type === 'status') {
+            if (this.statusFilter.includes(value)) this.statusFilter = this.statusFilter.filter(v => v !== value);
+            else this.statusFilter.push(value);
+        } else if (type === 'state') {
             if (this.stateFilter.includes(value)) this.stateFilter = this.stateFilter.filter(v => v !== value);
             else this.stateFilter.push(value);
             this.districtFilter = [];
@@ -219,7 +225,11 @@ document.addEventListener('alpine:init', () => {
     },
 
     toggleAllFilter(type) {
-        if (type === 'state') {
+        if (type === 'status') {
+            let list = this.allFilterStatuses || [];
+            if (this.statusFilter.length === list.length) this.statusFilter = [];
+            else this.statusFilter = [...list];
+        } else if (type === 'state') {
             let list = Object.values(this.statesList || {});
             if (this.stateFilter.length === list.length) this.stateFilter = [];
             else this.stateFilter = [...list];
@@ -246,6 +256,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     init() {
+      this.statusFilter = [...(this.allowedFilterStatuses || [])];
       this.loadOrders();
       
       const params = new URLSearchParams(window.location.search);
@@ -300,7 +311,7 @@ document.addEventListener('alpine:init', () => {
       const params = new URLSearchParams();
       
       if (this.searchQuery) params.append('search', this.searchQuery);
-      if (this.statusFilter) params.append('status', this.statusFilter);
+      if (this.statusFilter.length) params.append('status', this.statusFilter.join(','));
       if (this.productFilter) params.append('product', this.productFilter);
       if (this.fulfillmentFilter) params.append('fulfillment', this.fulfillmentFilter);
       if (this.stateFilter.length) params.append('state', this.stateFilter.join(','));
@@ -698,7 +709,7 @@ document.addEventListener('alpine:init', () => {
 
     clearFilters() {
       this.searchQuery = '';
-      this.statusFilter = '';
+      this.statusFilter = [...(this.allowedFilterStatuses || [])];
       this.dateFilter = '';
       this.productFilter = '';
       this.fulfillmentFilter = '';
@@ -1331,7 +1342,7 @@ document.addEventListener('alpine:init', () => {
     exportOrders() {
       window.open(`/orders/export?${new URLSearchParams({
         search: this.searchQuery,
-        status: this.statusFilter,
+        status: this.statusFilter.length ? this.statusFilter.join(',') : '',
         product: this.productFilter,
         fulfillment: this.fulfillmentFilter,
         state: this.stateFilter.join(','),

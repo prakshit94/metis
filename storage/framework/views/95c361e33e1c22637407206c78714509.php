@@ -182,15 +182,39 @@
                     </div>
                     
                     <!-- Status Filter -->
-                    <select class="form-select form-select-sm" 
-                            x-model="statusFilter" 
-                            @change="filterOrders()"
-                            style="width: 150px;">
-                        <option value="">All Statuses</option>
-                        <template x-for="status in allowedFilterStatuses" :key="status">
-                            <option :value="status" x-text="status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')"></option>
-                        </template>
-                    </select>
+                    <div class="position-relative" @click.away="showStatusDropdown = false" :style="showStatusDropdown ? 'z-index: 1050;' : ''">
+                        <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: pointer; width: 150px;" @click="showStatusDropdown = !showStatusDropdown">
+                            <template x-if="statusFilter.length === 0">
+                                <span class="text-body-secondary" style="font-size: 13px;">All Statuses</span>
+                            </template>
+                            <template x-if="statusFilter.length > 0">
+                                <div class="d-flex flex-wrap align-items-center gap-1 w-100" style="padding-right: 15px;">
+                                    <template x-for="status in statusFilter.slice(0, 1)" :key="status">
+                                        <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                                            <span x-text="status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')" style="font-size: 11px;"></span>
+                                            <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('status', status)" style="font-size: 13px;"></i>
+                                        </div>
+                                    </template>
+                                    <template x-if="statusFilter.length > 1">
+                                        <span class="badge bg-secondary rounded-pill" style="font-size: 11px;" x-text="'+' + (statusFilter.length - 1)"></span>
+                                    </template>
+                                </div>
+                            </template>
+                            <i class="bi bi-chevron-down position-absolute text-muted" style="right: 8px; font-size: 12px; top: 50%; transform: translateY(-50%);"></i>
+                        </div>
+                        <div x-show="showStatusDropdown" class="position-absolute bg-body border rounded shadow-lg mt-1" style="max-height: 250px; overflow-y: auto; z-index: 1050; min-width: 180px; right: 0;">
+                            <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('status')">
+                                <input type="checkbox" :checked="statusFilter.length > 0 && statusFilter.length === allFilterStatuses.length" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                            </div>
+                            <template x-for="status in allFilterStatuses" :key="status">
+                                <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('status', status)">
+                                    <input type="checkbox" :checked="statusFilter.includes(status)" class="me-2" style="cursor: pointer;">
+                                    <span style="font-size: 12px;" x-text="status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
                     
                     <!-- Date Range -->
                     <select class="form-select form-select-sm" 
