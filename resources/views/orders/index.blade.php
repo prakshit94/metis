@@ -1252,7 +1252,7 @@
                                                                 <p class="text-muted mb-0" style="font-size: 0.75rem;" x-text="formatDateTime(log.created_at)"></p>
                                                                 <p class="text-secondary small mt-1 lh-sm mb-0" x-show="log.notes" x-text="log.notes"></p>
                                                                 <p class="text-secondary opacity-75" style="font-size: 0.7rem; margin-top: 2px;" x-show="log.user">
-                                                                    <i class="bi bi-person me-1"></i><span x-text="log.user.firstname + ' ' + (log.user.lastname || '')"></span>
+                                                                    <i class="bi bi-person me-1"></i><span x-text="log.user.name || (log.user.first_name + ' ' + (log.user.last_name || ''))"></span>
                                                                 </p>
                                                             </div>
                                                         </div>
