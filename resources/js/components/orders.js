@@ -813,13 +813,14 @@ document.addEventListener('alpine:init', () => {
     // ─── Lifecycle Actions ───────────────────────────────────────────────────
     
     confirmOrder(order) {
-      this.confirmModalOrder = order;
-      this.confirmAction = 'now';
-      this.scheduledConfirmDate = '';
-      this.scheduleReason = '';
-      this.confirmNotes = '';
-      const modal = getModal('#confirmOrderModal');
-      if (modal) modal.show();
+      if (!order) return;
+      const query = new URLSearchParams();
+      query.set('order_id', order.id);
+      if (order.partyId || order.original?.party_id) {
+          query.set('customer_id', order.partyId || order.original?.party_id);
+      }
+      query.set('step', 'confirm');
+      window.location.href = `/orders/create?${query.toString()}`;
     },
 
     async submitConfirmOrder() {

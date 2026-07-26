@@ -13,17 +13,22 @@
     
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
-            <h1 class="h3 mb-1"><i class="bi bi-cart-check me-2"></i> Create New Order</h1>
+            <h1 class="h3 mb-1">
+                <template x-if="isConfirmMode"><i class="bi bi-check-circle me-2"></i> Confirm Order</template>
+                <template x-if="!isConfirmMode"><i class="bi bi-cart-check me-2"></i> <span x-text="editingOrderId ? 'Edit Order' : 'Create New Order'"></span></template>
+            </h1>
             <p class="text-muted mb-0">
-                <span x-show="!editingOrderId" x-cloak>Select customer, add products, and checkout.</span>
-                <span x-show="editingOrderId" x-cloak>Edit an existing order.</span>
-                <span class="badge text-bg-warning ms-2" x-show="editingOrderId" x-cloak>Edit Mode</span>
+                <span x-show="!editingOrderId && !isConfirmMode" x-cloak>Select customer, add products, and checkout.</span>
+                <span x-show="editingOrderId && !isConfirmMode" x-cloak>Edit an existing order.</span>
+                <span x-show="isConfirmMode" x-cloak>Review order details and confirm or schedule follow-up.</span>
+                <span class="badge text-bg-warning ms-2" x-show="editingOrderId && !isConfirmMode" x-cloak>Edit Mode</span>
+                <span class="badge text-bg-info ms-2" x-show="isConfirmMode" x-cloak>Confirmation Mode</span>
             </p>
         </div>
         <div class="d-flex gap-2">
-            <template x-if="editingOrderId">
+            <template x-if="editingOrderId || isConfirmMode">
                 <a href="<?php echo e(route('orders')); ?>" class="btn btn-outline-danger shadow-sm">
-                    <i class="bi bi-x-circle me-1"></i> Cancel Edit Mode
+                    <i class="bi bi-x-circle me-1"></i> <span x-text="isConfirmMode ? 'Cancel Confirmation' : 'Cancel Edit Mode'"></span>
                 </a>
             </template>
             <button type="button" class="btn btn-primary shadow-sm" @click="$dispatch('open-call-tagging-modal', {customerId: customerDetails ? customerDetails.id : null})">
@@ -43,6 +48,66 @@
 
     <div @customer-updated.window="loadAddresses()" @toggle-cart-sidebar.window="isCartSidebarOpen = !isCartSidebarOpen" class="row g-4">
         <div :class="isCartSidebarOpen ? 'col-xl-8' : 'col-xl-12'" style="transition: all 0.3s ease;">
+            
+            <template x-if="isConfirmMode && originalOrder">
+                <div class="card shadow-sm border-0 mb-4 bg-info bg-opacity-10 border-info border-opacity-25">
+                    <div class="card-header bg-transparent border-bottom-0 py-3 px-4">
+                        <h5 class="mb-0 fw-bold text-info-emphasis"><i class="bi bi-info-circle me-2"></i>Confirmation Details</h5>
+                    </div>
+                    <div class="card-body p-4 pt-0 row">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <template x-if="originalOrder.scheduled_confirmation_date">
+                                <div class="alert bg-white shadow-sm mb-0 rounded-3 border-0">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="bi bi-calendar-event fs-5 me-2 text-info"></i>
+                                        <h6 class="fw-bold text-info-emphasis mb-0">Currently Scheduled</h6>
+                                    </div>
+                                    <div class="small ms-4 ps-1 text-body">
+                                        <div class="mb-1"><strong class="text-body-emphasis">Date:</strong> <span class="fw-medium text-body" x-text="new Date(originalOrder.scheduled_confirmation_date).toLocaleString('en-IN', { day: '2-digit', month: 'short', year:'numeric', hour: '2-digit', minute:'2-digit', hour12: true })"></span></div>
+                                        <div><strong class="text-body-emphasis">Previous Attempts:</strong> <span class="badge bg-warning text-dark ms-1" x-text="originalOrder.confirmation_attempts || 0"></span></div>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="!originalOrder.scheduled_confirmation_date">
+                                <div class="text-muted small fst-italic">No future confirmation scheduled.</div>
+                            </template>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <template x-if="originalOrder.status_logs && originalOrder.status_logs.length > 0">
+                                <div>
+                                    <h6 class="fw-bold mb-3 text-body-emphasis border-bottom border-info border-opacity-25 pb-2">
+                                        <i class="bi bi-clock-history me-2"></i>Status History
+                                    </h6>
+                                    <div class="position-relative ms-2 ps-3 border-start border-info border-opacity-50 border-2" style="max-height: 200px; overflow-y: auto;">
+                                        <template x-for="log in originalOrder.status_logs" :key="log.id">
+                                            <div class="position-relative mb-3">
+                                                <div class="position-absolute bg-info rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <p class="fw-bold text-body-emphasis mb-0 small text-capitalize" x-text="log.status.replace(/_/g, ' ')"></p>
+                                                        <p class="text-muted mb-0" style="font-size: 0.75rem;">
+                                                            <span x-text="new Date(log.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year:'numeric', hour: '2-digit', minute:'2-digit', hour12: true })"></span>
+                                                            <template x-if="log.user">
+                                                                <span> &bull; by <span x-text="log.user.name"></span></span>
+                                                            </template>
+                                                        </p>
+                                                        <p class="text-secondary small mt-1 lh-sm mb-0" x-show="log.notes" x-text="log.notes"></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="!originalOrder.status_logs || originalOrder.status_logs.length === 0">
+                                <div class="text-muted small fst-italic">No status history available.</div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
             <div id="customer-workspace" class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                     <div>
@@ -858,7 +923,45 @@
                         </div>
 
                         
-                        <button type="button" @click.prevent="placeOrder()" :disabled="placing || cart.length === 0 || !partyId || !warehouseId"
+                        <div x-show="isConfirmMode" x-cloak class="mb-4 bg-info bg-opacity-10 border border-info border-opacity-25 rounded-4 p-3 shadow-sm">
+                            <h6 class="fw-bold text-info-emphasis mb-3"><i class="bi bi-check-circle-fill me-2"></i>Confirmation Options</h6>
+                            
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="confirmAction" id="actionConfirmNow" value="now" x-model="confirmAction">
+                                <label class="form-check-label fw-semibold text-body-emphasis" for="actionConfirmNow">Confirm Immediately</label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="confirmAction" id="actionSchedule" value="schedule" x-model="confirmAction">
+                                <label class="form-check-label fw-semibold text-body-emphasis" for="actionSchedule">Schedule for Future Confirmation</label>
+                            </div>
+                            
+                            <div x-show="confirmAction === 'schedule'" x-cloak x-transition class="mb-3">
+                                <label class="form-label fw-semibold small text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Reason for Reschedule <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm mb-2" x-model="scheduleReason">
+                                    <option value="" disabled selected>Select a reason...</option>
+                                    <template x-for="reason in rescheduleReasons" :key="reason.id">
+                                        <option :value="reason.reason" x-text="reason.reason"></option>
+                                    </template>
+                                </select>
+                                
+                                <label class="form-label fw-semibold small text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Scheduled Date <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control form-control-sm" x-model="scheduledConfirmDate" :min="new Date().toISOString().slice(0,16)">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Internal Notes (Optional)</label>
+                                <textarea class="form-control form-control-sm" rows="2" x-model="confirmNotes" placeholder="Any additional notes..."></textarea>
+                            </div>
+                            
+                            <button type="button" @click.prevent="submitConfirmation()" :disabled="placing || cart.length === 0 || !partyId || !warehouseId || (confirmAction === 'schedule' && (!scheduleReason || !scheduledConfirmDate))"
+                                class="btn btn-info text-white w-100 py-3 fw-bold text-uppercase shadow-sm position-relative overflow-hidden" style="letter-spacing: 1px;">
+                                <span x-show="placing" class="spinner-border spinner-border-sm me-2"></span>
+                                <i x-show="!placing" class="bi bi-check2-all me-2 fs-5 align-middle"></i>
+                                <span x-text="confirmAction === 'schedule' ? 'Save Schedule' : 'Submit Confirmation'" class="align-middle"></span>
+                            </button>
+                        </div>
+                        
+                        <button x-show="!isConfirmMode" type="button" @click.prevent="placeOrder()" :disabled="placing || cart.length === 0 || !partyId || !warehouseId"
                             class="btn btn-primary w-100 py-3 fw-bold text-uppercase shadow-sm position-relative overflow-hidden" style="letter-spacing: 1px;">
                             <span x-show="placing" class="spinner-border spinner-border-sm me-2"></span>
                             <i x-show="!placing" class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
@@ -1671,6 +1774,14 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         bottomTab: 'history',
         
         expandedOrderId: null,
+        
+        isConfirmMode: new URLSearchParams(window.location.search).get('step') === 'confirm',
+        confirmAction: 'now',
+        scheduleReason: '',
+        scheduledConfirmDate: '',
+        confirmNotes: '',
+        rescheduleReasons: <?php echo json_encode($rescheduleReasons ?? [], 15, 512) ?>,
+        originalOrder: window.__INITIAL_ORDER_TO_EDIT__ || null,
 
         async init() {
             this.searchProducts();
@@ -2280,6 +2391,40 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 const tax = this.lineTotal(item) * ((parseFloat(item.taxRate)||0)/100);
                 return { product_id: item.id, quantity: item.quantity, unit_price: item.price, discount_amount: parseFloat(disc.toFixed(2)), tax_amount: parseFloat(tax.toFixed(2)), total_amount: parseFloat(this.lineTotal(item).toFixed(2)) };
             });
+        },
+
+        async submitConfirmation() {
+            this.formErrors = [];
+            if (this.confirmAction === 'schedule') {
+                if (!this.scheduleReason) this.formErrors.push('Please provide a reason for rescheduling.');
+                if (!this.scheduledConfirmDate) this.formErrors.push('Please select a scheduled date.');
+            }
+            if (this.formErrors.length > 0) return;
+
+            this.placing = true;
+            try {
+                const payload = {
+                    action: this.confirmAction,
+                    reason: this.scheduleReason,
+                    scheduled_date: this.scheduledConfirmDate,
+                    notes: this.confirmNotes,
+                    _token: '<?php echo e(csrf_token()); ?>'
+                };
+                
+                const response = await fetch(`/orders/${this.editingOrderId}/confirm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Failed to confirm order');
+                
+                window.location.href = '<?php echo e(route("orders")); ?>';
+            } catch (error) {
+                this.formErrors.push(error.message);
+                this.placing = false;
+            }
         },
 
         async placeOrder() {

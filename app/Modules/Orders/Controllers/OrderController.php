@@ -381,6 +381,7 @@ class OrderController extends Controller implements HasMiddleware
                 'billingAddress.village.services',
                 'appliedOffer:id,name,discount_type,value',
                 'creator:id,first_name,last_name,name',
+                'statusLogs.user',
             ])->find(request()->integer('order_id'));
 
             if ($initialOrder && ! $initialCustomer) {
@@ -403,8 +404,9 @@ class OrderController extends Controller implements HasMiddleware
 
         $hideSidebar = true;
         $lockSearch = true;
+        $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
 
-        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder'));
+        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons'));
     }
 
     public function store(\App\Modules\Orders\Requests\StoreOrderRequest $request, OrderService $orderService)
