@@ -883,9 +883,9 @@
         <div class="card-header bg-body-tertiary border-bottom-0 p-3 p-lg-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'history' ? 'btn-primary border-primary' : 'btn-light text-body-secondary'" @click="bottomTab = 'history'; expandedOrderId = null">Order history</button>
-                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'future' ? 'btn-primary border-primary' : 'btn-light text-body-secondary'" @click="bottomTab = 'future'; expandedOrderId = null">Future Orders</button>
-                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'tags' ? 'btn-primary border-primary' : 'btn-light text-body-secondary'" @click="bottomTab = 'tags'; expandedOrderId = null">Tagging</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'history' ? 'btn-primary border-primary' : 'bg-body text-body-secondary'" @click="bottomTab = 'history'; expandedOrderId = null">Order history</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'future' ? 'btn-primary border-primary' : 'bg-body text-body-secondary'" @click="bottomTab = 'future'; expandedOrderId = null">Future Orders</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'tags' ? 'btn-primary border-primary' : 'bg-body text-body-secondary'" @click="bottomTab = 'tags'; expandedOrderId = null">Tagging</button>
                 </div>
                 <div class="text-lg-end">
                     <h5 class="mb-1 fw-bold text-body-emphasis"><i class="bi bi-layers me-2 text-primary"></i>Order Center</h5>
@@ -899,7 +899,7 @@
                     <template x-if="recentOrders && recentOrders.length > 0">
                         <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
-                                <thead class="table-light sticky-top" style="z-index: 1;">
+                                <thead class="table-secondary sticky-top" style="z-index: 1;">
                                     <tr>
                                         <th scope="col" class="text-nowrap ps-4 py-2 border-bottom-0">Order #</th>
                                         <th scope="col" class="text-nowrap py-2 border-bottom-0">Date</th>
@@ -910,9 +910,13 @@
                                 </thead>
                                 <template x-for="order in recentOrders" :key="'history-' + order.id">
                                     <tbody class="border-top-0 border-bottom">
-                                        <tr @click="toggleOrderDetails(order.id)" class="hover-bg-light transition-all" style="cursor: pointer;">
+                                        <tr @click="toggleOrderDetails(order.id)" class="transition-all" style="cursor: pointer;">
                                             <td class="text-nowrap ps-4 py-2 fw-bold text-body-emphasis" x-text="order.order_no || order.order_number || ('Order #' + order.id)"></td>
-                                            <td class="text-nowrap text-muted py-2" x-text="order.order_date ? new Date(order.order_date).toLocaleDateString() : 'No date'"></td>
+                                            <td class="text-nowrap py-2">
+                                                <div class="fw-medium text-body-emphasis" x-text="order.order_date ? new Date(order.order_date).toLocaleDateString() : 'No date'"></div>
+                                                <div class="small text-muted" x-show="order.order_date" x-text="new Date(order.order_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></div>
+                                                <div class="small text-muted mt-1" x-show="order.creator" x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
+                                            </td>
                                             <td class="py-2">
                                                 <span class="badge rounded-pill text-bg-primary-subtle text-primary-emphasis px-2" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
                                                 <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis px-2 ms-1" x-show="order.is_draft">Future</span>
@@ -927,30 +931,37 @@
                                         <tr x-show="expandedOrderId === order.id" x-cloak>
                                             <td colspan="5" class="p-0 border-0 bg-body-tertiary">
                                                 <div class="p-4 border-bottom border-top border-primary border-3 border-start-0 border-end-0 border-bottom-0 shadow-sm">
-                                                    <div class="row g-4 mb-4">
-                                                        <div class="col-lg-4">
-                                                            <div class="p-3 rounded-3 bg-white border h-100 shadow-sm">
+                                                    <div class="row g-3 mb-4">
+                                                        <div class="col-lg-3">
+                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
+                                                                <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Order Info</div>
+                                                                <div class="small text-muted mb-1"><i class="bi bi-clock me-1"></i> <span x-text="order.order_date ? new Date(order.order_date).toLocaleString() : 'No date'"></span></div>
+                                                                <div class="small text-primary fw-medium" x-show="order.creator"><i class="bi bi-person me-1"></i> <span x-text="'Created by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></span></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-lg-3">
+                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
                                                                 <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Shipping</div>
-                                                                <div class="small text-muted" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_city, order.shipping_state].filter(Boolean).join(', ') : 'Not available'"></div>
+                                                                <div class="small text-muted" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name, order.shipping_post_office, order.shipping_taluka, order.shipping_city, order.shipping_district, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') : 'Not available'"></div>
                                                             </div>
                                                         </div>
-                                                        <div class="col-lg-4">
-                                                            <div class="p-3 rounded-3 bg-white border h-100 shadow-sm">
+                                                        <div class="col-lg-3">
+                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
                                                                 <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Billing</div>
-                                                                <div class="small text-muted" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_city, order.billing_state].filter(Boolean).join(', ') : 'Same as shipping'"></div>
+                                                                <div class="small text-muted" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name, order.billing_post_office, order.billing_taluka, order.billing_city, order.billing_district, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') : 'Same as shipping'"></div>
                                                             </div>
                                                         </div>
-                                                        <div class="col-lg-4">
-                                                            <div class="p-3 rounded-3 bg-white border h-100 shadow-sm">
+                                                        <div class="col-lg-3">
+                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
                                                                 <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Totals</div>
                                                                 <div class="small text-muted mb-1" x-text="'Subtotal Rs ' + Number(order.total_amount || 0).toFixed(2) + ' | GST Rs ' + Number(order.tax_amount || 0).toFixed(2)"></div>
                                                                 <div class="small text-primary fw-medium" x-show="order.applied_offer?.name" x-text="'Offer: ' + order.applied_offer?.name"></div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="bg-white rounded-3 border overflow-hidden shadow-sm">
+                                                    <div class="bg-body rounded-3 border overflow-hidden shadow-sm">
                                                         <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
-                                                            <thead class="table-light">
+                                                            <thead class="table-secondary">
                                                                 <tr class="text-muted">
                                                                     <th class="ps-3 py-2 fw-medium">Item</th>
                                                                     <th class="py-2 fw-medium">SKU</th>
@@ -994,7 +1005,7 @@
                         </div>
                     </template>
                     <template x-if="!recentOrders || !recentOrders.length">
-                        <div class="alert alert-light border-0 mb-0 p-5 text-center text-muted">
+                        <div class="alert alert-secondary border-0 mb-0 p-5 text-center text-muted">
                             <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                             No order history available.
                         </div>
@@ -1007,7 +1018,7 @@
                     <template x-if="futureOrders && futureOrders.length > 0">
                         <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
-                                <thead class="table-light sticky-top" style="z-index: 1;">
+                                <thead class="table-secondary sticky-top" style="z-index: 1;">
                                     <tr>
                                         <th scope="col" class="text-nowrap ps-4 py-2 border-bottom-0">Order #</th>
                                         <th scope="col" class="text-nowrap py-2 border-bottom-0">Future Date</th>
@@ -1018,9 +1029,13 @@
                                 </thead>
                                 <template x-for="order in futureOrders" :key="'future-' + order.id">
                                     <tbody class="border-top-0 border-bottom">
-                                        <tr @click="toggleOrderDetails(order.id)" class="hover-bg-light transition-all" style="cursor: pointer;">
+                                        <tr @click="toggleOrderDetails(order.id)" class="transition-all" style="cursor: pointer;">
                                             <td class="text-nowrap ps-4 py-2 fw-bold text-body-emphasis" x-text="order.order_no || order.order_number || ('Order #' + order.id)"></td>
-                                            <td class="text-nowrap text-muted py-2" x-text="order.future_order_date ? new Date(order.future_order_date).toLocaleDateString() : 'No future date'"></td>
+                                            <td class="text-nowrap py-2">
+                                                <div class="fw-medium text-body-emphasis" x-text="order.future_order_date ? new Date(order.future_order_date).toLocaleDateString() : 'No future date'"></div>
+                                                <div class="small text-muted" x-show="order.future_order_date" x-text="new Date(order.future_order_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></div>
+                                                <div class="small text-muted mt-1" x-show="order.creator" x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
+                                            </td>
                                             <td class="py-2">
                                                 <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis px-2">Future</span>
                                                 <span class="badge rounded-pill text-bg-primary-subtle text-primary-emphasis px-2 ms-1" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
@@ -1035,17 +1050,24 @@
                                         <tr x-show="expandedOrderId === order.id" x-cloak>
                                             <td colspan="5" class="p-0 border-0 bg-body-tertiary">
                                                 <div class="p-4 border-bottom border-top border-primary border-3 border-start-0 border-end-0 border-bottom-0 shadow-sm">
-                                                    <div class="row g-4 mb-4">
-                                                        <div class="col-lg-6">
-                                                            <div class="p-3 rounded-3 bg-white border h-100 shadow-sm">
-                                                                <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Shipping</div>
-                                                                <div class="small text-muted" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_city, order.shipping_state].filter(Boolean).join(', ') : 'Not available'"></div>
+                                                    <div class="row g-3 mb-4">
+                                                        <div class="col-lg-4">
+                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
+                                                                <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Order Info</div>
+                                                                <div class="small text-muted mb-1"><i class="bi bi-clock me-1"></i> <span x-text="order.order_date ? new Date(order.order_date).toLocaleString() : 'No date'"></span></div>
+                                                                <div class="small text-primary fw-medium" x-show="order.creator"><i class="bi bi-person me-1"></i> <span x-text="'Created by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></span></div>
                                                             </div>
                                                         </div>
-                                                        <div class="col-lg-6">
-                                                            <div class="p-3 rounded-3 bg-white border h-100 shadow-sm">
+                                                        <div class="col-lg-4">
+                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
+                                                                <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Shipping</div>
+                                                                <div class="small text-muted" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name, order.shipping_post_office, order.shipping_taluka, order.shipping_city, order.shipping_district, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') : 'Not available'"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-lg-4">
+                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
                                                                 <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Billing</div>
-                                                                <div class="small text-muted" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_city, order.billing_state].filter(Boolean).join(', ') : 'Same as shipping'"></div>
+                                                                <div class="small text-muted" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name, order.billing_post_office, order.billing_taluka, order.billing_city, order.billing_district, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') : 'Same as shipping'"></div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1095,8 +1117,8 @@
                         </div>
                     </template>
                     <template x-if="!futureOrders || !futureOrders.length">
-                        <div class="alert alert-light border-0 mb-0 p-5 text-center text-muted">
-                            <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                        <div class="alert alert-secondary border-0 mb-0 p-5 text-center text-muted">
+                            <i class="bi bi-calendar-x fs-2 d-block mb-2 opacity-50"></i>
                             No future orders scheduled.
                         </div>
                     </template>

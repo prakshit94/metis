@@ -11,6 +11,12 @@ use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Cache;
+use App\Models\Crop;
+use App\Models\LeadSource;
+use App\Models\IrrigationType;
+use App\Models\LandUnit;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 use Illuminate\Database\Eloquent\Model;
@@ -59,6 +65,15 @@ class AppServiceProvider extends ServiceProvider
 
             // 3. Include Hybrid Modules (Orders, Inventory, Customers, etc.)
             return preg_match('/^(orders|returns|refunds|payments|invoices|promotions|customers|catalog|inventory|shipping|villages|products)/', $uri);
+        });
+
+        View::composer('components.add-customer-modal', function ($view) {
+            $dynamicCrops = Cache::remember('dynamic_crops', 3600, fn() => Crop::where('is_active', true)->pluck('name'));
+            $dynamicLeadSources = Cache::remember('dynamic_lead_sources', 3600, fn() => LeadSource::where('is_active', true)->pluck('name'));
+            $dynamicIrrigationTypes = Cache::remember('dynamic_irrigation_types', 3600, fn() => IrrigationType::where('is_active', true)->pluck('name'));
+            $dynamicLandUnits = Cache::remember('dynamic_land_units', 3600, fn() => LandUnit::where('is_active', true)->pluck('name'));
+
+            $view->with(compact('dynamicCrops', 'dynamicLeadSources', 'dynamicIrrigationTypes', 'dynamicLandUnits'));
         });
 
     }

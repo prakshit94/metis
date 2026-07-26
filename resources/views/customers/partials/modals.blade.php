@@ -321,7 +321,7 @@
     <div class="p-0 overflow-hidden" x-data="{
         selectedSources: {{ json_encode(old('source', is_array($customer->source) ? $customer->source : [])) }},
         showSourceDropdown: false,
-        sources: ['Referral', 'Walk-in', 'Social Media', 'Website', 'Advertisement', 'Event', 'Cold Call', 'Other'],
+        sources: {{ json_encode(isset($leadSources) ? $leadSources->map(fn($s) => $s->name) : ['Referral', 'Walk-in', 'Social Media', 'Website', 'Advertisement', 'Event', 'Cold Call', 'Other']) }},
         toggleSource(name) {
             if(this.selectedSources.includes(name)) {
                 this.selectedSources = this.selectedSources.filter(s => s !== name);

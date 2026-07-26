@@ -365,6 +365,7 @@ class OrderController extends Controller implements HasMiddleware
                         'shippingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
                         'billingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
                         'appliedOffer:id,name,discount_type,value',
+                        'creator:id,first_name,last_name,name',
                     ]);
                 },
             ])->find(request()->integer('customer_id'));
@@ -379,6 +380,7 @@ class OrderController extends Controller implements HasMiddleware
                 'shippingAddress.village.services',
                 'billingAddress.village.services',
                 'appliedOffer:id,name,discount_type,value',
+                'creator:id,first_name,last_name,name',
             ])->find(request()->integer('order_id'));
 
             if ($initialOrder && ! $initialCustomer) {
@@ -392,6 +394,7 @@ class OrderController extends Controller implements HasMiddleware
                             'shippingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
                             'billingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
                             'appliedOffer:id,name,discount_type,value',
+                            'creator:id,first_name,last_name,name',
                         ]);
                     },
                 ])->find($initialOrder->party_id);

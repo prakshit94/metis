@@ -31,6 +31,10 @@ class DatabaseSeeder extends Seeder
             DeliveryFailureReasonsSeeder::class,
             PromotionSeeder::class,
             CallTagSeeder::class,
+            LeadSourceSeeder::class,
+            LandUnitSeeder::class,
+            IrrigationTypeSeeder::class,
+            CropSeeder::class,
         ]);
     }
 }

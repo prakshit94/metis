@@ -34,8 +34,8 @@ class CallTaggingController extends Controller
         
         foreach ($fields as $field) {
             if (strtolower($field->name) === 'crop') {
-                $categories = \App\Modules\Catalog\Models\Category::where('is_active', true)->pluck('name')->toArray();
-                $field->options = json_encode($categories);
+                $crops = \App\Models\Crop::where('is_active', true)->pluck('name')->toArray();
+                $field->options = json_encode($crops);
                 $field->type = 'multi_select';
             }
         }

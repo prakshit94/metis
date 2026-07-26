@@ -33,7 +33,7 @@
                         
                         <div class="row g-3">
                             <div class="col-md-12">
-                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Call Category (Level 1) *</label>
+                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Primary Reason for Call *</label>
                                 <div class="d-flex align-items-center gap-2">
                                     <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL1">
                                         <option value="">Select Call Category...</option>
@@ -62,7 +62,7 @@
                         
                         <div class="row g-3">
                             <div class="col-md-12">
-                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Sub Category (Level 2) *</label>
+                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Specific Subject *</label>
                                 <div class="d-flex align-items-center gap-2">
                                     <template x-if="l2Tags.length > 0">
                                         <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL2">
@@ -196,7 +196,7 @@
                         
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Call Outcome (Level 3)</label>
+                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Final Outcome / Resolution</label>
                                 <div class="d-flex align-items-center gap-2">
                                     <template x-if="l3Tags.length > 0">
                                         <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL3">

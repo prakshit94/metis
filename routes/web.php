@@ -99,6 +99,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('invoices/export', [\App\Modules\Orders\Controllers\InvoiceController::class, 'exportSelected'])->name('invoices.export.selected');
     Route::post('invoices/{invoice}/payments', [\App\Modules\Orders\Controllers\InvoiceController::class, 'recordPayment'])->name('invoices.payments.store');
     Route::get('/customers', [PageController::class, 'customers'])->name('customers');
+    
+    // Customer Settings Routes
+    Route::get('/customer-settings', [\App\Modules\Customers\Controllers\CustomerSettingsController::class, 'index'])->name('customer-settings.index');
+    Route::get('/api/customer-settings/{type}', [\App\Modules\Customers\Controllers\CustomerSettingsController::class, 'list']);
+    Route::post('/api/customer-settings/{type}', [\App\Modules\Customers\Controllers\CustomerSettingsController::class, 'store']);
+    Route::put('/api/customer-settings/{type}/{id}', [\App\Modules\Customers\Controllers\CustomerSettingsController::class, 'update']);
+    Route::patch('/api/customer-settings/{type}/{id}/toggle', [\App\Modules\Customers\Controllers\CustomerSettingsController::class, 'toggle']);
+    Route::delete('/api/customer-settings/{type}/{id}', [\App\Modules\Customers\Controllers\CustomerSettingsController::class, 'destroy']);
+
     Route::get('/customers/search-by-phone', [\App\Modules\Customers\Controllers\CustomerController::class, 'searchByPhone'])->name('customers.search-by-phone');
     Route::get('/customers/{customer}', [\App\Modules\Customers\Controllers\CustomerController::class, 'show'])->name('customers.show');
     Route::post('/customers/{customer}/orders/place', [\App\Modules\Customers\Controllers\CustomerController::class, 'placeOrder'])->name('customers.orders.place');

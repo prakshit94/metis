@@ -6,7 +6,7 @@ namespace App\Modules\Customers\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Core\Models\Village;
-use App\Modules\Customers\Models\Customer;
+use App\Modules\Customers\Models\Party;
 use App\Modules\Customers\Models\PartyAddress;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +24,7 @@ class CustomerAddressController extends Controller implements HasMiddleware
         ];
     }
 
-    public function store(Request $request, Customer $customer): JsonResponse
+    public function store(Request $request, Party $customer): JsonResponse
     {
         $validated = $request->validate([
             'label' => ['required', 'string', 'max:255'],
@@ -70,7 +70,7 @@ class CustomerAddressController extends Controller implements HasMiddleware
         ], 201);
     }
 
-    public function update(Request $request, Customer $customer, PartyAddress $address): JsonResponse
+    public function update(Request $request, Party $customer, PartyAddress $address): JsonResponse
     {
         if ($address->party_id !== $customer->id) {
             return response()->json(['message' => 'Unauthorized address modification.'], 403);
@@ -119,7 +119,7 @@ class CustomerAddressController extends Controller implements HasMiddleware
         ]);
     }
 
-    public function destroy(Customer $customer, PartyAddress $address): JsonResponse
+    public function destroy(Party $customer, PartyAddress $address): JsonResponse
     {
         if ($address->party_id !== $customer->id) {
             return response()->json(['message' => 'Unauthorized address modification.'], 403);

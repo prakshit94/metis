@@ -12,6 +12,10 @@ use App\Modules\Customers\Models\Party;
 use App\Modules\Orders\Models\Coupon;
 use App\Modules\Orders\Models\Offer;
 use App\Modules\Orders\Models\Order;
+use App\Models\Crop;
+use App\Models\LeadSource;
+use App\Models\IrrigationType;
+use App\Models\LandUnit;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -218,6 +222,7 @@ class CustomerController extends Controller implements HasMiddleware
                         'shippingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
                         'billingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
                         'appliedOffer:id,name,discount_type,value',
+                        'creator:id,first_name,last_name,name',
                     ]);
                 },
                 'callLogs' => function ($q) {
@@ -242,12 +247,13 @@ class CustomerController extends Controller implements HasMiddleware
 
         $activeCoupons = Cache::remember('active_coupons', 600, fn () => Coupon::where('is_active', true)->get());
 
-        // Static fallbacks for agricultures parameters
-        $crops = collect(['Wheat', 'Rice', 'Cotton', 'Sugarcane', 'Maize', 'Soybean', 'Gram', 'Mustard', 'Bajra', 'Jowar'])->map(fn ($name) => (object) ['name' => $name]);
-        $irrigationTypes = collect(['Drip', 'Sprinkler', 'Canal', 'Tube Well', 'Rainfed', 'River Pump'])->map(fn ($name) => (object) ['name' => $name]);
-        $landUnits = collect(['Acre', 'Hectare', 'Bigha', 'Guntha', 'Kanal', 'Marla'])->map(fn ($name) => (object) ['name' => $name]);
+        // Dynamic database parameters
+        $crops = Cache::remember('dynamic_crops_obj', 3600, fn() => Crop::where('is_active', true)->get(['name']));
+        $irrigationTypes = Cache::remember('dynamic_irrigation_types_obj', 3600, fn() => IrrigationType::where('is_active', true)->get(['name']));
+        $landUnits = Cache::remember('dynamic_land_units_obj', 3600, fn() => LandUnit::where('is_active', true)->get(['name']));
+        $leadSources = Cache::remember('dynamic_lead_sources_obj', 3600, fn() => LeadSource::where('is_active', true)->get(['name']));
 
-        return view('customers.show', compact('customer', 'categories', 'warehouses', 'activeOffers', 'activeCoupons', 'crops', 'irrigationTypes', 'landUnits'));
+        return view('customers.show', compact('customer', 'categories', 'warehouses', 'activeOffers', 'activeCoupons', 'crops', 'irrigationTypes', 'landUnits', 'leadSources'));
     }
 
     /**
