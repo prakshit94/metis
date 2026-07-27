@@ -85,7 +85,7 @@
 
     <!-- Directory Card -->
     <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-header bg-white border-bottom py-3 rounded-top-4">
+        <div class="card-header bg-body border-bottom py-3 rounded-top-4">
             <div class="row align-items-center">
                 <div class="col">
                     <h2 class="h5 card-title mb-0 fw-bold text-body">Call Tags Directory</h2>
@@ -128,7 +128,7 @@
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light bg-opacity-75">
+                    <thead class="bg-body-secondary bg-opacity-75">
                         <tr>
                             <th style="width:40px" class="ps-4"><input type="checkbox" class="form-check-input shadow-sm border-secondary border-opacity-25" @change="$event.isTrusted && toggleAll($event)" :checked="allSelected"></th>
                             <th>Tag Hierarchy</th>
@@ -141,7 +141,7 @@
                     <tbody>
                         @forelse($tags as $l1)
                             {{-- LEVEL 1 --}}
-                            <tr class="bg-light bg-opacity-25" x-show="isVisible('{{ addslashes($l1->name) }}', {{ $l1->is_active }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l1->id }}) }">
+                            <tr class="bg-body-tertiary" x-show="isVisible('{{ addslashes($l1->name) }}', {{ $l1->is_active }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l1->id }}) }">
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center">
                                         <input type="checkbox" class="form-check-input shadow-sm border-secondary border-opacity-25 me-3" value="{{ $l1->id }}" x-model.number="selected">
@@ -179,7 +179,7 @@
                                             <input type="checkbox" class="form-check-input shadow-sm border-secondary border-opacity-25 me-3" value="{{ $l2->id }}" x-model.number="selected">
                                             <i class="bi bi-arrow-return-right text-muted me-2"></i>
                                             <i class="bi bi-folder2-open text-info me-2 fs-5"></i>
-                                            <span class="fw-semibold text-dark">{{ $l2->name }}</span>
+                                            <span class="fw-semibold text-body-emphasis">{{ $l2->name }}</span>
                                         </div>
                                     </td>
                                     <td><span class="badge bg-info bg-opacity-10 text-info border border-info-subtle">Level 2</span></td>
@@ -244,7 +244,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="text-center py-4 text-muted">
-                                    <div class="mb-3 mt-3"><i class="bi bi-tags display-6 text-black-50"></i></div>
+                                    <div class="mb-3 mt-3"><i class="bi bi-tags display-6 text-body-tertiary"></i></div>
                                     No Call Tags found. Get started by adding a Level 1 Category.
                                 </td>
                             </tr>
@@ -287,7 +287,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Level</label>
-                                    <input type="text" class="form-control bg-light" x-model="form.level" readonly>
+                                    <input type="text" class="form-control bg-body-secondary" x-model="form.level" readonly>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Status</label>
@@ -317,23 +317,23 @@
                                 </div>
                                 
                                 <template x-if="form.form_fields.length === 0">
-                                    <div class="text-muted small fst-italic py-2 text-center my-3 bg-light rounded-3 p-3 border border-light-subtle">No dynamic fields defined. Add fields to capture extra data when this tag is selected.</div>
+                                    <div class="text-muted small fst-italic py-2 text-center my-3 bg-body-secondary rounded-3 p-3 border border-light-subtle">No dynamic fields defined. Add fields to capture extra data when this tag is selected.</div>
                                 </template>
                                 
                                 <div class="d-flex flex-column gap-3">
                                     <template x-for="(field, index) in form.form_fields" :key="index">
-                                        <div class="row g-3 p-3 border rounded-3 bg-light position-relative">
+                                        <div class="row g-3 p-3 border rounded-3 bg-body-secondary position-relative">
                                             <div class="col-md-3">
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Label</label>
-                                                <input type="text" class="form-control form-control-sm bg-white" x-model="field.label" placeholder="e.g. Select Product">
+                                                <input type="text" class="form-control form-control-sm bg-body" x-model="field.label" placeholder="e.g. Select Product">
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Key Name</label>
-                                                <input type="text" class="form-control form-control-sm bg-white font-monospace text-primary" x-model="field.name" placeholder="e.g. search_product" @input="field.name = field.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')">
+                                                <input type="text" class="form-control form-control-sm bg-body font-monospace text-primary" x-model="field.name" placeholder="e.g. search_product" @input="field.name = field.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')">
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Type</label>
-                                                <select class="form-select form-select-sm bg-white" x-model="field.type">
+                                                <select class="form-select form-select-sm bg-body" x-model="field.type">
                                                     <option value="text">Text Input</option>
                                                     <option value="textarea">Textarea</option>
                                                     <option value="date">Date</option>
@@ -344,7 +344,7 @@
                                             </div>
                                             <div class="col-md-2">
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Required</label>
-                                                <select class="form-select form-select-sm bg-white" x-model="field.is_required">
+                                                <select class="form-select form-select-sm bg-body" x-model="field.is_required">
                                                     <option value="1">Yes</option>
                                                     <option value="0">No</option>
                                                 </select>
@@ -356,7 +356,7 @@
                                             </div>
                                             <div class="col-md-12 mt-2" x-show="field.type === 'select'">
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Options (JSON Array)</label>
-                                                <input type="text" class="form-control form-control-sm bg-white font-monospace" x-model="field.options" placeholder='["Option 1", "Option 2"]'>
+                                                <input type="text" class="form-control form-control-sm bg-body font-monospace" x-model="field.options" placeholder='["Option 1", "Option 2"]'>
                                             </div>
                                         </div>
                                     </template>
@@ -520,8 +520,6 @@ document.addEventListener('alpine:init', () => {
                 text: "Deleting this tag will also delete all its child tags and form fields. This cannot be undone!",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
                 confirmButtonText: 'Yes, delete it!'
             });
             
@@ -561,8 +559,6 @@ document.addEventListener('alpine:init', () => {
                     text: `You are about to delete ${this.selected.length} tags. This cannot be undone!`,
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
                     confirmButtonText: 'Yes, delete them!'
                 });
                 if (!result.isConfirmed) return;
