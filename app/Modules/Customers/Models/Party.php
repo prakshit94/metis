@@ -22,6 +22,8 @@ class Party extends Model
         'firstname',
         'middlename',
         'lastname',
+        'referral_code',
+        'referred_by',
         'email',
         'phone',
         'alternatemobile',
@@ -99,5 +101,31 @@ class Party extends Model
     {
         return trim(collect([$this->firstname, $this->middlename, $this->lastname])
             ->filter()->implode(' '));
+    }
+
+    public function referrer()
+    {
+        return $this->belongsTo(self::class, 'referred_by');
+    }
+
+    public function referrals()
+    {
+        return $this->hasMany(self::class, 'referred_by');
+    }
+
+    public function referredOrders(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(Order::class, self::class, 'referred_by', 'party_id');
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($party) {
+            if (empty($party->referral_code)) {
+                $party->referral_code = 'REF-' . strtoupper(\Illuminate\Support\Str::random(6));
+            }
+        });
     }
 }

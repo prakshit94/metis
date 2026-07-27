@@ -430,7 +430,7 @@ export default () => {
         openStatusModal(shipment) {
             this.selectedShipment = shipment;
             
-            let defaultFollowUp = '';
+            let defaultFollowUp;
             if (shipment.next_followup_date) {
                 defaultFollowUp = shipment.next_followup_date.split('T')[0];
             } else {

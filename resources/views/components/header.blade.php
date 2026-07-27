@@ -76,7 +76,6 @@
                         { name: 'Calendar', path: '{{ route('calendar') }}', icon: 'bi bi-calendar-week-fill', group: 'Utilities & Tools' },
                         { name: 'Files', path: '{{ route('files') }}', icon: 'bi bi-folder2-open', group: 'Utilities & Tools' },
                         { name: 'Forms', path: '{{ route('forms') }}', icon: 'bi bi-ui-checks-grid', group: 'Utilities & Tools' },
-                        { name: 'Settings', path: '{{ route('settings') }}', icon: 'bi bi-gear-fill', group: 'Utilities & Tools' },
                         { name: 'Security', path: '{{ route('security') }}', icon: 'bi bi-shield-fill-check', group: 'Utilities & Tools' },
                         { name: 'Help & Support', path: '{{ route('help') }}', icon: 'bi bi-question-circle-fill', group: 'Utilities & Tools' },
                         { name: 'API Documentation', path: '/docs/api', icon: 'bi bi-file-earmark-code-fill', group: 'Utilities & Tools' }
@@ -503,14 +502,6 @@
                             <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
                                 <i class="bi bi-wallet2 text-muted fs-5"></i> 
                                 <span>Wallet Balance : <span class="fw-bold text-success">$5971.67</span></span>
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary justify-content-between" href="{{ route('settings') }}">
-                                <div class="d-flex align-items-center gap-3">
-                                    <i class="bi bi-gear text-muted fs-5"></i> Settings
-                                </div>
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill fw-bold" style="font-size: 9px;">New</span>
                             </a>
                         </li>
                         

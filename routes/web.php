@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/call-tags-admin', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'store'])->middleware('permission:settings-view');
     Route::put('/call-tags-admin/{callTag}', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'update'])->middleware('permission:settings-view');
     Route::delete('/call-tags-admin/{callTag}', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'destroy'])->middleware('permission:settings-view');
+    Route::post('/call-tags-admin/bulk-action', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'bulkAction'])->middleware('permission:settings-view');
     
     Route::prefix('catalog')->name('catalog.')->group(function (): void {
         Route::get('/products', [\App\Modules\Catalog\Controllers\CatalogController::class, 'products'])->name('products');
@@ -119,7 +120,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/calendar', [PageController::class, 'calendar'])->name('calendar');
     Route::get('/files', [PageController::class, 'files'])->name('files');
     Route::get('/forms', [PageController::class, 'forms'])->name('forms');
-    Route::get('/settings', [PageController::class, 'settings'])->name('settings');
     Route::get('/security', [PageController::class, 'security'])->name('security');
     Route::get('/help', [PageController::class, 'help'])->name('help');
 
@@ -158,6 +158,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     // ─── Promotions ──────────────────────────────────────────────────────────
     Route::get('/promotions/coupons', [\App\Modules\Orders\Controllers\PromotionsController::class, 'coupons'])->name('promotions.coupons');
     Route::get('/promotions/offers', [\App\Modules\Orders\Controllers\PromotionsController::class, 'offers'])->name('promotions.offers');
+    
+    // Referral Programs
+    Route::get('/promotions/referral-programs', [\App\Http\Controllers\ReferralProgramController::class, 'index'])->name('referrals.programs.index');
+    Route::post('/promotions/referral-programs', [\App\Http\Controllers\ReferralProgramController::class, 'store'])->name('referrals.programs.store');
+    Route::post('/promotions/referral-programs/bulk-action', [\App\Http\Controllers\ReferralProgramController::class, 'bulk'])->name('referrals.programs.bulk');
+    Route::put('/promotions/referral-programs/{id}', [\App\Http\Controllers\ReferralProgramController::class, 'update'])->name('referrals.programs.update');
+    Route::patch('/promotions/referral-programs/{id}/toggle', [\App\Http\Controllers\ReferralProgramController::class, 'toggle'])->name('referrals.programs.toggle');
+    Route::delete('/promotions/referral-programs/{id}', [\App\Http\Controllers\ReferralProgramController::class, 'destroy'])->name('referrals.programs.destroy');
 
 
     // Elements sub-section

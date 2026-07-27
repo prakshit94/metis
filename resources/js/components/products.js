@@ -238,7 +238,7 @@ document.addEventListener('alpine:init', () => {
             if (form && !form.editingProductId && !form.form.default_warehouse_id && this.options.warehouses && this.options.warehouses.length > 0) {
               form.form.default_warehouse_id = String(this.options.warehouses[0].id);
             }
-          } catch (e) {}
+          } catch (e) { /* ignore */ }
         }
       } catch (error) {
         console.error('Failed to load products from API:', error);

@@ -13,6 +13,9 @@ use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Models\Shipment;
+use App\Modules\Orders\Models\Coupon;
+use App\Models\ReferralProgram;
+use Illuminate\Support\Str;
 use App\Notifications\LowStockNotification;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\DB;
@@ -1045,6 +1048,94 @@ class InventoryService
 
             $order->update(['status' => 'delivered', 'updated_by' => auth()->id()]);
 
+            // Advanced Referral Reward Logic
+            $party = \App\Modules\Customers\Models\Party::find($order->party_id);
+            if ($party && $party->referred_by) {
+                // If it's 1, it means the current one is the only delivered order.
+                $deliveredCount = Order::where('party_id', $party->id)->where('status', 'delivered')->count();
+                if ($deliveredCount === 1) {
+                    $alreadyRewarded = DB::table('referral_rewards')->where('referred_id', $party->id)->exists();
+                    if (!$alreadyRewarded) {
+                        $referrer = \App\Modules\Customers\Models\Party::find($party->referred_by);
+                        
+                        if ($referrer) {
+                            // Calculate referrer's total successful referrals
+                            // A successful referral is someone they referred who has at least one delivered order.
+                            $successfulReferrals = \App\Modules\Customers\Models\Party::where('referred_by', $referrer->id)
+                                ->whereHas('orders', function ($q) {
+                                    $q->where('status', 'delivered');
+                                })->count();
+
+                            // Find Active Program
+                            $activeProgram = ReferralProgram::with('milestones')
+                                ->where('is_active', true)
+                                ->where(function($q) {
+                                    $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+                                })
+                                ->where(function($q) {
+                                    $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+                                })->first();
+
+                            $rewardGranted = false;
+                            
+                            if ($activeProgram) {
+                                // Find base milestone (0 = every referral) and specific milestone for current count
+                                $baseMilestone = $activeProgram->milestones->where('required_referrals', 0)->first();
+                                $specificMilestone = $activeProgram->milestones->where('required_referrals', $successfulReferrals)->first();
+                                
+                                $milestonesToReward = array_filter([$baseMilestone, $specificMilestone]);
+                                
+                                foreach ($milestonesToReward as $milestone) {
+                                    $rewardAmount = $milestone->reward_type === 'wallet' ? (float) $milestone->reward_value : 0;
+                                    
+                                    DB::table('referral_rewards')->insert([
+                                        'referrer_id' => $referrer->id,
+                                        'referred_id' => $party->id,
+                                        'order_id' => $order->id,
+                                        'referral_program_id' => $activeProgram->id,
+                                        'milestone_id' => $milestone->id,
+                                        'reward_type' => $milestone->reward_type,
+                                        'reward_amount' => $rewardAmount,
+                                        'reward_value' => $milestone->reward_type !== 'wallet' ? $milestone->reward_value : null,
+                                        'status' => 'completed',
+                                        'created_at' => now(),
+                                        'updated_at' => now(),
+                                    ]);
+
+                                    if ($milestone->reward_type === 'wallet') {
+                                        $referrer->outstanding_balance += $rewardAmount;
+                                        $referrer->save();
+                                    } elseif ($milestone->reward_type === 'coupon') {
+                                        $couponCode = 'REF-' . strtoupper(Str::random(8));
+                                        Coupon::create([
+                                            'code' => $couponCode,
+                                            'type' => 'fixed',
+                                            'value' => (float) $milestone->reward_value,
+                                            'usage_limit' => 1,
+                                            'is_active' => true,
+                                            'status' => 'active',
+                                        ]);
+                                    } elseif ($milestone->reward_type === 'product') {
+                                        $couponCode = 'GIFT-' . strtoupper(Str::random(8));
+                                        Coupon::create([
+                                            'code' => $couponCode,
+                                            'type' => 'percentage',
+                                            'value' => 100.00,
+                                            'usage_limit' => 1,
+                                            'applicable_products' => [$milestone->reward_value], // reward_value should hold product ID
+                                            'is_active' => true,
+                                            'status' => 'active',
+                                        ]);
+                                    }
+                                    
+                                    $rewardGranted = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             $shipment = $order->shipments()->first();
             if ($shipment) {
                 $shipment->update([
@@ -1086,6 +1177,8 @@ class InventoryService
             }
 
             $order->update(['status' => 'dispatched', 'updated_by' => auth()->id()]);
+
+            $this->revokeReferralReward($order);
 
             $shipment = $order->shipments()->first();
             if ($shipment) {
@@ -1131,6 +1224,8 @@ class InventoryService
 
             $order->update(['status' => 'returned', 'updated_by' => auth()->id()]);
 
+            $this->revokeReferralReward($order);
+
             $invoice = $order->invoices()->latest()->first();
             if ($invoice && $invoice->status !== 'cancelled') {
                 $invoice->update(['status' => 'cancelled']);
@@ -1173,5 +1268,31 @@ class InventoryService
                 $this->syncProductStatus($productId);
             }
         }, 3);
+    }
+
+    /**
+     * Revoke a referral reward if the order is returned or reverted.
+     */
+    protected function revokeReferralReward(Order $order): void
+    {
+        $rewards = DB::table('referral_rewards')
+            ->where('order_id', $order->id)
+            ->where('status', 'completed')
+            ->get();
+
+        foreach ($rewards as $reward) {
+            if ($reward->reward_type === 'wallet') {
+                $referrer = \App\Modules\Customers\Models\Party::find($reward->referrer_id);
+                if ($referrer) {
+                    $referrer->outstanding_balance = max(0, $referrer->outstanding_balance - $reward->reward_amount);
+                    $referrer->save();
+                }
+            }
+            
+            DB::table('referral_rewards')->where('id', $reward->id)->update([
+                'status' => 'revoked',
+                'updated_at' => now(),
+            ]);
+        }
     }
 }

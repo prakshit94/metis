@@ -349,4 +349,267 @@
         </div>
     </div>
 </div>
+@push('scripts')
+<script>
+    async function apiFetch(url, options = {}) {
+        const { headers, ...rest } = options;
+        const response = await fetch(url, {
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content ?? "",
+                ...(headers || {})
+            },
+            ...rest
+        });
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : {};
+        if (!response.ok) {
+            const error = data?.errors ? Object.values(data.errors).flat().join(" ") : "";
+            throw new Error(error || data?.message || data?.error || "Request failed");
+        }
+        return data;
+    }
+
+    function showToast(message, type = "success") {
+        const container = document.getElementById("toast-container");
+        if (!container) return;
+        const toast = document.createElement("div");
+        toast.className = `toast align-items-center text-bg-${type} border-0 show mb-2`;
+        toast.setAttribute("role", "alert");
+        toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="bi ${
+                type === 'success' ? 'bi-check-circle-fill' : 
+                type === 'danger' ? 'bi-x-circle-fill' : 
+                type === 'warning' ? 'bi-exclamation-triangle-fill' : 
+                'bi-info-circle-fill'
+            } me-2"></i><span></span>
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>`;
+        toast.querySelector(".toast-body span").textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    document.addEventListener("alpine:init", () => {
+        Alpine.data("orderReasonsTable", () => ({
+            activeTab: "reschedule",
+            reasons: [],
+            searchQuery: "",
+            statusFilter: "",
+            itemsPerPage: 10,
+            currentPage: 1,
+            sortField: "created_at",
+            sortDirection: "desc",
+            selectedReasons: [],
+            isLoading: false,
+            isSubmitting: false,
+            editingId: null,
+            form: { reason: "", is_active: true },
+            modalInstance: null,
+
+            init() {
+                this.modalInstance = new bootstrap.Modal(document.getElementById('reasonModal'));
+                this.fetchReasons();
+            },
+
+            get tabTitle() {
+                const map = {
+                    reschedule: "Reschedule Reasons",
+                    return: "Return Reasons",
+                    failure: "Delivery Failure Reasons",
+                    cancel: "Cancellation Reasons"
+                };
+                return map[this.activeTab] || "Reasons";
+            },
+
+            get stats() {
+                return {
+                    total: this.reasons.length,
+                    active: this.reasons.filter(r => r.is_active).length,
+                    inactive: this.reasons.filter(r => !r.is_active).length
+                };
+            },
+
+            get filteredReasons() {
+                let r = this.reasons;
+                if (this.searchQuery) {
+                    const q = this.searchQuery.toLowerCase();
+                    r = r.filter(i => i.reason.toLowerCase().includes(q) || String(i.id).includes(q));
+                }
+                if (this.statusFilter === "active") {
+                    r = r.filter(i => i.is_active);
+                } else if (this.statusFilter === "inactive") {
+                    r = r.filter(i => !i.is_active);
+                }
+                r.sort((a, b) => {
+                    let s = a[this.sortField], i = b[this.sortField];
+                    if (typeof s === "string") s = s.toLowerCase();
+                    if (typeof i === "string") i = i.toLowerCase();
+                    if (s < i) return this.sortDirection === "asc" ? -1 : 1;
+                    if (s > i) return this.sortDirection === "asc" ? 1 : -1;
+                    return 0;
+                });
+                return r;
+            },
+
+            get paginatedReasons() {
+                const start = (this.currentPage - 1) * this.itemsPerPage;
+                return this.filteredReasons.slice(start, start + this.itemsPerPage);
+            },
+
+            get totalItems() {
+                return this.filteredReasons.length;
+            },
+
+            get totalPages() {
+                return Math.ceil(this.totalItems / this.itemsPerPage) || 1;
+            },
+
+            get visiblePages() {
+                if (this.totalPages <= 1) return [1];
+                const p = [1];
+                if (this.totalPages <= 7) {
+                    for (let i = 2; i <= this.totalPages; i++) p.push(i);
+                } else {
+                    if (this.currentPage > 3) p.push("...");
+                    const start = Math.max(2, this.currentPage - 1);
+                    const end = Math.min(this.totalPages - 1, this.currentPage + 1);
+                    for (let i = start; i <= end; i++) p.push(i);
+                    if (this.currentPage < this.totalPages - 2) p.push("...");
+                    p.push(this.totalPages);
+                }
+                return p;
+            },
+
+            goToPage(p) {
+                if (p >= 1 && p <= this.totalPages) this.currentPage = p;
+            },
+
+            sortBy(field) {
+                if (this.sortField === field) {
+                    this.sortDirection = this.sortDirection === "asc" ? "desc" : "asc";
+                } else {
+                    this.sortField = field;
+                    this.sortDirection = "asc";
+                }
+                this.currentPage = 1;
+            },
+
+            switchTab(tab) {
+                this.activeTab = tab;
+                this.searchQuery = "";
+                this.statusFilter = "";
+                this.selectedReasons = [];
+                this.currentPage = 1;
+                this.fetchReasons();
+            },
+
+            filterReasons() {
+                this.currentPage = 1;
+                this.selectedReasons = [];
+            },
+
+            toggleAll(checked) {
+                this.selectedReasons = checked ? this.paginatedReasons.map(r => String(r.id)) : [];
+            },
+
+            async fetchReasons() {
+                this.isLoading = true;
+                try {
+                    const res = await apiFetch(`/api/order-reasons/${this.activeTab}`);
+                    if (res.reasons) this.reasons = res.reasons;
+                } catch (e) {
+                    showToast(e.message || "Failed to load reasons.", "danger");
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+
+            openCreateModal() {
+                this.editingId = null;
+                this.form = { reason: "", is_active: true };
+                this.modalInstance.show();
+            },
+
+            openEditModal(r) {
+                this.editingId = r.id;
+                this.form = { reason: r.reason, is_active: r.is_active, updated_at: r.updated_at };
+                this.modalInstance.show();
+            },
+
+            async saveReason() {
+                this.isSubmitting = true;
+                const method = this.editingId ? "PUT" : "POST";
+                const url = this.editingId 
+                    ? `/api/order-reasons/${this.activeTab}/${this.editingId}` 
+                    : `/api/order-reasons/${this.activeTab}`;
+                
+                try {
+                    const res = await apiFetch(url, {
+                        method: method,
+                        body: JSON.stringify(this.form)
+                    });
+                    showToast(res.message || "Reason saved.");
+                    this.modalInstance.hide();
+                    this.fetchReasons();
+                } catch (e) {
+                    showToast(e.message || "Failed to save reason.", "danger");
+                } finally {
+                    this.isSubmitting = false;
+                }
+            },
+
+            async toggleActive(r) {
+                try {
+                    const res = await apiFetch(`/api/order-reasons/${this.activeTab}/${r.id}/toggle`, { method: "PATCH" });
+                    r.is_active = res.is_active;
+                    showToast(res.message || "Status toggled.");
+                } catch (e) {
+                    showToast(e.message || "Failed to toggle status.", "danger");
+                    r.is_active = !r.is_active;
+                }
+            },
+
+            async deleteReason(r) {
+                if (!confirm(`Delete reason "${r.reason}"?`)) return;
+                try {
+                    const res = await apiFetch(`/api/order-reasons/${this.activeTab}/${r.id}`, { method: "DELETE" });
+                    showToast(res.message || "Reason deleted.");
+                    this.fetchReasons();
+                } catch (e) {
+                    showToast(e.message || "Failed to delete.", "danger");
+                }
+            },
+
+            async bulkAction(action) {
+                if (this.selectedReasons.length === 0) return;
+                if (!confirm(`Are you sure you want to ${action} ${this.selectedReasons.length} reasons?`)) return;
+                
+                let success = 0, fail = 0;
+                for (const id of this.selectedReasons) {
+                    try {
+                        if (action === "delete") {
+                            await apiFetch(`/api/order-reasons/${this.activeTab}/${id}`, { method: "DELETE" });
+                        } else {
+                            const r = this.reasons.find(e => String(e.id) === id);
+                            if (!r || (action === "activate" && r.is_active) || (action === "deactivate" && !r.is_active)) continue;
+                            await apiFetch(`/api/order-reasons/${this.activeTab}/${id}/toggle`, { method: "PATCH" });
+                        }
+                        success++;
+                    } catch (e) {
+                        fail++;
+                    }
+                }
+                showToast(`Bulk action complete. Success: ${success}, Fail: ${fail}.`, fail > 0 ? "warning" : "success");
+                this.selectedReasons = [];
+                this.fetchReasons();
+            }
+        }));
+    });
+</script>
+@endpush
 @endsection

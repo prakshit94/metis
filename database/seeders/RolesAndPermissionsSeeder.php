@@ -242,6 +242,9 @@ class RolesAndPermissionsSeeder extends Seeder
         'audit-log-delete',
         'audit-log-restore',
         'audit-log-permanent-delete',
+        
+        // Call Center
+        'skip-call-log',
 
         // Order Reasons
         'orderreason-view',
@@ -489,6 +492,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'customer-export',
             'customer-activate',
             'audit-log-view',
+            'skip-call-log',
         ],
         'User'        => [
             'dashboard-view',

@@ -5,22 +5,133 @@
 @section('content')
 <div class="container-fluid py-4" x-data="callTagsAdmin()">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="mb-1 fw-bold text-dark"><i class="bi bi-tags me-2 text-primary"></i>Call Tags Manager</h4>
-            <p class="text-muted mb-0 small">Manage call outcome categories and dynamic form fields.</p>
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
+                <i class="bi bi-tags-fill fs-4"></i>
+            </div>
+            <div>
+                <h4 class="mb-0 fw-bold text-body">Call Tags Manager</h4>
+                <p class="mb-0 text-muted small" style="font-size: 13px;">Manage call outcome categories and dynamic form fields.</p>
+            </div>
         </div>
-        <button class="btn btn-primary shadow-sm" @click="openModal()">
-            <i class="bi bi-plus-circle me-2"></i>Add Level 1 Category
+        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm hover-shadow transition-all fw-bold" @click="openModal()">
+            <i class="bi bi-plus-circle-fill me-2"></i>Add Category
         </button>
     </div>
 
+    <!-- Stats Row -->
+    <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
+        <div class="col-xl-3 col-lg-6">
+            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 h-100">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                            <i class="bi bi-tags-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted" style="font-size: 13px;">Total Tags</p>
+                            <div class="h3 mb-0 fw-bold">{{ $stats['total'] ?? 0 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 h-100">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                            <i class="bi bi-check-circle-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted" style="font-size: 13px;">Active</p>
+                            <div class="h3 mb-0 fw-bold">{{ $stats['active'] ?? 0 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 h-100">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                            <i class="bi bi-folder-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted" style="font-size: 13px;">Level 1 Categories</p>
+                            <div class="h3 mb-0 fw-bold">{{ $stats['level_1'] ?? 0 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 h-100">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-danger bg-opacity-10 text-danger rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                            <i class="bi bi-x-circle-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted" style="font-size: 13px;">Inactive</p>
+                            <div class="h3 mb-0 fw-bold">{{ $stats['inactive'] ?? 0 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Directory Card -->
     <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-bottom py-3 rounded-top-4">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h2 class="h5 card-title mb-0 fw-bold text-body">Call Tags Directory</h2>
+                </div>
+                <div class="col-auto">
+                    <div class="d-flex flex-wrap gap-2 justify-content-end">
+                        <div class="position-relative">
+                            <input type="search" class="form-control form-control-sm" placeholder="Search tag..." x-model="search" style="width: 200px;">
+                            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
+                        </div>
+                        <select class="form-select form-select-sm" x-model="filterStatus" style="width: 150px;">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="card-body p-0">
+            <!-- Bulk Actions Bar -->
+            <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selected.length > 0" x-cloak>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                        <span class="fw-medium text-primary">
+                            <span x-text="selected.length"></span> selected
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold" @click="bulkAction('activate')"><i class="bi bi-check-circle me-1"></i>Activate</button>
+                        <button class="btn btn-sm btn-warning rounded-pill px-3 shadow-sm fw-bold" @click="bulkAction('deactivate')"><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
+                        <button class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm fw-bold" @click="bulkAction('delete')"><i class="bi bi-trash me-1"></i>Delete</button>
+                        <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2 rounded-circle shadow-sm" @click="selected = []" title="Clear selection">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light bg-opacity-75">
                         <tr>
-                            <th class="ps-4">Tag Hierarchy</th>
+                            <th style="width:40px" class="ps-4"><input type="checkbox" class="form-check-input shadow-sm border-secondary border-opacity-25" @change="$event.isTrusted && toggleAll($event)" :checked="allSelected"></th>
+                            <th>Tag Hierarchy</th>
                             <th>Level</th>
                             <th>Status</th>
                             <th>Dynamic Fields</th>
@@ -30,9 +141,10 @@
                     <tbody>
                         @forelse($tags as $l1)
                             {{-- LEVEL 1 --}}
-                            <tr class="bg-light bg-opacity-25">
+                            <tr class="bg-light bg-opacity-25" x-show="isVisible('{{ addslashes($l1->name) }}', {{ $l1->is_active }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l1->id }}) }">
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center">
+                                        <input type="checkbox" class="form-check-input shadow-sm border-secondary border-opacity-25 me-3" value="{{ $l1->id }}" x-model.number="selected">
                                         <i class="bi bi-folder-fill text-warning me-2 fs-5"></i>
                                         <span class="fw-bold">{{ $l1->name }}</span>
                                     </div>
@@ -47,13 +159,13 @@
                                 </td>
                                 <td>-</td>
                                 <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-light border shadow-sm me-1" @click="openModal({{ $l1->id }}, '{{ addslashes($l1->name) }}', 1, null, {{ $l1->is_active }})" title="Edit">
-                                        <i class="bi bi-pencil"></i>
+                                    <button class="btn btn-sm btn-light border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l1->id }}, '{{ addslashes($l1->name) }}', 1, null, {{ $l1->is_active }})" title="Edit">
+                                        <i class="bi bi-pencil text-secondary"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-outline-primary shadow-sm me-1" @click="openModal(null, '', 2, {{ $l1->id }}, 1)" title="Add L2 Tag">
-                                        <i class="bi bi-plus"></i> Add L2
+                                    <button class="btn btn-sm btn-outline-primary shadow-sm me-1 rounded-pill fw-bold px-3 transition-all hover-shadow" style="font-size: 11px; letter-spacing: 0.5px;" @click="openModal(null, '', 2, {{ $l1->id }}, 1)" title="Add L2 Tag">
+                                        <i class="bi bi-plus-lg me-1"></i> ADD L2
                                     </button>
-                                    <button class="btn btn-sm btn-outline-danger shadow-sm" @click="deleteTag({{ $l1->id }})" title="Delete">
+                                    <button class="btn btn-sm btn-light text-danger border shadow-sm rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="deleteTag({{ $l1->id }})" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </td>
@@ -61,9 +173,10 @@
                             
                             @foreach($l1->children as $l2)
                                 {{-- LEVEL 2 --}}
-                                <tr>
-                                    <td class="ps-5">
-                                        <div class="d-flex align-items-center">
+                                <tr x-show="isVisible('{{ addslashes($l2->name) }}', {{ $l2->is_active }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l2->id }}) }">
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center ms-4">
+                                            <input type="checkbox" class="form-check-input shadow-sm border-secondary border-opacity-25 me-3" value="{{ $l2->id }}" x-model.number="selected">
                                             <i class="bi bi-arrow-return-right text-muted me-2"></i>
                                             <i class="bi bi-folder2-open text-info me-2 fs-5"></i>
                                             <span class="fw-semibold text-dark">{{ $l2->name }}</span>
@@ -85,13 +198,13 @@
                                         @endif
                                     </td>
                                     <td class="text-end pe-4">
-                                        <button class="btn btn-sm btn-light border shadow-sm me-1" @click="openModal({{ $l2->id }}, '{{ addslashes($l2->name) }}', 2, {{ $l2->parent_id }}, {{ $l2->is_active }}, {{ json_encode($l2->formFields) }})" title="Edit">
-                                            <i class="bi bi-pencil"></i>
+                                        <button class="btn btn-sm btn-light border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l2->id }}, '{{ addslashes($l2->name) }}', 2, {{ $l2->parent_id }}, {{ $l2->is_active }}, {{ json_encode($l2->formFields) }})" title="Edit">
+                                            <i class="bi bi-pencil text-secondary"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-info shadow-sm me-1" @click="openModal(null, '', 3, {{ $l2->id }}, 1)" title="Add L3 Tag">
-                                            <i class="bi bi-plus"></i> Add L3
+                                        <button class="btn btn-sm btn-outline-info shadow-sm me-1 rounded-pill fw-bold px-3 transition-all hover-shadow" style="font-size: 11px; letter-spacing: 0.5px;" @click="openModal(null, '', 3, {{ $l2->id }}, 1)" title="Add L3 Tag">
+                                            <i class="bi bi-plus-lg me-1"></i> ADD L3
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger shadow-sm" @click="deleteTag({{ $l2->id }})" title="Delete">
+                                        <button class="btn btn-sm btn-light text-danger border shadow-sm rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="deleteTag({{ $l2->id }})" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>
@@ -99,9 +212,10 @@
                                 
                                 @foreach($l2->children as $l3)
                                     {{-- LEVEL 3 --}}
-                                    <tr>
-                                        <td class="ps-5" style="padding-left: 4rem !important;">
-                                            <div class="d-flex align-items-center">
+                                    <tr x-show="isVisible('{{ addslashes($l3->name) }}', {{ $l3->is_active }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l3->id }}) }">
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center ms-5" style="padding-left: 2rem;">
+                                                <input type="checkbox" class="form-check-input shadow-sm border-secondary border-opacity-25 me-3" value="{{ $l3->id }}" x-model.number="selected">
                                                 <i class="bi bi-arrow-return-right text-muted me-2"></i>
                                                 <i class="bi bi-tag text-success me-2"></i>
                                                 <span class="text-secondary">{{ $l3->name }}</span>
@@ -117,10 +231,10 @@
                                         </td>
                                         <td>-</td>
                                         <td class="text-end pe-4">
-                                            <button class="btn btn-sm btn-light border shadow-sm me-1" @click="openModal({{ $l3->id }}, '{{ addslashes($l3->name) }}', 3, {{ $l3->parent_id }}, {{ $l3->is_active }})" title="Edit">
-                                                <i class="bi bi-pencil"></i>
+                                            <button class="btn btn-sm btn-light border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l3->id }}, '{{ addslashes($l3->name) }}', 3, {{ $l3->parent_id }}, {{ $l3->is_active }})" title="Edit">
+                                                <i class="bi bi-pencil text-secondary"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-danger shadow-sm" @click="deleteTag({{ $l3->id }})" title="Delete">
+                                            <button class="btn btn-sm btn-light text-danger border shadow-sm rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="deleteTag({{ $l3->id }})" title="Delete">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </td>
@@ -129,7 +243,7 @@
                             @endforeach
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">
+                                <td colspan="6" class="text-center py-4 text-muted">
                                     <div class="mb-3 mt-3"><i class="bi bi-tags display-6 text-black-50"></i></div>
                                     No Call Tags found. Get started by adding a Level 1 Category.
                                 </td>
@@ -145,91 +259,115 @@
     <div class="modal fade" id="tagFormModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-primary bg-opacity-10 border-bottom-0">
-                    <h5 class="modal-title fw-bold text-primary">
-                        <i class="bi" :class="tagId ? 'bi-pencil-square' : 'bi-plus-circle'"></i> 
-                        <span x-text="tagId ? 'Edit Tag' : 'Add Tag'"></span>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-body-tertiary border-bottom d-flex align-items-center justify-content-between p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
+                            <i class="bi fs-4" :class="tagId ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0 fw-bold text-body"><span x-text="tagId ? 'Edit Tag' : 'Add Tag'"></span></h4>
+                            <p class="mb-0 small text-muted">Configure tag details and dynamic fields</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="row g-3">
-                        <div class="col-md-12">
-                            <label class="form-label fw-bold">Tag Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="form.name" placeholder="e.g. Sales Enquiry">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Level</label>
-                            <input type="text" class="form-control bg-light" x-model="form.level" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Status</label>
-                            <select class="form-select" x-model="form.is_active">
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
-                            </select>
+                <div class="modal-body p-4 bg-body-tertiary">
+                    <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body mb-4">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-light-subtle">
+                                <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                    <i class="bi bi-tag fs-6"></i>
+                                </div>
+                                <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Tag Configuration</h6>
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Tag Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" x-model="form.name" placeholder="e.g. Sales Enquiry">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Level</label>
+                                    <input type="text" class="form-control bg-light" x-model="form.level" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Status</label>
+                                    <select class="form-select" x-model="form.is_active">
+                                        <option value="1">Active</option>
+                                        <option value="0">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
                     {{-- Dynamic Form Builder for Level 2 only --}}
                     <template x-if="form.level == 2">
-                        <div class="mt-4 p-3 border rounded bg-light">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="fw-bold mb-0"><i class="bi bi-ui-radios me-2"></i>Dynamic Form Fields</h6>
-                                <button type="button" class="btn btn-sm btn-outline-primary" @click="addField()">
-                                    <i class="bi bi-plus"></i> Add Field
-                                </button>
-                            </div>
-                            
-                            <template x-if="form.form_fields.length === 0">
-                                <div class="text-muted small fst-italic py-2">No dynamic fields defined. You can add fields to capture extra data when this tag is selected.</div>
-                            </template>
-                            
-                            <template x-for="(field, index) in form.form_fields" :key="index">
-                                <div class="row g-2 mb-2 p-2 border rounded bg-white position-relative">
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted mb-1">Label</label>
-                                        <input type="text" class="form-control form-control-sm" x-model="field.label" placeholder="e.g. Select Product">
+                        <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body mb-4">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom border-light-subtle">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                            <i class="bi bi-ui-radios fs-6"></i>
+                                        </div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Dynamic Form Fields</h6>
                                     </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted mb-1">Key Name</label>
-                                        <input type="text" class="form-control form-control-sm" x-model="field.name" placeholder="e.g. search_product" @input="field.name = field.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted mb-1">Type</label>
-                                        <select class="form-select form-select-sm" x-model="field.type">
-                                            <option value="text">Text Input</option>
-                                            <option value="textarea">Textarea</option>
-                                            <option value="date">Date</option>
-                                            <option value="select">Dropdown Select</option>
-                                            <option value="product_search">Product Search (API)</option>
-                                            <option value="agent_search">Agent Search (API)</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label small text-muted mb-1">Required</label>
-                                        <select class="form-select form-select-sm" x-model="field.is_required">
-                                            <option value="1">Yes</option>
-                                            <option value="0">No</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-1 d-flex align-items-end">
-                                        <button type="button" class="btn btn-sm btn-outline-danger w-100" @click="removeField(index)" title="Remove Field">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                    <div class="col-md-12 mt-2" x-show="field.type === 'select'">
-                                        <label class="form-label small text-muted mb-1">Options (JSON Array)</label>
-                                        <input type="text" class="form-control form-control-sm" x-model="field.options" placeholder='["Option 1", "Option 2"]'>
-                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill fw-bold px-3 transition-all hover-shadow" @click="addField()">
+                                        <i class="bi bi-plus-lg"></i> Add Field
+                                    </button>
                                 </div>
-                            </template>
+                                
+                                <template x-if="form.form_fields.length === 0">
+                                    <div class="text-muted small fst-italic py-2 text-center my-3 bg-light rounded-3 p-3 border border-light-subtle">No dynamic fields defined. Add fields to capture extra data when this tag is selected.</div>
+                                </template>
+                                
+                                <div class="d-flex flex-column gap-3">
+                                    <template x-for="(field, index) in form.form_fields" :key="index">
+                                        <div class="row g-3 p-3 border rounded-3 bg-light position-relative">
+                                            <div class="col-md-3">
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Label</label>
+                                                <input type="text" class="form-control form-control-sm bg-white" x-model="field.label" placeholder="e.g. Select Product">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Key Name</label>
+                                                <input type="text" class="form-control form-control-sm bg-white font-monospace text-primary" x-model="field.name" placeholder="e.g. search_product" @input="field.name = field.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Type</label>
+                                                <select class="form-select form-select-sm bg-white" x-model="field.type">
+                                                    <option value="text">Text Input</option>
+                                                    <option value="textarea">Textarea</option>
+                                                    <option value="date">Date</option>
+                                                    <option value="select">Dropdown Select</option>
+                                                    <option value="product_search">Product Search (API)</option>
+                                                    <option value="agent_search">Agent Search (API)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Required</label>
+                                                <select class="form-select form-select-sm bg-white" x-model="field.is_required">
+                                                    <option value="1">Yes</option>
+                                                    <option value="0">No</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-1 d-flex align-items-end">
+                                                <button type="button" class="btn btn-sm btn-outline-danger w-100 rounded-3" @click="removeField(index)" title="Remove Field">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                            <div class="col-md-12 mt-2" x-show="field.type === 'select'">
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Options (JSON Array)</label>
+                                                <input type="text" class="form-control form-control-sm bg-white font-monospace" x-model="field.options" placeholder='["Option 1", "Option 2"]'>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                     </template>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" @click="saveTag()" :disabled="saving">
+                <div class="modal-footer bg-body-tertiary border-top p-4 d-flex justify-content-end gap-3">
+                    <button type="button" class="btn text-muted fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" @click="saveTag()" :disabled="saving">
                         <span x-show="!saving">Save Tag</span>
                         <span x-show="saving"><span class="spinner-border spinner-border-sm me-2"></span>Saving...</span>
                     </button>
@@ -246,6 +384,10 @@ document.addEventListener('alpine:init', () => {
         tagId: null,
         saving: false,
         
+        selected: [],
+        search: '',
+        filterStatus: '',
+        
         form: {
             name: '',
             level: 1,
@@ -254,6 +396,31 @@ document.addEventListener('alpine:init', () => {
             form_fields: []
         },
         
+        get allSelected() {
+            const visibleCheckboxes = Array.from(document.querySelectorAll('.table tbody tr:not([style*="display: none"]) input[type="checkbox"]'));
+            if (visibleCheckboxes.length === 0) return false;
+            return visibleCheckboxes.every(cb => this.selected.includes(parseInt(cb.value)));
+        },
+
+        toggleAll(e) {
+            const visibleCheckboxes = Array.from(document.querySelectorAll('.table tbody tr:not([style*="display: none"]) input[type="checkbox"]'));
+            if (e.target.checked) {
+                const visibleIds = visibleCheckboxes.map(cb => parseInt(cb.value));
+                this.selected = [...new Set([...this.selected, ...visibleIds])];
+            } else {
+                const visibleIds = visibleCheckboxes.map(cb => parseInt(cb.value));
+                this.selected = this.selected.filter(id => !visibleIds.includes(id));
+            }
+        },
+
+        isVisible(name, isActive) {
+            const matchesSearch = name.toLowerCase().includes(this.search.toLowerCase());
+            let matchesStatus = true;
+            if (this.filterStatus === 'active') matchesStatus = isActive == 1;
+            if (this.filterStatus === 'inactive') matchesStatus = isActive == 0;
+            return matchesSearch && matchesStatus;
+        },
+
         init() {
             this.modalInstance = new bootstrap.Modal(document.getElementById('tagFormModal'));
         },
@@ -383,6 +550,51 @@ document.addEventListener('alpine:init', () => {
                 } catch (e) {
                     Swal.fire('Error', 'Network error occurred.', 'error');
                 }
+            }
+        },
+        
+        async bulkAction(action) {
+            if (!this.selected.length) return;
+            if (action === 'delete') {
+                const result = await Swal.fire({
+                    title: 'Are you sure?',
+                    text: `You are about to delete ${this.selected.length} tags. This cannot be undone!`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete them!'
+                });
+                if (!result.isConfirmed) return;
+            }
+
+            try {
+                const res = await fetch('/call-tags-admin/bulk-action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ action: action, ids: this.selected })
+                });
+
+                if (res.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: 'Bulk action completed.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    const err = await res.json();
+                    Swal.fire('Error', err.message || 'Bulk action failed.', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                Swal.fire('Error', 'Network error occurred.', 'error');
             }
         }
     }));

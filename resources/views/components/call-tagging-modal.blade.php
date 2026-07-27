@@ -485,9 +485,8 @@ document.addEventListener('alpine:init', () => {
                     
                     // Set a session storage toast flag so the dashboard picks it up and shows it
                     sessionStorage.setItem('pending_toast', 'Profile closed successfully');
-                    
-                    // Redirect to the dashboard
-                    window.location.href = '/';
+                    // Emit event to parent to handle state and redirect
+                    window.dispatchEvent(new CustomEvent('call-log-added', { detail: data }));
                 } else {
                     const err = await res.json();
                     alert(err.message || 'Failed to save call log');

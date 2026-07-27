@@ -65,6 +65,13 @@
                                                 <option value="business">Business</option>
                                             </select>
                                         </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Referral Code</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-person-heart"></i></span>
+                                                <input type="text" name="referred_by_code" x-model="form.referred_by_code" class="form-control border-start-0 ps-0 fw-semibold text-uppercase font-monospace" style="font-size: 12px;" placeholder="Optional">
+                                            </div>
+                                        </div>
                                         <div class="col-sm-4 position-relative" @click.away="showSourceDropdown = false">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Lead Source</label>
                                             <div @click="showSourceDropdown = !showSourceDropdown" class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1 cursor-pointer bg-body" style="min-height: 31px; cursor: pointer;">
@@ -346,13 +353,12 @@ document.addEventListener('alpine:init', () => {
         cropSearch: '',
         isSubmitting: false,
         formError: '',
-        modalInstance: null,
         isEdit: false,
         customerId: null,
         form: {
             firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
             category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
-            land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
+            land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: '', referred_by_code: ''
         },
 
         get filteredCrops() {
@@ -388,7 +394,7 @@ document.addEventListener('alpine:init', () => {
             this.form = {
                 firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
                 category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
-                land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: ''
+                land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: '', referred_by_code: ''
             };
             this.selectedSources = [];
             this.selectedIrrigation = [];
@@ -408,6 +414,10 @@ document.addEventListener('alpine:init', () => {
                         this.form[key] = detail.customer[key];
                     }
                 }
+                // extract referral code from referrer if it exists
+                if (detail.customer.referrer && detail.customer.referrer.referral_code) {
+                    this.form.referred_by_code = detail.customer.referrer.referral_code;
+                }
                 // Date formatting for valid_till
                 if (detail.customer.credit_valid_till) {
                     this.form.credit_valid_till = new Date(detail.customer.credit_valid_till).toISOString().split('T')[0];
@@ -421,11 +431,7 @@ document.addEventListener('alpine:init', () => {
             }
             
             this.formError = '';
-            // Initialize modal if not already
-            if (!this.modalInstance) {
-                this.modalInstance = new bootstrap.Modal(document.getElementById('addCustomerModal'));
-            }
-            this.modalInstance.show();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('addCustomerModal')).show();
         },
 
         async submitForm(e) {
@@ -472,9 +478,8 @@ document.addEventListener('alpine:init', () => {
                 
                 // Success
                 this.isSubmitting = false;
-                if (this.modalInstance) {
-                    this.modalInstance.hide();
-                }
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addCustomerModal'));
+                if (modal) modal.hide();
                 
                 if (this.isEdit) {
                     window.dispatchEvent(new CustomEvent('customer-updated'));

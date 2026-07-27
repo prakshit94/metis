@@ -182,6 +182,7 @@ class CustomerController extends Controller implements HasMiddleware
             'is_blacklisted' => ['nullable', 'boolean'],
             'internal_notes' => ['nullable', 'string'],
             'tags' => ['nullable', 'array'],
+            'referred_by_code' => ['nullable', 'string', 'exists:parties,referral_code'],
         ]);
 
         $validated['type'] = 'customer';
@@ -199,6 +200,21 @@ class CustomerController extends Controller implements HasMiddleware
             $validated['created_by'] = $request->user()->id;
         }
 
+        // Handle referral
+        if (!empty($validated['referred_by_code'])) {
+            $referrer = Party::where('referral_code', $validated['referred_by_code'])->first();
+            if ($referrer) {
+                $validated['referred_by'] = $referrer->id;
+                
+                $source = $validated['source'] ?? [];
+                if (!in_array('Referral', $source)) {
+                    $source[] = 'Referral';
+                }
+                $validated['source'] = $source;
+            }
+        }
+        unset($validated['referred_by_code']); // Unset it as it's not a field in the table
+
         $customer = Customer::create($validated);
 
         return response()->json([
@@ -212,9 +228,34 @@ class CustomerController extends Controller implements HasMiddleware
      */
     public function show(Request $request, int|string $customer)
     {
+        $cust = Customer::withTrashed()->findOrFail($customer);
+        if (empty($cust->referral_code)) {
+            $cust->referral_code = strtoupper(Str::random(8));
+            $cust->save();
+        }
+
         $customer = Customer::withTrashed()
+            ->withCount([
+                'referrals as total_farmers_referred',
+                'referredOrders as total_referred_orders_placed',
+                'referredOrders as total_referred_orders_delivered' => function ($q) {
+                    $q->where('orders.status', 'delivered');
+                }
+            ])
             ->with([
                 'addresses.village.services',
+                'referrals:id,firstname,lastname,phone,referred_by',
+                'referrals.addresses' => function ($q) {
+                    $q->where('is_default', true)->with('village:id,village_name,taluka_name,district_name');
+                },
+                'referrer' => function ($q) {
+                    $q->withCount([
+                        'referredOrders as total_referred_orders',
+                        'referredOrders as delivered_referred_orders' => function ($query) {
+                            $query->where('orders.status', 'delivered');
+                        }
+                    ]);
+                },
                 'orders' => function ($q) {
                     $q->latest()->limit(10)->with([
                         'items.product:id,name,sku,image_path',

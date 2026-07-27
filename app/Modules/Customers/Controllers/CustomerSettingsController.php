@@ -11,9 +11,18 @@ use App\Models\LandUnit;
 use App\Models\LeadSource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class CustomerSettingsController extends Controller
+class CustomerSettingsController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:settings-view', only: ['index', 'list']),
+            new Middleware('permission:settings-edit', only: ['store', 'update', 'toggle', 'destroy']),
+        ];
+    }
     protected array $models = [
         'crop' => Crop::class,
         'irrigation' => IrrigationType::class,

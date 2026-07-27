@@ -1084,7 +1084,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async revertStatus(order) {
-      let options = {};
+      let options;
       switch (order.status) {
         case 'confirmed': options = { pending: 'Pending' }; break;
         case 'processing': options = { confirmed: 'Confirmed' }; break;

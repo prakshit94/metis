@@ -35,6 +35,7 @@ class DatabaseSeeder extends Seeder
             LandUnitSeeder::class,
             IrrigationTypeSeeder::class,
             CropSeeder::class,
+            ReferralProgramSeeder::class,
         ]);
     }
 }

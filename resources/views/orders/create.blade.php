@@ -9,7 +9,7 @@
     </script>
 
     <div x-data="createOrderApp(window.__INITIAL_ORDER_CUSTOMER__, window.__INITIAL_ORDER_TO_EDIT__)"
-         @call-log-added.window="if(customerDetails) { if(!customerDetails.call_logs) customerDetails.call_logs = []; customerDetails.call_logs.unshift($event.detail); bottomTab = 'tags'; }">
+         @call-log-added.window="if(customerDetails) { isCallLoggedOrClosed = true; window.location.href = '{{ route('dashboard') }}'; }">
     
     {{-- Page Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
@@ -22,7 +22,7 @@
                 </template>
             </h1>
             <div class="text-muted mb-0 d-flex align-items-center flex-wrap gap-2 mt-2">
-                <span x-show="!editingOrderId && !isConfirmMode" x-cloak>Select customer, add products, and checkout.</span>
+                <span x-show="!editingOrderId && !isConfirmMode" x-cloak>Manage customer profile, add products to cart, and process order checkout.</span>
                 <template x-if="editingOrderId && originalOrder">
                     <div class="d-flex align-items-center flex-wrap gap-3" x-cloak>
                         <div>
@@ -41,11 +41,16 @@
         </div>
         <div class="d-flex gap-2">
             <template x-if="editingOrderId || isConfirmMode">
-                <a href="{{ route('orders') }}" class="btn btn-outline-danger shadow-sm">
+                <a href="{{ route('orders') }}" data-bypass="true" class="btn btn-outline-danger shadow-sm" @click="isCallLoggedOrClosed = true">
                     <i class="bi bi-x-circle me-1"></i> <span x-text="isConfirmMode ? 'Cancel Confirmation' : 'Cancel Edit Mode'"></span>
                 </a>
             </template>
-            <button type="button" class="btn btn-primary shadow-sm" @click="$dispatch('open-call-tagging-modal', {customerId: customerDetails ? customerDetails.id : null})">
+            @can('skip-call-log')
+            <button type="button" class="btn btn-outline-danger shadow-sm" x-show="customerDetails" @click="isCallLoggedOrClosed = true; window.location.href = '{{ route('dashboard') }}'" title="Bypass Call Logging">
+                <i class="bi bi-door-closed me-1"></i> Close Profile
+            </button>
+            @endcan
+            <button type="button" class="btn btn-primary shadow-sm" x-show="customerDetails" @click="$dispatch('open-call-tagging-modal', {customerId: customerDetails ? customerDetails.id : null})">
                 <i class="bi bi-headset me-2"></i> Log Call & Close Profile
             </button>
         </div>
@@ -125,32 +130,82 @@
                 <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2 text-primary"></i>Customer Workspace</h5>
-                        <p class="mb-0 small text-muted">Profile, addresses, and order build steps in one place.</p>
                     </div>
                     <div class="d-flex align-items-center gap-2" x-show="customerDetails" x-cloak>
                         @can('customer-edit')
-                        <button type="button" class="btn btn-sm btn-outline-secondary" @click="$dispatch('open-add-customer-modal', {customer: customerDetails})">
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm hover-shadow transition-all" @click="$dispatch('open-add-customer-modal', {customer: customerDetails})">
                             <i class="bi bi-pencil-square me-1"></i>Edit Profile
                         </button>
                         @endcan
-                        <button type="button" class="btn btn-sm btn-outline-secondary px-2" @click="showCustomerWorkspace = !showCustomerWorkspace" title="Toggle Workspace">
-                            <template x-if="showCustomerWorkspace"><i class="bi bi-chevron-up"></i></template>
-                            <template x-if="!showCustomerWorkspace"><i class="bi bi-chevron-down"></i></template>
-                        </button>
+                        <div class="form-check form-switch cursor-pointer ms-2 mb-0 d-flex align-items-center" title="Toggle Workspace">
+                            <input class="form-check-input mt-0 me-2 shadow-sm" type="checkbox" role="switch" id="workspaceToggleBtn" x-model="showCustomerWorkspace" style="cursor: pointer;">
+                            <label class="form-check-label fw-bold text-muted text-uppercase mb-0" for="workspaceToggleBtn" style="cursor: pointer; font-size: 10px; letter-spacing: 0.5px;" x-text="showCustomerWorkspace ? 'Hide Profile' : 'View Profile'"></label>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body p-4 p-lg-4" x-show="showCustomerWorkspace">
                     <div class="card border shadow-sm mb-4" x-show="customerDetails" x-cloak>
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;" x-text="customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
-                                    <div>
-                                        <h5 class="mb-1 fw-bold" x-text="customerDisplayName"></h5>
-                                        <div class="small text-muted d-flex align-items-center gap-2">
-                                            <span x-text="customerDetails.party_code"></span>
-                                            <span class="badge bg-success bg-opacity-10 text-success border border-success" x-text="customerDetails.status || 'Active'"></span>
-                                            <span class="badge bg-info bg-opacity-10 text-info border border-info" x-show="customerDetails.kyc_completed">KYC Verified</span>
+                                <div class="d-flex align-items-start gap-4 flex-wrap">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;" x-text="customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
+                                        <div>
+                                            <h5 class="mb-1 fw-bold" x-text="customerDisplayName"></h5>
+                                            <div class="small text-muted d-flex align-items-center gap-2">
+                                                <span x-text="customerDetails.party_code"></span>
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success" x-text="customerDetails.status || 'Active'"></span>
+                                                <span class="badge bg-info bg-opacity-10 text-info border border-info" x-show="customerDetails.kyc_completed">KYC Verified</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Referral Stats in Header -->
+                                    <div class="d-flex gap-3 align-items-start border-start ps-3 ms-1 border-secondary border-opacity-25" x-show="customerDetails.referral_code || customerDetails?.referrer || customerDetails?.total_farmers_referred > 0" x-cloak>
+                                        <!-- Referral Code -->
+                                        <div x-show="customerDetails.referral_code" style="min-width: 110px;">
+                                            <span class="text-muted d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referral Code</span>
+                                            <div class="d-flex align-items-center gap-2 mt-1">
+                                                <span class="fw-bold text-primary font-monospace bg-primary bg-opacity-10 px-2 py-1 rounded" style="letter-spacing: 1px; font-size: 11px;" x-text="customerDetails.referral_code"></span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Referrer Details -->
+                                        <div x-show="customerDetails?.referrer" class="border-start ps-3 border-secondary border-opacity-25" style="min-width: 140px;">
+                                            <span class="text-muted d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referred By</span>
+                                            <div class="d-flex flex-column mt-1">
+                                                <span class="fw-bold text-body-emphasis lh-1" style="font-size: 11px;" x-text="(customerDetails?.referrer?.firstname || '') + ' ' + (customerDetails?.referrer?.lastname || '')"></span>
+                                                <span class="text-muted mt-1 lh-1" style="font-size: 10px;"><i class="bi bi-telephone text-primary opacity-75 me-1" style="font-size: 9px;"></i><span x-text="customerDetails?.referrer?.phone"></span></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Downline Stats -->
+                                        <div x-data="{ showReferralsList: false }" x-show="customerDetails?.total_farmers_referred > 0" class="border-start ps-3 border-secondary border-opacity-25 position-relative" style="min-width: 130px;">
+                                            <span class="text-muted d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referred Network</span>
+                                            <button type="button" @click="showReferralsList = !showReferralsList" class="btn btn-sm btn-outline-success border-0 text-start p-0 d-flex align-items-center gap-1 mt-1">
+                                                <span class="fw-bold" style="font-size: 11px;"><i class="bi bi-people me-1"></i><span x-text="customerDetails?.total_farmers_referred || 0"></span> Farmers</span>
+                                                <i class="bi" :class="showReferralsList ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 10px;"></i>
+                                            </button>
+                                            
+                                            <!-- Absolute Dropdown -->
+                                            <div x-show="showReferralsList" @click.away="showReferralsList = false" class="position-absolute shadow-lg rounded bg-body border border-success border-opacity-25 z-3 p-1 mt-2" style="width: 250px; left: 0; max-height: 200px; overflow-y: auto;" x-cloak>
+                                                <template x-for="(ref, index) in customerDetails.referrals" :key="ref.id">
+                                                    <div class="d-flex flex-column py-2 px-2 border-bottom border-success border-opacity-10 bg-success bg-opacity-10 rounded mb-1">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <span class="text-success-emphasis fw-bold text-truncate" style="font-size: 10px; max-width: 65%;">
+                                                                <span class="text-success opacity-75 me-1" x-text="(index + 1) + '.'"></span><span x-text="(ref.firstname || '') + ' ' + (ref.lastname || '')"></span>
+                                                            </span>
+                                                            <span class="text-muted" style="font-size: 10px;"><i class="bi bi-telephone text-success opacity-50 me-1" style="font-size: 8px;"></i><span x-text="ref.phone"></span></span>
+                                                        </div>
+                                                        <div class="mt-1" style="padding-left: 12px;" x-show="ref.addresses && ref.addresses.length > 0 && ref.addresses[0].village">
+                                                            <span class="text-muted d-flex align-items-center gap-1 text-truncate" style="font-size: 9px; max-width: 100%;">
+                                                                <i class="bi bi-geo-alt-fill text-success opacity-50" style="font-size: 8px;"></i>
+                                                                <span x-text="[ref.addresses[0]?.village?.village_name, ref.addresses[0]?.village?.taluka_name, ref.addresses[0]?.village?.district_name].filter(Boolean).join(', ')"></span>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -178,6 +233,7 @@
                                             <div class="mb-2" x-show="customerDetails.alternatemobile"><span class="text-muted d-block small mb-1">Alt Phone</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.alternatemobile"></span></div>
                                             <div class="mb-2" x-show="customerDetails.email"><span class="text-muted d-block small mb-1">Email Address</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block w-100" :title="customerDetails.email"><i class="bi bi-envelope text-primary me-1"></i><span x-text="customerDetails.email"></span></span></div>
                                             <div class="mb-2" x-show="customerDetails.relative_name"><span class="text-muted d-block small mb-1">Relative</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.relative_name + ' (' + customerDetails.relative_phone + ')'"></span></div>
+
                                         </div>
                                     </div>
                                 </div>
@@ -212,19 +268,19 @@
                                             <div class="mb-2" x-show="customerDetails.crops && customerDetails.crops.length > 0">
                                                 <span class="text-muted d-block small mb-1">Crops</span>
                                                 <div class="d-flex gap-1 flex-wrap">
-                                                    <template x-for="crop in customerDetails.crops"><span class="badge bg-success bg-opacity-25 text-success-emphasis border border-success border-opacity-50" x-text="crop"></span></template>
+                                                    <template x-for="crop in (customerDetails.crops || [])"><span class="badge bg-success bg-opacity-25 text-success-emphasis border border-success border-opacity-50" x-text="crop"></span></template>
                                                 </div>
                                             </div>
                                             <div class="mb-2" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
                                                 <span class="text-muted d-block small mb-1">Irrigation</span>
                                                 <div class="d-flex gap-1 flex-wrap">
-                                                    <template x-for="type in customerDetails.irrigation_type"><span class="badge bg-success text-white" x-text="type"></span></template>
+                                                    <template x-for="type in (customerDetails.irrigation_type || [])"><span class="badge bg-success text-white" x-text="type"></span></template>
                                                 </div>
                                             </div>
                                             <div class="mb-2" x-show="customerDetails.tags && customerDetails.tags.length > 0">
                                                 <span class="text-muted d-block small mb-1">Tags</span>
                                                 <div class="d-flex gap-1 flex-wrap">
-                                                    <template x-for="tag in customerDetails.tags"><span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis" x-text="tag"></span></template>
+                                                    <template x-for="tag in (customerDetails.tags || [])"><span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis" x-text="tag"></span></template>
                                                 </div>
                                             </div>
                                         </div>
@@ -269,9 +325,9 @@
                                     </div>
                                 </div>
 
+
                                 <!-- Notes & Status -->
-                                <div class="col-12 mt-2 pt-2 border-top" x-show="customerDetails.internal_notes || customerDetails.is_blacklisted">
-                                    <div class="d-flex flex-wrap gap-3 align-items-center">
+                                <div class="col-12 mt-2 pt-2 border-top" x-show="customerDetails.internal_notes || customerDetails.is_blacklisted">                                    <div class="d-flex flex-wrap gap-3 align-items-center">
                                         <div x-show="customerDetails.is_blacklisted"><span class="badge bg-danger"><i class="bi bi-slash-circle me-1"></i>Blacklisted</span></div>
                                         <div x-show="customerDetails.internal_notes">
                                             <span class="text-muted me-1 fw-bold" style="font-size: 11px; text-transform: uppercase;">Notes:</span>
@@ -422,7 +478,7 @@
                                     <div class="small fw-bold text-muted text-uppercase mb-1" style="font-size: 11px; letter-spacing: 1px;">Warehouse</div>
                                     <h6 class="mb-0 fw-bold">Select fulfillment warehouse</h6>
                                 </div>
-                                <select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId">
+                                <select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId" @change="searchProducts(true)">
                                     <option value="">Select Warehouse</option>
                                     @foreach($warehouses as $w)
                                     <option value="{{ $w->id }}">{{ $w->name }}</option>
@@ -446,9 +502,9 @@
                                 <button type="button" class="btn btn-sm" :class="viewMode === 'grid' ? 'btn-primary' : 'btn-outline-primary'" @click="viewMode = 'grid'" title="Grid View"><i class="bi bi-grid"></i></button>
                                 <button type="button" class="btn btn-sm" :class="viewMode === 'table' ? 'btn-primary' : 'btn-outline-primary'" @click="viewMode = 'table'" title="Table View"><i class="bi bi-list-ul"></i></button>
                             </div>
-                            <div class="input-group" style="max-width:240px">
-                                <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search"></i></span>
-                                <input type="text" class="form-control border-start-0" placeholder="Search SKU, name..." x-model="productQuery" @input.debounce.350ms="searchProducts(true)">
+                            <div class="position-relative" style="max-width:240px; width:100%;">
+                                <input type="search" class="form-control pe-5" placeholder="Search SKU, name..." x-model="productQuery" @input.debounce.350ms="searchProducts(true)">
+                                <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
                             </div>
                             <select class="form-select" style="max-width:140px" x-model="stockFilter" @change="searchProducts(true)">
                                 <option value="available">In Stock</option>
@@ -697,7 +753,7 @@
         {{-- RIGHT: Cart Summary + Calculations + Offers + Place Order (Glossy Style) --}}
         <div class="col-xl-4" x-show="isCartSidebarOpen" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 translate-x-4">
             <div class="sticky-side-div" style="position: sticky; top: 24px;">
-                <div class="card shadow-sm border-0 mb-4" x-show="cart.length > 0" x-cloak>
+                <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="mb-0 fw-bold"><i class="bi bi-cart3 me-2 text-primary"></i>Shopping Cart (<span x-text="cart.length" class="text-primary"></span>)</h5>
@@ -763,7 +819,7 @@
                         </template>
                     </div>
                 </div>
-                <div class="card shadow-sm border-0 mb-4" x-show="cart.length > 0" x-cloak>
+                <div class="card shadow-sm border-0 mb-4">
                     <div class="card-body p-4 space-y-4">
                         
                         {{-- ── Promotions & Offers ── --}}
@@ -905,7 +961,7 @@
                                                 <span x-text="Number(customerDetails.outstanding_balance) > 0 ? '(Due)' : '(Credit)'"></span>
                                             </div>
                                         </div>
-                                        <input class="form-check-input fs-4 m-0" type="checkbox" x-model="useWalletBalance" @click.stop>
+                                        <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" x-model="useWalletBalance" @click.stop>
                                     </div>
                                     <div x-show="useWalletBalance" x-cloak class="mt-3 pt-3 border-top">
                                         <div class="d-flex justify-content-between align-items-center">
@@ -927,7 +983,7 @@
                                     <label class="form-check-label fw-bold mb-0 text-body-emphasis" for="futureOrderSwitch">Schedule Future Order</label>
                                     <div class="small text-muted mt-1" style="font-size: 11px;">Save as a draft for later.</div>
                                 </div>
-                                <input class="form-check-input fs-4 m-0" type="checkbox" id="futureOrderSwitch" x-model="isDraft" @click.stop>
+                                <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" id="futureOrderSwitch" x-model="isDraft" @click.stop>
                             </div>
                             <div x-show="isDraft" x-cloak class="mt-3 pt-3 border-top">
                                 <label class="form-label fw-semibold small text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Delivery Date</label>
@@ -1704,6 +1760,7 @@
             </div>
         </div>
     </div>
+    </div>
 
 <style>
     /* Hide number input spin buttons */
@@ -1795,8 +1852,42 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         confirmNotes: '',
         rescheduleReasons: @json($rescheduleReasons ?? []),
         originalOrder: window.__INITIAL_ORDER_TO_EDIT__ || null,
+        
+        isCallLoggedOrClosed: false,
 
         async init() {
+            window.addEventListener('beforeunload', (e) => {
+                if (this.customerDetails && !this.isCallLoggedOrClosed) {
+                    e.preventDefault();
+                    e.returnValue = 'You must Log a Call before leaving this profile.';
+                    return e.returnValue;
+                }
+            });
+
+            // Intercept keyboard refresh shortcuts (F5, Ctrl+R, Cmd+R) to show custom modal
+            window.addEventListener('keydown', (e) => {
+                if (this.customerDetails && !this.isCallLoggedOrClosed) {
+                    if (e.key === 'F5' || (e.ctrlKey && e.key.toLowerCase() === 'r') || (e.metaKey && e.key.toLowerCase() === 'r')) {
+                        e.preventDefault();
+                        const blockedModal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('actionBlockedModal'));
+                        blockedModal.show();
+                    }
+                }
+            });
+
+            // Actively block link clicks across the entire page (including header)
+            document.addEventListener('click', (e) => {
+                if (this.customerDetails && !this.isCallLoggedOrClosed) {
+                    const link = e.target.closest('a');
+                    if (link && link.href && !link.href.startsWith('javascript') && !link.getAttribute('href').startsWith('#') && link.target !== '_blank' && !link.hasAttribute('data-bypass')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const blockedModal = new window.bootstrap.Modal(document.getElementById('actionBlockedModal'));
+                        blockedModal.show();
+                    }
+                }
+            }, true);
+            
             this.searchProducts();
             if (this.customerDetails) {
                 this.addresses = this.customerDetails.addresses || [];
@@ -2452,6 +2543,9 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     if (!this.formErrors.length && json.message) this.formErrors.push(json.message);
                     return false;
                 }
+                if (json && json.data && json.data.id) {
+                    this.editingOrderId = json.data.id;
+                }
                 
                 return true;
             } catch(e) {
@@ -2545,7 +2639,31 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
 }
 </script>
 @endpush
+
+
+<x-add-customer-modal />
 <x-customer-address-modal />
 <x-call-tagging-modal />
+
+<!-- Action Blocked Modal -->
+<div class="modal fade" id="actionBlockedModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger bg-opacity-10 border-bottom-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center pt-0">
+                <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-shield-lock-fill fs-1"></i>
+                </div>
+                <h5 class="fw-bold mb-2 text-danger">Action Blocked</h5>
+                <p class="text-muted mb-0 small">You must <strong>Log a Call</strong> or explicitly <strong>Close the Profile</strong> before leaving this page.</p>
+            </div>
+            <div class="modal-footer border-top-0 justify-content-center pb-4 pt-0">
+                <button type="button" class="btn btn-danger px-4 shadow-sm rounded-pill" data-bs-dismiss="modal">I Understand</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @endsection

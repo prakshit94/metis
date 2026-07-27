@@ -19,7 +19,15 @@ class CallTagAdminController extends Controller
             }, 'formFields']);
         }])->whereNull('parent_id')->orderBy('sort_order')->get();
         
-        return view('call-tags.index', compact('tags'));
+        $allTags = CallTag::all();
+        $stats = [
+            'total' => $allTags->count(),
+            'active' => $allTags->where('is_active', true)->count(),
+            'inactive' => $allTags->where('is_active', false)->count(),
+            'level_1' => $allTags->where('level', 1)->count()
+        ];
+        
+        return view('call-tags.index', compact('tags', 'stats'));
     }
 
     public function store(Request $request)
@@ -120,5 +128,27 @@ class CallTagAdminController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to delete tag', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $data = $request->validate([
+            'action' => 'required|in:delete,activate,deactivate',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:call_tags,id',
+        ]);
+
+        $ids = $data['ids'];
+        $action = $data['action'];
+
+        if ($action === 'delete') {
+            CallTag::whereIn('id', $ids)->delete();
+        } elseif ($action === 'activate') {
+            CallTag::whereIn('id', $ids)->update(['is_active' => true]);
+        } elseif ($action === 'deactivate') {
+            CallTag::whereIn('id', $ids)->update(['is_active' => false]);
+        }
+
+        return response()->json(['message' => 'Bulk action completed successfully.']);
     }
 }

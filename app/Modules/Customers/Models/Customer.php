@@ -24,6 +24,8 @@ class Customer extends Model
         'firstname',
         'middlename',
         'lastname',
+        'referral_code',
+        'referred_by',
         'email',
         'phone',
         'alternatemobile',
@@ -113,6 +115,16 @@ class Customer extends Model
         return $this->hasOne(PartyAddress::class, 'party_id')->where('is_default', true);
     }
 
+    public function referrer()
+    {
+        return $this->belongsTo(Party::class, 'referred_by');
+    }
+
+    public function referrals()
+    {
+        return $this->hasMany(Party::class, 'referred_by');
+    }
+
     public function orders(): HasMany
     {
         if (class_exists(Order::class)) {
@@ -120,6 +132,11 @@ class Customer extends Model
         }
 
         return $this->hasMany(self::class, 'id')->whereRaw('0=1'); // empty relation fallback
+    }
+
+    public function referredOrders(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(Order::class, self::class, 'referred_by', 'party_id');
     }
 
     // ─── Scopes ───────────────────────────────────────────────────────────────

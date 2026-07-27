@@ -562,10 +562,6 @@
 .custom-hover-bg:hover { background-color: rgba(var(--bs-primary-rgb), 0.1); }
 .custom-hover-opacity { transition: all 0.2s; }
 .custom-hover-opacity:hover { opacity: 1 !important; color: var(--bs-danger) !important; transform: scale(1.1); }
-input[type="text"]:focus, input[type="email"]:focus, input[type="number"]:focus, input[type="datetime-local"]:focus, select:focus, textarea:focus {
-    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.15) !important;
-    border-color: var(--bs-primary) !important;
-}
 .cursor-pointer { cursor: pointer; }
 </style>
 

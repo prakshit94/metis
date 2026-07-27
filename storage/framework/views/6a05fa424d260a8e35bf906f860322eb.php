@@ -47,17 +47,17 @@
                 
                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['orders.view', 'coupon-view', 'promotions-view'])): ?>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo e($current === 'orders' || $current === 'promotions.coupons' || $current === 'promotions.offers' ? 'active' : ''); ?>"
+                    <a class="nav-link <?php echo e(in_array($current, ['orders', 'promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'active' : ''); ?>"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#salesSubmenu"
-                       aria-expanded="<?php echo e($current === 'orders' || $current === 'promotions.coupons' || $current === 'promotions.offers' ? 'true' : 'false'); ?>"
+                       aria-expanded="<?php echo e(in_array($current, ['orders', 'promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'true' : 'false'); ?>"
                        aria-controls="salesSubmenu">
                         <i class="bi bi-shop"></i>
                         <span>Sales &amp; Marketing</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse <?php echo e($current === 'orders' || $current === 'promotions.coupons' || $current === 'promotions.offers' ? 'show' : ''); ?>" id="salesSubmenu">
+                    <div class="collapse <?php echo e(in_array($current, ['orders', 'promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'show' : ''); ?>" id="salesSubmenu">
                         <ul class="nav nav-submenu">
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.view')): ?>
                             <li class="nav-item">
@@ -80,6 +80,14 @@
                                 <a class="nav-link <?php echo e($current === 'promotions.offers' ? 'active' : ''); ?>" href="<?php echo e(route('promotions.offers')); ?>">
                                     <i class="bi bi-star-fill"></i>
                                     <span>Offers &amp; Deals</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('promotions-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'referrals.programs.index' ? 'active' : ''); ?>" href="<?php echo e(route('referrals.programs.index')); ?>">
+                                    <i class="bi bi-diagram-3-fill"></i>
+                                    <span>Referral Programs</span>
                                 </a>
                             </li>
                             <?php endif; ?>
@@ -436,14 +444,6 @@
                                 <a class="nav-link <?php echo e(Str::startsWith($current, 'elements') ? 'active' : ''); ?>" href="<?php echo e(route('elements')); ?>">
                                     <i class="bi bi-puzzle-fill"></i>
                                     <span>UI Elements</span>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('settings-view')): ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo e($current === 'settings' ? 'active' : ''); ?>" href="<?php echo e(route('settings')); ?>">
-                                    <i class="bi bi-gear-fill"></i>
-                                    <span>Settings</span>
                                 </a>
                             </li>
                             <?php endif; ?>

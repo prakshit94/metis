@@ -357,6 +357,18 @@ class OrderController extends Controller implements HasMiddleware
         if (request()->filled('customer_id')) {
             $initialCustomer = Party::with([
                 'addresses.village.services',
+                'referrals:id,firstname,lastname,phone,referred_by',
+                'referrals.addresses' => function ($q) {
+                    $q->where('is_default', true)->with('village:id,village_name,taluka_name,district_name');
+                },
+                'referrer' => function ($q) {
+                    $q->withCount([
+                        'referredOrders as total_referred_orders',
+                        'referredOrders as delivered_referred_orders' => function ($query) {
+                            $query->where('orders.status', 'delivered');
+                        }
+                    ]);
+                },
                 'callLogs' => function ($q) {
                     $q->latest()->limit(15)->with(['agent', 'tagL1', 'tagL2', 'tagL3', 'metas']);
                 },
@@ -371,7 +383,18 @@ class OrderController extends Controller implements HasMiddleware
                         'creator:id,first_name,last_name,name',
                     ]);
                 },
+            ])->withCount([
+                'referrals as total_farmers_referred',
+                'referredOrders as total_referred_orders_placed',
+                'referredOrders as total_referred_orders_delivered' => function ($q) {
+                    $q->where('orders.status', 'delivered');
+                }
             ])->find(request()->integer('customer_id'));
+            
+            if ($initialCustomer && empty($initialCustomer->referral_code)) {
+                $initialCustomer->referral_code = strtoupper(\Illuminate\Support\Str::random(8));
+                $initialCustomer->save();
+            }
         }
 
         if (request()->filled('order_id')) {
@@ -390,6 +413,18 @@ class OrderController extends Controller implements HasMiddleware
             if ($initialOrder && ! $initialCustomer) {
                 $initialCustomer = Party::with([
                     'addresses.village.services',
+                    'referrals:id,firstname,lastname,phone,referred_by',
+                    'referrals.addresses' => function ($q) {
+                        $q->where('is_default', true)->with('village:id,village_name,taluka_name,district_name');
+                    },
+                    'referrer' => function ($q) {
+                        $q->withCount([
+                            'referredOrders as total_referred_orders',
+                            'referredOrders as delivered_referred_orders' => function ($query) {
+                                $query->where('orders.status', 'delivered');
+                            }
+                        ]);
+                    },
                     'orders' => function ($q) {
                         $q->latest()->limit(10)->with([
                             'items.product:id,name,sku,image_path,tax_rate_id',
@@ -401,6 +436,12 @@ class OrderController extends Controller implements HasMiddleware
                             'creator:id,first_name,last_name,name',
                         ]);
                     },
+                ])->withCount([
+                    'referrals as total_farmers_referred',
+                    'referredOrders as total_referred_orders_placed',
+                    'referredOrders as total_referred_orders_delivered' => function ($q) {
+                        $q->where('orders.status', 'delivered');
+                    }
                 ])->find($initialOrder->party_id);
             }
         }

@@ -43,6 +43,11 @@ class CustomerAddressController extends Controller implements HasMiddleware
 
         $isDefault = (bool) ($validated['is_default'] ?? false);
 
+        // If this is the first address for the customer, force it to be default
+        if ($customer->addresses()->count() === 0) {
+            $isDefault = true;
+        }
+
         if ($isDefault) {
             $customer->addresses()->update(['is_default' => false]);
         }

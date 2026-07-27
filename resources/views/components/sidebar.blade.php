@@ -47,17 +47,17 @@
                 {{-- Sales & Marketing Dropdown --}}
                 @canany(['orders.view', 'coupon-view', 'promotions-view'])
                 <li class="nav-item">
-                    <a class="nav-link {{ $current === 'orders' || $current === 'promotions.coupons' || $current === 'promotions.offers' ? 'active' : '' }}"
+                    <a class="nav-link {{ in_array($current, ['orders', 'promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'active' : '' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#salesSubmenu"
-                       aria-expanded="{{ $current === 'orders' || $current === 'promotions.coupons' || $current === 'promotions.offers' ? 'true' : 'false' }}"
+                       aria-expanded="{{ in_array($current, ['orders', 'promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'true' : 'false' }}"
                        aria-controls="salesSubmenu">
                         <i class="bi bi-shop"></i>
                         <span>Sales &amp; Marketing</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ $current === 'orders' || $current === 'promotions.coupons' || $current === 'promotions.offers' ? 'show' : '' }}" id="salesSubmenu">
+                    <div class="collapse {{ in_array($current, ['orders', 'promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'show' : '' }}" id="salesSubmenu">
                         <ul class="nav nav-submenu">
                             @can('orders.view')
                             <li class="nav-item">
@@ -80,6 +80,14 @@
                                 <a class="nav-link {{ $current === 'promotions.offers' ? 'active' : '' }}" href="{{ route('promotions.offers') }}">
                                     <i class="bi bi-star-fill"></i>
                                     <span>Offers &amp; Deals</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('promotions-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'referrals.programs.index' ? 'active' : '' }}" href="{{ route('referrals.programs.index') }}">
+                                    <i class="bi bi-diagram-3-fill"></i>
+                                    <span>Referral Programs</span>
                                 </a>
                             </li>
                             @endcan
@@ -436,14 +444,6 @@
                                 <a class="nav-link {{ Str::startsWith($current, 'elements') ? 'active' : '' }}" href="{{ route('elements') }}">
                                     <i class="bi bi-puzzle-fill"></i>
                                     <span>UI Elements</span>
-                                </a>
-                            </li>
-                            @endcan
-                            @can('settings-view')
-                            <li class="nav-item">
-                                <a class="nav-link {{ $current === 'settings' ? 'active' : '' }}" href="{{ route('settings') }}">
-                                    <i class="bi bi-gear-fill"></i>
-                                    <span>Settings</span>
                                 </a>
                             </li>
                             @endcan

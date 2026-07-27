@@ -185,7 +185,6 @@ document.addEventListener('alpine:init', () => {
         addressId: null,
         isSubmitting: false,
         formError: '',
-        modalInstance: null,
         villageSearchQuery: '',
         villageResults: [],
         form: {
@@ -274,10 +273,7 @@ document.addEventListener('alpine:init', () => {
             }
             this.formError = '';
             
-            if (!this.modalInstance) {
-                this.modalInstance = new bootstrap.Modal(document.getElementById('customerAddressModal'));
-            }
-            this.modalInstance.show();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('customerAddressModal')).show();
         },
 
         async submitForm(e) {
@@ -315,9 +311,8 @@ document.addEventListener('alpine:init', () => {
                 }
                 
                 this.isSubmitting = false;
-                if (this.modalInstance) {
-                    this.modalInstance.hide();
-                }
+                const modal = bootstrap.Modal.getInstance(document.getElementById('customerAddressModal'));
+                if (modal) modal.hide();
                 
                 // Dispatch event to refresh customer data
                 window.dispatchEvent(new CustomEvent('customer-updated'));
