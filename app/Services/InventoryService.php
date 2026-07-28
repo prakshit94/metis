@@ -177,38 +177,45 @@ class InventoryService
         return $stock->refresh();
     }
 
-    /**
-     * Ensure a warehouse has a visible stock row for every non-draft product.
-     * This keeps the stock-management screen usable even before stock is assigned.
-     */
     public function ensureWarehouseStockCoverage(int $warehouseId): void
     {
         DB::transaction(function () use ($warehouseId) {
             $productIds = Product::where('status', '!=', 'draft')->pluck('id');
 
-            foreach ($productIds as $productId) {
-                $existing = Stock::withTrashed()
-                    ->where('product_id', $productId)
-                    ->where('warehouse_id', $warehouseId)
-                    ->first();
+            $existingStocks = Stock::withTrashed()
+                ->where('warehouse_id', $warehouseId)
+                ->whereIn('product_id', $productIds)
+                ->get(['id', 'product_id', 'deleted_at']);
 
-                if ($existing) {
-                    if ($existing->trashed()) {
-                        $existing->restore();
-                    }
+            $existingProductIds = $existingStocks->pluck('product_id')->toArray();
+            $trashedStocks = $existingStocks->filter(fn ($s) => $s->trashed());
 
-                    continue;
+            if ($trashedStocks->isNotEmpty()) {
+                Stock::withTrashed()->whereIn('id', $trashedStocks->pluck('id'))->restore();
+            }
+
+            $missingIds = array_diff($productIds->toArray(), $existingProductIds);
+
+            if (! empty($missingIds)) {
+                $now = now();
+                $insertData = [];
+                foreach ($missingIds as $productId) {
+                    $insertData[] = [
+                        'product_id' => $productId,
+                        'warehouse_id' => $warehouseId,
+                        'quantity' => 0,
+                        'reserved_qty' => 0,
+                        'dispatched_qty' => 0,
+                        'committed_qty' => 0,
+                        'in_transit_qty' => 0,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
                 }
 
-                Stock::create([
-                    'product_id' => $productId,
-                    'warehouse_id' => $warehouseId,
-                    'quantity' => 0,
-                    'reserved_qty' => 0,
-                    'dispatched_qty' => 0,
-                    'committed_qty' => 0,
-                    'in_transit_qty' => 0,
-                ]);
+                foreach (array_chunk($insertData, 500) as $chunk) {
+                    Stock::insert($chunk);
+                }
             }
         }, 3);
     }
@@ -1205,19 +1212,36 @@ class InventoryService
             }
 
             if ($order->type === 'sale' && $order->warehouse_id) {
+                // Determine already restocked items via completed RMAs to prevent double-restocking
+                $alreadyRestocked = DB::table('order_return_items')
+                    ->join('order_returns', 'order_return_items.order_return_id', '=', 'order_returns.id')
+                    ->where('order_returns.order_id', $order->id)
+                    ->where('order_returns.status', 'completed')
+                    ->select('order_return_items.product_id', DB::raw('SUM(order_return_items.restocked_qty + order_return_items.damaged_qty) as total_restocked'))
+                    ->groupBy('order_return_items.product_id')
+                    ->pluck('total_restocked', 'product_id');
+
                 foreach ($order->items as $item) {
                     $productId = (int) $item->product_id;
                     $warehouseId = (int) $order->warehouse_id;
                     $qty = (float) $item->quantity;
 
+                    $previouslyRestocked = (float) ($alreadyRestocked[$productId] ?? 0);
+                    $qtyToRestock = max(0.0, $qty - $previouslyRestocked);
+
                     $stock = $this->getStockForUpdate($productId, $warehouseId);
-                    $stock->quantity = (float) $stock->quantity + $qty;
+
+                    if ($qtyToRestock > 0) {
+                        $stock->quantity = (float) $stock->quantity + $qtyToRestock;
+                        $this->logMovement($productId, $warehouseId, $qtyToRestock, 'in', Order::class, $order->id);
+                    }
+
                     if (in_array($order->status, Order::inTransitStatuses(), true)) {
                         $stock->dispatched_qty = max(0.0, (float) $stock->dispatched_qty - $qty);
                     }
+
                     $stock->save();
 
-                    $this->logMovement($productId, $warehouseId, $qty, 'in', Order::class, $order->id);
                     $this->syncProductStatus($productId);
                 }
             }

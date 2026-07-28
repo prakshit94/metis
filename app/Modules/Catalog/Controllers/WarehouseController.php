@@ -186,6 +186,26 @@ class WarehouseController extends Controller implements HasMiddleware
         $this->authorize('product-delete');
 
         $model = Warehouse::findOrFail($id);
+
+        if ($model->is_default) {
+            return response()->json(['message' => 'Cannot delete the default warehouse.'], 422);
+        }
+
+        $hasActiveStock = \App\Modules\Inventory\Models\Stock::where('warehouse_id', $id)
+            ->where(function ($query) {
+                $query->where('quantity', '>', 0)
+                    ->orWhere('reserved_qty', '>', 0)
+                    ->orWhere('committed_qty', '>', 0)
+                    ->orWhere('in_transit_qty', '>', 0)
+                    ->orWhere('dispatched_qty', '>', 0);
+            })->exists();
+
+        if ($hasActiveStock) {
+            return response()->json([
+                'message' => 'Cannot delete this warehouse because it contains active inventory or pending orders. Please transfer all stock and clear pending reservations before deletion.'
+            ], 422);
+        }
+
         $model->delete();
 
         return response()->json([

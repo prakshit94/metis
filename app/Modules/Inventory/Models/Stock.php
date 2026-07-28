@@ -90,21 +90,37 @@ class Stock extends Model
     public function reservations(): HasMany
     {
         return $this->hasMany(StockReservation::class, 'product_id', 'product_id')
-            ->where('warehouse_id', $this->warehouse_id ?? -1);
+            ->where(function ($query) {
+                if ($this->warehouse_id) {
+                    $query->where('stock_reservations.warehouse_id', $this->warehouse_id);
+                } else {
+                    $query->whereColumn('stock_reservations.warehouse_id', 'stocks.warehouse_id');
+                }
+            });
     }
 
     public function movements(): HasMany
     {
         return $this->hasMany(StockMovement::class, 'product_id', 'product_id')
-            ->where('warehouse_id', $this->warehouse_id ?? -1);
+            ->where(function ($query) {
+                if ($this->warehouse_id) {
+                    $query->where('stock_movements.warehouse_id', $this->warehouse_id);
+                } else {
+                    $query->whereColumn('stock_movements.warehouse_id', 'stocks.warehouse_id');
+                }
+            });
     }
 
     public function pendingOrderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class, 'product_id', 'product_id')
             ->whereHas('order', function ($query) {
-                $query->whereColumn('orders.warehouse_id', 'stocks.warehouse_id')
-                    ->where('orders.status', 'pending');
+                if ($this->warehouse_id) {
+                    $query->where('orders.warehouse_id', $this->warehouse_id);
+                } else {
+                    $query->whereColumn('orders.warehouse_id', 'stocks.warehouse_id');
+                }
+                $query->where('orders.status', 'pending');
             });
     }
 
@@ -112,8 +128,12 @@ class Stock extends Model
     {
         return $this->hasMany(OrderItem::class, 'product_id', 'product_id')
             ->whereHas('order', function ($query) {
-                $query->whereColumn('orders.warehouse_id', 'stocks.warehouse_id')
-                    ->whereIn('orders.status', ['delivered', 'completed']);
+                if ($this->warehouse_id) {
+                    $query->where('orders.warehouse_id', $this->warehouse_id);
+                } else {
+                    $query->whereColumn('orders.warehouse_id', 'stocks.warehouse_id');
+                }
+                $query->whereIn('orders.status', ['delivered', 'completed']);
             });
     }
 
@@ -123,8 +143,12 @@ class Stock extends Model
             ->whereHas('orderReturn', function ($query) {
                 $query->where('status', 'completed')
                     ->whereHas('order', function ($q) {
-                        $q->whereColumn('orders.warehouse_id', 'stocks.warehouse_id')
-                            ->whereIn('orders.status', ['delivered', 'completed']);
+                        if ($this->warehouse_id) {
+                            $q->where('orders.warehouse_id', $this->warehouse_id);
+                        } else {
+                            $q->whereColumn('orders.warehouse_id', 'stocks.warehouse_id');
+                        }
+                        $q->whereIn('orders.status', ['delivered', 'completed']);
                     });
             });
     }
