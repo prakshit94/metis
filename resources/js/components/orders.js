@@ -93,6 +93,7 @@ document.addEventListener('alpine:init', () => {
     talukaFilter: [],
     villageFilter: [],
     carrierFilter: '',
+    warehouseFilter: '',
     fromDate: '',
     toDate: '',
     sortField: 'id',
@@ -127,6 +128,8 @@ document.addEventListener('alpine:init', () => {
     },
 
     statusStats: [],
+    warehouseStats: [],
+    visibleWarehouseStat: '',
     trendsData: [],
 
     // Dropdown lists
@@ -136,6 +139,7 @@ document.addEventListener('alpine:init', () => {
     talukasList: [],
     villagesList: [],
     carriersList: [],
+    warehousesList: [],
     allowedFilterStatuses: [],
     allFilterStatuses: ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'],
 
@@ -148,6 +152,9 @@ document.addEventListener('alpine:init', () => {
     shipTrackingNo: '',
     importRows: [],
     importing: false,
+
+    // Items Modal state
+    selectedItemsOrder: null,
 
     // Return Modal state
     returnModalOrder: null,
@@ -324,6 +331,7 @@ document.addEventListener('alpine:init', () => {
       if (this.talukaFilter.length) params.append('taluka', this.talukaFilter.join(','));
       if (this.villageFilter.length) params.append('village', this.villageFilter.join(','));
       if (this.carrierFilter) params.append('carrier', this.carrierFilter);
+      if (this.warehouseFilter) params.append('warehouse', this.warehouseFilter);
       
       // Handle Date selection
       let activeFromDate = this.fromDate;
@@ -398,6 +406,9 @@ document.addEventListener('alpine:init', () => {
             if (data.trends) {
               this.trendsData = data.trends;
             }
+            if (data.warehouseStats) {
+              this.warehouseStats = data.warehouseStats;
+            }
 
             this.initCharts();
           }
@@ -407,6 +418,7 @@ document.addEventListener('alpine:init', () => {
           if (data.villages) this.villagesList = data.villages;
           if (data.allowed_filter_statuses) this.allowedFilterStatuses = data.allowed_filter_statuses;
           if (data.carriers && data.carriers.length) this.carriersList = data.carriers;
+          if (data.warehousesList) this.warehousesList = data.warehousesList;
         })
         .catch(err => {
           showToast(err.message, 'danger');
@@ -650,7 +662,9 @@ document.addEventListener('alpine:init', () => {
             discountBadgeLabel: badgeLabel,
             tax: item.tax_amount || 0,
             taxRate: item.tax_rate || 0,
-            net: item.total_amount || 0
+            net: item.total_amount || 0,
+            isOutOfStock: item.is_out_of_stock || false,
+            availableStock: item.available_stock || 0
           };
         }),
         itemCount: o.items_count || (o.items ? o.items.length : 0),
@@ -669,6 +683,7 @@ document.addEventListener('alpine:init', () => {
           avatar: o.creator && o.creator.avatar ? o.creator.avatar : '/assets/images/avatar-placeholder.svg',
         },
         updatedBy: o.updater ? `${o.updater.name || ''}`.trim() : 'N/A',
+        isUnfulfillable: o.is_unfulfillable || false,
         original: o
       };
     },
@@ -723,6 +738,7 @@ document.addEventListener('alpine:init', () => {
       this.talukaFilter = [];
       this.villageFilter = [];
       this.carrierFilter = '';
+      this.warehouseFilter = '';
       this.fromDate = '';
       this.toDate = '';
       this.sortField = 'id';
@@ -736,6 +752,7 @@ document.addEventListener('alpine:init', () => {
         this.productFilter ||
         this.fulfillmentFilter ||
         this.carrierFilter ||
+        this.warehouseFilter ||
         this.fromDate ||
         this.toDate ||
         this.stateFilter.length > 0 ||
@@ -1145,6 +1162,11 @@ document.addEventListener('alpine:init', () => {
     viewOrder(order) {
       this.selectedOrder = order;
       getModal('#orderDetailModal')?.show();
+    },
+
+    viewItems(order) {
+      this.selectedItemsOrder = order;
+      getModal('#orderItemsModal')?.show();
     },
 
     editOrder(order) {

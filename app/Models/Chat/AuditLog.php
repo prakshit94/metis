@@ -2,10 +2,15 @@
 
 namespace App\Models\Chat;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use Illuminate\Database\Eloquent\Model;
 
-class AuditLog extends Model
+
+class AuditLog extends Model implements Auditable
 {
+    use AuditableTrait;
     protected $table = 'chat_audit_logs';
 
     protected $fillable = [

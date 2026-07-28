@@ -189,6 +189,10 @@ class OrderController extends Controller implements HasMiddleware
             $query->whereDate('order_date', '<=', $request->to_date);
         }
 
+        if ($request->filled('warehouse')) {
+            $query->where('warehouse_id', $request->warehouse);
+        }
+
         // Stats Query (Cached)
         $statsQuery = clone $query;
         $cacheKey = 'order_stats_'.auth()->id().'_'.md5(json_encode($request->all()));
@@ -240,6 +244,60 @@ class OrderController extends Controller implements HasMiddleware
             'cancelled_amount' => (float) ($counts->cancelled_amount ?? 0),
         ];
 
+        // Warehouse Stats Query (Cached)
+        $warehouseStatsQuery = clone $query;
+        $warehouseStatsCacheKey = 'order_warehouse_stats_'.auth()->id().'_'.md5(json_encode($request->all()));
+        $warehouseStats = Cache::remember($warehouseStatsCacheKey, 300, function () use ($warehouseStatsQuery) {
+            // Remove with() eager loading to avoid issues with groupBy
+            $warehouseStatsQuery->setEagerLoads([]);
+            $stats = $warehouseStatsQuery->select([
+                    'warehouse_id',
+                    DB::raw('COUNT(orders.id) as total'),
+                    DB::raw('SUM(orders.net_amount) as total_amount'),
+                    DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN 1 ELSE 0 END) as pending"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN orders.net_amount ELSE 0 END) as pending_amount"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN 1 ELSE 0 END) as processing"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN orders.net_amount ELSE 0 END) as processing_amount"),
+                    DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN 1 ELSE 0 END) as dispatched"),
+                    DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN orders.net_amount ELSE 0 END) as dispatched_amount"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN 1 ELSE 0 END) as delivered"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN orders.net_amount ELSE 0 END) as delivered_amount"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN orders.net_amount ELSE 0 END) as cancelled_amount"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN 1 ELSE 0 END) as returned"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN orders.net_amount ELSE 0 END) as returned_amount"),
+                    DB::raw("SUM(CASE WHEN EXISTS(SELECT 1 FROM order_returns WHERE order_returns.order_id = orders.id AND order_returns.status NOT IN ('completed', 'rejected')) THEN 1 ELSE 0 END) as return_requested"),
+                    DB::raw("SUM(CASE WHEN EXISTS(SELECT 1 FROM order_returns WHERE order_returns.order_id = orders.id AND order_returns.status NOT IN ('completed', 'rejected')) THEN orders.net_amount ELSE 0 END) as return_requested_amount"),
+                ])
+                ->groupBy('warehouse_id')
+                ->toBase()
+                ->get();
+                
+            $warehouses = Warehouse::pluck('name', 'id')->toArray();
+            
+            return $stats->map(function ($item) use ($warehouses) {
+                return [
+                    'name' => $warehouses[$item->warehouse_id] ?? 'Unassigned',
+                    'total' => (int) $item->total,
+                    'total_amount' => (float) $item->total_amount,
+                    'pending' => (int) $item->pending,
+                    'pending_amount' => (float) $item->pending_amount,
+                    'processing' => (int) $item->processing,
+                    'processing_amount' => (float) $item->processing_amount,
+                    'dispatched' => (int) $item->dispatched,
+                    'dispatched_amount' => (float) $item->dispatched_amount,
+                    'delivered' => (int) $item->delivered,
+                    'delivered_amount' => (float) $item->delivered_amount,
+                    'cancelled' => (int) $item->cancelled,
+                    'cancelled_amount' => (float) $item->cancelled_amount,
+                    'returned' => (int) $item->returned,
+                    'returned_amount' => (float) $item->returned_amount,
+                    'return_requested' => (int) $item->return_requested,
+                    'return_requested_amount' => (float) $item->return_requested_amount,
+                ];
+            });
+        });
+
         $sortField = $request->input('sort_field', 'id');
         $sortDirection = $request->input('sort_direction', 'desc');
         if (in_array($sortField, ['id', 'order_no', 'net_amount', 'order_date', 'status'])) {
@@ -249,6 +307,50 @@ class OrderController extends Controller implements HasMiddleware
         }
         $perPage = $request->integer('limit', 10);
         $orders = $query->paginate($perPage);
+
+        $productWarehousePairs = [];
+        foreach ($orders as $order) {
+            if ($order->status === 'pending') {
+                foreach ($order->items as $item) {
+                    if ($order->warehouse_id) {
+                        $productWarehousePairs[] = [$item->product_id, $order->warehouse_id];
+                    }
+                }
+            }
+        }
+
+        if (!empty($productWarehousePairs)) {
+            $productIds = array_unique(array_column($productWarehousePairs, 0));
+            $warehouseIds = array_unique(array_column($productWarehousePairs, 1));
+            
+            $stocks = \App\Modules\Inventory\Models\Stock::whereIn('product_id', $productIds)
+                ->whereIn('warehouse_id', $warehouseIds)
+                ->get()
+                ->keyBy(function ($stock) {
+                    return $stock->product_id . '_' . $stock->warehouse_id;
+                });
+
+            foreach ($orders as $order) {
+                if ($order->status === 'pending') {
+                    $order->is_unfulfillable = false;
+                    foreach ($order->items as $item) {
+                        if ($order->warehouse_id) {
+                            $key = $item->product_id . '_' . $order->warehouse_id;
+                            $stock = $stocks->get($key);
+                            $available = $stock ? ($stock->quantity - $stock->reserved_qty) : 0;
+                            if ($item->quantity > $available) {
+                                $item->is_out_of_stock = true;
+                                $item->available_stock = $available;
+                                $order->is_unfulfillable = true;
+                            } else {
+                                $item->is_out_of_stock = false;
+                                $item->available_stock = $available;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         $statusesList = $this->allowedOrderFilterStatuses($user);
         $productsList = Cache::remember('active_products_list', 3600, function () {
@@ -313,10 +415,13 @@ class OrderController extends Controller implements HasMiddleware
             ];
         }
 
+        $warehousesList = Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name']);
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'orders' => $orders,
                 'stats' => $stats,
+                'warehouseStats' => $warehouseStats,
                 'trends' => $trendsData,
                 'allowed_filter_statuses' => $statusesList,
                 'districts' => $districtsList,
@@ -340,7 +445,9 @@ class OrderController extends Controller implements HasMiddleware
             'returnReasons',
             'rescheduleReasons',
             'deliveryFailureReasons',
-            'cancelReasons'
+            'cancelReasons',
+            'warehousesList',
+            'warehouseStats'
         ));
     }
 
@@ -393,7 +500,7 @@ class OrderController extends Controller implements HasMiddleware
             
             if ($initialCustomer && empty($initialCustomer->referral_code)) {
                 $initialCustomer->referral_code = strtoupper(\Illuminate\Support\Str::random(8));
-                $initialCustomer->save();
+                $initialCustomer->saveQuietly();
             }
         }
 
@@ -1167,7 +1274,7 @@ class OrderController extends Controller implements HasMiddleware
                 $order->loadMissing('shipments');
                 foreach ($order->shipments as $shipment) {
                     if ($shipment->status === 'pending') {
-                        $shipment->events()->delete();
+                        $shipment->events()->get()->each->delete();
                         $shipment->delete();
                     }
                 }

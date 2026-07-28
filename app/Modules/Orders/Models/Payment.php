@@ -2,6 +2,9 @@
 
 namespace App\Modules\Orders\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,9 +12,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-class Payment extends Model
+class Payment extends Model implements Auditable
 {
+    use AuditableTrait;
     use SoftDeletes;
+
 
     protected $fillable = [
         'payment_no',

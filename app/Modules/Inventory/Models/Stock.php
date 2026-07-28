@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Orders\Models\OrderItem;
@@ -13,9 +16,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Stock extends Model
+class Stock extends Model implements Auditable
 {
+    use AuditableTrait;
     use SoftDeletes;
+
 
     protected $fillable = [
         'product_id',

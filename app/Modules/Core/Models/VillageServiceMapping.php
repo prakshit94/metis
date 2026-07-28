@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Core\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use App\Modules\Catalog\Models\Service;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class VillageServiceMapping extends Model
+class VillageServiceMapping extends Model implements Auditable
 {
+    use AuditableTrait;
     protected $table = 'village_service_mappings';
 
     protected $fillable = [
@@ -64,6 +68,7 @@ class VillageServiceMapping extends Model
         })->where(function ($q) use ($today) {
             $q->whereNull('serviceable_to_date')
                 ->orWhere('serviceable_to_date', '>=', $today);
+
         });
     }
 }

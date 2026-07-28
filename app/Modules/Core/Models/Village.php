@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Core\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use App\Modules\Catalog\Models\Service;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -11,9 +14,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Village extends Model
+class Village extends Model implements Auditable
 {
+    use AuditableTrait;
     use SoftDeletes;
+
 
     protected $fillable = [
         'village_name',

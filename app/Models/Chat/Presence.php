@@ -2,12 +2,17 @@
 
 namespace App\Models\Chat;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Presence extends Model
+
+class Presence extends Model implements Auditable
 {
+    use AuditableTrait;
     protected $table = 'chat_presence';
 
     protected $fillable = [

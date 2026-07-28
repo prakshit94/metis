@@ -2,14 +2,18 @@
 
 namespace App\Modules\Orders\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Offer extends Model
+class Offer extends Model implements Auditable
 {
+    use AuditableTrait;
     use HasFactory;
 
     protected static function boot()
@@ -113,6 +117,7 @@ class Offer extends Model
             })
             ->where(function ($q) use ($now) {
                 $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
+
             });
     }
 }

@@ -201,11 +201,11 @@ class PromotionsController extends Controller implements HasMiddleware
         $action = $data['action'];
 
         if ($action === 'delete') {
-            Coupon::whereIn('id', $ids)->delete();
+            Coupon::whereIn('id', $ids)->get()->each->delete();
         } elseif ($action === 'activate') {
-            Coupon::whereIn('id', $ids)->update(['is_active' => true, 'status' => 'active']);
+            Coupon::whereIn('id', $ids)->get()->each->update(['is_active' => true, 'status' => 'active']);
         } elseif ($action === 'deactivate') {
-            Coupon::whereIn('id', $ids)->update(['is_active' => false, 'status' => 'inactive']);
+            Coupon::whereIn('id', $ids)->get()->each->update(['is_active' => false, 'status' => 'inactive']);
         }
 
         return response()->json(['message' => count($ids).' coupon(s) '.$action.'d successfully.']);
@@ -370,11 +370,11 @@ class PromotionsController extends Controller implements HasMiddleware
         $action = $data['action'];
 
         if ($action === 'delete') {
-            Offer::whereIn('id', $ids)->delete();
+            Offer::whereIn('id', $ids)->get()->each->delete();
         } elseif ($action === 'activate') {
-            Offer::whereIn('id', $ids)->update(['is_active' => true]);
+            Offer::whereIn('id', $ids)->get()->each->update(['is_active' => true]);
         } elseif ($action === 'deactivate') {
-            Offer::whereIn('id', $ids)->update(['is_active' => false]);
+            Offer::whereIn('id', $ids)->get()->each->update(['is_active' => false]);
         }
 
         return response()->json(['message' => count($ids).' offer(s) '.$action.'d successfully.']);

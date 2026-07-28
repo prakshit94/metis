@@ -31,7 +31,23 @@ class WarehouseController extends Controller implements HasMiddleware
         $query = Warehouse::query()
             ->withCount('stocks as total_skus')
             ->withSum('stocks as total_physical_stock', 'quantity')
-            ->withSum('stocks as total_reserved_stock', 'reserved_qty');
+            ->withSum('stocks as total_reserved_stock', 'reserved_qty')
+            ->withCount('orders as total_orders')
+            ->withCount(['orders as fulfillable_orders' => function ($query) {
+                $query->whereIn('status', ['confirmed', 'processing'])
+                      ->orWhere(function ($q) {
+                          $q->where('status', 'pending')
+                            ->whereDoesntHave('items', function ($iq) {
+                                $iq->whereRaw('quantity > (IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = order_items.product_id AND stocks.warehouse_id = orders.warehouse_id AND stocks.deleted_at IS NULL), 0))');
+                            });
+                      });
+            }])
+            ->withCount(['orders as unfulfillable_orders' => function ($query) {
+                $query->where('status', 'pending')
+                      ->whereHas('items', function ($q) {
+                          $q->whereRaw('quantity > (IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = order_items.product_id AND stocks.warehouse_id = orders.warehouse_id AND stocks.deleted_at IS NULL), 0))');
+                      });
+            }]);
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {

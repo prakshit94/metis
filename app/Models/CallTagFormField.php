@@ -2,10 +2,15 @@
 
 namespace App\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use Illuminate\Database\Eloquent\Model;
 
-class CallTagFormField extends Model
+
+class CallTagFormField extends Model implements Auditable
 {
+    use AuditableTrait;
     protected $fillable = [
         'call_tag_id',
         'name',

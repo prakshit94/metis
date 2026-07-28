@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Models\Village;
 use App\Modules\Customers\Models\Party;
@@ -15,8 +18,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Order extends Model
+class Order extends Model implements Auditable
 {
+    use AuditableTrait;
     use SoftDeletes;
 
     /** Canonical order lifecycle (warehouse → customer). */
@@ -33,6 +37,7 @@ class Order extends Model
     public static function inTransitStatuses(): array
     {
         return ['dispatched', 'shipped'];
+
     }
 
     protected $appends = [

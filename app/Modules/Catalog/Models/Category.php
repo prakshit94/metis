@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Category extends Model
+class Category extends Model implements Auditable
 {
+    use AuditableTrait;
     use SoftDeletes;
+
 
     protected $fillable = [
         'parent_id',

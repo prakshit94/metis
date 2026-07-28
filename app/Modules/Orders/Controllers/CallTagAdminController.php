@@ -142,11 +142,11 @@ class CallTagAdminController extends Controller
         $action = $data['action'];
 
         if ($action === 'delete') {
-            CallTag::whereIn('id', $ids)->delete();
+            CallTag::whereIn('id', $ids)->get()->each->delete();
         } elseif ($action === 'activate') {
-            CallTag::whereIn('id', $ids)->update(['is_active' => true]);
+            CallTag::whereIn('id', $ids)->get()->each->update(['is_active' => true]);
         } elseif ($action === 'deactivate') {
-            CallTag::whereIn('id', $ids)->update(['is_active' => false]);
+            CallTag::whereIn('id', $ids)->get()->each->update(['is_active' => false]);
         }
 
         return response()->json(['message' => 'Bulk action completed successfully.']);

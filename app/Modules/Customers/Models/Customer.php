@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Customers\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use App\Modules\Orders\Models\Order;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -11,8 +14,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Customer extends Model
+class Customer extends Model implements Auditable
 {
+    use AuditableTrait;
     use SoftDeletes;
 
     protected $table = 'parties';
@@ -156,6 +160,7 @@ class Customer extends Model
                 ->orWhere('gst_no', 'like', "%{$search}%")
                 ->orWhere('company_name', 'like', "%{$search}%")
                 ->orWhere('party_code', 'like', "%{$search}%");
+
         });
     }
 

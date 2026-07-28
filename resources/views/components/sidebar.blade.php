@@ -320,17 +320,17 @@
                 {{-- People & Admin Dropdown --}}
                 @canany(['user-view', 'role-view', 'village-view', 'settings-view'])
                 <li class="nav-item">
-                    <a class="nav-link {{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' || $current === 'customer-settings.index' ? 'active' : '' }}"
+                    <a class="nav-link {{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' || $current === 'customer-settings.index' || $current === 'admin.audit-logs.index' ? 'active' : '' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#peopleSubmenu"
-                       aria-expanded="{{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' || $current === 'customer-settings.index' ? 'true' : 'false' }}"
+                       aria-expanded="{{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' || $current === 'customer-settings.index' || $current === 'admin.audit-logs.index' ? 'true' : 'false' }}"
                        aria-controls="peopleSubmenu">
                         <i class="bi bi-people-fill"></i>
                         <span>People &amp; Admin</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' || $current === 'customer-settings.index' ? 'show' : '' }}" id="peopleSubmenu">
+                    <div class="collapse {{ $current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' || $current === 'customer-settings.index' || $current === 'admin.audit-logs.index' ? 'show' : '' }}" id="peopleSubmenu">
                         <ul class="nav nav-submenu">
                             @can('user-view')
                             <li class="nav-item">
@@ -388,6 +388,14 @@
                                 </a>
                             </li>
                             @endcan
+                            @role('Super Admin')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'admin.audit-logs.index' ? 'active' : '' }}" href="{{ route('admin.audit-logs.index') }}">
+                                    <i class="bi bi-journal-medical"></i>
+                                    <span>Audit Logs</span>
+                                </a>
+                            </li>
+                            @endrole
                         </ul>
                     </div>
                 </li>

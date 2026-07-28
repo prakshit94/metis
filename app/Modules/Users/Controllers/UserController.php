@@ -170,7 +170,7 @@ class UserController extends Controller implements HasMiddleware
             $extension = $file->extension() ?: 'jpg';
             $filename = 'user-'.$user->id.'-'.time().'.'.$extension;
             $user->photo = asset('storage/'.$file->storeAs('users/photos', $filename, 'public'));
-            $user->save();
+            $user->saveQuietly();
         }
 
         if (! empty($validated['roles'])) {

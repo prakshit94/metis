@@ -11,6 +11,7 @@
     talukasList = {{ json_encode($talukasList ?? []) }};
     villagesList = {{ json_encode($villagesList ?? []) }};
     carriersList = {{ json_encode($carriersList) }};
+    warehousesList = {{ json_encode($warehousesList ?? []) }};
     allowedFilterStatuses = {{ json_encode($statusesList) }};
     init();
 ">
@@ -50,8 +51,8 @@
 </form>
 
 <!-- Order Stats Widgets -->
-<div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
-    <div class="col-xl-3 col-lg-6">
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
+    <div class="col">
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
@@ -67,7 +68,7 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-3 col-lg-6">
+    <div class="col">
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
@@ -83,7 +84,23 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-3 col-lg-6">
+    <div class="col">
+        <div class="card stats-card">
+            <div class="card-body p-3 p-lg-4">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
+                        <i class="bi bi-gear"></i>
+                    </div>
+                    <div>
+                        <p class="h6 mb-0 text-muted">Processing</p>
+                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.processing"></span></div>
+                        <small class="text-secondary" x-text="'Value: ' + formatCurrency(stats.processing_amount)"></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
@@ -91,7 +108,7 @@
                         <i class="bi bi-truck"></i>
                     </div>
                     <div>
-                        <p class="h6 mb-0 text-muted">Shipped / Dispatched</p>
+                        <p class="h6 mb-0 text-muted">Dispatched</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.dispatched"></span></div>
                         <small class="text-info" x-text="'Value: ' + formatCurrency(stats.dispatched_amount)"></small>
                     </div>
@@ -99,7 +116,7 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-3 col-lg-6">
+    <div class="col">
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
@@ -160,6 +177,160 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Warehouse Operations Overview -->
+<div class="mb-5 mb-lg-5 mb-xl-6" x-show="warehouseStats && warehouseStats.length > 0" x-cloak>
+    <div class="d-flex align-items-center mb-3 gap-3">
+        <h2 class="h5 mb-0 fw-bold d-flex align-items-center text-nowrap">
+            <i class="bi bi-buildings text-primary me-2 fs-4"></i>Warehouse Operations Overview
+        </h2>
+        <div class="flex-grow-1 border-bottom border-secondary-subtle"></div>
+        <select class="form-select form-select-sm w-auto" x-model="visibleWarehouseStat" aria-label="Toggle Warehouse Visibility">
+            <option value="">All Warehouses</option>
+            <template x-for="wh in warehouseStats" :key="wh.name">
+                <option :value="wh.name" x-text="wh.name"></option>
+            </template>
+        </select>
+    </div>
+    
+    <div class="row g-4">
+        <template x-for="(wh, idx) in warehouseStats" :key="idx">
+            <div class="col-12" x-show="!visibleWarehouseStat || visibleWarehouseStat === wh.name" x-transition>
+                <div class="card shadow-sm border-0 rounded-4 overflow-hidden position-relative">
+                    <!-- Left accent line -->
+                    <div class="position-absolute top-0 bottom-0 start-0 bg-primary" style="width: 4px;"></div>
+                    
+                    <div class="card-body p-4">
+                        <div class="row align-items-center g-4">
+                            <!-- Info Section -->
+                            <div class="col-lg-3 col-md-4 border-end border-secondary-subtle pe-4">
+                                <h3 class="h6 fw-bold mb-2 text-body-emphasis" x-text="wh.name"></h3>
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <div class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle" x-text="`${wh.total} Orders`"></div>
+                                </div>
+                                <div>
+                                    <span class="d-block text-muted small fw-medium mb-1">Total Value</span>
+                                    <span class="fs-5 fw-bold text-success" x-text="`Rs. ${formatCurrency(wh.total_amount)}`"></span>
+                                </div>
+                            </div>
+
+                            <!-- Status Breakdown Section -->
+                            <div class="col-lg-7 col-md-8 pe-lg-4">
+                                <p class="text-muted small fw-bold text-uppercase tracking-wide mb-3" style="font-size: 0.7rem; letter-spacing: 0.5px;">Fulfillment Status</p>
+                                <div class="row g-3">
+                                    <!-- Pending -->
+                                    <div class="col-sm-3 col-6">
+                                        <div class="p-2 rounded bg-warning bg-opacity-10 border border-warning border-opacity-25 d-flex flex-column h-100">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <div class="bg-warning rounded-circle" style="width: 8px; height: 8px;"></div>
+                                                <span class="small text-warning-emphasis fw-medium">Pending</span>
+                                            </div>
+                                            <div class="mt-auto">
+                                                <span class="fw-bold fs-5 text-warning-emphasis lh-1 d-block mb-1" x-text="wh.pending"></span>
+                                                <small class="text-warning-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.pending_amount)}`"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Processing -->
+                                    <div class="col-sm-3 col-6">
+                                        <div class="p-2 rounded bg-primary bg-opacity-10 border border-primary border-opacity-25 d-flex flex-column h-100">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <div class="bg-primary rounded-circle" style="width: 8px; height: 8px;"></div>
+                                                <span class="small text-primary-emphasis fw-medium">Processing</span>
+                                            </div>
+                                            <div class="mt-auto">
+                                                <span class="fw-bold fs-5 text-primary-emphasis lh-1 d-block mb-1" x-text="wh.processing"></span>
+                                                <small class="text-primary-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.processing_amount)}`"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Dispatched -->
+                                    <div class="col-sm-3 col-6">
+                                        <div class="p-2 rounded bg-info bg-opacity-10 border border-info border-opacity-25 d-flex flex-column h-100">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <div class="bg-info rounded-circle" style="width: 8px; height: 8px;"></div>
+                                                <span class="small text-info-emphasis fw-medium">Dispatched</span>
+                                            </div>
+                                            <div class="mt-auto">
+                                                <span class="fw-bold fs-5 text-info-emphasis lh-1 d-block mb-1" x-text="wh.dispatched"></span>
+                                                <small class="text-info-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.dispatched_amount)}`"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Delivered -->
+                                    <div class="col-sm-3 col-6">
+                                        <div class="p-2 rounded bg-success bg-opacity-10 border border-success border-opacity-25 d-flex flex-column h-100">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <div class="bg-success rounded-circle" style="width: 8px; height: 8px;"></div>
+                                                <span class="small text-success-emphasis fw-medium">Delivered</span>
+                                            </div>
+                                            <div class="mt-auto">
+                                                <span class="fw-bold fs-5 text-success-emphasis lh-1 d-block mb-1" x-text="wh.delivered"></span>
+                                                <small class="text-success-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.delivered_amount)}`"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Return Requested -->
+                                    <div class="col-sm-3 col-6">
+                                        <div class="p-2 rounded bg-danger bg-opacity-10 border border-danger border-opacity-25 d-flex flex-column h-100">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <div class="bg-danger rounded-circle" style="width: 8px; height: 8px;"></div>
+                                                <span class="small text-danger-emphasis fw-medium text-nowrap">Return Req</span>
+                                            </div>
+                                            <div class="mt-auto">
+                                                <span class="fw-bold fs-5 text-danger-emphasis lh-1 d-block mb-1" x-text="wh.return_requested"></span>
+                                                <small class="text-danger-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.return_requested_amount)}`"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Returned -->
+                                    <div class="col-sm-3 col-6">
+                                        <div class="p-2 rounded bg-secondary bg-opacity-10 border border-secondary border-opacity-25 d-flex flex-column h-100">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <div class="bg-secondary rounded-circle" style="width: 8px; height: 8px;"></div>
+                                                <span class="small text-secondary-emphasis fw-medium">Returned</span>
+                                            </div>
+                                            <div class="mt-auto">
+                                                <span class="fw-bold fs-5 text-secondary-emphasis lh-1 d-block mb-1" x-text="wh.returned"></span>
+                                                <small class="text-secondary-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.returned_amount)}`"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Cancelled -->
+                                    <div class="col-sm-3 col-6">
+                                        <div class="p-2 rounded bg-dark bg-opacity-10 border border-dark border-opacity-25 d-flex flex-column h-100">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <div class="bg-dark rounded-circle" style="width: 8px; height: 8px;"></div>
+                                                <span class="small text-dark-emphasis fw-medium">Cancelled</span>
+                                            </div>
+                                            <div class="mt-auto">
+                                                <span class="fw-bold fs-5 text-dark-emphasis lh-1 d-block mb-1" x-text="wh.cancelled"></span>
+                                                <small class="text-dark-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.cancelled_amount)}`"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Section -->
+                            <div class="col-lg-2 border-start border-secondary-subtle ps-lg-4">
+                                <p class="text-muted small fw-bold text-uppercase tracking-wide mb-3" style="font-size: 0.7rem; letter-spacing: 0.5px;">Progress</p>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small text-muted">Completion</span>
+                                    <span class="small fw-bold" x-text="wh.total > 0 ? Math.round(((wh.delivered + wh.dispatched) / wh.total) * 100) + '%' : '0%'"></span>
+                                </div>
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar bg-success" role="progressbar" :style="`width: ${wh.total > 0 ? Math.round((wh.delivered / wh.total) * 100) : 0}%`" title="Delivered"></div>
+                                    <div class="progress-bar bg-info" role="progressbar" :style="`width: ${wh.total > 0 ? Math.round((wh.dispatched / wh.total) * 100) : 0}%`" title="Dispatched"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
     </div>
 </div>
 
@@ -275,6 +446,17 @@
                         <option value="">All Carriers</option>
                         <template x-for="carrier in carriersList" :key="carrier">
                             <option :value="carrier" x-text="carrier"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <!-- Warehouse Filter -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-body-secondary">Warehouse</label>
+                    <select class="form-select form-select-sm" x-model="warehouseFilter" @change="filterOrders()">
+                        <option value="">All Warehouses</option>
+                        <template x-for="warehouse in warehousesList" :key="warehouse.id">
+                            <option :value="warehouse.id" x-text="warehouse.name"></option>
                         </template>
                     </select>
                 </div>
@@ -569,7 +751,7 @@
                 </thead>
                 <tbody>
                     <template x-for="order in orders" :key="order.id">
-                        <tr :class="{ 'selected': selectedOrders.includes(String(order.id)) }">
+                        <tr :class="{ 'selected': selectedOrders.includes(String(order.id)), 'bg-danger bg-opacity-10 border-danger border-opacity-25': order.isUnfulfillable }">
                             <td>
                                 <input type="checkbox" 
                                        class="form-check-input"
@@ -579,7 +761,14 @@
                             </td>
                             <td>
                                 <div class="fw-medium" x-text="order.orderNumber"></div>
-                                <small class="text-muted" x-text="'ID: ' + order.id"></small>
+                                <div class="d-flex align-items-center flex-wrap gap-1 mt-1">
+                                    <small class="text-muted" x-text="'ID: ' + order.id"></small>
+                                    <template x-if="order.warehouse">
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle ms-1" style="font-size: 0.65rem;" title="Fulfillment Warehouse">
+                                            <i class="bi bi-building me-1"></i><span x-text="order.warehouse.name"></span>
+                                        </span>
+                                    </template>
+                                </div>
                             </td>
                             <td>
                                 <div class="d-flex align-items-center">
@@ -595,9 +784,15 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="order-items small">
-                                    <div class="fw-medium" x-text="order.itemCount + ' item' + (order.itemCount > 1 ? 's' : '')"></div>
-                                    <small class="text-muted" x-text="order.items.length > 0 ? order.items[0].name + (order.itemCount > 1 ? ' +' + (order.itemCount - 1) + ' more' : '') : '—'"></small>
+                                <div class="order-items small cursor-pointer custom-hover-bg p-2 rounded border border-transparent hover-border-secondary-subtle transition-all" @click="viewItems(order)" title="Click to view items">
+                                    <div class="fw-medium d-flex align-items-center flex-wrap gap-1">
+                                        <i class="bi bi-box-seam text-secondary me-1"></i>
+                                        <span x-text="order.itemCount + ' item' + (order.itemCount > 1 ? 's' : '')"></span>
+                                        <template x-if="order.isUnfulfillable">
+                                            <span class="badge bg-danger ms-1" style="font-size: 0.65rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Unfulfillable</span>
+                                        </template>
+                                    </div>
+                                    <small class="text-muted d-block text-truncate mt-1" style="max-width: 200px;" x-text="order.items.length > 0 ? order.items[0].name + (order.itemCount > 1 ? ' +' + (order.itemCount - 1) + ' more' : '') : '—'"></small>
                                 </div>
                             </td>
                             <td class="fw-medium small" x-text="`Rs. ${order.total}`"></td>
@@ -781,9 +976,16 @@
                                     <h4 class="modal-title fw-bolder mb-1" id="orderDetailModalLabel" style="letter-spacing: -0.5px;">
                                         Order <span class="text-primary" x-text="selectedOrder.orderNumber"></span>
                                     </h4>
-                                    <p class="text-muted small mb-0 d-flex align-items-center gap-2">
-                                        <i class="bi bi-calendar3"></i> <span x-text="selectedOrder.orderDate ? new Date(selectedOrder.orderDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'"></span>
-                                    </p>
+                                    <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
+                                        <p class="text-muted small mb-0 d-flex align-items-center gap-2">
+                                            <i class="bi bi-calendar3"></i> <span x-text="selectedOrder.orderDate ? new Date(selectedOrder.orderDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'"></span>
+                                        </p>
+                                        <template x-if="selectedOrder.warehouse">
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle" title="Fulfillment Warehouse">
+                                                <i class="bi bi-building me-1"></i><span x-text="selectedOrder.warehouse.name"></span>
+                                            </span>
+                                        </template>
+                                    </div>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-3">
@@ -1681,6 +1883,89 @@
         </div>
     </div>
 </div>
+
+    <!-- Items Breakdown Modal -->
+    <div class="modal fade" id="orderItemsModal" tabindex="-1" aria-labelledby="orderItemsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <template x-if="selectedItemsOrder">
+                    <div>
+                        <!-- Header -->
+                        <div class="modal-header border-bottom-0 pb-0 position-relative">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-primary bg-opacity-10 text-primary rounded p-3 d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-box-seam fs-4"></i>
+                                </div>
+                                <div>
+                                    <h4 class="modal-title fw-bolder mb-1" id="orderItemsModalLabel" style="letter-spacing: -0.5px;">
+                                        Order Items
+                                    </h4>
+                                    <p class="text-muted mb-0 small">
+                                        Order #<span class="fw-medium text-body" x-text="selectedItemsOrder.orderNumber"></span>
+                                        <template x-if="selectedItemsOrder.isUnfulfillable">
+                                            <span class="badge bg-danger ms-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Unfulfillable</span>
+                                        </template>
+                                    </p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close position-absolute top-0 end-0 m-4" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        
+                        <!-- Body -->
+                        <div class="modal-body pt-4">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Product</th>
+                                            <th class="text-center">Quantity</th>
+                                            <th class="text-end">Unit Price</th>
+                                            <th class="text-end">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="item in selectedItemsOrder.items" :key="item.product_id">
+                                            <tr :class="{ 'bg-danger bg-opacity-10': item.isOutOfStock }">
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="bg-body-secondary rounded overflow-hidden d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; min-width: 48px;">
+                                                            <template x-if="item.image">
+                                                                <img :src="item.image" :alt="item.name" class="img-fluid object-fit-cover w-100 h-100">
+                                                            </template>
+                                                            <template x-if="!item.image">
+                                                                <i class="bi bi-image text-secondary fs-4"></i>
+                                                            </template>
+                                                        </div>
+                                                        <div>
+                                                            <h6 class="mb-1 text-body-emphasis" style="font-size: 0.9rem;" x-text="item.name"></h6>
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle font-monospace" style="font-size: 0.65rem;" x-text="item.sku"></span>
+                                                                <template x-if="item.isOutOfStock">
+                                                                    <span class="badge bg-danger text-white ms-1" style="font-size: 0.65rem;" x-text="`Out of Stock (Have: ${item.availableStock})`"></span>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center fw-medium" x-text="item.quantity"></td>
+                                                <td class="text-end text-muted" x-text="`Rs. ${formatCurrency(item.price)}`"></td>
+                                                <td class="text-end fw-medium text-body-emphasis" x-text="`Rs. ${formatCurrency(item.net)}`"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="modal-footer border-top-0 pt-0">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
 
 </div> <!-- End Order Management Container -->
 @endsection

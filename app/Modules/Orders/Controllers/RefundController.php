@@ -96,7 +96,7 @@ class RefundController extends Controller implements HasMiddleware
             $status = 'completed';
         }
 
-        Refund::whereIn('id', $validated['ids'])->update(['status' => $status]);
+        Refund::whereIn('id', $validated['ids'])->get()->each->update(['status' => $status]);
 
         return response()->json([
             'success' => true,

@@ -170,7 +170,7 @@
                             </th>
                             <th>Contact Info</th>
                             <th>Address</th>
-                            <th>Inventory</th>
+                            <th>Inventory & Orders</th>
                             <th @click="sortBy('status')" class="sortable" style="width:110px; cursor: pointer;">
                                 Status
                                 <i class="bi ms-1" :class="sortField === 'status' ? (sortDirection === 'asc' ? 'bi-chevron-up text-primary' : 'bi-chevron-down text-primary') : 'bi-arrow-down-up opacity-25'"></i>
@@ -268,15 +268,26 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="small d-flex flex-column gap-1">
+                                    <div class="small d-flex flex-column gap-1 mb-2">
                                         <div class="d-flex align-items-center gap-2">
                                             <i class="bi bi-box-seam text-muted"></i>
                                             <span class="fw-medium"><span x-text="item.total_skus || 0"></span> SKUs</span>
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <i class="bi bi-stack text-muted"></i>
-                                            <span class="text-muted"><span x-text="item.total_physical_stock || 0"></span> Units</span>
+                                            <span class="text-muted"><span x-text="parseFloat(item.total_physical_stock || 0)"></span> Units</span>
                                         </div>
+                                    </div>
+                                    <div class="small d-flex gap-2">
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle" title="Total Orders">
+                                            <i class="bi bi-cart me-1"></i><span x-text="item.total_orders || 0"></span>
+                                        </span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle" title="Fulfillable Orders">
+                                            <i class="bi bi-check-circle me-1"></i><span x-text="item.fulfillable_orders || 0"></span>
+                                        </span>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle" title="Unfulfillable Orders">
+                                            <i class="bi bi-exclamation-circle me-1"></i><span x-text="item.unfulfillable_orders || 0"></span>
+                                        </span>
                                     </div>
                                 </td>
                                 <td>
@@ -708,6 +719,7 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
                         <div class="col-12">
                             <div class="p-3 bg-body-tertiary rounded-3 h-100">
                                 <h6 class="fw-bold mb-3 text-warning"><i class="bi bi-box-seam me-2"></i>Inventory Overview</h6>
@@ -721,19 +733,44 @@
                                     <div class="col-3">
                                         <div class="p-2 border rounded bg-body shadow-sm">
                                             <div class="small text-muted mb-1">Physical Stock</div>
-                                            <div class="h5 mb-0 fw-bold text-body-emphasis" x-text="viewData.total_physical_stock || 0"></div>
+                                            <div class="h5 mb-0 fw-bold text-body-emphasis" x-text="parseFloat(viewData.total_physical_stock || 0)"></div>
                                         </div>
                                     </div>
                                     <div class="col-3">
                                         <div class="p-2 border rounded bg-body shadow-sm border-danger border-opacity-25">
                                             <div class="small text-muted mb-1">Reserved</div>
-                                            <div class="h5 mb-0 fw-bold text-danger" x-text="viewData.total_reserved_stock || 0"></div>
+                                            <div class="h5 mb-0 fw-bold text-danger" x-text="parseFloat(viewData.total_reserved_stock || 0)"></div>
                                         </div>
                                     </div>
                                     <div class="col-3">
                                         <div class="p-2 border rounded bg-body shadow-sm border-success border-opacity-25">
                                             <div class="small text-muted mb-1">Available</div>
-                                            <div class="h5 mb-0 fw-bold text-success" x-text="Math.max(0, (viewData.total_physical_stock || 0) - (viewData.total_reserved_stock || 0))"></div>
+                                            <div class="h5 mb-0 fw-bold text-success" x-text="Math.max(0, parseFloat(viewData.total_physical_stock || 0) - parseFloat(viewData.total_reserved_stock || 0))"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-4">
+                            <div class="p-3 bg-body-tertiary rounded-3 h-100">
+                                <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-cart-check me-2"></i>Order Fulfillment Overview</h6>
+                                <div class="row text-center g-3">
+                                    <div class="col-4">
+                                        <div class="p-2 border rounded bg-body shadow-sm">
+                                            <div class="small text-muted mb-1">Total Orders</div>
+                                            <div class="h5 mb-0 fw-bold" x-text="viewData.total_orders || 0"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-2 border rounded bg-body shadow-sm border-success border-opacity-25">
+                                            <div class="small text-muted mb-1">Fulfillable</div>
+                                            <div class="h5 mb-0 fw-bold text-success" x-text="viewData.fulfillable_orders || 0"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-2 border rounded bg-body shadow-sm border-danger border-opacity-25">
+                                            <div class="small text-muted mb-1">Unfulfillable</div>
+                                            <div class="h5 mb-0 fw-bold text-danger" x-text="viewData.unfulfillable_orders || 0"></div>
                                         </div>
                                     </div>
                                 </div>

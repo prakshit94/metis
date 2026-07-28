@@ -2,11 +2,16 @@
 
 namespace App\Modules\Orders\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
-class OrderVerificationLog extends Model
+
+class OrderVerificationLog extends Model implements Auditable
 {
+    use AuditableTrait;
     public const OUTCOMES = [
         'call_not_picked' => 'Call Not Picked',
         'customer_confirmed' => 'Customer Confirmed Order',

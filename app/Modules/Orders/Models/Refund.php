@@ -2,12 +2,17 @@
 
 namespace App\Modules\Orders\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-class Refund extends Model
+
+class Refund extends Model implements Auditable
 {
+    use AuditableTrait;
     protected $fillable = [
         'refund_no',
         'order_id',

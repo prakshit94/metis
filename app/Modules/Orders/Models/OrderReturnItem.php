@@ -2,12 +2,17 @@
 
 namespace App\Modules\Orders\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use App\Modules\Catalog\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class OrderReturnItem extends Model
+
+class OrderReturnItem extends Model implements Auditable
 {
+    use AuditableTrait;
     protected $fillable = [
         'order_return_id',
         'product_id',

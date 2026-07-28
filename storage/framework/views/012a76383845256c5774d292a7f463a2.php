@@ -554,7 +554,7 @@
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-1 bg-body-tertiary rounded">
                                                 <span class="fw-bold text-primary fs-5" x-text="'Rs ' + parseFloat(p.selling_price).toFixed(2)"></span>
-                                                <span class="badge" :class="p.available_stock > 10 ? 'bg-success' : (p.available_stock > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + p.available_stock"></span>
+                                                <span class="badge" :class="p.available_stock > 10 ? 'bg-success' : (p.available_stock > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + parseFloat(p.available_stock)"></span>
                                             </div>
                                             <div class="d-flex flex-wrap gap-1 mb-3" x-show="getProductPromotions(p).length > 0">
                                                 <template x-for="promo in getProductPromotions(p)">
@@ -629,7 +629,7 @@
                                             </td>
                                             <td>
                                                 <div class="d-flex align-items-center gap-2 mb-1">
-                                                    <span class="badge" :class="p.available_stock > (p.min_stock_level || 10) ? 'bg-success' : (p.available_stock > 0 ? 'bg-warning text-dark' : 'bg-danger')" x-text="'Stock: ' + p.available_stock + ' ' + (p.uom_id || 'Units')"></span>
+                                                    <span class="badge" :class="p.available_stock > (p.min_stock_level || 10) ? 'bg-success' : (p.available_stock > 0 ? 'bg-warning text-dark' : 'bg-danger')" x-text="'Stock: ' + parseFloat(p.available_stock) + ' ' + (p.uom_id || 'Units')"></span>
                                                 </div>
                                                 <div class="small text-muted mb-1" style="font-size: 11px;" x-show="p.min_stock_level > 0">Min Lvl: <span class="fw-medium" x-text="p.min_stock_level"></span></div>
                                                 <div class="d-flex flex-wrap gap-1 mt-1">
@@ -1646,7 +1646,7 @@
                                             </div>
                                             <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary border-opacity-25">
                                                 <div>
-                                                    <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="selectedProductForModal ? (selectedProductForModal.available_stock + ' ' + (selectedProductForModal.uom || 'Units')) : ''"></div>
+                                                    <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="selectedProductForModal ? (parseFloat(selectedProductForModal.available_stock) + ' ' + (selectedProductForModal.uom || 'Units')) : ''"></div>
                                                     <div class="text-muted" style="font-size:10px;">Available to Order</div>
                                                 </div>
                                                 <span class="badge" style="font-size:10px;" :class="selectedProductForModal && selectedProductForModal.available_stock > (selectedProductForModal.min_stock_level || 10) ? 'bg-success' : (selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'bg-warning text-dark' : 'bg-danger')" x-text="selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'In Stock' : 'Out of Stock'"></span>

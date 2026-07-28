@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Users\Models;
 
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
@@ -16,8 +19,9 @@ use Illuminate\Support\Carbon;
  * Records are automatically pruned via MassPrunable after 90 days to manage
  * table growth in enterprise environments (no individual model events fired).
  */
-class LoginHistory extends Model
+class LoginHistory extends Model implements Auditable
 {
+    use AuditableTrait;
     use MassPrunable;
 
     /**
@@ -106,6 +110,7 @@ class LoginHistory extends Model
             ->where(function (Builder $q) use ($email, $ip) {
                 $q->where('email_attempted', $email)
                     ->orWhere('ip_address', $ip);
+
             })
             ->where('status', 'failed')
             ->where('failure_reason', '!=', 'throttled')

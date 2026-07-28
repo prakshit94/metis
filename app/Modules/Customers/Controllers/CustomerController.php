@@ -231,7 +231,7 @@ class CustomerController extends Controller implements HasMiddleware
         $cust = Customer::withTrashed()->findOrFail($customer);
         if (empty($cust->referral_code)) {
             $cust->referral_code = strtoupper(Str::random(8));
-            $cust->save();
+            $cust->saveQuietly();
         }
 
         $customer = Customer::withTrashed()
@@ -470,7 +470,7 @@ class CustomerController extends Controller implements HasMiddleware
 
         if ($action === 'delete') {
             abort_unless($request->user()?->can('customer-delete'), 403);
-            Customer::whereIn('id', $ids)->delete();
+            Customer::whereIn('id', $ids)->get()->each->delete();
 
             return response()->json([
                 'message' => count($ids).' customer(s) deleted successfully.',
@@ -492,10 +492,12 @@ class CustomerController extends Controller implements HasMiddleware
 
         $isActive = $action === 'activate';
 
-        Customer::whereIn('id', $ids)->update([
-            'is_active' => $isActive,
-            'status' => $isActive ? 'active' : 'inactive',
-        ]);
+        Customer::whereIn('id', $ids)->get()->each(function (Customer $customer) use ($isActive) {
+            $customer->update([
+                'is_active' => $isActive,
+                'status' => $isActive ? 'active' : 'inactive',
+            ]);
+        });
 
         return response()->json([
             'message' => count($ids).' customer(s) '.($isActive ? 'activated' : 'deactivated').' successfully.',
