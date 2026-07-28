@@ -526,6 +526,11 @@
                                                                         <i class="bi bi-pencil me-2"></i>Edit
                                                                     </a>
                                                                 </li>
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" @click.prevent="$dispatch('open-change-password-modal', { userId: user.id })" x-show="!user.isDeleted">
+                                                                        <i class="bi bi-key me-2"></i>Change Password
+                                                                    </a>
+                                                                </li>
                                                                 <?php endif; ?>
                                                                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-activate')): ?>
                                                                 <li>

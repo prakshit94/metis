@@ -52,7 +52,7 @@ class PageController extends Controller
             })->sum('net_amount');
         $totalOrders = (clone $orderQuery)->count();
 
-        $totalProducts = Product::count();
+        $totalProducts = (int) OrderItem::whereIn('order_id', (clone $orderQuery)->select('id'))->sum('quantity');
 
         // 1.5 Order Performance Metrics
         $totalDelivered = (clone $orderQuery)->whereIn('status', ['delivered', 'completed'])

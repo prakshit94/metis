@@ -337,6 +337,8 @@ class RolesAndPermissionsSeeder extends Seeder
         'view_all_order',
 
         // ── General System Views ──
+        'sidebar-view',
+        'search-view',
 
 
         // ── Utilities & Tools ──

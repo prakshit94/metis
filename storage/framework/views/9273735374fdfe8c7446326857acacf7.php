@@ -51,10 +51,12 @@
                 <?php echo csrf_field(); ?>
 
                 
-                <div class="mb-3">
-                    <label for="loginEmail" class="form-label fw-semibold">Email address</label>
-                    <input type="email"
-                           class="form-control <?php $__errorArgs = ['email'];
+                <div class="mb-4">
+                    <label for="loginEmail" class="form-label fw-semibold small text-muted">Email address</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-body-secondary border-end-0 text-muted px-3"><i class="bi bi-envelope"></i></span>
+                        <input type="email"
+                               class="form-control bg-body border-start-0 ps-0 shadow-none fs-6 <?php $__errorArgs = ['email'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -62,34 +64,32 @@ $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>"
-                           id="loginEmail"
-                           name="email"
-                           value="<?php echo e(old('email', request()->cookie('remembered_email'))); ?>"
-                           placeholder="you@example.com"
-                           autocomplete="email"
-                           autofocus
-                           required>
-                    <?php $__errorArgs = ['email'];
+                               id="loginEmail"
+                               name="email"
+                               value="<?php echo e(old('email', request()->cookie('remembered_email'))); ?>"
+                               placeholder="you@example.com"
+                               autocomplete="email"
+                               autofocus
+                               required>
+                        <?php $__errorArgs = ['email'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?>
-                        <div class="invalid-feedback"><?php echo e($message); ?></div>
-                    <?php unset($message);
+                            <div class="invalid-feedback"><?php echo e($message); ?></div>
+                        <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
+                    </div>
                 </div>
 
                 
-                <div class="mb-3">
-                    <!-- <div class="d-flex justify-content-between align-items-center mb-1">
-                        <label for="loginPassword" class="form-label fw-semibold mb-0">Password</label>
-                        <a href="#" class="auth-forgot-link" tabindex="-1">Forgot password?</a>
-                    </div> -->
-                    <div class="input-group">
+                <div class="mb-4">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-body-secondary border-end-0 text-muted px-3"><i class="bi bi-lock"></i></span>
                         <input :type="showPassword ? 'text' : 'password'"
-                               class="form-control <?php $__errorArgs = ['password'];
+                               class="form-control bg-body border-start-0 shadow-none fs-6 <?php $__errorArgs = ['password'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -102,7 +102,7 @@ unset($__errorArgs, $__bag); ?>"
                                placeholder="••••••••"
                                autocomplete="current-password"
                                required>
-                        <button class="btn btn-outline-secondary password-toggle"
+                        <button class="btn btn-outline-secondary password-toggle px-3"
                                 type="button"
                                 @click="showPassword = !showPassword"
                                 :aria-label="showPassword ? 'Hide password' : 'Show password'"
@@ -145,11 +145,11 @@ unset($__errorArgs, $__bag); ?>
 
                 
                 <button type="submit"
-                        class="btn btn-primary w-100 auth-submit-btn"
+                        class="btn btn-primary w-100 auth-submit-btn py-3 fs-6 rounded-3 mt-2"
                         id="loginSubmitBtn"
                         :disabled="isSubmitting">
                     <span x-show="!isSubmitting" class="d-flex align-items-center justify-content-center gap-2">
-                        <i class="bi bi-box-arrow-in-right"></i>
+                        <i class="bi bi-box-arrow-in-right fs-5"></i>
                         Sign In
                     </span>
                     <span x-show="isSubmitting" style="display: none;" class="d-flex align-items-center justify-content-center gap-2">

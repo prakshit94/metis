@@ -12,7 +12,15 @@ class UpdateUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('user-edit') ?? false;
+        if (! $this->user()) {
+            return false;
+        }
+        
+        if ($this->user()->can('user-edit')) {
+            return true;
+        }
+        
+        return $this->user()->id === (int) $this->route('user')?->id;
     }
 
     /**

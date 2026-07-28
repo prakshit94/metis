@@ -67,11 +67,16 @@
     <!-- Main Wrapper -->
     <div class="admin-wrapper" id="admin-wrapper">
 
+        @php
+            $hasSidebarPermission = auth()->check() && (auth()->user()->hasRole('Super Admin') || auth()->user()->can('sidebar-view'));
+            $hideSidebar = (isset($hideSidebar) && $hideSidebar) || !$hasSidebarPermission;
+        @endphp
+
         <!-- Header -->
         @include('components.header')
 
         <!-- Sidebar -->
-        @if(!isset($hideSidebar) || !$hideSidebar)
+        @if(!$hideSidebar)
             @include('components.sidebar')
         @endif
 
@@ -79,7 +84,7 @@
         <div class="sidebar-backdrop" aria-hidden="true"></div>
 
         <!-- Main Content -->
-        <main id="main-content" class="admin-main" style="{{ (isset($hideSidebar) && $hideSidebar) ? 'margin-left: 0;' : '' }}">
+        <main id="main-content" class="admin-main" style="{{ $hideSidebar ? 'margin-left: 0;' : '' }}">
             <div class="container-fluid p-4 p-lg-5">
                 @yield('content')
             </div>

@@ -67,11 +67,16 @@
     <!-- Main Wrapper -->
     <div class="admin-wrapper" id="admin-wrapper">
 
+        <?php
+            $hasSidebarPermission = auth()->check() && (auth()->user()->hasRole('Super Admin') || auth()->user()->can('sidebar-view'));
+            $hideSidebar = (isset($hideSidebar) && $hideSidebar) || !$hasSidebarPermission;
+        ?>
+
         <!-- Header -->
         <?php echo $__env->make('components.header', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
         <!-- Sidebar -->
-        <?php if(!isset($hideSidebar) || !$hideSidebar): ?>
+        <?php if(!$hideSidebar): ?>
             <?php echo $__env->make('components.sidebar', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
         <?php endif; ?>
 
@@ -79,7 +84,7 @@
         <div class="sidebar-backdrop" aria-hidden="true"></div>
 
         <!-- Main Content -->
-        <main id="main-content" class="admin-main" style="<?php echo e((isset($hideSidebar) && $hideSidebar) ? 'margin-left: 0;' : ''); ?>">
+        <main id="main-content" class="admin-main" style="<?php echo e($hideSidebar ? 'margin-left: 0;' : ''); ?>">
             <div class="container-fluid p-4 p-lg-5">
                 <?php echo $__env->yieldContent('content'); ?>
             </div>

@@ -32,6 +32,10 @@
             </div>
 
             {{-- ── CENTER SECTION (Search) ──────────────────────── --}}
+            @php
+                $hasSearchPermission = auth()->check() && (auth()->user()->hasRole('Super Admin') || auth()->user()->can('search-view'));
+            @endphp
+            @if($hasSearchPermission)
             <div class="d-none d-md-flex justify-content-center px-4" style="flex: 2; max-width: 600px;">
                 <div class="position-relative w-100" x-data="{
                     searchQuery: '',
@@ -135,9 +139,33 @@
                     </div>
                 </div>
             </div>
+            @endif
             {{-- ── RIGHT ACTIONS ─────────────────────────────────── --}}
             <div class="d-flex align-items-center justify-content-end gap-2 gap-sm-3 h-100" style="flex: 1; min-width: 0;">
 
+                @php
+                    $webApps = [
+                        ['route' => 'orders', 'icon' => 'bi-bag-check-fill', 'color' => 'primary', 'name' => 'Orders', 'permission' => 'orders.view'],
+                        ['route' => 'customers', 'icon' => 'bi-person-lines-fill', 'color' => 'success', 'name' => 'Customers', 'permission' => 'customer-view', 'super_admin_only' => true],
+                        ['route' => 'catalog.products', 'icon' => 'bi-box-seam-fill', 'color' => 'info', 'name' => 'Products', 'permission' => 'product-view'],
+                        ['route' => 'reports', 'icon' => 'bi-file-earmark-bar-graph-fill', 'color' => 'warning', 'name' => 'Reports', 'permission' => 'reports-view'],
+                        ['route' => 'chat.index', 'icon' => 'bi-chat-dots-fill', 'color' => 'danger', 'name' => 'Team Chat', 'permission' => 'chat-view'],
+                        ['route' => 'calendar', 'icon' => 'bi-calendar-week-fill', 'color' => 'secondary', 'name' => 'Calendar', 'permission' => 'calendar-view'],
+                    ];
+                    $availableWebApps = [];
+                    if (auth()->check()) {
+                        $isSuperAdmin = auth()->user()->hasRole('Super Admin');
+                        foreach ($webApps as $app) {
+                            $isSuperAdminOnly = $app['super_admin_only'] ?? false;
+                            if ($isSuperAdmin) {
+                                $availableWebApps[] = $app;
+                            } elseif (!$isSuperAdminOnly && auth()->user()->can($app['permission'])) {
+                                $availableWebApps[] = $app;
+                            }
+                        }
+                    }
+                @endphp
+                @if(count($availableWebApps) > 0)
                 {{-- Web Apps Dropdown --}}
                 <div class="dropdown h-100 d-flex align-items-center">
                     <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
@@ -147,63 +175,31 @@
                             data-bs-toggle="dropdown"
                             data-bs-display="static"
                             aria-expanded="false"
-                            aria-label="Web apps">
+                            aria-label="Quick Links">
                         <i class="bi bi-grid-3x3-gap-fill fs-5" aria-hidden="true"></i>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="webAppsMenuBtn" style="width: 320px;">
                         <div class="p-3 border-bottom bg-body-secondary bg-opacity-50 rounded-top-4">
-                            <div class="row align-items-center">
-                                <div class="col">
-                                    <h6 class="m-0 fw-bold text-body text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Web Apps</h6>
-                                </div>
-                                <div class="col-auto">
-                                    <a href="#!" class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" style="font-size: 11px;">View All</a>
-                                </div>
-                            </div>
+                            <h6 class="m-0 fw-bold text-body text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Quick Links</h6>
                         </div>
 
                         <div class="p-3">
                             <div class="row g-3 text-center">
+                                @foreach($availableWebApps as $app)
                                 <div class="col-4">
-                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
-                                        <img src="{{ asset('assets/images/github.png') }}" alt="Github" height="24">
-                                        <span class="fw-semibold text-muted" style="font-size: 11px;">GitHub</span>
+                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="{{ route($app['route']) }}" target="_blank" rel="noopener noreferrer">
+                                        <div class="bg-{{ $app['color'] }} bg-opacity-10 text-{{ $app['color'] }} rounded-circle d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;">
+                                            <i class="bi {{ $app['icon'] }} fs-5"></i>
+                                        </div>
+                                        <span class="fw-semibold text-muted" style="font-size: 11px;">{{ $app['name'] }}</span>
                                     </a>
                                 </div>
-                                <div class="col-4">
-                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
-                                        <img src="{{ asset('assets/images/bitbucket.png') }}" alt="Bitbucket" height="24">
-                                        <span class="fw-semibold text-muted" style="font-size: 11px;">Bitbucket</span>
-                                    </a>
-                                </div>
-                                <div class="col-4">
-                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
-                                        <img src="{{ asset('assets/images/dribbble.png') }}" alt="Dribbble" height="24">
-                                        <span class="fw-semibold text-muted" style="font-size: 11px;">Dribbble</span>
-                                    </a>
-                                </div>
-                                <div class="col-4">
-                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
-                                        <img src="{{ asset('assets/images/dropbox.png') }}" alt="Dropbox" height="24">
-                                        <span class="fw-semibold text-muted" style="font-size: 11px;">Dropbox</span>
-                                    </a>
-                                </div>
-                                <div class="col-4">
-                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
-                                        <img src="{{ asset('assets/images/mail_chimp.png') }}" alt="Mail Chimp" height="24">
-                                        <span class="fw-semibold text-muted" style="font-size: 11px;">Mail Chimp</span>
-                                    </a>
-                                </div>
-                                <div class="col-4">
-                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="#!">
-                                        <img src="{{ asset('assets/images/slack.png') }}" alt="Slack" height="24">
-                                        <span class="fw-semibold text-muted" style="font-size: 11px;">Slack</span>
-                                    </a>
-                                </div>
+                                @endforeach
                             </div>
                         </div>
                     </div>
                 </div>
+                @endif
 
                 {{-- Shopping Cart Dropdown --}}
                 @if(request()->routeIs('orders.create', 'promotions.coupons', 'promotions.offers'))
@@ -491,6 +487,11 @@
                             </a>
                         </li>
                         <li>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                <i class="bi bi-key text-muted fs-5"></i> Change Password
+                            </a>
+                        </li>
+                        <li>
                             <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
                                 <i class="bi bi-life-preserver text-muted fs-5"></i> Help Center
                             </a>
@@ -524,6 +525,7 @@
 </header>
 
 <x-add-customer-modal />
+<x-change-password-modal />
 
 <style>
 .hover-bg-secondary:hover { background-color: var(--bs-secondary-bg) !important; }
