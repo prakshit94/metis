@@ -274,6 +274,12 @@ export class DashboardManager {
       const customerCell = document.createElement('td');
       customerCell.textContent = order.customer;
 
+      const itemsCell = document.createElement('td');
+      itemsCell.textContent = order.items || '-';
+      itemsCell.className = 'text-truncate text-muted small';
+      itemsCell.style.maxWidth = '200px';
+      itemsCell.title = order.items || '';
+
       const amountCell = document.createElement('td');
       amountCell.textContent = order.amount;
 
@@ -286,7 +292,7 @@ export class DashboardManager {
       const dateCell = document.createElement('td');
       dateCell.textContent = order.date;
 
-      tr.append(idCell, customerCell, amountCell, statusCell, dateCell);
+      tr.append(idCell, customerCell, itemsCell, amountCell, statusCell, dateCell);
       tableBody.appendChild(tr);
     }
   }

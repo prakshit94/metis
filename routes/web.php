@@ -123,6 +123,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/shipping/shipments', [PageController::class, 'shipments'])->name('shipping.shipments')->middleware('permission:shipping-view');
     Route::get('/shipping/services', [PageController::class, 'shippingServices'])->name('shipping.services')->middleware('permission:shipping-view');
     Route::get('/reports', [PageController::class, 'reports'])->name('reports');
+    Route::get('/reports/export', [PageController::class, 'exportReports'])->name('reports.export');
     Route::get('/messages', [PageController::class, 'messages'])->name('messages');
     Route::get('/calendar', [PageController::class, 'calendar'])->name('calendar');
     Route::get('/files', [PageController::class, 'files'])->name('files');

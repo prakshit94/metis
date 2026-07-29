@@ -34,7 +34,7 @@ class OrderController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:orders.view', only: ['index', 'show', 'bulkExport']),
+            new Middleware('permission:orders.view', only: ['index', 'show']),
             new Middleware('permission:orders.create', only: ['create', 'store', 'bulkImport', 'bulkImportTemplate']),
             new Middleware('permission:orders.edit', only: ['edit']),
             new Middleware('permission:orders.delete', only: ['destroy']),
@@ -51,6 +51,7 @@ class OrderController extends Controller implements HasMiddleware
             new Middleware('permission:orders.receipt', only: ['receipt']),
             new Middleware('permission:orders.bulk_status', only: ['bulkStatus', 'bulkStoreVerification']),
             new Middleware('permission:orders.bulk_print', only: ['bulkPrint']),
+            new Middleware('permission:orders.export', only: ['bulkExport', 'exportSelected']),
             new Middleware('permission:orders.revert_status', only: ['revertStatus']),
         ];
     }
@@ -195,7 +196,8 @@ class OrderController extends Controller implements HasMiddleware
 
         // Stats Query (Cached)
         $statsQuery = clone $query;
-        $cacheKey = 'order_stats_'.auth()->id().'_'.md5(json_encode($request->all()));
+        $statsVersion = Cache::get('order_stats_version', 0);
+        $cacheKey = 'order_stats_'.$statsVersion.'_'.auth()->id().'_'.md5(json_encode($request->all()));
         $counts = Cache::remember($cacheKey, 300, function () use ($statsQuery) {
             return $statsQuery->select([
                 DB::raw('COUNT(*) as total'),
@@ -246,7 +248,7 @@ class OrderController extends Controller implements HasMiddleware
 
         // Warehouse Stats Query (Cached)
         $warehouseStatsQuery = clone $query;
-        $warehouseStatsCacheKey = 'order_warehouse_stats_'.auth()->id().'_'.md5(json_encode($request->all()));
+        $warehouseStatsCacheKey = 'order_warehouse_stats_'.$statsVersion.'_'.auth()->id().'_'.md5(json_encode($request->all()));
         $warehouseStats = Cache::remember($warehouseStatsCacheKey, 300, function () use ($warehouseStatsQuery) {
             // Remove with() eager loading to avoid issues with groupBy
             $warehouseStatsQuery->setEagerLoads([]);
@@ -256,8 +258,12 @@ class OrderController extends Controller implements HasMiddleware
                     DB::raw('SUM(orders.net_amount) as total_amount'),
                     DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN 1 ELSE 0 END) as pending"),
                     DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN orders.net_amount ELSE 0 END) as pending_amount"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN 1 ELSE 0 END) as confirmed"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN orders.net_amount ELSE 0 END) as confirmed_amount"),
                     DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN 1 ELSE 0 END) as processing"),
                     DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN orders.net_amount ELSE 0 END) as processing_amount"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN 1 ELSE 0 END) as ready_to_ship"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN orders.net_amount ELSE 0 END) as ready_to_ship_amount"),
                     DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN 1 ELSE 0 END) as dispatched"),
                     DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN orders.net_amount ELSE 0 END) as dispatched_amount"),
                     DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN 1 ELSE 0 END) as delivered"),
@@ -282,8 +288,12 @@ class OrderController extends Controller implements HasMiddleware
                     'total_amount' => (float) $item->total_amount,
                     'pending' => (int) $item->pending,
                     'pending_amount' => (float) $item->pending_amount,
+                    'confirmed' => (int) $item->confirmed,
+                    'confirmed_amount' => (float) $item->confirmed_amount,
                     'processing' => (int) $item->processing,
                     'processing_amount' => (float) $item->processing_amount,
+                    'ready_to_ship' => (int) $item->ready_to_ship,
+                    'ready_to_ship_amount' => (float) $item->ready_to_ship_amount,
                     'dispatched' => (int) $item->dispatched,
                     'dispatched_amount' => (float) $item->dispatched_amount,
                     'delivered' => (int) $item->delivered,
@@ -1307,7 +1317,18 @@ class OrderController extends Controller implements HasMiddleware
             return;
         }
 
-        if ($user->hasAnyRole(['Super Admin', 'Admin']) || ($user->can('view_all_order') || $user->can('view-all-data'))) {
+        if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view-all-data')) {
+            return;
+        }
+
+        if ($user->can('view_all_order')) {
+            $allowedStatuses = $this->allowedOrderFilterStatuses($user);
+            if (!empty($allowedStatuses)) {
+                $query->where(function ($q) use ($user, $allowedStatuses) {
+                    $q->where('created_by', $user->id)
+                      ->orWhereIn('status', $allowedStatuses);
+                });
+            }
             return;
         }
 
@@ -1320,7 +1341,7 @@ class OrderController extends Controller implements HasMiddleware
             return [];
         }
 
-        if ($user->hasAnyRole(['Super Admin', 'Admin']) || ($user->can('view_all_order') || $user->can('view-all-data'))) {
+        if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view-all-data')) {
             return ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'];
         }
 
@@ -1378,15 +1399,11 @@ class OrderController extends Controller implements HasMiddleware
             array_push($statuses, 'dispatched', 'delivered', 'returned');
         }
 
-        if ($user->can('orders.cancel')) {
-            array_push($statuses, 'future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship');
-        }
-
-        if ($user->can('orders.revert_status')) {
-            array_push($statuses, 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled');
-        }
-
         $orderedStatuses = ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'];
+
+        if ($user->can('view_all_order') && empty($statuses)) {
+            return $orderedStatuses;
+        }
 
         return array_values(array_intersect($orderedStatuses, array_unique($statuses)));
     }

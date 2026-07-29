@@ -302,12 +302,24 @@ class ChatService
             ->whereColumn('chat_presence.user_id', 'users.id')
             ->limit(1);
 
+        $todayOrdersCount = DB::table('orders')
+            ->selectRaw('count(*)')
+            ->whereColumn('orders.created_by', 'users.id')
+            ->whereDate('created_at', now()->toDateString());
+
+        $todayRevenue = DB::table('orders')
+            ->selectRaw('sum(total_amount)')
+            ->whereColumn('orders.created_by', 'users.id')
+            ->whereDate('created_at', now()->toDateString());
+
         $users = User::query()
             ->select('id', 'name', 'first_name', 'last_name', 'email', 'employee_id', 'photo', 'is_active as status', 'village_name', 'district', 'state')
             ->selectSub($lastSessionActivity, 'last_session_activity')
             ->selectSub($lastSessionUserAgent, 'last_session_user_agent')
             ->selectSub($presenceStatus, 'presence_status')
             ->selectSub($presenceLastSeen, 'presence_last_seen_at')
+            ->selectSub($todayOrdersCount, 'today_orders')
+            ->selectSub($todayRevenue, 'today_revenue')
             ->where('is_active', 1)
             ->when(! $includeSelf, fn ($query) => $query->where('id', '!=', $viewer->id))
             ->when($term, fn ($query) => $query->where(function ($nested) use ($term) {
@@ -349,6 +361,8 @@ class ChatService
                 'last_seen_at' => $lastSeenAt?->toIso8601String(),
                 'last_seen_label' => $isOnline ? 'Active now' : ($lastSeenAt ? 'Last seen '.$lastSeenAt->diffForHumans() : 'Not seen yet'),
                 'active_device' => $this->deviceFromUserAgent($user->last_session_user_agent),
+                'today_orders' => (int) $user->today_orders,
+                'today_revenue' => (float) $user->today_revenue,
             ];
         })->sortBy([
             ['is_online', 'desc'],

@@ -140,7 +140,7 @@
             </aside>
 
             <!-- Center: Main Chat Area -->
-            <section class="col-12 col-lg-6 col-xl-7 flex-column h-100 position-relative bg-body"
+            <section class="col-12 col-lg-6 flex-column h-100 position-relative bg-body"
                      :class="activeConversation ? 'd-flex' : 'd-none d-lg-flex'">
                 <template x-if="activeConversation">
                     <div class="d-flex flex-column h-100">
@@ -328,28 +328,40 @@
             </section>
 
             <!-- Right Sidebar: Live Users -->
-            <aside class="d-none d-lg-flex col-lg-3 col-xl-2 flex-column border-start bg-body-tertiary h-100">
+            <aside class="d-none d-lg-flex col-lg-3 flex-column border-start bg-body-tertiary h-100">
                 <div class="p-3 border-bottom">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div>
                             <h6 class="mb-0 fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">Live Users</h6>
                             <p class="mb-0 text-muted" style="font-size: 11px;" x-text="`${onlineUsers.length} active, ${users.length} available`"></p>
                         </div>
-                        <button type="button" @click="fetchUsers" class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Refresh users">
-                            <i class="bi bi-arrow-clockwise"></i>
-                        </button>
+                        <div class="d-flex gap-1">
+                            <button type="button" @click="exportUsersToCSV" class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Export Data">
+                                <i class="bi bi-download"></i>
+                            </button>
+                            <button type="button" @click="fetchUsers" class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Refresh users">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="position-relative mb-3">
                         <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events:none;"></i>
                         <input type="search" x-model.debounce.300ms="userSearch" placeholder="Find users..." class="form-control form-control-sm ps-5 rounded-pill">
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 mb-2">
                         <button type="button" @click="userFilter = 'all'" :class="userFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary bg-body'" class="btn btn-sm flex-fill fw-semibold py-1 border" style="font-size: 11px;">All</button>
                         <button type="button" @click="userFilter = 'online'" :class="userFilter === 'online' ? 'btn-primary' : 'btn-outline-secondary bg-body'" class="btn btn-sm flex-fill fw-semibold py-1 border" style="font-size: 11px;">Online</button>
                     </div>
+                    <div class="d-flex gap-2">
+                        <select x-model="userSort" class="form-select form-select-sm" style="font-size: 11px;">
+                            <option value="default">Default Sort</option>
+                            <option value="revenue_desc">Revenue: High to Low</option>
+                            <option value="revenue_asc">Revenue: Low to High</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="flex-grow-1 overflow-y-auto">
-                    <template x-for="user in visibleUsers" :key="user.id">
+                    <template x-for="(user, index) in visibleUsers" :key="user.id">
                         <button type="button" @click="startDirect(user.id)" class="btn bg-transparent border-0 text-start w-100 d-flex align-items-start gap-3 mb-0 p-3" 
                                 style="border-bottom: 1px solid var(--bs-border-color) !important; transition: background 0.15s;"
                                 onmouseover="this.style.backgroundColor='var(--bs-secondary-bg)'" 
@@ -369,7 +381,12 @@
                             <div class="min-w-0 flex-grow-1">
                                 <!-- First Row: Name & Badge -->
                                 <div class="d-flex justify-content-between align-items-center mb-1 gap-2">
-                                    <span class="text-truncate fw-bold text-body" style="font-size: .875rem;" x-text="user.name"></span>
+                                    <div class="d-flex align-items-center gap-1 flex-grow-1 min-w-0">
+                                        <template x-if="userSort === 'revenue_desc' && index === 0"><span title="Top Earner" class="fs-5">🥇</span></template>
+                                        <template x-if="userSort === 'revenue_desc' && index === 1"><span title="2nd Earner" class="fs-5">🥈</span></template>
+                                        <template x-if="userSort === 'revenue_desc' && index === 2"><span title="3rd Earner" class="fs-5">🥉</span></template>
+                                        <span class="text-truncate fw-bold text-body" style="font-size: .875rem;" x-text="user.name"></span>
+                                    </div>
                                     <span class="badge rounded-pill fw-semibold flex-shrink-0" style="font-size: 9px; padding: 0.25em 0.5em;" :class="user.is_online ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25'" x-text="user.is_online ? 'Live' : 'Away'"></span>
                                 </div>
                                 
@@ -387,6 +404,15 @@
                                 <div class="d-flex justify-content-between align-items-center text-muted opacity-75" style="font-size: 10px;">
                                     <span class="text-truncate" x-text="user.last_seen_label"></span>
                                     <span class="text-truncate ms-2 text-end" x-show="user.active_device" x-text="user.active_device"></span>
+                                </div>
+                                <!-- Fourth Row: Today's Stats -->
+                                <div class="d-flex gap-2 mt-2">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style="font-size: 9px;">
+                                        <i class="bi bi-box-seam me-1"></i> <span x-text="user.today_orders || 0"></span> Orders
+                                    </span>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 9px;">
+                                        <i class="bi bi-currency-dollar me-1"></i> <span x-text="'Rs. ' + (user.today_revenue || 0).toLocaleString()"></span>
+                                    </span>
                                 </div>
                             </div>
                             <div x-show="startingUserId === user.id" class="spinner-border spinner-border-sm text-primary ms-auto mt-1" role="status"></div>
@@ -664,6 +690,7 @@
             userSearch: '',
             filter: 'all',
             userFilter: 'all',
+            userSort: 'default',
             
             draft: '',
             replyTo: null,
@@ -740,13 +767,18 @@
             },
             
             get visibleUsers() {
-                let filtered = Array.isArray(this.users) ? this.users : [];
+                let filtered = Array.isArray(this.users) ? [...this.users] : [];
                 if (this.userFilter === 'online') {
                     filtered = filtered.filter(u => u.is_online);
                 }
                 if (this.userSearch) {
                     const q = this.userSearch.toLowerCase();
                     filtered = filtered.filter(u => (u.name || '').toLowerCase().includes(q));
+                }
+                if (this.userSort === 'revenue_desc') {
+                    filtered.sort((a, b) => (b.today_revenue || 0) - (a.today_revenue || 0));
+                } else if (this.userSort === 'revenue_asc') {
+                    filtered.sort((a, b) => (a.today_revenue || 0) - (b.today_revenue || 0));
                 }
                 return filtered;
             },
@@ -1289,6 +1321,33 @@
                 if (!other) return false;
                 const liveUser = this.users.find(u => Number(u.id) === Number(other.user_id));
                 return liveUser?.is_online === true;
+            },
+            
+            exportUsersToCSV() {
+                const rows = [
+                    ['Name', 'Email', 'Location', 'Status', 'Today Orders', 'Today Revenue', 'Last Seen']
+                ];
+                
+                this.visibleUsers.forEach(u => {
+                    rows.push([
+                        u.name || '',
+                        u.email || '',
+                        u.location || '',
+                        u.is_online ? 'Online' : 'Offline',
+                        u.today_orders || 0,
+                        u.today_revenue || 0,
+                        u.last_seen_label || ''
+                    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+                });
+                
+                const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `live_users_${new Date().toISOString().split('T')[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
         };
     }

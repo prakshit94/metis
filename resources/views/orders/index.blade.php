@@ -15,13 +15,19 @@
     allowedFilterStatuses = {{ json_encode($statusesList) }};
     init();
 ">
+    <div x-data="{ showAnalytics: localStorage.getItem('orders_show_analytics') !== 'false' }" x-init="$watch('showAnalytics', val => localStorage.setItem('orders_show_analytics', val))">
 <!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
     <div>
         <h1 class="h3 mb-0">Order Management</h1>
         <p class="text-muted mb-0">Track orders, manage fulfillment, and analyze sales</p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex align-items-center gap-2">
+        <!-- Analytics Toggle -->
+        <div class="form-check form-switch m-0 me-2 pe-3 border-end cursor-pointer d-flex align-items-center gap-2">
+            <input class="form-check-input m-0" type="checkbox" role="switch" id="ordersAnalyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
+            <label class="form-check-label small fw-bold text-muted mb-0 ms-1" for="ordersAnalyticsToggle" style="cursor: pointer; padding-top: 2px;">Analytics</label>
+        </div>
         <button type="button" class="btn btn-outline-secondary" @click="exportOrders()">
             <i class="bi bi-download me-2"></i>Export
         </button>
@@ -135,6 +141,7 @@
 </div>
 
 <!-- Charts Row -->
+<div x-show="showAnalytics" x-transition.opacity.duration.300ms>
 <div class="row g-4 g-lg-5 mb-5 mb-lg-5 mb-xl-6">
     <!-- Order Trends Chart -->
     <div class="col-lg-8">
@@ -179,9 +186,10 @@
         </div>
     </div>
 </div>
+</div> <!-- End showAnalytics Wrapper -->
 
 <!-- Warehouse Operations Overview -->
-<div class="mb-5 mb-lg-5 mb-xl-6" x-show="warehouseStats && warehouseStats.length > 0" x-cloak>
+<div class="mb-5 mb-lg-5 mb-xl-6" x-show="showWarehouseStats && warehouseStats && warehouseStats.length > 0" x-transition x-cloak>
     <div class="d-flex align-items-center mb-3 gap-3">
         <h2 class="h5 mb-0 fw-bold d-flex align-items-center text-nowrap">
             <i class="bi bi-buildings text-primary me-2 fs-4"></i>Warehouse Operations Overview
@@ -205,125 +213,100 @@
                     <div class="card-body p-4">
                         <div class="row align-items-center g-4">
                             <!-- Info Section -->
-                            <div class="col-lg-3 col-md-4 border-end border-secondary-subtle pe-4">
-                                <h3 class="h6 fw-bold mb-2 text-body-emphasis" x-text="wh.name"></h3>
-                                <div class="d-flex align-items-center gap-2 mb-3">
-                                    <div class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle" x-text="`${wh.total} Orders`"></div>
+                            <div class="col-lg-3 col-md-12 border-end border-secondary-subtle pe-lg-4 mb-4 mb-lg-0 pb-4 pb-lg-0">
+                                <h3 class="h5 fw-bold mb-3 text-body-emphasis" x-text="wh.name"></h3>
+                                <div class="d-flex align-items-center gap-3 mb-4">
+                                    <div class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle py-2 px-3 fs-6 rounded-pill" x-text="`${wh.total} Orders`"></div>
                                 </div>
-                                <div>
-                                    <span class="d-block text-muted small fw-medium mb-1">Total Value</span>
-                                    <span class="fs-5 fw-bold text-success" x-text="`Rs. ${formatCurrency(wh.total_amount)}`"></span>
+                                <div class="p-3 bg-light bg-opacity-50 rounded-4 border border-secondary-subtle mb-3 shadow-sm">
+                                    <span class="d-block text-muted small fw-medium mb-1 text-uppercase tracking-wider">Total Value</span>
+                                    <span class="fs-4 fw-bold text-success" x-text="`Rs. ${formatCurrency(wh.total_amount)}`"></span>
+                                </div>
+                                
+                                <div class="px-1">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="small text-muted fw-bold text-uppercase tracking-wide" style="font-size: 0.7rem;">Delivery Rate</span>
+                                        <span class="small fw-bold text-success" x-text="`${wh.total > 0 ? Math.round((wh.delivered / wh.total) * 100) : 0}%`"></span>
+                                    </div>
+                                    <div class="progress rounded-pill bg-success bg-opacity-10" style="height: 6px;">
+                                        <div class="progress-bar bg-success rounded-pill" role="progressbar" :style="`width: ${wh.total > 0 ? (wh.delivered / wh.total) * 100 : 0}%`"></div>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Status Breakdown Section -->
-                            <div class="col-lg-7 col-md-8 pe-lg-4">
-                                <p class="text-muted small fw-bold text-uppercase tracking-wide mb-3" style="font-size: 0.7rem; letter-spacing: 0.5px;">Fulfillment Status</p>
-                                <div class="row g-3">
-                                    <!-- Pending -->
-                                    <div class="col-sm-3 col-6">
-                                        <div class="p-2 rounded bg-warning bg-opacity-10 border border-warning border-opacity-25 d-flex flex-column h-100">
-                                            <div class="d-flex align-items-center gap-2 mb-1">
-                                                <div class="bg-warning rounded-circle" style="width: 8px; height: 8px;"></div>
-                                                <span class="small text-warning-emphasis fw-medium">Pending</span>
-                                            </div>
-                                            <div class="mt-auto">
-                                                <span class="fw-bold fs-5 text-warning-emphasis lh-1 d-block mb-1" x-text="wh.pending"></span>
-                                                <small class="text-warning-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.pending_amount)}`"></small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Processing -->
-                                    <div class="col-sm-3 col-6">
-                                        <div class="p-2 rounded bg-primary bg-opacity-10 border border-primary border-opacity-25 d-flex flex-column h-100">
-                                            <div class="d-flex align-items-center gap-2 mb-1">
-                                                <div class="bg-primary rounded-circle" style="width: 8px; height: 8px;"></div>
-                                                <span class="small text-primary-emphasis fw-medium">Processing</span>
-                                            </div>
-                                            <div class="mt-auto">
-                                                <span class="fw-bold fs-5 text-primary-emphasis lh-1 d-block mb-1" x-text="wh.processing"></span>
-                                                <small class="text-primary-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.processing_amount)}`"></small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Dispatched -->
-                                    <div class="col-sm-3 col-6">
-                                        <div class="p-2 rounded bg-info bg-opacity-10 border border-info border-opacity-25 d-flex flex-column h-100">
-                                            <div class="d-flex align-items-center gap-2 mb-1">
-                                                <div class="bg-info rounded-circle" style="width: 8px; height: 8px;"></div>
-                                                <span class="small text-info-emphasis fw-medium">Dispatched</span>
-                                            </div>
-                                            <div class="mt-auto">
-                                                <span class="fw-bold fs-5 text-info-emphasis lh-1 d-block mb-1" x-text="wh.dispatched"></span>
-                                                <small class="text-info-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.dispatched_amount)}`"></small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Delivered -->
-                                    <div class="col-sm-3 col-6">
-                                        <div class="p-2 rounded bg-success bg-opacity-10 border border-success border-opacity-25 d-flex flex-column h-100">
-                                            <div class="d-flex align-items-center gap-2 mb-1">
-                                                <div class="bg-success rounded-circle" style="width: 8px; height: 8px;"></div>
-                                                <span class="small text-success-emphasis fw-medium">Delivered</span>
-                                            </div>
-                                            <div class="mt-auto">
-                                                <span class="fw-bold fs-5 text-success-emphasis lh-1 d-block mb-1" x-text="wh.delivered"></span>
-                                                <small class="text-success-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.delivered_amount)}`"></small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Return Requested -->
-                                    <div class="col-sm-3 col-6">
-                                        <div class="p-2 rounded bg-danger bg-opacity-10 border border-danger border-opacity-25 d-flex flex-column h-100">
-                                            <div class="d-flex align-items-center gap-2 mb-1">
-                                                <div class="bg-danger rounded-circle" style="width: 8px; height: 8px;"></div>
-                                                <span class="small text-danger-emphasis fw-medium text-nowrap">Return Req</span>
-                                            </div>
-                                            <div class="mt-auto">
-                                                <span class="fw-bold fs-5 text-danger-emphasis lh-1 d-block mb-1" x-text="wh.return_requested"></span>
-                                                <small class="text-danger-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.return_requested_amount)}`"></small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Returned -->
-                                    <div class="col-sm-3 col-6">
-                                        <div class="p-2 rounded bg-secondary bg-opacity-10 border border-secondary border-opacity-25 d-flex flex-column h-100">
-                                            <div class="d-flex align-items-center gap-2 mb-1">
-                                                <div class="bg-secondary rounded-circle" style="width: 8px; height: 8px;"></div>
-                                                <span class="small text-secondary-emphasis fw-medium">Returned</span>
-                                            </div>
-                                            <div class="mt-auto">
-                                                <span class="fw-bold fs-5 text-secondary-emphasis lh-1 d-block mb-1" x-text="wh.returned"></span>
-                                                <small class="text-secondary-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.returned_amount)}`"></small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Cancelled -->
-                                    <div class="col-sm-3 col-6">
-                                        <div class="p-2 rounded bg-dark bg-opacity-10 border border-dark border-opacity-25 d-flex flex-column h-100">
-                                            <div class="d-flex align-items-center gap-2 mb-1">
-                                                <div class="bg-dark rounded-circle" style="width: 8px; height: 8px;"></div>
-                                                <span class="small text-dark-emphasis fw-medium">Cancelled</span>
-                                            </div>
-                                            <div class="mt-auto">
-                                                <span class="fw-bold fs-5 text-dark-emphasis lh-1 d-block mb-1" x-text="wh.cancelled"></span>
-                                                <small class="text-dark-emphasis opacity-75 fw-medium d-block" style="font-size: 0.7rem;" x-text="`Rs. ${formatCurrency(wh.cancelled_amount)}`"></small>
-                                            </div>
-                                        </div>
+                            <div class="col-lg-9 col-md-12 ps-lg-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <p class="text-muted small fw-bold text-uppercase tracking-wide mb-0" style="font-size: 0.75rem; letter-spacing: 0.5px;">Fulfillment Pipeline</p>
+                                    
+                                    <!-- Exceptions / Returns Badge -->
+                                    <div class="badge bg-danger bg-opacity-10 border border-danger border-opacity-25 text-danger-emphasis py-1 px-3 rounded-pill d-flex align-items-center gap-2" x-show="wh.return_requested > 0" x-transition>
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        <span x-text="`${wh.return_requested} Return(s) Req (Rs. ${formatCurrency(wh.return_requested_amount)})`"></span>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Progress Section -->
-                            <div class="col-lg-2 border-start border-secondary-subtle ps-lg-4">
-                                <p class="text-muted small fw-bold text-uppercase tracking-wide mb-3" style="font-size: 0.7rem; letter-spacing: 0.5px;">Progress</p>
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="small text-muted">Completion</span>
-                                    <span class="small fw-bold" x-text="wh.total > 0 ? Math.round(((wh.delivered + wh.dispatched) / wh.total) * 100) + '%' : '0%'"></span>
+                                <!-- Horizontal Pipeline -->
+                                <div class="d-flex align-items-stretch flex-nowrap overflow-x-auto pb-2 gap-2" style="scrollbar-width: thin;">
+                                    
+                                    <!-- Pending -->
+                                    <div class="flex-fill p-3 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
+                                        <span class="small text-warning-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Pending</span>
+                                        <span class="fw-bold fs-4 text-warning-emphasis lh-1 mb-1" x-text="wh.pending"></span>
+                                        <small class="text-warning-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.pending_amount)}`"></small>
+                                        <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-warning opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
+                                    </div>
+
+                                    <!-- Confirmed -->
+                                    <div class="flex-fill p-3 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
+                                        <span class="small text-info-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Confirmed</span>
+                                        <span class="fw-bold fs-4 text-info-emphasis lh-1 mb-1" x-text="wh.confirmed"></span>
+                                        <small class="text-info-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.confirmed_amount)}`"></small>
+                                        <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-info opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
+                                    </div>
+
+                                    <!-- Processing -->
+                                    <div class="flex-fill p-3 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
+                                        <span class="small text-primary-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Processing</span>
+                                        <span class="fw-bold fs-4 text-primary-emphasis lh-1 mb-1" x-text="wh.processing"></span>
+                                        <small class="text-primary-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.processing_amount)}`"></small>
+                                        <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-primary opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
+                                    </div>
+
+                                    <!-- Ready -->
+                                    <div class="flex-fill p-3 rounded-4 bg-warning-subtle bg-opacity-50 border border-warning border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
+                                        <span class="small text-warning-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Ready</span>
+                                        <span class="fw-bold fs-4 text-warning-emphasis lh-1 mb-1" x-text="wh.ready_to_ship"></span>
+                                        <small class="text-warning-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.ready_to_ship_amount)}`"></small>
+                                        <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-warning opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
+                                    </div>
+
+                                    <!-- Dispatched -->
+                                    <div class="flex-fill p-3 rounded-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
+                                        <span class="small text-secondary-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Dispatched</span>
+                                        <span class="fw-bold fs-4 text-secondary-emphasis lh-1 mb-1" x-text="wh.dispatched"></span>
+                                        <small class="text-secondary-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.dispatched_amount)}`"></small>
+                                        <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-secondary opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
+                                    </div>
+
+                                    <!-- Delivered -->
+                                    <div class="flex-fill p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 d-flex flex-column text-center transition-hover" style="min-width: 130px;">
+                                        <span class="small text-success-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Delivered</span>
+                                        <span class="fw-bold fs-4 text-success-emphasis lh-1 mb-1" x-text="wh.delivered"></span>
+                                        <small class="text-success-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.delivered_amount)}`"></small>
+                                    </div>
                                 </div>
-                                <div class="progress mb-2" style="height: 8px;">
-                                    <div class="progress-bar bg-success" role="progressbar" :style="`width: ${wh.total > 0 ? Math.round((wh.delivered / wh.total) * 100) : 0}%`" title="Delivered"></div>
-                                    <div class="progress-bar bg-info" role="progressbar" :style="`width: ${wh.total > 0 ? Math.round((wh.dispatched / wh.total) * 100) : 0}%`" title="Dispatched"></div>
+                                
+                                <!-- Non-Lifecycle Statuses -->
+                                <div class="d-flex gap-3 mt-3">
+                                    <div class="d-flex align-items-center gap-2" x-show="wh.returned > 0">
+                                        <div class="bg-secondary rounded-circle" style="width: 8px; height: 8px;"></div>
+                                        <span class="small text-secondary-emphasis fw-medium">Returned: <span x-text="wh.returned"></span></span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2" x-show="wh.cancelled > 0">
+                                        <div class="bg-dark rounded-circle" style="width: 8px; height: 8px;"></div>
+                                        <span class="small text-dark-emphasis fw-medium">Cancelled: <span x-text="wh.cancelled"></span></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -398,7 +381,14 @@
                         <option value="today">Today</option>
                         <option value="week">This Week</option>
                         <option value="month">This Month</option>
+                        <option value="prev_month">Previous Month</option>
                     </select>
+
+                    <!-- Warehouse Ops Toggle -->
+                    <div class="form-check form-switch m-0 ms-2 d-none d-md-flex align-items-center gap-2" x-show="warehouseStats && warehouseStats.length > 0">
+                        <input class="form-check-input m-0" type="checkbox" role="switch" id="warehouseStatsToggle" x-model="showWarehouseStats" style="cursor: pointer; width: 2.5em; height: 1.25em;">
+                        <label class="form-check-label text-muted small fw-bold mb-0 cursor-pointer user-select-none" for="warehouseStatsToggle">Warehouse Ops</label>
+                    </div>
 
                     <!-- Advanced Filters Trigger -->
                     <button class="btn btn-sm"
@@ -622,6 +612,7 @@
                     </span>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
+                    @can('orders.bulk_status')
                     {{-- Next-step lifecycle buttons - only shown when relevant --}}
                     <button class="btn btn-sm btn-primary"
                             x-show="bulkAvailableActions.canConfirm"
@@ -651,16 +642,20 @@
                             title="Move dispatched orders → Delivered">
                         <i class="bi bi-check2-all me-1"></i>Deliver
                     </button>
+                    @endcan
 
                     {{-- Separator before non-lifecycle actions --}}
                     <div class="vr" x-show="bulkAvailableActions.canCancel || true"></div>
 
+                    @can('orders.export')
                     <button class="btn btn-sm btn-outline-info" 
                             @click="exportSelectedOrders()" 
                             title="Export Selected to CSV">
                         <i class="bi bi-download me-1"></i>Export CSV
                     </button>
+                    @endcan
 
+                    @can('orders.bulk_status')
                     {{-- Cancel (always shown if any selected order is cancellable) --}}
                     <button class="btn btn-sm btn-outline-danger"
                             x-show="bulkAvailableActions.canCancel"
@@ -669,9 +664,11 @@
                             title="Cancel selected orders">
                         <i class="bi bi-x-circle me-1"></i>Cancel
                     </button>
+                    @endcan
 
 
 
+                    @can('orders.bulk_print')
                     <div class="dropdown d-inline-block" x-show="bulkDocumentActions.canPrint" x-transition>
                         <button class="btn btn-sm btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-printer me-1"></i>Print
@@ -685,6 +682,7 @@
                             </a></li>
                         </ul>
                     </div>
+                    @endcan
 
                     {{-- Deselect all --}}
                     <button class="btn btn-sm btn-outline-secondary" @click="selectedOrders = []"
@@ -1967,6 +1965,7 @@
         </div>
     </div>
 
+    </div> <!-- End showAnalytics Main Wrapper -->
 </div> <!-- End Order Management Container -->
 @endsection
 

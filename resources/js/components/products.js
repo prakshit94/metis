@@ -168,7 +168,8 @@ document.addEventListener('alpine:init', () => {
         if (message === 'unknown status' || !message) {
           message = 'A server error occurred (Status: ' + response.status + ').';
         }
-        throw new Error(message);
+        if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
+    throw new Error(message);
       }
 
       return response;

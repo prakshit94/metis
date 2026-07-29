@@ -33,6 +33,7 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
+    if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
     throw new Error(message);
   }
 
@@ -415,7 +416,8 @@ document.addEventListener('alpine:init', () => {
           this.initCharts();
         });
       } catch (err) {
-        if (err.message.includes('right permissions')) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('right permissions') || msg.includes('authoriz') || msg.includes('unauthorized') || msg.includes('forbidden')) {
           window.location.href = '/';
           return;
         }

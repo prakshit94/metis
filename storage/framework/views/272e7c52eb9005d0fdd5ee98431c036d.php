@@ -3,8 +3,9 @@
 
 <?php $__env->startSection('content'); ?>
 <div x-data="{ 
-    activeTab: new URLSearchParams(window.location.search).has('filter') ? 'dashboard' : (localStorage.getItem('dashboard_active_tab') || 'search') 
-}" x-init="$watch('activeTab', val => localStorage.setItem('dashboard_active_tab', val))">
+    activeTab: new URLSearchParams(window.location.search).has('filter') ? 'dashboard' : (localStorage.getItem('dashboard_active_tab') || 'search'),
+    showAnalytics: localStorage.getItem('dashboard_show_analytics') !== 'false'
+}" x-init="$watch('activeTab', val => localStorage.setItem('dashboard_active_tab', val)); $watch('showAnalytics', val => localStorage.setItem('dashboard_show_analytics', val))">
     <!-- Page Header Tabs -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
         <ul class="nav nav-pills gap-2" role="tablist">
@@ -26,7 +27,12 @@
                 <option value="yesterday" <?php echo e(($filter ?? 'today') === 'yesterday' ? 'selected' : ''); ?>>Yesterday</option>
                 <option value="this_week" <?php echo e(($filter ?? 'today') === 'this_week' ? 'selected' : ''); ?>>This Week</option>
                 <option value="this_month" <?php echo e(($filter ?? 'today') === 'this_month' ? 'selected' : ''); ?>>This Month</option>
+                <option value="prev_month" <?php echo e(($filter ?? 'today') === 'prev_month' ? 'selected' : ''); ?>>Previous Month</option>
             </select>
+            <div class="form-check form-switch m-0 ms-2 cursor-pointer d-flex align-items-center gap-2">
+                <input class="form-check-input m-0" type="checkbox" role="switch" id="analyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
+                <label class="form-check-label small fw-bold text-muted mb-0 ms-1" for="analyticsToggle" style="cursor: pointer; padding-top: 2px;">Analytics</label>
+            </div>
         </div>
         </ul>
 
@@ -281,6 +287,7 @@
                 </div>
                 </div>
 
+                <div x-show="showAnalytics" x-transition>
                 <!-- Charts Row 1 -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <div class="col-lg-8">
@@ -339,6 +346,7 @@
                     </div>
                 </div>
 
+                </div> <!-- End showAnalytics wrapper -->
                 <!-- Data Tables -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <div class="col-lg-12">
@@ -353,6 +361,7 @@
                                             <tr>
                                                 <th>Order ID</th>
                                                 <th>Customer</th>
+                                                <th>Items</th>
                                                 <th>Amount</th>
                                                 <th>Status</th>
                                                 <th>Date</th>
@@ -369,7 +378,7 @@
                 </div>
 
                 <!-- Geographic Data -->
-                <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
+                <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6" x-show="showAnalytics" x-transition>
                     <div class="col-12">
                         <div class="card h-100">
                             <div class="card-header">

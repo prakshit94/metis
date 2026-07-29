@@ -5,13 +5,19 @@
 
 @section('content')
 <div class="user-management" x-data="userTable">
+    <div x-data="{ showAnalytics: localStorage.getItem('users_show_analytics') !== 'false' }" x-init="$watch('showAnalytics', val => localStorage.setItem('users_show_analytics', val))">
 <!-- Page Header -->
                     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
                         <div>
                             <h1 class="h3 mb-0"><i class="bi bi-people-fill text-primary me-2"></i>User Management</h1>
                             <p class="text-muted mb-0">Manage users, roles, and permissions</p>
                         </div>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- Analytics Toggle -->
+                            <div class="form-check form-switch m-0 me-2 pe-3 border-end cursor-pointer d-flex align-items-center gap-2">
+                                <input class="form-check-input m-0" type="checkbox" role="switch" id="usersAnalyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
+                                <label class="form-check-label small fw-bold text-muted mb-0 ms-1" for="usersAnalyticsToggle" style="cursor: pointer; padding-top: 2px;">Analytics</label>
+                            </div>
                             @can('user-import')
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                                 <i class="bi bi-upload me-2"></i>Import Users
@@ -108,6 +114,7 @@
                         </div>
 
                         <!-- Enhanced Analytics Widgets Row -->
+                        <div x-show="showAnalytics" x-transition.opacity.duration.300ms>
                         <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                             <!-- User Growth Chart -->
                             <div class="col-lg-8">
@@ -294,6 +301,7 @@
                                 </div>
                             </div>
                         </div>
+                        </div> <!-- End Analytics Wrapper -->
 
                         <!-- Users Table -->
                         <div class="card">
@@ -615,6 +623,7 @@
                         </div>
                         
                     </div> <!-- End Users Management Container -->
+    </div> <!-- End showAnalytics wrapper -->
 
 {{-- ═══════════════════════ Add / Edit User Modal ═══════════════════════════ --}}
 <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel">

@@ -23,6 +23,20 @@ class Order extends Model implements Auditable
     use AuditableTrait;
     use SoftDeletes;
 
+    protected static function booted()
+    {
+        $clearCache = function () {
+            if (\Illuminate\Support\Facades\Cache::has('order_stats_version')) {
+                \Illuminate\Support\Facades\Cache::increment('order_stats_version');
+            } else {
+                \Illuminate\Support\Facades\Cache::put('order_stats_version', 1);
+            }
+        };
+
+        static::saved($clearCache);
+        static::deleted($clearCache);
+    }
+
     /** Canonical order lifecycle (warehouse → customer). */
     public const LIFECYCLE_STATUSES = [
         'pending',

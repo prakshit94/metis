@@ -25,6 +25,7 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
+    if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
     throw new Error(message);
   }
 

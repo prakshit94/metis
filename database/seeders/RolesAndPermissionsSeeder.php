@@ -275,6 +275,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Orders
         'orders.view',
+        'orders.export',
         'orders.create',
         'orders.edit',
         'orders.delete',
@@ -499,6 +500,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'orders.receipt',
             'orders.bulk_status',
             'orders.bulk_print',
+            'orders.export',
             'orders.revert_status',
             'orders.filter_status',
             'orders.filter_product',
@@ -526,7 +528,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'User'        => [
             'dashboard-view',
         ],
-        'Order Varification 1' => [
+        'Verification' => [
             'dashboard-view',
             'customer-view',
             'customeraddress-view',
@@ -534,23 +536,52 @@ class RolesAndPermissionsSeeder extends Seeder
             'customeraddress-edit',
             'customeraddress-delete',
             'orders.view',
+            'view_all_order',
             'orders.create',
             'orders.edit',
             'orders.cancel',
             'orders.confirm',
+            'orders.bulk_status',
+            'orders.bulk_print',
+            'orders.export',
         ],
-        'Order Varification 2' => [
+        'Operations' => [
             'dashboard-view',
-            'customer-view',
-            'customeraddress-view',
-            'customeraddress-create',
-            'customeraddress-edit',
-            'customeraddress-delete',
             'orders.view',
+            'view_all_order',
             'orders.create',
             'orders.edit',
             'orders.cancel',
             'orders.confirm',
+            'orders.ship',
+            'orders.dispatch',
+            'orders.processing',
+            'orders.deliver',
+            'orders.return',
+            'orders.revert_status',
+            'customer-view',
+            'customeraddress-view',
+            'inventoryadjustment-view',
+            'stockmanagement-view',
+            'stocktransfer-view',
+            'purchaseorder-view',
+            'goodsreceipt-view',
+            'shipping-view',
+            'shipping-manage',
+        ],
+        'Team Leader' => [
+            'dashboard-view',
+            'analytics-view',
+            'reports-view',
+            'orders.view',
+            'view_all_order',
+            'orders.filter_status',
+            'orders.filter_date',
+            'user-view',
+            'user-report',
+            'audit-log-view',
+            'customer-view',
+            'customer-export',
         ],
         'Agent' => [
             'dashboard-view',
@@ -643,22 +674,13 @@ class RolesAndPermissionsSeeder extends Seeder
                 'role' => 'User'
             ],
             [
-                'email' => 'order.verifier1@example.com',
+                'email' => 'order.verifier@example.com',
                 'first_name' => 'Order',
-                'last_name' => 'Verifier1',
-                'name' => 'Order Verifier 1',
+                'last_name' => 'Verifier',
+                'name' => 'Order Verifier',
                 'department' => 'Operations',
                 'phone' => '+91 6543210987',
-                'role' => 'Order Varification 1'
-            ],
-            [
-                'email' => 'order.verifier2@example.com',
-                'first_name' => 'Order',
-                'last_name' => 'Verifier2',
-                'name' => 'Order Verifier 2',
-                'department' => 'Operations',
-                'phone' => '+91 5432109876',
-                'role' => 'Order Varification 2'
+                'role' => 'Verification'
             ],
             [
                 'email' => 'agent.one@example.com',
@@ -668,6 +690,24 @@ class RolesAndPermissionsSeeder extends Seeder
                 'department' => 'Sales',
                 'phone' => '+91 4321098765',
                 'role' => 'Agent'
+            ],
+            [
+                'email' => 'operations@example.com',
+                'first_name' => 'Operations',
+                'last_name' => 'Lead',
+                'name' => 'Operations Lead',
+                'department' => 'Operations',
+                'phone' => '+91 3210987654',
+                'role' => 'Operations'
+            ],
+            [
+                'email' => 'team.leader@example.com',
+                'first_name' => 'Team',
+                'last_name' => 'Leader',
+                'name' => 'Team Leader',
+                'department' => 'Management',
+                'phone' => '+91 2109876543',
+                'role' => 'Team Leader'
             ],
         ];
 

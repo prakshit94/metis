@@ -28,6 +28,7 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
+    if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
     throw new Error(message);
   }
 
@@ -129,6 +130,7 @@ document.addEventListener('alpine:init', () => {
 
     statusStats: [],
     warehouseStats: [],
+    showWarehouseStats: true,
     visibleWarehouseStat: '',
     trendsData: [],
 
@@ -352,6 +354,11 @@ document.addEventListener('alpine:init', () => {
           const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
           activeFromDate = formatDate(monthAgo);
           activeToDate = formatDate(today);
+        } else if (this.dateFilter === 'prev_month') {
+          const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1, 12, 0, 0);
+          const lastDay = new Date(today.getFullYear(), today.getMonth(), 0, 12, 0, 0);
+          activeFromDate = formatDate(firstDay);
+          activeToDate = formatDate(lastDay);
         }
       }
       
@@ -836,6 +843,10 @@ document.addEventListener('alpine:init', () => {
     
     confirmOrder(order) {
       if (!order) return;
+      if (order.isUnfulfillable) {
+        showToast('Cannot confirm: Order contains items with insufficient stock in the assigned warehouse.', 'danger');
+        return;
+      }
       const query = new URLSearchParams();
       query.set('order_id', order.id);
       if (order.partyId || order.original?.party_id) {
@@ -1219,6 +1230,15 @@ document.addEventListener('alpine:init', () => {
     
     async bulkUpdateStatus(status) {
       if (this.selectedOrders.length === 0) return;
+
+      if (status === 'confirmed') {
+        const unfulfillableSelected = this.orders.filter(o => this.selectedOrders.includes(String(o.id)) && o.isUnfulfillable);
+        if (unfulfillableSelected.length > 0) {
+          showToast(`Skipped ${unfulfillableSelected.length} unfulfillable order(s) due to insufficient stock.`, 'warning');
+          this.selectedOrders = this.selectedOrders.filter(id => !unfulfillableSelected.find(u => String(u.id) === id));
+          if (this.selectedOrders.length === 0) return;
+        }
+      }
 
       let carrierName = null;
       let trackingNo = null;
