@@ -180,7 +180,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/{order}', [\App\Modules\Orders\Controllers\OrderController::class, 'show'])->name('show');
         Route::patch('/{order}', [\App\Modules\Orders\Controllers\OrderController::class, 'update'])->name('update');
         Route::delete('/{order}', [\App\Modules\Orders\Controllers\OrderController::class, 'destroy'])->name('destroy');
-        Route::post('/{order}/status', [\App\Modules\Orders\Controllers\OrderController::class, 'updateStatus'])->name('update-status');
+    });
+
+    Route::prefix('credit-notes')->name('api.credit-notes.')->group(function (): void {
+        Route::get('/', [\App\Modules\Orders\Controllers\CreditNoteController::class, 'index'])->name('index');
+        Route::post('/', [\App\Modules\Orders\Controllers\CreditNoteController::class, 'store'])->name('store');
+        Route::patch('/{creditNote}', [\App\Modules\Orders\Controllers\CreditNoteController::class, 'update'])->name('update');
+        Route::delete('/{creditNote}', [\App\Modules\Orders\Controllers\CreditNoteController::class, 'destroy'])->name('destroy');
     });
 
     Route::prefix('invoices')->name('api.invoices.')->group(function (): void {

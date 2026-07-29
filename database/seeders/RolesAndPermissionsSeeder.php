@@ -131,6 +131,22 @@ class RolesAndPermissionsSeeder extends Seeder
         'stocktransfer-restore',
         'stocktransfer-permanent-delete',
 
+        // Purchase Orders
+        'purchaseorder-view',
+        'purchaseorder-create',
+        'purchaseorder-edit',
+        'purchaseorder-delete',
+        'purchaseorder-restore',
+        'purchaseorder-permanent-delete',
+
+        // Goods Receipts
+        'goodsreceipt-view',
+        'goodsreceipt-create',
+        'goodsreceipt-edit',
+        'goodsreceipt-delete',
+        'goodsreceipt-restore',
+        'goodsreceipt-permanent-delete',
+
         // ── Marketing ──
 
         // Coupons
@@ -297,6 +313,14 @@ class RolesAndPermissionsSeeder extends Seeder
         'returns.restore',
         'returns.permanent-delete',
 
+        // Credit Notes
+        'credit-notes.view',
+        'credit-notes.create',
+        'credit-notes.edit',
+        'credit-notes.delete',
+        'credit-notes.restore',
+        'credit-notes.permanent-delete',
+
         // ── Additional Order Specifics ──
 
         // Order Views
@@ -448,6 +472,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.view',
             'refunds.view',
             'returns.view',
+            'credit-notes.view',
+            'purchaseorder-view',
+            'goodsreceipt-view',
             'orders.view.future_order',
             'orders.view.pending',
             'orders.view.confirmed',

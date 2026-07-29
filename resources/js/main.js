@@ -550,29 +550,9 @@ class AdminApp {
       }
     }
 
-    // Handle submenu toggle persistence
-    document.addEventListener('click', (e) => {
-      const toggleButton = e.target.closest('[data-bs-toggle="collapse"]');
-      if (toggleButton) {
-        const targetId = toggleButton.getAttribute('data-bs-target');
-        const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
-        localStorage.setItem(`submenu-${targetId}`, (!isExpanded).toString());
-      }
-    });
+    
 
-    // Restore submenu states from localStorage
-    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(toggle => {
-      const targetId = toggle.getAttribute('data-bs-target');
-      const savedState = localStorage.getItem(`submenu-${targetId}`);
-
-      if (savedState === 'true' && !isElementsPage) {
-        const targetElement = document.querySelector(targetId);
-        if (targetElement) {
-          targetElement.classList.add('show');
-          toggle.setAttribute('aria-expanded', 'true');
-        }
-      }
-    });
+    
   }
 
   // Initialize Alpine.js

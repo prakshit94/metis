@@ -50,6 +50,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/stock-transfers', [PageController::class, 'stockTransfers'])->name('stock-transfers');
         Route::get('/adjustments', [PageController::class, 'inventoryAdjustments'])->name('adjustments');
     });
+    Route::prefix('procurement')->name('procurement.')->group(function (): void {
+        Route::get('/purchase-orders', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+        Route::post('/purchase-orders', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+        Route::post('/purchase-orders/{order}/receive', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'store'])->name('purchase-orders.receive');
+        Route::get('/goods-receipts', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'index'])->name('goods-receipts.index');
+    });
     Route::post('orders/bulk-status', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkStatus'])->name('orders.bulk-status');
     Route::post('orders/bulk-generate-invoices', [\App\Modules\Orders\Controllers\OrderController::class, 'generateBulkInvoices'])->name('orders.bulk-generate-invoices');
     Route::get('orders/bulk-print', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkPrint'])->name('orders.bulk-print');
@@ -81,6 +87,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('returns/{return}/finance', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'processFinancials'])->name('returns.finance');
 
     // Billing & Financials
+    Route::get('credit-notes', [\App\Modules\Orders\Controllers\CreditNoteController::class, 'index'])->name('credit-notes.index');
     Route::get('refunds', [\App\Modules\Orders\Controllers\RefundController::class, 'index'])->name('refunds.index');
     Route::post('refunds/bulk-status', [\App\Modules\Orders\Controllers\RefundController::class, 'bulkStatus'])->name('refunds.bulk-status');
     Route::get('payments', [\App\Modules\Orders\Controllers\PaymentController::class, 'index'])->name('payments.index');

@@ -299,7 +299,7 @@
                                                                   'low-stock': product.stock > 0 && product.stock <= 20,
                                                                   'out-of-stock': product.stock === 0
                                                               }"
-                                                              x-text="product.stock + ' units'"></span>
+                                                              x-text="parseFloat(product.stock) + ' units'"></span>
                                                     </td>
                                                     <td>
                                                         <span class="badge" 
@@ -802,13 +802,13 @@
                                         </div>
                                         <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary border-opacity-25">
                                             <div>
-                                                <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="product ? ((product.available_stock !== undefined ? product.available_stock : product.stock) + ' ' + (product.uom || 'Units')) : ''"></div>
+                                                <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="product ? (parseFloat(product.available_stock !== undefined ? product.available_stock : product.stock) + ' ' + (product.uom || 'Units')) : ''"></div>
                                                 <div class="text-muted" style="font-size:10px;">Available to Order</div>
                                             </div>
                                             <span class="badge" style="font-size:10px;" :class="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > (product.min_stock_level || 10) ? 'bg-success' : (product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'bg-warning text-dark' : 'bg-danger')" x-text="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'In Stock' : 'Out of Stock'"></span>
                                         </div>
                                         <div class="row text-center g-1 mb-2">
-                                            <div class="col-4"><div class="fw-semibold" style="font-size:13px;" x-text="product ? (product.physical_available !== undefined ? product.physical_available : product.stock) : 0"></div><div class="text-muted" style="font-size:9px;">Physical</div></div>
+                                            <div class="col-4"><div class="fw-semibold" style="font-size:13px;" x-text="product ? parseFloat(product.physical_available !== undefined ? product.physical_available : product.stock) : 0"></div><div class="text-muted" style="font-size:9px;">Physical</div></div>
                                             <div class="col-4 border-start border-end border-secondary border-opacity-25"><div class="fw-semibold text-warning" style="font-size:13px;" x-text="product ? ((product.reserved_qty || 0) + (product.pending_qty || 0)) : 0"></div><div class="text-muted" style="font-size:9px;">Reserved</div></div>
                                             <div class="col-4"><div class="fw-semibold text-danger" style="font-size:13px;" x-text="product ? (product.min_stock_level || 0) : 0"></div><div class="text-muted" style="font-size:9px;">Min Level</div></div>
                                         </div>

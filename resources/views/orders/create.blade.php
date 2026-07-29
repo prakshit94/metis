@@ -1090,7 +1090,7 @@
                                                 <div class="small text-muted mt-1" x-show="order.creator" x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
                                             </td>
                                             <td class="py-2">
-                                                <span class="badge rounded-pill text-bg-primary-subtle text-primary-emphasis px-2" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                                <span class="badge rounded-pill px-2" :class="getStatusBadgeClass(order.status_label || order.lifecycle_status || order.status || 'Pending')" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
                                                 <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis px-2 ms-1" x-show="order.is_draft">Future</span>
                                             </td>
                                             <td class="py-2 text-muted">
@@ -1161,7 +1161,7 @@
                                                         </table>
                                                     </div>
                                                     <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
-                                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'shipped', 'dispatched'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-pencil-square me-1"></i> Edit Order
                                                         </button>
                                                         <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(order.id, order.order_no || order.order_number)" x-show="!['delivered', 'cancelled', 'returned'].includes(order.status || order.lifecycle_status)">
@@ -1210,7 +1210,7 @@
                                             </td>
                                             <td class="py-2">
                                                 <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis px-2">Future</span>
-                                                <span class="badge rounded-pill text-bg-primary-subtle text-primary-emphasis px-2 ms-1" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                                <span class="badge rounded-pill px-2 ms-1" :class="getStatusBadgeClass(order.status_label || order.lifecycle_status || order.status || 'Pending')" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
                                             </td>
                                             <td class="py-2 text-muted">
                                                 <span x-text="order.warehouse?.name ? order.warehouse.name : 'N/A'"></span>
@@ -1273,7 +1273,7 @@
                                                         </table>
                                                     </div>
                                                     <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
-                                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'shipped', 'dispatched'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-pencil-square me-1"></i> Edit Order
                                                         </button>
                                                         <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(order.id, order.order_no || order.order_number)" x-show="!['delivered', 'cancelled', 'returned'].includes(order.status || order.lifecycle_status)">
@@ -1760,6 +1760,51 @@
             </div>
         </div>
     </div>
+
+    <!-- ═══════════════════════ Cancel Order Modal ═══════════════════════════ -->
+    <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="cancelOrderModalLabel">
+                        <i class="bi bi-x-circle me-2 text-danger"></i>Cancel Order <span class="text-danger" x-text="cancelModalOrder?.orderNumber"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 shadow-sm rounded-3">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="bi bi-exclamation-triangle-fill fs-5 me-2 text-danger"></i>
+                            <h6 class="fw-bold text-danger mb-0">Warning</h6>
+                        </div>
+                        <div class="small ms-4 ps-1 text-danger-emphasis">
+                            Are you sure you want to cancel this order? This action will release inventory.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Reason for Cancellation <span class="text-danger">*</span></label>
+                        <select class="form-select" x-model="cancelReason">
+                            <option value="" disabled selected>Select a reason...</option>
+                            @foreach($cancelReasons ?? [] as $reason)
+                                <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Internal Notes (Optional)</label>
+                        <textarea class="form-control" rows="2" x-model="cancelNotes" placeholder="Any additional notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger" @click="submitCancelOrder()">Confirm Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     </div>
 
 <style>
@@ -1854,6 +1899,11 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         originalOrder: window.__INITIAL_ORDER_TO_EDIT__ || null,
         
         isCallLoggedOrClosed: false,
+
+        cancelModalOrder: null,
+        cancelReason: '',
+        cancelNotes: '',
+        cancelReasons: @json($cancelReasons ?? []),
 
         async init() {
             window.addEventListener('beforeunload', (e) => {
@@ -2059,21 +2109,30 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             this.addresses = order.party?.addresses || this.addresses;
             this.recentOrders = order.party?.orders || this.recentOrders;
 
-            this.cart = (order.items || []).map(item => ({
-                id: item.product_id || item.id,
-                name: item.product?.name || item.product_name || 'Product',
-                sku: item.product?.sku || item.sku || '',
-                price: item.unit_price ?? item.price ?? 0,
-                image_url: item.product?.image_url || (item.product?.image_path ? `/storage/${item.product.image_path}` : null),
-                quantity: Number(item.quantity || 1),
-                available: item.product?.available_stock ?? item.available ?? null,
-                taxRate: Number(item.tax_rate > 0 ? item.tax_rate : (item.taxRate || item.product?.tax_rate?.rate || item.product?.taxRate?.rate || 0)),
-                discountValue: Number(item.quantity || 1) > 0
-                    ? Number(item.discount_amount || item.discountValue || 0) / Number(item.quantity || 1)
-                    : 0,
-                discountType: 'flat',
-                category_id: item.product?.category_id || null,
-            }));
+            this.cart = (order.items || []).map(item => {
+                const quantity = Number(item.quantity || 1);
+                const discountValue = quantity > 0
+                    ? Number(item.discount_amount || item.discountValue || 0) / quantity
+                    : 0;
+                const price = Number(item.unit_price ?? item.price ?? 0);
+                const is_gift = price > 0 && Math.abs(price - discountValue) < 0.01;
+
+                return {
+                    id: item.product_id || item.id,
+                    name: item.product?.name || item.product_name || 'Product',
+                    sku: item.product?.sku || item.sku || '',
+                    price: price,
+                    image_url: item.product?.image_url || (item.product?.image_path ? `/storage/${item.product.image_path}` : null),
+                    quantity: quantity,
+                    available: item.product?.available_stock ?? item.available ?? null,
+                    taxRate: Number(item.tax_rate > 0 ? item.tax_rate : (item.taxRate || item.product?.tax_rate?.rate || item.product?.taxRate?.rate || 0)),
+                    discountValue: discountValue,
+                    discountType: 'flat',
+                    category_id: item.product?.category_id || null,
+                    is_gift: is_gift,
+                    gift_source: is_gift ? 'legacy_gift' : null
+                };
+            });
 
             if (this.cart.length > 0) {
                 localStorage.setItem('ecommerce_create_order_cart', JSON.stringify(this.cart));
@@ -2472,17 +2531,28 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             window.location.href = `/orders/create?${query.toString()}`;
         },
 
-        async cancelOrder(orderId, orderNo) {
-            if (!confirm(`Are you sure you want to cancel order ${orderNo}?`)) return;
+        cancelOrder(orderId, orderNo) {
+            this.cancelModalOrder = { id: orderId, orderNumber: orderNo };
+            this.cancelReason = '';
+            this.cancelNotes = '';
+            new bootstrap.Modal(document.getElementById('cancelOrderModal')).show();
+        },
+        async submitCancelOrder() {
+            if (!this.cancelReason) {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'danger', message: 'Please select a reason for cancellation' }}));
+                return;
+            }
             try {
-                const res = await fetch(`/orders/${orderId}/cancel`, { 
+                const res = await fetch(`/orders/${this.cancelModalOrder.id}/cancel`, { 
                     method: 'POST', 
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
+                    body: JSON.stringify({ reason: this.cancelReason, notes: this.cancelNotes })
                 });
                 const json = await res.json();
                 if (!res.ok) throw new Error(json.message || json.error || 'Failed to cancel order');
-                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Order cancelled successfully' }}));
-                this.loadCustomerOrders();
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: json.message || 'Order cancelled successfully' }}));
+                bootstrap.Modal.getInstance(document.getElementById('cancelOrderModal')).hide();
+                this.loadAddresses();
             } catch (e) {
                 window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'danger', message: e.message }}));
             }
@@ -2635,6 +2705,16 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 this.placing = false; 
             }
         },
+
+        getStatusBadgeClass(status) {
+            if (!status) return 'text-bg-secondary-subtle text-secondary-emphasis';
+            const s = status.toLowerCase();
+            if (['delivered', 'completed', 'return received'].includes(s)) return 'text-bg-success-subtle text-success-emphasis border border-success-subtle';
+            if (['cancelled', 'returned', 'rejected', 'rto'].includes(s)) return 'text-bg-danger-subtle text-danger-emphasis border border-danger-subtle';
+            if (['shipped', 'dispatched', 'ready', 'processing', 'confirmed', 'approved'].includes(s)) return 'text-bg-primary-subtle text-primary-emphasis border border-primary-subtle';
+            if (['pending'].includes(s)) return 'text-bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+            return 'text-bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle';
+        }
     };
 }
 </script>

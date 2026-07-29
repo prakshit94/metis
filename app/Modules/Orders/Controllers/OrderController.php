@@ -556,8 +556,9 @@ class OrderController extends Controller implements HasMiddleware
         $hideSidebar = true;
         $lockSearch = true;
         $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
+        $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
-        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons'));
+        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
     }
 
     public function store(\App\Modules\Orders\Requests\StoreOrderRequest $request, OrderService $orderService)

@@ -6,6 +6,37 @@
 <aside class="admin-sidebar" id="admin-sidebar">
     <div class="sidebar-content">
 
+        <div class="px-3 mb-2 mt-2 d-flex justify-content-between align-items-center">
+            <span class="text-muted small fw-bold text-uppercase">Navigation</span>
+            <button class="btn btn-sm btn-link text-muted p-0 text-decoration-none" id="toggle-all-menus" title="Toggle all menus">
+                <i class="bi bi-arrows-expand"></i>
+            </button>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var btn = document.getElementById('toggle-all-menus');
+                if(btn) {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        var collapses = document.querySelectorAll('.admin-sidebar .collapse');
+                        var anyOpen = Array.from(collapses).some(c => c.classList.contains('show'));
+                        
+                        collapses.forEach(c => {
+                            var bsCollapse = window.bootstrap.Collapse.getInstance(c);
+                            if (!bsCollapse) {
+                                bsCollapse = new window.bootstrap.Collapse(c, {toggle: false});
+                            }
+                            if (anyOpen) {
+                                bsCollapse.hide();
+                            } else {
+                                bsCollapse.show();
+                            }
+                        });
+                    });
+                }
+            });
+        </script>
+
         <nav class="sidebar-nav">
             <ul class="nav flex-column gap-1">
 
@@ -15,49 +46,49 @@
                 </li>
 
                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('dashboard-view')): ?>
-                            <li class="nav-item">
+                <li class="nav-item">
                     <a class="nav-link <?php echo e($current === 'dashboard' ? 'active' : ''); ?>" href="<?php echo e(route('dashboard')); ?>">
                         <i class="bi bi-grid-1x2-fill"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
-                            <?php endif; ?>
+                <?php endif; ?>
                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('analytics-view')): ?>
-                            <li class="nav-item">
+                <li class="nav-item">
                     <a class="nav-link <?php echo e($current === 'analytics' ? 'active' : ''); ?>" href="<?php echo e(route('analytics')); ?>">
                         <i class="bi bi-bar-chart-line-fill"></i>
                         <span>Analytics</span>
                     </a>
                 </li>
-                            <?php endif; ?>
+                <?php endif; ?>
                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('reports-view')): ?>
-                            <li class="nav-item">
+                <li class="nav-item">
                     <a class="nav-link <?php echo e($current === 'reports' ? 'active' : ''); ?>" href="<?php echo e(route('reports')); ?>">
                         <i class="bi bi-file-earmark-bar-graph-fill"></i>
                         <span>Reports</span>
                     </a>
                 </li>
-                            <?php endif; ?>
+                <?php endif; ?>
 
                 
                 <li class="nav-item sidebar-section-label mt-3">
-                    <small class="text-muted px-3 text-uppercase fw-bold">Enterprise</small>
+                    <small class="text-muted px-3 text-uppercase fw-bold">Commerce &amp; Sales</small>
                 </li>
 
                 
-                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['orders.view', 'coupon-view', 'promotions-view'])): ?>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view'])): ?>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo e(in_array($current, ['orders', 'promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'active' : ''); ?>"
+                    <a class="nav-link <?php echo e(in_array($current, ['orders', 'invoices.index', 'payments.index', 'returns.index', 'refunds.index', 'credit-notes.index']) ? 'active' : 'collapsed'); ?>"
                        href="#"
                        data-bs-toggle="collapse"
-                       data-bs-target="#salesSubmenu"
-                       aria-expanded="<?php echo e(in_array($current, ['orders', 'promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'true' : 'false'); ?>"
-                       aria-controls="salesSubmenu">
-                        <i class="bi bi-shop"></i>
-                        <span>Sales &amp; Marketing</span>
+                       data-bs-target="#orderManagementSubmenu"
+                       aria-expanded="<?php echo e(in_array($current, ['orders', 'invoices.index', 'payments.index', 'returns.index', 'refunds.index', 'credit-notes.index']) ? 'true' : 'false'); ?>"
+                       aria-controls="orderManagementSubmenu">
+                        <i class="bi bi-cart-check-fill"></i>
+                        <span>Order Management</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse <?php echo e(in_array($current, ['orders', 'promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'show' : ''); ?>" id="salesSubmenu">
+                    <div class="collapse <?php echo e(in_array($current, ['orders', 'invoices.index', 'payments.index', 'returns.index', 'refunds.index', 'credit-notes.index']) ? 'show' : ''); ?>" id="orderManagementSubmenu">
                         <ul class="nav nav-submenu">
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.view')): ?>
                             <li class="nav-item">
@@ -67,19 +98,79 @@
                                 </a>
                             </li>
                             <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('coupon-view')): ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('invoices.view')): ?>
                             <li class="nav-item">
-                                <a class="nav-link <?php echo e($current === 'promotions.coupons' ? 'active' : ''); ?>" href="<?php echo e(route('promotions.coupons')); ?>">
-                                    <i class="bi bi-ticket-perforated-fill"></i>
-                                    <span>Coupon Codes</span>
+                                <a class="nav-link <?php echo e($current === 'invoices.index' ? 'active' : ''); ?>" href="<?php echo e(route('invoices.index')); ?>">
+                                    <i class="bi bi-receipt"></i>
+                                    <span>Invoices</span>
                                 </a>
                             </li>
                             <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('payments.view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'payments.index' ? 'active' : ''); ?>" href="<?php echo e(route('payments.index')); ?>">
+                                    <i class="bi bi-credit-card"></i>
+                                    <span>Payments</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('returns.view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'returns.index' ? 'active' : ''); ?>" href="<?php echo e(route('returns.index')); ?>">
+                                    <i class="bi bi-arrow-return-left"></i>
+                                    <span>Returns</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('refunds.view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'refunds.index' ? 'active' : ''); ?>" href="<?php echo e(route('refunds.index')); ?>">
+                                    <i class="bi bi-cash-coin"></i>
+                                    <span>Refunds</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('credit-notes.view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'credit-notes.index' ? 'active' : ''); ?>" href="<?php echo e(route('credit-notes.index')); ?>">
+                                    <i class="bi bi-receipt-cutoff"></i>
+                                    <span>Credit Notes</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                        </ul>
+                    </div>
+                </li>
+                <?php endif; ?>
+
+                
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['coupon-view', 'promotions-view'])): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo e(in_array($current, ['promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'active' : 'collapsed'); ?>"
+                       href="#"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#marketingSubmenu"
+                       aria-expanded="<?php echo e(in_array($current, ['promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'true' : 'false'); ?>"
+                       aria-controls="marketingSubmenu">
+                        <i class="bi bi-megaphone-fill"></i>
+                        <span>Marketing &amp; Promos</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse <?php echo e(in_array($current, ['promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'show' : ''); ?>" id="marketingSubmenu">
+                        <ul class="nav nav-submenu">
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('promotions-view')): ?>
                             <li class="nav-item">
                                 <a class="nav-link <?php echo e($current === 'promotions.offers' ? 'active' : ''); ?>" href="<?php echo e(route('promotions.offers')); ?>">
                                     <i class="bi bi-star-fill"></i>
                                     <span>Offers &amp; Deals</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('coupon-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'promotions.coupons' ? 'active' : ''); ?>" href="<?php echo e(route('promotions.coupons')); ?>">
+                                    <i class="bi bi-ticket-perforated-fill"></i>
+                                    <span>Coupon Codes</span>
                                 </a>
                             </li>
                             <?php endif; ?>
@@ -97,116 +188,41 @@
                 <?php endif; ?>
 
                 
-                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['invoices.view', 'payments.view', 'refunds.view', 'returns.view'])): ?>
-                <li class="nav-item">
-                    <a class="nav-link <?php echo e(Str::startsWith($current, 'returns') || Str::startsWith($current, 'refunds') || Str::startsWith($current, 'payments') || Str::startsWith($current, 'invoices') ? 'active' : ''); ?>"
-                       href="#"
-                       data-bs-toggle="collapse"
-                       data-bs-target="#billingSubmenu"
-                       aria-expanded="<?php echo e(Str::startsWith($current, 'returns') || Str::startsWith($current, 'refunds') || Str::startsWith($current, 'payments') || Str::startsWith($current, 'invoices') ? 'true' : 'false'); ?>"
-                       aria-controls="billingSubmenu">
-                        <i class="bi bi-cash-stack"></i>
-                        <span>Billing &amp; Payments</span>
-                        <i class="bi bi-chevron-down ms-auto"></i>
-                    </a>
-                    <div class="collapse <?php echo e(Str::startsWith($current, 'returns') || Str::startsWith($current, 'refunds') || Str::startsWith($current, 'payments') || Str::startsWith($current, 'invoices') ? 'show' : ''); ?>" id="billingSubmenu">
-                        <ul class="nav nav-submenu">
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('invoices.view')): ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo e(Str::startsWith($current, 'invoices') ? 'active' : ''); ?>" href="<?php echo e(route('invoices.index')); ?>">
-                                    <i class="bi bi-receipt"></i>
-                                    <span>Invoices</span>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('payments.view')): ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo e(Str::startsWith($current, 'payments') ? 'active' : ''); ?>" href="<?php echo e(route('payments.index')); ?>">
-                                    <i class="bi bi-credit-card"></i>
-                                    <span>Payments</span>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('refunds.view')): ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo e(Str::startsWith($current, 'refunds') ? 'active' : ''); ?>" href="<?php echo e(route('refunds.index')); ?>">
-                                    <i class="bi bi-cash-coin"></i>
-                                    <span>Refunds</span>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('returns.view')): ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo e(Str::startsWith($current, 'returns') ? 'active' : ''); ?>" href="<?php echo e(route('returns.index')); ?>">
-                                    <i class="bi bi-arrow-return-left"></i>
-                                    <span>Returns</span>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                        </ul>
-                    </div>
+                <li class="nav-item sidebar-section-label mt-3">
+                    <small class="text-muted px-3 text-uppercase fw-bold">Supply Chain</small>
                 </li>
-                <?php endif; ?>
 
                 
-                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['shipping-view', 'warehouse-view'])): ?>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view'])): ?>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo e(Str::startsWith($current, 'shipping') || $current === 'catalog.warehouses' ? 'active' : ''); ?>"
-                       href="#"
-                       data-bs-toggle="collapse"
-                       data-bs-target="#shippingSubmenu"
-                       aria-expanded="<?php echo e(Str::startsWith($current, 'shipping') || $current === 'catalog.warehouses' ? 'true' : 'false'); ?>"
-                       aria-controls="shippingSubmenu">
-                        <i class="bi bi-truck"></i>
-                        <span>Logistics &amp; Warehouses</span>
-                        <i class="bi bi-chevron-down ms-auto"></i>
-                    </a>
-                    <div class="collapse <?php echo e(Str::startsWith($current, 'shipping') || $current === 'catalog.warehouses' ? 'show' : ''); ?>" id="shippingSubmenu">
-                        <ul class="nav nav-submenu">
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('shipping-view')): ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo e($current === 'shipping.shipments' ? 'active' : ''); ?>" href="<?php echo e(route('shipping.shipments')); ?>">
-                                    <i class="bi bi-geo-alt-fill"></i>
-                                    <span>Shipments &amp; Tracking</span>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('shipping-view')): ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo e($current === 'shipping.services' ? 'active' : ''); ?>" href="<?php echo e(route('shipping.services')); ?>">
-                                    <i class="bi bi-gear-wide-connected"></i>
-                                    <span>Shipping Services</span>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('warehouse-view')): ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo e($current === 'catalog.warehouses' ? 'active' : ''); ?>" href="<?php echo e(route('catalog.warehouses')); ?>">
-                                    <i class="bi bi-buildings-fill"></i>
-                                    <span>Warehouses</span>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                        </ul>
-                    </div>
-                </li>
-                <?php endif; ?>
-
-                
-                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view'])): ?>
-                <li class="nav-item">
-                    <a class="nav-link <?php echo e(Str::startsWith($current, 'inventory') ? 'active' : ''); ?>"
+                    <a class="nav-link <?php echo e(in_array($current, ['procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'active' : 'collapsed'); ?>"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#inventorySubmenu"
-                       aria-expanded="<?php echo e(Str::startsWith($current, 'inventory') ? 'true' : 'false'); ?>"
+                       aria-expanded="<?php echo e(in_array($current, ['procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'true' : 'false'); ?>"
                        aria-controls="inventorySubmenu">
                         <i class="bi bi-archive-fill"></i>
-                        <span>Inventory &amp; Stock</span>
+                        <span>Procurement &amp; Inventory</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse <?php echo e(Str::startsWith($current, 'inventory') ? 'show' : ''); ?>" id="inventorySubmenu">
+                    <div class="collapse <?php echo e(in_array($current, ['procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'show' : ''); ?>" id="inventorySubmenu">
                         <ul class="nav nav-submenu">
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('purchaseorder-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'procurement.purchase-orders.index' ? 'active' : ''); ?>" href="<?php echo e(route('procurement.purchase-orders.index')); ?>">
+                                    <i class="bi bi-receipt"></i>
+                                    <span>Purchase Orders</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('goodsreceipt-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'procurement.goods-receipts.index' ? 'active' : ''); ?>" href="<?php echo e(route('procurement.goods-receipts.index')); ?>">
+                                    <i class="bi bi-clipboard-check"></i>
+                                    <span>Goods Receipts</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('stockmanagement-view')): ?>
                             <li class="nav-item">
                                 <a class="nav-link <?php echo e($current === 'inventory.stock-management' ? 'active' : ''); ?>" href="<?php echo e(route('inventory.stock-management')); ?>">
@@ -237,19 +253,63 @@
                 <?php endif; ?>
 
                 
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['shipping-view', 'warehouse-view'])): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo e(in_array($current, ['shipping.shipments', 'shipping.services', 'catalog.warehouses']) ? 'active' : 'collapsed'); ?>"
+                       href="#"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#shippingSubmenu"
+                       aria-expanded="<?php echo e(in_array($current, ['shipping.shipments', 'shipping.services', 'catalog.warehouses']) ? 'true' : 'false'); ?>"
+                       aria-controls="shippingSubmenu">
+                        <i class="bi bi-truck"></i>
+                        <span>Logistics &amp; Warehouses</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse <?php echo e(in_array($current, ['shipping.shipments', 'shipping.services', 'catalog.warehouses']) ? 'show' : ''); ?>" id="shippingSubmenu">
+                        <ul class="nav nav-submenu">
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('warehouse-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'catalog.warehouses' ? 'active' : ''); ?>" href="<?php echo e(route('catalog.warehouses')); ?>">
+                                    <i class="bi bi-buildings-fill"></i>
+                                    <span>Warehouses</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('shipping-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'shipping.shipments' ? 'active' : ''); ?>" href="<?php echo e(route('shipping.shipments')); ?>">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                    <span>Shipments &amp; Tracking</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('shipping-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'shipping.services' ? 'active' : ''); ?>" href="<?php echo e(route('shipping.services')); ?>">
+                                    <i class="bi bi-gear-wide-connected"></i>
+                                    <span>Shipping Services</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                        </ul>
+                    </div>
+                </li>
+                <?php endif; ?>
+
+                
                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view'])): ?>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo e(Str::startsWith($current, 'catalog') && $current !== 'catalog.warehouses' ? 'active' : ''); ?>"
+                    <a class="nav-link <?php echo e(in_array($current, ['catalog.products', 'catalog.categories', 'catalog.brands', 'catalog.attributes', 'catalog.uom', 'catalog.tax-rates', 'catalog.hsn-codes']) ? 'active' : 'collapsed'); ?>"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#catalogSubmenu"
-                       aria-expanded="<?php echo e(Str::startsWith($current, 'catalog') && $current !== 'catalog.warehouses' ? 'true' : 'false'); ?>"
+                       aria-expanded="<?php echo e(in_array($current, ['catalog.products', 'catalog.categories', 'catalog.brands', 'catalog.attributes', 'catalog.uom', 'catalog.tax-rates', 'catalog.hsn-codes']) ? 'true' : 'false'); ?>"
                        aria-controls="catalogSubmenu">
                         <i class="bi bi-shop-window"></i>
                         <span>Catalog Management</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse <?php echo e(Str::startsWith($current, 'catalog') && $current !== 'catalog.warehouses' ? 'show' : ''); ?>" id="catalogSubmenu">
+                    <div class="collapse <?php echo e(in_array($current, ['catalog.products', 'catalog.categories', 'catalog.brands', 'catalog.attributes', 'catalog.uom', 'catalog.tax-rates', 'catalog.hsn-codes']) ? 'show' : ''); ?>" id="catalogSubmenu">
                         <ul class="nav nav-submenu">
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('product-view')): ?>
                             <li class="nav-item">
@@ -318,25 +378,39 @@
                 </li>
 
                 
-                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['user-view', 'role-view', 'village-view', 'settings-view'])): ?>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['user-view', 'role-view'])): ?>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo e($current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' || $current === 'customer-settings.index' || $current === 'admin.audit-logs.index' ? 'active' : ''); ?>"
+                    <a class="nav-link <?php echo e(in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index']) ? 'active' : 'collapsed'); ?>"
                        href="#"
                        data-bs-toggle="collapse"
-                       data-bs-target="#peopleSubmenu"
-                       aria-expanded="<?php echo e($current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' || $current === 'customer-settings.index' || $current === 'admin.audit-logs.index' ? 'true' : 'false'); ?>"
-                       aria-controls="peopleSubmenu">
+                       data-bs-target="#crmSubmenu"
+                       aria-expanded="<?php echo e(in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index']) ? 'true' : 'false'); ?>"
+                       aria-controls="crmSubmenu">
                         <i class="bi bi-people-fill"></i>
-                        <span>People &amp; Admin</span>
+                        <span>CRM &amp; People</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse <?php echo e($current === 'users' || $current === 'roles-permissions' || $current === 'customers' || $current === 'villages' || $current === 'order.reasons' || $current === 'call-tags.index' || $current === 'customer-settings.index' || $current === 'admin.audit-logs.index' ? 'show' : ''); ?>" id="peopleSubmenu">
+                    <div class="collapse <?php echo e(in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index']) ? 'show' : ''); ?>" id="crmSubmenu">
                         <ul class="nav nav-submenu">
+                            <?php if (\Illuminate\Support\Facades\Blade::check('role', 'Super Admin')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'customers' ? 'active' : ''); ?>" href="<?php echo e(route('customers')); ?>">
+                                    <i class="bi bi-person-lines-fill"></i>
+                                    <span>Customers</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'customer-settings.index' ? 'active' : ''); ?>" href="<?php echo e(route('customer-settings.index')); ?>">
+                                    <i class="bi bi-gear-wide-connected"></i>
+                                    <span>Customer Settings</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-view')): ?>
                             <li class="nav-item">
                                 <a class="nav-link <?php echo e($current === 'users' ? 'active' : ''); ?>" href="<?php echo e(route('users')); ?>">
                                     <i class="bi bi-person-fill-gear"></i>
-                                    <span>Users</span>
+                                    <span>System Users</span>
                                 </a>
                             </li>
                             <?php endif; ?>
@@ -348,22 +422,26 @@
                                 </a>
                             </li>
                             <?php endif; ?>
-                            <?php if (\Illuminate\Support\Facades\Blade::check('role', 'Super Admin')): ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo e($current === 'customers' ? 'active' : ''); ?>" href="<?php echo e(route('customers')); ?>">
-                                    <i class="bi bi-person-lines-fill"></i>
-                                    <span>Customers</span>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                            <?php if (\Illuminate\Support\Facades\Blade::check('role', 'Super Admin')): ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo e($current === 'customer-settings.index' ? 'active' : ''); ?>" href="<?php echo e(route('customer-settings.index')); ?>">
-                                    <i class="bi bi-gear-wide-connected"></i>
-                                    <span>Customer Settings</span>
-                                </a>
-                            </li>
-                            <?php endif; ?>
+                        </ul>
+                    </div>
+                </li>
+                <?php endif; ?>
+
+                
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['village-view', 'orderreason-view', 'settings-view'])): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo e(in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index']) ? 'active' : 'collapsed'); ?>"
+                       href="#"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#systemSubmenu"
+                       aria-expanded="<?php echo e(in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index']) ? 'true' : 'false'); ?>"
+                       aria-controls="systemSubmenu">
+                        <i class="bi bi-gear-fill"></i>
+                        <span>System Settings</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse <?php echo e(in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index']) ? 'show' : ''); ?>" id="systemSubmenu">
+                        <ul class="nav nav-submenu">
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('village-view')): ?>
                             <li class="nav-item">
                                 <a class="nav-link <?php echo e($current === 'villages' ? 'active' : ''); ?>" href="<?php echo e(route('villages')); ?>">
@@ -402,18 +480,23 @@
                 <?php endif; ?>
 
                 
+                <li class="nav-item sidebar-section-label mt-3">
+                    <small class="text-muted px-3 text-uppercase fw-bold">Workspace</small>
+                </li>
+
+                
                 <li class="nav-item">
-                    <a class="nav-link <?php echo e($current === 'chat.index' || $current === 'messages' || $current === 'calendar' || $current === 'files' || $current === 'forms' || Str::startsWith($current, 'elements') || $current === 'settings' || $current === 'security' || $current === 'help' ? 'active' : ''); ?>"
+                    <a class="nav-link <?php echo e(in_array($current, ['chat.index', 'messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'active' : 'collapsed'); ?>"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#toolsSubmenu"
-                       aria-expanded="<?php echo e($current === 'chat.index' || $current === 'messages' || $current === 'calendar' || $current === 'files' || $current === 'forms' || Str::startsWith($current, 'elements') || $current === 'settings' || $current === 'security' || $current === 'help' ? 'true' : 'false'); ?>"
+                       aria-expanded="<?php echo e(in_array($current, ['chat.index', 'messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'true' : 'false'); ?>"
                        aria-controls="toolsSubmenu">
                         <i class="bi bi-wrench-adjustable-circle-fill"></i>
-                        <span>Utilities &amp; Workspace</span>
+                        <span>Utilities &amp; Tools</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse <?php echo e($current === 'chat.index' || $current === 'messages' || $current === 'calendar' || $current === 'files' || $current === 'forms' || Str::startsWith($current, 'elements') || $current === 'settings' || $current === 'security' || $current === 'help' ? 'show' : ''); ?>" id="toolsSubmenu">
+                    <div class="collapse <?php echo e(in_array($current, ['chat.index', 'messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'show' : ''); ?>" id="toolsSubmenu">
                         <ul class="nav nav-submenu">
                             <li class="nav-item">
                                 <a class="nav-link <?php echo e($current === 'chat.index' ? 'active' : ''); ?>" href="<?php echo e(route('chat.index')); ?>">

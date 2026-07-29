@@ -153,7 +153,7 @@
             </div>
 
             <!-- Table -->
-            <div>
+            <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0 text-nowrap">
                     <thead class="table-light">
                         <tr>
@@ -795,4 +795,20 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+    // Prevent dropdowns from being clipped by table-responsive or causing scrollbars
+    document.addEventListener('show.bs.dropdown', function (e) {
+        if (e.target.closest('.table-responsive')) {
+            const instance = bootstrap.Dropdown.getOrCreateInstance(e.target);
+            if (instance && typeof instance._getPopperConfig === 'function' && !instance._originalGetPopperConfig) {
+                instance._originalGetPopperConfig = instance._getPopperConfig;
+                instance._getPopperConfig = function () {
+                    const config = this._originalGetPopperConfig();
+                    config.strategy = 'fixed';
+                    return config;
+                };
+            }
+        }
+    });
+</script>
 @endpush

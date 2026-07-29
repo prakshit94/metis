@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <!-- Meta Tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="description" content="Modern Bootstrap 5 Admin Template - Clean, responsive dashboard">
+    <meta name="keywords" content="bootstrap, admin, dashboard, template, modern, responsive">
+    <meta name="author" content="Bootstrap Admin Template">
+    <meta name="csrf-token" content="">
+    <meta name="user-name" content="">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Purchase Orders">
+    <meta property="og:description" content="Clean and modern admin dashboard template built with Bootstrap 5">
+    <meta property="og:type" content="website">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg">
+    <link rel="icon" type="image/png" href="/assets/icons/favicon.png">
+
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Title -->
+    <title>Purchase Orders - Ecommerce Admin</title>
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#6366f1">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Vite Assets -->
+    
+    <script>
+        (function() {
+            var t = localStorage.getItem('theme') ||
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-bs-theme', t);
+        })();
+    </script>
+
+    <link rel="preload" as="style" href="http://localhost/build/assets/main-DfiLI7X2.css" /><link rel="modulepreload" as="script" href="http://localhost/build/assets/main-DveuBJZ3.js" /><link rel="stylesheet" href="http://localhost/build/assets/main-DfiLI7X2.css" /><script type="module" src="http://localhost/build/assets/main-DveuBJZ3.js"></script>
+    </head>
+
+<body data-page="procurement-purchase-orders" class="admin-layout">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Wrapper -->
+    <div class="admin-wrapper" id="admin-wrapper">
+
+        
+        <!-- Header -->
+        <!-- Header -->
+<header class="admin-header border-bottom shadow-sm sticky-top" role="banner" style="z-index: 1030; min-height: 70px; background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+    <nav class="navbar navbar-expand h-100 py-0" aria-label="Main navigation">
+        <div class="container-fluid align-items-center h-100 px-3 px-md-4 d-flex justify-content-between">
+
+            
+            <div class="d-flex align-items-center gap-3" style="flex: 1; min-width: 0;">
+                
+                
+                
+                
+                <a class="navbar-brand d-flex align-items-center gap-2 m-0" href="http://localhost" aria-label="Ecommerce Admin — go to dashboard">
+                    <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                        <img src="/assets/images/logo.svg" alt="" width="24" height="24" aria-hidden="true">
+                    </div>
+                    <div class="d-none d-xl-flex flex-column lh-1 text-truncate">
+                        <span class="fw-bold text-body fs-5 tracking-tight">Ecommerce</span>
+                        <span class="text-primary fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 2px;">Admin</span>
+                    </div>
+                </a>
+            </div>
+
+            
+                                    
+            <div class="d-flex align-items-center justify-content-end gap-2 gap-sm-3 h-100" style="flex: 1; min-width: 0;">
+
+                                
+                
+                
+                
+                <div x-data="themeSwitch" class="h-100 d-flex align-items-center d-none d-md-flex">
+                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
+                            style="width: 40px; height: 40px;"
+                            type="button"
+                            @click="toggle()"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            :title="currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+                            aria-label="Toggle theme">
+                        <i class="bi bi-sun-fill fs-5 text-warning" x-show="currentTheme === 'light'" aria-hidden="true"></i>
+                        <i class="bi bi-moon-stars-fill fs-5 text-primary" x-show="currentTheme === 'dark'" aria-hidden="true" x-cloak></i>
+                    </button>
+                </div>
+
+                
+                <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all d-none d-lg-flex"
+                        style="width: 40px; height: 40px;"
+                        type="button"
+                        data-fullscreen-toggle
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        title="Toggle fullscreen"
+                        aria-label="Toggle fullscreen">
+                    <i class="bi bi-arrows-fullscreen fs-5" aria-hidden="true"></i>
+                </button>
+
+                
+                <div class="dropdown h-100 d-flex align-items-center" x-data="notificationApp(JSON.parse('[{\u0022id\u0022:5,\u0022description\u0022:\u0022created\u0022,\u0022subject_type\u0022:\u0022User\u0022,\u0022causer_name\u0022:\u0022System\u0022,\u0022causer_photo\u0022:null,\u0022time_ago\u0022:\u00221 hour ago\u0022,\u0022is_read\u0022:false},{\u0022id\u0022:6,\u0022description\u0022:\u0022created\u0022,\u0022subject_type\u0022:\u0022User\u0022,\u0022causer_name\u0022:\u0022System\u0022,\u0022causer_photo\u0022:null,\u0022time_ago\u0022:\u00221 hour ago\u0022,\u0022is_read\u0022:false},{\u0022id\u0022:7,\u0022description\u0022:\u0022created\u0022,\u0022subject_type\u0022:\u0022User\u0022,\u0022causer_name\u0022:\u0022System\u0022,\u0022causer_photo\u0022:null,\u0022time_ago\u0022:\u00221 hour ago\u0022,\u0022is_read\u0022:false},{\u0022id\u0022:1,\u0022description\u0022:\u0022created\u0022,\u0022subject_type\u0022:\u0022User\u0022,\u0022causer_name\u0022:\u0022System\u0022,\u0022causer_photo\u0022:null,\u0022time_ago\u0022:\u00221 hour ago\u0022,\u0022is_read\u0022:false},{\u0022id\u0022:2,\u0022description\u0022:\u0022created\u0022,\u0022subject_type\u0022:\u0022User\u0022,\u0022causer_name\u0022:\u0022System\u0022,\u0022causer_photo\u0022:null,\u0022time_ago\u0022:\u00221 hour ago\u0022,\u0022is_read\u0022:false},{\u0022id\u0022:3,\u0022description\u0022:\u0022created\u0022,\u0022subject_type\u0022:\u0022User\u0022,\u0022causer_name\u0022:\u0022System\u0022,\u0022causer_photo\u0022:null,\u0022time_ago\u0022:\u00221 hour ago\u0022,\u0022is_read\u0022:false},{\u0022id\u0022:4,\u0022description\u0022:\u0022created\u0022,\u0022subject_type\u0022:\u0022User\u0022,\u0022causer_name\u0022:\u0022System\u0022,\u0022causer_photo\u0022:null,\u0022time_ago\u0022:\u00221 hour ago\u0022,\u0022is_read\u0022:false}]'), 7)">
+                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
+                            style="width: 40px; height: 40px;"
+                            type="button"
+                            id="notificationsMenuBtn"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            data-bs-display="static"
+                            @click="fetchActivities"
+                            aria-expanded="false"
+                            aria-label="Notifications">
+                        <i class="bi bi-bell-fill fs-5" aria-hidden="true"></i>
+                        <span x-show="count > 0" x-cloak class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body" style="font-size: 9px; margin-top: 6px; margin-left: -10px;" x-text="count"></span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3"
+                         aria-labelledby="notificationsMenuBtn"
+                         style="width: 340px;">
+                        <div class="bg-primary rounded-top-4 p-3 text-white">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div>
+                                    <h6 class="m-0 fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Notifications / Activity</h6>
+                                    <button type="button" @click="markAsRead('all')" class="btn btn-sm btn-link text-white-50 text-decoration-none p-0 mt-1" style="font-size: 10px;">Mark all as read</button>
+                                </div>
+                                <span class="badge bg-body text-primary rounded-pill fw-bold" style="font-size: 10px;"><span x-text="count"></span> Recent</span>
+                            </div>
+                            <ul class="nav nav-tabs nav-tabs-custom border-bottom-0" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#all-noti-tab" type="button" role="tab" aria-controls="all-noti-tab" aria-selected="true" style="opacity: 0.8;">
+                                        All Activity
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#messages-noti-tab" type="button" role="tab" aria-controls="messages-noti-tab" aria-selected="false" style="opacity: 0.8;">
+                                        Messages
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#alerts-noti-tab" type="button" role="tab" aria-controls="alerts-noti-tab" aria-selected="false" style="opacity: 0.8;">
+                                        Alerts
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="all-noti-tab" role="tabpanel">
+                                <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
+                                    <template x-if="activities.length === 0">
+                                        <div class="p-4 text-center opacity-75">
+                                            <i class="bi bi-bell-slash fs-2 text-muted mb-2 d-block"></i>
+                                            <p class="text-muted mb-0">No recent activity.</p>
+                                        </div>
+                                    </template>
+                                    <template x-for="activity in activities" :key="activity.id">
+                                        <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all" href="#" @click.prevent="markAsRead(activity.id)" :class="{
+                                            'bg-primary bg-opacity-10 position-relative': !activity.is_read,
+                                            'hover-bg-secondary opacity-75': activity.is_read
+                                        }">
+                                            <!-- Unread Dot Indicator -->
+                                            <template x-if="!activity.is_read">
+                                                <div class="position-absolute top-50 start-0 translate-middle-y bg-primary rounded-circle ms-2 shadow-sm" style="width: 8px; height: 8px;"></div>
+                                            </template>
+                                            
+                                            <template x-if="activity.causer_photo">
+                                                <img :src="activity.causer_photo" class="rounded-circle flex-shrink-0 object-fit-cover ms-2" :class="!activity.is_read ? 'border border-2 border-primary border-opacity-25' : ''" alt="User" width="40" height="40" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                            </template>
+                                            <template x-if="!activity.causer_photo">
+                                                <div class="text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2" :class="!activity.is_read ? 'bg-primary bg-opacity-25 border border-2 border-primary border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary'" style="width: 40px; height: 40px;">
+                                                    <i class="bi bi-person-fill fs-5"></i>
+                                                </div>
+                                            </template>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <h6 class="mb-0 fs-13" :class="!activity.is_read ? 'fw-bold text-primary' : 'fw-semibold text-body'" x-text="activity.causer_name"></h6>
+                                                    <template x-if="!activity.is_read">
+                                                        <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
+                                                    </template>
+                                                </div>
+                                                <p class="mb-1 fs-13" :class="!activity.is_read ? 'text-body fw-bold' : 'text-muted'" style="line-height: 1.4;">
+                                                    <span x-text="activity.description"></span> a <b x-text="activity.subject_type"></b>.
+                                                </p>
+                                                <p class="mb-0 small" :class="!activity.is_read ? 'text-primary text-opacity-75 fw-semibold' : 'text-muted'"><i class="bi bi-clock me-1"></i> <span x-text="activity.time_ago"></span></p>
+                                            </div>
+                                        </a>
+                                    </template>
+                                </div>
+                                <div class="p-2 text-center bg-body-secondary bg-opacity-50 rounded-bottom-4">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All Activity <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="messages-noti-tab" role="tabpanel">
+                                <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
+                                    
+                                    <!-- Unread Message (Distinct styling) -->
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all bg-primary bg-opacity-10 position-relative" href="#">
+                                        <!-- Unread Dot Indicator -->
+                                        <div class="position-absolute top-50 start-0 translate-middle-y bg-primary rounded-circle ms-2 shadow-sm" style="width: 8px; height: 8px;"></div>
+                                        
+                                        <img src="http://localhost/assets/images/users/avatar-3.jpg" class="rounded-circle flex-shrink-0 object-fit-cover ms-2 border border-2 border-primary border-opacity-25" alt="James" width="40" height="40" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <h6 class="mb-0 fw-bold text-primary fs-13">James Lemire</h6>
+                                                <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
+                                            </div>
+                                            <p class="mb-1 text-body fw-bold fs-13">We talked about a project on linkedin.</p>
+                                            <p class="mb-0 text-primary text-opacity-75 small fw-semibold"><i class="bi bi-clock me-1"></i> 30 min ago</p>
+                                        </div>
+                                    </a>
+
+                                    <!-- Read Message (Muted styling) -->
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary transition-all" href="#">
+                                        <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-3" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-person-fill fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1 opacity-75">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <h6 class="mb-0 fw-semibold text-body fs-13">Sarah Smith</h6>
+                                            </div>
+                                            <p class="mb-1 text-muted fs-13">Can you send me the latest invoice?</p>
+                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> 2 hours ago</p>
+                                        </div>
+                                    </a>
+
+                                </div>
+                                <div class="p-2 text-center bg-body-secondary bg-opacity-50 rounded-bottom-4">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All Messages <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade p-5 text-center" id="alerts-noti-tab" role="tabpanel">
+                                <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
+                                    <i class="bi bi-bell-slash fs-2"></i>
+                                </div>
+                                <h6 class="fw-bold text-muted mb-0">No new alerts yet!</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vr mx-1 d-none d-md-block opacity-25"></div>
+
+                
+                <div class="dropdown h-100 d-flex align-items-center">
+                    <button class="btn btn-body-secondary p-1 pe-md-3 d-flex align-items-center gap-2 rounded-pill shadow-none border-0 transition-all hover-bg-secondary"
+                            type="button"
+                            id="userMenuBtn"
+                            data-bs-toggle="dropdown"
+                            data-bs-display="static"
+                            aria-expanded="false"
+                            aria-label="User menu">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm border border-2 border-body" style="width: 36px; height: 36px;">
+                            <i class="bi bi-person-fill fs-5"></i>
+                        </div>
+                        <span class="d-none d-md-flex flex-column text-start ms-1 lh-1">
+                            <span class="fw-bold text-body" style="font-size: 13px;">User</span>
+                            <span class="text-muted fw-semibold" style="font-size: 10px;">User</span>
+                        </span>
+                        <i class="bi bi-chevron-down text-muted ms-1 d-none d-md-inline" style="font-size: 12px;"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-3 py-2"
+                        aria-labelledby="userMenuBtn" style="min-width: 240px;">
+                        
+                        <li class="px-4 py-3 d-flex align-items-center gap-3 border-bottom mb-2">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
+                                <i class="bi bi-person-fill fs-3"></i>
+                            </div>
+                            <div style="min-width: 0;">
+                                <h6 class="mb-1 fw-bold text-body text-truncate">User</h6>
+                                <p class="mb-0 text-muted small text-truncate">admin@example.com</p>
+                            </div>
+                        </li>
+                        
+                        <li>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
+                                <i class="bi bi-person text-muted fs-5"></i> Profile
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                <i class="bi bi-key text-muted fs-5"></i> Change Password
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
+                                <i class="bi bi-life-preserver text-muted fs-5"></i> Help Center
+                            </a>
+                        </li>
+                        
+                        <li><hr class="dropdown-divider opacity-10 my-2"></li>
+                        
+                        <li>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
+                                <i class="bi bi-wallet2 text-muted fs-5"></i> 
+                                <span>Wallet Balance : <span class="fw-bold text-success">$5971.67</span></span>
+                            </a>
+                        </li>
+                        
+                        <li><hr class="dropdown-divider opacity-10 my-2"></li>
+                        
+                        <li>
+                            <form method="POST" action="http://localhost/logout" class="m-0">
+                                <input type="hidden" name="_token" value="" autocomplete="off">                                <button type="submit" class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-danger fw-bold hover-bg-danger-subtle">
+                                    <i class="bi bi-box-arrow-right fs-5"></i> Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </nav>
+</header>
+
+<div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel" aria-hidden="true" 
+     x-data="addCustomerApp()" 
+     @open-add-customer-modal.window="openModal($event.detail)">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            
+            
+            <div class="modal-header bg-body-tertiary border-bottom d-flex align-items-center justify-content-between p-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
+                        <i class="bi bi-person-plus-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fw-bold text-body"><span x-text="isEdit ? 'Edit Customer Profile' : 'Add New Customer'"></span></h4>
+                        <p class="mb-0 small text-muted">Register a new customer profile</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4 bg-body-tertiary">
+                <form id="addCustomerForm" @submit.prevent="submitForm" autocomplete="off">
+                    <div class="row g-4">
+                        
+                        <div class="col-lg-6">
+                            
+                            
+                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 30;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                        <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                            <i class="bi bi-person fs-6"></i>
+                                        </div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Basic Identity</h6>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">First Name *</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-person"></i></span>
+                                                <input type="text" name="firstname" x-model="form.firstname" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Middle Name</label>
+                                            <input type="text" name="middlename" x-model="form.middlename" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Last Name *</label>
+                                            <input type="text" name="lastname" x-model="form.lastname" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" required>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Status *</label>
+                                            <select name="status" x-model="form.status" class="form-select form-select-sm fw-semibold" style="font-size: 12px;">
+                                                <option value="active">Active</option>
+                                                <option value="inactive">Inactive</option>
+                                                <option value="suspended">Suspended</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Category</label>
+                                            <select name="category" x-model="form.category" class="form-select form-select-sm fw-semibold" style="font-size: 12px;">
+                                                <option value="">— Select —</option>
+                                                <option value="individual">Individual</option>
+                                                <option value="business">Business</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Referral Code</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-person-heart"></i></span>
+                                                <input type="text" name="referred_by_code" x-model="form.referred_by_code" class="form-control border-start-0 ps-0 fw-semibold text-uppercase font-monospace" style="font-size: 12px;" placeholder="Optional">
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-4 position-relative" @click.away="showSourceDropdown = false">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Lead Source</label>
+                                            <div @click="showSourceDropdown = !showSourceDropdown" class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1 cursor-pointer bg-body" style="min-height: 31px; cursor: pointer;">
+                                                <template x-if="selectedSources.length === 0">
+                                                    <span class="text-muted" style="font-size: 12px;">Select...</span>
+                                                </template>
+                                                <template x-for="source in selectedSources" :key="source">
+                                                    <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1">
+                                                        <span x-text="source" style="font-size: 10px;"></span>
+                                                        <i class="bi bi-x cursor-pointer" @click.stop="toggleSource(source)" style="font-size: 12px;"></i>
+                                                        <input type="hidden" name="source[]" :value="source">
+                                                    </div>
+                                                </template>
+                                            </div>
+                                            <div x-show="showSourceDropdown" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
+                                                <template x-for="source in sources" :key="source">
+                                                    <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleSource(source)">
+                                                        <input type="checkbox" :checked="selectedSources.includes(source)" class="me-2" style="cursor: pointer;">
+                                                        <span style="font-size: 12px;" x-text="source"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            
+                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 20;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                        <div class="bg-indigo text-indigo bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; color: #6610f2;">
+                                            <i class="bi bi-telephone fs-6"></i>
+                                        </div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Contact Channels</h6>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Email Address</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-envelope"></i></span>
+                                                <input type="email" name="email" x-model="form.email" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;">
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Primary Phone *</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-phone"></i></span>
+                                                <input type="text" name="phone" x-model="form.phone" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" required pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Alternate Mobile</label>
+                                            <input type="text" name="alternatemobile" x-model="form.alternatemobile" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Relative Name</label>
+                                            <input type="text" name="relative_name" x-model="form.relative_name" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Relative Phone</label>
+                                            <input type="text" name="relative_phone" x-model="form.relative_phone" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            
+                            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-3 mb-lg-0" style="z-index: 10;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                        <div class="bg-secondary bg-opacity-10 text-secondary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                            <i class="bi bi-file-text fs-6"></i>
+                                        </div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Internal Notes</h6>
+                                    </div>
+                                    <textarea name="internal_notes" x-model="form.internal_notes" rows="1" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" placeholder="Administrative notes..."></textarea>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        
+                        <div class="col-lg-6">
+                            
+                            
+                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 30;" x-show="form.category === 'business'" x-transition x-cloak>
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                        <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                            <i class="bi bi-briefcase fs-6"></i>
+                                        </div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Business & Compliance</h6>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Company Name</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-building"></i></span>
+                                                <input type="text" name="company_name" x-model="form.company_name" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;">
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">GST Number</label>
+                                            <input type="text" name="gst_no" x-model="form.gst_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">PAN Number</label>
+                                            <input type="text" name="pan_no" x-model="form.pan_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Tax No (Other)</label>
+                                            <input type="text" name="tax_no" x-model="form.tax_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Aadhaar (Last 4)</label>
+                                            <input type="text" name="aadhaar_last4" x-model="form.aadhaar_last4" class="form-control form-control-sm fw-semibold font-monospace" style="font-size: 12px; letter-spacing: 2px;" maxlength="4">
+                                        </div>
+                                        <div class="col-12 mt-2">
+                                            <div class="d-flex gap-4 pt-2">
+                                                <input type="hidden" name="kyc_completed" value="0">
+                                                <div class="form-check form-switch cursor-pointer">
+                                                    <input class="form-check-input" type="checkbox" name="kyc_completed" value="1" id="kycCheck" x-model="form.kyc_completed">
+                                                    <label class="form-check-label fw-bold text-muted text-uppercase" for="kycCheck" style="font-size: 9px; letter-spacing: 0.1em; cursor: pointer;">KYC Verified</label>
+                                                </div>
+                                                <input type="hidden" name="is_blacklisted" value="0">
+                                                <div class="form-check form-switch cursor-pointer">
+                                                    <input class="form-check-input" type="checkbox" name="is_blacklisted" value="1" id="blacklistCheck" x-model="form.is_blacklisted">
+                                                    <label class="form-check-label fw-bold text-danger text-uppercase" for="blacklistCheck" style="font-size: 9px; letter-spacing: 0.1em; cursor: pointer;">Blacklisted</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            
+                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 20;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                        <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; color: #ffc107;">
+                                            <i class="bi bi-brightness-high fs-6"></i>
+                                        </div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Agriculture Profile</h6>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Land Area & Unit</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="0.01" name="land_area" x-model="form.land_area" class="form-control w-50 fw-semibold" style="font-size: 12px;">
+                                                <select name="land_unit" x-model="form.land_unit" class="form-select w-50 fw-semibold" style="font-size: 12px;">
+                                                    <template x-for="unit in landUnits" :key="unit">
+                                                        <option :value="unit" x-text="unit"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6 position-relative" @click.away="showIrrigationDropdown = false">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Irrigation</label>
+                                            <div @click="showIrrigationDropdown = !showIrrigationDropdown" class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1 cursor-pointer bg-body" style="min-height: 31px; cursor: pointer;">
+                                                <template x-if="selectedIrrigation.length === 0">
+                                                    <span class="text-muted" style="font-size: 12px;">Select...</span>
+                                                </template>
+                                                <template x-for="type in selectedIrrigation" :key="type">
+                                                    <div class="badge bg-warning bg-opacity-10 text-warning d-flex align-items-center gap-1" style="color: #d39e00 !important;">
+                                                        <span x-text="type" style="font-size: 10px;"></span>
+                                                        <i class="bi bi-x cursor-pointer" @click.stop="toggleIrrigation(type)" style="font-size: 12px;"></i>
+                                                        <input type="hidden" name="irrigation_type[]" :value="type">
+                                                    </div>
+                                                </template>
+                                            </div>
+                                            <div x-show="showIrrigationDropdown" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
+                                                <template x-for="type in irrigationTypes" :key="type">
+                                                    <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleIrrigation(type)">
+                                                        <input type="checkbox" :checked="selectedIrrigation.includes(type)" class="me-2" style="cursor: pointer;">
+                                                        <span style="font-size: 12px;" x-text="type"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 position-relative" @click.away="showCropsDropdown = false">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Cultivated Major Crops</label>
+                                            <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1 bg-body" style="min-height: 31px; cursor: text;" @click="showCropsDropdown = true; $refs.cropSearch.focus()">
+                                                <template x-for="crop in selectedCrops" :key="crop">
+                                                    <div class="badge bg-success bg-opacity-10 text-success d-flex align-items-center gap-1">
+                                                        <span x-text="crop" style="font-size: 10px;"></span>
+                                                        <i class="bi bi-x cursor-pointer" @click.stop="toggleCrop(crop)" style="font-size: 12px;"></i>
+                                                        <input type="hidden" name="crops[]" :value="crop">
+                                                    </div>
+                                                </template>
+                                                <div class="flex-grow-1 position-relative" style="min-width: 100px;">
+                                                    <input x-ref="cropSearch" type="text" x-model="cropSearch" @focus="showCropsDropdown = true" placeholder="Search..." class="border-0 w-100 outline-none" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                                                </div>
+                                            </div>
+                                            <div x-show="showCropsDropdown && filteredCrops.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
+                                                <template x-for="crop in filteredCrops" :key="crop">
+                                                    <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleCrop(crop)">
+                                                        <input type="checkbox" :checked="selectedCrops.includes(crop)" class="me-2" style="cursor: pointer;">
+                                                        <span style="font-size: 12px;" x-text="crop"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            
+                            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 10;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                        <div class="bg-danger bg-opacity-10 text-danger rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                            <i class="bi bi-credit-card fs-6"></i>
+                                        </div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Financial Terms</h6>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Credit Limit (Rs )</label>
+                                            <input type="number" step="0.01" name="credit_limit" x-model="form.credit_limit" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Credit Days</label>
+                                            <input type="number" name="credit_days" x-model="form.credit_days" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Wallet Balance</label>
+                                            <input type="number" step="0.01" name="outstanding_balance" x-model="form.outstanding_balance" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Validity Period</label>
+                                            <input type="date" name="credit_valid_till" x-model="form.credit_valid_till" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                        <button type="button" @click="$dispatch('close-modal', { name: 'global-add-customer-modal' })" data-bs-dismiss="modal" class="btn text-muted fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Cancel</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" :disabled="isSubmitting">
+                            <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span x-text="isEdit ? 'Save Changes' : 'Create Customer Profile'"></span>
+                        </button>
+                    </div>
+                    <div class="alert alert-danger mt-3 mb-0 py-2 small fw-bold" x-show="formError" x-text="formError" x-cloak></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.custom-hover-bg:hover { background-color: rgba(var(--bs-primary-rgb), 0.1); }
+input[type="text"]:focus, input[type="email"]:focus, input[type="number"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.15) !important;
+    border-color: var(--bs-primary) !important;
+}
+.cursor-pointer { cursor: pointer; }
+</style>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true" x-data="changePasswordModal()">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-body-secondary border-bottom-0 py-3 px-4">
+                <h5 class="modal-title fw-bold text-body" id="changePasswordModalLabel">
+                    <i class="bi bi-key text-primary me-2"></i>Change Password
+                </h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form @submit.prevent="submitForm" id="changePasswordForm">
+                <div class="modal-body p-4">
+                    <!-- Error Message -->
+                    <template x-if="errorMessage">
+                        <div class="alert alert-danger d-flex align-items-center mb-4 border-0 shadow-sm" role="alert">
+                            <i class="bi bi-exclamation-triangle fs-5 me-3"></i>
+                            <div x-text="errorMessage" class="fw-semibold small"></div>
+                        </div>
+                    </template>
+                    
+                    <!-- Success Message -->
+                    <template x-if="successMessage">
+                        <div class="alert alert-success d-flex align-items-center mb-4 border-0 shadow-sm" role="alert">
+                            <i class="bi bi-check-circle fs-5 me-3"></i>
+                            <div x-text="successMessage" class="fw-semibold small"></div>
+                        </div>
+                    </template>
+
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label fw-semibold small text-muted">New Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body-secondary border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                            <input :type="showPassword ? 'text' : 'password'" 
+                                   class="form-control bg-body border-start-0 border-end-0 px-0 shadow-none" 
+                                   id="new_password" 
+                                   x-model="formData.password" 
+                                   :class="{'is-invalid': errors.password}"
+                                   required>
+                            <button type="button" class="btn btn-outline-secondary border-start-0 shadow-none px-3" tabindex="-1" @click="showPassword = !showPassword">
+                                <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                            </button>
+                        </div>
+                        <template x-if="errors.password">
+                            <div class="text-danger small mt-1 fw-medium" x-text="errors.password[0]"></div>
+                        </template>
+                        <div class="form-text small mt-2">Password must be at least 8 characters long and contain mixed case letters and numbers.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password_confirmation" class="form-label fw-semibold small text-muted">Confirm New Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body-secondary border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                            <input :type="showPasswordConfirmation ? 'text' : 'password'" 
+                                   class="form-control bg-body border-start-0 border-end-0 px-0 shadow-none" 
+                                   id="password_confirmation" 
+                                   x-model="formData.password_confirmation" 
+                                   :class="{'is-invalid': errors.password_confirmation}"
+                                   required>
+                            <button type="button" class="btn btn-outline-secondary border-start-0 shadow-none px-3" tabindex="-1" @click="showPasswordConfirmation = !showPasswordConfirmation">
+                                <i :class="showPasswordConfirmation ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer bg-body-secondary border-top-0 py-3 px-4 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border-0 fw-semibold shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-bold shadow-sm d-flex align-items-center gap-2" :disabled="isLoading">
+                        <span x-show="!isLoading">Update Password</span>
+                        <span x-show="isLoading" x-cloak>
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            Updating...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('changePasswordModal', () => ({
+        userId: '',
+        defaultUserId: '',
+        isLoading: false,
+        errorMessage: '',
+        successMessage: '',
+        showPassword: false,
+        showPasswordConfirmation: false,
+        formData: {
+            password: '',
+            password_confirmation: ''
+        },
+        errors: {},
+        
+        init() {
+            const modalEl = document.getElementById('changePasswordModal');
+            if(modalEl) {
+                modalEl.addEventListener('hidden.bs.modal', () => {
+                    this.resetForm();
+                    this.userId = this.defaultUserId; // Reset back to logged-in user when closed
+                });
+            }
+            
+            window.addEventListener('open-change-password-modal', (e) => {
+                this.userId = e.detail.userId;
+                this.resetForm();
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('changePasswordModal')).show();
+            });
+        },
+        
+        resetForm() {
+            this.formData.password = '';
+            this.formData.password_confirmation = '';
+            this.errors = {};
+            this.errorMessage = '';
+            this.successMessage = '';
+            this.showPassword = false;
+            this.showPasswordConfirmation = false;
+            this.isLoading = false;
+        },
+        
+        async submitForm() {
+            this.isLoading = true;
+            this.errorMessage = '';
+            this.successMessage = '';
+            this.errors = {};
+            
+            try {
+                const response = await fetch(`/api/users/${this.userId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(this.formData)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    if (response.status === 422) {
+                        this.errors = data.errors || {};
+                        if (!this.errors.password && data.message) {
+                            this.errorMessage = data.message;
+                        }
+                    } else {
+                        this.errorMessage = data.message || 'An error occurred while updating the password.';
+                    }
+                } else {
+                    this.successMessage = 'Password updated successfully!';
+                    
+                    setTimeout(() => {
+                        const modalEl = document.getElementById('changePasswordModal');
+                        if (modalEl) {
+                            const modal = bootstrap.Modal.getInstance(modalEl);
+                            if (modal) modal.hide();
+                        }
+                    }, 1500);
+                }
+            } catch (error) {
+                this.errorMessage = 'A network error occurred. Please try again.';
+                console.error(error);
+            } finally {
+                this.isLoading = false;
+            }
+        }
+    }));
+});
+</script>
+
+<style>
+.hover-bg-secondary:hover { background-color: var(--bs-secondary-bg) !important; }
+.hover-bg-danger-subtle:hover { background-color: rgba(var(--bs-danger-rgb), 0.1) !important; }
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--bs-body-color-rgb), 0.1); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(var(--bs-body-color-rgb), 0.2); }
+
+/* Fix Nav Tab Active States in dropdown */
+.nav-tabs-custom .nav-link.active {
+    opacity: 1 !important;
+    border-bottom: 2px solid white !important;
+}
+</style>
+
+
+        <!-- Sidebar -->
+        
+        <!-- Sidebar Backdrop (mobile overlay) -->
+        <div class="sidebar-backdrop" aria-hidden="true"></div>
+
+        <!-- Main Content -->
+        <main id="main-content" class="admin-main" style="margin-left: 0;">
+            <div class="container-fluid p-4 p-lg-5">
+                <div class="purchase-orders-management" x-data="purchaseOrdersTable" x-cloak>
+
+    <!-- ═══════════════════════ Page Header ════════════════════════════════ -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5">
+        <div>
+            <h1 class="h3 mb-0">Purchase Orders</h1>
+            <p class="text-muted mb-0">Manage supplier purchase orders and GRNs</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" @click="exportData()">
+                <i class="bi bi-download me-2"></i>Export
+            </button>
+            <button type="button" class="btn btn-primary" @click.prevent="openCreateModal()">
+                <i class="bi bi-plus-lg me-2"></i>Create PO
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
+    <div class="row g-4 g-lg-5 mb-5">
+        <div class="col-xl-4 col-lg-4 col-md-4">
+            <div class="card stats-card" style="cursor: default;">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
+                            <i class="bi bi-file-earmark-text-fill"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted">Total Orders</p>
+                            <div class="h3 mb-0" aria-live="polite"><span>0</span></div>
+                            <small class="text-muted">All purchase orders</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-4 col-md-4">
+            <div class="card stats-card" style="cursor: default;">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted">Pending Delivery</p>
+                            <div class="h3 mb-0" aria-live="polite"><span>0</span></div>
+                            <small class="text-warning">
+                                <i class="bi bi-arrow-right me-1"></i>Awaiting receipt
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-4 col-md-4">
+            <div class="card stats-card" style="cursor: default;">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted">Received</p>
+                            <div class="h3 mb-0" aria-live="polite"><span>0</span></div>
+                            <small class="text-success">Fully fulfilled</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════ Main Table Card ═════════════════════════════ -->
+    <div class="card mb-5">
+        <div class="card-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h2 class="h5 card-title mb-0">Purchase Orders Directory</h2>
+                </div>
+                <div class="col-auto mt-3 mt-md-0">
+                    <div class="d-flex gap-2 flex-wrap justify-content-end">
+                        <div class="position-relative">
+                            <input type="search"
+                                   class="form-control form-control-sm"
+                                   placeholder="Search PO Number or Supplier..."
+                                   x-model.debounce.300ms="searchQuery"
+                                   style="width:250px;">
+                            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
+                        </div>
+                        <select class="form-select form-select-sm" x-model="statusFilter" style="width:150px;">
+                            <option value="">All Statuses</option>
+                            <option value="draft">Draft</option>
+                            <option value="sent">Sent</option>
+                            <option value="partially_received">Partially Received</option>
+                            <option value="received">Received</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <!-- Table -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-nowrap">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width:44px;">
+                                <input type="checkbox" class="user-select-checkbox" @change="toggleAll($event.target.checked)">
+                            </th>
+                            <th style="width:120px;">PO Number</th>
+                            <th>Supplier</th>
+                            <th>Warehouse</th>
+                            <th>Expected Date</th>
+                            <th>Amount</th>
+                            <th style="width:110px;">Status</th>
+                            <th style="width:90px;" class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Loading State -->
+                        <template x-if="isLoading">
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                    <p class="text-muted small mt-2 mb-0 fw-medium">Loading purchase orders…</p>
+                                </td>
+                            </tr>
+                        </template>
+
+                        <!-- Empty State -->
+                        <template x-if="!isLoading && items.length === 0">
+                            <tr>
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <i class="bi bi-file-earmark-x fs-2 d-block mb-2"></i>
+                                    No purchase orders found matching your criteria.
+                                </td>
+                            </tr>
+                        </template>
+
+                        <!-- Data Rows -->
+                        <template x-for="item in items" :key="item.id">
+                            <tr>
+                                <td class="ps-3">
+                                    <input type="checkbox" class="user-select-checkbox" :value="item.id">
+                                </td>
+                                <td>
+                                    <span class="font-monospace fw-medium text-primary" x-text="item.po_number"></span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width:38px;height:38px;">
+                                            <i class="bi bi-truck"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-medium" x-text="item.supplier ? (item.supplier.company_name || item.supplier.firstname) : 'Unknown'"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="small d-flex align-items-center gap-2">
+                                        <i class="bi bi-building text-muted"></i>
+                                        <span x-text="item.warehouse ? item.warehouse.name : 'Unknown'"></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="small text-muted" x-text="item.expected_delivery_date || '—'"></span>
+                                </td>
+                                <td>
+                                    <span class="fw-medium">₹<span x-text="item.total_amount"></span></span>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          :class="{
+                                            'bg-secondary-subtle text-secondary': item.status === 'draft',
+                                            'bg-primary-subtle text-primary': item.status === 'sent',
+                                            'bg-warning-subtle text-warning': item.status === 'partially_received',
+                                            'bg-success-subtle text-success': item.status === 'received',
+                                            'bg-danger-subtle text-danger': item.status === 'cancelled'
+                                          }">
+                                          <span x-text="item.status.toUpperCase().replace('_', ' ')"></span>
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" @click="viewItem(item)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top" x-show="totalPages > 1">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
+                            <a class="page-link" href="#" @click.prevent="currentPage--; fetchData()">Previous</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">Page <span x-text="currentPage"></span> of <span x-text="totalPages"></span></span>
+                        </li>
+                        <li class="page-item" :class="{ 'disabled': currentPage === totalPages }">
+                            <a class="page-link" href="#" @click.prevent="currentPage++; fetchData()">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Create PO Modal -->
+    <div class="modal fade" id="createPoModal" tabindex="-1" aria-labelledby="createPoModalLabel" aria-hidden="true" wire:ignore.self>
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content border-0 shadow">
+                <form @submit.prevent="submitCreateForm" autocomplete="off">
+                    
+                    
+                    <div class="modal-header bg-body-tertiary border-bottom d-flex align-items-center justify-content-between p-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
+                                <i class="bi bi-receipt fs-4"></i>
+                            </div>
+                            <div>
+                                <h4 class="mb-0 fw-bold text-body">Create Purchase Order</h4>
+                                <p class="mb-0 small text-muted">Draft a new purchase order for suppliers</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body p-4 bg-body-tertiary">
+                        <div class="row g-4">
+                            
+                            
+                            <div class="col-12 position-relative" style="z-index: 100;">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                                <i class="bi bi-info-circle fs-6"></i>
+                                            </div>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Order Information</h6>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-3 position-relative" @click.away="showSupplierDropdown = false">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Supplier *</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-truck"></i></span>
+                                                    <div class="form-control border-start-0 ps-0 fw-semibold d-flex align-items-center bg-body cursor-pointer" @click="showSupplierDropdown = !showSupplierDropdown; if(showSupplierDropdown) setTimeout(() => $refs.supplierSearch.focus(), 50)" style="font-size: 12px; min-height: 31px;">
+                                                        <span class="flex-grow-1 text-truncate" x-text="selectedSupplierName || 'Select Supplier'"></span>
+                                                        <i class="bi bi-chevron-down text-muted" style="font-size: 10px;"></i>
+                                                    </div>
+                                                </div>
+                                                <div x-show="showSupplierDropdown" x-transition class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 250px; overflow-y: auto; z-index: 1050; left: 0;">
+                                                    <div class="p-2 border-bottom position-sticky top-0 bg-body" style="z-index: 1051;">
+                                                        <input x-ref="supplierSearch" type="text" class="form-control form-control-sm" x-model="supplierSearch" placeholder="Search..." style="font-size: 12px;">
+                                                    </div>
+                                                    <template x-for="supplier in filteredSuppliers" :key="supplier.id">
+                                                        <div class="px-3 py-2 cursor-pointer custom-hover-bg d-flex align-items-center border-bottom border-light" @click="selectSupplier(supplier)">
+                                                            <input type="checkbox" :checked="createForm.supplier_id === supplier.id" class="me-2" style="cursor: pointer;" @click.prevent>
+                                                            <span style="font-size: 12px;" x-text="supplier.name"></span>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="filteredSuppliers.length === 0">
+                                                        <div class="px-3 py-2 text-muted text-center" style="font-size: 11px;">No suppliers found</div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 position-relative" @click.away="showWarehouseDropdown = false">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Warehouse *</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-building"></i></span>
+                                                    <div class="form-control border-start-0 ps-0 fw-semibold d-flex align-items-center bg-body cursor-pointer" @click="showWarehouseDropdown = !showWarehouseDropdown; if(showWarehouseDropdown) setTimeout(() => $refs.warehouseSearch.focus(), 50)" style="font-size: 12px; min-height: 31px;">
+                                                        <span class="flex-grow-1 text-truncate" x-text="selectedWarehouseName || 'Select Warehouse'"></span>
+                                                        <i class="bi bi-chevron-down text-muted" style="font-size: 10px;"></i>
+                                                    </div>
+                                                </div>
+                                                <div x-show="showWarehouseDropdown" x-transition class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 250px; overflow-y: auto; z-index: 1050; left: 0;">
+                                                    <div class="p-2 border-bottom position-sticky top-0 bg-body" style="z-index: 1051;">
+                                                        <input x-ref="warehouseSearch" type="text" class="form-control form-control-sm" x-model="warehouseSearch" placeholder="Search..." style="font-size: 12px;">
+                                                    </div>
+                                                    <template x-for="warehouse in filteredWarehouses" :key="warehouse.id">
+                                                        <div class="px-3 py-2 cursor-pointer custom-hover-bg d-flex align-items-center border-bottom border-light" @click="selectWarehouse(warehouse)">
+                                                            <input type="checkbox" :checked="createForm.warehouse_id === warehouse.id" class="me-2" style="cursor: pointer;" @click.prevent>
+                                                            <span style="font-size: 12px;" x-text="warehouse.name"></span>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="filteredWarehouses.length === 0">
+                                                        <div class="px-3 py-2 text-muted text-center" style="font-size: 11px;">No warehouses found</div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Expected Delivery</label>
+                                                <input type="date" class="form-control form-control-sm fw-semibold" x-model="createForm.expected_delivery_date" style="font-size: 12px;">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Notes</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="createForm.notes" placeholder="Optional notes..." style="font-size: 12px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            
+                            <div class="col-12 position-relative" style="z-index: 50;">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                            <div class="bg-indigo text-indigo bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; color: #6610f2;">
+                                                <i class="bi bi-box-seam fs-6"></i>
+                                            </div>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Line Items</h6>
+                                        </div>
+                                        
+                                        <div class="bg-body rounded border shadow-sm" style="overflow: visible;">
+                                            <table class="table table-hover align-middle mb-0 text-nowrap">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th class="text-uppercase text-muted fw-bold" style="font-size: 10px; letter-spacing: 0.5px;">Product *</th>
+                                                        <th class="text-uppercase text-muted fw-bold" style="font-size: 10px; letter-spacing: 0.5px; width: 120px;">Qty *</th>
+                                                        <th class="text-uppercase text-muted fw-bold" style="font-size: 10px; letter-spacing: 0.5px; width: 150px;">Unit Price *</th>
+                                                        <th class="text-uppercase text-muted fw-bold" style="font-size: 10px; letter-spacing: 0.5px; width: 150px;">Total</th>
+                                                        <th style="width: 50px;"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <template x-for="(item, index) in createForm.items" :key="index">
+                                                        <tr>
+                                                            <td class="position-relative" @click.away="item._showDropdown = false">
+                                                                <div class="form-control form-control-sm fw-semibold d-flex align-items-center bg-body cursor-pointer position-relative" @click="item._showDropdown = !item._showDropdown; if(item._showDropdown) setTimeout(() => document.getElementById('prodSearch_'+index).focus(), 50)" style="font-size: 12px; min-height: 31px; padding-right: 25px;">
+                                                                    <template x-if="item.product_id && getProductObj(item.product_id)?.image">
+                                                                        <img :src="getProductObj(item.product_id).image" class="rounded object-fit-cover shadow-sm border border-secondary border-opacity-25 me-2 flex-shrink-0" style="width: 18px; height: 18px;" alt="">
+                                                                    </template>
+                                                                    <span class="flex-grow-1 text-truncate" x-text="getProductName(item.product_id) || 'Select Product'"></span>
+                                                                    <i class="bi bi-chevron-down text-muted position-absolute" style="font-size: 10px; right: 8px;"></i>
+                                                                </div>
+                                                                <div x-show="item._showDropdown" x-transition class="position-absolute bg-body border rounded shadow-lg mt-1" style="max-height: 250px; overflow-y: auto; z-index: 1060; left: 0; min-width: 250px;">
+                                                                    <div class="p-2 border-bottom position-sticky top-0 bg-body" style="z-index: 1061;">
+                                                                        <input :id="'prodSearch_'+index" type="text" class="form-control form-control-sm" x-model="item._search" placeholder="Search product..." style="font-size: 12px;">
+                                                                    </div>
+                                                                    <template x-for="product in filteredProducts(item)" :key="product.id">
+                                                                        <div class="px-3 py-2 cursor-pointer custom-hover-bg d-flex align-items-center border-bottom border-light" @click="selectProduct(item, product)">
+                                                                            <input type="checkbox" :checked="item.product_id === product.id" class="me-2 flex-shrink-0" style="cursor: pointer;" @click.prevent>
+                                                                            <template x-if="product.image">
+                                                                                <img :src="product.image" class="rounded me-2 object-fit-cover border shadow-sm flex-shrink-0" style="width: 28px; height: 28px;" alt="">
+                                                                            </template>
+                                                                            <template x-if="!product.image">
+                                                                                <div class="bg-secondary bg-opacity-10 text-secondary rounded d-flex align-items-center justify-content-center me-2 border border-secondary border-opacity-25 shadow-sm flex-shrink-0" style="width: 28px; height: 28px;">
+                                                                                    <i class="bi bi-box" style="font-size: 12px;"></i>
+                                                                                </div>
+                                                                            </template>
+                                                                            <div class="d-flex flex-column text-truncate">
+                                                                                <span style="font-size: 12px; line-height: 1.2;" class="fw-medium text-body text-truncate" x-text="product.name"></span>
+                                                                                <span style="font-size: 9px;" class="text-muted text-uppercase text-truncate" x-text="product.sku"></span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+                                                                    <template x-if="filteredProducts(item).length === 0">
+                                                                        <div class="px-3 py-2 text-muted text-center" style="font-size: 11px;">No products found</div>
+                                                                    </template>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold" x-model="item.quantity" style="font-size: 12px;" required>
+                                                            </td>
+                                                            <td>
+                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold" x-model="item.unit_price" style="font-size: 12px;" required>
+                                                            </td>
+                                                            <td class="text-end fw-bold text-primary" style="font-size: 13px;">
+                                                                ₹<span x-text="(item.quantity * item.unit_price).toFixed(2)"></span>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <button type="button" class="btn btn-sm btn-link text-danger" @click="removeLineItem(index)" x-show="createForm.items.length > 1" title="Remove Item">
+                                                                    <i class="bi bi-trash-fill fs-5"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    </template>
+                                                </tbody>
+                                                <tfoot class="table-light">
+                                                    <tr>
+                                                        <td colspan="5" class="py-2">
+                                                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-3 py-1" style="font-size: 11px; letter-spacing: 0.5px;" @click="addLineItem()">
+                                                                <i class="bi bi-plus-circle-fill me-1"></i> ADD ROW
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        
+                        <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                            <button type="button" data-bs-dismiss="modal" class="btn text-muted fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Cancel</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" :disabled="isSubmitting">
+                                <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span>Create Purchase Order</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .custom-hover-bg:hover { background-color: rgba(var(--bs-primary-rgb), 0.1); }
+        .cursor-pointer { cursor: pointer; }
+    </style>
+</div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="admin-footer border-top border-secondary border-opacity-10 py-3 mt-auto bg-body">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
+                <span class="text-muted small fw-medium">
+                    &copy; 2026 Laravel. All rights reserved.
+                </span>
+                <span class="text-muted mx-2 d-none d-md-inline">|</span>
+                <span class="text-muted small">
+                    <i class="bi bi-hdd-network text-success me-1"></i> System Status: Online
+                </span>
+            </div>
+            <div class="col-md-6 text-center text-md-end" 
+                 x-data="{ currentTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }), currentDate: new Date().toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) }" 
+                 x-init="setInterval(() => { const d = new Date(); currentTime = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); currentDate = d.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }); }, 1000)">
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 shadow-sm fw-medium">
+                    <i class="bi bi-calendar3 me-1"></i> <span x-text="currentDate"></span>
+                </span>
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 shadow-sm fw-medium ms-2" style="min-width: 90px; display: inline-block;">
+                    <i class="bi bi-clock me-1"></i> <span x-text="currentTime"></span>
+                </span>
+            </div>
+        </div>
+    </div>
+</footer>
+
+    </div><!-- /.admin-wrapper -->
+
+            <div x-data="{ open: false }" class="position-fixed bottom-0 end-0 m-4" style="z-index: 9999;">
+    <!-- Toggle Button -->
+    <button @click="open = !open" 
+        class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center border-0 text-white"
+        style="width: 56px; height: 56px; transition: transform 0.2s;"
+        onmouseover="this.style.transform='scale(1.05)'"
+        onmouseout="this.style.transform='scale(1)'">
+        <i :class="open ? 'bi bi-x-lg fs-4' : 'bi bi-chat-dots-fill fs-4'"></i>
+    </button>
+
+    <!-- Chat Window -->
+    <div x-show="open" x-cloak
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-8"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 translate-y-8"
+        class="position-absolute bottom-100 end-0 mb-3"
+        style="width: 350px; height: 500px; max-width: calc(100vw - 2rem); transform-origin: bottom right;">
+        
+        <div class="bg-body border shadow-lg rounded-4 overflow-hidden d-flex flex-column w-100 h-100">
+            <!-- Header -->
+            <div class="p-3 bg-primary text-white">
+                <h3 class="fw-bold fs-5 mb-0">Team Chat</h3>
+                <p class="small opacity-75 mt-1 mb-0">Open conversations, groups, and real-time updates.</p>
+            </div>
+
+            <!-- Messages -->
+            <div class="flex-grow-1 overflow-y-auto p-3 bg-body-tertiary d-flex flex-column gap-3">
+                <div class="d-flex align-items-start gap-2">
+                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0" style="width: 32px; height: 32px; font-size: 10px;">AI</div>
+                    <div class="bg-body p-2 px-3 shadow-sm border small" style="border-radius: 1rem; border-top-left-radius: 0;">
+                        Your messaging module is ready. Open the full chat workspace to start a private chat or create a group.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="p-3 bg-body border-top">
+                <a href="http://localhost/chat"
+                    class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 rounded-pill py-2 fw-bold shadow-sm">
+                    Open Team Chat
+                    <i class="bi bi-arrow-right-short fs-5"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+    
+    <!-- Toast Container -->
+    <div aria-live="polite" aria-atomic="true" class="toast-stack position-fixed end-0 p-3">
+        <div id="toast-container"></div>
+    </div>
+
+        <script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('purchaseOrdersTable', () => ({
+        items: [],
+        isLoading: false,
+        searchQuery: '',
+        statusFilter: '',
+        currentPage: 1,
+        totalPages: 1,
+        
+        init() {
+            this.fetchData();
+            this.$watch('searchQuery', () => { this.currentPage = 1; this.fetchData(); });
+            this.$watch('statusFilter', () => { this.currentPage = 1; this.fetchData(); });
+        },
+        
+        fetchData() {
+            this.isLoading = true;
+            let url = new URL(window.location.href);
+            url.searchParams.set('page', this.currentPage);
+            if (this.searchQuery) url.searchParams.set('search', this.searchQuery);
+            if (this.statusFilter) url.searchParams.set('status', this.statusFilter);
+            
+            fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(res => res.json())
+                .then(data => {
+                    this.items = data.data;
+                    this.currentPage = data.current_page;
+                    this.totalPages = data.last_page;
+                })
+                .catch(err => console.error(err))
+                .finally(() => this.isLoading = false);
+        },
+
+        toggleAll(checked) {
+            // Checkbox logic stub
+        },
+        
+        suppliersList: [{"id":1,"name":"Ramesh"}],
+        warehousesList: [{"id":1,"name":"Main Ecommerce Warehouse","company_name":"Metis Retail Pvt Ltd","gstin":"22AAAAA0000A1Z5","phone":"+91-9876543210","email":null,"reference_no":null,"seed_lic_no":null,"pesti_lic_no":null,"code":"MAIN-ECOM","address":"Plot 45, Phase 2, Industrial Area, Sector 62","address_line_1":"Plot 45, Phase 2","address_line_2":"Industrial Area, Sector 62","village_id":null,"village_name":"Noida","post_office":"Sector 62","taluka":"Noida","city":"Noida","state":"Uttar Pradesh","pincode":"201309","status":"active","is_default":true,"is_active":true,"created_at":"2026-07-29T11:05:28.000000Z","updated_at":"2026-07-29T11:05:28.000000Z","deleted_at":null}],
+        productsList: [{"id":1,"name":"Luxury Automatic Watch","sku":"WATCH-001","image":"http:\/\/localhost\/storage\/products\/watch-001-1785323128.jpg"}],
+        
+        supplierSearch: '',
+        showSupplierDropdown: false,
+        get filteredSuppliers() {
+            if (!this.supplierSearch) return this.suppliersList;
+            return this.suppliersList.filter(s => s.name.toLowerCase().includes(this.supplierSearch.toLowerCase()));
+        },
+        get selectedSupplierName() {
+            const s = this.suppliersList.find(s => s.id === this.createForm.supplier_id);
+            return s ? s.name : '';
+        },
+        selectSupplier(supplier) {
+            this.createForm.supplier_id = supplier.id;
+            this.showSupplierDropdown = false;
+        },
+
+        warehouseSearch: '',
+        showWarehouseDropdown: false,
+        get filteredWarehouses() {
+            if (!this.warehouseSearch) return this.warehousesList;
+            return this.warehousesList.filter(w => w.name.toLowerCase().includes(this.warehouseSearch.toLowerCase()));
+        },
+        get selectedWarehouseName() {
+            const w = this.warehousesList.find(w => w.id === this.createForm.warehouse_id);
+            return w ? w.name : '';
+        },
+        selectWarehouse(warehouse) {
+            this.createForm.warehouse_id = warehouse.id;
+            this.showWarehouseDropdown = false;
+        },
+
+        filteredProducts(item) {
+            if (!item._search) return this.productsList;
+            return this.productsList.filter(p => p.name.toLowerCase().includes(item._search.toLowerCase()) || (p.sku && p.sku.toLowerCase().includes(item._search.toLowerCase())));
+        },
+        getProductObj(id) {
+            return this.productsList.find(p => p.id === id);
+        },
+        getProductName(id) {
+            const p = this.getProductObj(id);
+            return p ? `${p.name} (${p.sku})` : '';
+        },
+        selectProduct(item, product) {
+            item.product_id = product.id;
+            item._showDropdown = false;
+        },
+
+        createForm: {
+            supplier_id: '',
+            warehouse_id: '',
+            expected_delivery_date: '',
+            notes: '',
+            items: [{ product_id: '', quantity: 1, unit_price: 0, _showDropdown: false, _search: '' }]
+        },
+        isSubmitting: false,
+
+        openCreateModal() {
+            this.createForm = {
+                supplier_id: '', warehouse_id: '', expected_delivery_date: '', notes: '',
+                items: [{ product_id: '', quantity: 1, unit_price: 0, _showDropdown: false, _search: '' }]
+            };
+            this.supplierSearch = '';
+            this.warehouseSearch = '';
+            new bootstrap.Modal(document.getElementById('createPoModal')).show();
+        },
+        
+        addLineItem() {
+            this.createForm.items.push({ product_id: '', quantity: 1, unit_price: 0, _showDropdown: false, _search: '' });
+        },
+        
+        removeLineItem(index) {
+            if (this.createForm.items.length > 1) {
+                this.createForm.items.splice(index, 1);
+            }
+        },
+
+        async submitCreateForm() {
+            this.isSubmitting = true;
+            try {
+                const response = await fetch('http://localhost/procurement/purchase-orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(this.createForm)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('createPoModal')).hide();
+                    this.fetchData();
+                } else {
+                    alert(data.message || 'Validation failed. Please check your inputs.');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('An error occurred. Please try again.');
+            } finally {
+                this.isSubmitting = false;
+            }
+        },
+        
+        viewItem(item) {
+            alert('View PO details flow will go here for ' + item.po_number);
+        },
+        
+        exportData() {
+            alert('Exporting data...');
+        }
+    }));
+});
+</script>
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('addCustomerApp', () => ({
+        phone: '',
+        sources: ["Referral","Walk-in","Social Media","Website","Advertisement","Event","Cold Call","Other"],
+        selectedSources: [],
+        showSourceDropdown: false,
+        landUnits: ["Acre","Hectare","Bigha","Guntha","Kanal","Marla"],
+        irrigationTypes: ["Drip","Sprinkler","Canal","Tube Well","Rainfed","River Pump"],
+        selectedIrrigation: [],
+        showIrrigationDropdown: false,
+        allCrops: ["Wheat","Rice","Cotton","Sugarcane","Maize","Soybean","Gram","Mustard","Bajra","Jowar"],
+        selectedCrops: [],
+        showCropsDropdown: false,
+        cropSearch: '',
+        isSubmitting: false,
+        formError: '',
+        isEdit: false,
+        customerId: null,
+        form: {
+            firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
+            category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
+            land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: '', referred_by_code: ''
+        },
+
+        get filteredCrops() {
+            if (!this.cropSearch) return this.allCrops;
+            return this.allCrops.filter(c => c.toLowerCase().includes(this.cropSearch.toLowerCase()));
+        },
+
+        toggleSource(name) {
+            if(this.selectedSources.includes(name)) {
+                this.selectedSources = this.selectedSources.filter(s => s !== name);
+            } else {
+                this.selectedSources.push(name);
+            }
+        },
+
+        toggleIrrigation(name) {
+            if(this.selectedIrrigation.includes(name)) {
+                this.selectedIrrigation = this.selectedIrrigation.filter(t => t !== name);
+            } else {
+                this.selectedIrrigation.push(name);
+            }
+        },
+
+        toggleCrop(name) {
+            if(this.selectedCrops.includes(name)) {
+                this.selectedCrops = this.selectedCrops.filter(c => c !== name);
+            } else {
+                this.selectedCrops.push(name);
+            }
+        },
+
+        resetForm() {
+            this.form = {
+                firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
+                category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
+                land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: '', referred_by_code: ''
+            };
+            this.selectedSources = [];
+            this.selectedIrrigation = [];
+            this.selectedCrops = [];
+            this.isEdit = false;
+            this.customerId = null;
+        },
+
+        openModal(detail) {
+            this.resetForm();
+            if (detail && detail.customer) {
+                this.isEdit = true;
+                this.customerId = detail.customer.id;
+                // copy fields
+                for(let key in this.form) {
+                    if (detail.customer[key] !== undefined && detail.customer[key] !== null) {
+                        this.form[key] = detail.customer[key];
+                    }
+                }
+                // extract referral code from referrer if it exists
+                if (detail.customer.referrer && detail.customer.referrer.referral_code) {
+                    this.form.referred_by_code = detail.customer.referrer.referral_code;
+                }
+                // Date formatting for valid_till
+                if (detail.customer.credit_valid_till) {
+                    this.form.credit_valid_till = new Date(detail.customer.credit_valid_till).toISOString().split('T')[0];
+                }
+                // Arrays
+                this.selectedSources = detail.customer.source || [];
+                this.selectedIrrigation = detail.customer.irrigation_type || [];
+                this.selectedCrops = detail.customer.crops || [];
+            } else if (detail && detail.phone) {
+                this.form.phone = detail.phone;
+            }
+            
+            this.formError = '';
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('addCustomerModal')).show();
+        },
+
+        async submitForm(e) {
+            this.formError = '';
+            this.isSubmitting = true;
+            
+            if (this.form.phone && this.form.alternatemobile && this.form.phone === this.form.alternatemobile) {
+                this.formError = 'Primary Phone and Alternate Mobile cannot be the same.';
+                this.isSubmitting = false;
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            
+            // Bug Fix: Send to /api/customers to hit the correct RESTful POST endpoint
+            let url = '/api/customers';
+            if (this.isEdit) {
+                url = `/api/customers/${this.customerId}`;
+                formData.append('_method', 'PUT');
+            }
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    if (data.errors) {
+                        this.formError = Object.values(data.errors).flat().join(', ');
+                    } else {
+                        this.formError = data.message || 'An error occurred during submission.';
+                    }
+                    this.isSubmitting = false;
+                    return;
+                }
+                
+                // Success
+                this.isSubmitting = false;
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addCustomerModal'));
+                if (modal) modal.hide();
+                
+                if (this.isEdit) {
+                    window.dispatchEvent(new CustomEvent('customer-updated'));
+                    if (window.dispatchEvent) {
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Profile updated successfully!' }}));
+                    }
+                } else {
+                    // Feature Request: Redirect to orders create page with pre-selected customer
+                    window.location.href = `/orders/create?customer_id=${data.data.id}`;
+                }
+            } catch (err) {
+                this.formError = 'Network error occurred. Please try again.';
+                this.isSubmitting = false;
+            }
+        }
+    }));
+});
+</script>
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('headerCart', () => ({
+        items: [],
+        cartGrandTotal: 0,
+        init() {
+            this.loadCart();
+            this.loadCartTotal();
+            this.syncCustomerContext();
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'ecommerce_create_order_cart') this.loadCart();
+                if (e.key === 'ecommerce_create_order_cart_total') this.loadCartTotal();
+            });
+            window.addEventListener('cart-updated', () => this.loadCart());
+            window.addEventListener('cart-total-updated', (e) => {
+                if (e.detail !== undefined) {
+                    this.cartGrandTotal = parseFloat(e.detail) || 0;
+                } else {
+                    this.loadCartTotal();
+                }
+            });
+        },
+        handleCartClick() {
+            if (document.querySelector('[x-data^="createOrderApp"]')) {
+                window.dispatchEvent(new CustomEvent('toggle-cart-sidebar'));
+                const btn = document.getElementById('cartMenuBtn');
+                if (btn && window.bootstrap && window.bootstrap.Dropdown) {
+                    const dropdown = window.bootstrap.Dropdown.getInstance(btn);
+                    if (dropdown) dropdown.hide();
+                }
+            } else {
+                window.location.href = this.checkoutHref();
+            }
+        },
+        syncCustomerContext() {
+            const match = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
+            if (match && match[1]) {
+                localStorage.setItem('ecommerce_active_customer_id', match[1]);
+            }
+        },
+        loadCart() {
+            try {
+                this.items = JSON.parse(localStorage.getItem('ecommerce_create_order_cart')) || [];
+            } catch (e) {
+                this.items = [];
+            }
+        },
+        loadCartTotal() {
+            this.cartGrandTotal = parseFloat(localStorage.getItem('ecommerce_create_order_cart_total')) || 0;
+        },
+        checkoutHref() {
+            const pathMatch = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
+            const customerId = (pathMatch && pathMatch[1]) || localStorage.getItem('ecommerce_active_customer_id');
+            if (customerId) {
+                return `/orders/create?customer_id=${encodeURIComponent(customerId)}&step=review`;
+            }
+            return 'http://localhost/orders/create';
+        },
+        removeItem(index) {
+            this.items.splice(index, 1);
+            localStorage.setItem('ecommerce_create_order_cart', JSON.stringify(this.items));
+            window.dispatchEvent(new CustomEvent('cart-updated'));
+        }
+    }));
+
+
+
+    window.notificationApp = function(initialActivities, initialCount) {
+        return {
+            activities: initialActivities || [],
+            count: initialCount || 0,
+            init() {
+                // Periodically fetch updates every 3 seconds for instant-like feel
+                setInterval(() => {
+                    this.fetchActivities();
+                }, 3000);
+            },
+            fetchActivities() {
+                fetch('/api/activities/recent', {
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.activities) {
+                        this.activities = data.activities;
+                        this.count = data.count;
+                    }
+                })
+                .catch(err => console.error('Failed to fetch activities', err));
+            },
+            markAsRead(id) {
+                if (id === 'all') {
+                    this.activities.forEach(a => a.is_read = true);
+                    this.count = 0;
+                } else {
+                    const activity = this.activities.find(a => a.id === id);
+                    if (activity && !activity.is_read) {
+                        activity.is_read = true;
+                        this.count = Math.max(0, this.count - 1);
+                    }
+                }
+                
+                fetch(`/api/activities/${id}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                }).catch(err => console.error('Failed to mark as read', err));
+            }
+        };
+    };
+});
+</script>
+    <script>
+        document.addEventListener('show.bs.dropdown', function (event) {
+            var responsiveContainer = event.target.closest('.table-responsive');
+            if (responsiveContainer) {
+                responsiveContainer.style.overflow = 'visible';
+            }
+        });
+        
+        document.addEventListener('hide.bs.dropdown', function (event) {
+            var responsiveContainer = event.target.closest('.table-responsive');
+            if (responsiveContainer) {
+                responsiveContainer.style.overflow = '';
+            }
+        });
+
+        // Check for pending toasts from previous pages
+        document.addEventListener('DOMContentLoaded', function() {
+            var pendingToast = sessionStorage.getItem('pending_toast');
+            if (pendingToast) {
+                // Wait a tiny bit for AdminApp to be fully initialized
+                setTimeout(function() {
+                    if (window.AdminApp && window.AdminApp.notificationManager) {
+                        window.AdminApp.notificationManager.success(pendingToast);
+                    }
+                }, 100);
+                sessionStorage.removeItem('pending_toast');
+            }
+        });
+    </script>
+</body>
+</html>
