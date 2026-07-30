@@ -40,10 +40,21 @@
         <nav class="sidebar-nav">
             <ul class="nav flex-column gap-1">
 
+                {{-- ── COMMUNICATION (Visible to all) ──────────────── --}}
+                <li class="nav-item">
+                    <a class="nav-link {{ $current === 'chat.index' ? 'active' : '' }}" href="{{ route('chat.index') }}">
+                        <i class="bi bi-chat-text-fill"></i>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Team Chat</span>
+                        <span class="badge bg-primary rounded-pill ms-auto">New</span>
+                    </a>
+                </li>
+
                 {{-- ── MAIN ───────────────────────────────────────── --}}
+                @canany(['dashboard-view', 'analytics-view', 'reports-view'])
                 <li class="nav-item sidebar-section-label">
                     <small class="text-muted px-3 text-uppercase fw-bold">Main</small>
                 </li>
+                @endcanany
 
                 @can('dashboard-view')
                 <li class="nav-item">
@@ -71,9 +82,11 @@
                 @endcan
 
                 {{-- ── COMMERCE & SALES ─────────────────────────── --}}
+                @canany(['orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view', 'coupon-view', 'promotions-view'])
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Commerce &amp; Sales</small>
                 </li>
+                @endcanany
 
                 {{-- Order Management Dropdown --}}
                 @canany(['orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view'])
@@ -188,25 +201,35 @@
                 @endcanany
 
                 {{-- ── SUPPLY CHAIN ─────────────────────────── --}}
+                @canany(['purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view', 'warehouse-dashboard-view', 'shipping-view', 'warehouse-view', 'product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view'])
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Supply Chain</small>
                 </li>
+                @endcanany
 
                 {{-- Procurement & Inventory Dropdown --}}
-                @canany(['purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view'])
+                @canany(['purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view', 'warehouse-dashboard-view'])
                 <li class="nav-item">
-                    <a class="nav-link {{ in_array($current, ['procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'active' : 'collapsed' }}"
+                    <a class="nav-link {{ in_array($current, ['inventory.dashboard', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'active' : 'collapsed' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#inventorySubmenu"
-                       aria-expanded="{{ in_array($current, ['procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'true' : 'false' }}"
+                       aria-expanded="{{ in_array($current, ['inventory.dashboard', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'true' : 'false' }}"
                        aria-controls="inventorySubmenu">
                         <i class="bi bi-archive-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">Procurement &amp; Inventory</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ in_array($current, ['procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'show' : '' }}" id="inventorySubmenu">
+                    <div class="collapse {{ in_array($current, ['inventory.dashboard', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'show' : '' }}" id="inventorySubmenu">
                         <ul class="nav nav-submenu">
+                            @can('warehouse-dashboard-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'inventory.dashboard' ? 'active' : '' }}" href="{{ route('inventory.dashboard') }}">
+                                    <i class="bi bi-buildings"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Command Center</span>
+                                </a>
+                            </li>
+                            @endcan
                             @can('purchaseorder-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'procurement.purchase-orders.index' ? 'active' : '' }}" href="{{ route('procurement.purchase-orders.index') }}">
@@ -373,9 +396,11 @@
                 @endcanany
 
                 {{-- ── ADMINISTRATION ─────────────────────────────── --}}
+                @canany(['user-view', 'role-view', 'village-view', 'orderreason-view', 'settings-view', 'audit-log-view'])
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Administration</small>
                 </li>
+                @endcanany
 
                 {{-- CRM & People Dropdown --}}
                 @canany(['user-view', 'role-view'])
@@ -479,6 +504,7 @@
                 </li>
                 @endcanany
 
+                @role('Super Admin')
                 {{-- ── WORKSPACE ─────────────────────────────── --}}
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Workspace</small>
@@ -486,25 +512,18 @@
 
                 {{-- Utilities & Workspace Dropdown --}}
                 <li class="nav-item">
-                    <a class="nav-link {{ in_array($current, ['chat.index', 'messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'active' : 'collapsed' }}"
+                    <a class="nav-link {{ in_array($current, ['messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'active' : 'collapsed' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#toolsSubmenu"
-                       aria-expanded="{{ in_array($current, ['chat.index', 'messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'true' : 'false' }}"
+                       aria-expanded="{{ in_array($current, ['messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'true' : 'false' }}"
                        aria-controls="toolsSubmenu">
                         <i class="bi bi-wrench-adjustable-circle-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">Utilities &amp; Tools</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ in_array($current, ['chat.index', 'messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'show' : '' }}" id="toolsSubmenu">
+                    <div class="collapse {{ in_array($current, ['messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'show' : '' }}" id="toolsSubmenu">
                         <ul class="nav nav-submenu">
-                            <li class="nav-item">
-                                <a class="nav-link {{ $current === 'chat.index' ? 'active' : '' }}" href="{{ route('chat.index') }}">
-                                    <i class="bi bi-chat-text-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Team Chat</span>
-                                    <span class="badge bg-primary rounded-pill ms-auto">New</span>
-                                </a>
-                            </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'messages' ? 'active' : '' }}" href="{{ route('messages') }}">
                                     <i class="bi bi-chat-dots-fill"></i>
@@ -559,6 +578,7 @@
                         </ul>
                     </div>
                 </li>
+                @endrole
 
             </ul>
         </nav>

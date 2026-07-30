@@ -20,7 +20,8 @@ class StockManagementController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:stockmanagement-view', only: ['index', 'show']),
+            new Middleware('permission:stockmanagement-view', only: ['index', 'show', 'warehouseOptions']),
+            new Middleware('permission:stockmanagement-edit', only: ['setStock']),
         ];
     }
 

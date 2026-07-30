@@ -1161,12 +1161,16 @@
                                                         </table>
                                                     </div>
                                                     <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
+                                                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.edit')): ?>
                                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'shipped', 'dispatched'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-pencil-square me-1"></i> Edit Order
                                                         </button>
+                                                        <?php endif; ?>
+                                                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.cancel')): ?>
                                                         <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(order.id, order.order_no || order.order_number)" x-show="!['delivered', 'cancelled', 'returned'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-x-circle me-1"></i> Cancel Order
                                                         </button>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                             </td>
@@ -1273,12 +1277,16 @@
                                                         </table>
                                                     </div>
                                                     <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
+                                                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.edit')): ?>
                                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'shipped', 'dispatched'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-pencil-square me-1"></i> Edit Order
                                                         </button>
+                                                        <?php endif; ?>
+                                                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.cancel')): ?>
                                                         <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(order.id, order.order_no || order.order_number)" x-show="!['delivered', 'cancelled', 'returned'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-x-circle me-1"></i> Cancel Order
                                                         </button>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                             </td>

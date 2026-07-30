@@ -86,6 +86,60 @@
         <!-- Main Content -->
         <main id="main-content" class="admin-main" style="<?php echo e($hideSidebar ? 'margin-left: 0;' : ''); ?>">
             <div class="container-fluid p-4 p-lg-5">
+                
+                <?php if(!request()->routeIs('dashboard') && !request()->routeIs('inventory.dashboard')): ?>
+                    <?php
+                        $segmentMap = [
+                            'orders' => 'Order Management',
+                            'invoices' => 'Order Management',
+                            'payments' => 'Order Management',
+                            'refunds' => 'Order Management',
+                            'returns' => 'Order Management',
+                            'credit-notes' => 'Order Management',
+                            'order-reasons' => 'Order Management',
+                            'catalog' => 'Catalog Management',
+                            'promotions' => 'Sales & Marketing',
+                            'inventory' => 'Inventory & Stock',
+                            'procurement' => 'Procurement',
+                            'shipping' => 'Logistics & Warehouses',
+                            'customers' => 'User & Customer Admin',
+                            'users' => 'User & Customer Admin',
+                            'roles-permissions' => 'User & Customer Admin',
+                            'villages' => 'User & Customer Admin',
+                            'customer-settings' => 'User & Customer Admin',
+                            'call-tags-admin' => 'User & Customer Admin',
+                            'chat' => 'Utilities & Tools',
+                            'messages' => 'Utilities & Tools',
+                            'calendar' => 'Utilities & Tools',
+                            'files' => 'Utilities & Tools',
+                            'forms' => 'Utilities & Tools',
+                            'security' => 'Utilities & Tools',
+                            'admin' => 'Utilities & Tools',
+                        ];
+                        $firstSegment = request()->segment(1);
+                        $moduleName = $segmentMap[$firstSegment] ?? 'Home';
+                    ?>
+                    <nav aria-label="breadcrumb" class="mb-4">
+                        <ol class="breadcrumb m-0 fs-14 fw-semibold">
+                            <li class="breadcrumb-item text-muted">
+                                <?php if($moduleName === 'Home'): ?>
+                                    <a href="<?php echo e(route('dashboard')); ?>" class="text-decoration-none text-muted"><i class="bi bi-house-door-fill me-1"></i>Home</a>
+                                <?php else: ?>
+                                    <?php echo e($moduleName); ?>
+
+                                <?php endif; ?>
+                            </li>
+                            <?php $__currentLoopData = request()->segments(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $segment): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <?php if(!$loop->last): ?>
+                                    <li class="breadcrumb-item text-capitalize"><a href="<?php echo e(url(implode('/', array_slice(request()->segments(), 0, $loop->iteration)))); ?>" class="text-decoration-none text-muted"><?php echo e(str_replace('-', ' ', $segment)); ?></a></li>
+                                <?php else: ?>
+                                    <li class="breadcrumb-item active text-capitalize text-primary" aria-current="page"><?php echo e(str_replace('-', ' ', $segment)); ?></li>
+                                <?php endif; ?>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </ol>
+                    </nav>
+                <?php endif; ?>
+                
                 <?php echo $__env->yieldContent('content'); ?>
             </div>
         </main>

@@ -41,17 +41,20 @@
                     searchQuery: '',
                     items: [
                         { name: 'Dashboard', path: '{{ route('dashboard') }}', icon: 'bi bi-grid-1x2-fill', group: 'Main' },
+                        { name: 'Warehouse Dashboard', path: '{{ route('inventory.dashboard') }}', icon: 'bi bi-grid-fill', group: 'Main' },
                         { name: 'Analytics', path: '{{ route('analytics') }}', icon: 'bi bi-bar-chart-line-fill', group: 'Main' },
                         { name: 'Reports', path: '{{ route('reports') }}', icon: 'bi bi-file-earmark-bar-graph-fill', group: 'Main' },
                         
                         { name: 'Orders', path: '{{ route('orders') }}', icon: 'bi bi-bag-check-fill', group: 'Sales & Marketing' },
                         { name: 'Coupon Codes', path: '{{ route('promotions.coupons') }}', icon: 'bi bi-ticket-perforated-fill', group: 'Sales & Marketing' },
                         { name: 'Offers & Deals', path: '{{ route('promotions.offers') }}', icon: 'bi bi-star-fill', group: 'Sales & Marketing' },
+                        { name: 'Referral Programs', path: '{{ route('referrals.programs.index') }}', icon: 'bi bi-people-fill', group: 'Sales & Marketing' },
                         
                         { name: 'Invoices', path: '{{ route('invoices.index') }}', icon: 'bi bi-receipt', group: 'Billing & Payments' },
                         { name: 'Payments', path: '{{ route('payments.index') }}', icon: 'bi bi-credit-card', group: 'Billing & Payments' },
                         { name: 'Refunds', path: '{{ route('refunds.index') }}', icon: 'bi bi-cash-coin', group: 'Billing & Payments' },
                         { name: 'Returns', path: '{{ route('returns.index') }}', icon: 'bi bi-arrow-return-left', group: 'Billing & Payments' },
+                        { name: 'Credit Notes', path: '{{ route('credit-notes.index') }}', icon: 'bi bi-journal-text', group: 'Billing & Payments' },
                         
                         { name: 'Shipments & Tracking', path: '{{ route('shipping.shipments') }}', icon: 'bi bi-geo-alt-fill', group: 'Logistics & Warehouses' },
                         { name: 'Shipping Services', path: '{{ route('shipping.services') }}', icon: 'bi bi-gear-wide-connected', group: 'Logistics & Warehouses' },
@@ -60,6 +63,9 @@
                         { name: 'Stock Levels', path: '{{ route('inventory.stock-management') }}', icon: 'bi bi-box-seam-fill', group: 'Inventory & Stock' },
                         { name: 'Stock Transfers', path: '{{ route('inventory.stock-transfers') }}', icon: 'bi bi-arrow-left-right', group: 'Inventory & Stock' },
                         { name: 'Adjustments', path: '{{ route('inventory.adjustments') }}', icon: 'bi bi-sliders2', group: 'Inventory & Stock' },
+                        
+                        { name: 'Purchase Orders', path: '{{ route('procurement.purchase-orders.index') }}', icon: 'bi bi-cart-check-fill', group: 'Procurement' },
+                        { name: 'Goods Receipts', path: '{{ route('procurement.goods-receipts.index') }}', icon: 'bi bi-box-arrow-in-down', group: 'Procurement' },
                         
                         { name: 'Products', path: '{{ route('catalog.products') }}', icon: 'bi bi-box-seam-fill', group: 'Catalog Management' },
                         { name: 'Categories', path: '{{ route('catalog.categories') }}', icon: 'bi bi-diagram-3-fill', group: 'Catalog Management' },
@@ -72,8 +78,10 @@
                         { name: 'Users', path: '{{ route('users') }}', icon: 'bi bi-person-fill-gear', group: 'User & Customer Admin' },
                         { name: 'Roles & Permissions', path: '{{ route('roles-permissions') }}', icon: 'bi bi-shield-lock-fill', group: 'User & Customer Admin' },
                         { name: 'Customers', path: '{{ route('customers') }}', icon: 'bi bi-person-lines-fill', group: 'User & Customer Admin' },
+                        { name: 'Customer Settings', path: '{{ route('customer-settings.index') }}', icon: 'bi bi-person-gear', group: 'User & Customer Admin' },
                         { name: 'Villages', path: '{{ route('villages') }}', icon: 'bi bi-geo-alt-fill', group: 'User & Customer Admin' },
                         { name: 'Order Reasons', path: '{{ route('order.reasons') }}', icon: 'bi bi-list-task', group: 'User & Customer Admin' },
+                        { name: 'Call Tags', path: '{{ route('call-tags.index') }}', icon: 'bi bi-tags-fill', group: 'User & Customer Admin' },
                         
                         { name: 'Team Chat', path: '{{ route('chat.index') }}', icon: 'bi bi-chat-text-fill', group: 'Utilities & Tools' },
                         { name: 'Messages', path: '{{ route('messages') }}', icon: 'bi bi-chat-dots-fill', group: 'Utilities & Tools' },
@@ -81,6 +89,7 @@
                         { name: 'Files', path: '{{ route('files') }}', icon: 'bi bi-folder2-open', group: 'Utilities & Tools' },
                         { name: 'Forms', path: '{{ route('forms') }}', icon: 'bi bi-ui-checks-grid', group: 'Utilities & Tools' },
                         { name: 'Security', path: '{{ route('security') }}', icon: 'bi bi-shield-fill-check', group: 'Utilities & Tools' },
+                        { name: 'Audit Logs', path: '{{ route('admin.audit-logs.index') }}', icon: 'bi bi-journal-medical', group: 'Utilities & Tools' },
                         { name: 'Help & Support', path: '{{ route('help') }}', icon: 'bi bi-question-circle-fill', group: 'Utilities & Tools' },
                         { name: 'API Documentation', path: '/docs/api', icon: 'bi bi-file-earmark-code-fill', group: 'Utilities & Tools' }
                     ],

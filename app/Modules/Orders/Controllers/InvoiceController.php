@@ -9,6 +9,7 @@ use App\Services\FinancialService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Validation\ValidationException;
 
@@ -57,8 +58,19 @@ class InvoiceController extends Controller implements HasMiddleware
         $invoices = $query->paginate($request->integer('limit', 10));
 
         if ($request->wantsJson() || $request->ajax()) {
-            $totalInvoiced = (float) Invoice::sum('net_amount');
-            $collectedAmount = (float) Payment::where('status', 'completed')->sum('amount');
+            $user = $request->user();
+
+            // Scope stats to what the requesting user can see
+            $statsQuery = Invoice::query();
+            if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
+                $statsQuery->whereHas('order', fn ($q) => $q->where('created_by', $user->id));
+            }
+
+            $invoiceIds = $statsQuery->pluck('id');
+
+            $totalInvoiced = (float) Invoice::whereIn('id', $invoiceIds)->sum('net_amount');
+            $collectedAmount = (float) Payment::where('status', 'completed')
+                ->whereIn('invoice_id', $invoiceIds)->sum('amount');
             $pendingAmount = max(0, $totalInvoiced - $collectedAmount);
 
             $stats = [
@@ -90,20 +102,28 @@ class InvoiceController extends Controller implements HasMiddleware
     public function bulkStatus(Request $request, FinancialService $financialService)
     {
         $validated = $request->validate([
-            'ids' => 'required|array',
-            'ids.*' => 'exists:invoices,id',
+            'ids'    => 'required|array',
+            'ids.*'  => 'exists:invoices,id',
             'status' => 'required|in:paid,unpaid,cancelled',
         ]);
 
-        $invoices = Invoice::whereIn('id', $validated['ids'])->get();
+        $user = $request->user();
 
-        foreach ($invoices as $invoice) {
-            if ($validated['status'] === 'paid' && $invoice->due_amount > 0) {
-                $financialService->processPayment($invoice, $invoice->due_amount, 'bank_transfer', 'BULK-AUTO');
-            } else {
+        // Scope: prevent users from updating invoices for orders they don't own
+        $query = Invoice::whereIn('id', $validated['ids']);
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
+            $query->whereHas('order', fn ($q) => $q->where('created_by', $user->id));
+        }
+
+        $invoices = $query->get();
+
+        DB::transaction(function () use ($invoices, $validated) {
+            foreach ($invoices as $invoice) {
+                // Never auto-create phantom payment records for bulk status changes.
+                // Simply update the invoice status directly.
                 $invoice->update(['status' => $validated['status']]);
             }
-        }
+        });
 
         return response()->json([
             'success' => true,
@@ -148,7 +168,16 @@ class InvoiceController extends Controller implements HasMiddleware
             'ids.*' => 'exists:invoices,id',
         ]);
 
-        $invoices = Invoice::whereIn('id', $validated['ids'])->get();
+        $user = $request->user();
+
+        $query = Invoice::whereIn('id', $validated['ids']);
+
+        // Scope: non-admin users can only export invoices for their own orders
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
+            $query->whereHas('order', fn ($q) => $q->where('created_by', $user->id));
+        }
+
+        $invoices = $query->get();
 
         $headers = [
             'Content-Type' => 'text/csv',

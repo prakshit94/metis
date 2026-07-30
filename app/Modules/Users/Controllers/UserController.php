@@ -29,7 +29,7 @@ class UserController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:user-view', only: ['index', 'show', 'loginHistory']),
             new Middleware('permission:user-create', only: ['store']),
-            new Middleware('permission:user-edit', only: ['toggleActive', 'syncRoles', 'syncPermissions']),
+            new Middleware('permission:user-edit', only: ['update', 'toggleActive', 'syncRoles', 'syncPermissions']),
             new Middleware('permission:user-delete', only: ['destroy', 'forceDelete']),
             new Middleware('permission:user-restore', only: ['restore']),
         ];
@@ -66,10 +66,7 @@ class UserController extends Controller implements HasMiddleware
 
         $activeApiUserIds = DB::table('personal_access_tokens')
             ->where('tokenable_type', User::class)
-            ->where(function ($query) {
-                $query->where('last_used_at', '>=', now()->subMinutes(15))
-                    ->orWhere('created_at', '>=', now()->subMinutes(15));
-            })
+            ->where('last_used_at', '>=', now()->subMinutes(15))
             ->pluck('tokenable_id')
             ->filter()
             ->toArray();

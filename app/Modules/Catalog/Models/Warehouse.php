@@ -30,6 +30,15 @@ class Warehouse extends Model implements Auditable
         'is_active' => 'boolean',
     ];
 
+    /**
+     * Scope to active warehouses — uses the canonical `status = 'active'` column.
+     * Use this instead of ad-hoc where('status', 'active') or where('is_active', true).
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
     public function stocks()
     {
         return $this->hasMany(Stock::class);

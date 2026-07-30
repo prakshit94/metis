@@ -86,6 +86,59 @@
         <!-- Main Content -->
         <main id="main-content" class="admin-main" style="{{ $hideSidebar ? 'margin-left: 0;' : '' }}">
             <div class="container-fluid p-4 p-lg-5">
+                {{-- ACTIVE PATH BREADCRUMBS --}}
+                @if(!request()->routeIs('dashboard') && !request()->routeIs('inventory.dashboard'))
+                    @php
+                        $segmentMap = [
+                            'orders' => 'Order Management',
+                            'invoices' => 'Order Management',
+                            'payments' => 'Order Management',
+                            'refunds' => 'Order Management',
+                            'returns' => 'Order Management',
+                            'credit-notes' => 'Order Management',
+                            'order-reasons' => 'Order Management',
+                            'catalog' => 'Catalog Management',
+                            'promotions' => 'Sales & Marketing',
+                            'inventory' => 'Inventory & Stock',
+                            'procurement' => 'Procurement',
+                            'shipping' => 'Logistics & Warehouses',
+                            'customers' => 'User & Customer Admin',
+                            'users' => 'User & Customer Admin',
+                            'roles-permissions' => 'User & Customer Admin',
+                            'villages' => 'User & Customer Admin',
+                            'customer-settings' => 'User & Customer Admin',
+                            'call-tags-admin' => 'User & Customer Admin',
+                            'chat' => 'Utilities & Tools',
+                            'messages' => 'Utilities & Tools',
+                            'calendar' => 'Utilities & Tools',
+                            'files' => 'Utilities & Tools',
+                            'forms' => 'Utilities & Tools',
+                            'security' => 'Utilities & Tools',
+                            'admin' => 'Utilities & Tools',
+                        ];
+                        $firstSegment = request()->segment(1);
+                        $moduleName = $segmentMap[$firstSegment] ?? 'Home';
+                    @endphp
+                    <nav aria-label="breadcrumb" class="mb-4">
+                        <ol class="breadcrumb m-0 fs-14 fw-semibold">
+                            <li class="breadcrumb-item text-muted">
+                                @if($moduleName === 'Home')
+                                    <a href="{{ route('dashboard') }}" class="text-decoration-none text-muted"><i class="bi bi-house-door-fill me-1"></i>Home</a>
+                                @else
+                                    {{ $moduleName }}
+                                @endif
+                            </li>
+                            @foreach(request()->segments() as $segment)
+                                @if(!$loop->last)
+                                    <li class="breadcrumb-item text-capitalize"><a href="{{ url(implode('/', array_slice(request()->segments(), 0, $loop->iteration))) }}" class="text-decoration-none text-muted">{{ str_replace('-', ' ', $segment) }}</a></li>
+                                @else
+                                    <li class="breadcrumb-item active text-capitalize text-primary" aria-current="page">{{ str_replace('-', ' ', $segment) }}</li>
+                                @endif
+                            @endforeach
+                        </ol>
+                    </nav>
+                @endif
+                
                 @yield('content')
             </div>
         </main>

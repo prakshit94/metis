@@ -591,10 +591,12 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['role-create', 'role-edit', 'permission-create', 'permission-edit'])): ?>
                     <button type="submit" class="btn btn-primary px-4" :disabled="saving">
                         <span x-show="saving" class="spinner-border spinner-border-sm me-2"></span>
                         <span x-text="editingId ? 'Save Changes' : 'Create Access'"></span>
                     </button>
+                    <?php endif; ?>
                 </div>
         </form>
     </div>
@@ -728,9 +730,11 @@
             </div>
             <div class="modal-footer border-top-0 pt-0">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['role-edit', 'permission-edit'])): ?>
                 <button type="button" class="btn btn-primary px-4" x-show="item && !item.isDeleted" @click="editFromProfile()">
                     <i class="bi bi-pencil me-1"></i>Edit
                 </button>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -777,10 +781,12 @@
             </div>
             <div class="modal-footer bg-body-tertiary border-top-0 rounded-bottom-3">
                 <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['role-import', 'permission-import'])): ?>
                 <button type="button" class="btn btn-primary px-4 shadow-sm" @click="importItems()" :disabled="importing || !file">
                     <span x-show="importing" class="spinner-border spinner-border-sm me-2"></span>
                     <span x-text="importing ? 'Importing...' : 'Import Records'"></span>
                 </button>
+                <?php endif; ?>
             </div>
         </div>
     </div>

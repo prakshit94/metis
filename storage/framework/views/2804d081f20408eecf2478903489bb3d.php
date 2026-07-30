@@ -35,10 +35,12 @@
                             <h5 class="mb-0 fw-bold">Messages</h5>
                             <small class="text-muted" x-text="onlineLabel"></small>
                         </div>
+                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('chat-create')): ?>
                         <button type="button" @click="showGroupModal = true; groupError = ''" class="btn btn-primary btn-sm d-flex align-items-center gap-1" title="Create group">
                             <i class="bi bi-people-fill"></i>
                             <span class="d-none d-xl-inline">New Group</span>
                         </button>
+                        <?php endif; ?>
                     </div>
                     <div class="position-relative">
                         <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events:none;"></i>
@@ -247,8 +249,12 @@
                                         
                                         <div class="mt-1 d-flex gap-2" :class="message.sender_id === currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                             <button type="button" @click="setReply(message)" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">REPLY</button>
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('chat-edit')): ?>
                                             <button type="button" @click="startEdit(message)" x-show="message.sender_id === currentUserId" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">EDIT</button>
+                                            <?php endif; ?>
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('chat-delete')): ?>
                                             <button type="button" @click="deleteMessage(message)" :disabled="busyMessageId === message.id" class="btn btn-link btn-sm p-0 text-danger text-decoration-none" style="font-size: 10px;">DELETE</button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -317,9 +323,11 @@
                             </div>
                             <h5 class="fw-bold mb-1">Your Messages</h5>
                             <p class="text-muted small mb-3">Select a conversation or start a new one</p>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('chat-create')): ?>
                             <button type="button" @click="showGroupModal = true" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-plus-circle me-1"></i>New Group
                             </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </template>
@@ -499,10 +507,12 @@
                 </div>
                 <div class="d-flex justify-content-end gap-2 p-4 pt-0">
                     <button type="button" @click="showGroupModal = false; groupError = ''" class="btn btn-light fw-bold" :disabled="groupBusy">Cancel</button>
+                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('chat-create')): ?>
                     <button type="submit" class="btn btn-primary fw-bold px-4" :disabled="groupBusy || !groupForm.name.trim()">
                         <span x-show="groupBusy" class="spinner-border spinner-border-sm me-2"></span>
                         <span x-text="groupBusy ? 'Creating...' : 'Create Group'"></span>
                     </button>
+                    <?php endif; ?>
                 </div>
             </form>
         </div>
@@ -534,7 +544,9 @@
                         <div class="col-md-6 border-end-md">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold text-muted text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Group Details</h6>
+                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('chat-edit')): ?>
                                 <button type="button" x-show="canManageSettings" @click="updateGroup" :disabled="groupBusy" class="btn btn-primary btn-sm fw-semibold px-3 shadow-sm">Save</button>
+                                <?php endif; ?>
                             </div>
                             <template x-if="canManageSettings">
                                 <div>
@@ -567,16 +579,20 @@
                             
                             <h6 class="fw-bold text-danger mb-3" style="font-size:0.75rem; letter-spacing:0.5px; text-transform:uppercase;">Danger Zone</h6>
                             <button type="button" x-show="!canManageSettings" @click="leaveGroup" :disabled="groupBusy" class="btn btn-outline-danger w-100 fw-semibold">Leave Group</button>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('chat-delete')): ?>
                             <button type="button" x-show="canManageSettings" @click="deleteGroup" :disabled="groupBusy" class="btn btn-danger w-100 fw-semibold shadow-sm">Delete Group</button>
+                            <?php endif; ?>
                         </div>
 
                         <!-- Members -->
                         <div class="col-md-6 d-flex flex-column" style="max-height: 500px;">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold text-muted text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Members (<span x-text="activeConversation?.active_members?.length"></span>)</h6>
+                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('chat-edit')): ?>
                                 <button type="button" x-show="canManageSettings" @click="showAddMember = !showAddMember" class="btn btn-outline-primary btn-sm fw-semibold px-3 border shadow-sm">
                                     <i class="bi bi-person-plus-fill me-1"></i> Add
                                 </button>
+                                <?php endif; ?>
                             </div>
 
                             <div x-show="showAddMember" x-cloak class="mb-3 bg-body-tertiary p-3 rounded-3 border">

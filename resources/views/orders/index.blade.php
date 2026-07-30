@@ -870,24 +870,32 @@
                                         
                                         <!-- Context Actions -->
                                         <template x-if="order.status === 'pending'">
+                                            @can('orders.confirm')
                                             <li><a class="dropdown-item" href="#" @click.prevent="confirmOrder(order)">
                                                 <i class="bi bi-check-circle me-2"></i>Confirm Order
                                             </a></li>
+                                            @endcan
                                         </template>
                                         <template x-if="order.status === 'confirmed'">
+                                            @can('orders.processing')
                                             <li><a class="dropdown-item" href="#" @click.prevent="processOrder(order)">
                                                 <i class="bi bi-gear me-2"></i>Process Order
                                             </a></li>
+                                            @endcan
                                         </template>
                                         <template x-if="order.status === 'processing'">
+                                            @can('orders.ship')
                                             <li><a class="dropdown-item" href="#" @click.prevent="openShipModal(order)">
                                                 <i class="bi bi-truck me-2"></i>Ship (Ready to Ship)
                                             </a></li>
+                                            @endcan
                                         </template>
                                         <template x-if="order.status === 'ready_to_ship'">
+                                            @can('orders.dispatch')
                                             <li><a class="dropdown-item" href="#" @click.prevent="dispatchOrder(order)">
                                                 <i class="bi bi-send me-2"></i>Dispatch
                                             </a></li>
+                                            @endcan
                                         </template>
                                         <template x-if="order.status === 'dispatched' || order.status === 'shipped'">
                                             @can('orders.deliver')
@@ -916,15 +924,21 @@
                                         </a></li>
                                         @endcan
                                         <li><hr class="dropdown-divider"></li>
+                                        @can('orders.invoice_pdf')
                                         <li><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
                                             <i class="bi bi-file-pdf me-2"></i>Print Invoice
                                         </a></li>
+                                        @endcan
+                                        @can('orders.cod')
                                         <li><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
                                             <i class="bi bi-file-earmark-pdf me-2"></i>Print COD Receipt
                                         </a></li>
+                                        @endcan
+                                        @can('orders.receipt')
                                         <li><a class="dropdown-item" href="#" @click.prevent="printReceipt(order)">
                                             <i class="bi bi-receipt me-2"></i>Print Receipt
                                         </a></li>
+                                        @endcan
                                     </ul>
                                 </div>
                             </td>
@@ -969,7 +983,7 @@
 </div>
 
 <!-- ═══════════════════════ Order Details Modal ═══════════════════════════ -->
-<div class="modal fade order-detail-modal" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+<div class="modal fade order-detail-modal" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true" style="z-index: 1070;">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content shadow-lg border-0 rounded-4" x-show="selectedOrder">
             <template x-if="selectedOrder">
@@ -1204,22 +1218,30 @@
                                 <div class="d-flex flex-wrap gap-2 mb-4 w-100">
                                     <template x-if="selectedOrder.invoice">
                                         <div class="d-flex flex-wrap gap-2 w-100">
+                                            @can('orders.invoice_pdf')
                                             <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printInvoice(selectedOrder)">
                                                 <i class="bi bi-file-earmark-pdf me-2"></i>Print Invoice
                                             </button>
+                                            @endcan
+                                            @can('orders.cod')
                                             <button class="btn btn-info text-white flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printCOD(selectedOrder)">
                                                 <i class="bi bi-file-earmark-pdf me-2"></i>COD Receipt
                                             </button>
+                                            @endcan
                                         </div>
                                     </template>
                                     <template x-if="!selectedOrder.invoice">
+                                        @can('orders.generate_invoice')
                                         <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="generateAndPrintInvoice(selectedOrder)">
                                             <i class="bi bi-receipt-cutoff me-2"></i>Generate Invoice & Print
                                         </button>
+                                        @endcan
                                     </template>
+                                    @can('orders.receipt')
                                     <button class="btn btn-outline-secondary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printReceipt(selectedOrder)">
                                         <i class="bi bi-receipt me-2"></i>Receipt
                                     </button>
+                                    @endcan
                                 </div>
                                 
                                 <!-- Order Actions -->
@@ -1233,24 +1255,32 @@
                                                 <i class="bi bi-pencil-square me-1"></i>Edit
                                             </button>
                                             <template x-if="selectedOrder.status === 'pending'">
+                                                @can('orders.confirm')
                                                 <button class="btn btn-sm btn-primary flex-grow-1 shadow-sm fw-semibold" @click="confirmOrder(selectedOrder)">
                                                     <i class="bi bi-check-circle me-1"></i>Confirm
                                                 </button>
+                                                @endcan
                                             </template>
                                             <template x-if="selectedOrder.status === 'confirmed'">
+                                                @can('orders.processing')
                                                 <button class="btn btn-sm btn-info text-white flex-grow-1 shadow-sm fw-semibold" @click="processOrder(selectedOrder)">
                                                     <i class="bi bi-gear me-1"></i>Process
                                                 </button>
+                                                @endcan
                                             </template>
                                             <template x-if="selectedOrder.status === 'processing'">
+                                                @can('orders.ship')
                                                 <button class="btn btn-sm btn-warning text-dark flex-grow-1 shadow-sm fw-semibold" @click="openShipModal(selectedOrder)">
                                                     <i class="bi bi-truck me-1"></i>Ready to Ship
                                                 </button>
+                                                @endcan
                                             </template>
                                             <template x-if="selectedOrder.status === 'ready_to_ship'">
+                                                @can('orders.dispatch')
                                                 <button class="btn btn-sm btn-primary flex-grow-1 shadow-sm fw-semibold" @click="dispatchOrder(selectedOrder)">
                                                     <i class="bi bi-send me-1"></i>Dispatch
                                                 </button>
+                                                @endcan
                                             </template>
                                             <template x-if="selectedOrder.status === 'dispatched' || selectedOrder.status === 'shipped'">
                                                 @can('orders.deliver')

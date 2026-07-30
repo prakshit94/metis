@@ -37,7 +37,7 @@ class FinancialService
             if ($baseNo === $order->order_no) {
                 $baseNo = 'PAY-'.$order->order_no;
             }
-            $count = Payment::where('order_id', $order->id)->count();
+            $count = Payment::where('order_id', $order->id)->lockForUpdate()->count();
             $paymentNo = $count > 0 ? $baseNo.'-'.($count + 1) : $baseNo;
 
             $payment = Payment::create([
@@ -61,10 +61,18 @@ class FinancialService
     public function processRefund(OrderReturn $return, float $amount, string $method, ?string $transactionId = null): Refund
     {
         return DB::transaction(function () use ($return, $amount, $method, $transactionId) {
-            $return = OrderReturn::lockForUpdate()->findOrFail($return->id);
+            $return = OrderReturn::with('order')->lockForUpdate()->findOrFail($return->id);
 
             if ($amount <= 0) {
                 throw ValidationException::withMessages(['amount' => 'Refund amount must be greater than zero.']);
+            }
+
+            // Prevent over-refunding: total refunded must not exceed the original order amount
+            $maxRefundable = (float) ($return->order->net_amount ?? 0) - (float) $return->refund_amount;
+            if ($amount > $maxRefundable + 0.001) { // small epsilon for float precision
+                throw ValidationException::withMessages([
+                    'amount' => 'Refund amount cannot exceed the refundable balance of ₹'.number_format($maxRefundable, 2).'.',
+                ]);
             }
             $order = $return->order;
             $invoice = $order->invoice;
@@ -114,12 +122,21 @@ class FinancialService
     public function issueCreditNote(OrderReturn $return, float $amount): CreditNote
     {
         return DB::transaction(function () use ($return, $amount) {
-            $return = OrderReturn::lockForUpdate()->findOrFail($return->id);
+            $return = OrderReturn::with('order')->lockForUpdate()->findOrFail($return->id);
 
             if ($amount <= 0) {
                 throw ValidationException::withMessages(['amount' => 'Credit Note amount must be greater than zero.']);
             }
+
+            // Prevent over-crediting: total credit notes must not exceed the original order amount
             $order = $return->order;
+            $maxCreditable = (float) ($order->net_amount ?? 0) - (float) $return->credit_note_amount;
+            if ($amount > $maxCreditable + 0.001) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Credit note amount cannot exceed the remaining creditable balance of ₹'.number_format($maxCreditable, 2).'.',
+                ]);
+            }
+
             $invoice = $order->invoice;
 
             $creditNote = CreditNote::create([

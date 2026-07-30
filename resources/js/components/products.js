@@ -257,8 +257,8 @@ document.addEventListener('alpine:init', () => {
     calculateStats() {
       this.stats.total = this.products.length;
       this.stats.active = this.products.filter(p => ['published', 'active'].includes(String(p.status || '').toLowerCase())).length;
-      this.stats.inStock = this.products.filter(p => p.stock > 20).length;
-      this.stats.lowStock = this.products.filter(p => p.stock > 0 && p.stock <= 20).length;
+      this.stats.inStock = this.products.filter(p => p.stock > (p.min_stock_level || 10)).length;
+      this.stats.lowStock = this.products.filter(p => p.stock > 0 && p.stock <= (p.min_stock_level || 10)).length;
       this.stats.outOfStock = this.products.filter(p => p.stock <= 0).length;
       this.stats.totalValue = this.products.reduce((sum, p) => sum + (p.price * p.stock), 0);
 
@@ -310,8 +310,8 @@ document.addEventListener('alpine:init', () => {
         const matchesCategory = !this.categoryFilter || product.category === this.categoryFilter;
         
         const matchesStock = !this.stockFilter || 
-          (this.stockFilter === 'in-stock' && product.stock > 20) ||
-          (this.stockFilter === 'low-stock' && product.stock > 0 && product.stock <= 20) ||
+          (this.stockFilter === 'in-stock' && product.stock > (product.min_stock_level || 10)) ||
+          (this.stockFilter === 'low-stock' && product.stock > 0 && product.stock <= (product.min_stock_level || 10)) ||
           (this.stockFilter === 'out-of-stock' && product.stock === 0);
 
         return matchesSearch && matchesCategory && matchesStock;

@@ -71,7 +71,7 @@ class OrderController extends Controller implements HasMiddleware
             'updater',
             'orderReturns',
             'appliedOffer',
-            'statusLogs.user',
+            'statusLogs' => fn ($q) => $q->with('user')->latest(),
         ])->withCount('items');
 
         $user = auth()->user();
@@ -524,7 +524,7 @@ class OrderController extends Controller implements HasMiddleware
                 'billingAddress.village.services',
                 'appliedOffer:id,name,discount_type,value',
                 'creator:id,first_name,last_name,name',
-                'statusLogs.user',
+                'statusLogs' => fn ($q) => $q->with('user')->latest(),
             ])->find(request()->integer('order_id'));
 
             if ($initialOrder && ! $initialCustomer) {
@@ -1256,10 +1256,16 @@ class OrderController extends Controller implements HasMiddleware
             'ids.*' => 'exists:orders,id',
         ]);
 
-        $orders = Order::with(['party', 'warehouse', 'items.product', 'shipments', 'billingAddress', 'shippingAddress'])
+        $user = auth()->user();
+
+        // Apply the same permission scope used in index() — prevents data-leak via ID enumeration
+        $query = Order::with(['party', 'warehouse', 'items.product', 'shipments', 'billingAddress', 'shippingAddress'])
             ->whereIn('id', $validated['ids'])
-            ->orderBy('id')
-            ->get();
+            ->orderBy('id');
+
+        $this->applyOrderActionPermissionScope($query, $user);
+
+        $orders = $query->get();
 
         $filename = 'orders-export-selected-'.now()->format('Ymd_His').'.csv';
 

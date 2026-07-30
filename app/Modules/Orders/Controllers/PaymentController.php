@@ -7,6 +7,7 @@ use App\Modules\Orders\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 
 class PaymentController extends Controller implements HasMiddleware
@@ -55,11 +56,23 @@ class PaymentController extends Controller implements HasMiddleware
         $payments = $query->paginate($request->integer('limit', 10));
 
         if ($request->wantsJson() || $request->ajax()) {
+            $user = $request->user();
+
+            // Scope stats to what the requesting user can see
+            $userOrderIds = null;
+            if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
+                $userOrderIds = \App\Modules\Orders\Models\Order::where('created_by', $user->id)->pluck('id');
+            }
+
+            $statsQuery = fn () => $userOrderIds
+                ? Payment::whereIn('order_id', $userOrderIds)
+                : Payment::query();
+
             $stats = [
-                'total_volume' => (float) Payment::sum('amount'),
-                'completed_amount' => (float) Payment::where('status', 'completed')->sum('amount'),
-                'authorized_amount' => (float) Payment::whereIn('status', ['authorized', 'pending'])->sum('amount'),
-                'failed_amount' => (float) Payment::where('status', 'failed')->sum('amount'),
+                'total_volume'       => (float) $statsQuery()->sum('amount'),
+                'completed_amount'   => (float) $statsQuery()->where('status', 'completed')->sum('amount'),
+                'authorized_amount'  => (float) $statsQuery()->whereIn('status', ['authorized', 'pending'])->sum('amount'),
+                'failed_amount'      => (float) $statsQuery()->where('status', 'failed')->sum('amount'),
             ];
 
             return response()->json([
@@ -93,17 +106,18 @@ class PaymentController extends Controller implements HasMiddleware
     public function bulkStatus(Request $request)
     {
         $validated = $request->validate([
-            'ids' => 'required|array',
-            'ids.*' => 'exists:payments,id',
+            'ids'    => 'required|array',
+            'ids.*'  => 'exists:payments,id',
             'status' => 'required|in:pending,authorized,completed,failed,refunded',
         ]);
 
-        $payments = Payment::whereIn('id', $validated['ids'])->get();
-
-        foreach ($payments as $payment) {
-            // Updating model instance ensures boot / saved events trigger accounting & invoice updates
-            $payment->update(['status' => $validated['status']]);
-        }
+        DB::transaction(function () use ($validated) {
+            $payments = Payment::whereIn('id', $validated['ids'])->get();
+            foreach ($payments as $payment) {
+                // Updating model instance ensures boot / saved events trigger accounting & invoice updates
+                $payment->update(['status' => $validated['status']]);
+            }
+        });
 
         return response()->json([
             'success' => true,
@@ -114,7 +128,7 @@ class PaymentController extends Controller implements HasMiddleware
     public function update(Request $request, Payment $payment)
     {
         $validated = $request->validate([
-            'amount' => 'required|numeric|min:0',
+            'amount'         => 'required|numeric|min:0.01',
             'payment_method' => 'required|string',
             'transaction_id' => 'nullable|string',
             'status' => 'required|in:pending,authorized,completed,failed,refunded',
@@ -137,7 +151,22 @@ class PaymentController extends Controller implements HasMiddleware
             'ids.*' => 'exists:payments,id',
         ]);
 
-        $payments = Payment::whereIn('id', $validated['ids'])->with(['invoice.order.party', 'order.party'])->get();
+        $user = $request->user();
+
+        // Scope to payments the user is authorised to see:
+        // Super Admin / Admin / view-all-data see everything.
+        // Others only see payments for orders they created.
+        $query = Payment::whereIn('id', $validated['ids'])
+            ->with(['invoice.order.party', 'order.party']);
+
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
+            $query->where(function ($q) use ($user) {
+                $q->whereHas('order', fn ($oq) => $oq->where('created_by', $user->id))
+                  ->orWhereHas('invoice.order', fn ($oq) => $oq->where('created_by', $user->id));
+            });
+        }
+
+        $payments = $query->get();
 
         $headers = [
             'Content-Type' => 'text/csv',

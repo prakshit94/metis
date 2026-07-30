@@ -32,8 +32,6 @@ class StockTransferController extends Controller implements HasMiddleware
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('product-view');
-
         $query = StockTransfer::query()
             ->with(['fromWarehouse:id,name,code', 'toWarehouse:id,name,code'])
             ->withCount('items');
@@ -78,8 +76,6 @@ class StockTransferController extends Controller implements HasMiddleware
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('product-create');
-
         $validated = $request->validate([
             'from_warehouse_id' => 'required|exists:warehouses,id',
             'to_warehouse_id' => 'required|exists:warehouses,id|different:from_warehouse_id',
@@ -114,8 +110,6 @@ class StockTransferController extends Controller implements HasMiddleware
 
     public function show(StockTransfer $stockTransfer): JsonResponse
     {
-        $this->authorize('product-view');
-
         return response()->json([
             'data' => $stockTransfer->load(['fromWarehouse:id,name,code', 'toWarehouse:id,name,code', 'items.product:id,name,sku']),
         ]);
@@ -123,8 +117,6 @@ class StockTransferController extends Controller implements HasMiddleware
 
     public function update(Request $request, StockTransfer $stockTransfer): JsonResponse
     {
-        $this->authorize('product-edit');
-
         if ($stockTransfer->status !== 'draft') {
             return response()->json(['message' => 'Only draft transfers can be edited.'], 422);
         }
@@ -161,8 +153,6 @@ class StockTransferController extends Controller implements HasMiddleware
 
     public function destroy(StockTransfer $stockTransfer): JsonResponse
     {
-        $this->authorize('product-delete');
-
         if ($stockTransfer->status !== 'draft') {
             return response()->json(['message' => 'Only draft transfers can be deleted.'], 422);
         }
@@ -185,22 +175,17 @@ class StockTransferController extends Controller implements HasMiddleware
         ]);
 
         $action = $validated['action'];
-        $ids = $validated['ids'];
-
-        if ($action === 'delete') {
-            $this->authorize('product-delete');
-        } else {
-            $this->authorize('product-edit');
-        }
+        $ids    = $validated['ids'];
 
         $transfers = StockTransfer::whereIn('id', $ids)->get();
         $processedCount = 0;
         $failedCount = 0;
         $errors = [];
 
-        \DB::transaction(function () use ($transfers, $action, &$processedCount, &$failedCount, &$errors) {
-            foreach ($transfers as $transfer) {
-                try {
+        // Each transfer runs in its own transaction — a failure on one does not affect others
+        foreach ($transfers as $transfer) {
+            try {
+                \DB::transaction(function () use ($transfer, $action) {
                     if ($action === 'send') {
                         $this->inventoryService->sendTransfer($transfer);
                     } elseif ($action === 'receive') {
@@ -214,18 +199,18 @@ class StockTransferController extends Controller implements HasMiddleware
                         $transfer->items()->delete();
                         $transfer->delete();
                     }
-                    $processedCount++;
-                } catch (\Throwable $e) {
-                    $failedCount++;
-                    $errors[] = "Transfer {$transfer->transfer_no}: ".$e->getMessage();
-                }
+                });
+                $processedCount++;
+            } catch (\Throwable $e) {
+                $failedCount++;
+                $errors[] = "Transfer {$transfer->transfer_no}: " . $e->getMessage();
             }
-        });
+        }
 
         if ($failedCount > 0) {
             return response()->json([
                 'message' => "Processed {$processedCount} transfer(s). Failed {$failedCount} transfer(s).",
-                'errors' => $errors,
+                'errors'  => $errors,
             ], 422);
         }
 
@@ -239,7 +224,6 @@ class StockTransferController extends Controller implements HasMiddleware
      */
     public function send(StockTransfer $stockTransfer): JsonResponse
     {
-        $this->authorize('product-edit');
         try {
             $this->inventoryService->sendTransfer($stockTransfer);
         } catch (ValidationException $e) {
@@ -260,8 +244,6 @@ class StockTransferController extends Controller implements HasMiddleware
      */
     public function receive(StockTransfer $stockTransfer): JsonResponse
     {
-        $this->authorize('product-edit');
-
         try {
             $this->inventoryService->receiveTransfer($stockTransfer);
         } catch (ValidationException $e) {
@@ -282,8 +264,6 @@ class StockTransferController extends Controller implements HasMiddleware
      */
     public function cancel(StockTransfer $stockTransfer): JsonResponse
     {
-        $this->authorize('product-edit');
-
         try {
             $this->inventoryService->cancelSentTransfer($stockTransfer);
         } catch (ValidationException $e) {
@@ -304,8 +284,6 @@ class StockTransferController extends Controller implements HasMiddleware
      */
     public function options(): JsonResponse
     {
-        $this->authorize('product-view');
-
         return response()->json([
             'warehouses' => Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name', 'code', 'is_default']),
             'products' => Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']),

@@ -103,17 +103,19 @@ class InventoryService
         float $quantity,
         string $type,
         ?string $referenceType = null,
-        ?int $referenceId = null
+        ?int $referenceId = null,
+        ?int $performedBy = null
     ): void {
         StockMovement::create([
-            'product_id' => $productId,
-            'warehouse_id' => $warehouseId,
-            'quantity' => $quantity,
-            'type' => $type,
+            'product_id'     => $productId,
+            'warehouse_id'   => $warehouseId,
+            'quantity'       => $quantity,
+            'type'           => $type,
             'reference_type' => $referenceType,
-            'reference_id' => $referenceId,
-            'status' => 'active',
-            'performed_by' => auth()->id(),
+            'reference_id'   => $referenceId,
+            'status'         => 'active',
+            // Prefer explicitly passed value; fall back to HTTP auth; fall back to 0 (system)
+            'performed_by'   => $performedBy ?? auth()->id() ?? 0,
         ]);
     }
 
@@ -705,15 +707,30 @@ class InventoryService
             }
 
             foreach ($transfer->items as $item) {
-                $this->adjustInTransitQuantity(
-                    (int) $item->product_id,
-                    (int) $transfer->from_warehouse_id,
-                    (float) $item->quantity
-                );
+                $productId   = (int) $item->product_id;
+                $warehouseId = (int) $transfer->from_warehouse_id;
+                $qty         = (float) $item->quantity;
+
+                $stock = $this->getStockForUpdate($productId, $warehouseId);
+
+                // Validate sufficient physical stock before sending
+                if ((float) $stock->quantity < $qty) {
+                    throw ValidationException::withMessages([
+                        'quantity' => "Insufficient stock for product ID {$productId} in source warehouse.",
+                    ]);
+                }
+
+                // Deduct from source warehouse quantity immediately on dispatch
+                $stock->quantity     = max(0.0, (float) $stock->quantity - $qty);
+                $stock->in_transit_qty = (float) $stock->in_transit_qty + $qty;
+                $stock->save();
+
+                $this->logMovement($productId, $warehouseId, $qty, 'out', StockTransfer::class, $transfer->id);
+                $this->syncProductStatus($productId);
             }
 
             $transfer->update([
-                'status' => 'sent',
+                'status'  => 'sent',
                 'sent_at' => now(),
             ]);
         }, 3);
@@ -736,23 +753,28 @@ class InventoryService
             }
 
             foreach ($transfer->items as $item) {
-                $this->adjustInTransitQuantity(
-                    (int) $item->product_id,
-                    (int) $transfer->from_warehouse_id,
-                    -((float) $item->quantity)
-                );
+                $productId   = (int) $item->product_id;
+                $fromWh      = (int) $transfer->from_warehouse_id;
+                $toWh        = (int) $transfer->to_warehouse_id;
+                $qty         = (float) $item->quantity;
 
-                $this->_executeTransfer(
-                    (int) $item->product_id,
-                    (int) $transfer->from_warehouse_id,
-                    (int) $transfer->to_warehouse_id,
-                    (float) $item->quantity,
-                    $transfer->id
-                );
+                // Clear in_transit from source (quantity was already deducted in sendTransfer)
+                $fromStock = $this->getStockForUpdate($productId, $fromWh);
+                $fromStock->in_transit_qty = max(0.0, (float) $fromStock->in_transit_qty - $qty);
+                $fromStock->save();
+
+                // Add to destination warehouse
+                $toStock = $this->getStockForUpdate($productId, $toWh);
+                $toStock->quantity = (float) $toStock->quantity + $qty;
+                $toStock->save();
+
+                $this->logMovement($productId, $toWh, $qty, 'in', StockTransfer::class, $transfer->id);
+                $this->syncProductStatus($productId);
+                $this->syncProductStatus($productId); // sync for both warehouses
             }
 
             $transfer->update([
-                'status' => 'received',
+                'status'      => 'received',
                 'received_at' => now(),
             ]);
         }, 3);
@@ -769,8 +791,8 @@ class InventoryService
                 ->findOrFail($transfer->id);
 
             if ($transfer->status === 'draft') {
+                // Draft: nothing was deducted yet, just cancel
                 $transfer->update(['status' => 'cancelled']);
-
                 return;
             }
 
@@ -780,12 +802,19 @@ class InventoryService
                 ]);
             }
 
+            // Sent: source quantity was deducted in sendTransfer — restore it
             foreach ($transfer->items as $item) {
-                $this->adjustInTransitQuantity(
-                    (int) $item->product_id,
-                    (int) $transfer->from_warehouse_id,
-                    -((float) $item->quantity)
-                );
+                $productId   = (int) $item->product_id;
+                $warehouseId = (int) $transfer->from_warehouse_id;
+                $qty         = (float) $item->quantity;
+
+                $stock = $this->getStockForUpdate($productId, $warehouseId);
+                $stock->quantity       = (float) $stock->quantity + $qty;
+                $stock->in_transit_qty = max(0.0, (float) $stock->in_transit_qty - $qty);
+                $stock->save();
+
+                $this->logMovement($productId, $warehouseId, $qty, 'in', StockTransfer::class, $transfer->id);
+                $this->syncProductStatus($productId);
             }
 
             $transfer->update(['status' => 'cancelled']);
@@ -1089,24 +1118,25 @@ class InventoryService
                                 // Find base milestone (0 = every referral) and specific milestone for current count
                                 $baseMilestone = $activeProgram->milestones->where('required_referrals', 0)->first();
                                 $specificMilestone = $activeProgram->milestones->where('required_referrals', $successfulReferrals)->first();
-                                
+
                                 $milestonesToReward = array_filter([$baseMilestone, $specificMilestone]);
-                                
+
                                 foreach ($milestonesToReward as $milestone) {
                                     $rewardAmount = $milestone->reward_type === 'wallet' ? (float) $milestone->reward_value : 0;
-                                    
-                                    DB::table('referral_rewards')->insert([
-                                        'referrer_id' => $referrer->id,
-                                        'referred_id' => $party->id,
-                                        'order_id' => $order->id,
+
+                                    // Insert reward record first as 'pending' to allow atomic wallet update
+                                    $rewardId = DB::table('referral_rewards')->insertGetId([
+                                        'referrer_id'         => $referrer->id,
+                                        'referred_id'         => $party->id,
+                                        'order_id'            => $order->id,
                                         'referral_program_id' => $activeProgram->id,
-                                        'milestone_id' => $milestone->id,
-                                        'reward_type' => $milestone->reward_type,
-                                        'reward_amount' => $rewardAmount,
-                                        'reward_value' => $milestone->reward_type !== 'wallet' ? $milestone->reward_value : null,
-                                        'status' => 'completed',
-                                        'created_at' => now(),
-                                        'updated_at' => now(),
+                                        'milestone_id'        => $milestone->id,
+                                        'reward_type'         => $milestone->reward_type,
+                                        'reward_amount'       => $rewardAmount,
+                                        'reward_value'        => $milestone->reward_type !== 'wallet' ? $milestone->reward_value : null,
+                                        'status'              => 'pending',
+                                        'created_at'          => now(),
+                                        'updated_at'          => now(),
                                     ]);
 
                                     if ($milestone->reward_type === 'wallet') {
@@ -1115,26 +1145,34 @@ class InventoryService
                                     } elseif ($milestone->reward_type === 'coupon') {
                                         $couponCode = 'REF-' . strtoupper(Str::random(8));
                                         Coupon::create([
-                                            'code' => $couponCode,
-                                            'type' => 'fixed',
-                                            'value' => (float) $milestone->reward_value,
+                                            'code'        => $couponCode,
+                                            'type'        => 'fixed',
+                                            'value'       => (float) $milestone->reward_value,
                                             'usage_limit' => 1,
-                                            'is_active' => true,
-                                            'status' => 'active',
+                                            'expiry_date' => now()->addMonths(6), // Referral coupons expire in 6 months
+                                            'is_active'   => true,
+                                            'status'      => 'active',
                                         ]);
                                     } elseif ($milestone->reward_type === 'product') {
                                         $couponCode = 'GIFT-' . strtoupper(Str::random(8));
                                         Coupon::create([
-                                            'code' => $couponCode,
-                                            'type' => 'percentage',
-                                            'value' => 100.00,
-                                            'usage_limit' => 1,
-                                            'applicable_products' => [$milestone->reward_value], // reward_value should hold product ID
-                                            'is_active' => true,
-                                            'status' => 'active',
+                                            'code'                => $couponCode,
+                                            'type'                => 'percentage',
+                                            'value'               => 100.00,
+                                            'usage_limit'         => 1,
+                                            'expiry_date'         => now()->addMonths(6),
+                                            'applicable_products' => [$milestone->reward_value],
+                                            'is_active'           => true,
+                                            'status'              => 'active',
                                         ]);
                                     }
-                                    
+
+                                    // Mark as completed only after all side-effects succeed
+                                    DB::table('referral_rewards')->where('id', $rewardId)->update([
+                                        'status'     => 'completed',
+                                        'updated_at' => now(),
+                                    ]);
+
                                     $rewardGranted = true;
                                 }
                             }
@@ -1311,10 +1349,22 @@ class InventoryService
                     $referrer->outstanding_balance = max(0, $referrer->outstanding_balance - $reward->reward_amount);
                     $referrer->save();
                 }
+            } elseif (in_array($reward->reward_type, ['coupon', 'product'])) {
+                // Deactivate the auto-generated referral/gift coupon so it can no longer be used
+                Coupon::where('order_id', $order->id)
+                    ->orWhere(function ($q) use ($reward) {
+                        // Match by prefix since we don't store the coupon code on the reward row
+                        $prefix = $reward->reward_type === 'coupon' ? 'REF-' : 'GIFT-';
+                        $q->where('code', 'like', $prefix . '%')
+                          ->where('is_active', true)
+                          ->where('usage_limit', 1)
+                          ->where('used_count', 0);
+                    })
+                    ->update(['is_active' => false, 'status' => 'inactive']);
             }
-            
+
             DB::table('referral_rewards')->where('id', $reward->id)->update([
-                'status' => 'revoked',
+                'status'     => 'revoked',
                 'updated_at' => now(),
             ]);
         }

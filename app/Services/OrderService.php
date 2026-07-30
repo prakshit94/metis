@@ -87,7 +87,10 @@ class OrderService
             $datePart = $today->format('dmY');   // DDMMYYYY
             $todayStart = $today->copy()->startOfDay();
             $todayEnd = $today->copy()->endOfDay();
-            $dailyCount = Order::whereBetween('created_at', [$todayStart, $todayEnd])->count() + 1;
+            // Atomic sequence: lock the last inserted row so concurrent requests get distinct counts
+            $dailyCount = Order::whereBetween('created_at', [$todayStart, $todayEnd])
+                ->lockForUpdate()
+                ->count() + 1;
             $seq = str_pad((string) $dailyCount, 2, '0', STR_PAD_LEFT);
             $orderNo = "ORD-{$datePart}-{$seq}";
 
@@ -161,12 +164,15 @@ class OrderService
 
             if (! empty($data['use_wallet_balance'])) {
                 $party = Party::find($data['party_id']);
-                if ($party && (float) $party->outstanding_balance !== 0.0) {
-                    $netPayable = $order->net_amount + (float) $party->outstanding_balance;
+                if ($party && (float) $party->outstanding_balance > 0.0) {
+                    // outstanding_balance is a positive credit — subtract from net payable
+                    $netPayable = $order->net_amount - (float) $party->outstanding_balance;
                     if ($netPayable <= 0) {
-                        $party->outstanding_balance = $netPayable;
+                        // Wallet covers the full order — deduct only the order amount from wallet
+                        $party->outstanding_balance = abs($netPayable);
                         $order->update(['net_amount' => 0]);
                     } else {
+                        // Wallet partially covers the order — drain wallet, reduce payable
                         $party->outstanding_balance = 0;
                         $order->update(['net_amount' => $netPayable]);
                     }
@@ -240,7 +246,7 @@ class OrderService
                 ]);
             }
 
-            if ($product->status !== 'active' || ! $product->is_active) {
+            if (!in_array($product->status, ['active', 'published']) || !$product->is_active) {
                 throw ValidationException::withMessages([
                     'cart' => "Product '{$product->name}' is currently unavailable.",
                 ]);
@@ -528,7 +534,7 @@ class OrderService
                 $newCouponCode = $calc['coupon_code'];
                 if ($newCouponCode !== $lastCouponCode) {
                     if ($lastCouponCode) {
-                        Coupon::where('code', $lastCouponCode)->decrement('used_count');
+                    Coupon::where('code', $lastCouponCode)->where('used_count', '>', 0)->decrement('used_count');
                     }
                     if ($newCouponCode) {
                         Coupon::where('code', $newCouponCode)->increment('used_count');
@@ -630,7 +636,7 @@ class OrderService
 
             if ($newCouponCode !== $lastCouponCode) {
                 if ($lastCouponCode) {
-                    Coupon::where('code', $lastCouponCode)->decrement('used_count');
+                    Coupon::where('code', $lastCouponCode)->where('used_count', '>', 0)->decrement('used_count');
                 }
                 if ($newCouponCode) {
                     Coupon::where('code', $newCouponCode)->increment('used_count');

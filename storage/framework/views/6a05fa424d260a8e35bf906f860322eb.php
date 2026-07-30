@@ -41,9 +41,20 @@
             <ul class="nav flex-column gap-1">
 
                 
+                <li class="nav-item">
+                    <a class="nav-link <?php echo e($current === 'chat.index' ? 'active' : ''); ?>" href="<?php echo e(route('chat.index')); ?>">
+                        <i class="bi bi-chat-text-fill"></i>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Team Chat</span>
+                        <span class="badge bg-primary rounded-pill ms-auto">New</span>
+                    </a>
+                </li>
+
+                
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['dashboard-view', 'analytics-view', 'reports-view'])): ?>
                 <li class="nav-item sidebar-section-label">
                     <small class="text-muted px-3 text-uppercase fw-bold">Main</small>
                 </li>
+                <?php endif; ?>
 
                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('dashboard-view')): ?>
                 <li class="nav-item">
@@ -71,9 +82,11 @@
                 <?php endif; ?>
 
                 
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view', 'coupon-view', 'promotions-view'])): ?>
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Commerce &amp; Sales</small>
                 </li>
+                <?php endif; ?>
 
                 
                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view'])): ?>
@@ -188,25 +201,35 @@
                 <?php endif; ?>
 
                 
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view', 'warehouse-dashboard-view', 'shipping-view', 'warehouse-view', 'product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view'])): ?>
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Supply Chain</small>
                 </li>
+                <?php endif; ?>
 
                 
-                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view'])): ?>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view', 'warehouse-dashboard-view'])): ?>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo e(in_array($current, ['procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'active' : 'collapsed'); ?>"
+                    <a class="nav-link <?php echo e(in_array($current, ['inventory.dashboard', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'active' : 'collapsed'); ?>"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#inventorySubmenu"
-                       aria-expanded="<?php echo e(in_array($current, ['procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'true' : 'false'); ?>"
+                       aria-expanded="<?php echo e(in_array($current, ['inventory.dashboard', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'true' : 'false'); ?>"
                        aria-controls="inventorySubmenu">
                         <i class="bi bi-archive-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">Procurement &amp; Inventory</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse <?php echo e(in_array($current, ['procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'show' : ''); ?>" id="inventorySubmenu">
+                    <div class="collapse <?php echo e(in_array($current, ['inventory.dashboard', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'show' : ''); ?>" id="inventorySubmenu">
                         <ul class="nav nav-submenu">
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('warehouse-dashboard-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'inventory.dashboard' ? 'active' : ''); ?>" href="<?php echo e(route('inventory.dashboard')); ?>">
+                                    <i class="bi bi-buildings"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Command Center</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('purchaseorder-view')): ?>
                             <li class="nav-item">
                                 <a class="nav-link <?php echo e($current === 'procurement.purchase-orders.index' ? 'active' : ''); ?>" href="<?php echo e(route('procurement.purchase-orders.index')); ?>">
@@ -373,9 +396,11 @@
                 <?php endif; ?>
 
                 
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['user-view', 'role-view', 'village-view', 'orderreason-view', 'settings-view', 'audit-log-view'])): ?>
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Administration</small>
                 </li>
+                <?php endif; ?>
 
                 
                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['user-view', 'role-view'])): ?>
@@ -479,6 +504,7 @@
                 </li>
                 <?php endif; ?>
 
+                <?php if (\Illuminate\Support\Facades\Blade::check('role', 'Super Admin')): ?>
                 
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Workspace</small>
@@ -486,25 +512,18 @@
 
                 
                 <li class="nav-item">
-                    <a class="nav-link <?php echo e(in_array($current, ['chat.index', 'messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'active' : 'collapsed'); ?>"
+                    <a class="nav-link <?php echo e(in_array($current, ['messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'active' : 'collapsed'); ?>"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#toolsSubmenu"
-                       aria-expanded="<?php echo e(in_array($current, ['chat.index', 'messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'true' : 'false'); ?>"
+                       aria-expanded="<?php echo e(in_array($current, ['messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'true' : 'false'); ?>"
                        aria-controls="toolsSubmenu">
                         <i class="bi bi-wrench-adjustable-circle-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">Utilities &amp; Tools</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse <?php echo e(in_array($current, ['chat.index', 'messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'show' : ''); ?>" id="toolsSubmenu">
+                    <div class="collapse <?php echo e(in_array($current, ['messages', 'calendar', 'files', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'show' : ''); ?>" id="toolsSubmenu">
                         <ul class="nav nav-submenu">
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo e($current === 'chat.index' ? 'active' : ''); ?>" href="<?php echo e(route('chat.index')); ?>">
-                                    <i class="bi bi-chat-text-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Team Chat</span>
-                                    <span class="badge bg-primary rounded-pill ms-auto">New</span>
-                                </a>
-                            </li>
                             <li class="nav-item">
                                 <a class="nav-link <?php echo e($current === 'messages' ? 'active' : ''); ?>" href="<?php echo e(route('messages')); ?>">
                                     <i class="bi bi-chat-dots-fill"></i>
@@ -559,6 +578,7 @@
                         </ul>
                     </div>
                 </li>
+                <?php endif; ?>
 
             </ul>
         </nav>

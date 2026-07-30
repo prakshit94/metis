@@ -16,6 +16,12 @@ class PageController extends Controller
     public function dashboard(Request $request)
     {
         $user = auth()->user();
+        
+        // Redirect warehouse personnel directly to their command center
+        if ($user && $user->can('warehouse-dashboard-view') && !$user->can('dashboard-view')) {
+            return redirect()->route('inventory.dashboard');
+        }
+
         $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
 
         $customerQuery = Party::where('type', 'customer');

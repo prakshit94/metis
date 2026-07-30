@@ -3,11 +3,22 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use OwenIt\Auditing\Models\Audit;
 use Illuminate\Support\Facades\Gate;
+use App\Modules\Core\Controllers\Controller;
 
-class AuditLogController
+class AuditLogController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:audit-log-view', only: ['index']),
+            new Middleware('permission:audit-log-delete', only: ['clearAll', 'destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the audit logs.
      */
@@ -90,7 +101,7 @@ class AuditLogController
 
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'integer'
+            'ids.*' => 'integer|exists:audits,id'
         ]);
 
         Audit::whereIn('id', $request->ids)->delete();

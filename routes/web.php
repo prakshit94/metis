@@ -46,6 +46,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/attributes', [\App\Modules\Catalog\Controllers\CatalogController::class, 'attributes'])->name('attributes');
     });
     Route::prefix('inventory')->name('inventory.')->group(function (): void {
+        Route::get('/dashboard', [\App\Modules\Inventory\Controllers\WarehouseDashboardController::class, 'index'])->name('dashboard')->middleware('permission:warehouse-dashboard-view');
+        Route::get('/dashboard/activities', [\App\Modules\Inventory\Controllers\WarehouseDashboardController::class, 'activities'])->name('dashboard.activities')->middleware('permission:warehouse-dashboard-view');
         Route::get('/stock-management', [PageController::class, 'stockManagement'])->name('stock-management');
         Route::get('/stock-transfers', [PageController::class, 'stockTransfers'])->name('stock-transfers');
         Route::get('/adjustments', [PageController::class, 'inventoryAdjustments'])->name('adjustments');

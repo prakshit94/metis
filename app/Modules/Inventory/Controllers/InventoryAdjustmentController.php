@@ -213,18 +213,17 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
         $failedCount = 0;
         $errors = [];
 
-        \DB::transaction(function () use ($adjustments, $action, &$processedCount, &$failedCount, &$errors) {
-            foreach ($adjustments as $adjustment) {
-                try {
+        // Each adjustment runs in its own transaction — a failure on one does not affect others
+        foreach ($adjustments as $adjustment) {
+            try {
+                \DB::transaction(function () use ($adjustment, $action) {
                     if ($action === 'approve') {
                         $this->inventoryService->applyAdjustment($adjustment);
                     } elseif ($action === 'reject') {
                         if ($adjustment->status !== 'pending') {
                             throw new \Exception('Only pending adjustments can be rejected.');
                         }
-                        $adjustment->update([
-                            'status' => 'rejected',
-                        ]);
+                        $adjustment->update(['status' => 'rejected']);
                     } elseif ($action === 'delete') {
                         if ($adjustment->status !== 'pending') {
                             throw new \Exception('Only pending adjustments can be deleted.');
@@ -232,18 +231,18 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
                         $adjustment->items()->delete();
                         $adjustment->delete();
                     }
-                    $processedCount++;
-                } catch (\Throwable $e) {
-                    $failedCount++;
-                    $errors[] = "Adjustment {$adjustment->reference_no}: ".$e->getMessage();
-                }
+                });
+                $processedCount++;
+            } catch (\Throwable $e) {
+                $failedCount++;
+                $errors[] = "Adjustment {$adjustment->reference_no}: " . $e->getMessage();
             }
-        });
+        }
 
         if ($failedCount > 0) {
             return response()->json([
                 'message' => "Processed {$processedCount} adjustment(s). Failed {$failedCount} adjustment(s).",
-                'errors' => $errors,
+                'errors'  => $errors,
             ], 422);
         }
 

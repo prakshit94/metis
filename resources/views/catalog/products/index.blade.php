@@ -297,8 +297,8 @@
                                                     <td>
                                                         <span class="badge stock-badge" 
                                                               :class="{
-                                                                  'in-stock': product.stock > 20,
-                                                                  'low-stock': product.stock > 0 && product.stock <= 20,
+                                                                  'in-stock': product.stock > (product.min_stock_level || 10),
+                                                                  'low-stock': product.stock > 0 && product.stock <= (product.min_stock_level || 10),
                                                                   'out-of-stock': product.stock === 0
                                                               }"
                                                               x-text="parseFloat(product.stock) + ' units'"></span>

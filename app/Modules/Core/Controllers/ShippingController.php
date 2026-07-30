@@ -174,7 +174,9 @@ class ShippingController extends Controller implements HasMiddleware
      */
     public function trackingEvents(Shipment $shipment): JsonResponse
     {
-        $shipment->load('order.statusLogs.user');
+        $shipment->load([
+            'order' => fn ($q) => $q->with(['statusLogs' => fn ($q) => $q->with('user')->latest()]),
+        ]);
 
         return response()->json([
             'shipment' => $shipment,

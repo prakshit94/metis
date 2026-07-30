@@ -215,6 +215,9 @@ class CustomerController extends Controller implements HasMiddleware
         }
         unset($validated['referred_by_code']); // Unset it as it's not a field in the table
 
+        // Generate referral code at creation time (not lazily on read)
+        $validated['referral_code'] = strtoupper(Str::random(8));
+
         $customer = Customer::create($validated);
 
         return response()->json([
@@ -229,10 +232,6 @@ class CustomerController extends Controller implements HasMiddleware
     public function show(Request $request, int|string $customer)
     {
         $cust = Customer::withTrashed()->findOrFail($customer);
-        if (empty($cust->referral_code)) {
-            $cust->referral_code = strtoupper(Str::random(8));
-            $cust->saveQuietly();
-        }
 
         $customer = Customer::withTrashed()
             ->withCount([
@@ -492,11 +491,13 @@ class CustomerController extends Controller implements HasMiddleware
 
         $isActive = $action === 'activate';
 
-        Customer::whereIn('id', $ids)->get()->each(function (Customer $customer) use ($isActive) {
-            $customer->update([
-                'is_active' => $isActive,
-                'status' => $isActive ? 'active' : 'inactive',
-            ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($ids, $isActive) {
+            Customer::whereIn('id', $ids)->get()->each(function (Customer $customer) use ($isActive) {
+                $customer->update([
+                    'is_active' => $isActive,
+                    'status'    => $isActive ? 'active' : 'inactive',
+                ]);
+            });
         });
 
         return response()->json([

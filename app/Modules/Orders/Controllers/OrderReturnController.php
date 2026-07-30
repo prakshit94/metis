@@ -86,11 +86,25 @@ class OrderReturnController extends Controller implements HasMiddleware
 
     public function store(Request $request, Order $order)
     {
+        // Ensure order items are loaded (used in product ownership validation below)
+        $order->loadMissing('items');
+        $orderProductIds = $order->items->pluck('product_id')->toArray();
+
         $validated = $request->validate([
-            'reason' => 'required|string',
-            'notes' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'reason'                   => 'required|string',
+            'notes'                    => 'nullable|string',
+            'items'                    => 'required|array|min:1',
+            'items.*.product_id'       => [
+                'required',
+                'integer',
+                'exists:products,id',
+                // Ensure the product actually belongs to this order
+                function ($attribute, $value, $fail) use ($orderProductIds) {
+                    if (!in_array((int) $value, $orderProductIds)) {
+                        $fail('Product ID '.$value.' was not part of this order and cannot be returned.');
+                    }
+                },
+            ],
             'items.*.requested_qty' => 'required|numeric|gt:0',
         ]);
 
@@ -137,14 +151,29 @@ class OrderReturnController extends Controller implements HasMiddleware
 
     public function processQc(Request $request, OrderReturn $return, InventoryService $inventoryService)
     {
+        // Guard: only allow QC on returns that have not already been completed or rejected
+        if (!in_array($return->status, ['pending', 'received', 'qc_in_progress'])) {
+            return response()->json(['message' => 'Cannot process QC on a return that is already completed or rejected.'], 422);
+        }
+
         $validated = $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:order_return_items,id',
-            'items.*.received_qty' => 'required|numeric|min:0',
-            'items.*.restocked_qty' => 'required|numeric|min:0',
-            'items.*.damaged_qty' => 'required|numeric|min:0',
-            'items.*.qc_notes' => 'nullable|string',
+            'items'                    => 'required|array',
+            'items.*.id'               => 'required|exists:order_return_items,id',
+            'items.*.received_qty'     => 'required|numeric|min:0',
+            'items.*.restocked_qty'    => 'required|numeric|min:0',
+            'items.*.damaged_qty'      => 'required|numeric|min:0',
+            'items.*.qc_notes'         => 'nullable|string',
         ]);
+
+        // Validate that restocked + damaged does not exceed received for each item
+        foreach ($validated['items'] as $index => $itemData) {
+            $totalProcessed = $itemData['restocked_qty'] + $itemData['damaged_qty'];
+            if ($totalProcessed > $itemData['received_qty']) {
+                return response()->json([
+                    'message' => "Item #{$index}: restocked_qty + damaged_qty cannot exceed received_qty.",
+                ], 422);
+            }
+        }
 
         DB::transaction(function () use ($validated, $return, $inventoryService) {
             foreach ($validated['items'] as $itemData) {

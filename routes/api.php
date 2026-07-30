@@ -47,23 +47,30 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // ── Notifications / Activities ───────────────────────────────────────────
     Route::get('/activities/recent', function () {
+        abort_unless(
+            request()->user()?->can('audit-log-view')
+            || request()->user()?->hasAnyRole(['Super Admin', 'Admin']),
+            403,
+            'You do not have permission to view activity logs.'
+        );
+
         $user = auth()->user();
         $activities = \Spatie\Activitylog\Models\Activity::with('causer')->latest()->limit(15)->get();
         $readIds = $user ? $user->readActivities()->whereIn('activity_id', $activities->pluck('id'))->pluck('activity_id')->toArray() : [];
-        
+
         $unreadCount = $activities->whereNotIn('id', $readIds)->count();
-        
+
         return response()->json([
             'count' => $unreadCount,
             'activities' => $activities->map(function ($a) use ($readIds) {
                 return [
-                    'id' => $a->id,
-                    'description' => $a->description,
+                    'id'           => $a->id,
+                    'description'  => $a->description,
                     'subject_type' => class_basename($a->subject_type),
-                    'causer_name' => $a->causer->name ?? 'System',
+                    'causer_name'  => $a->causer->name ?? 'System',
                     'causer_photo' => $a->causer->photo ?? null,
-                    'time_ago' => $a->created_at->diffForHumans(),
-                    'is_read' => in_array($a->id, $readIds),
+                    'time_ago'     => $a->created_at->diffForHumans(),
+                    'is_read'      => in_array($a->id, $readIds),
                 ];
             })
         ]);

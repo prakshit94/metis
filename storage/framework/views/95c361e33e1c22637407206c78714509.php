@@ -868,24 +868,32 @@
                                         
                                         <!-- Context Actions -->
                                         <template x-if="order.status === 'pending'">
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.confirm')): ?>
                                             <li><a class="dropdown-item" href="#" @click.prevent="confirmOrder(order)">
                                                 <i class="bi bi-check-circle me-2"></i>Confirm Order
                                             </a></li>
+                                            <?php endif; ?>
                                         </template>
                                         <template x-if="order.status === 'confirmed'">
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.processing')): ?>
                                             <li><a class="dropdown-item" href="#" @click.prevent="processOrder(order)">
                                                 <i class="bi bi-gear me-2"></i>Process Order
                                             </a></li>
+                                            <?php endif; ?>
                                         </template>
                                         <template x-if="order.status === 'processing'">
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.ship')): ?>
                                             <li><a class="dropdown-item" href="#" @click.prevent="openShipModal(order)">
                                                 <i class="bi bi-truck me-2"></i>Ship (Ready to Ship)
                                             </a></li>
+                                            <?php endif; ?>
                                         </template>
                                         <template x-if="order.status === 'ready_to_ship'">
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.dispatch')): ?>
                                             <li><a class="dropdown-item" href="#" @click.prevent="dispatchOrder(order)">
                                                 <i class="bi bi-send me-2"></i>Dispatch
                                             </a></li>
+                                            <?php endif; ?>
                                         </template>
                                         <template x-if="order.status === 'dispatched' || order.status === 'shipped'">
                                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.deliver')): ?>
@@ -914,15 +922,21 @@
                                         </a></li>
                                         <?php endif; ?>
                                         <li><hr class="dropdown-divider"></li>
+                                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.invoice_pdf')): ?>
                                         <li><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
                                             <i class="bi bi-file-pdf me-2"></i>Print Invoice
                                         </a></li>
+                                        <?php endif; ?>
+                                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.cod')): ?>
                                         <li><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
                                             <i class="bi bi-file-earmark-pdf me-2"></i>Print COD Receipt
                                         </a></li>
+                                        <?php endif; ?>
+                                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.receipt')): ?>
                                         <li><a class="dropdown-item" href="#" @click.prevent="printReceipt(order)">
                                             <i class="bi bi-receipt me-2"></i>Print Receipt
                                         </a></li>
+                                        <?php endif; ?>
                                     </ul>
                                 </div>
                             </td>
@@ -967,7 +981,7 @@
 </div>
 
 <!-- ═══════════════════════ Order Details Modal ═══════════════════════════ -->
-<div class="modal fade order-detail-modal" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+<div class="modal fade order-detail-modal" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true" style="z-index: 1070;">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content shadow-lg border-0 rounded-4" x-show="selectedOrder">
             <template x-if="selectedOrder">
@@ -1202,22 +1216,30 @@
                                 <div class="d-flex flex-wrap gap-2 mb-4 w-100">
                                     <template x-if="selectedOrder.invoice">
                                         <div class="d-flex flex-wrap gap-2 w-100">
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.invoice_pdf')): ?>
                                             <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printInvoice(selectedOrder)">
                                                 <i class="bi bi-file-earmark-pdf me-2"></i>Print Invoice
                                             </button>
+                                            <?php endif; ?>
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.cod')): ?>
                                             <button class="btn btn-info text-white flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printCOD(selectedOrder)">
                                                 <i class="bi bi-file-earmark-pdf me-2"></i>COD Receipt
                                             </button>
+                                            <?php endif; ?>
                                         </div>
                                     </template>
                                     <template x-if="!selectedOrder.invoice">
+                                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.generate_invoice')): ?>
                                         <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="generateAndPrintInvoice(selectedOrder)">
                                             <i class="bi bi-receipt-cutoff me-2"></i>Generate Invoice & Print
                                         </button>
+                                        <?php endif; ?>
                                     </template>
+                                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.receipt')): ?>
                                     <button class="btn btn-outline-secondary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printReceipt(selectedOrder)">
                                         <i class="bi bi-receipt me-2"></i>Receipt
                                     </button>
+                                    <?php endif; ?>
                                 </div>
                                 
                                 <!-- Order Actions -->
@@ -1231,24 +1253,32 @@
                                                 <i class="bi bi-pencil-square me-1"></i>Edit
                                             </button>
                                             <template x-if="selectedOrder.status === 'pending'">
+                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.confirm')): ?>
                                                 <button class="btn btn-sm btn-primary flex-grow-1 shadow-sm fw-semibold" @click="confirmOrder(selectedOrder)">
                                                     <i class="bi bi-check-circle me-1"></i>Confirm
                                                 </button>
+                                                <?php endif; ?>
                                             </template>
                                             <template x-if="selectedOrder.status === 'confirmed'">
+                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.processing')): ?>
                                                 <button class="btn btn-sm btn-info text-white flex-grow-1 shadow-sm fw-semibold" @click="processOrder(selectedOrder)">
                                                     <i class="bi bi-gear me-1"></i>Process
                                                 </button>
+                                                <?php endif; ?>
                                             </template>
                                             <template x-if="selectedOrder.status === 'processing'">
+                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.ship')): ?>
                                                 <button class="btn btn-sm btn-warning text-dark flex-grow-1 shadow-sm fw-semibold" @click="openShipModal(selectedOrder)">
                                                     <i class="bi bi-truck me-1"></i>Ready to Ship
                                                 </button>
+                                                <?php endif; ?>
                                             </template>
                                             <template x-if="selectedOrder.status === 'ready_to_ship'">
+                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.dispatch')): ?>
                                                 <button class="btn btn-sm btn-primary flex-grow-1 shadow-sm fw-semibold" @click="dispatchOrder(selectedOrder)">
                                                     <i class="bi bi-send me-1"></i>Dispatch
                                                 </button>
+                                                <?php endif; ?>
                                             </template>
                                             <template x-if="selectedOrder.status === 'dispatched' || selectedOrder.status === 'shipped'">
                                                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('orders.deliver')): ?>

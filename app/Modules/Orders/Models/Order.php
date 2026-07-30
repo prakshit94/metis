@@ -202,7 +202,8 @@ class Order extends Model implements Auditable
 
     public function statusLogs(): HasMany
     {
-        return $this->hasMany(OrderStatusLog::class)->orderBy('created_at', 'desc');
+        // No default sort — callers should add ->latest() or ->oldest() as needed.
+        return $this->hasMany(OrderStatusLog::class);
     }
 
     public function refunds(): HasMany

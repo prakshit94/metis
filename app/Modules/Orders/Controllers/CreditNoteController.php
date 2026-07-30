@@ -11,10 +11,20 @@ use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\OrderReturn;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\View\View;
 
-class CreditNoteController extends Controller
+class CreditNoteController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:orders.view',    only: ['index']),
+            new Middleware('permission:orders.receipt', only: ['store', 'update', 'destroy']),
+        ];
+    }
+
     public function index(Request $request)
     {
         if ($request->wantsJson()) {
@@ -62,10 +72,10 @@ class CreditNoteController extends Controller
             'status' => 'required|in:active,used,cancelled'
         ]);
 
-        $validated['balance_remaining'] = $validated['amount'];
-        if ($validated['status'] === 'used') {
-            $validated['balance_remaining'] = 0;
-        }
+        // Balance remaining should be zero for any non-active status
+        $validated['balance_remaining'] = ($validated['status'] === 'active')
+            ? $validated['amount']
+            : 0;
 
         $creditNote = CreditNote::create($validated);
         return response()->json(['message' => 'Credit Note created successfully', 'data' => $creditNote], 201);

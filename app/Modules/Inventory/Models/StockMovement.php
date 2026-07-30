@@ -49,4 +49,32 @@ class StockMovement extends Model implements Auditable
     {
         return $this->belongsTo(User::class, 'performed_by');
     }
+
+    public function reference()
+    {
+        return $this->morphTo();
+    }
+
+    public function getReferenceLabelAttribute(): string
+    {
+        if (empty($this->reference_type)) {
+            return 'Manual Entry';
+        }
+        $base = class_basename($this->reference_type);
+        // Add spaces before uppercase letters for better readability (e.g., OrderReturn -> Order Return)
+        return trim(preg_replace('/(?<!^)([A-Z])/', ' $1', $base));
+    }
+
+    public function getReferenceNumberAttribute(): string
+    {
+        if (!$this->relationLoaded('reference') || !$this->reference) {
+            return (string) $this->reference_id;
+        }
+
+        return $this->reference->order_no 
+            ?? $this->reference->reference_no 
+            ?? $this->reference->po_number 
+            ?? $this->reference->receipt_no 
+            ?? (string) $this->reference->id;
+    }
 }

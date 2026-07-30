@@ -46,7 +46,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::define('viewApiDocs', function ($user) {
-            return true; // Allow all authenticated users, or change logic as needed
+            return $user->hasAnyRole(['Super Admin', 'Admin']);
+        });
+
+        // Implicitly grant "Super Admin" role all permissions
+        Gate::before(function ($user, $ability) {
+            return $user->hasRole('Super Admin') ? true : null;
         });
 
         Scramble::routes(function (Route $route) {
