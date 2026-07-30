@@ -1906,11 +1906,14 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         cancelReasons: @json($cancelReasons ?? []),
 
         async init() {
-            window.addEventListener('beforeunload', (e) => {
+            // Push initial state to trap back button
+            window.history.pushState(null, null, window.location.href);
+            window.addEventListener('popstate', (e) => {
                 if (this.customerDetails && !this.isCallLoggedOrClosed) {
-                    e.preventDefault();
-                    e.returnValue = 'You must Log a Call before leaving this profile.';
-                    return e.returnValue;
+                    window.history.pushState(null, null, window.location.href);
+                    const blockedModal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('actionBlockedModal'));
+                    blockedModal.show();
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'danger', message: 'You must Log a Call before leaving this profile.' }}));
                 }
             });
 
@@ -2671,6 +2674,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     ? 'Order updated and scheduled for follow-up!' 
                     : 'Order updated and successfully confirmed!';
                     
+                this.isCallLoggedOrClosed = true;
                 window.location.href = '{{ route("orders") }}?success=' + encodeURIComponent(finalMessage);
             } catch (error) {
                 this.formErrors.push(error.message);

@@ -93,7 +93,10 @@ class AuthController extends Controller
             $isValid = Hash::check($request->validated('password'), $user->password);
         } else {
             // Dummy hash to prevent timing-based user enumeration attacks
-            Hash::check($request->validated('password'), '$2y$12$R.vP3sZq1WJ/1q0kK8M9V.Qn6Qx.X.vP9Q..');
+            $dummyHash = in_array(config('hashing.driver'), ['argon2id', 'argon2i']) 
+                ? '$argon2id$v=19$m=65536,t=4,p=1$Z29uOU56Slc0SWRJbFAvYg$ILca1T1tS+yPIT6WNfrXcA6t0S0XqX9wngZa+PXrZj4' 
+                : '$2y$12$R.vP3sZq1WJ/1q0kK8M9V.Qn6Qx.X.vP9Q..';
+            Hash::check($request->validated('password'), $dummyHash);
         }
 
         if ($user === null || ! $isValid) {

@@ -28,6 +28,11 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'You do not have the required authorization.'], 403);
             }
+            
+            if (auth()->check()) {
+                return redirect()->route('dashboard')->with('error', 'You do not have the required authorization.');
+            }
+            
             return redirect()->route('login')->with('error', 'You do not have the required authorization.');
         });
     })->create();
