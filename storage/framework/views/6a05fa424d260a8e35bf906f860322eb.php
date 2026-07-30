@@ -45,7 +45,6 @@
                     <a class="nav-link <?php echo e($current === 'chat.index' ? 'active' : ''); ?>" href="<?php echo e(route('chat.index')); ?>">
                         <i class="bi bi-chat-text-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">Team Chat</span>
-                        <span class="badge bg-primary rounded-pill ms-auto">New</span>
                     </a>
                 </li>
 

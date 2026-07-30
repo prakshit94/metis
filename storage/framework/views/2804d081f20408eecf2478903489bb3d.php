@@ -1,6 +1,11 @@
 <?php $__env->startPush('head'); ?>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <style>[x-cloak] { display: none !important; }</style>
+    <style>
+        [x-cloak] { display: none !important; }
+        /* Remove global container padding and hide breadcrumb for full-height chat */
+        main.admin-main > .container-fluid { padding: 0 !important; }
+        main.admin-main > .container-fluid > nav[aria-label="breadcrumb"] { display: none !important; }
+    </style>
     <script>
         // Ensure Axios sends XMLHttpRequest header for Laravel
         axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
@@ -16,8 +21,8 @@
 
 <?php $__env->startSection('content'); ?>
     <div
-        class="bg-body d-flex flex-column"
-        style="height: calc(100vh - 80px); min-height: 720px;"
+        class="bg-body d-flex flex-column overflow-hidden"
+        style="height: calc(100vh - 135px);"
         x-data="chatWorkspace({
             conversations: <?php echo \Illuminate\Support\Js::from($conversations)->toHtml() ?>,
             users: <?php echo \Illuminate\Support\Js::from($users)->toHtml() ?>,
@@ -262,7 +267,7 @@
                         </div><!-- end message list -->
 
                         <!-- Composer -->
-                        <form @submit.prevent="sendMessage()" class="p-3 border-top bg-body">
+                        <form @submit.prevent="sendMessage()" class="p-3 pb-4 border-top bg-body">
                             <div :class="{'d-flex': errorMessage, 'd-none': !errorMessage}" x-cloak class="alert alert-danger py-2 px-3 mb-2 small justify-content-between align-items-center">
                                 <span x-text="errorMessage"></span>
                                 <button type="button" @click="errorMessage = ''" class="btn-close" style="font-size:10px;"></button>
