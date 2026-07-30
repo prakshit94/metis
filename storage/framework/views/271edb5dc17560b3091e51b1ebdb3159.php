@@ -4,7 +4,7 @@
         <div class="container-fluid align-items-center h-100 px-3 px-md-4 d-flex justify-content-between">
 
             
-            <div class="d-flex align-items-center gap-3" style="flex: 1; min-width: 0;">
+            <div class="d-flex align-items-center gap-3 flex-shrink-0" style="min-width: 0;">
                 
                 
                 <?php if(!isset($hideSidebar) || !$hideSidebar): ?>
@@ -36,7 +36,7 @@
                 $hasSearchPermission = auth()->check() && (auth()->user()->hasRole('Super Admin') || auth()->user()->can('search-view'));
             ?>
             <?php if($hasSearchPermission): ?>
-            <div class="d-none d-md-flex justify-content-center px-4" style="flex: 2; max-width: 600px;">
+            <div class="d-none d-md-flex justify-content-center px-4 flex-grow-1" style="max-width: 600px;">
                 <div class="position-relative w-100" x-data="{
                     searchQuery: '',
                     items: [
@@ -141,9 +141,36 @@
             </div>
             <?php endif; ?>
             
-            <div class="d-flex align-items-center justify-content-end gap-2 gap-sm-3 h-100" style="flex: 1; min-width: 0;">
+            <div class="d-flex align-items-center justify-content-end gap-2 gap-sm-3 h-100 flex-shrink-0">
 
-                <?php
+
+                <div x-data="themeSwitch" class="h-100 d-flex align-items-center d-none d-md-flex">
+                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
+                            style="width: 40px; height: 40px;"
+                            type="button"
+                            @click="toggle()"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            :title="currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+                            aria-label="Toggle theme">
+                        <i class="bi bi-sun-fill fs-5 text-warning" x-show="currentTheme === 'light'" aria-hidden="true"></i>
+                        <i class="bi bi-moon-stars-fill fs-5 text-primary" x-show="currentTheme === 'dark'" aria-hidden="true" x-cloak></i>
+                    </button>
+                </div>
+
+
+                <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all d-none d-lg-flex"
+                        style="width: 40px; height: 40px;"
+                        type="button"
+                        data-fullscreen-toggle
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        title="Toggle fullscreen"
+                        aria-label="Toggle fullscreen">
+                    <i class="bi bi-arrows-fullscreen fs-5" aria-hidden="true"></i>
+                </button>
+
+<?php
                     $webApps = [
                         ['route' => 'orders', 'icon' => 'bi-bag-check-fill', 'color' => 'primary', 'name' => 'Orders', 'permission' => 'orders.view'],
                         ['route' => 'customers', 'icon' => 'bi-person-lines-fill', 'color' => 'success', 'name' => 'Customers', 'permission' => 'customer-view', 'super_admin_only' => true],
@@ -187,7 +214,7 @@
                             <div class="row g-3 text-center">
                                 <?php $__currentLoopData = $availableWebApps; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $app): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <div class="col-4">
-                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="<?php echo e(route($app['route'])); ?>" target="_blank" rel="noopener noreferrer">
+                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="<?php echo e(route($app['route'])); ?>">
                                         <div class="bg-<?php echo e($app['color']); ?> bg-opacity-10 text-<?php echo e($app['color']); ?> rounded-circle d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;">
                                             <i class="bi <?php echo e($app['icon']); ?> fs-5"></i>
                                         </div>
@@ -201,7 +228,7 @@
                 </div>
                 <?php endif; ?>
 
-                
+
                 <?php if(request()->routeIs('orders.create', 'promotions.coupons', 'promotions.offers')): ?>
                 <div class="dropdown h-100 d-flex align-items-center" x-data="headerCart">
                     <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
@@ -267,33 +294,6 @@
                     </div>
                 </div>
                 <?php endif; ?>
-
-                
-                <div x-data="themeSwitch" class="h-100 d-flex align-items-center d-none d-md-flex">
-                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
-                            style="width: 40px; height: 40px;"
-                            type="button"
-                            @click="toggle()"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="bottom"
-                            :title="currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
-                            aria-label="Toggle theme">
-                        <i class="bi bi-sun-fill fs-5 text-warning" x-show="currentTheme === 'light'" aria-hidden="true"></i>
-                        <i class="bi bi-moon-stars-fill fs-5 text-primary" x-show="currentTheme === 'dark'" aria-hidden="true" x-cloak></i>
-                    </button>
-                </div>
-
-                
-                <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all d-none d-lg-flex"
-                        style="width: 40px; height: 40px;"
-                        type="button"
-                        data-fullscreen-toggle
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="bottom"
-                        title="Toggle fullscreen"
-                        aria-label="Toggle fullscreen">
-                    <i class="bi bi-arrows-fullscreen fs-5" aria-hidden="true"></i>
-                </button>
 
 <?php
     $initialActivities = \Spatie\Activitylog\Models\Activity::with('causer')->latest()->limit(10)->get()->map(function($a) {
