@@ -635,6 +635,7 @@
                             title="Move ready-to-ship orders → Dispatched">
                         <i class="bi bi-box-arrow-right me-1"></i>Dispatch
                     </button>
+                    @can('orders.deliver')
                     <button class="btn btn-sm btn-success"
                             x-show="bulkAvailableActions.canDeliver"
                             x-transition
@@ -642,6 +643,7 @@
                             title="Move dispatched orders → Delivered">
                         <i class="bi bi-check2-all me-1"></i>Deliver
                     </button>
+                    @endcan
                     @endcan
 
                     {{-- Separator before non-lifecycle actions --}}
@@ -655,7 +657,7 @@
                     </button>
                     @endcan
 
-                    @can('orders.bulk_status')
+                    @can('orders.cancel')
                     {{-- Cancel (always shown if any selected order is cancellable) --}}
                     <button class="btn btn-sm btn-outline-danger"
                             x-show="bulkAvailableActions.canCancel"
@@ -859,9 +861,11 @@
                                             <i class="bi bi-eye me-2"></i>View Details
                                         </a></li>
                                         <template x-if="!['cancelled', 'delivered', 'returned'].includes(order.status)">
+                                            @can('orders.edit')
                                             <li><a class="dropdown-item" href="#" @click.prevent="editOrder(order)">
                                                 <i class="bi bi-pencil-square me-2"></i>Edit Order
                                             </a></li>
+                                            @endcan
                                         </template>
                                         
                                         <!-- Context Actions -->
@@ -886,23 +890,31 @@
                                             </a></li>
                                         </template>
                                         <template x-if="order.status === 'dispatched' || order.status === 'shipped'">
+                                            @can('orders.deliver')
                                             <li><a class="dropdown-item" href="#" @click.prevent="deliverOrder(order)">
                                                 <i class="bi bi-check2-all me-2"></i>Deliver
                                             </a></li>
+                                            @endcan
                                         </template>
                                         <template x-if="['delivered', 'dispatched', 'shipped'].includes(order.status)">
+                                            @can('orders.return')
                                             <li><a class="dropdown-item text-warning" href="#" @click.prevent="returnOrder(order)">
                                                 <i class="bi bi-arrow-return-left me-2"></i>Return Order
                                             </a></li>
+                                            @endcan
                                         </template>
                                         <template x-if="['pending', 'confirmed', 'processing', 'ready_to_ship'].includes(order.status)">
+                                            @can('orders.cancel')
                                             <li><a class="dropdown-item text-danger" href="#" @click.prevent="cancelOrder(order)">
                                                 <i class="bi bi-x-circle me-2"></i>Cancel Order
                                             </a></li>
+                                            @endcan
                                         </template>
+                                        @can('orders.revert_status')
                                         <li><a class="dropdown-item" href="#" @click.prevent="revertStatus(order)">
                                             <i class="bi bi-arrow-left-right me-2"></i>Revert Status
                                         </a></li>
+                                        @endcan
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
                                             <i class="bi bi-file-pdf me-2"></i>Print Invoice
@@ -1241,19 +1253,25 @@
                                                 </button>
                                             </template>
                                             <template x-if="selectedOrder.status === 'dispatched' || selectedOrder.status === 'shipped'">
+                                                @can('orders.deliver')
                                                 <button class="btn btn-sm btn-success flex-grow-1 shadow-sm fw-semibold" @click="deliverOrder(selectedOrder)">
                                                     <i class="bi bi-check2-all me-1"></i>Deliver
                                                 </button>
+                                                @endcan
                                             </template>
                                             <template x-if="['delivered', 'dispatched', 'shipped'].includes(selectedOrder.status)">
+                                                @can('orders.return')
                                                 <button class="btn btn-sm btn-outline-warning flex-grow-1 shadow-sm fw-semibold" @click="returnOrder(selectedOrder)">
                                                     <i class="bi bi-arrow-return-left me-1"></i>Return
                                                 </button>
+                                                @endcan
                                             </template>
                                             <template x-if="['pending', 'confirmed', 'processing', 'ready_to_ship'].includes(selectedOrder.status)">
+                                                @can('orders.cancel')
                                                 <button class="btn btn-sm btn-outline-danger flex-grow-1 shadow-sm fw-semibold" @click="cancelOrder(selectedOrder)">
                                                     <i class="bi bi-x-circle me-1"></i>Cancel
                                                 </button>
+                                                @endcan
                                             </template>
                                         </div>
                                     </div>
