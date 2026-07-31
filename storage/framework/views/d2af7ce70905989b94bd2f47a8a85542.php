@@ -11,12 +11,16 @@
             <p class="text-muted mb-0">Monitor and adjust real-time stock levels per warehouse</p>
         </div>
         <div class="d-flex gap-2">
+            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('product-export')): ?>
             <button type="button" class="btn btn-outline-secondary" @click="exportStock()">
                 <i class="bi bi-download me-2"></i>Export
             </button>
+            <?php endif; ?>
+            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('stockmanagement-edit')): ?>
             <button type="button" class="btn btn-primary" @click.prevent="openAdjustModal(null)">
                 <i class="bi bi-plus-lg me-2"></i>Set Stock
             </button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -153,9 +157,11 @@
                             </span>
                         </div>
                         <div class="d-flex gap-2">
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('product-export')): ?>
                             <button class="btn btn-sm btn-secondary" @click="exportStock(true)">
                                 <i class="bi bi-download me-1"></i>Export Selected
                             </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -273,16 +279,20 @@
                                                 <i class="bi bi-three-dots"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('stockmanagement-edit')): ?>
                                                 <li>
                                                     <a class="dropdown-item" href="#" @click.prevent="openAdjustModal(item)">
                                                         <i class="bi bi-pencil me-2"></i>Set Stock Level
                                                     </a>
                                                 </li>
+                                                <?php endif; ?>
+                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('stocktransfer-create')): ?>
                                                 <li>
                                                     <a class="dropdown-item" href="<?php echo e(route('inventory.stock-transfers')); ?>">
                                                         <i class="bi bi-arrow-left-right me-2"></i>Create Transfer
                                                     </a>
                                                 </li>
+                                                <?php endif; ?>
                                             </ul>
                                         </div>
                                     </td>

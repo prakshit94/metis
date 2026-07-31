@@ -2489,11 +2489,9 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 const apps = typeof c.applicable_products === 'string' ? JSON.parse(c.applicable_products) : c.applicable_products;
                 const excs = typeof c.excluded_products === 'string' ? JSON.parse(c.excluded_products) : c.excluded_products;
                 const appCats = typeof c.applicable_categories === 'string' ? JSON.parse(c.applicable_categories) : c.applicable_categories;
-                const excCats = typeof c.excluded_categories === 'string' ? JSON.parse(c.excluded_categories) : c.excluded_categories;
                 if (apps && apps.length > 0 && !apps.includes(item.id) && !apps.includes(String(item.id))) return t;
                 if (excs && excs.length > 0 && (excs.includes(item.id) || excs.includes(String(item.id)))) return t;
                 if (appCats && appCats.length > 0 && !appCats.includes(item.category_id) && !appCats.includes(String(item.category_id))) return t;
-                if (excCats && excCats.length > 0 && (excCats.includes(item.category_id) || excCats.includes(String(item.category_id)))) return t;
                 return t + this.lineTotal(item);
             }, 0);
 

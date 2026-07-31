@@ -349,9 +349,11 @@
                             <p class="mb-0 text-muted" style="font-size: 11px;" x-text="`${onlineUsers.length} active, ${users.length} available`"></p>
                         </div>
                         <div class="d-flex gap-1">
+                            @can('chat-export')
                             <button type="button" @click="exportUsersToCSV" class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Export Data">
                                 <i class="bi bi-download"></i>
                             </button>
+                            @endcan
                             <button type="button" @click="fetchUsers" class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Refresh users">
                                 <i class="bi bi-arrow-clockwise"></i>
                             </button>
@@ -662,6 +664,7 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        @can('chat-edit')
                                         <div x-show="canManageSettings && member.user_id !== currentUserId" class="dropdown">
                                             <button class="btn btn-light btn-sm px-2 rounded-circle border shadow-sm d-flex align-items-center justify-content-center" style="width:28px;height:28px;" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical" style="font-size:12px;"></i></button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 text-sm py-2">
@@ -670,6 +673,7 @@
                                                 <li><button type="button" @click="removeGroupMember(member)" class="dropdown-item small text-danger fw-semibold">Remove from Group</button></li>
                                             </ul>
                                         </div>
+                                        @endcan
                                     </div>
                                 </template>
                             </div>

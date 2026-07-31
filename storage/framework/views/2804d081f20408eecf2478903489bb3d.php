@@ -662,6 +662,7 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('chat-edit')): ?>
                                         <div x-show="canManageSettings && member.user_id !== currentUserId" class="dropdown">
                                             <button class="btn btn-light btn-sm px-2 rounded-circle border shadow-sm d-flex align-items-center justify-content-center" style="width:28px;height:28px;" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical" style="font-size:12px;"></i></button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 text-sm py-2">
@@ -670,6 +671,7 @@
                                                 <li><button type="button" @click="removeGroupMember(member)" class="dropdown-item small text-danger fw-semibold">Remove from Group</button></li>
                                             </ul>
                                         </div>
+                                        <?php endif; ?>
                                     </div>
                                 </template>
                             </div>

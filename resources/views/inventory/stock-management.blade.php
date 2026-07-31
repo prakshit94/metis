@@ -13,12 +13,16 @@
             <p class="text-muted mb-0">Monitor and adjust real-time stock levels per warehouse</p>
         </div>
         <div class="d-flex gap-2">
+            @can('product-export')
             <button type="button" class="btn btn-outline-secondary" @click="exportStock()">
                 <i class="bi bi-download me-2"></i>Export
             </button>
+            @endcan
+            @can('stockmanagement-edit')
             <button type="button" class="btn btn-primary" @click.prevent="openAdjustModal(null)">
                 <i class="bi bi-plus-lg me-2"></i>Set Stock
             </button>
+            @endcan
         </div>
     </div>
 
@@ -155,9 +159,11 @@
                             </span>
                         </div>
                         <div class="d-flex gap-2">
+                            @can('product-export')
                             <button class="btn btn-sm btn-secondary" @click="exportStock(true)">
                                 <i class="bi bi-download me-1"></i>Export Selected
                             </button>
+                            @endcan
                         </div>
                     </div>
                 </div>
@@ -275,16 +281,20 @@
                                                 <i class="bi bi-three-dots"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                                @can('stockmanagement-edit')
                                                 <li>
                                                     <a class="dropdown-item" href="#" @click.prevent="openAdjustModal(item)">
                                                         <i class="bi bi-pencil me-2"></i>Set Stock Level
                                                     </a>
                                                 </li>
+                                                @endcan
+                                                @can('stocktransfer-create')
                                                 <li>
                                                     <a class="dropdown-item" href="{{ route('inventory.stock-transfers') }}">
                                                         <i class="bi bi-arrow-left-right me-2"></i>Create Transfer
                                                     </a>
                                                 </li>
+                                                @endcan
                                             </ul>
                                         </div>
                                     </td>

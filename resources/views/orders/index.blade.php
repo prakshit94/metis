@@ -28,9 +28,12 @@
             <input class="form-check-input m-0" type="checkbox" role="switch" id="ordersAnalyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
             <label class="form-check-label small fw-bold text-muted mb-0 ms-1" for="ordersAnalyticsToggle" style="cursor: pointer; padding-top: 2px;">Analytics</label>
         </div>
+        @can('orders.export')
         <button type="button" class="btn btn-outline-secondary" @click="exportOrders()">
             <i class="bi bi-download me-2"></i>Export
         </button>
+        @endcan
+        @can('orders.import')
         <div class="dropdown">
             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                 <i class="bi bi-upload me-2"></i>Import
@@ -44,6 +47,7 @@
                 </a></li>
             </ul>
         </div>
+        @endcan
         <a href="{{ route('orders.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-2"></i>New Order
         </a>

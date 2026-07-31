@@ -10,15 +10,21 @@
                             <p class="text-muted mb-0">Manage your product catalog and inventory</p>
                         </div>
                         <div class="d-flex gap-2">
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('product-export')): ?>
                             <button type="button" class="btn btn-outline-secondary" @click="exportProducts()">
                                 <i class="bi bi-download me-2"></i>Export
                             </button>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('product-import')): ?>
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                                 <i class="bi bi-upload me-2"></i>Import
                             </button>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('product-create')): ?>
                             <button type="button" class="btn btn-primary" @click.prevent="openCreateProduct()">
                                 <i class="bi bi-plus-lg me-2"></i>Add Product
                             </button>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -222,6 +228,7 @@
                                             </span>
                                         </div>
                                         <div class="d-flex gap-2">
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('product-edit')): ?>
                                             <button class="btn btn-sm btn-outline-secondary bg-body" @click="bulkAction('publish')">
                                                 <i class="bi bi-eye me-1"></i>Publish
                                             </button>
@@ -231,9 +238,12 @@
                                             <button class="btn btn-sm btn-outline-secondary bg-body" @click="bulkAction('disable_sku')">
                                                 <i class="bi bi-tags me-1"></i>Disable SKU
                                             </button>
+                                            <?php endif; ?>
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('product-delete')): ?>
                                             <button class="btn btn-sm btn-outline-danger bg-body" @click="bulkAction('delete')">
                                                 <i class="bi bi-trash me-1"></i>Delete
                                             </button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -327,19 +337,25 @@
                                                                 <i class="bi bi-three-dots"></i>
                                                             </button>
                                                             <ul class="dropdown-menu">
+                                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('product-edit')): ?>
                                                                 <li><a class="dropdown-item" href="#" @click.prevent="editProduct(product)">
                                                                     <i class="bi bi-pencil me-2"></i>Edit
                                                                 </a></li>
+                                                                <?php endif; ?>
                                                                 <li><a class="dropdown-item" href="#" @click.prevent="viewProduct(product)">
                                                                     <i class="bi bi-eye me-2"></i>View Details
                                                                 </a></li>
+                                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('product-create')): ?>
                                                                 <li><a class="dropdown-item" href="#" @click.prevent="duplicateProduct(product)">
                                                                     <i class="bi bi-copy me-2"></i>Duplicate
                                                                 </a></li>
+                                                                <?php endif; ?>
+                                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('product-delete')): ?>
                                                                 <li><hr class="dropdown-divider"></li>
                                                                 <li><a class="dropdown-item text-danger" href="#" @click.prevent="deleteProduct(product)">
                                                                     <i class="bi bi-trash me-2"></i>Delete
                                                                 </a></li>
+                                                                <?php endif; ?>
                                                             </ul>
                                                         </div>
                                                     </td>
