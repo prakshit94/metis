@@ -18,7 +18,7 @@ class InvoiceController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:orders.view', only: ['index', 'show', 'exportSelected']),
+            new Middleware('permission:orders.view', only: ['index', 'show', 'exportSelected', 'downloadPdf']),
             new Middleware('permission:orders.receipt', only: ['bulkStatus', 'recordPayment']),
         ];
     }

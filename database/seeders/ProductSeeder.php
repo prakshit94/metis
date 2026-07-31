@@ -30,6 +30,14 @@ class ProductSeeder extends Seeder
                 'selling_price' => 7500,
                 'description' => 'Premium luxury watch.',
                 'image_source' => 'watch.jpg',
+                'barcode' => '8901111222233',
+                'weight' => '0.5 kg',
+                'application_instructions' => 'Wind manually if not worn for 48 hours.',
+                'grade' => 'A',
+                'attributes' => [
+                    ['name' => 'Color', 'type' => 'color', 'value' => 'Silver', 'color_code' => '#C0C0C0'],
+                    ['name' => 'Material', 'type' => 'text', 'value' => 'Stainless Steel', 'color_code' => null],
+                ],
             ],
             [
                 'name' => 'Noise Cancelling Headphones',
@@ -44,6 +52,14 @@ class ProductSeeder extends Seeder
                 'selling_price' => 2000,
                 'description' => 'High quality noise cancelling headphones.',
                 'image_source' => 'headphone.jpg',
+                'barcode' => '8902222333344',
+                'weight' => '0.3 kg',
+                'application_instructions' => 'Charge fully before first use.',
+                'grade' => 'B',
+                'attributes' => [
+                    ['name' => 'Color', 'type' => 'color', 'value' => 'Black', 'color_code' => '#000000'],
+                    ['name' => 'Connectivity', 'type' => 'text', 'value' => 'Bluetooth 5.0', 'color_code' => null],
+                ],
             ],
             [
                 'name' => 'Vintage Wall Clock',
@@ -57,6 +73,14 @@ class ProductSeeder extends Seeder
                 'mrp' => 1000,
                 'selling_price' => 800,
                 'description' => 'Classic vintage wall clock.',
+                'barcode' => '8903333444455',
+                'weight' => '1.2 kg',
+                'application_instructions' => 'Mount on a sturdy wall hook.',
+                'grade' => 'C',
+                'attributes' => [
+                    ['name' => 'Material', 'type' => 'text', 'value' => 'Wood', 'color_code' => null],
+                    ['name' => 'Color', 'type' => 'color', 'value' => 'Brown', 'color_code' => '#8B4513'],
+                ],
             ],
             [
                 'name' => 'Running Shoes',
@@ -71,6 +95,14 @@ class ProductSeeder extends Seeder
                 'selling_price' => 3500,
                 'description' => 'Comfortable sports running shoes.',
                 'image_source' => 'shose.jpg',
+                'barcode' => '8904444555566',
+                'weight' => '0.8 kg',
+                'application_instructions' => 'Clean with a damp cloth; do not machine wash.',
+                'grade' => 'A',
+                'attributes' => [
+                    ['name' => 'Size', 'type' => 'text', 'value' => '9', 'color_code' => null],
+                    ['name' => 'Color', 'type' => 'color', 'value' => 'Red', 'color_code' => '#FF0000'],
+                ],
             ],
             [
                 'name' => 'Aviator Sunglasses',
@@ -85,6 +117,14 @@ class ProductSeeder extends Seeder
                 'selling_price' => 1500,
                 'description' => 'Stylish aviator sunglasses.',
                 'image_source' => 'sunglasses.jpg',
+                'barcode' => '8905555666677',
+                'weight' => '0.1 kg',
+                'application_instructions' => 'Store in case when not in use.',
+                'grade' => 'B',
+                'attributes' => [
+                    ['name' => 'Frame Color', 'type' => 'color', 'value' => 'Gold', 'color_code' => '#FFD700'],
+                    ['name' => 'Lens Color', 'type' => 'color', 'value' => 'Green', 'color_code' => '#008000'],
+                ],
             ],
         ];
 
@@ -112,7 +152,7 @@ class ProductSeeder extends Seeder
                 }
             }
 
-            Product::firstOrCreate(
+            $product = Product::firstOrCreate(
                 ['sku' => $item['sku']],
                 [
                     'name' => $item['name'],
@@ -133,8 +173,30 @@ class ProductSeeder extends Seeder
                     'is_active' => true,
                     'description' => $item['description'],
                     'image_path' => $imagePath,
+                    'barcode' => $item['barcode'] ?? null,
+                    'weight' => $item['weight'] ?? null,
+                    'application_instructions' => $item['application_instructions'] ?? null,
+                    'grade' => $item['grade'] ?? null,
+                    'default_discount' => 0,
+                    'default_discount_type' => 'percent',
                 ]
             );
+
+            if (isset($item['attributes'])) {
+                $attributeValueIds = [];
+                foreach ($item['attributes'] as $attrData) {
+                    $attribute = \App\Modules\Catalog\Models\ProductAttribute::firstOrCreate(
+                        ['name' => $attrData['name']],
+                        ['type' => $attrData['type'], 'is_filterable' => true, 'status' => 'active']
+                    );
+                    $attributeValue = \App\Modules\Catalog\Models\ProductAttributeValue::firstOrCreate(
+                        ['product_attribute_id' => $attribute->id, 'value' => $attrData['value']],
+                        ['color_code' => $attrData['color_code'] ?? null, 'status' => 'active']
+                    );
+                    $attributeValueIds[] = $attributeValue->id;
+                }
+                $product->attributeValues()->sync($attributeValueIds);
+            }
         }
     }
 }

@@ -48,9 +48,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::prefix('inventory')->name('inventory.')->group(function (): void {
         Route::get('/dashboard', [\App\Modules\Inventory\Controllers\WarehouseDashboardController::class, 'index'])->name('dashboard')->middleware('permission:warehouse-dashboard-view');
         Route::get('/dashboard/activities', [\App\Modules\Inventory\Controllers\WarehouseDashboardController::class, 'activities'])->name('dashboard.activities')->middleware('permission:warehouse-dashboard-view');
-        Route::get('/stock-management', [PageController::class, 'stockManagement'])->name('stock-management');
-        Route::get('/stock-transfers', [PageController::class, 'stockTransfers'])->name('stock-transfers');
-        Route::get('/adjustments', [PageController::class, 'inventoryAdjustments'])->name('adjustments');
+        Route::get('/stock-management', [PageController::class, 'stockManagement'])->name('stock-management')->middleware('permission:stockmanagement-view');
+        Route::get('/stock-transfers', [PageController::class, 'stockTransfers'])->name('stock-transfers')->middleware('permission:stocktransfer-view');
+        Route::get('/adjustments', [PageController::class, 'inventoryAdjustments'])->name('adjustments')->middleware('permission:inventoryadjustment-view');
     });
     Route::prefix('procurement')->name('procurement.')->group(function (): void {
         Route::get('/purchase-orders', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'index'])->name('purchase-orders.index');

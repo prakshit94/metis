@@ -430,10 +430,10 @@ document.addEventListener('alpine:init', () => {
         totalPages: 1,
         total: 0, from: 0, to: 0,
         selected: [],
-        stats: @json($stats ?? ['total' => 0, 'active' => 0, 'used' => 0, 'cancelled' => 0]),
+        stats: {!! json_encode($stats ?? ['total' => 0, 'active' => 0, 'used' => 0, 'cancelled' => 0]) !!},
         customers: {!! isset($customers) ? $customers->map(function($c) { return ['id' => $c->id, 'name' => $c->company_name ?: $c->firstname . ' ' . $c->lastname]; })->toJson() : '[]' !!},
-        invoices: @json($invoices ?? []),
-        returns: @json($returns ?? []),
+        invoices: {!! json_encode($invoices ?? []) !!},
+        returns: {!! json_encode($returns ?? []) !!},
         
         isEditing: false,
         saving: false,

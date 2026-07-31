@@ -688,13 +688,13 @@ document.addEventListener('alpine:init', () => {
         },
         yaxis: {
           title: {
-            text: 'Sales ($1000s)'
+            text: 'Sales (₹1000s)'
           }
         },
         tooltip: {
           y: {
             formatter: function (val) {
-              return "$" + val + "k"
+              return "₹" + val + "k"
             }
           }
         }
@@ -827,6 +827,14 @@ document.addEventListener('alpine:init', () => {
         statusList: [],
       };
     },
+    get finalSellingPriceWithTax() {
+      let price = parseFloat(this.form.selling_price) || 0;
+      if (!this.form.tax_rate_id) return price;
+      let taxRate = this.options.taxRates.find(r => String(r.id) === String(this.form.tax_rate_id));
+      if (!taxRate) return price;
+      let rate = parseFloat(taxRate.rate) || 0;
+      return price + (price * rate / 100);
+    },
     form: {
       name: '',
       sku: '',
@@ -936,8 +944,10 @@ document.addEventListener('alpine:init', () => {
 
       if (!this.form.name || !this.form.sku || !this.form.category_id ||
           this.form.selling_price === '' || this.form.purchase_price === '' ||
-          this.form.stock === '' || !this.form.status) {
-        table.showNotification('Please fill in all required fields (Name, SKU, Category, Purchase Price, Selling Price, Stock, Status).', 'warning');
+          this.form.stock === '' || !this.form.status || 
+          !this.form.tax_rate_id || !this.form.hsn_code_id || 
+          !this.form.uom_id || !this.form.weight) {
+        table.showNotification('Please fill in all required fields (Name, SKU, Category, Purchase Price, Selling Price, Stock, Status, Tax Rate, HSN Code, UOM, Weight/Volume).', 'warning');
         return;
       }
 

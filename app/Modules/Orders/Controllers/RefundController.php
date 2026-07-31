@@ -13,7 +13,7 @@ class RefundController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:orders.view', only: ['index']),
+            new Middleware('permission:orders.view', only: ['index', 'show']),
             new Middleware('permission:orders.edit', only: ['bulkStatus']),
         ];
     }

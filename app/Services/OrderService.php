@@ -225,7 +225,7 @@ class OrderService
             ->orderBy('id')
             ->get();
 
-        $orderOffers = $activeOffers->where('type', 'order_discount')->values();
+        $orderOffers = $activeOffers->whereIn('type', ['order_discount', 'category_discount'])->values();
         $bogoOffers = $activeOffers->where('type', 'bogo')->groupBy('product_id');
 
         $items = [];
@@ -352,16 +352,40 @@ class OrderService
                 ]);
             }
 
-            if ($coupon->type === 'percentage') {
-                $couponDiscount = $subtotal * ($coupon->value / 100);
-                if ($coupon->max_discount > 0 && $couponDiscount > $coupon->max_discount) {
-                    $couponDiscount = (float) $coupon->max_discount;
+            $eligibleSubtotal = $subtotal;
+            $apps = is_string($coupon->applicable_products) ? json_decode($coupon->applicable_products, true) : $coupon->applicable_products;
+            $excs = is_string($coupon->excluded_products) ? json_decode($coupon->excluded_products, true) : $coupon->excluded_products;
+            $appCats = is_string($coupon->applicable_categories) ? json_decode($coupon->applicable_categories, true) : $coupon->applicable_categories;
+            $excCats = is_string($coupon->excluded_categories) ? json_decode($coupon->excluded_categories, true) : $coupon->excluded_categories;
+
+            if (!empty($apps) || !empty($excs) || !empty($appCats) || !empty($excCats)) {
+                $eligibleSubtotal = 0.0;
+                foreach ($items as $item) {
+                    $pid = $item['product_id'];
+                    $product = $products->get($pid);
+                    $cid = $product?->category_id;
+                    
+                    if (!empty($apps) && !in_array($pid, $apps) && !in_array((string)$pid, $apps)) continue;
+                    if (!empty($excs) && (in_array($pid, $excs) || in_array((string)$pid, $excs))) continue;
+                    if (!empty($appCats) && (!in_array($cid, $appCats) && !in_array((string)$cid, $appCats))) continue;
+                    if (!empty($excCats) && (in_array($cid, $excCats) || in_array((string)$cid, $excCats))) continue;
+                    
+                    $eligibleSubtotal += $item['total_amount'];
                 }
-            } else {
-                $couponDiscount = (float) $coupon->value;
             }
 
-            $couponDiscount = min($couponDiscount, $subtotal);
+            if ($eligibleSubtotal > 0) {
+                if ($coupon->type === 'percentage') {
+                    $couponDiscount = $eligibleSubtotal * ($coupon->value / 100);
+                    if ($coupon->max_discount > 0 && $couponDiscount > $coupon->max_discount) {
+                        $couponDiscount = (float) $coupon->max_discount;
+                    }
+                } else {
+                    $couponDiscount = (float) $coupon->value;
+                }
+                $couponDiscount = min($couponDiscount, $eligibleSubtotal);
+            }
+
             $couponCode = $coupon->code;
         }
 
@@ -373,7 +397,17 @@ class OrderService
             $bestOrderOffer = $orderOffers->firstWhere('id', $appliedOfferId);
             if ($bestOrderOffer) {
                 $eligibleSubtotal = $subtotal;
-                if ($bestOrderOffer->product_id) {
+                if ($bestOrderOffer->type === 'category_discount' && !empty($bestOrderOffer->applicable_categories)) {
+                    $cats = is_string($bestOrderOffer->applicable_categories) ? json_decode($bestOrderOffer->applicable_categories, true) : $bestOrderOffer->applicable_categories;
+                    $eligibleSubtotal = 0.0;
+                    foreach ($items as $item) {
+                        $product = $products->get($item['product_id']);
+                        $cid = $product?->category_id;
+                        if (in_array($cid, $cats) || in_array((string)$cid, $cats)) {
+                            $eligibleSubtotal += $item['total_amount'];
+                        }
+                    }
+                } elseif ($bestOrderOffer->product_id) {
                     $eligibleSubtotal = 0.0;
                     foreach ($items as $item) {
                         if ($item['product_id'] == $bestOrderOffer->product_id) {

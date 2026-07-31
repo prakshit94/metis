@@ -21,7 +21,8 @@ class StockTransferController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:stocktransfer-view', only: ['index', 'show', 'options']),
+            new Middleware('permission:stocktransfer-view', only: ['index', 'show']),
+            new Middleware('permission:stocktransfer-view|stockmanagement-view', only: ['options']),
             new Middleware('permission:stocktransfer-create', only: ['store']),
             new Middleware('permission:stocktransfer-edit', only: ['update', 'bulkAction']),
             new Middleware('permission:stocktransfer-delete', only: ['destroy']),

@@ -84,10 +84,10 @@ class ProductCatalogSeeder extends Seeder
         ])->map(fn (array $row) => Warehouse::firstOrCreate(['code' => $row['code']], $row));
 
         $examples = [
-            ['name' => 'Mahyco BG-II Cotton Seeds', 'sku' => 'SEED-COT-MHY01', 'category' => 'cotton-seeds', 'price' => 850.00, 'stock' => 500, 'status' => 'published', 'description' => 'High-yielding hybrid cotton seeds.', 'purchase_price' => 620.00, 'mrp' => 990.00, 'grade' => 'A', 'tax' => 5],
-            ['name' => 'UPL Saaf Fungicide 1KG', 'sku' => 'PROT-FUN-UPL01', 'category' => 'fungicides', 'price' => 680.00, 'stock' => 120, 'status' => 'published', 'description' => 'Systemic and contact fungicide.', 'purchase_price' => 510.00, 'mrp' => 750.00, 'grade' => 'A', 'tax' => 18],
-            ['name' => 'Premium NPK Fertilizer 50KG', 'sku' => 'FERT-NPK-PREM', 'category' => 'chemical-fertilizers', 'price' => 1450.00, 'stock' => 300, 'status' => 'published', 'description' => 'Balanced nitrogen, phosphorus, and potassium formula.', 'purchase_price' => 1100.00, 'mrp' => 1600.00, 'grade' => 'B', 'tax' => 12],
-            ['name' => 'Drip Irrigation Inline Pipe 400M', 'sku' => 'MACH-DRIP-PIPE', 'category' => 'irrigation-tools', 'price' => 4200.00, 'stock' => 45, 'status' => 'published', 'description' => 'High durability 16mm inline drip lateral pipe.', 'purchase_price' => 3100.00, 'mrp' => 4800.00, 'grade' => 'A', 'tax' => 18],
+            ['name' => 'Mahyco BG-II Cotton Seeds', 'sku' => 'SEED-COT-MHY01', 'category' => 'cotton-seeds', 'price' => 850.00, 'stock' => 500, 'status' => 'published', 'description' => 'High-yielding hybrid cotton seeds.', 'purchase_price' => 620.00, 'mrp' => 990.00, 'grade' => 'A', 'tax' => 5, 'barcode' => '8901234567890', 'weight' => '1 kg', 'application_instructions' => 'Sow in well-drained soil.'],
+            ['name' => 'UPL Saaf Fungicide 1KG', 'sku' => 'PROT-FUN-UPL01', 'category' => 'fungicides', 'price' => 680.00, 'stock' => 120, 'status' => 'published', 'description' => 'Systemic and contact fungicide.', 'purchase_price' => 510.00, 'mrp' => 750.00, 'grade' => 'A', 'tax' => 18, 'barcode' => '8909876543210', 'weight' => '1 kg', 'application_instructions' => 'Mix 2g per liter of water.'],
+            ['name' => 'Premium NPK Fertilizer 50KG', 'sku' => 'FERT-NPK-PREM', 'category' => 'chemical-fertilizers', 'price' => 1450.00, 'stock' => 300, 'status' => 'published', 'description' => 'Balanced nitrogen, phosphorus, and potassium formula.', 'purchase_price' => 1100.00, 'mrp' => 1600.00, 'grade' => 'B', 'tax' => 12, 'barcode' => '8905555444433', 'weight' => '50 kg', 'application_instructions' => 'Apply 50kg per acre during vegetative growth.'],
+            ['name' => 'Drip Irrigation Inline Pipe 400M', 'sku' => 'MACH-DRIP-PIPE', 'category' => 'irrigation-tools', 'price' => 4200.00, 'stock' => 45, 'status' => 'published', 'description' => 'High durability 16mm inline drip lateral pipe.', 'purchase_price' => 3100.00, 'mrp' => 4800.00, 'grade' => 'A', 'tax' => 18, 'barcode' => '8901122334455', 'weight' => '15 kg', 'application_instructions' => 'Lay along crop rows, spacing as per crop requirement.'],
         ];
 
         foreach ($examples as $index => $example) {
@@ -122,7 +122,11 @@ class ProductCatalogSeeder extends Seeder
                     'status' => $example['status'],
                     'is_active' => $example['status'] === 'published',
                     'description' => $example['description'],
+                    'application_instructions' => $example['application_instructions'] ?? null,
                     'grade' => $example['grade'],
+                    'barcode' => $example['barcode'] ?? null,
+                    'weight' => $example['weight'] ?? null,
+                    'image_path' => null,
                     'default_discount' => 0,
                     'default_discount_type' => 'percent',
                 ],

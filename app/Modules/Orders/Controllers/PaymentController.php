@@ -16,7 +16,7 @@ class PaymentController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:orders.view', only: ['index', 'show', 'exportSelected']),
-            new Middleware('permission:orders.receipt', only: ['update', 'bulkStatus']),
+            new Middleware('permission:orders.receipt', only: ['store', 'update', 'bulkStatus']),
         ];
     }
 

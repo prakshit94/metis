@@ -18,7 +18,11 @@ class HsnCodeSeeder extends Seeder
         ];
 
         foreach ($hsnCodes as $hsn) {
-            HsnCode::firstOrCreate(['code' => $hsn['code']], $hsn);
+            HsnCode::firstOrCreate(['code' => $hsn['code']], [
+                'code' => $hsn['code'],
+                'description' => $hsn['description'],
+                'status' => 'active',
+            ]);
         }
     }
 }

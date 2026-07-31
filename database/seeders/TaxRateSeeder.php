@@ -18,7 +18,12 @@ class TaxRateSeeder extends Seeder
         ];
 
         foreach ($taxRates as $tax) {
-            TaxRate::firstOrCreate(['name' => $tax['name']], $tax);
+            TaxRate::firstOrCreate(['name' => $tax['name']], [
+                'name' => $tax['name'],
+                'rate' => $tax['rate'],
+                'status' => 'active',
+                'is_active' => true,
+            ]);
         }
     }
 }

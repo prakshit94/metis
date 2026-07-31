@@ -20,7 +20,9 @@ class CategorySeeder extends Seeder
         foreach ($categories as $category) {
             Category::firstOrCreate(['slug' => $category['slug']], [
                 'name' => $category['name'],
+                'image' => null,
                 'status' => 'active',
+                'is_active' => true,
             ]);
         }
     }

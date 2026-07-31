@@ -12,9 +12,19 @@ use App\Modules\Inventory\Models\StockMovement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class GoodsReceiptController extends Controller
+class GoodsReceiptController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:goodsreceipt-view', only: ['index']),
+            new Middleware('permission:goodsreceipt-create', only: ['store']),
+        ];
+    }
+
     public function index(Request $request)
     {
         if ($request->wantsJson()) {

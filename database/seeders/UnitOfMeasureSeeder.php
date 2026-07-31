@@ -15,7 +15,14 @@ class UnitOfMeasureSeeder extends Seeder
         ];
 
         foreach ($uoms as $uom) {
-            UnitOfMeasure::firstOrCreate(['slug' => $uom['slug']], $uom);
+            UnitOfMeasure::firstOrCreate(['slug' => $uom['slug']], [
+                'name' => $uom['name'],
+                'short_name' => $uom['short_name'],
+                'slug' => $uom['slug'],
+                'code' => $uom['short_name'],
+                'is_base_unit' => false,
+                'status' => 'active',
+            ]);
         }
     }
 }

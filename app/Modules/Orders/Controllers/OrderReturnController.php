@@ -19,7 +19,7 @@ class OrderReturnController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:orders.view', only: ['index', 'show']),
-            new Middleware('permission:orders.return', only: ['store', 'processQc', 'processFinancials']),
+            new Middleware('permission:orders.return', only: ['store', 'process', 'processQc', 'processFinancials']),
         ];
     }
 

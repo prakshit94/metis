@@ -18,7 +18,14 @@ class BrandSeeder extends Seeder
         ];
 
         foreach ($brands as $brand) {
-            Brand::firstOrCreate(['slug' => $brand['slug']], $brand);
+            Brand::firstOrCreate(['slug' => $brand['slug']], [
+                'name' => $brand['name'],
+                'slug' => $brand['slug'],
+                'image' => null,
+                'logo' => null,
+                'status' => 'active',
+                'is_active' => true,
+            ]);
         }
     }
 }

@@ -56,8 +56,8 @@ class CreditNoteController extends Controller implements HasMiddleware
         ];
         
         $customers = Party::select('id', 'company_name', 'firstname', 'lastname')->where('type', 'customer')->get();
-        $invoices = Invoice::select('id', 'invoice_number')->latest()->limit(100)->get();
-        $returns = OrderReturn::select('id', 'return_number')->latest()->limit(100)->get();
+        $invoices = Invoice::select('id', 'invoice_no')->latest()->limit(100)->get();
+        $returns = OrderReturn::select('id', 'return_no')->latest()->limit(100)->get();
 
         return view('orders.credit-notes.index', compact('stats', 'customers', 'invoices', 'returns'));
     }

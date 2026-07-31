@@ -464,23 +464,26 @@
                                             <div class="col-md-4">
                                                 <label class="form-label fw-medium text-muted small">Purchase Price <span class="text-danger">*</span></label>
                                                 <div class="input-group">
-                                                    <span class="input-group-text bg-body-secondary">$</span>
+                                                    <span class="input-group-text bg-body-secondary">₹</span>
                                                     <input type="number" class="form-control" x-model="form.purchase_price" step="0.01" min="0" required placeholder="0.00">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label fw-medium text-muted small">MRP</label>
                                                 <div class="input-group">
-                                                    <span class="input-group-text bg-body-secondary">$</span>
+                                                    <span class="input-group-text bg-body-secondary">₹</span>
                                                     <input type="number" class="form-control" x-model="form.mrp" step="0.01" min="0" placeholder="0.00">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label fw-medium text-muted small">Selling Price <span class="text-danger">*</span></label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text bg-body-secondary">$</span>
+                                                <div class="input-group mb-1">
+                                                    <span class="input-group-text bg-body-secondary">₹</span>
                                                     <input type="number" class="form-control" x-model="form.selling_price" step="0.01" min="0" required placeholder="0.00">
                                                 </div>
+                                                <small class="text-success fw-medium" x-show="form.selling_price && form.tax_rate_id" x-cloak>
+                                                    Inc. GST: ₹<span x-text="finalSellingPriceWithTax.toFixed(2)"></span>
+                                                </small>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Default Discount</label>
@@ -490,12 +493,12 @@
                                                 <label class="form-label fw-medium text-muted small">Discount Type</label>
                                                 <select class="form-select" x-model="form.default_discount_type">
                                                     <option value="percent">Percent (%)</option>
-                                                    <option value="flat">Flat ($)</option>
+                                                    <option value="flat">Flat (₹)</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Tax Rate</label>
-                                                <select class="form-select" x-model="form.tax_rate_id">
+                                                <label class="form-label fw-medium text-muted small">Tax Rate <span class="text-danger">*</span></label>
+                                                <select class="form-select" x-model="form.tax_rate_id" required>
                                                     <option value="">No Tax</option>
                                                     <template x-for="rate in options.taxRates" :key="rate.id">
                                                         <option :value="String(rate.id)" x-text="rate.name + ' (' + rate.rate + '%)'"></option>
@@ -503,8 +506,8 @@
                                                 </select>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">HSN Code</label>
-                                                <select class="form-select" x-model="form.hsn_code_id">
+                                                <label class="form-label fw-medium text-muted small">HSN Code <span class="text-danger">*</span></label>
+                                                <select class="form-select" x-model="form.hsn_code_id" required>
                                                     <option value="">No HSN</option>
                                                     <template x-for="hsn in options.hsnCodes" :key="hsn.id">
                                                         <option :value="String(hsn.id)" x-text="hsn.code + (hsn.description ? ' - ' + hsn.description : '')"></option>
@@ -597,8 +600,8 @@
                                                 <input type="number" class="form-control" x-model="form.min_stock_level" min="0" placeholder="0">
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Unit (UOM)</label>
-                                                <select class="form-select" x-model="form.uom_id">
+                                                <label class="form-label fw-medium text-muted small">Unit (UOM) <span class="text-danger">*</span></label>
+                                                <select class="form-select" x-model="form.uom_id" required>
                                                     <option value="">Select Unit</option>
                                                     <template x-for="uom in options.uoms" :key="uom.id">
                                                         <option :value="String(uom.id)" x-text="uom.name + (uom.short_name ? ' (' + uom.short_name + ')' : '')"></option>
@@ -615,8 +618,8 @@
                                                 </select>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Weight / Volume</label>
-                                                <input type="text" class="form-control" x-model="form.weight" placeholder="e.g. 1kg, 500ml">
+                                                <label class="form-label fw-medium text-muted small">Weight / Volume <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" x-model="form.weight" required placeholder="e.g. 1kg, 500ml">
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Grade</label>

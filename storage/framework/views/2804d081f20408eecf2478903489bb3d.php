@@ -347,9 +347,11 @@
                             <p class="mb-0 text-muted" style="font-size: 11px;" x-text="`${onlineUsers.length} active, ${users.length} available`"></p>
                         </div>
                         <div class="d-flex gap-1">
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('chat-export')): ?>
                             <button type="button" @click="exportUsersToCSV" class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Export Data">
                                 <i class="bi bi-download"></i>
                             </button>
+                            <?php endif; ?>
                             <button type="button" @click="fetchUsers" class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Refresh users">
                                 <i class="bi bi-arrow-clockwise"></i>
                             </button>

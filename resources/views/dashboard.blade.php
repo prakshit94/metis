@@ -108,7 +108,7 @@
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
                                         <h6 class="text-muted mb-1">Total Revenue</h6>
-                                        <div class="h3 mb-0" aria-live="polite"><span x-text="'Rs ' + value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})">Rs {{ number_format($totalRevenue, 2) }}</span></div>
+                                        <div class="h3 mb-0" aria-live="polite"><span x-text="'₹' + value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})">₹{{ number_format($totalRevenue, 2) }}</span></div>
                                         <small class="trend-up">
                                             <i class="bi bi-arrow-up"></i> +8.2% from last month
                                         </small>
@@ -251,7 +251,7 @@
                                 </div>
                                 <div class="mt-3 pt-2 border-top border-success border-opacity-25">
                                     <span class="text-muted d-block small mb-1 fw-semibold">Rev. Delivered</span>
-                                    <span class="fw-bold text-success fs-5">Rs {{ number_format($revDelivered, 2) }}</span>
+                                    <span class="fw-bold text-success fs-5">₹{{ number_format($revDelivered, 2) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -281,7 +281,7 @@
                                 </div>
                                 <div class="mt-3 pt-2 border-top border-danger border-opacity-25">
                                     <span class="text-muted d-block small mb-1 fw-semibold">Rev. Returned</span>
-                                    <span class="fw-bold text-danger fs-5">Rs {{ number_format($revReturned, 2) }}</span>
+                                    <span class="fw-bold text-danger fs-5">₹{{ number_format($revReturned, 2) }}</span>
                                 </div>
                             </div>
                         </div>

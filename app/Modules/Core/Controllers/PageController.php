@@ -57,6 +57,9 @@ class PageController extends Controller
         // 1. Top Metrics
         $totalCustomers = (clone $customerQuery)->count();
         $totalRevenue = (clone $orderQuery)->whereNotIn('status', ['cancelled'])
+            ->where(function ($q) {
+                $q->where('is_draft', 0)->orWhere('status', '!=', 'pending');
+            })
             ->whereDoesntHave('orderReturns', function ($q) {
                 $q->where('status', 'completed');
             })->sum('net_amount');
@@ -90,6 +93,9 @@ class PageController extends Controller
         for ($i = 11; $i >= 0; $i--) {
             $month = Carbon::now()->subMonths($i);
             $revenue = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned'])
+                ->where(function ($q) {
+                    $q->where('is_draft', 0)->orWhere('status', '!=', 'pending');
+                })
                 ->whereYear('order_date', $month->year)
                 ->whereMonth('order_date', $month->month)
                 ->sum('net_amount');
@@ -107,6 +113,9 @@ class PageController extends Controller
         for ($i = 29; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
             $revenue = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned'])
+                ->where(function ($q) {
+                    $q->where('is_draft', 0)->orWhere('status', '!=', 'pending');
+                })
                 ->whereDate('order_date', $date->toDateString())
                 ->sum('net_amount');
             $profit = $revenue * 0.2;
@@ -174,6 +183,9 @@ class PageController extends Controller
         })
             ->select(DB::raw('COALESCE(shipping_district, shipping_city, shipping_state) as location_name'), DB::raw('SUM(net_amount) as total_sales'))
             ->whereNotIn('status', ['cancelled', 'returned'])
+            ->where(function ($q) {
+                $q->where('is_draft', 0)->orWhere('status', '!=', 'pending');
+            })
             ->groupBy('location_name')
             ->orderByDesc('total_sales')
             ->limit(10)
@@ -188,6 +200,9 @@ class PageController extends Controller
 
         // Recent Orders
         $recentOrdersRaw = (clone $orderQuery)->with(['party', 'items.product'])
+            ->where(function ($q) {
+                $q->where('is_draft', 0)->orWhere('status', '!=', 'pending');
+            })
             ->latest('order_date')
             ->take(5)
             ->get();
@@ -219,6 +234,35 @@ class PageController extends Controller
             ];
         })->toArray();
 
+        // Future Orders
+        $futureOrdersRaw = (clone $orderQuery)->with(['party', 'items.product'])
+            ->where('is_draft', 1)
+            ->where('status', 'pending')
+            ->orderBy('future_order_date', 'asc')
+            ->take(5)
+            ->get();
+
+        $futureOrders = $futureOrdersRaw->map(function ($order) {
+            $statusClass = 'bg-primary';
+
+            $itemsList = $order->items->map(function($item) {
+                $name = $item->product ? $item->product->name : 'Unknown Product';
+                return $item->quantity . 'x ' . $name;
+            })->implode(', ');
+
+            return [
+                'id' => $order->order_no,
+                'customer' => $order->party ? $order->party->name : 'Unknown',
+                'items' => $itemsList,
+                'amount' => 'Rs '.number_format($order->net_amount, 2),
+                'status' => [
+                    'text' => 'Future Order',
+                    'class' => $statusClass,
+                ],
+                'date' => $order->future_order_date ? \Carbon\Carbon::parse($order->future_order_date)->format('M d, Y') : 'N/A',
+            ];
+        })->toArray();
+
         $dashboardData = [
             'revenue_monthly' => $revenueData,
             'revenue_daily' => $dailyRevenueData,
@@ -226,6 +270,7 @@ class PageController extends Controller
             'orders' => $orderStatusDistribution,
             'salesByLocation' => $salesByLocation,
             'recentOrders' => $recentOrders,
+            'futureOrders' => $futureOrders,
         ];
 
         if ($request->wantsJson() || $request->ajax()) {

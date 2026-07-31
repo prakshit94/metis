@@ -9,9 +9,19 @@ use App\Modules\Inventory\Models\PurchaseOrder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class PurchaseOrderController extends Controller
+class PurchaseOrderController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:purchaseorder-view', only: ['index']),
+            new Middleware('permission:purchaseorder-create', only: ['store']),
+        ];
+    }
+
     public function index(Request $request)
     {
         if ($request->wantsJson()) {

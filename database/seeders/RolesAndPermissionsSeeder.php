@@ -276,6 +276,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Orders
         'orders.view',
         'orders.export',
+        'orders.import',
         'orders.create',
         'orders.edit',
         'orders.delete',
@@ -370,6 +371,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Chat
         'chat-view',
+        'chat-export',
         'chat-create',
         'chat-edit',
         'chat-delete',
@@ -528,6 +530,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'audit-log-view',
             'skip-call-log',
             'chat-view',
+            'chat-export',
             'chat-create',
             'chat-edit',
             'chat-delete',
@@ -544,6 +547,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'sidebar-view',
             'dashboard-view',
             'customer-view',
+            'view_all_customer',
+            'customer-create',
+            'customer-edit',
             'customeraddress-view',
             'customeraddress-create',
             'customeraddress-edit',
@@ -639,6 +645,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'dashboard-view',
             'view_all_customer',
             'customer-view',
+            'catalog-view',
+            'product-view',
+            'stockmanagement-view',
             'customeraddress-view',
             'customeraddress-create',
             'customeraddress-edit',
