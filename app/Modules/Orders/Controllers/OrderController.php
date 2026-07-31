@@ -218,6 +218,8 @@ class OrderController extends Controller implements HasMiddleware
                 DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN orders.net_amount ELSE 0 END) as delivered_amount"),
                 DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN 1 ELSE 0 END) as returned"),
                 DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN orders.net_amount ELSE 0 END) as returned_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'return_requested' THEN 1 ELSE 0 END) as return_requested"),
+                DB::raw("SUM(CASE WHEN orders.status = 'return_requested' THEN orders.net_amount ELSE 0 END) as return_requested_amount"),
                 DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled"),
                 DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN orders.net_amount ELSE 0 END) as cancelled_amount"),
             ])->toBase()->first();
@@ -242,6 +244,8 @@ class OrderController extends Controller implements HasMiddleware
             'delivered_amount' => (float) ($counts->delivered_amount ?? 0),
             'returned' => (int) ($counts->returned ?? 0),
             'returned_amount' => (float) ($counts->returned_amount ?? 0),
+            'return_requested' => (int) ($counts->return_requested ?? 0),
+            'return_requested_amount' => (float) ($counts->return_requested_amount ?? 0),
             'cancelled' => (int) ($counts->cancelled ?? 0),
             'cancelled_amount' => (float) ($counts->cancelled_amount ?? 0),
         ];
@@ -1348,7 +1352,7 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view-all-data')) {
-            return ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'];
+            return ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'return_requested', 'returned', 'cancelled'];
         }
 
         $statuses = [];
@@ -1373,6 +1377,9 @@ class OrderController extends Controller implements HasMiddleware
         }
         if ($user->can('orders.view.delivered')) {
             $statuses[] = 'delivered';
+        }
+        if ($user->can('orders.view.return_requested')) {
+            $statuses[] = 'return_requested';
         }
         if ($user->can('orders.view.returned')) {
             $statuses[] = 'returned';

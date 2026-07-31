@@ -132,6 +132,18 @@ class OrderReturnController extends Controller implements HasMiddleware
                 ]);
             }
 
+            // Update the main order status and log it
+            $order->update([
+                'status' => 'return_requested',
+                'updated_by' => auth()->id()
+            ]);
+
+            $order->statusLogs()->create([
+                'status' => 'return_requested',
+                'notes' => 'Return initiated. Reason: ' . $validated['reason'],
+                'changed_by' => auth()->id()
+            ]);
+
             return $return;
         });
 
@@ -201,6 +213,18 @@ class OrderReturnController extends Controller implements HasMiddleware
             }
 
             $return->update(['status' => 'completed']);
+
+            // Update main order status to returned and log it
+            $return->order->update([
+                'status' => 'returned',
+                'updated_by' => auth()->id()
+            ]);
+
+            $return->order->statusLogs()->create([
+                'status' => 'returned',
+                'notes' => 'Return QC completed successfully.',
+                'changed_by' => auth()->id()
+            ]);
         });
 
         return response()->json(['success' => true, 'message' => 'Quality Check processed successfully.']);

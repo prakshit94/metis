@@ -35,6 +35,27 @@ class Order extends Model implements Auditable
 
         static::saved($clearCache);
         static::deleted($clearCache);
+
+        static::creating(function (self $order) {
+            if ($order->status) {
+                $statusField = $order->status . '_at';
+                $byField = $order->status . '_by';
+                $order->{$statusField} = now();
+                $order->{$byField} = auth()->id() ?? $order->created_by;
+            }
+        });
+
+        static::updating(function (self $order) {
+            if ($order->isDirty('status')) {
+                $newStatus = $order->status;
+                if ($newStatus) {
+                    $statusField = $newStatus . '_at';
+                    $byField = $newStatus . '_by';
+                    $order->{$statusField} = now();
+                    $order->{$byField} = auth()->id() ?? $order->updated_by;
+                }
+            }
+        });
     }
 
     /** Canonical order lifecycle (warehouse → customer). */

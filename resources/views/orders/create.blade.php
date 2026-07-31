@@ -1068,7 +1068,7 @@
         <div class="card-body p-4 p-lg-4">
             <template x-if="bottomTab === 'history'">
                 <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden">
-                    <template x-if="recentOrders && recentOrders.length > 0">
+                    <template x-if="historyOrders && historyOrders.length > 0">
                         <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
                                 <thead class="table-secondary sticky-top" style="z-index: 1;">
@@ -1080,7 +1080,7 @@
                                         <th scope="col" class="text-nowrap text-end pe-4 py-2 border-bottom-0">Total</th>
                                     </tr>
                                 </thead>
-                                <template x-for="order in recentOrders" :key="'history-' + order.id">
+                                <template x-for="order in historyOrders" :key="'history-' + order.id">
                                     <tbody class="border-top-0 border-bottom">
                                         <tr @click="toggleOrderDetails(order.id)" class="transition-all" style="cursor: pointer;">
                                             <td class="text-nowrap ps-4 py-2 fw-bold text-body-emphasis" x-text="order.order_no || order.order_number || ('Order #' + order.id)"></td>
@@ -1180,7 +1180,7 @@
                             </table>
                         </div>
                     </template>
-                    <template x-if="!recentOrders || !recentOrders.length">
+                    <template x-if="!historyOrders || !historyOrders.length">
                         <div class="alert alert-secondary border-0 mb-0 p-5 text-center text-muted">
                             <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                             No order history available.
@@ -2176,6 +2176,10 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
 
         get futureOrders() {
             return (this.recentOrders || []).filter(order => Boolean(order.is_draft) || order.lifecycle_status === 'future_order' || order.status_label === 'Future Order');
+        },
+
+        get historyOrders() {
+            return (this.recentOrders || []).filter(order => !(Boolean(order.is_draft) || order.lifecycle_status === 'future_order' || order.status_label === 'Future Order'));
         },
 
         get customerTags() {

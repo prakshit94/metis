@@ -23,6 +23,28 @@ return new class extends Migration {
             $table->date('future_order_date')->nullable();
             $table->dateTime('scheduled_confirmation_date')->nullable();
             $table->integer('confirmation_attempts')->default(0);
+
+            // Status tracking
+            $table->dateTime('pending_at')->nullable();
+            $table->foreignId('pending_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('confirmed_at')->nullable();
+            $table->foreignId('confirmed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('processing_at')->nullable();
+            $table->foreignId('processing_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('ready_to_ship_at')->nullable();
+            $table->foreignId('ready_to_ship_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('dispatched_at')->nullable();
+            $table->foreignId('dispatched_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('shipped_at')->nullable();
+            $table->foreignId('shipped_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('delivered_at')->nullable();
+            $table->foreignId('delivered_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('cancelled_at')->nullable();
+            $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('returned_at')->nullable();
+            $table->foreignId('returned_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('return_requested_at')->nullable();
+            $table->foreignId('return_requested_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('warehouse_id')->nullable()->constrained()->nullOnDelete();
 
             $table->unsignedBigInteger('shipping_address_id')->nullable();

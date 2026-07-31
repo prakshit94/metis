@@ -143,7 +143,7 @@ document.addEventListener('alpine:init', () => {
     carriersList: [],
     warehousesList: [],
     allowedFilterStatuses: [],
-    allFilterStatuses: ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'],
+    allFilterStatuses: ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'return_requested', 'returned', 'cancelled'],
 
     // Modal data state
     selectedOrder: null,
