@@ -140,7 +140,7 @@ class WarehouseAnalyticsService
         $netValue = 0;
         foreach ($adjQuery->get() as $adjustment) {
             foreach ($adjustment->items as $item) {
-                $price = $item->product->price ?? 0;
+                $price = $item->product->purchase_price ?? $item->product->selling_price ?? 0;
                 $netValue += ($item->difference * $price);
             }
         }
@@ -203,10 +203,9 @@ class WarehouseAnalyticsService
             $query->where('warehouse_id', $warehouseId);
         }
 
-        // Just an approximation based on available quantity * product price (assuming product has a price or MRP)
-        // Here we just return a stub or query that maps to standard structures
+        // Just an approximation based on available quantity * product purchase price
         return (float) $query->get()->sum(function($stock) {
-             return $stock->quantity * ($stock->product->price ?? 100);
+             return $stock->quantity * ($stock->product->purchase_price ?? $stock->product->selling_price ?? 0);
         });
     }
 
