@@ -222,6 +222,23 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    async revertPayment(id) {
+      if (!confirm('Are you sure you want to revert this payment? This action cannot be undone.')) return;
+      this.isSubmitting = true;
+      try {
+        const res = await apiFetch(`/payments/${id}`, {
+          method: 'DELETE'
+        });
+        showToast(res.message || 'Payment reverted successfully.');
+        this.loadPayments();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+
+
     async exportSelectedPayments() {
       if (!this.selectedPayments.length) return;
       this.isSubmitting = true;
@@ -375,6 +392,12 @@ document.addEventListener('alpine:init', () => {
       if (!value) return 'N/A';
       const d = new Date(value);
       return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    },
+
+    formatDateTime(value) {
+      if (!value) return 'N/A';
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     }
   }));
 });

@@ -50,6 +50,9 @@ class Invoice extends Model implements Auditable
 
     public function getPaidAmountAttribute()
     {
+        if ($this->relationLoaded('payments')) {
+            return $this->payments->where('status', 'completed')->sum('amount');
+        }
         return $this->payments()->where('status', 'completed')->sum('amount');
     }
 
@@ -70,6 +73,9 @@ class Invoice extends Model implements Auditable
 
     public function getRefundedAmountAttribute()
     {
+        if ($this->relationLoaded('refunds')) {
+            return $this->refunds->where('status', 'completed')->sum('amount');
+        }
         return $this->refunds()->where('status', 'completed')->sum('amount');
     }
 }

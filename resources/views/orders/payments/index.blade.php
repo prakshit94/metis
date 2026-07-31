@@ -98,7 +98,7 @@
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
                         <div class="position-relative">
-                            <input type="search" class="form-control form-control-sm" placeholder="Search Txn ID..." x-model="searchQuery" @input.debounce.300ms="filterPayments()" style="width: 200px;">
+                            <input type="search" class="form-control form-control-sm" placeholder="Search Txn, Order ID, Name..." x-model="searchQuery" @input.debounce.300ms="filterPayments()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
                         <select class="form-select form-select-sm" x-model="statusFilter" @change="filterPayments()" style="width: 150px;">
@@ -108,6 +108,7 @@
                             <option value="completed">Completed</option>
                             <option value="failed">Failed</option>
                             <option value="refunded">Refunded</option>
+                            <option value="reverted">Reverted</option>
                         </select>
                     </div>
                 </div>
@@ -155,6 +156,7 @@
                                 <i class="bi bi-arrow-down" x-show="sortField === 'payment_no' && sortDirection === 'desc'"></i>
                             </th>
                             <th scope="col"><i class="bi bi-hash me-1 text-secondary"></i>Order #</th>
+                            <th scope="col"><i class="bi bi-file-earmark-text me-1 text-secondary"></i>Invoice #</th>
                             <th scope="col" role="button" @click="sortBy('payment_method')" class="sortable">
                                 <i class="bi bi-wallet2 me-1 text-secondary"></i>Method
                                 <i class="bi bi-arrow-up" x-show="sortField === 'payment_method' && sortDirection === 'asc'"></i>
@@ -185,7 +187,20 @@
                                     <br><small class="text-muted" x-text="payment.transaction_id || 'N/A'"></small>
                                 </td>
                                 <td>
-                                    <span class="text-body-secondary font-monospace" x-text="payment.order ? payment.order.order_no : 'N/A'"></span>
+                                    <template x-if="payment.order">
+                                        <a :href="`/orders/${payment.order.id}`" class="text-decoration-none font-monospace text-primary fw-medium" target="_blank" x-text="payment.order.order_no"></a>
+                                    </template>
+                                    <template x-if="!payment.order">
+                                        <span class="text-body-secondary font-monospace">N/A</span>
+                                    </template>
+                                </td>
+                                <td>
+                                    <template x-if="payment.invoice">
+                                        <a href="/invoices" class="text-decoration-none font-monospace text-primary fw-medium" target="_blank" x-text="payment.invoice.invoice_no" title="View in Invoices"></a>
+                                    </template>
+                                    <template x-if="!payment.invoice">
+                                        <span class="text-body-secondary font-monospace">N/A</span>
+                                    </template>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -206,13 +221,14 @@
                                 <td>
                                     <span class="badge" 
                                           :class="{
-                                              'bg-success bg-opacity-25 text-success border border-success border-opacity-50': payment.status === 'completed',
-                                              'bg-info bg-opacity-25 text-info border border-info border-opacity-50': payment.status === 'authorized',
-                                              'bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50': payment.status === 'pending',
-                                              'bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50': payment.status === 'failed',
-                                              'bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-50': payment.status === 'refunded'
+                                              'bg-dark bg-opacity-25 text-dark border border-dark border-opacity-50': payment.deleted_at,
+                                              'bg-success bg-opacity-25 text-success border border-success border-opacity-50': !payment.deleted_at && payment.status === 'completed',
+                                              'bg-info bg-opacity-25 text-info border border-info border-opacity-50': !payment.deleted_at && payment.status === 'authorized',
+                                              'bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50': !payment.deleted_at && payment.status === 'pending',
+                                              'bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50': !payment.deleted_at && payment.status === 'failed',
+                                              'bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-50': !payment.deleted_at && payment.status === 'refunded'
                                           }"
-                                          x-text="payment.status.toUpperCase()"></span>
+                                          x-text="payment.deleted_at ? 'REVERTED' : payment.status.toUpperCase()"></span>
                                 </td>
                                 <td>
                                     <div class="small text-body-secondary" x-text="formatDate(payment.payment_date)"></div>
@@ -234,6 +250,11 @@
                                                     <i class="bi bi-cash me-2"></i>Complete Payment
                                                 </a></li>
                                             </template>
+                                            <template x-if="payment.status === 'completed'">
+                                                <li><a class="dropdown-item text-danger" href="#" @click.prevent="revertPayment(payment.id)">
+                                                    <i class="bi bi-arrow-counterclockwise me-2"></i>Revert Payment
+                                                </a></li>
+                                            </template>
                                         </ul>
                                     </div>
                                 </td>
@@ -241,7 +262,7 @@
                         </template>
                         <template x-if="payments.length === 0">
                             <tr>
-                                <td colspan="8" class="text-center py-5 text-muted">
+                                <td colspan="9" class="text-center py-5 text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                     No payments found matching current criteria.
                                 </td>
@@ -290,7 +311,7 @@
                                 </div>
                                 <div>
                                     <h4 class="modal-title fw-bolder mb-1">Txn <span class="text-primary" x-text="selectedPayment.payment_no"></span></h4>
-                                    <p class="text-muted small mb-0" x-text="formatDate(selectedPayment.payment_date)"></p>
+                                    <p class="text-muted small mb-0"><i class="bi bi-clock me-1"></i><span x-text="formatDateTime(selectedPayment.payment_date)"></span></p>
                                 </div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -325,7 +346,7 @@
                                                             <tr :class="{ 'table-primary': historyPayment.id === selectedPayment.id }">
                                                                 <td class="font-monospace" x-text="historyPayment.payment_no"></td>
                                                                 <td x-text="(historyPayment.payment_method || 'N/A').toUpperCase().replace(/_/g, ' ')"></td>
-                                                                <td x-text="formatDate(historyPayment.payment_date)"></td>
+                                                                <td x-text="formatDateTime(historyPayment.payment_date)"></td>
                                                                 <td class="text-end fw-semibold" x-text="formatCurrency(historyPayment.amount)"></td>
                                                                 <td><span class="badge" :class="historyPayment.status === 'completed' ? 'bg-success' : 'bg-secondary'" x-text="historyPayment.status.toUpperCase()"></span></td>
                                                                 <td class="font-monospace small" x-text="historyPayment.transaction_id || '—'"></td>
@@ -349,6 +370,28 @@
   "completed": <span x-text="selectedPayment.status === 'completed' ? 'true' : 'false'"></span>
 }
                                     </pre>
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <div class="p-4 bg-white border border-light-subtle rounded-4 shadow-sm">
+                                        <div class="row align-items-center">
+                                            <div class="col-6 border-end">
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <i class="bi bi-person-check-fill text-success fs-5"></i>
+                                                    <p class="fw-bold small text-muted text-uppercase mb-0">Recorded By</p>
+                                                </div>
+                                                <p class="fw-bold text-body-emphasis mb-0 fs-6 ps-4 ms-1" x-text="selectedPayment.recorder ? selectedPayment.recorder.name : 'System'"></p>
+                                                <small class="text-muted ps-4 ms-1" x-text="selectedPayment.recorded_at ? formatDateTime(selectedPayment.recorded_at) : ''"></small>
+                                            </div>
+                                            <div class="col-6 ps-4" x-show="selectedPayment.reverter">
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <i class="bi bi-arrow-counterclockwise text-danger fs-5"></i>
+                                                    <p class="fw-bold small text-danger text-uppercase mb-0">Reverted By</p>
+                                                </div>
+                                                <p class="fw-bold text-danger mb-0 fs-6 ps-4 ms-1" x-text="selectedPayment.reverter ? selectedPayment.reverter.name : 'System'"></p>
+                                                <small class="text-danger ps-4 ms-1" x-text="selectedPayment.reverted_at ? formatDateTime(selectedPayment.reverted_at) : ''"></small>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

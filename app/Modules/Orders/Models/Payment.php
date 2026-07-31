@@ -27,12 +27,28 @@ class Payment extends Model implements Auditable
         'transaction_id',
         'payment_date',
         'status',
+        'recorded_by',
+        'recorded_at',
+        'reverted_by',
+        'reverted_at',
     ];
 
     protected $casts = [
         'payment_date' => 'datetime',
+        'recorded_at' => 'datetime',
+        'reverted_at' => 'datetime',
         'amount' => 'decimal:2',
     ];
+
+    public function recorder()
+    {
+        return $this->belongsTo(\App\Modules\Users\Models\User::class, 'recorded_by');
+    }
+
+    public function reverter()
+    {
+        return $this->belongsTo(\App\Modules\Users\Models\User::class, 'reverted_by');
+    }
 
     protected static function booted()
     {

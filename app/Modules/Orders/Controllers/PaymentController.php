@@ -22,7 +22,7 @@ class PaymentController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Payment::with(['order.party', 'invoice']);
+        $query = Payment::withTrashed()->with(['order.party', 'invoice.payments', 'invoice.refunds', 'recorder']);
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -30,17 +30,28 @@ class PaymentController extends Controller implements HasMiddleware
                 $subQuery->where('payment_no', 'LIKE', "%{$s}%")
                     ->orWhere('transaction_id', 'LIKE', "%{$s}%")
                     ->orWhereHas('order', function ($q) use ($s) {
-                        $q->where('order_no', 'LIKE', "%{$s}%")
-                            ->orWhereHas('party', function ($q2) use ($s) {
-                                $q2->where('firstname', 'LIKE', "%{$s}%")
-                                    ->orWhere('lastname', 'LIKE', "%{$s}%");
-                            });
+                        $q->where('order_no', 'LIKE', "%{$s}%");
+                        if (is_numeric($s)) {
+                            $q->orWhere('id', $s);
+                        }
+                        $q->orWhereHas('party', function ($q2) use ($s) {
+                            $q2->where('firstname', 'LIKE', "%{$s}%")
+                                ->orWhere('lastname', 'LIKE', "%{$s}%");
+                        });
                     });
             });
         }
 
+        // Clone base stats query before paginating or applying status filters
+        $baseStatsQuery = clone $query;
+        $statsQuery = fn () => clone $baseStatsQuery;
+
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'reverted') {
+                $query->onlyTrashed();
+            } else {
+                $query->where('status', $request->status)->whereNull('deleted_at');
+            }
         }
 
         $sortField = $request->input('sort_field', 'id');
@@ -56,23 +67,11 @@ class PaymentController extends Controller implements HasMiddleware
         $payments = $query->paginate($request->integer('limit', 10));
 
         if ($request->wantsJson() || $request->ajax()) {
-            $user = $request->user();
-
-            // Scope stats to what the requesting user can see
-            $userOrderIds = null;
-            if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
-                $userOrderIds = \App\Modules\Orders\Models\Order::where('created_by', $user->id)->pluck('id');
-            }
-
-            $statsQuery = fn () => $userOrderIds
-                ? Payment::whereIn('order_id', $userOrderIds)
-                : Payment::query();
-
             $stats = [
-                'total_volume'       => (float) $statsQuery()->sum('amount'),
-                'completed_amount'   => (float) $statsQuery()->where('status', 'completed')->sum('amount'),
-                'authorized_amount'  => (float) $statsQuery()->whereIn('status', ['authorized', 'pending'])->sum('amount'),
-                'failed_amount'      => (float) $statsQuery()->where('status', 'failed')->sum('amount'),
+                'total_volume'       => (float) $statsQuery()->whereNull('deleted_at')->sum('amount'),
+                'completed_amount'   => (float) $statsQuery()->where('status', 'completed')->whereNull('deleted_at')->sum('amount'),
+                'authorized_amount'  => (float) $statsQuery()->whereIn('status', ['authorized', 'pending'])->whereNull('deleted_at')->sum('amount'),
+                'failed_amount'      => (float) $statsQuery()->where('status', 'failed')->whereNull('deleted_at')->sum('amount'),
             ];
 
             return response()->json([
@@ -89,8 +88,10 @@ class PaymentController extends Controller implements HasMiddleware
         $payment->load([
             'order.party',
             'invoice',
-            'invoice.payments' => fn ($query) => $query->orderByDesc('payment_date')->orderByDesc('id'),
-            'order.payments' => fn ($query) => $query->orderByDesc('payment_date')->orderByDesc('id'),
+            'recorder',
+            'reverter',
+            'invoice.payments' => fn ($query) => $query->with(['recorder', 'reverter'])->orderByDesc('payment_date')->orderByDesc('id'),
+            'order.payments' => fn ($query) => $query->with(['recorder', 'reverter'])->orderByDesc('payment_date')->orderByDesc('id'),
         ]);
 
         $history = $payment->invoice
@@ -111,13 +112,32 @@ class PaymentController extends Controller implements HasMiddleware
             'status' => 'required|in:pending,authorized,completed,failed,refunded',
         ]);
 
-        DB::transaction(function () use ($validated) {
+        DB::transaction(function () use ($validated, &$errorResponse) {
             $payments = Payment::whereIn('id', $validated['ids'])->get();
             foreach ($payments as $payment) {
+                if ($payment->status === 'refunded' && $validated['status'] !== 'refunded') {
+                    $errorResponse = response()->json([
+                        'success' => false, 
+                        'message' => "Payment #{$payment->payment_no} has already been refunded and cannot be modified."
+                    ], 422);
+                    return false; // Break transaction
+                }
+                if ($validated['status'] === 'refunded' && $payment->status !== 'completed') {
+                    $errorResponse = response()->json([
+                        'success' => false, 
+                        'message' => "Payment #{$payment->payment_no} cannot be refunded because it is not completed."
+                    ], 422);
+                    return false; // Break transaction
+                }
+                
                 // Updating model instance ensures boot / saved events trigger accounting & invoice updates
                 $payment->update(['status' => $validated['status']]);
             }
         });
+
+        if (isset($errorResponse)) {
+            return $errorResponse;
+        }
 
         return response()->json([
             'success' => true,
@@ -151,22 +171,9 @@ class PaymentController extends Controller implements HasMiddleware
             'ids.*' => 'exists:payments,id',
         ]);
 
-        $user = $request->user();
-
-        // Scope to payments the user is authorised to see:
-        // Super Admin / Admin / view-all-data see everything.
-        // Others only see payments for orders they created.
-        $query = Payment::whereIn('id', $validated['ids'])
-            ->with(['invoice.order.party', 'order.party']);
-
-        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
-            $query->where(function ($q) use ($user) {
-                $q->whereHas('order', fn ($oq) => $oq->where('created_by', $user->id))
-                  ->orWhereHas('invoice.order', fn ($oq) => $oq->where('created_by', $user->id));
-            });
-        }
-
-        $payments = $query->get();
+        $payments = Payment::whereIn('id', $validated['ids'])
+            ->with(['invoice.order.party', 'order.party'])
+            ->get();
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -212,5 +219,22 @@ class PaymentController extends Controller implements HasMiddleware
         };
 
         return Response::stream($callback, 200, $headers);
+    }
+
+    public function destroy(Payment $payment, \App\Services\FinancialService $financialService)
+    {
+        try {
+            $financialService->revertPayment($payment);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment reverted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to revert payment: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

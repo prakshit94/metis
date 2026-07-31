@@ -176,7 +176,12 @@
                                     <span class="fw-medium text-body-emphasis" x-text="invoice.invoice_no"></span>
                                 </td>
                                 <td>
-                                    <span class="text-body-secondary font-monospace" x-text="invoice.order ? invoice.order.order_no : 'N/A'"></span>
+                                    <template x-if="invoice.order">
+                                        <a :href="`/orders/${invoice.order.id}`" class="text-decoration-none font-monospace text-primary fw-medium" target="_blank" x-text="invoice.order.order_no"></a>
+                                    </template>
+                                    <template x-if="!invoice.order">
+                                        <span class="text-body-secondary font-monospace">N/A</span>
+                                    </template>
                                 </td>
                                 <td>
                                     <div class="small fw-medium text-body-emphasis" x-text="invoice.order && invoice.order.party ? (invoice.order.party.firstname + ' ' + invoice.order.party.lastname) : 'N/A'"></div>
@@ -184,9 +189,14 @@
                                 <td>
                                     <div class="fw-bold text-body-emphasis" x-text="formatCurrency(invoice.net_amount)"></div>
                                     <template x-if="invoice.status === 'partially_paid' || invoice.paid_amount > 0">
-                                        <div class="small mt-1 lh-sm">
-                                            <span class="text-success d-block" style="font-size: 0.75rem;">Paid: <span x-text="formatCurrency(invoice.paid_amount)"></span></span>
-                                            <span class="text-warning d-block" style="font-size: 0.75rem;">Remaining: <span x-text="formatCurrency(invoice.due_amount)"></span></span>
+                                        <div class="mt-1">
+                                            <div class="progress" style="height: 6px;" :title="'Paid: ' + formatCurrency(invoice.paid_amount) + ' / Due: ' + formatCurrency(invoice.due_amount)">
+                                                <div class="progress-bar bg-success" role="progressbar" :style="'width: ' + ((invoice.paid_amount / invoice.net_amount) * 100) + '%'" :aria-valuenow="invoice.paid_amount" aria-valuemin="0" :aria-valuemax="invoice.net_amount"></div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mt-1" style="font-size: 0.70rem;">
+                                                <span class="text-success fw-medium"><i class="bi bi-check-circle me-1"></i><span x-text="formatCurrency(invoice.paid_amount)"></span></span>
+                                                <span class="text-warning fw-medium"><span x-text="formatCurrency(invoice.due_amount)"></span><i class="bi bi-clock ms-1"></i></span>
+                                            </div>
                                         </div>
                                     </template>
                                 </td>
@@ -272,7 +282,7 @@
                                 </div>
                                 <div>
                                     <h4 class="modal-title fw-bolder mb-1">Invoice <span class="text-primary" x-text="selectedInvoice.invoice_no"></span></h4>
-                                    <p class="text-muted small mb-0">Due: <span x-text="formatDate(selectedInvoice.due_date)"></span></p>
+                                    <p class="text-muted small mb-0"><i class="bi bi-clock me-1"></i><span x-text="formatDateTime(selectedInvoice.invoice_date)"></span></p>
                                 </div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -285,7 +295,12 @@
                                 </div>
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Order Ref</p>
-                                    <p class="font-monospace fw-medium text-body-emphasis" x-text="selectedInvoice.order ? selectedInvoice.order.order_no : 'N/A'"></p>
+                                    <template x-if="selectedInvoice.order">
+                                        <a :href="`/orders/${selectedInvoice.order.id}`" class="text-decoration-none font-monospace fs-5 text-primary fw-medium" target="_blank" x-text="selectedInvoice.order.order_no"></a>
+                                    </template>
+                                    <template x-if="!selectedInvoice.order">
+                                        <p class="font-monospace fw-medium text-body-emphasis mb-0">N/A</p>
+                                    </template>
                                 </div>
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Total Invoice Value</p>
@@ -301,7 +316,16 @@
                                 </div>
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Status</p>
-                                    <p class="fw-medium text-body-emphasis" x-text="selectedInvoice.status.toUpperCase().replace('_', ' ')"></p>
+                                    <p class="fw-medium text-body-emphasis mb-0">
+                                        <span class="badge" 
+                                              :class="{
+                                                  'bg-success': selectedInvoice.status === 'paid',
+                                                  'bg-warning text-dark': selectedInvoice.status === 'partially_paid',
+                                                  'bg-danger': selectedInvoice.status === 'unpaid',
+                                                  'bg-secondary': selectedInvoice.status === 'cancelled'
+                                              }"
+                                              x-text="selectedInvoice.status.toUpperCase().replace('_', ' ')"></span>
+                                    </p>
                                 </div>
                                 <div class="col-12">
                                     <p class="fw-bold small text-muted text-uppercase mb-2">Payment History</p>
@@ -309,13 +333,16 @@
                                         <template x-if="selectedInvoice.paymentHistory.length">
                                             <div class="table-responsive">
                                                 <table class="table table-sm align-middle mb-0">
-                                                    <thead class="table-light"><tr><th>Payment #</th><th>Method</th><th>Date</th><th class="text-end">Amount</th><th>Status</th><th>Transaction ID</th></tr></thead>
+                                                    <thead class="table-light"><tr><th>Payment #</th><th>Method</th><th>Recorded By</th><th>Date</th><th class="text-end">Amount</th><th>Status</th><th>Transaction ID</th></tr></thead>
                                                     <tbody>
                                                         <template x-for="payment in selectedInvoice.paymentHistory" :key="payment.id">
                                                             <tr>
                                                                 <td class="font-monospace" x-text="payment.payment_no"></td>
                                                                 <td x-text="(payment.payment_method || 'N/A').toUpperCase().replace(/_/g, ' ')"></td>
-                                                                <td x-text="formatDate(payment.payment_date)"></td>
+                                                                <td>
+                                                                    <span class="d-block text-truncate" style="max-width: 120px;" x-text="payment.recorder ? payment.recorder.name : 'System'" :title="payment.recorder ? payment.recorder.name : 'System'"></span>
+                                                                </td>
+                                                                <td x-text="formatDateTime(payment.payment_date)"></td>
                                                                 <td class="text-end fw-semibold" x-text="formatCurrency(payment.amount)"></td>
                                                                 <td><span class="badge" :class="payment.status === 'completed' ? 'bg-success' : 'bg-secondary'" x-text="payment.status.toUpperCase()"></span></td>
                                                                 <td class="font-monospace small" x-text="payment.transaction_id || '—'"></td>

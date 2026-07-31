@@ -37,7 +37,7 @@ class FinancialService
             if ($baseNo === $order->order_no) {
                 $baseNo = 'PAY-'.$order->order_no;
             }
-            $count = Payment::where('order_id', $order->id)->lockForUpdate()->count();
+            $count = Payment::withTrashed()->where('order_id', $order->id)->lockForUpdate()->count();
             $paymentNo = $count > 0 ? $baseNo.'-'.($count + 1) : $baseNo;
 
             $payment = Payment::create([
@@ -49,10 +49,27 @@ class FinancialService
                 'transaction_id' => $transactionId,
                 'payment_date' => $paymentDate ? Carbon::parse($paymentDate) : now(),
                 'status' => 'completed',
+                'recorded_by' => auth()->id(),
+                'recorded_at' => now(),
             ]);
 
             return $payment;
         }, 3);
+    }
+
+    /**
+     * Revert a mistakenly recorded payment.
+     */
+    public function revertPayment(Payment $payment): void
+    {
+        DB::transaction(function () use ($payment) {
+            $payment->update([
+                'reverted_by' => auth()->id(),
+                'reverted_at' => now(),
+            ]);
+            
+            $payment->delete();
+        });
     }
 
     /**

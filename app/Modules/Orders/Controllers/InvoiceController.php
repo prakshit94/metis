@@ -25,21 +25,28 @@ class InvoiceController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Invoice::with(['order.party', 'payments']);
+        $query = Invoice::with(['order.party', 'payments.recorder']);
 
         if ($request->filled('search')) {
             $s = trim($request->search);
             $query->where(function ($subQuery) use ($s) {
                 $subQuery->where('invoice_no', 'LIKE', "%{$s}%")
                     ->orWhereHas('order', function ($q) use ($s) {
-                        $q->where('order_no', 'LIKE', "%{$s}%")
-                            ->orWhereHas('party', function ($q2) use ($s) {
-                                $q2->where('firstname', 'LIKE', "%{$s}%")
-                                    ->orWhere('lastname', 'LIKE', "%{$s}%");
-                            });
+                        $q->where('order_no', 'LIKE', "%{$s}%");
+                        if (is_numeric($s)) {
+                            $q->orWhere('id', $s);
+                        }
+                        $q->orWhereHas('party', function ($q2) use ($s) {
+                            $q2->where('firstname', 'LIKE', "%{$s}%")
+                                ->orWhere('lastname', 'LIKE', "%{$s}%");
+                        });
                     });
             });
         }
+
+        // Clone base stats query before paginating or applying status filters
+        $baseStatsQuery = clone $query;
+        $statsQuery = fn () => clone $baseStatsQuery;
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -58,26 +65,22 @@ class InvoiceController extends Controller implements HasMiddleware
         $invoices = $query->paginate($request->integer('limit', 10));
 
         if ($request->wantsJson() || $request->ajax()) {
-            $user = $request->user();
-
-            // Scope stats to what the requesting user can see
-            $statsQuery = Invoice::query();
-            if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
-                $statsQuery->whereHas('order', fn ($q) => $q->where('created_by', $user->id));
-            }
-
-            $invoiceIds = $statsQuery->pluck('id');
-
-            $totalInvoiced = (float) Invoice::whereIn('id', $invoiceIds)->sum('net_amount');
+            $totalInvoiced = (float) $statsQuery()->sum('net_amount');
+            
+            // Subquery prevents packet limit / bindings explosion compared to pluck('id')
             $collectedAmount = (float) Payment::where('status', 'completed')
-                ->whereIn('invoice_id', $invoiceIds)->sum('amount');
+                ->whereIn('invoice_id', $statsQuery()->select('id'))
+                ->sum('amount');
+                
             $pendingAmount = max(0, $totalInvoiced - $collectedAmount);
+
+            $avgValue = (float) $statsQuery()->avg('net_amount');
 
             $stats = [
                 'total_invoiced' => $totalInvoiced,
                 'collected_amount' => $collectedAmount,
                 'pending_amount' => $pendingAmount,
-                'avg_value' => (float) (Invoice::avg('net_amount') ?? 0),
+                'avg_value' => $avgValue ?: 0,
             ];
 
             return response()->json([
@@ -93,7 +96,7 @@ class InvoiceController extends Controller implements HasMiddleware
     {
         $invoice->load([
             'order.party',
-            'payments' => fn ($query) => $query->orderByDesc('payment_date')->orderByDesc('id'),
+            'payments' => fn ($query) => $query->with(['recorder', 'reverter'])->orderByDesc('payment_date')->orderByDesc('id'),
         ]);
 
         return response()->json(['invoice' => $invoice]);
@@ -107,20 +110,33 @@ class InvoiceController extends Controller implements HasMiddleware
             'status' => 'required|in:paid,unpaid,cancelled',
         ]);
 
+        if (in_array($validated['status'], ['paid', 'unpaid'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invoice status is automatically derived from payments. You cannot manually force an invoice to be paid or unpaid without recording an actual payment.'
+            ], 422);
+        }
+
         $user = $request->user();
 
         // Scope: prevent users from updating invoices for orders they don't own
         $query = Invoice::whereIn('id', $validated['ids']);
-        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
-            $query->whereHas('order', fn ($q) => $q->where('created_by', $user->id));
-        }
-
+        
         $invoices = $query->get();
+
+        if ($validated['status'] === 'cancelled') {
+            foreach ($invoices as $invoice) {
+                if ($invoice->paid_amount > 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Cannot cancel Invoice #{$invoice->invoice_no} because it has completed payments. Please refund all associated payments first."
+                    ], 422);
+                }
+            }
+        }
 
         DB::transaction(function () use ($invoices, $validated) {
             foreach ($invoices as $invoice) {
-                // Never auto-create phantom payment records for bulk status changes.
-                // Simply update the invoice status directly.
                 $invoice->update(['status' => $validated['status']]);
             }
         });
@@ -171,11 +187,6 @@ class InvoiceController extends Controller implements HasMiddleware
         $user = $request->user();
 
         $query = Invoice::whereIn('id', $validated['ids']);
-
-        // Scope: non-admin users can only export invoices for their own orders
-        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
-            $query->whereHas('order', fn ($q) => $q->where('created_by', $user->id));
-        }
 
         $invoices = $query->get();
 
