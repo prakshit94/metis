@@ -610,7 +610,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'orders.cod',
             'orders.view.cancelled',
             'orders.view.confirmed',
-            'orders.view.future_order',
             'orders.view.pending',
             'orders.view.processing',
             'orders.view.ready_to_ship',
