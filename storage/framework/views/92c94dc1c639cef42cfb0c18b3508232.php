@@ -728,11 +728,19 @@
                             </div>
                         </div>
                         
-                        <div class="col-12 mt-4">
-                            <label class="form-label fw-semibold">Direct Permissions (Optional)</label>
-                            <p class="text-muted small mb-2">Assign specific permissions to this user directly, in addition to their role.</p>
+                        <div class="col-12 mt-4" x-data="{ showDirectPermissions: false }">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <label class="form-label fw-semibold mb-0">Direct Permissions (Optional)</label>
+                                    <p class="text-muted small mb-0">Assign specific permissions to this user directly, in addition to their role.</p>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @click="showDirectPermissions = !showDirectPermissions">
+                                    <i class="bi" :class="showDirectPermissions ? 'bi-eye-slash' : 'bi-eye'"></i> <span x-text="showDirectPermissions ? 'Hide' : 'Show'"></span> Permissions
+                                </button>
+                            </div>
                             
-                            <template x-if="rolesLoading">
+                            <div x-show="showDirectPermissions" x-collapse x-cloak>
+                                <template x-if="rolesLoading">
                                 <div class="border rounded p-3 text-center text-muted small">
                                     <span class="spinner-border spinner-border-sm me-2"></span>Loading permissions...
                                 </div>
@@ -768,6 +776,7 @@
                                     </template>
                                 </div>
                             </template>
+                            </div>
                         </div>
                         
                         <div class="col-12"><hr class="my-1"></div>
