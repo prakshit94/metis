@@ -1044,6 +1044,7 @@ class OrderController extends Controller implements HasMiddleware
                 'party',
                 'items.product.taxRate',
                 'shippingAddress.village',
+                'warehouse',
             ]);
             $pdf = Pdf::loadView('orders.pdf.bulk_cod', compact('orders'))->setPaper('a5', 'portrait');
 
