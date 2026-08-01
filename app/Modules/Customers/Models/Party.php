@@ -104,8 +104,11 @@ class Party extends Model implements Auditable
 
     public function getNameAttribute(): string
     {
-        return trim(collect([$this->firstname, $this->middlename, $this->lastname])
-            ->filter()->implode(' '));
+        return trim(collect([
+            $this->attributes['firstname'] ?? null,
+            $this->attributes['middlename'] ?? null,
+            $this->attributes['lastname'] ?? null
+        ])->filter()->implode(' '));
     }
 
     public function referrer()
