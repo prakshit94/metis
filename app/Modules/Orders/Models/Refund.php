@@ -23,6 +23,12 @@ class Refund extends Model implements Auditable
         'transaction_id',
         'status',
         'notes',
+        'processed_by',
+        'processed_at',
+    ];
+
+    protected $casts = [
+        'processed_at' => 'datetime',
     ];
 
     protected static function booted()
@@ -47,5 +53,10 @@ class Refund extends Model implements Auditable
     public function orderReturn(): BelongsTo
     {
         return $this->belongsTo(OrderReturn::class);
+    }
+
+    public function processedBy(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Users\Models\User::class, 'processed_by');
     }
 }

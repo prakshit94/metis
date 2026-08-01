@@ -124,12 +124,26 @@ class OrderReturnController extends Controller implements HasMiddleware
                 'notes' => $validated['notes'],
             ]);
 
+            $wasInTransit = in_array($order->status, Order::inTransitStatuses(), true);
+
             foreach ($validated['items'] as $item) {
                 OrderReturnItem::create([
                     'order_return_id' => $return->id,
                     'product_id' => $item['product_id'],
                     'requested_qty' => $item['requested_qty'],
                 ]);
+
+                if ($wasInTransit && $order->warehouse_id) {
+                    $stock = \App\Modules\Inventory\Models\Stock::where('product_id', $item['product_id'])
+                        ->where('warehouse_id', $order->warehouse_id)
+                        ->lockForUpdate()
+                        ->first();
+                    
+                    if ($stock) {
+                        $stock->dispatched_qty = max(0.0, (float) $stock->dispatched_qty - (float) $item['requested_qty']);
+                        $stock->save();
+                    }
+                }
             }
 
             // Update the main order status and log it
@@ -188,6 +202,7 @@ class OrderReturnController extends Controller implements HasMiddleware
         }
 
         DB::transaction(function () use ($validated, $return, $inventoryService) {
+            $refundAmount = 0;
             foreach ($validated['items'] as $itemData) {
                 $item = OrderReturnItem::where('order_return_id', $return->id)
                     ->findOrFail($itemData['id']);
@@ -199,6 +214,14 @@ class OrderReturnController extends Controller implements HasMiddleware
                     'qc_notes' => $itemData['qc_notes'],
                     'qc_status' => 'passed', // simplistically assuming it passed QC if we recorded quantities
                 ]);
+
+                // Calculate proportional refund amount based on received qty
+                $orderItem = \App\Modules\Orders\Models\OrderItem::where('order_id', $return->order_id)
+                    ->where('product_id', $item->product_id)
+                    ->first();
+                if ($orderItem && $orderItem->quantity > 0) {
+                    $refundAmount += ((float)$orderItem->total_amount / (float)$orderItem->quantity) * (float)$itemData['received_qty'];
+                }
 
                 // Inventory Update
                 if ($return->order->warehouse_id) {
@@ -213,6 +236,27 @@ class OrderReturnController extends Controller implements HasMiddleware
             }
 
             $return->update(['status' => 'completed']);
+            $return->load('order.invoice');
+
+            if ($refundAmount > 0 && $return->order->invoice && $return->order->invoice->paid_amount > 0) {
+                $refundable = min($refundAmount, $return->order->invoice->paid_amount);
+                
+                $baseNo = str_replace('ORD-', 'REF-', $return->order->order_no);
+                if ($baseNo === $return->order->order_no) {
+                    $baseNo = 'REF-'.$return->order->order_no;
+                }
+                $count = \App\Modules\Orders\Models\Refund::where('order_id', $return->order_id)->count();
+                $refundNo = $count > 0 ? $baseNo.'-'.($count + 1) : $baseNo;
+
+                \App\Modules\Orders\Models\Refund::create([
+                    'refund_no' => $refundNo,
+                    'order_id' => $return->order_id,
+                    'invoice_id' => $return->order->invoice->id,
+                    'order_return_id' => $return->id,
+                    'amount' => $refundable,
+                    'status' => 'pending',
+                ]);
+            }
 
             // Update main order status to returned and log it
             $return->order->update([

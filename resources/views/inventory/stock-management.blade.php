@@ -181,12 +181,13 @@
                                 </th>
                                 <th @click="sortBy('product_id')" class="sortable"><i class="bi bi-box-seam me-1 text-secondary"></i>Product</th>
                                 <th @click="sortBy('warehouse_id')" class="sortable"><i class="bi bi-buildings-fill me-1 text-secondary"></i>Warehouse</th>
-                                <th @click="sortBy('quantity')" class="sortable text-center"><i class="bi bi-inboxes me-1 text-secondary"></i>On Hand</th>
+                                <th @click="sortBy('quantity')" class="sortable text-center"><i class="bi bi-inboxes me-1 text-secondary"></i>In Stock</th>
+                                <th @click="sortBy('available')" class="sortable text-center"><i class="bi bi-check-circle me-1 text-secondary"></i>Available For Sell</th>
+                                <th @click="sortBy('pending_qty')" class="sortable text-center"><i class="bi bi-hourglass-split me-1 text-secondary"></i>Order Placed</th>
                                 <th @click="sortBy('reserved_qty')" class="sortable text-center"><i class="bi bi-bookmark-dash me-1 text-secondary"></i>Reserved</th>
-                                <th @click="sortBy('pending_qty')" class="sortable text-center"><i class="bi bi-hourglass-split me-1 text-secondary"></i>Pending</th>
                                 <th @click="sortBy('dispatched_qty')" class="sortable text-center"><i class="bi bi-send-check me-1 text-secondary"></i>Dispatched</th>
                                 <th @click="sortBy('delivered_qty')" class="sortable text-center"><i class="bi bi-box2-heart me-1 text-secondary"></i>Delivered</th>
-                                <th @click="sortBy('available')" class="sortable text-center"><i class="bi bi-check-circle me-1 text-secondary"></i>Available</th>
+                                <th @click="sortBy('return_requested_qty')" class="sortable text-center"><i class="bi bi-arrow-return-left me-1 text-secondary"></i>Return Req</th>
                                 <th @click="sortBy('in_transit_qty')" class="sortable text-center"><i class="bi bi-truck me-1 text-secondary"></i>In Transit</th>
                                 <th @click="sortBy('damaged_qty')" class="sortable text-center"><i class="bi bi-exclamation-octagon me-1 text-secondary"></i>Bad Qty</th>
                                 <th style="width: 120px;" class="text-end pe-4"><i class="bi bi-lightning-charge me-1 text-secondary"></i>Actions</th>
@@ -240,12 +241,22 @@
                                         </span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle"
-                                              x-text="parseFloat(item.reserved_qty || 0).toFixed(2)"></span>
+                                        <span class="badge stock-badge"
+                                              :class="{
+                                                  'in-stock':     (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 5,
+                                                  'low-stock':    (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 0 && (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 5,
+                                                  'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 0
+                                              }"
+                                              x-text="parseFloat(Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)).toFixed(4))">
+                                        </span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle"
                                               x-text="parseFloat(item.pending_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle"
+                                              x-text="parseFloat(item.reserved_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-info-subtle text-info border border-info-subtle"
@@ -256,14 +267,8 @@
                                               x-text="parseFloat(item.delivered_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge stock-badge"
-                                              :class="{
-                                                  'in-stock':     (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 5,
-                                                  'low-stock':    (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 0 && (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 5,
-                                                  'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 0
-                                              }"
-                                              x-text="parseFloat(Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)).toFixed(4))">
-                                        </span>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.return_requested_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"

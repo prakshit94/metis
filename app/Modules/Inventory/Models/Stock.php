@@ -157,4 +157,19 @@ class Stock extends Model implements Auditable
                     });
             });
     }
+
+    public function returnRequestedOrderItems(): HasMany
+    {
+        return $this->hasMany(OrderReturnItem::class, 'product_id', 'product_id')
+            ->whereHas('orderReturn', function ($query) {
+                $query->whereIn('status', ['pending', 'received', 'qc_in_progress'])
+                    ->whereHas('order', function ($q) {
+                        if ($this->warehouse_id) {
+                            $q->where('orders.warehouse_id', $this->warehouse_id);
+                        } else {
+                            $q->whereColumn('orders.warehouse_id', 'stocks.warehouse_id');
+                        }
+                    });
+            });
+    }
 }

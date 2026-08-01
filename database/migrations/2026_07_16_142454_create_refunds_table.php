@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('transaction_id')->nullable();
             $table->string('status')->default('pending');
             $table->text('notes')->nullable();
+            $table->foreignId('processed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('processed_at')->nullable();
             $table->timestamps();
         });
     }

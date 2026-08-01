@@ -110,6 +110,8 @@ class FinancialService
                 'payment_method' => $method,
                 'transaction_id' => $transactionId,
                 'status' => 'completed',
+                'processed_by' => auth()->id(),
+                'processed_at' => now(),
             ]);
 
             $return->refund_amount = (float) $return->refund_amount + $amount;

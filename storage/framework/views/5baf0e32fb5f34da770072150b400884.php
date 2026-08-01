@@ -290,6 +290,28 @@
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Gateway</p>
                                     <p class="fw-medium text-body-emphasis" x-text="selectedRefund.payment_method ? selectedRefund.payment_method.toUpperCase().replace('_', ' ') : 'N/A'"></p>
                                 </div>
+                                <div class="col-md-6">
+                                    <p class="fw-bold small text-muted text-uppercase mb-1">Processed By</p>
+                                    <p class="fw-medium text-body-emphasis">
+                                        <template x-if="selectedRefund.processed_by && selectedRefund.processed_by_user">
+                                            <span x-text="selectedRefund.processed_by_user.name"></span>
+                                        </template>
+                                        <template x-if="!selectedRefund.processed_by">
+                                            <span class="text-muted fst-italic">Pending</span>
+                                        </template>
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="fw-bold small text-muted text-uppercase mb-1">Processed At</p>
+                                    <p class="fw-medium text-body-emphasis">
+                                        <template x-if="selectedRefund.processed_at">
+                                            <span x-text="formatDate(selectedRefund.processed_at)"></span>
+                                        </template>
+                                        <template x-if="!selectedRefund.processed_at">
+                                            <span class="text-muted fst-italic">—</span>
+                                        </template>
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>

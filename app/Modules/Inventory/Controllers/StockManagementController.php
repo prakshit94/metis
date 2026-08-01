@@ -39,6 +39,7 @@ class StockManagementController extends Controller implements HasMiddleware
             ->withSum('pendingOrderItems as pending_qty', 'quantity')
             ->withSum('deliveredOrderItems as raw_delivered_qty', 'quantity')
             ->withSum('returnedOrderItems as returned_qty', 'received_qty')
+            ->withSum('returnRequestedOrderItems as return_requested_qty', 'requested_qty')
             ->whereHas('product')
             ->whereHas('warehouse');
 

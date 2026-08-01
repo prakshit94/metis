@@ -20,7 +20,7 @@ class RefundController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Refund::with(['order.party', 'invoice', 'orderReturn']);
+        $query = Refund::with(['order.party', 'invoice', 'orderReturn', 'processedBy']);
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -96,7 +96,13 @@ class RefundController extends Controller implements HasMiddleware
             $status = 'completed';
         }
 
-        Refund::whereIn('id', $validated['ids'])->get()->each->update(['status' => $status]);
+        $updateData = ['status' => $status];
+        if ($status === 'completed') {
+            $updateData['processed_by'] = auth()->id();
+            $updateData['processed_at'] = now();
+        }
+
+        Refund::whereIn('id', $validated['ids'])->get()->each->update($updateData);
 
         return response()->json([
             'success' => true,
