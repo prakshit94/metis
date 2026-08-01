@@ -69,8 +69,17 @@
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Referral Code</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-person-heart"></i></span>
-                                                <input type="text" name="referred_by_code" x-model="form.referred_by_code" class="form-control border-start-0 ps-0 fw-semibold text-uppercase font-monospace" style="font-size: 12px;" placeholder="Optional">
+                                                <input type="text" name="referred_by_code" x-model="form.referred_by_code" @input.debounce.500ms="checkReferralCode" class="form-control border-start-0 ps-0 fw-semibold text-uppercase font-monospace" style="font-size: 12px;" placeholder="Optional">
+                                                <span class="input-group-text bg-body border-start-0" x-show="form.referred_by_code && isValidatingReferral === false" x-cloak>
+                                                    <i class="bi bi-check-circle-fill text-success" x-show="referralValid"></i>
+                                                    <i class="bi bi-x-circle-fill text-danger" x-show="!referralValid && form.referred_by_code.length > 0"></i>
+                                                </span>
+                                                <span class="input-group-text bg-body border-start-0" x-show="isValidatingReferral" x-cloak>
+                                                    <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                                                </span>
                                             </div>
+                                            <div x-show="referralName" class="text-success small fw-bold mt-1" style="font-size: 10px;" x-text="'Referrer: ' + referralName" x-cloak></div>
+                                            <div x-show="!referralValid && form.referred_by_code && isValidatingReferral === false" class="text-danger small fw-bold mt-1" style="font-size: 10px;" x-cloak>Invalid Referral Code</div>
                                         </div>
                                         <div class="col-sm-4 position-relative" @click.away="showSourceDropdown = false">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Lead Source</label>
@@ -355,6 +364,9 @@ document.addEventListener('alpine:init', () => {
         formError: '',
         isEdit: false,
         customerId: null,
+        isValidatingReferral: false,
+        referralValid: false,
+        referralName: '',
         form: {
             firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
             category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
@@ -364,6 +376,25 @@ document.addEventListener('alpine:init', () => {
         get filteredCrops() {
             if (!this.cropSearch) return this.allCrops;
             return this.allCrops.filter(c => c.toLowerCase().includes(this.cropSearch.toLowerCase()));
+        },
+
+        async checkReferralCode() {
+            if (!this.form.referred_by_code || this.form.referred_by_code.trim().length < 3) {
+                this.referralValid = false;
+                this.referralName = '';
+                return;
+            }
+            this.isValidatingReferral = true;
+            try {
+                const res = await fetch(`/api/customers/check-referral/${this.form.referred_by_code.trim().toUpperCase()}`);
+                const data = await res.json();
+                this.referralValid = data.valid;
+                this.referralName = data.name || '';
+            } catch(e) {
+                this.referralValid = false;
+                this.referralName = '';
+            }
+            this.isValidatingReferral = false;
         },
 
         toggleSource(name) {
@@ -401,6 +432,9 @@ document.addEventListener('alpine:init', () => {
             this.selectedCrops = [];
             this.isEdit = false;
             this.customerId = null;
+            this.isValidatingReferral = false;
+            this.referralValid = false;
+            this.referralName = '';
         },
 
         openModal(detail) {
@@ -417,6 +451,7 @@ document.addEventListener('alpine:init', () => {
                 // extract referral code from referrer if it exists
                 if (detail.customer.referrer && detail.customer.referrer.referral_code) {
                     this.form.referred_by_code = detail.customer.referrer.referral_code;
+                    this.checkReferralCode();
                 }
                 // Date formatting for valid_till
                 if (detail.customer.credit_valid_till) {

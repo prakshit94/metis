@@ -306,6 +306,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/users/bulk-action', \App\Modules\Users\Controllers\BulkUserController::class)->name('api.users.bulk');
 
         // Customers API Routes
+        Route::get('/customers/check-referral/{code}', function ($code) {
+            $party = \App\Modules\Customers\Models\Party::where('referral_code', $code)->first(['id', 'firstname', 'lastname']);
+            return response()->json([
+                'valid' => (bool) $party,
+                'name' => $party ? trim("{$party->firstname} {$party->lastname}") : null,
+            ]);
+        })->name('api.customers.check-referral');
+
         Route::post('/customers/bulk-action', [\App\Modules\Customers\Controllers\CustomerController::class, 'bulkAction'])->name('api.customers.bulk');
         Route::patch('/customers/{customer}/restore', [\App\Modules\Customers\Controllers\CustomerController::class, 'restore'])->name('api.customers.restore');
         Route::delete('/customers/{customer}/force', [\App\Modules\Customers\Controllers\CustomerController::class, 'forceDelete'])->name('api.customers.force-delete');
