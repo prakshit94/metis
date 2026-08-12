@@ -481,7 +481,7 @@
                                 <select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId" @change="searchProducts(true)">
                                     <option value="">Select Warehouse</option>
                                     <?php $__currentLoopData = $warehouses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $w): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <option value="<?php echo e($w->id); ?>"><?php echo e($w->name); ?></option>
+                                    <option value="<?php echo e($w->id); ?>" data-state="<?php echo e($w->state); ?>"><?php echo e($w->name); ?></option>
                                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
                             </div>
@@ -1872,7 +1872,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         viewMode: 'table',
         showCustomerWorkspace: true,
         isCartSidebarOpen: false, useWalletBalance: false,
-        partyId: new URLSearchParams(window.location.search).get('customer_id') || '', warehouseId: '<?php echo e($warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "")); ?>', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale', shippingFee: 0,
+        partyId: new URLSearchParams(window.location.search).get('customer_id') || '', defaultWarehouseId: '<?php echo e($warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "")); ?>', warehouseId: '<?php echo e($warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "")); ?>', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale', shippingFee: 0,
         orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
         isDraft: false, futureOrderDate: '',
         editingOrderId: null,
@@ -1996,6 +1996,23 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 await this.evaluateFreeProducts();
             });
 
+            this.$watch('shippingAddressId', (newVal) => {
+                if (newVal) {
+                    const selectedAddress = this.addresses.find(a => String(a.id) === String(newVal));
+                    if (selectedAddress && selectedAddress.state) {
+                        const whSelect = document.querySelector('select[x-model="warehouseId"]');
+                        if (whSelect) {
+                            const options = Array.from(whSelect.options);
+                            const matchingOption = options.find(opt => opt.getAttribute('data-state') === selectedAddress.state);
+                            if (matchingOption) {
+                                this.warehouseId = matchingOption.value;
+                                setTimeout(() => { this.searchProducts(true); }, 50);
+                            }
+                        }
+                    }
+                }
+            });
+
             this.$watch('grandTotal', v => {
                 localStorage.setItem('ecommerce_create_order_cart_total', v);
                 window.dispatchEvent(new CustomEvent('cart-total-updated', { detail: v }));
@@ -2073,6 +2090,21 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 if (this.addresses.length) {
                     this.shippingAddressId = this.addresses.find(a=>a.is_default)?.id || this.addresses[0].id;
                     this.billingAddressId = this.shippingAddressId;
+                    
+                    if (!this.warehouseId || String(this.warehouseId) === String(this.defaultWarehouseId)) {
+                        const defaultAddress = this.addresses.find(a => String(a.id) === String(this.shippingAddressId));
+                        if (defaultAddress && defaultAddress.state) {
+                            const whSelect = document.querySelector('select[x-model="warehouseId"]');
+                            if (whSelect) {
+                                const options = Array.from(whSelect.options);
+                                const matchingOption = options.find(opt => opt.getAttribute('data-state') === defaultAddress.state);
+                                if (matchingOption) {
+                                    this.warehouseId = matchingOption.value;
+                                    setTimeout(() => { this.searchProducts(true); }, 50);
+                                }
+                            }
+                        }
+                    }
                 }
             } catch(e) { console.error(e); }
         },

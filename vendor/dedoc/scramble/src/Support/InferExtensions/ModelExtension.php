@@ -4,6 +4,8 @@ namespace Dedoc\Scramble\Support\InferExtensions;
 
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use Dedoc\Scramble\Diagnostics\DiagnosticsCollector;
+use Dedoc\Scramble\Diagnostics\Model\Md001PendingMigrationsDiagnostic;
 use Dedoc\Scramble\Infer\AutoResolvingArgumentTypeBag;
 use Dedoc\Scramble\Infer\Extensions\Event\MethodCallEvent;
 use Dedoc\Scramble\Infer\Extensions\Event\PropertyFetchEvent;
@@ -47,7 +49,12 @@ class ModelExtension implements MethodReturnTypeExtension, PropertyTypeExtension
 {
     use ExtractsLiteralArrayKeys;
 
-    private static $cache;
+    /** @var array<string, mixed> */
+    private array $cache = [];
+
+    public function __construct(
+        private ?DiagnosticsCollector $diagnostics = null,
+    ) {}
 
     public function shouldHandle(ObjectType|string $type): bool
     {
@@ -71,12 +78,12 @@ class ModelExtension implements MethodReturnTypeExtension, PropertyTypeExtension
             ?->getPropertyDefinition($event->getName())
             ?->type;
 
-        if ($propertyType?->getAttribute('source') === 'phpDoc') {
-            return $propertyType;
-        }
+        $annotatedType = $propertyType?->getAttribute('source') === 'phpDoc'
+            ? $propertyType
+            : null;
 
         if (! $this->hasProperty($event->getInstance(), $event->getName())) {
-            return null;
+            return $annotatedType;
         }
 
         $info = $this->getModelInfo($event->getInstance());
@@ -86,18 +93,48 @@ class ModelExtension implements MethodReturnTypeExtension, PropertyTypeExtension
                 ?? $this->getAttributeTypeFromDbColumnType($attribute['type'], $attribute['driver'])
                 ?? new UnknownType("Virtual attribute ({$attribute['name']}) type inference not supported.");
 
-            if ($attribute['nullable']) {
-                return Union::wrap([$baseType, new NullType]);
-            }
+            $inferredType = $attribute['nullable']
+                ? Union::wrap([$baseType, new NullType])
+                : $baseType;
 
-            return $baseType;
+            return $this->refineAnnotatedType($annotatedType, $inferredType);
         }
 
         if ($relation = $info->get('relations')->get($event->getName())) {
-            return $this->getRelationType($relation);
+            $inferredType = $this->getRelationType($relation);
+
+            return $this->refineAnnotatedType($annotatedType, $inferredType);
         }
 
         throw new \LogicException('Should not happen');
+    }
+
+    private function refineAnnotatedType(?Type $annotatedType, Type $inferredType): Type
+    {
+        if (! $annotatedType?->accepts($inferredType)) {
+            return $annotatedType ?? $inferredType;
+        }
+
+        if (! $annotatedType instanceof Union) {
+            return $inferredType;
+        }
+
+        $inferredTypes = $inferredType instanceof Union
+            ? $inferredType->types
+            : [$inferredType];
+
+        $refinedTypes = collect($annotatedType->types)
+            ->flatMap(function (Type $annotatedMember) use ($inferredTypes) {
+                $acceptedInferredTypes = array_filter(
+                    $inferredTypes,
+                    fn (Type $inferredMember) => $annotatedMember->accepts($inferredMember),
+                );
+
+                return $acceptedInferredTypes ?: [$annotatedMember];
+            })
+            ->all();
+
+        return Union::wrap($refinedTypes)->mergeAttributes($annotatedType->attributes());
     }
 
     /**
@@ -490,7 +527,18 @@ class ModelExtension implements MethodReturnTypeExtension, PropertyTypeExtension
 
     private function getModelInfo(ObjectType $type)
     {
-        return static::$cache[$type->name] ??= (new ModelInfo($type->name))->handle();
+        $info = $this->cache[$type->name] ??= (new ModelInfo($type->name))->handle();
+
+        if ($info->get('table_missing')) {
+            $this->diagnostics?->reportOnce(
+                Md001PendingMigrationsDiagnostic::forModel(
+                    $info->get('class'),
+                    $info->get('instance')->getTable(),
+                ),
+            );
+        }
+
+        return $info;
     }
 
     private function getProtectedValue($obj, $name)

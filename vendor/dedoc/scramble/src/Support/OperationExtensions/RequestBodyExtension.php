@@ -2,7 +2,9 @@
 
 namespace Dedoc\Scramble\Support\OperationExtensions;
 
-use Dedoc\Scramble\Extensions\OperationExtension;
+use Dedoc\Scramble\Contracts\OperationTransformer;
+use Dedoc\Scramble\Diagnostics\AbstractDiagnostic;
+use Dedoc\Scramble\Diagnostics\DiagnosticsCollector;
 use Dedoc\Scramble\GeneratorConfig;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\ContainerUtils;
@@ -20,15 +22,23 @@ use Dedoc\Scramble\Support\OperationExtensions\ParameterExtractor\ParameterExtra
 use Dedoc\Scramble\Support\OperationExtensions\RulesExtractor\DeepParametersMerger;
 use Dedoc\Scramble\Support\OperationExtensions\RulesExtractor\ParametersExtractionResult;
 use Dedoc\Scramble\Support\OperationExtensions\RulesExtractor\QueryParametersConverter;
+use Dedoc\Scramble\Support\ProNudge\ProNudgeCollector;
 use Dedoc\Scramble\Support\RouteInfo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Throwable;
 
-class RequestBodyExtension extends OperationExtension
+class RequestBodyExtension implements OperationTransformer
 {
     const HTTP_METHODS_WITHOUT_REQUEST_BODY = ['get', 'delete', 'head'];
+
+    public function __construct(
+        protected TypeTransformer $openApiTransformer,
+        protected GeneratorConfig $config,
+        protected DiagnosticsCollector $diagnostics,
+        private readonly ProNudgeCollector $proNudge,
+    ) {}
 
     public function handle(Operation $operation, RouteInfo $routeInfo): void
     {
@@ -40,9 +50,14 @@ class RequestBodyExtension extends OperationExtension
         try {
             $rulesResults = collect($this->extractParameters($operation, $routeInfo));
         } catch (Throwable $exception) {
+            $this->diagnostics->reportQuietly(
+                $diagnostic = AbstractDiagnostic::fromThrowable($exception)
+            );
+
             if (Scramble::shouldThrowOnError()) {
-                throw $exception;
+                throw $diagnostic->toException();
             }
+
             $description = $description->append('⚠️ Cannot generate request documentation: '.$exception->getMessage());
         }
 
@@ -255,12 +270,16 @@ class RequestBodyExtension extends OperationExtension
     private function extractParameters(Operation $operation, RouteInfo $routeInfo): array
     {
         $result = [];
+        $diagnostics = $this->diagnostics;
+
         foreach ($this->config->parametersExtractors->all() as $extractorClass) {
             /** @var ParameterExtractor $extractor */
             $extractor = ContainerUtils::makeContextable($extractorClass, [
                 GeneratorConfig::class => $this->config,
                 TypeTransformer::class => $this->openApiTransformer,
                 Operation::class => $operation,
+                DiagnosticsCollector::class => $diagnostics,
+                ProNudgeCollector::class => $this->proNudge,
                 JsonApiQueryParameterFactory::class => new JsonApiQueryParameterFactory(
                     arraySerialization: $this->config->jsonApi->arraySerialization,
                 ),
