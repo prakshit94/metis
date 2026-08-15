@@ -28,6 +28,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/users', [PageController::class, 'users'])->name('users');
     Route::get('/roles-permissions', [PageController::class, 'rolesPermissions'])->name('roles-permissions');
     
+    // HR Module
+    Route::get('/departments', [PageController::class, 'departments'])->name('departments')->middleware('permission:department-view');
+    Route::get('/attendances', [PageController::class, 'attendances'])->name('attendances')->middleware('permission:attendance-view');
+    Route::get('/leaves', [PageController::class, 'leaves'])->name('leaves')->middleware('permission:leave-view');
+    
     // Call Tags Admin CRUD
     Route::get('/call-tags-admin', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'index'])->name('call-tags.index')->middleware('permission:settings-view');
     Route::post('/call-tags-admin', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'store'])->middleware('permission:settings-view');

@@ -148,6 +148,9 @@ class AdminApp {
       case 'users':
         await this.initUsersPage();
         break;
+      case 'attendances':
+        await this.initAttendancesPage();
+        break;
       case 'customers':
         await this.initCustomersPage();
         break;
@@ -246,6 +249,15 @@ class AdminApp {
       console.log('👥 Users page script loaded successfully');
     } catch (error) {
       console.error('Failed to load users page script:', error);
+    }
+  }
+
+  async initAttendancesPage() {
+    try {
+      await import('./components/attendances.js');
+      console.log('🕒 Attendances page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load attendances page script:', error);
     }
   }
 

@@ -25,7 +25,13 @@ class ReferralProgramController extends Controller implements HasMiddleware
     public function index()
     {
         $programs = ReferralProgram::with('milestones')->latest()->get();
-        $products = \App\Modules\Catalog\Models\Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']);
+        
+        $products = cache()->remember('referral_products_list', now()->addMinutes(60), function () {
+            return \App\Modules\Catalog\Models\Product::where('status', '!=', 'draft')
+                ->orderBy('name')
+                ->get(['id', 'name', 'sku']);
+        });
+        
         return view('promotions.referrals.index', compact('programs', 'products'));
     }
 
@@ -54,9 +60,7 @@ class ReferralProgramController extends Controller implements HasMiddleware
                 'is_active'  => $validated['is_active'] ?? false,
             ]);
 
-            foreach ($validated['milestones'] as $milestone) {
-                $program->milestones()->create($milestone);
-            }
+            $program->milestones()->createMany($validated['milestones']);
         });
 
         return back()->with('success', 'Referral program created successfully.');
@@ -90,9 +94,7 @@ class ReferralProgramController extends Controller implements HasMiddleware
             ]);
 
             $program->milestones()->delete();
-            foreach ($validated['milestones'] as $milestone) {
-                $program->milestones()->create($milestone);
-            }
+            $program->milestones()->createMany($validated['milestones']);
         });
 
         return back()->with('success', 'Referral program updated successfully.');

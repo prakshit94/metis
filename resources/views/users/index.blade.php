@@ -694,8 +694,30 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Department</label>
-                            <input type="text" class="form-control" x-model="form.department"
-                                   placeholder="e.g. Engineering">
+                            <select class="form-select" x-model="form.department_id">
+                                <option value="">None</option>
+                                <template x-for="dept in departments" :key="dept.id">
+                                    <option :value="dept.id" x-text="dept.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Manager</label>
+                            <select class="form-select" x-model="form.manager_id">
+                                <option value="">None</option>
+                                <template x-for="mgr in managers" :key="mgr.id">
+                                    <option :value="mgr.id" x-text="mgr.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Employment Type</label>
+                            <select class="form-select" x-model="form.employment_type">
+                                <option value="Full-time">Full-time</option>
+                                <option value="Part-time">Part-time</option>
+                                <option value="Contract">Contract</option>
+                                <option value="Intern">Intern</option>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>

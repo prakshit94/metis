@@ -403,10 +403,10 @@ class OrderController extends Controller implements HasMiddleware
             ->sort()
             ->values();
 
-        $returnReasons = ReturnReason::where('is_active', true)->orderBy('id')->get();
-        $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
-        $deliveryFailureReasons = DeliveryFailureReason::where('is_active', true)->orderBy('id')->get();
-        $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
+        $returnReasons = Cache::remember('active_return_reasons', 3600, fn() => ReturnReason::where('is_active', true)->orderBy('id')->get());
+        $rescheduleReasons = Cache::remember('active_reschedule_reasons', 3600, fn() => RescheduleReason::where('is_active', true)->orderBy('id')->get());
+        $deliveryFailureReasons = Cache::remember('active_delivery_failure_reasons', 3600, fn() => DeliveryFailureReason::where('is_active', true)->orderBy('id')->get());
+        $cancelReasons = Cache::remember('active_cancel_reasons', 3600, fn() => CancelReason::where('is_active', true)->orderBy('id')->get());
 
         // 7 Day Trends Data
         $trendsQuery = Order::whereDate('order_date', '>=', now()->subDays(6))
@@ -429,7 +429,7 @@ class OrderController extends Controller implements HasMiddleware
             ];
         }
 
-        $warehousesList = Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name']);
+        $warehousesList = Cache::remember('active_warehouses_list', 3600, fn() => Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name']));
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([

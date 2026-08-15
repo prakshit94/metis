@@ -248,6 +248,26 @@ class RolesAndPermissionsSeeder extends Seeder
         'bulkuser-create',
         'bulkuser-edit',
         'bulkuser-delete',
+        
+        // ── HR Module ──
+        
+        // Departments
+        'department-view',
+        'department-create',
+        'department-edit',
+        'department-delete',
+        
+        // Attendances
+        'attendance-view',
+        'attendance-create',
+        'attendance-edit',
+        'attendance-delete',
+        
+        // Leaves
+        'leave-view',
+        'leave-create',
+        'leave-edit',
+        'leave-delete',
         'bulkuser-restore',
         'bulkuser-permanent-delete',
 
@@ -715,7 +735,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'first_name' => 'Rajesh',
                 'last_name' => 'Kumar',
                 'name' => 'Rajesh Kumar',
-                'department' => 'Operations',
                 'phone' => '+91 9876543210',
                 'role' => 'Manager'
             ],
@@ -724,7 +743,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'first_name' => 'Priya',
                 'last_name' => 'Sharma',
                 'name' => 'Priya Sharma',
-                'department' => 'Administration',
                 'phone' => '+91 8765432109',
                 'role' => 'Admin'
             ],
@@ -733,7 +751,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'first_name' => 'Amit',
                 'last_name' => 'Patel',
                 'name' => 'Amit Patel',
-                'department' => 'Sales',
                 'phone' => '+91 7654321098',
                 'role' => 'User'
             ],
@@ -742,7 +759,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'first_name' => 'Order',
                 'last_name' => 'Verifier',
                 'name' => 'Order Verifier',
-                'department' => 'Operations',
                 'phone' => '+91 6543210987',
                 'role' => 'Verification'
             ],
@@ -751,7 +767,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'first_name' => 'Agent',
                 'last_name' => 'One',
                 'name' => 'Agent One',
-                'department' => 'Sales',
                 'phone' => '+91 4321098765',
                 'role' => 'Agent'
             ],
@@ -760,7 +775,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'first_name' => 'Operations',
                 'last_name' => 'Lead',
                 'name' => 'Operations Lead',
-                'department' => 'Operations',
                 'phone' => '+91 3210987654',
                 'role' => 'Operations'
             ],
@@ -769,7 +783,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'first_name' => 'Team',
                 'last_name' => 'Leader',
                 'name' => 'Team Leader',
-                'department' => 'Management',
                 'phone' => '+91 2109876543',
                 'role' => 'Team Leader'
             ],

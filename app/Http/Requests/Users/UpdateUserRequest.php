@@ -45,7 +45,9 @@ class UpdateUserRequest extends FormRequest
             'password' => ['sometimes', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'is_active' => ['sometimes', 'boolean'],
             'phone' => ['sometimes', 'nullable', 'string', 'regex:/^\d{10}$/'],
-            'department' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'department_id' => ['sometimes', 'nullable', 'exists:departments,id'],
+            'manager_id' => ['sometimes', 'nullable', 'exists:users,id'],
+            'employment_type' => ['sometimes', 'string', 'in:Full-time,Part-time,Contract,Intern'],
             'employee_id' => [
                 'sometimes',
                 'nullable',

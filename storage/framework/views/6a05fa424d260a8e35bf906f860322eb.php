@@ -402,19 +402,19 @@
                 <?php endif; ?>
 
                 
-                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['user-view', 'role-view'])): ?>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->any(['user-view', 'role-view', 'department-view', 'attendance-view', 'leave-view'])): ?>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo e(in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index']) ? 'active' : 'collapsed'); ?>"
+                    <a class="nav-link <?php echo e(in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments', 'attendances', 'leaves']) ? 'active' : 'collapsed'); ?>"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#crmSubmenu"
-                       aria-expanded="<?php echo e(in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index']) ? 'true' : 'false'); ?>"
+                       aria-expanded="<?php echo e(in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments', 'attendances', 'leaves']) ? 'true' : 'false'); ?>"
                        aria-controls="crmSubmenu">
                         <i class="bi bi-people-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">CRM &amp; People</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse <?php echo e(in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index']) ? 'show' : ''); ?>" id="crmSubmenu">
+                    <div class="collapse <?php echo e(in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments', 'attendances', 'leaves']) ? 'show' : ''); ?>" id="crmSubmenu">
                         <ul class="nav nav-submenu">
                             <?php if (\Illuminate\Support\Facades\Blade::check('role', 'Super Admin')): ?>
                             <li class="nav-item">
@@ -443,6 +443,30 @@
                                 <a class="nav-link <?php echo e($current === 'roles-permissions' ? 'active' : ''); ?>" href="<?php echo e(route('roles-permissions')); ?>">
                                     <i class="bi bi-shield-lock-fill"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Roles &amp; Permissions</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('department-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'departments' ? 'active' : ''); ?>" href="<?php echo e(route('departments')); ?>">
+                                    <i class="bi bi-diagram-3-fill"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Departments</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('attendance-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'attendances' ? 'active' : ''); ?>" href="<?php echo e(route('attendances')); ?>">
+                                    <i class="bi bi-calendar-check-fill"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Attendances</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('leave-view')): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo e($current === 'leaves' ? 'active' : ''); ?>" href="<?php echo e(route('leaves')); ?>">
+                                    <i class="bi bi-calendar-minus-fill"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Leave Management</span>
                                 </a>
                             </li>
                             <?php endif; ?>

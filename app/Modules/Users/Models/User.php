@@ -8,6 +8,7 @@ use App\Models\Chat\Presence;
 use App\Modules\Catalog\Models\Service;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -46,7 +47,9 @@ class User extends Authenticatable implements Auditable
         'is_active',
         'email_verified_at',
         'phone',
-        'department',
+        'department_id',
+        'manager_id',
+        'employment_type',
         'password_changed_at',
         'suspended_until',
         'address_line_1',
@@ -116,6 +119,31 @@ class User extends Authenticatable implements Auditable
             ->withTimestamps();
     }
 
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function subordinates(): HasMany
+    {
+        return $this->hasMany(User::class, 'manager_id');
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function leaves(): HasMany
+    {
+        return $this->hasMany(Leave::class);
+    }
+
     // ─── Helper Methods ───────────────────────────────────────────────────────
 
     /**
@@ -168,28 +196,64 @@ class User extends Authenticatable implements Auditable
 
     public function isOnline(): bool
     {
-        return DB::table('sessions')
+        $hasActiveSession = DB::table('sessions')
             ->where('user_id', $this->id)
             ->where('last_activity', '>=', now()->subMinutes(5)->getTimestamp())
+            ->exists();
+            
+        if ($hasActiveSession) {
+            return true;
+        }
+
+        return DB::table('personal_access_tokens')
+            ->where('tokenable_type', self::class)
+            ->where('tokenable_id', $this->id)
+            ->where(function($q) {
+                $q->where('last_used_at', '>=', now()->subMinutes(5))
+                  ->orWhere('created_at', '>=', now()->subMinutes(5));
+            })
             ->exists();
     }
 
     public function getLastSeenAt(): ?Carbon
     {
-        $lastActivity = DB::table('sessions')
+        $lastSession = DB::table('sessions')
             ->where('user_id', $this->id)
             ->max('last_activity');
+            
+        $lastToken = DB::table('personal_access_tokens')
+            ->where('tokenable_type', self::class)
+            ->where('tokenable_id', $this->id)
+            ->max(DB::raw('COALESCE(last_used_at, created_at)'));
 
-        return $lastActivity ? now()->setTimestamp((int) $lastActivity) : null;
+        $lastActivity = max(
+            $lastSession ? now()->setTimestamp((int) $lastSession)->timestamp : 0,
+            $lastToken ? Carbon::parse($lastToken)->timestamp : 0
+        );
+
+        return $lastActivity > 0 ? now()->setTimestamp($lastActivity) : null;
     }
 
     public function getActiveDevice(): ?string
     {
+        $lastToken = DB::table('personal_access_tokens')
+            ->where('tokenable_type', self::class)
+            ->where('tokenable_id', $this->id)
+            ->orderByDesc(DB::raw('COALESCE(last_used_at, created_at)'))
+            ->first();
+
         $session = DB::table('sessions')
             ->where('user_id', $this->id)
             ->latest('last_activity')
             ->first();
 
+        $tokenTime = $lastToken ? Carbon::parse($lastToken->last_used_at ?? $lastToken->created_at)->timestamp : 0;
+        $sessionTime = $session ? (int) $session->last_activity : 0;
+        
+        if ($tokenTime > $sessionTime) {
+            return 'mobile';
+        }
+        
         if (! $session) {
             return null;
         }

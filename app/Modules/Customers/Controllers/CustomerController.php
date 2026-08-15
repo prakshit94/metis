@@ -231,8 +231,6 @@ class CustomerController extends Controller implements HasMiddleware
      */
     public function show(Request $request, int|string $customer)
     {
-        $cust = Customer::withTrashed()->findOrFail($customer);
-
         $customer = Customer::withTrashed()
             ->withCount([
                 'referrals as total_farmers_referred',

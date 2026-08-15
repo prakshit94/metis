@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\LoginHistory;
 use App\Modules\Users\Models\User;
+use App\Modules\Users\Models\Attendance;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Http\JsonResponse;
@@ -134,6 +135,11 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse|RedirectResponse
     {
+        $user = $request->user() ?? Auth::guard('web')->user();
+        if ($user) {
+            $this->recordAttendanceCheckOut($user);
+        }
+
         if ($this->isMobileRequest($request)) {
             $request->user()?->currentAccessToken()?->delete();
 
@@ -205,6 +211,8 @@ class AuthController extends Controller
             expiresAt: $expiresAt,
         );
 
+        $this->recordAttendanceCheckIn($user);
+
         return response()->json([
             'message' => 'Login successful.',
             'token' => $token->plainTextToken,
@@ -225,6 +233,9 @@ class AuthController extends Controller
     {
         $remember = (bool) $request->boolean('remember');
         Auth::guard('web')->login($user, $remember);
+        
+        $this->recordAttendanceCheckIn($user);
+        
         $request->session()->regenerate();
 
         $response = redirect()->intended(route('dashboard'));
@@ -264,5 +275,37 @@ class AuthController extends Controller
         $ua = $request->userAgent() ?? 'Unknown Device';
 
         return mb_substr($ua, 0, 255);
+    }
+    
+    private function recordAttendanceCheckIn(User $user): void
+    {
+        $today = Carbon::today()->toDateString();
+        $now = Carbon::now()->toTimeString();
+
+        // Create a new session entry for this login
+        Attendance::create([
+            'user_id' => $user->id,
+            'date' => $today,
+            'status' => 'Present',
+            'check_in' => $now
+        ]);
+    }
+
+    private function recordAttendanceCheckOut(User $user): void
+    {
+        $today = Carbon::today()->toDateString();
+        $now = Carbon::now()->toTimeString();
+
+        // Find the latest open session for today and stamp it
+        $attendance = Attendance::where('user_id', $user->id)
+            ->where('date', $today)
+            ->whereNull('check_out')
+            ->latest('id')
+            ->first();
+
+        if ($attendance) {
+            $attendance->check_out = $now;
+            $attendance->save();
+        }
     }
 }

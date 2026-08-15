@@ -66,7 +66,10 @@ class UserController extends Controller implements HasMiddleware
 
         $activeApiUserIds = DB::table('personal_access_tokens')
             ->where('tokenable_type', User::class)
-            ->where('last_used_at', '>=', now()->subMinutes(15))
+            ->where(function($q) {
+                $q->where('last_used_at', '>=', now()->subMinutes(15))
+                  ->orWhere('created_at', '>=', now()->subMinutes(15));
+            })
             ->pluck('tokenable_id')
             ->filter()
             ->toArray();
@@ -78,7 +81,7 @@ class UserController extends Controller implements HasMiddleware
             ->select('users.*')
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
-            ->with(['roles', 'permissions'])
+            ->with(['roles', 'permissions', 'department', 'manager'])
             ->when(
                 $request->filled('search'),
                 fn ($q) => $q->where(function ($inner) use ($request): void {
@@ -88,8 +91,7 @@ class UserController extends Controller implements HasMiddleware
                         ->orWhere('users.middle_name', 'like', $term)
                         ->orWhere('users.last_name', 'like', $term)
                         ->orWhere('users.email', 'like', $term)
-                        ->orWhere('users.phone', 'like', $term)
-                        ->orWhere('users.department', 'like', $term);
+                        ->orWhere('users.phone', 'like', $term);
                 }),
             )
             ->when(
@@ -106,16 +108,22 @@ class UserController extends Controller implements HasMiddleware
 
         $userIds = $users->getCollection()->pluck('id')->toArray();
 
-        $latestLoginHistories = DB::table('login_histories')
-            ->whereIn('id', function ($q) use ($userIds) {
-                $q->select(DB::raw('MAX(id)'))
-                    ->from('login_histories')
-                    ->whereIn('user_id', $userIds)
-                    ->where('status', 'success')
-                    ->groupBy('user_id');
-            })
-            ->get()
-            ->keyBy('user_id');
+        $latestLoginHistories = [];
+        if (!empty($userIds)) {
+            $latestIds = DB::table('login_histories')
+                ->whereIn('user_id', $userIds)
+                ->where('status', 'success')
+                ->groupBy('user_id')
+                ->select(DB::raw('MAX(id) as id'))
+                ->pluck('id');
+
+            if ($latestIds->isNotEmpty()) {
+                $latestLoginHistories = DB::table('login_histories')
+                    ->whereIn('id', $latestIds)
+                    ->get()
+                    ->keyBy('user_id');
+            }
+        }
 
         $users->getCollection()->transform(function ($user) use ($allActiveUserIds, $latestLoginHistories) {
             $user->is_online = in_array($user->id, $allActiveUserIds);
@@ -146,7 +154,9 @@ class UserController extends Controller implements HasMiddleware
             'password' => Hash::make($validated['password']),
             'is_active' => $validated['is_active'] ?? true,
             'phone' => $validated['phone'] ?? null,
-            'department' => $validated['department'] ?? null,
+            'department_id' => $validated['department_id'] ?? null,
+            'manager_id' => $validated['manager_id'] ?? null,
+            'employment_type' => $validated['employment_type'] ?? 'Full-time',
             'employee_id' => $validated['employee_id'] ?? null,
             'photo' => $validated['photo'] ?? null,
             'joining_date' => $validated['joining_date'] ?? null,
@@ -199,7 +209,7 @@ class UserController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('user-view'), 403);
 
         $user = User::withTrashed()
-            ->with(['roles', 'permissions'])
+            ->with(['roles', 'permissions', 'department', 'manager'])
             ->findOrFail($user);
 
         $loginHistory = $user->loginHistories()
@@ -228,7 +238,7 @@ class UserController extends Controller implements HasMiddleware
         $fillable = [];
         $allowedFields = [
             'name', 'first_name', 'middle_name', 'last_name', 'email', 'is_active', 'phone',
-            'department', 'employee_id', 'photo', 'joining_date',
+            'department_id', 'manager_id', 'employment_type', 'employee_id', 'photo', 'joining_date',
             'address_line_1', 'address_line_2', 'village_id', 'village_name', 'post_office',
             'taluka', 'district', 'city', 'state', 'pincode',
         ];
@@ -323,7 +333,7 @@ class UserController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('user-restore'), 403);
 
         $user = User::withTrashed()
-            ->with(['roles', 'permissions'])
+            ->with(['roles', 'permissions', 'department', 'manager'])
             ->findOrFail($user);
 
         if (! $user->trashed()) {

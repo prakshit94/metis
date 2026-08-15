@@ -342,6 +342,21 @@ class PageController extends Controller
         return view('users.roles-permissions');
     }
 
+    public function departments()
+    {
+        return view('users.departments');
+    }
+
+    public function attendances()
+    {
+        return view('users.attendances');
+    }
+
+    public function leaves()
+    {
+        return view('users.leaves');
+    }
+
     public function products()
     {
         return view('products');

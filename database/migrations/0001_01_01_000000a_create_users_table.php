@@ -21,7 +21,9 @@ return new class extends Migration
             $table->string('photo')->nullable();
             $table->date('joining_date')->nullable();
             $table->string('phone', 30)->nullable();
-            $table->string('department', 100)->nullable();
+            $table->foreignId('department_id')->nullable()->constrained('departments')->nullOnDelete();
+            $table->foreignId('manager_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->enum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern'])->default('Full-time');
             
             // Address details
             $table->string('address_line_1')->nullable();
@@ -43,6 +45,10 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
+        });
+
+        Schema::table('departments', function (Blueprint $table) {
+            $table->foreign('manager_id')->references('id')->on('users')->nullOnDelete();
         });
     }
 

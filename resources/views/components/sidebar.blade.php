@@ -402,19 +402,19 @@
                 @endcanany
 
                 {{-- CRM & People Dropdown --}}
-                @canany(['user-view', 'role-view'])
+                @canany(['user-view', 'role-view', 'department-view', 'attendance-view', 'leave-view'])
                 <li class="nav-item">
-                    <a class="nav-link {{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index']) ? 'active' : 'collapsed' }}"
+                    <a class="nav-link {{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments', 'attendances', 'leaves']) ? 'active' : 'collapsed' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#crmSubmenu"
-                       aria-expanded="{{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index']) ? 'true' : 'false' }}"
+                       aria-expanded="{{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments', 'attendances', 'leaves']) ? 'true' : 'false' }}"
                        aria-controls="crmSubmenu">
                         <i class="bi bi-people-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">CRM &amp; People</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index']) ? 'show' : '' }}" id="crmSubmenu">
+                    <div class="collapse {{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments', 'attendances', 'leaves']) ? 'show' : '' }}" id="crmSubmenu">
                         <ul class="nav nav-submenu">
                             @role('Super Admin')
                             <li class="nav-item">
@@ -443,6 +443,30 @@
                                 <a class="nav-link {{ $current === 'roles-permissions' ? 'active' : '' }}" href="{{ route('roles-permissions') }}">
                                     <i class="bi bi-shield-lock-fill"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Roles &amp; Permissions</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('department-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'departments' ? 'active' : '' }}" href="{{ route('departments') }}">
+                                    <i class="bi bi-diagram-3-fill"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Departments</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('attendance-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'attendances' ? 'active' : '' }}" href="{{ route('attendances') }}">
+                                    <i class="bi bi-calendar-check-fill"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Attendances</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('leave-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'leaves' ? 'active' : '' }}" href="{{ route('leaves') }}">
+                                    <i class="bi bi-calendar-minus-fill"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Leave Management</span>
                                 </a>
                             </li>
                             @endcan

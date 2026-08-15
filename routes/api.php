@@ -6,6 +6,9 @@ use App\Modules\Users\Controllers\AuthController;
 use App\Modules\Users\Controllers\PermissionController;
 use App\Modules\Users\Controllers\RoleController;
 use App\Modules\Users\Controllers\UserController;
+use App\Modules\Users\Controllers\DepartmentController;
+use App\Modules\Users\Controllers\AttendanceController;
+use App\Modules\Users\Controllers\LeaveController;
 use Illuminate\Support\Facades\Route;
 use App\Modules\Catalog\Controllers\ProductController as CatalogProductController;
 
@@ -178,6 +181,31 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('users/{user}/login-history', [UserController::class, 'loginHistory'])
             ->name('api.users.login-history');
+
+        // HR & Departments
+        Route::middleware('permission:department-view')->get('/departments', [DepartmentController::class, 'index']);
+        Route::middleware('permission:department-view')->get('/departments/{department}', [DepartmentController::class, 'show']);
+        Route::middleware('permission:department-create')->post('/departments', [DepartmentController::class, 'store']);
+        Route::middleware('permission:department-edit')->put('/departments/{department}', [DepartmentController::class, 'update']);
+        Route::middleware('permission:department-delete')->delete('/departments/{department}', [DepartmentController::class, 'destroy']);
+
+        // Attendance
+        Route::get('/attendances/export/summary', [AttendanceController::class, 'exportSummary']);
+        Route::get('/attendances/export/detailed', [AttendanceController::class, 'exportDetailed']);
+        Route::post('/attendances/bulk-action', [AttendanceController::class, 'bulkAction']);
+        Route::patch('/attendances/{attendance}/restore', [AttendanceController::class, 'restore']);
+        Route::delete('/attendances/{attendance}/force', [AttendanceController::class, 'forceDelete']);
+        Route::apiResource('attendances', AttendanceController::class);
+
+        // Leaves
+        Route::post('/leaves/bulk-action', [LeaveController::class, 'bulkAction']);
+        Route::middleware('permission:leave-view')->get('/leaves', [LeaveController::class, 'index']);
+        Route::middleware('permission:leave-view')->get('/leaves/{leave}', [LeaveController::class, 'show']);
+        Route::middleware('permission:leave-create')->post('/leaves', [LeaveController::class, 'store']);
+        Route::middleware('permission:leave-edit')->put('/leaves/{leave}', [LeaveController::class, 'update']);
+        Route::middleware('permission:leave-delete')->delete('/leaves/{leave}', [LeaveController::class, 'destroy']);
+        Route::patch('leaves/{leave}/status', [LeaveController::class, 'updateStatus'])
+            ->name('api.leaves.status');
     });
 
     // ── Financial & Sales APIs ─────────────────────────────────────────────

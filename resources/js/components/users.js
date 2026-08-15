@@ -444,7 +444,11 @@ document.addEventListener('alpine:init', () => {
         last_name: lastName,
         email: u.email,
         phone: u.phone ?? '',
-        department: u.department ?? '',
+        department: u.department ? u.department.name : '',
+        department_id: u.department_id ?? '',
+        manager_id: u.manager_id ?? '',
+        manager: u.manager ? u.manager.name : '',
+        employment_type: u.employment_type ?? 'Full-time',
         employee_id: u.employee_id ?? '',
         photo: u.photo ?? null,
         joining_date: u.joining_date ?? '',
@@ -592,7 +596,9 @@ document.addEventListener('alpine:init', () => {
       form.form.last_name = user.last_name ?? '';
       form.form.email = user.email;
       form.form.phone = user.phone ?? '';
-      form.form.department = user.department ?? '';
+      form.form.department_id = user.department_id ?? '';
+      form.form.manager_id = user.manager_id ?? '';
+      form.form.employment_type = user.employment_type ?? 'Full-time';
       form.form.employee_id = user.employee_id ?? '';
       form.form.photo = user.photo ?? '';
       form.form.joining_date = user.joining_date ?? '';
@@ -1006,7 +1012,9 @@ document.addEventListener('alpine:init', () => {
       last_name: '',
       email: '',
       phone: '',
-      department: '',
+      department_id: '',
+      manager_id: '',
+      employment_type: 'Full-time',
       employee_id: '',
       photo: '',
       photoFile: null,
@@ -1028,6 +1036,8 @@ document.addEventListener('alpine:init', () => {
       permissions: [],
     },
     availablePermissions: [],
+    departments: [],
+    managers: [],
     
     get groupedAvailablePermissions() {
       return groupPermissions(this.availablePermissions);
@@ -1081,6 +1091,23 @@ document.addEventListener('alpine:init', () => {
         const title = document.querySelector('#userModal .modal-title');
         if (title) title.textContent = 'Add New User';
       });
+      
+      this.loadHrData();
+    },
+
+    async loadHrData() {
+      try {
+        const dData = await apiFetch('/api/departments');
+        this.departments = dData.data ?? dData;
+      } catch (e) {
+        this.departments = [];
+      }
+      try {
+        const mData = await apiFetch('/api/users?per_page=100');
+        this.managers = mData.data ?? mData;
+      } catch (e) {
+        this.managers = [];
+      }
     },
 
     async loadRoles() {
@@ -1121,7 +1148,9 @@ document.addEventListener('alpine:init', () => {
         last_name: '',
         email: '',
         phone: '',
-        department: '',
+        department_id: '',
+        manager_id: '',
+        employment_type: 'Full-time',
         employee_id: '',
         photoFile: null,
         joining_date: new Date().toISOString().split('T')[0],
@@ -1196,7 +1225,9 @@ document.addEventListener('alpine:init', () => {
         if (this.form.last_name) formData.append('last_name', this.form.last_name);
         formData.append('email', this.form.email);
         if (formattedPhone) formData.append('phone', formattedPhone);
-        if (this.form.department) formData.append('department', this.form.department);
+        if (this.form.department_id) formData.append('department_id', this.form.department_id);
+        if (this.form.manager_id) formData.append('manager_id', this.form.manager_id);
+        if (this.form.employment_type) formData.append('employment_type', this.form.employment_type);
         if (this.form.employee_id) formData.append('employee_id', this.form.employee_id);
         if (this.form.joining_date) formData.append('joining_date', this.form.joining_date);
         formData.append('is_active', this.form.is_active ? '1' : '0');

@@ -8,6 +8,7 @@ use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Bulk operations on a set of user IDs.
@@ -55,11 +56,7 @@ class BulkUserController extends Controller
         }
 
         if ($action === 'restore') {
-            User::withTrashed()->whereIn('id', $ids)->get()->each(function (User $user): void {
-                if ($user->trashed()) {
-                    $user->restore();
-                }
-            });
+            User::withTrashed()->whereIn('id', $ids)->restore();
 
             return response()->json([
                 'message' => count($ids).' user(s) restored successfully.',
@@ -68,10 +65,12 @@ class BulkUserController extends Controller
         }
 
         if ($action === 'delete') {
-            User::whereIn('id', $ids)->get()->each(function (User $u) {
-                $u->tokens()->delete();
-                $u->delete();
-            });
+            DB::table('personal_access_tokens')
+                ->where('tokenable_type', User::class)
+                ->whereIn('tokenable_id', $ids)
+                ->delete();
+
+            User::whereIn('id', $ids)->delete();
 
             return response()->json([
                 'message' => count($ids).' user(s) deleted successfully.',
@@ -80,10 +79,12 @@ class BulkUserController extends Controller
         }
 
         if ($action === 'force-delete') {
-            User::withTrashed()->whereIn('id', $ids)->get()->each(function (User $user): void {
-                $user->tokens()->delete();
-                $user->forceDelete();
-            });
+            DB::table('personal_access_tokens')
+                ->where('tokenable_type', User::class)
+                ->whereIn('tokenable_id', $ids)
+                ->delete();
+
+            User::withTrashed()->whereIn('id', $ids)->forceDelete();
 
             return response()->json([
                 'message' => count($ids).' user(s) permanently deleted successfully.',
@@ -93,12 +94,14 @@ class BulkUserController extends Controller
 
         $isActive = $action === 'activate';
 
-        User::whereIn('id', $ids)->get()->each(function (User $u) use ($isActive) {
-            $u->update(['is_active' => $isActive]);
-            if (! $isActive) {
-                $u->tokens()->delete();
-            }
-        });
+        User::whereIn('id', $ids)->update(['is_active' => $isActive]);
+
+        if (! $isActive) {
+            DB::table('personal_access_tokens')
+                ->where('tokenable_type', User::class)
+                ->whereIn('tokenable_id', $ids)
+                ->delete();
+        }
 
         return response()->json([
             'message' => count($ids).' user(s) '.($isActive ? 'activated' : 'deactivated').' successfully.',
