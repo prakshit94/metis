@@ -36,6 +36,8 @@ class DatabaseSeeder extends Seeder
             IrrigationTypeSeeder::class,
             CropSeeder::class,
             ReferralProgramSeeder::class,
+            HolidaySeeder::class,
+            LeaveBalanceSeeder::class,
         ]);
     }
 }

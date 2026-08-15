@@ -26,11 +26,27 @@
                     <li><button class="dropdown-item" @click="exportDetailed()"><i class="bi bi-list-task me-2"></i>Detailed Log (CSV)</button></li>
                 </ul>
             </div>
-            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('attendance-create')): ?>
-            <button type="button" class="btn btn-primary" @click="openCreate()">
-                <i class="bi bi-plus-circle me-2"></i>Log Attendance
-            </button>
-            <?php endif; ?>
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle shadow-sm" type="button" id="requestDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-plus-circle me-2"></i>New Request
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="requestDropdown">
+                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('attendance-create')): ?>
+                    <li>
+                        <button class="dropdown-item" @click="openCreate()">
+                            <i class="bi bi-calendar-check-fill text-primary me-2"></i>Log Attendance
+                        </button>
+                    </li>
+                    <?php endif; ?>
+                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('leave-create')): ?>
+                    <li>
+                        <button class="dropdown-item" @click="openLeaveCreate()">
+                            <i class="bi bi-calendar-minus-fill text-warning me-2"></i>Request Leave
+                        </button>
+                    </li>
+                    <?php endif; ?>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -98,6 +114,42 @@
         </div>
     </div>
 
+    <!-- My Leave Balances Widget -->
+    <?php
+        $userLeaveBalances = \App\Modules\Users\Models\LeaveBalance::where('user_id', auth()->id())->where('is_active', true)->get();
+    ?>
+    <div class="card border-0 shadow-sm mb-5 mb-lg-5 mb-xl-6">
+        <div class="card-header bg-body p-3 p-lg-4 border-bottom-0">
+            <h2 class="h5 card-title mb-0 d-flex align-items-center">
+                <i class="bi bi-wallet2 text-primary me-2"></i>My Leave Balances
+            </h2>
+        </div>
+        <div class="card-body p-3 p-lg-4 pt-0">
+            <?php if($userLeaveBalances->count() > 0): ?>
+            <div class="row g-3">
+                <?php $__currentLoopData = $userLeaveBalances; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $balance): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="col-sm-6 col-md-4 col-xl-auto" style="min-width: 200px;">
+                    <div class="d-flex align-items-center p-3 border rounded-3 bg-body-tertiary shadow-sm">
+                        <div class="fs-2 text-primary me-3 fw-bold lh-1">
+                            <?php echo e(rtrim(rtrim(number_format($balance->balance, 1), '0'), '.')); ?>
+
+                        </div>
+                        <div>
+                            <div class="fw-bold"><?php echo e($balance->leave_type); ?></div>
+                            <small class="text-muted">Available</small>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+            <?php else: ?>
+            <div class="text-center py-4 bg-body-tertiary rounded border border-dashed">
+                <p class="text-muted mb-0">No active leave balances found.</p>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-body d-flex flex-column flex-md-row justify-content-between align-items-center p-3 p-lg-4 border-bottom-0">
             <h2 class="h5 card-title mb-3 mb-md-0 d-flex align-items-center">
@@ -126,6 +178,13 @@
                     <option value="Absent">Absent</option>
                     <option value="Late">Late</option>
                     <option value="Half-Day">Half-Day</option>
+                </select>
+                
+                <select class="form-select form-select-sm" x-model="userFilter" @change="filterItems()" style="max-width: 150px;" x-show="usersList.length > 0" style="display: none;">
+                    <option value="">My Attendances / All</option>
+                    <template x-for="u in usersList" :key="u.id">
+                        <option :value="u.id" x-text="u.name"></option>
+                    </template>
                 </select>
 
                 <div class="dropdown" x-show="currentView === 'list'">
@@ -438,5 +497,83 @@
     </div>
 </div>
 <?php $__env->stopSection(); ?>
+
+<div class="modal fade" id="leaveModal" tabindex="-1" aria-labelledby="leaveModalLabel">
+    <div class="modal-dialog modal-dialog-centered" x-data="leaveForm">
+        <form class="modal-content" @submit.prevent="saveItem()">
+            <div class="modal-header">
+                <h5 class="modal-title d-flex align-items-center" id="leaveModalLabel">
+                    <i class="bi bi-calendar-minus-fill text-primary me-2"></i>
+                    <span x-text="editingId ? 'Edit Leave Request' : 'Request Leave'"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
+                
+                <div class="form-floating mb-3">
+                    <select class="form-select" id="leaveUser" x-model="form.user_id" required>
+                        <option value="">Select Employee</option>
+                        <template x-for="user in users" :key="user.id">
+                            <option :value="user.id" x-text="user.name"></option>
+                        </template>
+                    </select>
+                    <label for="leaveUser">Employee <span class="text-danger">*</span></label>
+                </div>
+                
+                <div class="form-floating mb-3">
+                    <select class="form-select" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
+                        <option value="">Select Leave Type</option>
+                        <template x-for="balance in userBalances" :key="balance.id">
+                            <option :value="balance.leave_type" 
+                                    x-text="`${balance.leave_type} Leave (Balance: ${balance.balance})`"
+                                    :disabled="balance.balance <= 0 && balance.leave_type !== originalLeaveType"></option>
+                        </template>
+                    </select>
+                    <label for="leaveType">Leave Type <span class="text-danger">*</span></label>
+                    <div class="form-text text-warning" x-show="form.user_id && userBalances.length === 0 && !isLoadingBalances">
+                        No active leave balances found for this employee.
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6">
+                        <div class="form-floating mb-3">
+                            <input type="date" class="form-control" id="leaveStart" x-model="form.start_date" required>
+                            <label for="leaveStart">Start Date <span class="text-danger">*</span></label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-floating mb-3">
+                            <input type="date" class="form-control" id="leaveEnd" x-model="form.end_date" required>
+                            <label for="leaveEnd">End Date <span class="text-danger">*</span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <textarea class="form-control" id="leaveReason" x-model="form.reason" style="height: 100px;" required></textarea>
+                    <label for="leaveReason">Reason <span class="text-danger">*</span></label>
+                </div>
+
+                <div class="form-floating mb-3" x-show="editingId">
+                    <select class="form-select" id="leaveStatus" x-model="form.status">
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                    <label for="leaveStatus">Status</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary px-4" :disabled="saving">
+                    <span x-show="saving" class="spinner-border spinner-border-sm me-2" style="display: none;"></span>
+                    <span x-text="editingId ? 'Save Changes' : 'Submit Request'"></span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/user/metis/resources/views/users/attendances.blade.php ENDPATH**/ ?>

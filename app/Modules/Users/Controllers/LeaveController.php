@@ -49,6 +49,10 @@ class LeaveController extends Controller
     {
         abort_unless($request->user()?->can('leave-edit'), 403);
         
+        if ($leave->status !== 'Pending') {
+            return response()->json(['message' => 'Cannot modify an already processed leave request.'], 422);
+        }
+        
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'leave_type' => 'required|string',
@@ -66,7 +70,37 @@ class LeaveController extends Controller
             $validated['approved_at'] = null;
         }
 
+        $originalStatus = $leave->status;
+        $originalUserId = $leave->user_id;
+        $originalLeaveType = $leave->leave_type;
+        $originalDays = \Carbon\Carbon::parse($leave->start_date)->diffInDays(\Carbon\Carbon::parse($leave->end_date)) + 1;
+
         $leave->update($validated);
+
+        $newStatus = $leave->status;
+
+        // If it was previously approved, refund the original balance first
+        if ($originalStatus === 'Approved') {
+            $oldBalance = \App\Modules\Users\Models\LeaveBalance::where('user_id', $originalUserId)
+                ->where('leave_type', $originalLeaveType)
+                ->first();
+            if ($oldBalance) {
+                $oldBalance->used_leaves -= $originalDays;
+                $oldBalance->save();
+            }
+        }
+        
+        // If the new status is approved, deduct the new balance
+        if ($newStatus === 'Approved') {
+            $newDays = \Carbon\Carbon::parse($leave->start_date)->diffInDays(\Carbon\Carbon::parse($leave->end_date)) + 1;
+            $newBalance = \App\Modules\Users\Models\LeaveBalance::where('user_id', $leave->user_id)
+                ->where('leave_type', $leave->leave_type)
+                ->first();
+            if ($newBalance) {
+                $newBalance->used_leaves += $newDays;
+                $newBalance->save();
+            }
+        }
 
         return response()->json(['data' => $leave, 'message' => 'Leave request updated successfully.']);
     }
@@ -74,6 +108,14 @@ class LeaveController extends Controller
     public function destroy(Request $request, Leave $leave): JsonResponse
     {
         abort_unless($request->user()?->can('leave-delete'), 403);
+        
+        if ($leave->status !== 'Pending') {
+            return response()->json(['message' => 'Cannot delete an already processed leave request.'], 422);
+        }
+        
+        if ($leave->status === 'Approved') {
+            $this->adjustLeaveBalance($leave, 'refund');
+        }
         
         $leave->delete();
         
@@ -84,15 +126,29 @@ class LeaveController extends Controller
     {
         abort_unless($request->user()?->can('leave-edit'), 403);
 
+        if ($leave->status !== 'Pending') {
+            return response()->json(['message' => 'Cannot modify an already processed leave request.'], 422);
+        }
+
         $validated = $request->validate([
             'status' => 'required|in:Approved,Rejected',
         ]);
 
+        $originalStatus = $leave->status;
+
         $leave->update([
             'status' => $validated['status'],
-            'approved_by' => auth()->id(),
+            'approved_by' => $request->user()->id,
             'approved_at' => now(),
         ]);
+
+        $newStatus = $leave->status;
+
+        if ($originalStatus !== 'Approved' && $newStatus === 'Approved') {
+            $this->adjustLeaveBalance($leave, 'deduct');
+        } elseif ($originalStatus === 'Approved' && $newStatus !== 'Approved') {
+            $this->adjustLeaveBalance($leave, 'refund');
+        }
 
         return response()->json(['data' => $leave, 'message' => 'Leave status updated successfully.']);
     }
@@ -110,20 +166,56 @@ class LeaveController extends Controller
 
         if ($action === 'delete') {
             abort_unless($request->user()?->can('leave-delete'), 403);
-            Leave::whereIn('id', $ids)->delete();
-            return response()->json(['message' => 'Selected leaves deleted successfully.']);
+            $leaves = Leave::whereIn('id', $ids)->where('status', 'Pending')->get();
+            foreach ($leaves as $leave) {
+                // ... refunds aren't needed if they are always Pending, but we can keep it safe
+                if ($leave->status === 'Approved') {
+                    $this->adjustLeaveBalance($leave, 'refund');
+                }
+                $leave->delete();
+            }
+            return response()->json(['message' => 'Selected pending leaves deleted successfully.']);
         }
 
         abort_unless($request->user()?->can('leave-edit'), 403);
 
         $status = $action === 'approve' ? 'Approved' : 'Rejected';
         
-        Leave::whereIn('id', $ids)->update([
-            'status' => $status,
-            'approved_by' => auth()->id(),
-            'approved_at' => now(),
-        ]);
+        $leaves = Leave::whereIn('id', $ids)->where('status', 'Pending')->get();
+        foreach ($leaves as $leave) {
+            $originalStatus = $leave->status;
+            
+            $leave->update([
+                'status' => $status,
+                'approved_by' => $request->user()->id,
+                'approved_at' => now(),
+            ]);
+            
+            if ($originalStatus !== 'Approved' && $status === 'Approved') {
+                $this->adjustLeaveBalance($leave, 'deduct');
+            } elseif ($originalStatus === 'Approved' && $status !== 'Approved') {
+                $this->adjustLeaveBalance($leave, 'refund');
+            }
+        }
 
         return response()->json(['message' => 'Selected leaves ' . strtolower($status) . ' successfully.']);
+    }
+
+    private function adjustLeaveBalance(Leave $leave, $action = 'deduct')
+    {
+        $days = \Carbon\Carbon::parse($leave->start_date)->diffInDays(\Carbon\Carbon::parse($leave->end_date)) + 1;
+        
+        $balance = \App\Modules\Users\Models\LeaveBalance::where('user_id', $leave->user_id)
+            ->where('leave_type', $leave->leave_type)
+            ->first();
+            
+        if ($balance) {
+            if ($action === 'deduct') {
+                $balance->used_leaves += $days;
+            } else {
+                $balance->used_leaves -= $days;
+            }
+            $balance->save();
+        }
     }
 }

@@ -202,6 +202,9 @@ class AuthController extends Controller
     {
         Event::dispatch(new Login('sanctum', $user, false)); // fires the Login event → LogAuthenticationAttempts
 
+        // Revoke all existing mobile tokens for this user
+        $user->tokens()->delete();
+
         $deviceName = $this->extractDeviceName($request);
         $expiresAt = Carbon::now()->addDays(self::TOKEN_EXPIRY_DAYS);
 
@@ -231,6 +234,9 @@ class AuthController extends Controller
      */
     private function issueWebSession(Request $request, User $user): RedirectResponse
     {
+        // Delete any existing sessions for this user from the database
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+
         $remember = (bool) $request->boolean('remember');
         Auth::guard('web')->login($user, $remember);
         
@@ -281,6 +287,16 @@ class AuthController extends Controller
     {
         $today = Carbon::today()->toDateString();
         $now = Carbon::now()->toTimeString();
+
+        // Check if user is already checked in for today
+        $existingOpenAttendance = Attendance::where('user_id', $user->id)
+            ->where('date', $today)
+            ->whereNull('check_out')
+            ->exists();
+
+        if ($existingOpenAttendance) {
+            return;
+        }
 
         // Create a new session entry for this login
         Attendance::create([

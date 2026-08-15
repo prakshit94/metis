@@ -42,10 +42,20 @@ class AttendanceController extends Controller implements HasMiddleware
 
         $deletedFilter = $request->input('deleted');
 
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        $filterUserId = $request->input('user_id');
+
         $query = Attendance::query()
             ->select('attendances.*')
             ->join('users', 'attendances.user_id', '=', 'users.id')
-            ->where('attendances.user_id', $request->user()->id)
+            ->when(!$isGlobalView, fn ($q) => $q->where('attendances.user_id', $request->user()->id))
+            ->when($isGlobalView, function($q) use ($request, $filterUserId, $perPage) {
+                if ($filterUserId) {
+                    $q->where('attendances.user_id', $filterUserId);
+                } elseif ($perPage === -1) {
+                    $q->where('attendances.user_id', $request->user()->id);
+                }
+            })
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
             ->with(['user:id,name,employee_id'])
@@ -85,7 +95,14 @@ class AttendanceController extends Controller implements HasMiddleware
                 $startDate = $request->input('start_date');
                 $endDate = $request->input('end_date');
                 
-                $leaves = \App\Modules\Users\Models\Leave::where('user_id', $request->user()->id)
+                $leaves = \App\Modules\Users\Models\Leave::when(!$isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
+                    ->when($isGlobalView, function($q) use ($request, $filterUserId, $perPage) {
+                        if ($filterUserId) {
+                            $q->where('user_id', $filterUserId);
+                        } elseif ($perPage === -1) {
+                            $q->where('user_id', $request->user()->id);
+                        }
+                    })
                     ->where(function ($q) use ($startDate, $endDate) {
                         $q->whereBetween('start_date', [$startDate, $endDate])
                           ->orWhereBetween('end_date', [$startDate, $endDate])
@@ -116,7 +133,14 @@ class AttendanceController extends Controller implements HasMiddleware
             $startDate = $request->input('start_date');
             $endDate = $request->input('end_date');
             
-            $leaves = \App\Modules\Users\Models\Leave::where('user_id', $request->user()->id)
+            $leaves = \App\Modules\Users\Models\Leave::when(!$isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
+                ->when($isGlobalView, function($q) use ($request, $filterUserId, $perPage) {
+                    if ($filterUserId) {
+                        $q->where('user_id', $filterUserId);
+                    } elseif ($perPage === -1) {
+                        $q->where('user_id', $request->user()->id);
+                    }
+                })
                 ->where(function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('start_date', [$startDate, $endDate])
                       ->orWhereBetween('end_date', [$startDate, $endDate])
@@ -260,14 +284,17 @@ class AttendanceController extends Controller implements HasMiddleware
         
         $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $m, $year);
         
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        $filterUserId = $request->input('user_id');
+
         $attendances = Attendance::with('user:id,name,employee_id')
-            ->where('user_id', $request->user()->id)
+            ->when(!$isGlobalView, fn($q) => $q->where('user_id', $request->user()->id))
+            ->when($isGlobalView && $filterUserId, fn($q) => $q->where('user_id', $filterUserId))
             ->whereYear('date', $year)
             ->whereMonth('date', $m)
             ->get();
-        $grouped = $attendances->groupBy(function($item) {
-            return \Carbon\Carbon::parse($item->date)->format('Y-m-d');
-        });
+            
+        $groupedByUser = $attendances->groupBy('user_id');
 
         $headers = [
             "Content-type"        => "text/csv",
@@ -277,7 +304,7 @@ class AttendanceController extends Controller implements HasMiddleware
             "Expires"             => "0"
         ];
 
-        $callback = function() use ($grouped, $daysInMonth, $year, $m, $request) {
+        $callback = function() use ($groupedByUser, $daysInMonth, $year, $m) {
             $file = fopen('php://output', 'w');
             
             $columns = ['Employee', 'Employee ID'];
@@ -286,27 +313,33 @@ class AttendanceController extends Controller implements HasMiddleware
             }
             fputcsv($file, $columns);
             
-            $user = $request->user();
-            $row = [$user->name, $user->employee_id ?? 'N/A'];
-            
-            for ($i = 1; $i <= $daysInMonth; $i++) {
-                $dateStr = sprintf('%04d-%02d-%02d', $year, $m, $i);
+            foreach ($groupedByUser as $userId => $userAttendances) {
+                $user = $userAttendances->first()->user;
+                $row = [$user->name ?? 'N/A', $user->employee_id ?? 'N/A'];
                 
-                if (isset($grouped[$dateStr])) {
-                    $dayAttendances = $grouped[$dateStr];
-                    $status = 'A';
-                    foreach ($dayAttendances as $att) {
-                        if ($att->status !== 'Absent') {
-                            $status = substr($att->status, 0, 1);
+                $groupedByDate = $userAttendances->groupBy(function($item) {
+                    return \Carbon\Carbon::parse($item->date)->format('Y-m-d');
+                });
+                
+                for ($i = 1; $i <= $daysInMonth; $i++) {
+                    $dateStr = sprintf('%04d-%02d-%02d', $year, $m, $i);
+                    
+                    if (isset($groupedByDate[$dateStr])) {
+                        $dayAttendances = $groupedByDate[$dateStr];
+                        $status = 'A';
+                        foreach ($dayAttendances as $att) {
+                            if ($att->status !== 'Absent') {
+                                $status = substr($att->status, 0, 1);
+                            }
                         }
+                        $row[] = $status;
+                    } else {
+                        $row[] = 'A';
                     }
-                    $row[] = $status;
-                } else {
-                    $row[] = 'A';
                 }
+                
+                fputcsv($file, $row);
             }
-            
-            fputcsv($file, $row);
             fclose($file);
         };
 
@@ -321,8 +354,12 @@ class AttendanceController extends Controller implements HasMiddleware
         $year = (int) substr($month, 0, 4);
         $m = (int) substr($month, 5, 2);
 
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        $filterUserId = $request->input('user_id');
+
         $attendances = Attendance::with('user:id,name,employee_id')
-            ->where('user_id', $request->user()->id)
+            ->when(!$isGlobalView, fn($q) => $q->where('user_id', $request->user()->id))
+            ->when($isGlobalView && $filterUserId, fn($q) => $q->where('user_id', $filterUserId))
             ->whereYear('date', $year)
             ->whereMonth('date', $m)
             ->orderBy('date', 'asc')

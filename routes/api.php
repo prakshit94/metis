@@ -206,6 +206,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::middleware('permission:leave-delete')->delete('/leaves/{leave}', [LeaveController::class, 'destroy']);
         Route::patch('leaves/{leave}/status', [LeaveController::class, 'updateStatus'])
             ->name('api.leaves.status');
+
+        // Leave Balances
+        Route::post('/leave-balances/bulk-action', [\App\Modules\Users\Controllers\LeaveBalanceController::class, 'bulkAction']);
+        Route::apiResource('leave-balances', \App\Modules\Users\Controllers\LeaveBalanceController::class);
+
+        // Holidays
+        Route::post('/holidays/bulk-action', [\App\Modules\Users\Controllers\HolidayController::class, 'bulkAction']);
+        Route::apiResource('holidays', \App\Modules\Users\Controllers\HolidayController::class);
     });
 
     // ── Financial & Sales APIs ─────────────────────────────────────────────

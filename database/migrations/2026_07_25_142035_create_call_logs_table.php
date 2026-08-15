@@ -17,6 +17,9 @@ return new class extends Migration
             $table->foreignId('tag_l3_id')->nullable()->constrained('call_tags')->onDelete('set null');
             $table->text('notes')->nullable();
             $table->timestamps();
+
+            $table->foreign('customer_id')->references('id')->on('parties')->onDelete('set null');
+            $table->foreign('agent_id')->references('id')->on('users')->onDelete('set null');
         });
     }
 

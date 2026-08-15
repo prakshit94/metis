@@ -34,6 +34,10 @@ import { createSearchComponent } from './utils/search-component.js';
 import Alpine from 'alpinejs';
 window.Alpine = Alpine;
 
+// Import SweetAlert2
+import Swal from 'sweetalert2';
+window.Swal = Swal;
+
 // Import styles (Bootstrap Icons are included in SCSS)
 import '../scss/main.scss';
 

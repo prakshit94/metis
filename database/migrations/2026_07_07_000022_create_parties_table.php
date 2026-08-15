@@ -10,6 +10,8 @@ return new class extends Migration {
             $table->id();
             $table->uuid('uuid')->nullable()->unique();
             $table->string('party_code')->nullable()->unique();
+            $table->string('referral_code')->nullable()->unique();
+            $table->unsignedBigInteger('referred_by')->nullable();
             $table->string('type')->index(); // customer, supplier, vendor, etc.
 
             // Name breakdown
@@ -79,6 +81,8 @@ return new class extends Migration {
 
             $table->timestamps();
             $table->softDeletes()->index();
+
+            $table->foreign('referred_by')->references('id')->on('parties')->nullOnDelete();
 
             // Performance indexes
             $table->index('created_at');

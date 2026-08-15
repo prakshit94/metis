@@ -285,6 +285,7 @@
                     });
                     if(res.ok) {
                         this.loadItems();
+                        Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Department has been deleted successfully.', timer: 2000, showConfirmButton: false });
                     } else {
                         Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete department.' });
                     }
@@ -354,6 +355,7 @@
                     
                     if (res.ok) {
                         window.dispatchEvent(new CustomEvent('department-saved'));
+                        Swal.fire({ icon: 'success', title: 'Success', text: `Department ${this.editingId ? 'updated' : 'created'} successfully.`, timer: 2000, showConfirmButton: false });
                     } else {
                         const err = await res.json();
                         this.error = err.message || 'Validation error.';

@@ -63,11 +63,13 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     statusFilter: '',
     dateFilter: '',
+    userFilter: '',
+    usersList: [],
     sortField: 'date',
     sortDirection: 'desc',
     isLoading: false,
 
-    currentView: 'list',
+    currentView: 'calendar',
     currentMonthDate: new Date(),
     calendarDays: [],
 
@@ -80,10 +82,18 @@ document.addEventListener('alpine:init', () => {
 
     init() {
       this.generateCalendarDays();
+      this.loadUsersList();
       this.loadItems();
       window.addEventListener('attendance-saved', () => {
         this.loadItems();
       });
+    },
+
+    async loadUsersList() {
+      try {
+        const res = await apiFetch('/api/users?per_page=100');
+        this.usersList = res.data ?? res;
+      } catch(e) {}
     },
 
     async loadItems() {
@@ -97,6 +107,7 @@ document.addEventListener('alpine:init', () => {
         });
         if (this.searchQuery) params.set('search', this.searchQuery);
         if (this.statusFilter) params.set('status', this.statusFilter);
+        if (this.userFilter) params.set('user_id', this.userFilter);
         
         if (this.currentView === 'calendar') {
           if (this.calendarDays.length > 0) {
@@ -266,7 +277,7 @@ document.addEventListener('alpine:init', () => {
               checkIn: leave.status,
               checkOut: null,
               totalTime: null,
-              raw: null
+              raw: { ...leave, isLeave: true }
             });
           }
         });
@@ -422,9 +433,17 @@ document.addEventListener('alpine:init', () => {
       window.dispatchEvent(new CustomEvent('open-attendance-modal', { detail: null }));
     },
 
+    openLeaveCreate() {
+      window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: null }));
+    },
+
     editItem(item) {
       if (!item) return;
-      window.dispatchEvent(new CustomEvent('open-attendance-modal', { detail: item }));
+      if (item.isLeave) {
+        window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: item }));
+      } else {
+        window.dispatchEvent(new CustomEvent('open-attendance-modal', { detail: item }));
+      }
     },
 
     async deleteItem(item) {
@@ -467,6 +486,105 @@ document.addEventListener('alpine:init', () => {
         showToast(`Bulk action failed: ${err.message}`, 'danger');
       }
     },
+  }));
+
+  Alpine.data('leaveForm', () => ({
+    editingId: null,
+    originalLeaveType: null,
+    saving: false,
+    error: null,
+    users: [],
+    userBalances: [],
+    isLoadingBalances: false,
+    form: {
+      user_id: '',
+      leave_type: '',
+      start_date: '',
+      end_date: '',
+      reason: '',
+      status: 'Pending'
+    },
+    
+    init() {
+      this.loadUsers();
+      window.addEventListener('open-leave-modal', (e) => {
+        this.error = null;
+        if (e.detail) {
+          this.editingId = e.detail.id;
+          this.originalLeaveType = e.detail.leave_type;
+          this.form.user_id = e.detail.user_id;
+          this.form.leave_type = e.detail.leave_type;
+          this.form.start_date = e.detail.start_date ? e.detail.start_date.split('T')[0].split(' ')[0] : '';
+          this.form.end_date = e.detail.end_date ? e.detail.end_date.split('T')[0].split(' ')[0] : '';
+          this.form.reason = e.detail.reason;
+          this.form.status = e.detail.status;
+        } else {
+          this.editingId = null;
+          this.originalLeaveType = null;
+          this.form.user_id = '';
+          this.form.leave_type = '';
+          this.form.start_date = '';
+          this.form.end_date = '';
+          this.form.reason = '';
+          this.form.status = 'Pending';
+        }
+        getModal('#leaveModal')?.show();
+      });
+
+      this.$watch('form.user_id', (value) => {
+          this.fetchBalances(value);
+      });
+    },
+
+    async fetchBalances(userId) {
+        const prevType = this.form.leave_type;
+        this.userBalances = [];
+        if (!userId) return;
+        
+        this.isLoadingBalances = true;
+        try {
+            const res = await apiFetch(`/api/leave-balances?user_id=${userId}&is_active=1&per_page=100`);
+            if (res && res.data) {
+                this.userBalances = res.data;
+                this.$nextTick(() => {
+                    if (prevType) this.form.leave_type = prevType;
+                });
+            }
+        } catch (e) {
+            console.error("Failed to load balances");
+        }
+        this.isLoadingBalances = false;
+    },
+    
+    async loadUsers() {
+      try {
+        const res = await apiFetch('/api/users?per_page=100');
+        this.users = res.data ?? res;
+      } catch(e) {}
+    },
+    
+    async saveItem() {
+      this.saving = true;
+      this.error = null;
+      
+      try {
+        const method = this.editingId ? 'PUT' : 'POST';
+        const url = this.editingId ? `/api/leaves/${this.editingId}` : '/api/leaves';
+        
+        await apiFetch(url, {
+          method: method,
+          body: JSON.stringify(this.form)
+        });
+        
+        window.dispatchEvent(new CustomEvent('leave-saved'));
+        showToast('Leave requested successfully', 'success');
+        getModal('#leaveModal')?.hide();
+        window.dispatchEvent(new CustomEvent('attendance-saved'));
+      } catch(e) {
+        this.error = e.message || 'Validation error.';
+      }
+      this.saving = false;
+    }
   }));
 
   Alpine.data('attendanceForm', () => ({
