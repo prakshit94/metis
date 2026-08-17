@@ -161,19 +161,7 @@
     <?php echo $__env->yieldPushContent('modals'); ?>
     <?php echo $__env->yieldPushContent('scripts'); ?>
     <script>
-        document.addEventListener('show.bs.dropdown', function (event) {
-            var responsiveContainer = event.target.closest('.table-responsive');
-            if (responsiveContainer) {
-                responsiveContainer.style.overflow = 'visible';
-            }
-        });
-        
-        document.addEventListener('hide.bs.dropdown', function (event) {
-            var responsiveContainer = event.target.closest('.table-responsive');
-            if (responsiveContainer) {
-                responsiveContainer.style.overflow = '';
-            }
-        });
+
 
         // Check for pending toasts from previous pages
         document.addEventListener('DOMContentLoaded', function() {

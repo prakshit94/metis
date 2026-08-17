@@ -1,9 +1,7 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', '👥 User Management'); ?>
+<?php $__env->startSection('page', 'users'); ?>
 
-@section('title', '👥 User Management')
-@section('page', 'users')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="user-management" x-data="userTable">
     <div x-data="{ showAnalytics: localStorage.getItem('users_show_analytics') !== 'false' }" x-init="$watch('showAnalytics', val => localStorage.setItem('users_show_analytics', val))">
 <!-- Page Header -->
@@ -18,21 +16,21 @@
                                 <input class="form-check-input m-0" type="checkbox" role="switch" id="usersAnalyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
                                 <label class="form-check-label small fw-bold text-muted mb-0 ms-1" for="usersAnalyticsToggle" style="cursor: pointer; padding-top: 2px;">Analytics</label>
                             </div>
-                            @can('user-import')
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-import')): ?>
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                                 <i class="bi bi-upload me-2"></i>Import Users
                             </button>
-                            @endcan
-                            @can('user-export')
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-export')): ?>
                             <button type="button" class="btn btn-outline-secondary" x-on:click="exportUsers()">
                                 <i class="bi bi-download me-2"></i>Export
                             </button>
-                            @endcan
-                            @can('user-create')
+                            <?php endif; ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-create')): ?>
                             <button type="button" class="btn btn-primary" @click="openCreateUser()">
                                 <i class="bi bi-person-plus me-2"></i>Add User
                             </button>
-                            @endcan
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -249,7 +247,7 @@
                                             </div>
                                             <div class="card-body p-3 p-lg-4">
                                                 <div class="row g-2 g-lg-3">
-                                                    @can('user-create')
+                                                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-create')): ?>
                                                     <div class="col-6">
                                                         <button class="btn btn-outline-primary btn-sm w-100" 
                                                                 type="button" @click="openCreateUser()">
@@ -257,8 +255,8 @@
                                                             Add User
                                                         </button>
                                                     </div>
-                                                    @endcan
-                                                    @can('user-import')
+                                                    <?php endif; ?>
+                                                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-import')): ?>
                                                     <div class="col-6">
                                                         <button class="btn btn-outline-info btn-sm w-100"
                                                                 data-bs-toggle="modal" data-bs-target="#importModal">
@@ -266,8 +264,8 @@
                                                             Import
                                                         </button>
                                                     </div>
-                                                    @endcan
-                                                    @can('user-export')
+                                                    <?php endif; ?>
+                                                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-export')): ?>
                                                     <div class="col-6">
                                                         <button class="btn btn-outline-success btn-sm w-100"
                                                                 @click="exportUsers()">
@@ -275,8 +273,8 @@
                                                             Export
                                                         </button>
                                                     </div>
-                                                    @endcan
-                                                    @can('user-invite')
+                                                    <?php endif; ?>
+                                                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-invite')): ?>
                                                     <div class="col-6">
                                                         <button class="btn btn-outline-warning btn-sm w-100"
                                                                 @click="sendBulkInvites()">
@@ -284,8 +282,8 @@
                                                             Invites
                                                         </button>
                                                     </div>
-                                                    @endcan
-                                                    @can('user-report')
+                                                    <?php endif; ?>
+                                                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-report')): ?>
                                                     <div class="col-12">
                                                         <button class="btn btn-outline-secondary btn-sm w-100"
                                                                 @click="generateReport()">
@@ -293,7 +291,7 @@
                                                             Generate Report
                                                         </button>
                                                     </div>
-                                                    @endcan
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </div>
@@ -371,29 +369,29 @@
                                             </span>
                                         </div>
                                         <div class="d-flex gap-2">
-                                            @can('user-activate')
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-activate')): ?>
                                             <button class="btn btn-sm btn-success" @click="bulkAction('activate')" x-show="hasSelectedActiveUsers">
                                                 <i class="bi bi-check-circle me-1"></i>Activate
                                             </button>
                                             <button class="btn btn-sm btn-warning" @click="bulkAction('deactivate')" x-show="hasSelectedActiveUsers">
                                                 <i class="bi bi-x-circle me-1"></i>Deactivate
                                             </button>
-                                            @endcan
-                                            @can('user-delete')
+                                            <?php endif; ?>
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-delete')): ?>
                                             <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" x-show="hasSelectedActiveUsers">
                                                 <i class="bi bi-trash me-1"></i>Delete
                                             </button>
-                                            @endcan
-                                            @can('user-restore')
+                                            <?php endif; ?>
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-restore')): ?>
                                             <button class="btn btn-sm btn-success" @click="bulkAction('restore')" x-show="hasSelectedDeletedUsers">
                                                 <i class="bi bi-arrow-counterclockwise me-1"></i>Restore
                                             </button>
-                                            @endcan
-                                            @can('user-permanent-delete')
+                                            <?php endif; ?>
+                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-permanent-delete')): ?>
                                             <button class="btn btn-sm btn-danger" @click="bulkAction('force-delete')" x-show="hasSelectedDeletedUsers">
                                                 <i class="bi bi-trash3 me-1"></i>Permanent Delete
                                             </button>
-                                            @endcan
+                                            <?php endif; ?>
                                             <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selectedUsers = []" title="Clear selection">
                                                 <i class="bi bi-x-lg" style="margin-left: 7px"></i>
                                             </button>
@@ -522,14 +520,14 @@
                                                                 <i class="bi bi-three-dots"></i>
                                                             </button>
                                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                                                @can('user-view')
+                                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-view')): ?>
                                                                 <li>
                                                                     <a class="dropdown-item" href="#" @click.prevent="viewUser(user)">
                                                                         <i class="bi bi-eye me-2"></i>View Profile
                                                                     </a>
                                                                 </li>
-                                                                @endcan
-                                                                @can('user-edit')
+                                                                <?php endif; ?>
+                                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-edit')): ?>
                                                                 <li>
                                                                     <a class="dropdown-item" href="#" @click.prevent="editUser(user)" x-show="!user.isDeleted">
                                                                         <i class="bi bi-pencil me-2"></i>Edit
@@ -540,36 +538,36 @@
                                                                         <i class="bi bi-key me-2"></i>Change Password
                                                                     </a>
                                                                 </li>
-                                                                @endcan
-                                                                @can('user-activate')
+                                                                <?php endif; ?>
+                                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-activate')): ?>
                                                                 <li>
                                                                     <a class="dropdown-item" href="#" @click.prevent="toggleActive(user)" x-show="!user.isDeleted">
                                                                         <i class="bi me-2" :class="user.is_active ? 'bi-x-circle' : 'bi-check-circle'"></i><span x-text="user.is_active ? 'Deactivate' : 'Activate'"></span>
                                                                     </a>
                                                                 </li>
-                                                                @endcan
+                                                                <?php endif; ?>
                                                                 <li><hr class="dropdown-divider"></li>
-                                                                @can('user-delete')
+                                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-delete')): ?>
                                                                 <li>
                                                                     <a class="dropdown-item text-danger" href="#" @click.prevent="deleteUser(user)" x-show="!user.isDeleted">
                                                                         <i class="bi bi-trash me-2"></i>Delete
                                                                     </a>
                                                                 </li>
-                                                                @endcan
-                                                                @can('user-restore')
+                                                                <?php endif; ?>
+                                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-restore')): ?>
                                                                 <li>
                                                                     <a class="dropdown-item text-success" href="#" @click.prevent="restoreUser(user)" x-show="user.isDeleted">
                                                                         <i class="bi bi-arrow-counterclockwise me-2"></i>Restore
                                                                     </a>
                                                                 </li>
-                                                                @endcan
-                                                                @can('user-permanent-delete')
+                                                                <?php endif; ?>
+                                                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('user-permanent-delete')): ?>
                                                                 <li>
                                                                     <a class="dropdown-item text-danger" href="#" @click.prevent="forceDeleteUser(user)" x-show="user.isDeleted">
                                                                         <i class="bi bi-trash3 me-2"></i>Permanent Delete
                                                                     </a>
                                                                 </li>
-                                                                @endcan
+                                                                <?php endif; ?>
                                                             </ul>
                                                         </div>
                                                     </td>
@@ -624,7 +622,7 @@
                     </div> <!-- End Users Management Container -->
     </div> <!-- End showAnalytics wrapper -->
 
-{{-- ═══════════════════════ Add / Edit User Modal ═══════════════════════════ --}}
+
 <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel">
     <div class="modal-dialog modal-lg">
         <div class="modal-content" x-data="userForm">
@@ -949,7 +947,7 @@
     </div>
 </div>
 
-{{-- ═══════════════════════ Import Users Modal ═══════════════════════════════ --}}
+
 <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel">
     <div class="modal-dialog" x-data="importForm">
         <div class="modal-content">
@@ -1000,7 +998,7 @@
     </div>
 </div>
 
-{{-- ═══════════════════════ View Profile Modal ═══════════════════════════════ --}}
+
 <div class="modal fade" id="viewUserModal" tabindex="-1" aria-labelledby="viewUserModalLabel">
     <div class="modal-dialog modal-lg" x-data="userProfile">
         <div class="modal-content">
@@ -1178,7 +1176,9 @@
     </div>
 </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
-@endpush
+<?php $__env->startPush('scripts'); ?>
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/user/metis/resources/views/users/index.blade.php ENDPATH**/ ?>
