@@ -1974,7 +1974,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <template x-for="item in selectedItemsOrder.items" :key="item.product_id">
+                                        <template x-for="(item, idx) in selectedItemsOrder.items" :key="idx">
                                             <tr :class="{ 'bg-danger bg-opacity-10': item.isOutOfStock }">
                                                 <td>
                                                     <div class="d-flex align-items-center">

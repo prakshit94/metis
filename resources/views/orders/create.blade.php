@@ -700,7 +700,7 @@
                 </template>
 
                 {{-- Cart Item Cards --}}
-                <template x-for="(item, idx) in cart" :key="item.id">
+                <template x-for="(item, idx) in cart" :key="item.id + '_' + (item.is_gift ? item.gift_source : 'paid')">
                     <div class="card border shadow-sm mb-3">
                         <div class="d-flex align-items-start gap-3 p-3">
                             <div class="rounded-3 bg-body-tertiary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
@@ -709,12 +709,19 @@
                             <div class="flex-grow-1 min-w-0">
                                 <div class="d-flex align-items-start justify-content-between gap-2">
                                     <div class="min-w-0">
-                                        <h6 class="fw-bold text-truncate mb-1" x-text="item.name"></h6>
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <h6 class="fw-bold text-truncate mb-0" x-text="item.name"></h6>
+                                            <template x-if="item.is_gift">
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.6rem; line-height: 1;"><i class="bi bi-gift-fill me-1"></i>Free</span>
+                                            </template>
+                                        </div>
                                         <div class="font-monospace text-muted" style="font-size: 11px;" x-text="item.sku"></div>
                                     </div>
-                                    <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-muted hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
-                                        <i class="bi bi-trash3"></i>
-                                    </button>
+                                    <template x-if="!item.is_gift">
+                                        <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-muted hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </template>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between mt-2">
                                     <span class="text-muted fw-medium" style="font-size: 12px;" x-text="'Rs ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
@@ -728,20 +735,24 @@
                         </div>
                         <div class="px-3 pb-3 d-flex flex-wrap align-items-center gap-3">
                             <div class="d-flex align-items-center bg-body-secondary border rounded-3 p-1 flex-shrink-0">
-                                <button type="button" @click.prevent="updateQty(idx,-1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
-                                    <i class="bi bi-dash"></i>
-                                </button>
+                                <template x-if="!item.is_gift">
+                                    <button type="button" @click.prevent="updateQty(idx,-1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
+                                        <i class="bi bi-dash"></i>
+                                    </button>
+                                </template>
                                 <span class="fw-bold text-center" style="width: 32px; font-size: 13px;" x-text="item.quantity"></span>
-                                <button type="button" @click.prevent="updateQty(idx,1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
-                                    <i class="bi bi-plus"></i>
-                                </button>
+                                <template x-if="!item.is_gift">
+                                    <button type="button" @click.prevent="updateQty(idx,1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </template>
                             </div>
                             <div class="flex-grow-1 min-w-0 d-flex justify-content-end align-items-center gap-2">
                                 <template x-if="item.discountValue > 0">
-                                    <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-flex align-items-center gap-1 px-2 py-1 rounded-3">
-                                        <i class="bi bi-tag-fill"></i>
-                                        <span class="fw-bold" style="font-size: 11px;" x-text="(item.discountType === 'flat' ? 'Rs ' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (item.discountType === 'flat' ? ' off' : '% off')"></span>
-                                    </div>
+                                        <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-flex align-items-center gap-1 px-2 py-1 rounded-3">
+                                            <i class="bi bi-tag-fill"></i>
+                                            <span class="fw-bold" style="font-size: 11px;" x-text="(['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? 'Rs ' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? ' off' : '% off')"></span>
+                                        </div>
                                 </template>
                             </div>
                         </div>
@@ -770,7 +781,7 @@
                                 Cart is empty
                             </div>
                         </template>
-                        <template x-for="(item, idx) in cart" :key="item.id">
+                        <template x-for="(item, idx) in cart" :key="item.id + '_' + (item.is_gift ? item.gift_source : 'paid')">
                             <div class="card border shadow-sm mb-3">
                                 <div class="d-flex align-items-start gap-3 p-3">
                                     <div class="rounded-3 bg-body-tertiary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
@@ -779,12 +790,19 @@
                                     <div class="flex-grow-1" style="min-width: 0;">
                                         <div class="d-flex align-items-start justify-content-between gap-2">
                                             <div style="min-width: 0;">
-                                                <h6 class="fw-bold text-truncate mb-1" x-text="item.name"></h6>
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <h6 class="fw-bold text-truncate mb-0" x-text="item.name"></h6>
+                                                    <template x-if="item.is_gift">
+                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.6rem; line-height: 1;"><i class="bi bi-gift-fill me-1"></i>Free</span>
+                                                    </template>
+                                                </div>
                                                 <div class="font-monospace text-muted text-truncate" style="font-size: 11px;" x-text="item.sku"></div>
                                             </div>
-                                            <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-muted hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
-                                                <i class="bi bi-trash3"></i>
-                                            </button>
+                                            <template x-if="!item.is_gift">
+                                                <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-muted hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </template>
                                         </div>
                                         <div class="d-flex align-items-center justify-content-between mt-2">
                                             <span class="text-muted fw-medium" style="font-size: 12px;" x-text="'Rs ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
@@ -798,19 +816,23 @@
                                 </div>
                                 <div class="px-3 pb-3 d-flex flex-wrap align-items-center gap-3">
                                     <div class="d-flex align-items-center bg-body-secondary border rounded-3 p-1 flex-shrink-0">
-                                        <button type="button" @click.prevent="updateQty(idx,-1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
-                                            <i class="bi bi-dash"></i>
-                                        </button>
+                                        <template x-if="!item.is_gift">
+                                            <button type="button" @click.prevent="updateQty(idx,-1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                        </template>
                                         <span class="fw-bold text-center" style="width: 32px; font-size: 13px;" x-text="item.quantity"></span>
-                                        <button type="button" @click.prevent="updateQty(idx,1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
-                                            <i class="bi bi-plus"></i>
-                                        </button>
+                                        <template x-if="!item.is_gift">
+                                            <button type="button" @click.prevent="updateQty(idx,1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </template>
                                     </div>
                                     <div class="flex-grow-1 d-flex justify-content-end align-items-center gap-2" style="min-width: 0;">
                                         <template x-if="item.discountValue > 0">
                                             <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-flex align-items-center gap-1 px-2 py-1 rounded-3">
                                                 <i class="bi bi-tag-fill"></i>
-                                                <span class="fw-bold" style="font-size: 11px;" x-text="(item.discountType === 'flat' ? 'Rs ' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (item.discountType === 'flat' ? ' off' : '% off')"></span>
+                                                <span class="fw-bold" style="font-size: 11px;" x-text="(['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? 'Rs ' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? ' off' : '% off')"></span>
                                             </div>
                                         </template>
                                     </div>
@@ -896,7 +918,7 @@
                                         </div>
                                         <div>
                                             <p class="mb-0 fw-bold text-info-emphasis fs-6">BOGO Savings</p>
-                                            <p class="mb-0 text-info opacity-75 small">Auto-applied</p>
+                                            <p class="mb-0 text-info opacity-75 small" x-text="appliedBogoOfferNames"></p>
                                         </div>
                                     </div>
                                     <span class="fw-bold text-info-emphasis fs-6" x-text="'- Rs ' + Number(bogoDiscount).toFixed(2)"></span>
@@ -914,29 +936,29 @@
                                 <span class="text-body fw-bold" x-text="'Rs ' + Number(subtotal).toFixed(2)"></span>
                             </div>
                             
-                            <div class="d-flex justify-content-between fw-medium text-success" style="font-size: 13px;" x-show="bogoDiscount > 0" x-cloak>
+                            <div class="d-flex justify-content-between fw-medium" :class="bogoDiscount > 0 ? 'text-success' : 'text-muted'" style="font-size: 13px;">
                                 <div>
                                     <span>BOGO Savings</span>
-                                    <span class="text-muted d-block" style="font-size: 10px;">Auto-applied backend offer</span>
+                                    <span class="text-muted d-block" style="font-size: 10px;" x-text="appliedBogoOfferNames"></span>
                                 </div>
                                 <span class="fw-bold align-top" x-text="'- Rs ' + Number(bogoDiscount).toFixed(2)"></span>
                             </div>
 
-                            <div class="d-flex justify-content-between fw-medium text-success" style="font-size: 13px;" x-show="orderOfferDiscountAmount > 0" x-cloak>
+                            <div class="d-flex justify-content-between fw-medium" :class="orderOfferDiscountAmount > 0 ? 'text-success' : 'text-muted'" style="font-size: 13px;">
                                 <div>
                                     <span>Order Discount</span>
-                                    <span class="text-muted d-block" style="font-size: 10px;" x-text="bestOrderOffer ? bestOrderOffer.name : ''"></span>
+                                    <span class="text-muted d-block" style="font-size: 10px;" x-text="bestOrderOffer ? bestOrderOffer.name : 'No active offer'"></span>
                                 </div>
                                 <span class="fw-bold align-top" x-text="'- Rs ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
                             </div>
 
-                            <div class="d-flex justify-content-between fw-medium text-success" style="font-size: 13px;" x-show="appliedCouponObj !== null" x-cloak>
+                            <div class="d-flex justify-content-between fw-medium" :class="appliedCouponObj !== null ? 'text-success' : 'text-muted'" style="font-size: 13px;">
                                 <div>
                                     <span>Coupon Savings</span>
-                                    <span class="text-muted d-block" style="font-size: 10px;" x-text="'(Code: ' + couponCode + ')'"></span>
+                                    <span class="text-muted d-block" style="font-size: 10px;" x-text="appliedCouponObj ? '(Code: ' + couponCode + ')' : 'No coupon applied'"></span>
                                 </div>
                                 <span class="fw-bold align-top" x-show="appliedCouponObj && (appliedCouponObj.type === 'free_shipping' || appliedCouponObj.type === 'free_product')" x-text="appliedCouponObj.type === 'free_shipping' ? 'Free Shipping' : 'Free Gift'"></span>
-                                <span class="fw-bold align-top" x-show="appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product'" x-text="'- Rs ' + Number(couponDiscount).toFixed(2)"></span>
+                                <span class="fw-bold align-top" x-show="!appliedCouponObj || (appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product')" x-text="'- Rs ' + Number(couponDiscount).toFixed(2)"></span>
                             </div>
 
                             <div class="d-flex justify-content-between fw-medium text-muted" style="font-size: 13px;">
@@ -2066,10 +2088,34 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             });
         },
 
+        getBogoMatch(productId) {
+            const bogos = this.activeOffers
+                .filter(o => o.type === 'bogo')
+                .sort((a,b)=>(b.priority - a.priority) || (a.id - b.id));
+            
+            return bogos.find(o => {
+                let apps = o.applicable_products;
+                if (typeof apps === 'string') {
+                    try { apps = JSON.parse(apps); } catch(e) { apps = null; }
+                }
+                if (apps && apps.length > 0) {
+                    return apps.includes(productId) || apps.includes(String(productId));
+                }
+                // If applicable_products is null or empty, it applies to ALL products
+                return true;
+            });
+        },
+
         getProductPromotions(p) {
             let promos = [];
             this.activeOffers.forEach(o => {
-                if (o.type === 'bogo' && String(o.product_id) === String(p.id)) promos.push({text: 'BOGO', icon: 'bi-gift-fill', class: 'bg-info bg-opacity-10 text-info border-info'});
+                if (o.type === 'bogo') {
+                    let apps = o.applicable_products;
+                    if (typeof apps === 'string') { try { apps = JSON.parse(apps); } catch(e) { apps = null; } }
+                    if (!apps || apps.length === 0 || apps.includes(p.id) || apps.includes(String(p.id))) {
+                        promos.push({text: 'BOGO', icon: 'bi-gift-fill', class: 'bg-info bg-opacity-10 text-info border-info'});
+                    }
+                }
                 if (o.type === 'free_product' && String(o.product_id) === String(p.id)) promos.push({text: 'Free Gift', icon: 'bi-gift', class: 'bg-success bg-opacity-10 text-success border-success'});
                 if (o.type === 'category_discount' && o.applicable_categories && o.applicable_categories.includes(String(p.category_id))) promos.push({text: (o.discount_type === 'percentage' ? parseFloat(o.value) + '%' : 'Rs ' + parseFloat(o.value)) + ' OFF', icon: 'bi-tags', class: 'bg-primary bg-opacity-10 text-primary border-primary'});
             });
@@ -2342,39 +2388,18 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             if (qtyToAdd <= 0) return;
 
             const existing = this.cart.findIndex(i => i.id === p.id && !i.is_gift);
-            const bogos = this.activeOffers.filter(o=>o.type==='bogo');
-            const match = bogos.find(o=> Number(o.product_id)===Number(p.id)) || bogos.find(o=> !o.product_id);
+            const match = this.getBogoMatch(p.id);
 
             let newQty;
             if (existing >= 0) {
-                let item = this.cart[existing];
-                if (match) {
-                    const buyQty = parseInt(match.buy_qty)||1;
-                    const getQty = parseInt(match.get_qty)||1;
-                    const cycle = buyQty + getQty;
-                    const cycles = Math.floor(item.quantity / cycle);
-                    const rem = item.quantity % cycle;
-                    let paidQty = cycles * buyQty + Math.min(rem, buyQty);
-                    
-                    paidQty += qtyToAdd;
-                    newQty = paidQty + Math.floor(paidQty / buyQty) * getQty;
-                } else {
-                    newQty = item.quantity + qtyToAdd;
-                }
-
+                newQty = this.cart[existing].quantity + qtyToAdd;
                 if (p.available_stock !== null && p.available_stock !== undefined && newQty > p.available_stock) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+p.available_stock+')'}}));
                     return;
                 }
                 this.cart[existing].quantity = newQty;
             } else {
-                if (match) {
-                    const buyQty = parseInt(match.buy_qty)||1;
-                    const getQty = parseInt(match.get_qty)||1;
-                    newQty = qtyToAdd + Math.floor(qtyToAdd / buyQty) * getQty;
-                } else {
-                    newQty = qtyToAdd;
-                }
+                newQty = qtyToAdd;
                 if (p.available_stock !== null && p.available_stock !== undefined && newQty > p.available_stock) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+p.available_stock+')'}}));
                     return;
@@ -2388,29 +2413,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             const item = this.cart[idx];
             if (!item) return;
             
-            const bogos = this.activeOffers.filter(o=>o.type==='bogo');
-            const match = bogos.find(o=> Number(o.product_id)===Number(item.id)) || bogos.find(o=> !o.product_id);
-            
-            let newQty;
-            if (match) {
-                const buyQty = parseInt(match.buy_qty)||1;
-                const getQty = parseInt(match.get_qty)||1;
-                const cycle = buyQty + getQty;
-                
-                const cycles = Math.floor(item.quantity / cycle);
-                const rem = item.quantity % cycle;
-                let paidQty = cycles * buyQty + Math.min(rem, buyQty);
-                
-                paidQty += delta;
-                
-                if (paidQty <= 0) {
-                    newQty = 0;
-                } else {
-                    newQty = paidQty + Math.floor(paidQty / buyQty) * getQty;
-                }
-            } else {
-                newQty = item.quantity + delta;
-            }
+            let newQty = item.quantity + delta;
 
             if (newQty <= 0) {
                 this.cart.splice(idx,1);
@@ -2434,37 +2437,49 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         },
 
         get subtotal() { return this.cart.reduce((t,i) => t + this.lineTotal(i), 0); },
-        get taxAmount() { return this.cart.reduce((t,i) => t + this.lineTotal(i) * ((parseFloat(i.taxRate)||0)/100), 0); },
-        get bogoDiscount() {
-            const bogos = this.activeOffers
-                .filter(o=>o.type==='bogo')
-                .sort((a,b)=>(b.priority - a.priority) || (a.id - b.id));
-            return this.cart.reduce((t,item)=>{
-                if (item.is_gift) return t; // Skip gifts
-                const match = bogos.find(o=> Number(o.product_id)===Number(item.id)) || bogos.find(o=> !o.product_id);
-                if(!match) return t;
-                
-                // Enforce minimum spend (check against total subtotal)
-                if ((parseFloat(match.min_spend) || 0) > this.subtotal) return t;
+        itemBogoDiscount(item) {
+            if (item.is_gift) return 0; // Skip gifts
+            const match = this.getBogoMatch(item.id);
+            if(!match) return 0;
+            
+            // Enforce minimum spend (check against total subtotal)
+            if ((parseFloat(match.min_spend) || 0) > this.subtotal) return 0;
 
-                const buyQty = parseInt(match.buy_qty)||1;
-                const getQty = parseInt(match.get_qty)||1;
-                const cycle = buyQty + getQty;
-                const qty = parseInt(item.quantity)||0;
-                if(qty<cycle) return t;
-                const free = Math.floor(qty/cycle)*getQty;
-                const eff = qty>0 ? this.lineTotal(item)/qty : 0;
-                return t + Math.min(eff*free, this.lineTotal(item));
-            },0);
+            const buyQty = parseInt(match.buy_qty)||1;
+            const getQty = parseInt(match.get_qty)||1;
+            const cycle = buyQty + getQty;
+            const qty = parseInt(item.quantity)||0;
+            if(qty<cycle) return 0;
+            const free = Math.floor(qty/cycle)*getQty;
+            const eff = qty>0 ? this.lineTotal(item)/qty : 0;
+            return Math.min(eff*free, this.lineTotal(item));
+        },
+        get taxAmount() { 
+            return this.cart.reduce((t,i) => {
+                const taxableAmount = Math.max(0, this.lineTotal(i) - this.itemBogoDiscount(i));
+                return t + taxableAmount * ((parseFloat(i.taxRate)||0)/100);
+            }, 0); 
+        },
+        get bogoDiscount() {
+            return this.cart.reduce((t,item) => t + this.itemBogoDiscount(item), 0);
+        },
+        get appliedBogoOfferNames() {
+            const names = new Set();
+            this.cart.forEach(item => {
+                if (item.is_gift) return;
+                const match = this.getBogoMatch(item.id);
+                if (match && this.itemBogoDiscount(item) > 0) {
+                    names.add(match.name);
+                }
+            });
+            const arr = Array.from(names);
+            return arr.length > 0 ? arr.join(', ') : 'No active offer';
         },
         get appliedBogoIds() {
-            const bogos = this.activeOffers
-                .filter(o=>o.type==='bogo')
-                .sort((a,b)=>(b.priority - a.priority) || (a.id - b.id));
             const ids = [];
             this.cart.forEach(item => {
                 if (item.is_gift) return;
-                const match = bogos.find(o=> Number(o.product_id)===Number(item.id)) || bogos.find(o=> !o.product_id);
+                const match = this.getBogoMatch(item.id);
                 if(match && !ids.includes(match.id)) {
                     const cycle = parseInt(match.buy_qty||1) + parseInt(match.get_qty||1);
                     if(item.quantity >= cycle) ids.push(match.id);
