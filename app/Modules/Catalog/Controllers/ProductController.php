@@ -190,7 +190,7 @@ class ProductController extends Controller
     public function searchApi(Request $request): JsonResponse
     {
         $query = Product::query()
-            ->with(['category', 'brand', 'taxRate'])
+            ->with(['category', 'brand', 'taxRate', 'stocks.warehouse'])
             ->withSum('stocks as stocks_sum_quantity', 'quantity')
             ->withSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
             ->withSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
@@ -236,6 +236,12 @@ class ProductController extends Controller
 
             return [
                 'id' => $p->id,
+                'warehouse_stocks' => $p->stocks->map(fn($s) => [
+                    'warehouse_id' => $s->warehouse_id,
+                    'warehouse_name' => $s->warehouse?->name ?? 'Unknown',
+                    'quantity' => $s->quantity,
+                    'available' => max(0, $s->quantity - $s->reserved_qty)
+                ])->values()->toArray(),
                 'name' => $p->name,
                 'sku' => $p->sku,
                 'barcode' => $p->barcode,

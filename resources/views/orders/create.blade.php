@@ -506,6 +506,12 @@
                                 <input type="search" class="form-control pe-5" placeholder="Search SKU, name..." x-model="productQuery" @input.debounce.350ms="searchProducts(true)">
                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
                             </div>
+                            <select class="form-select" style="max-width:180px" x-model="warehouseId" @change="searchProducts(true)">
+                                <option value="">Select Warehouse</option>
+                                @foreach($warehouses as $w)
+                                <option value="{{ $w->id }}">{{ $w->name }}</option>
+                                @endforeach
+                            </select>
                             <select class="form-select" style="max-width:140px" x-model="stockFilter" @change="searchProducts(true)">
                                 <option value="available">In Stock</option>
                                 <option value="">All Stock</option>
@@ -538,7 +544,7 @@
                         <div class="row g-3" x-show="viewMode === 'grid'">
                             <template x-for="p in products" :key="p.id">
                                 <div class="col-sm-6 col-md-4">
-                                    <div class="card h-100 border shadow-sm transition-all" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !p.is_sku_enabled || p.available_stock <= 0}">
+                                    <div class="card h-100 border shadow-sm transition-all" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getWarehouseStock(p) <= 0}">
                                         <div class="card-body p-3">
                                             <div class="d-flex gap-3 mb-3">
                                                 <div class="position-relative cursor-pointer" @click="openProductModal(p)">
@@ -554,7 +560,7 @@
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-1 bg-body-tertiary rounded">
                                                 <span class="fw-bold text-primary fs-5" x-text="'Rs ' + parseFloat(p.selling_price).toFixed(2)"></span>
-                                                <span class="badge" :class="p.available_stock > 10 ? 'bg-success' : (p.available_stock > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + parseFloat(p.available_stock)"></span>
+                                                <span class="badge" :class="getWarehouseStock(p) > 10 ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p))"></span>
                                             </div>
                                             <div class="d-flex flex-wrap gap-1 mb-3" x-show="getProductPromotions(p).length > 0">
                                                 <template x-for="promo in getProductPromotions(p)">
@@ -566,14 +572,14 @@
                                             <div class="row g-2">
                                                 <div class="col-8">
                                                     <div class="form-floating">
-                                                        <input type="number" class="form-control form-control-sm text-center fw-bold" style="height: 42px; min-height: 42px;" x-model.number="p._qty" min="1" :max="p.available_stock || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || p.available_stock <= 0">
+                                                        <input type="number" class="form-control form-control-sm text-center fw-bold" style="height: 42px; min-height: 42px;" x-model.number="p._qty" min="1" :max="getWarehouseStock(p) || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
                                                         <label class="text-muted" style="padding-top: 0.5rem; padding-bottom: 0.5rem; font-size: 0.75rem;">Qty</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-4">
-                                                    <button class="btn btn-sm w-100 h-100 d-flex align-items-center justify-content-center gap-1" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || p.available_stock <= 0">
+                                                    <button class="btn btn-sm w-100 h-100 d-flex align-items-center justify-content-center gap-1" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
                                                         <i class="bi fs-5" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
-                                                        <span x-text="!p.is_sku_enabled ? 'Disabled' : (p.available_stock <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 13px;" class="fw-bold"></span>
+                                                        <span x-text="!p.is_sku_enabled ? 'Disabled' : (getWarehouseStock(p) <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 13px;" class="fw-bold"></span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -597,7 +603,7 @@
                                 </thead>
                                 <tbody>
                                     <template x-for="p in products" :key="'tbl-'+p.id">
-                                        <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id), 'opacity-50': !p.is_sku_enabled || p.available_stock <= 0}">
+                                        <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getWarehouseStock(p) <= 0}">
                                             <td>
                                                 <div class="d-flex gap-3">
                                                     <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded border bg-body shadow-sm cursor-pointer" style="width:50px;height:50px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'" @click="openProductModal(p)">
@@ -628,8 +634,29 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <div class="d-flex align-items-center gap-2 mb-1">
-                                                    <span class="badge" :class="p.available_stock > (p.min_stock_level || 10) ? 'bg-success' : (p.available_stock > 0 ? 'bg-warning text-dark' : 'bg-danger')" x-text="'Stock: ' + parseFloat(p.available_stock) + ' ' + (p.uom_id || 'Units')"></span>
+                                                <div class="d-flex flex-column gap-1 mb-1">
+                                                    <template x-if="!p.warehouse_stocks || p.warehouse_stocks.length === 0">
+                                                        <div>
+                                                            <span class="badge" :class="getWarehouseStock(p) > (p.min_stock_level || 10) ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-dark' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p)) + ' ' + (p.uom_id || 'Units')"></span>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="p.warehouse_stocks && p.warehouse_stocks.length > 0">
+                                                        <div class="d-flex flex-wrap gap-1">
+                                                            <template x-if="p.warehouse_stocks.some(w => String(w.warehouse_id) === String(warehouseId))">
+                                                                <template x-for="(ws, index) in p.warehouse_stocks.filter(w => String(w.warehouse_id) === String(warehouseId))" :key="index">
+                                                                    <span class="badge bg-secondary bg-opacity-10 border text-dark" style="font-size: 0.65rem;">
+                                                                        <span class="text-muted me-1" x-text="ws.warehouse_name + ':'"></span>
+                                                                        <span class="fw-bold" :class="ws.available > 0 ? 'text-success' : 'text-danger'" x-text="parseFloat(ws.available)"></span>
+                                                                    </span>
+                                                                </template>
+                                                            </template>
+                                                            <template x-if="!p.warehouse_stocks.some(w => String(w.warehouse_id) === String(warehouseId))">
+                                                                <span class="badge bg-danger bg-opacity-10 border border-danger text-danger" style="font-size: 0.65rem;">
+                                                                    <i class="bi bi-x-circle me-1"></i>Not in selected warehouse
+                                                                </span>
+                                                            </template>
+                                                        </div>
+                                                    </template>
                                                 </div>
                                                 <div class="small text-muted mb-1" style="font-size: 11px;" x-show="p.min_stock_level > 0">Min Lvl: <span class="fw-medium" x-text="p.min_stock_level"></span></div>
                                                 <div class="d-flex flex-wrap gap-1 mt-1">
@@ -639,15 +666,15 @@
                                             </td>
                                             <td>
                                                 <div class="input-group input-group-sm shadow-sm flex-nowrap mx-auto" style="width: 110px;">
-                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!p.is_sku_enabled || p.available_stock <= 0"><i class="bi bi-dash"></i></button>
-                                                    <input type="number" class="form-control text-center fw-bold px-1 no-spinners" x-model.number="p._qty" min="1" :max="p.available_stock || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || p.available_stock <= 0">
-                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty < (p.available_stock || 9999)) p._qty++" :disabled="!p.is_sku_enabled || p.available_stock <= 0"><i class="bi bi-plus"></i></button>
+                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-dash"></i></button>
+                                                    <input type="number" class="form-control text-center fw-bold px-1 no-spinners" x-model.number="p._qty" min="1" :max="getWarehouseStock(p) || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
+                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty < (getWarehouseStock(p) || 9999)) p._qty++" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-plus"></i></button>
                                                 </div>
                                             </td>
                                             <td class="text-center">
-                                                <button class="btn btn-sm shadow-sm w-100 transition-all fw-bold text-nowrap" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || p.available_stock <= 0">
+                                                <button class="btn btn-sm shadow-sm w-100 transition-all fw-bold text-nowrap" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
                                                     <i class="bi" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i> 
-                                                    <span x-text="!p.is_sku_enabled ? 'Disabled' : (p.available_stock <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))"></span>
+                                                    <span x-text="!p.is_sku_enabled ? 'Disabled' : (getWarehouseStock(p) <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))"></span>
                                                 </button>
                                             </td>
                                         </tr>
@@ -2252,6 +2279,15 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             return match ? match.name : 'Select warehouse';
         },
 
+        getWarehouseStock(p) {
+            if (!p) return 0;
+            if (!this.warehouseId || !p.warehouse_stocks || p.warehouse_stocks.length === 0) {
+                return parseFloat(p.available_stock || 0);
+            }
+            const match = p.warehouse_stocks.find(w => String(w.warehouse_id) === String(this.warehouseId));
+            return match ? parseFloat(match.available || 0) : 0;
+        },
+
         get futureOrders() {
             return (this.recentOrders || []).filter(order => Boolean(order.is_draft) || order.lifecycle_status === 'future_order' || order.status_label === 'Future Order');
         },
@@ -2363,7 +2399,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     if (productObj) {
                         cleanedCart.push({
                             id: productObj.id, name: productObj.name, sku: productObj.sku, price: productObj.selling_price, image_url: productObj.image_url,
-                            quantity: gift.qty, available: productObj.available_stock, taxRate: 0, discountValue: productObj.selling_price, discountType: 'amount', category_id: productObj.category_id, is_gift: true, gift_source: gift.source
+                            quantity: gift.qty, available: this.getWarehouseStock(productObj), taxRate: 0, discountValue: productObj.selling_price, discountType: 'amount', category_id: productObj.category_id, is_gift: true, gift_source: gift.source
                         });
                         window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: `Free Gift added: ${productObj.name}` }}));
                     }
@@ -2393,18 +2429,20 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             let newQty;
             if (existing >= 0) {
                 newQty = this.cart[existing].quantity + qtyToAdd;
-                if (p.available_stock !== null && p.available_stock !== undefined && newQty > p.available_stock) {
-                    window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+p.available_stock+')'}}));
+                const whStock = this.getWarehouseStock(p);
+                if (whStock !== null && whStock !== undefined && newQty > whStock) {
+                    window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+whStock+')'}}));
                     return;
                 }
                 this.cart[existing].quantity = newQty;
             } else {
                 newQty = qtyToAdd;
-                if (p.available_stock !== null && p.available_stock !== undefined && newQty > p.available_stock) {
-                    window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+p.available_stock+')'}}));
+                const whStock = this.getWarehouseStock(p);
+                if (whStock !== null && whStock !== undefined && newQty > whStock) {
+                    window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+whStock+')'}}));
                     return;
                 }
-                this.cart.push({ id:p.id, name:p.name, sku:p.sku, price:p.selling_price, image_url:p.image_url, quantity:newQty, available:p.available_stock, taxRate:parseFloat(p.tax_rate)||0, discountValue:disc, discountType:p.default_discount_type||'percent', category_id:p.category_id });
+                this.cart.push({ id:p.id, name:p.name, sku:p.sku, price:p.selling_price, image_url:p.image_url, quantity:newQty, available:whStock, taxRate:parseFloat(p.tax_rate)||0, discountValue:disc, discountType:p.default_discount_type||'percent', category_id:p.category_id });
             }
             window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:'Added '+p.name+' to cart'}}));
         },
