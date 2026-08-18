@@ -184,4 +184,18 @@ class PermissionController extends Controller implements HasMiddleware
             'message' => "Permission [{$name}] permanently deleted successfully.",
         ]);
     }
+
+    public function options(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()?->can('permission-view')
+            || $request->user()?->can('user-create')
+            || $request->user()?->can('user-edit')
+            || $request->user()?->can('role-create')
+            || $request->user()?->can('role-edit'),
+            403,
+        );
+
+        return response()->json(\App\Modules\Users\Models\Permission::orderBy('name')->get(['id', 'name']));
+    }
 }

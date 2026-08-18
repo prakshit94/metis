@@ -18,16 +18,14 @@ class ProductAttributeController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:productattribute-view', only: ['index', 'show']),
-            new Middleware('permission:productattribute-create', only: ['store']),
-            new Middleware('permission:productattribute-edit', only: ['update']),
-            new Middleware('permission:productattribute-delete', only: ['destroy']),
+            new Middleware('permission:productattribute-create', only: ['store', 'storeValue']),
+            new Middleware('permission:productattribute-edit', only: ['update', 'updateValue']),
+            new Middleware('permission:productattribute-delete', only: ['destroy', 'destroyValue']),
         ];
     }
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('product-view');
-
         $query = ProductAttribute::query()->with('values');
 
         if ($search = $request->query('search')) {
@@ -51,8 +49,6 @@ class ProductAttributeController extends Controller implements HasMiddleware
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('product-create');
-
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:product_attributes,name',
             'type' => 'required|string|in:select,color,text',
@@ -72,7 +68,6 @@ class ProductAttributeController extends Controller implements HasMiddleware
 
     public function show(ProductAttribute $attribute): JsonResponse
     {
-        $this->authorize('product-view');
         $attribute->load('values');
 
         return response()->json(['data' => $attribute]);
@@ -80,8 +75,6 @@ class ProductAttributeController extends Controller implements HasMiddleware
 
     public function update(Request $request, $id): JsonResponse
     {
-        $this->authorize('product-edit');
-
         $model = ProductAttribute::findOrFail($id);
 
         $validated = $request->validate([
@@ -101,7 +94,6 @@ class ProductAttributeController extends Controller implements HasMiddleware
 
     public function destroy($id): JsonResponse
     {
-        $this->authorize('product-delete');
         $model = ProductAttribute::findOrFail($id);
         $model->delete();
 
@@ -113,8 +105,6 @@ class ProductAttributeController extends Controller implements HasMiddleware
     // Value Management
     public function storeValue(Request $request, ProductAttribute $attribute): JsonResponse
     {
-        $this->authorize('product-create');
-
         $data = $request->validate([
             'value' => 'required|string|max:255',
             'color_code' => 'nullable|string|max:255',
@@ -131,8 +121,6 @@ class ProductAttributeController extends Controller implements HasMiddleware
 
     public function updateValue(Request $request, $id): JsonResponse
     {
-        $this->authorize('product-edit');
-
         $value = ProductAttributeValue::findOrFail($id);
 
         $data = $request->validate([
@@ -151,7 +139,6 @@ class ProductAttributeController extends Controller implements HasMiddleware
 
     public function destroyValue($id): JsonResponse
     {
-        $this->authorize('product-delete');
         $value = ProductAttributeValue::findOrFail($id);
         $value->delete();
 

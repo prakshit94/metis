@@ -1,4 +1,4 @@
-<div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel" aria-hidden="true" 
+<div class="modal fade" id="addCustomerModal" aria-labelledby="addCustomerModalLabel" aria-hidden="true" 
      x-data="addCustomerApp()" 
      @open-add-customer-modal.window="openModal($event.detail)">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -522,8 +522,15 @@ document.addEventListener('alpine:init', () => {
                         window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Profile updated successfully!' }}));
                     }
                 } else {
-                    // Feature Request: Redirect to orders create page with pre-selected customer
-                    window.location.href = `/orders/create?customer_id=${data.data.id}`;
+                    window.dispatchEvent(new CustomEvent('customer-created', { detail: { customer: data.data } }));
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Customer added successfully!' }}));
+                    
+                    const path = window.location.pathname;
+                    if (path === '/' || path === '/dashboard' || path.includes('/orders/create')) {
+                        window.location.href = `/orders/create?customer_id=${data.data.id}`;
+                    } else {
+                        setTimeout(() => window.location.reload(), 1000);
+                    }
                 }
             } catch (err) {
                 this.formError = 'Network error occurred. Please try again.';

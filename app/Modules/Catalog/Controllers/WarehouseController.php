@@ -26,7 +26,7 @@ class WarehouseController extends Controller implements HasMiddleware
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('product-view');
+
 
         $query = Warehouse::query()
             ->withCount('stocks as total_skus')
@@ -79,7 +79,7 @@ class WarehouseController extends Controller implements HasMiddleware
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('product-create');
+
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -137,14 +137,14 @@ class WarehouseController extends Controller implements HasMiddleware
 
     public function show(Warehouse $model): JsonResponse
     {
-        $this->authorize('product-view');
+
 
         return response()->json(['data' => $model]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-        $this->authorize('product-edit');
+
 
         $model = Warehouse::findOrFail($id);
 
@@ -199,7 +199,7 @@ class WarehouseController extends Controller implements HasMiddleware
 
     public function destroy($id): JsonResponse
     {
-        $this->authorize('product-delete');
+
 
         $model = Warehouse::findOrFail($id);
 

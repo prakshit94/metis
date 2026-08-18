@@ -192,6 +192,22 @@ class RoleController extends Controller implements HasMiddleware
         ]);
     }
 
+    public function options(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()?->can('role-view')
+            || $request->user()?->can('user-create')
+            || $request->user()?->can('user-edit')
+            || $request->user()?->can('role-create')
+            || $request->user()?->can('role-edit'),
+            403,
+        );
+
+        return response()->json(\App\Modules\Users\Models\Role::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'guard_name']));
+    }
+
     // ─── Private ──────────────────────────────────────────────────────────────
 
     /**

@@ -26,7 +26,7 @@ class UnitOfMeasureController extends Controller implements HasMiddleware
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('product-view');
+
 
         $query = UnitOfMeasure::query();
 
@@ -51,7 +51,7 @@ class UnitOfMeasureController extends Controller implements HasMiddleware
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('product-create');
+
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -92,14 +92,14 @@ class UnitOfMeasureController extends Controller implements HasMiddleware
 
     public function show(UnitOfMeasure $model): JsonResponse
     {
-        $this->authorize('product-view');
+
 
         return response()->json(['data' => $model]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-        $this->authorize('product-edit');
+
 
         $model = UnitOfMeasure::findOrFail($id);
 
@@ -143,7 +143,7 @@ class UnitOfMeasureController extends Controller implements HasMiddleware
 
     public function destroy($id): JsonResponse
     {
-        $this->authorize('product-delete');
+
         $model = UnitOfMeasure::findOrFail($id);
         $model->delete();
 

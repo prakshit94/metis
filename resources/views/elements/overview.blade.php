@@ -140,7 +140,7 @@
 @endsection
 
 @push('scripts')
-<script type="module" src="./scripts/components/elements.js"></script>
 
-<script type="module" src="./scripts/main.js"></script>
+
+
 @endpush

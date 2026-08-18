@@ -186,7 +186,7 @@ class InvoiceController extends Controller implements HasMiddleware
 
         $user = $request->user();
 
-        $query = Invoice::whereIn('id', $validated['ids']);
+        $query = Invoice::whereIn('id', $validated['ids'])->with(['order.party', 'payments']);
 
         $invoices = $query->get();
 

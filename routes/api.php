@@ -49,49 +49,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/reports', [\App\Modules\Core\Controllers\PageController::class, 'reports'])->name('api.reports');
 
     // ── Notifications / Activities ───────────────────────────────────────────
-    Route::get('/activities/recent', function () {
-        abort_unless(
-            request()->user()?->can('audit-log-view')
-            || request()->user()?->hasAnyRole(['Super Admin', 'Admin']),
-            403,
-            'You do not have permission to view activity logs.'
-        );
+    Route::get('/activities/recent', [\App\Http\Controllers\AuditLogController::class, 'recentActivities'])
+        ->name('api.activities.recent');
 
-        $user = auth()->user();
-        $activities = \Spatie\Activitylog\Models\Activity::with('causer')->latest()->limit(15)->get();
-        $readIds = $user ? $user->readActivities()->whereIn('activity_id', $activities->pluck('id'))->pluck('activity_id')->toArray() : [];
-
-        $unreadCount = $activities->whereNotIn('id', $readIds)->count();
-
-        return response()->json([
-            'count' => $unreadCount,
-            'activities' => $activities->map(function ($a) use ($readIds) {
-                return [
-                    'id'           => $a->id,
-                    'description'  => $a->description,
-                    'subject_type' => class_basename($a->subject_type),
-                    'causer_name'  => $a->causer->name ?? 'System',
-                    'causer_photo' => $a->causer->photo ?? null,
-                    'time_ago'     => $a->created_at->diffForHumans(),
-                    'is_read'      => in_array($a->id, $readIds),
-                ];
-            })
-        ]);
-    })->name('api.activities.recent');
-
-    Route::post('/activities/{id}/read', function ($id) {
-        $user = auth()->user();
-        if (!$user) return response()->json(['success' => false], 401);
-        
-        if ($id === 'all') {
-            $activityIds = \Spatie\Activitylog\Models\Activity::latest()->limit(50)->pluck('id');
-            $user->readActivities()->syncWithoutDetaching($activityIds);
-        } else {
-            $user->readActivities()->syncWithoutDetaching([$id]);
-        }
-        
-        return response()->json(['success' => true]);
-    })->name('api.activities.read');
+    Route::post('/activities/{id}/read', [\App\Http\Controllers\AuditLogController::class, 'markAsRead'])
+        ->name('api.activities.read');
 
     // ── Roles Management ─────────────────────────────────────────────────────
     Route::group([], function (): void {
@@ -107,32 +69,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('permissions/{permission}/force', [PermissionController::class, 'forceDelete'])
             ->name('api.permissions.force-delete');
 
-        Route::get('/roles/options', function () {
-            abort_unless(
-                request()->user()?->can('role-view')
-                || request()->user()?->can('user-create')
-                || request()->user()?->can('user-edit')
-                || request()->user()?->can('role-create')
-                || request()->user()?->can('role-edit'),
-                403,
-            );
-
-            return response()->json(\App\Modules\Users\Models\Role::query()
-                ->orderBy('name')
-                ->get(['id', 'name', 'guard_name']));
-        })->name('api.roles.options');
-        Route::get('/permissions/options', function () {
-            abort_unless(
-                request()->user()?->can('permission-view')
-                || request()->user()?->can('user-create')
-                || request()->user()?->can('user-edit')
-                || request()->user()?->can('role-create')
-                || request()->user()?->can('role-edit'),
-                403,
-            );
-
-            return response()->json(\App\Modules\Users\Models\Permission::orderBy('name')->get(['id', 'name']));
-        })->name('api.permissions.options');
+        Route::get('/roles/options', [RoleController::class, 'options'])
+            ->name('api.roles.options');
+            
+        Route::get('/permissions/options', [PermissionController::class, 'options'])
+            ->name('api.permissions.options');
 
         Route::apiResource('roles', RoleController::class)
             ->names([

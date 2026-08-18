@@ -26,6 +26,10 @@ return new class extends Migration
             $table->charset = 'utf8mb4';
             $table->collation = 'utf8mb4_unicode_ci';
         });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('village_id')->references('id')->on('villages')->nullOnDelete();
+        });
     }
 
     public function down(): void

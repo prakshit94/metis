@@ -36,7 +36,7 @@ class OrderController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:orders.view', only: ['index', 'show']),
             new Middleware('permission:orders.create', only: ['create', 'store', 'bulkImport', 'bulkImportTemplate']),
-            new Middleware('permission:orders.edit', only: ['edit']),
+            new Middleware('permission:orders.edit', only: ['edit', 'update']),
             new Middleware('permission:orders.delete', only: ['destroy']),
             new Middleware('permission:orders.confirm', only: ['confirm']),
             new Middleware('permission:orders.ship', only: ['ship']),
@@ -1077,12 +1077,6 @@ class OrderController extends Controller implements HasMiddleware
         $query = Order::with(['party', 'warehouse', 'items.product', 'shipments', 'billingAddress', 'shippingAddress']);
 
         $user = auth()->user();
-        if ($user && ! $user->hasAnyRole(['Super Admin', 'Admin']) && ! (($user->can('view_all_order') || $user->can('view-all-data')) || $user->can('view-all-data'))) {
-            $query->where('created_by', $user->id);
-        }
-        if ($user && ($user->can('view_all_order') || $user->can('view-all-data')) && ! $user->hasAnyRole(['Super Admin', 'Admin'])) {
-            $query->where('status', '!=', 'pending');
-        }
         $this->applyOrderActionPermissionScope($query, $user);
 
         if ($request->filled('search')) {

@@ -25,7 +25,7 @@ class HsnCodeController extends Controller implements HasMiddleware
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('product-view');
+
 
         $query = HsnCode::query();
 
@@ -55,7 +55,7 @@ class HsnCodeController extends Controller implements HasMiddleware
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('product-create');
+
 
         $validated = $request->validate([
             'code' => 'required|string|max:255',
@@ -74,14 +74,14 @@ class HsnCodeController extends Controller implements HasMiddleware
 
     public function show(HsnCode $hsnCode): JsonResponse
     {
-        $this->authorize('product-view');
+
 
         return response()->json(['data' => $hsnCode]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-        $this->authorize('product-edit');
+
 
         $model = HsnCode::findOrFail($id);
 
@@ -102,7 +102,7 @@ class HsnCodeController extends Controller implements HasMiddleware
 
     public function destroy($id): JsonResponse
     {
-        $this->authorize('product-delete');
+
         $model = HsnCode::findOrFail($id);
         $model->delete();
 

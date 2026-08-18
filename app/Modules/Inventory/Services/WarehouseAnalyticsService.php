@@ -129,22 +129,21 @@ class WarehouseAnalyticsService
     {
         $dateStart = $this->getDateStart($dateRange);
         
-        $adjQuery = InventoryAdjustment::with('items.product')->where('status', 'completed');
+        $query = DB::table('inventory_adjustment_items')
+            ->join('inventory_adjustments', 'inventory_adjustment_items.inventory_adjustment_id', '=', 'inventory_adjustments.id')
+            ->join('products', 'inventory_adjustment_items.product_id', '=', 'products.id')
+            ->where('inventory_adjustments.status', 'completed')
+            ->whereNull('inventory_adjustments.deleted_at')
+            ->whereNull('products.deleted_at');
+
         if ($warehouseId) {
-            $adjQuery->where('warehouse_id', $warehouseId);
+            $query->where('inventory_adjustments.warehouse_id', $warehouseId);
         }
         if ($dateStart) {
-            $adjQuery->where('created_at', '>=', $dateStart);
+            $query->where('inventory_adjustments.created_at', '>=', $dateStart);
         }
         
-        $netValue = 0;
-        foreach ($adjQuery->get() as $adjustment) {
-            foreach ($adjustment->items as $item) {
-                $price = $item->product->purchase_price ?? $item->product->selling_price ?? 0;
-                $netValue += ($item->difference * $price);
-            }
-        }
-        return (float) $netValue;
+        return (float) $query->sum(DB::raw('inventory_adjustment_items.difference * COALESCE(products.purchase_price, products.selling_price, 0)'));
     }
 
     /**
@@ -198,15 +197,16 @@ class WarehouseAnalyticsService
      */
     public function getInventoryValue(?int $warehouseId): float
     {
-        $query = Stock::with('product');
+        $query = DB::table('stocks')
+            ->join('products', 'stocks.product_id', '=', 'products.id')
+            ->whereNull('stocks.deleted_at')
+            ->whereNull('products.deleted_at');
+            
         if ($warehouseId) {
-            $query->where('warehouse_id', $warehouseId);
+            $query->where('stocks.warehouse_id', $warehouseId);
         }
 
-        // Just an approximation based on available quantity * product purchase price
-        return (float) $query->get()->sum(function($stock) {
-             return $stock->quantity * ($stock->product->purchase_price ?? $stock->product->selling_price ?? 0);
-        });
+        return (float) $query->sum(DB::raw('stocks.quantity * COALESCE(products.purchase_price, products.selling_price, 0)'));
     }
 
     /**

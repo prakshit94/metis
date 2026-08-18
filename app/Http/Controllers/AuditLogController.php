@@ -108,4 +108,55 @@ class AuditLogController extends Controller implements HasMiddleware
 
         return response()->json(['message' => 'Selected logs deleted.']);
     }
+    /**
+     * Fetch recent activity logs for the authenticated user.
+     */
+    public function recentActivities(Request $request)
+    {
+        abort_unless(
+            $request->user()?->can('audit-log-view')
+            || $request->user()?->hasAnyRole(['Super Admin', 'Admin']),
+            403,
+            'You do not have permission to view activity logs.'
+        );
+
+        $user = auth()->user();
+        $activities = \Spatie\Activitylog\Models\Activity::with('causer')->latest()->limit(15)->get();
+        $readIds = $user ? $user->readActivities()->whereIn('activity_id', $activities->pluck('id'))->pluck('activity_id')->toArray() : [];
+
+        $unreadCount = $activities->whereNotIn('id', $readIds)->count();
+
+        return response()->json([
+            'count' => $unreadCount,
+            'activities' => $activities->map(function ($a) use ($readIds) {
+                return [
+                    'id'           => $a->id,
+                    'description'  => $a->description,
+                    'subject_type' => class_basename($a->subject_type),
+                    'causer_name'  => $a->causer->name ?? 'System',
+                    'causer_photo' => $a->causer->photo ?? null,
+                    'time_ago'     => $a->created_at->diffForHumans(),
+                    'is_read'      => in_array($a->id, $readIds),
+                ];
+            })
+        ]);
+    }
+
+    /**
+     * Mark specific or all activities as read.
+     */
+    public function markAsRead(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$user) return response()->json(['success' => false], 401);
+        
+        if ($id === 'all') {
+            $activityIds = \Spatie\Activitylog\Models\Activity::latest()->limit(50)->pluck('id');
+            $user->readActivities()->syncWithoutDetaching($activityIds);
+        } else {
+            $user->readActivities()->syncWithoutDetaching([$id]);
+        }
+        
+        return response()->json(['success' => true]);
+    }
 }

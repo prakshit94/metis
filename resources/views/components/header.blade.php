@@ -22,7 +22,7 @@
                 {{-- BRAND --}}
                 <a class="navbar-brand d-flex align-items-center gap-2 m-0" href="{{ route('dashboard') }}" aria-label="Ecommerce Admin — go to dashboard">
                     <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
-                        <img src="/assets/images/logo.svg" alt="" width="24" height="24" aria-hidden="true">
+                        <img src="{{ asset('assets/images/logo.svg') }}" alt="" width="24" height="24" aria-hidden="true">
                     </div>
                     <div class="d-none d-xl-flex flex-column lh-1 text-truncate">
                         <span class="fw-bold text-body fs-5 tracking-tight">Ecommerce</span>

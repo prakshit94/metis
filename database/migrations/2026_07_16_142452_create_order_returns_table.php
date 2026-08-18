@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
             $table->string('return_no')->unique();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('pending')->index();
             $table->string('financial_status')->default('pending');
             $table->string('reason')->nullable();
             $table->text('notes')->nullable();

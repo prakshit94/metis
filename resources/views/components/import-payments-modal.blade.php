@@ -1,5 +1,5 @@
 <!-- Import Payments Modal -->
-<div class="modal fade" id="importPaymentsModal" tabindex="-1">
+<div class="modal fade" id="importPaymentsModal">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">

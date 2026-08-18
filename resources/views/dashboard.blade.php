@@ -21,7 +21,7 @@
                     <i class="bi bi-grid me-2"></i> Dashboard
                 </button>
             </li>
-
+        </ul>
         <div x-show="activeTab === 'dashboard'" x-transition.opacity.duration.300ms class="d-flex align-items-center gap-2">
             <label class="text-muted small fw-bold mb-0 text-nowrap"><i class="bi bi-calendar3 me-1"></i> Date Filter:</label>
             <select x-select class="form-select form-select-sm fw-semibold shadow-sm border-0 bg-body-tertiary rounded-pill px-3" style="min-width: 140px; cursor: pointer;" onchange="window.location.href = '?filter=' + this.value">
@@ -36,8 +36,6 @@
                 <label class="form-check-label small fw-bold text-muted mb-0 ms-1" for="analyticsToggle" style="cursor: pointer; padding-top: 2px;">Analytics</label>
             </div>
         </div>
-        </ul>
-
     </div>
 
     <!-- Tab 1: Customer Search -->
@@ -53,11 +51,9 @@
                 </div>
                 <div class="mx-auto position-relative" style="max-width: 650px;" x-data="customerSearchApp()">
                     <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden bg-body border">
-                        <select x-select class="form-select border-0 bg-transparent fw-semibold text-body shadow-none px-4" style="max-width: 200px; cursor: pointer; border-right: 1px solid var(--bs-border-color) !important;">
-                            <option value="mobile">Mobile Number</option>
-                            <option value="customer_id">Customer ID</option>
-                            <option value="name">Name</option>
-                        </select>
+                        <span class="input-group-text border-0 bg-transparent fw-semibold text-body px-4" style="border-right: 1px solid var(--bs-border-color) !important;">
+                            <i class="bi bi-phone me-2"></i> Mobile
+                        </span>
                         <input type="text" class="form-control border-0 shadow-none px-4 bg-transparent text-body" placeholder="Enter 10-digit mobile number..." x-model="searchPhone" @keydown.enter.prevent="searchCustomer()" maxlength="10">
                         <button class="btn btn-primary px-4 px-md-5 fw-bold" type="button" @click="searchCustomer()" :disabled="isLoading">
                             <span x-show="!isLoading"><i class="bi bi-search me-1 d-none d-sm-inline"></i> Search</span>
@@ -482,7 +478,7 @@
 @endsection
 
 @push('modals')
-<div class="modal fade" id="iconDemoModal" tabindex="-1">
+<div class="modal fade" id="iconDemoModal">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">

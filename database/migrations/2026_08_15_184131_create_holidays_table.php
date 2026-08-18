@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->date('date');
-            $table->string('type')->default('National');
+            $table->string('type')->default('National')->index();
             $table->timestamps();
         });
     }

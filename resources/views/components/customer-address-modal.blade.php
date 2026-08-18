@@ -1,4 +1,4 @@
-<div class="modal fade" id="customerAddressModal" tabindex="-1" aria-labelledby="customerAddressModalLabel" aria-hidden="true" 
+<div class="modal fade" id="customerAddressModal" aria-labelledby="customerAddressModalLabel" aria-hidden="true" 
      x-data="customerAddressApp()" 
      @open-address-modal.window="openModal($event.detail)">
     <div class="modal-dialog modal-dialog-centered modal-lg">

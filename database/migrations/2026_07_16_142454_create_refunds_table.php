@@ -17,7 +17,7 @@ return new class extends Migration
             $table->decimal('amount', 15, 2);
             $table->string('payment_method')->nullable();
             $table->string('transaction_id')->nullable();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('pending')->index();
             $table->text('notes')->nullable();
             $table->foreignId('processed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('processed_at')->nullable();

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignId('order_return_id')->nullable()->constrained()->nullOnDelete();
             $table->decimal('amount', 15, 2);
             $table->decimal('balance_remaining', 15, 2);
-            $table->string('status')->default('active');
+            $table->string('status')->default('active')->index();
             $table->timestamps();
         });
     }

@@ -26,7 +26,7 @@ class BrandController extends Controller implements HasMiddleware
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('product-view');
+
 
         $query = Brand::query();
 
@@ -51,7 +51,7 @@ class BrandController extends Controller implements HasMiddleware
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('product-create');
+
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -92,14 +92,14 @@ class BrandController extends Controller implements HasMiddleware
 
     public function show(Brand $model): JsonResponse
     {
-        $this->authorize('product-view');
+
 
         return response()->json(['data' => $model]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-        $this->authorize('product-edit');
+
 
         $model = Brand::findOrFail($id);
 
@@ -143,7 +143,7 @@ class BrandController extends Controller implements HasMiddleware
 
     public function destroy($id): JsonResponse
     {
-        $this->authorize('product-delete');
+
         $model = Brand::findOrFail($id);
         $model->delete();
 

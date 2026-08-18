@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('reward_type')->default('wallet');
             $table->string('reward_value')->nullable();
             $table->decimal('reward_amount', 10, 2)->default(0);
-            $table->string('status')->default('completed'); // e.g. completed, pending, revoked
+            $table->string('status')->default('completed')->index(); // e.g. completed, pending, revoked
             $table->timestamps();
 
             $table->foreign('referrer_id')->references('id')->on('parties')->cascadeOnDelete();

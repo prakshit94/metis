@@ -109,7 +109,7 @@ class AdminApp {
 
   // Initialize Bootstrap components
   initBootstrapComponents() {
-        // Disable focus enforcement globally for all modals so TomSelect (appended to body) doesn't get focus-stolen
+    // Disable focus enforcement globally for all modals so TomSelect (appended to body) doesn't get focus-stolen
     document.addEventListener('show.bs.modal', (e) => {
       const modal = bootstrap.Modal.getInstance(e.target);
       if (modal) {
@@ -320,16 +320,16 @@ class AdminApp {
   }
 
 
-  async initCatalogBrands() { try { const m = await import('./components/catalog/brands.js'); window.Alpine.data('brandsTable', m.default); console.log('Loaded brands'); } catch(e) { console.error(e); } }
-  async initCatalogCategories() { try { const m = await import('./components/catalog/categories.js'); window.Alpine.data('categoriesTable', m.default); console.log('Loaded categories'); } catch(e) { console.error(e); } }
-  async initCatalogUom() { try { const m = await import('./components/catalog/uom.js'); window.Alpine.data('uomTable', m.default); console.log('Loaded uom'); } catch(e) { console.error(e); } }
-  async initCatalogTaxRates() { try { const m = await import('./components/catalog/tax-rates.js'); window.Alpine.data('taxRatesTable', m.default); console.log('Loaded tax rates'); } catch(e) { console.error(e); } }
-  async initCatalogHsnCodes() { try { const m = await import('./components/catalog/hsn-codes.js'); window.Alpine.data('hsnCodesTable', m.default); console.log('Loaded hsn codes'); } catch(e) { console.error(e); } }
-  async initCatalogWarehouses() { try { const m = await import('./components/catalog/warehouses.js'); window.Alpine.data('warehousesTable', m.default); console.log('Loaded warehouses'); } catch(e) { console.error(e); } }
-  async initCatalogAttributes() { try { const m = await import('./components/catalog/attributes.js'); window.Alpine.data('attributesTable', m.default); console.log('Loaded attributes'); } catch(e) { console.error(e); } }
-  async initInventoryStockManagement() { try { const m = await import('./components/inventory/stock-management.js'); window.Alpine.data('stockManagement', m.default); console.log('Loaded stock management'); } catch(e) { console.error(e); } }
-  async initInventoryStockTransfers() { try { const m = await import('./components/inventory/stock-transfers.js'); window.Alpine.data('stockTransfers', m.default); console.log('Loaded stock transfers'); } catch(e) { console.error(e); } }
-  async initInventoryAdjustments() { try { const m = await import('./components/inventory/adjustments.js'); window.Alpine.data('inventoryAdjustments', m.default); console.log('Loaded inventory adjustments'); } catch(e) { console.error(e); } }
+  async initCatalogBrands() { try { const m = await import('./components/catalog/brands.js'); window.Alpine.data('brandsTable', m.default); console.log('Loaded brands'); } catch (e) { console.error(e); } }
+  async initCatalogCategories() { try { const m = await import('./components/catalog/categories.js'); window.Alpine.data('categoriesTable', m.default); console.log('Loaded categories'); } catch (e) { console.error(e); } }
+  async initCatalogUom() { try { const m = await import('./components/catalog/uom.js'); window.Alpine.data('uomTable', m.default); console.log('Loaded uom'); } catch (e) { console.error(e); } }
+  async initCatalogTaxRates() { try { const m = await import('./components/catalog/tax-rates.js'); window.Alpine.data('taxRatesTable', m.default); console.log('Loaded tax rates'); } catch (e) { console.error(e); } }
+  async initCatalogHsnCodes() { try { const m = await import('./components/catalog/hsn-codes.js'); window.Alpine.data('hsnCodesTable', m.default); console.log('Loaded hsn codes'); } catch (e) { console.error(e); } }
+  async initCatalogWarehouses() { try { const m = await import('./components/catalog/warehouses.js'); window.Alpine.data('warehousesTable', m.default); console.log('Loaded warehouses'); } catch (e) { console.error(e); } }
+  async initCatalogAttributes() { try { const m = await import('./components/catalog/attributes.js'); window.Alpine.data('attributesTable', m.default); console.log('Loaded attributes'); } catch (e) { console.error(e); } }
+  async initInventoryStockManagement() { try { const m = await import('./components/inventory/stock-management.js'); window.Alpine.data('stockManagement', m.default); console.log('Loaded stock management'); } catch (e) { console.error(e); } }
+  async initInventoryStockTransfers() { try { const m = await import('./components/inventory/stock-transfers.js'); window.Alpine.data('stockTransfers', m.default); console.log('Loaded stock transfers'); } catch (e) { console.error(e); } }
+  async initInventoryAdjustments() { try { const m = await import('./components/inventory/adjustments.js'); window.Alpine.data('inventoryAdjustments', m.default); console.log('Loaded inventory adjustments'); } catch (e) { console.error(e); } }
 
   async initProductsPage() {
     try {
@@ -575,52 +575,52 @@ class AdminApp {
       }
     }
 
-    
 
-    
+
+
   }
 
   // Initialize Alpine.js
   initAlpine() {
     // Shared navbar search — uses the factory from search-component.js
     const navbarPages = [
-      { title: 'Dashboard',             url: '/',                               type: 'page' },
-      { title: 'Analytics',             url: '/analytics',                      type: 'page' },
-      { title: 'Reports',               url: '/reports',                        type: 'page' },
-      { title: 'Orders',                url: '/orders',                         type: 'page' },
-      { title: 'Coupon Codes',          url: '/promotions/coupons',             type: 'page' },
-      { title: 'Offers & Deals',        url: '/promotions/offers',              type: 'page' },
-      { title: 'Invoices',              url: '/invoices',                       type: 'page' },
-      { title: 'Payments',              url: '/payments',                       type: 'page' },
-      { title: 'Refunds',               url: '/refunds',                        type: 'page' },
-      { title: 'Returns',               url: '/returns',                        type: 'page' },
-      { title: 'Shipments & Tracking',  url: '/shipping/shipments',             type: 'page' },
-      { title: 'Shipping Services',     url: '/shipping/services',              type: 'page' },
-      { title: 'Warehouses',            url: '/catalog/warehouses',             type: 'page' },
-      { title: 'Stock Levels',          url: '/inventory/stock-management',     type: 'page' },
-      { title: 'Stock Transfers',       url: '/inventory/stock-transfers',      type: 'page' },
-      { title: 'Adjustments',           url: '/inventory/adjustments',          type: 'page' },
-      { title: 'Products',              url: '/catalog/products',               type: 'page' },
-      { title: 'Categories',            url: '/catalog/categories',             type: 'page' },
-      { title: 'Brands',                url: '/catalog/brands',                 type: 'page' },
-      { title: 'Attributes',            url: '/catalog/attributes',             type: 'page' },
-      { title: 'Units of Measure',      url: '/catalog/uom',                    type: 'page' },
-      { title: 'Tax Rates',             url: '/catalog/tax-rates',              type: 'page' },
-      { title: 'HSN Codes',             url: '/catalog/hsn-codes',              type: 'page' },
-      { title: 'Users',                 url: '/users',                          type: 'page' },
-      { title: 'Roles & Permissions',   url: '/roles-permissions',              type: 'page' },
-      { title: 'Customers',             url: '/customers',                      type: 'page' },
-      { title: 'Villages',              url: '/villages',                       type: 'page' },
-      { title: 'Order Reasons',         url: '/order-reasons',                  type: 'page' },
-      { title: 'Team Chat',             url: '/chat',                           type: 'page' },
-      { title: 'Messages',              url: '/messages',                       type: 'page' },
-      { title: 'Calendar',              url: '/calendar',                       type: 'page' },
-      { title: 'Files',                 url: '/files',                          type: 'page' },
-      { title: 'Forms',                 url: '/forms',                          type: 'page' },
-      { title: 'UI Elements',           url: '/elements',                       type: 'page' },
-      { title: 'Settings',              url: '/settings',                       type: 'page' },
-      { title: 'Security',              url: '/security',                       type: 'page' },
-      { title: 'Help & Support',        url: '/help',                           type: 'page' },
+      { title: 'Dashboard', url: '/', type: 'page' },
+      { title: 'Analytics', url: '/analytics', type: 'page' },
+      { title: 'Reports', url: '/reports', type: 'page' },
+      { title: 'Orders', url: '/orders', type: 'page' },
+      { title: 'Coupon Codes', url: '/promotions/coupons', type: 'page' },
+      { title: 'Offers & Deals', url: '/promotions/offers', type: 'page' },
+      { title: 'Invoices', url: '/invoices', type: 'page' },
+      { title: 'Payments', url: '/payments', type: 'page' },
+      { title: 'Refunds', url: '/refunds', type: 'page' },
+      { title: 'Returns', url: '/returns', type: 'page' },
+      { title: 'Shipments & Tracking', url: '/shipping/shipments', type: 'page' },
+      { title: 'Shipping Services', url: '/shipping/services', type: 'page' },
+      { title: 'Warehouses', url: '/catalog/warehouses', type: 'page' },
+      { title: 'Stock Levels', url: '/inventory/stock-management', type: 'page' },
+      { title: 'Stock Transfers', url: '/inventory/stock-transfers', type: 'page' },
+      { title: 'Adjustments', url: '/inventory/adjustments', type: 'page' },
+      { title: 'Products', url: '/catalog/products', type: 'page' },
+      { title: 'Categories', url: '/catalog/categories', type: 'page' },
+      { title: 'Brands', url: '/catalog/brands', type: 'page' },
+      { title: 'Attributes', url: '/catalog/attributes', type: 'page' },
+      { title: 'Units of Measure', url: '/catalog/uom', type: 'page' },
+      { title: 'Tax Rates', url: '/catalog/tax-rates', type: 'page' },
+      { title: 'HSN Codes', url: '/catalog/hsn-codes', type: 'page' },
+      { title: 'Users', url: '/users', type: 'page' },
+      { title: 'Roles & Permissions', url: '/roles-permissions', type: 'page' },
+      { title: 'Customers', url: '/customers', type: 'page' },
+      { title: 'Villages', url: '/villages', type: 'page' },
+      { title: 'Order Reasons', url: '/order-reasons', type: 'page' },
+      { title: 'Team Chat', url: '/chat', type: 'page' },
+      { title: 'Messages', url: '/messages', type: 'page' },
+      { title: 'Calendar', url: '/calendar', type: 'page' },
+      { title: 'Files', url: '/files', type: 'page' },
+      { title: 'Forms', url: '/forms', type: 'page' },
+      { title: 'UI Elements', url: '/elements', type: 'page' },
+      { title: 'Settings', url: '/settings', type: 'page' },
+      { title: 'Security', url: '/security', type: 'page' },
+      { title: 'Help & Support', url: '/help', type: 'page' },
     ];
 
     Alpine.data('searchComponent', createSearchComponent({
@@ -631,17 +631,17 @@ class AdminApp {
     // Stats counter — animates from 0 to target on load
     Alpine.data('statsCounter', (targetValue = 0) => ({
       value: 0,
-      
+
       init() {
         const duration = 1000;
         const steps = 30;
         const stepValue = targetValue / steps;
         let currentStep = 0;
-        
+
         const timer = setInterval(() => {
           this.value = Math.floor(this.value + stepValue);
           currentStep++;
-          
+
           if (currentStep >= steps) {
             this.value = targetValue;
             clearInterval(timer);
@@ -721,18 +721,18 @@ class AdminApp {
 
     // Expose Alpine globally BEFORE starting it so alpine:init listeners can use it
     window.Alpine = Alpine;
-        // Register global TomSelect directive
+    // Register global TomSelect directive
     Alpine.directive('select', (el, { expression }, { evaluate, effect, cleanup }) => {
       setTimeout(() => {
         const isMultiple = el.hasAttribute('multiple');
         const forceSearch = el.hasAttribute('data-search');
         const forceNoSearch = el.hasAttribute('data-no-search');
-        
+
         let disableSearch = forceNoSearch;
         if (!forceSearch && !forceNoSearch && !isMultiple) {
-            disableSearch = el.options.length <= 10;
+          disableSearch = el.options.length <= 10;
         }
-        
+
         const ts = new TomSelect(el, {
           plugins: isMultiple ? ['remove_button'] : [],
           maxOptions: null,
@@ -762,19 +762,19 @@ class AdminApp {
           if (shouldSync) {
             setTimeout(() => {
               ts.sync();
-              
+
               // Dynamically adjust search feature for asynchronously loaded options
               if (!forceSearch && !forceNoSearch && !isMultiple) {
-                  const shouldDisable = el.options.length <= 10;
-                  if (ts.control_input) {
-                      if (shouldDisable) {
-                          ts.control_input.setAttribute('readonly', 'readonly');
-                          ts.control_input.style.cursor = 'pointer';
-                      } else {
-                          ts.control_input.removeAttribute('readonly');
-                          ts.control_input.style.cursor = 'text';
-                      }
+                const shouldDisable = el.options.length <= 10;
+                if (ts.control_input) {
+                  if (shouldDisable) {
+                    ts.control_input.setAttribute('readonly', 'readonly');
+                    ts.control_input.style.cursor = 'pointer';
+                  } else {
+                    ts.control_input.removeAttribute('readonly');
+                    ts.control_input.style.cursor = 'text';
                   }
+                }
               }
 
               if (el.hasAttribute('x-model')) {
@@ -793,7 +793,7 @@ class AdminApp {
         // If it has x-model, sync from Alpine to TomSelect
         if (el.hasAttribute('x-model')) {
           const modelExpression = el.getAttribute('x-model');
-          
+
           ts.on('change', () => {
             isUpdating = true;
             el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -806,10 +806,10 @@ class AdminApp {
             if (val !== undefined && val !== null) {
               const currentTsVal = ts.getValue();
               // Array comparison for multiple selects, string for single
-              const isDiff = Array.isArray(val) 
+              const isDiff = Array.isArray(val)
                 ? JSON.stringify(val.map(String)) !== JSON.stringify(Array.isArray(currentTsVal) ? currentTsVal : [currentTsVal])
                 : String(val) !== String(currentTsVal);
-                
+
               if (isDiff) {
                 isUpdating = true;
                 ts.setValue(val, true);
@@ -826,7 +826,7 @@ class AdminApp {
       }, 50);
     });
 
-    
+
     Alpine.start();
   }
 

@@ -74,16 +74,17 @@
 
                 {{-- Password ----------------------------------------------- --}}
                 <div class="mb-4">
+                    <label for="loginPassword" class="form-label fw-semibold small text-muted">Password</label>
                     <div class="input-group input-group-lg">
                         <span class="input-group-text bg-body-secondary border-end-0 text-muted px-3"><i class="bi bi-lock"></i></span>
                         <input :type="showPassword ? 'text' : 'password'"
-                               class="form-control bg-body border-start-0 shadow-none fs-6 @error('password') is-invalid @enderror"
+                               class="form-control bg-body border-start-0 border-end-0 ps-0 shadow-none fs-6 @error('password') is-invalid @enderror"
                                id="loginPassword"
                                name="password"
                                placeholder="••••••••"
                                autocomplete="current-password"
                                required>
-                        <button class="btn btn-outline-secondary password-toggle px-3"
+                        <button class="btn btn-outline-secondary border-start-0 password-toggle px-3"
                                 type="button"
                                 @click="showPassword = !showPassword"
                                 :aria-label="showPassword ? 'Hide password' : 'Show password'"

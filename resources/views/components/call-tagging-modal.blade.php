@@ -2,7 +2,7 @@
     .custom-hover-bg { transition: background-color 0.2s; }
     .custom-hover-bg:hover { background-color: var(--bs-secondary-bg); }
 </style>
-<div class="modal fade" id="callTaggingModal" tabindex="-1" aria-hidden="true" x-data="callTaggingApp()" @open-call-tagging-modal.window="openModal($event.detail.customerId)">
+<div class="modal fade" id="callTaggingModal" aria-hidden="true" x-data="callTaggingApp()" @open-call-tagging-modal.window="openModal($event.detail.customerId)">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
             {{-- GLOSSY STYLE HEADER --}}

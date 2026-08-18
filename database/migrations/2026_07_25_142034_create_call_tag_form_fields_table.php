@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('call_tag_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->string('label');
-            $table->string('type')->default('text'); // text, select, textarea, date
+            $table->string('type')->default('text')->index(); // text, select, textarea, date
             $table->json('options')->nullable(); // for selects
             $table->boolean('is_required')->default(false);
             $table->integer('sort_order')->default(0);

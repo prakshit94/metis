@@ -45,6 +45,10 @@ class AppServiceProvider extends ServiceProvider
                 ->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
         Gate::define('viewApiDocs', function ($user) {
             return $user->hasAnyRole(['Super Admin', 'Admin']);
         });

@@ -203,9 +203,22 @@ class OrderReturnController extends Controller implements HasMiddleware
 
         DB::transaction(function () use ($validated, $return, $inventoryService) {
             $refundAmount = 0;
+            
+            $returnItemIds = collect($validated['items'])->pluck('id');
+            $returnItems = OrderReturnItem::where('order_return_id', $return->id)
+                ->whereIn('id', $returnItemIds)
+                ->get()
+                ->keyBy('id');
+
+            $orderItems = \App\Modules\Orders\Models\OrderItem::where('order_id', $return->order_id)
+                ->get()
+                ->keyBy('product_id');
+
             foreach ($validated['items'] as $itemData) {
-                $item = OrderReturnItem::where('order_return_id', $return->id)
-                    ->findOrFail($itemData['id']);
+                $item = $returnItems->get($itemData['id']);
+                if (!$item) {
+                    continue;
+                }
 
                 $item->update([
                     'received_qty' => $itemData['received_qty'],
@@ -216,9 +229,7 @@ class OrderReturnController extends Controller implements HasMiddleware
                 ]);
 
                 // Calculate proportional refund amount based on received qty
-                $orderItem = \App\Modules\Orders\Models\OrderItem::where('order_id', $return->order_id)
-                    ->where('product_id', $item->product_id)
-                    ->first();
+                $orderItem = $orderItems->get($item->product_id);
                 if ($orderItem && $orderItem->quantity > 0) {
                     $refundAmount += ((float)$orderItem->total_amount / (float)$orderItem->quantity) * (float)$itemData['received_qty'];
                 }

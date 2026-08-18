@@ -607,7 +607,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/docs/api" target="_blank">
+                                <a class="nav-link" href="{{ url('/docs/api') }}" target="_blank">
                                     <i class="bi bi-file-earmark-code-fill"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">API Documentation</span>
                                 </a>

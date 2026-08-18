@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('product_attributes', function (Blueprint $table) {
             $table->id();
             $table->string('name')->index();
-            $table->string('type')->default('text');
+            $table->string('type')->default('text')->index();
             $table->boolean('is_filterable')->default(false)->index();
             $table->string('status')->default('active')->index();
             $table->timestamps();

@@ -196,7 +196,7 @@
                                 </td>
                                 <td>
                                     <template x-if="payment.invoice">
-                                        <a href="/invoices" class="text-decoration-none font-monospace text-primary fw-medium" target="_blank" x-text="payment.invoice.invoice_no" title="View in Invoices"></a>
+                                        <a href="{{ route('invoices.index') }}" class="text-decoration-none font-monospace text-primary fw-medium" target="_blank" x-text="payment.invoice.invoice_no" title="View in Invoices"></a>
                                     </template>
                                     <template x-if="!payment.invoice">
                                         <span class="text-body-secondary font-monospace">N/A</span>

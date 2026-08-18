@@ -27,7 +27,7 @@ class CategoryController extends Controller implements HasMiddleware
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('product-view');
+
 
         $query = Category::query()->with('parent')->withCount('products');
 
@@ -52,7 +52,7 @@ class CategoryController extends Controller implements HasMiddleware
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('product-create');
+
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:categories,name',
@@ -88,14 +88,14 @@ class CategoryController extends Controller implements HasMiddleware
 
     public function show(Category $model): JsonResponse
     {
-        $this->authorize('product-view');
+
 
         return response()->json(['data' => $model->load('parent')->loadCount('products')]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-        $this->authorize('product-edit');
+
 
         $model = Category::findOrFail($id);
 
@@ -146,7 +146,7 @@ class CategoryController extends Controller implements HasMiddleware
 
     public function destroy($id): JsonResponse
     {
-        $this->authorize('product-delete');
+
         $model = Category::findOrFail($id);
 
         // Delete image if exists
