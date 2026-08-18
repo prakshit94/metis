@@ -420,7 +420,7 @@
                                                     @keydown.space.prevent="sortBy('name')"
                                                     :aria-sort="sortField === 'name' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
                                                     class="sortable">
-                                                    Name
+                                                    User Identity
                                                     <i class="bi bi-arrow-up" x-show="sortField === 'name' && sortDirection === 'asc'" aria-hidden="true"></i>
                                                     <i class="bi bi-arrow-down" x-show="sortField === 'name' && sortDirection === 'desc'" aria-hidden="true"></i>
                                                 </th>
@@ -432,17 +432,13 @@
                                                     @keydown.space.prevent="sortBy('email')"
                                                     :aria-sort="sortField === 'email' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
                                                     class="sortable">
-                                                    Email
+                                                    Contact Info
                                                     <i class="bi bi-arrow-up" x-show="sortField === 'email' && sortDirection === 'asc'" aria-hidden="true"></i>
                                                     <i class="bi bi-arrow-down" x-show="sortField === 'email' && sortDirection === 'desc'" aria-hidden="true"></i>
                                                 </th>
-                                                <th scope="col">Phone</th>
-                                                <th scope="col">Department</th>
+                                                <th scope="col">Employment</th>
                                                 <th scope="col">Location</th>
-                                                <th scope="col">Role</th>
-                                                <th scope="col">Online</th>
                                                 <th scope="col">Status</th>
-                                                <th scope="col">Last Login</th>
                                                 <th scope="col"
                                                     role="button"
                                                     tabindex="0"
@@ -451,7 +447,7 @@
                                                     @keydown.space.prevent="sortBy('lastActive')"
                                                     :aria-sort="sortField === 'lastActive' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
                                                     class="sortable">
-                                                    Last Active
+                                                    Activity
                                                     <i class="bi bi-arrow-up" x-show="sortField === 'lastActive' && sortDirection === 'asc'" aria-hidden="true"></i>
                                                     <i class="bi bi-arrow-down" x-show="sortField === 'lastActive' && sortDirection === 'desc'" aria-hidden="true"></i>
                                                 </th>
@@ -469,49 +465,62 @@
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
-                                                            <img :src="user.photo || user.avatar" 
-                                                                 class="rounded-circle me-2" 
-                                                                 width="32" 
-                                                                 height="32"
-                                                                 :alt="user.name"
-                                                                 style="object-fit: cover;">
+                                                            <div class="position-relative me-3">
+                                                                <img :src="user.photo || user.avatar || '/assets/images/avatar-placeholder.svg'" 
+                                                                     class="rounded-circle shadow-sm" 
+                                                                     width="42" 
+                                                                     height="42"
+                                                                     :alt="user.name"
+                                                                     style="object-fit: cover;">
+                                                                <span class="position-absolute bottom-0 end-0 p-1 border border-2 border-white rounded-circle" :class="user.is_online ? 'bg-success' : 'bg-secondary'" style="width: 12px; height: 12px;"></span>
+                                                            </div>
                                                             <div>
-                                                                <div class="fw-medium" x-text="user.name || '—'"></div>
-                                                                <small class="text-muted" x-text="user.employee_id ? 'Emp ID: ' + user.employee_id : 'Sys ID: ' + user.id"></small>
+                                                                <a href="#" class="fw-bold text-decoration-none text-primary d-block mb-1" @click.prevent="viewUser(user)" x-text="user.name || '—'"></a>
+                                                                <small class="text-muted bg-body-tertiary px-2 py-1 rounded" style="font-size: 0.75rem;"><i class="bi bi-person-badge me-1"></i><span x-text="user.employee_id ? user.employee_id : 'Sys ID: ' + user.id"></span></small>
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td x-text="user.email"></td>
-                                                    <td x-text="user.phone || '—'"></td>
-                                                    <td x-text="user.department || '—'"></td>
-                                                    <td x-text="user.village_name || user.city || '—'"></td>
                                                     <td>
-                                                        <span class="badge" 
-                                                              :class="roleBadgeClass(user.role)"
-                                                              x-text="user.roleLabel"></span>
+                                                        <div class="d-flex flex-column gap-1">
+                                                            <div class="text-body d-flex align-items-center"><i class="bi bi-envelope text-muted me-2"></i> <span x-text="user.email || '—'"></span></div>
+                                                            <div class="text-muted small d-flex align-items-center"><i class="bi bi-telephone text-muted me-2"></i> <span x-text="user.phone || '—'"></span></div>
+                                                        </div>
                                                     </td>
                                                     <td>
-                                                        <span class="badge"
-                                                              :class="user.is_online ? 'bg-success' : 'bg-secondary'"
-                                                              x-text="user.is_online ? 'Online' : 'Offline'"></span>
+                                                        <div class="d-flex flex-column gap-2 align-items-start">
+                                                            <span class="badge shadow-sm" :class="roleBadgeClass(user.role)" x-text="user.roleLabel"></span>
+                                                            <small class="text-muted d-flex align-items-center"><i class="bi bi-diagram-3 me-1"></i> <span x-text="user.department || '—'"></span></small>
+                                                        </div>
                                                     </td>
                                                     <td>
-                                                        <span class="badge" 
+                                                        <div class="d-flex align-items-center text-body">
+                                                            <i class="bi bi-geo-alt text-danger me-2"></i>
+                                                            <span x-text="user.village_name || user.city || '—'"></span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge px-3 py-2" 
                                                               :class="{
-                                                                  'bg-danger': user.status === 'deleted',
-                                                                  'bg-success': user.status === 'active',
-                                                                  'bg-secondary': user.status === 'inactive',
+                                                                  'bg-danger-subtle text-danger-emphasis': user.status === 'deleted',
+                                                                  'bg-success-subtle text-success-emphasis': user.status === 'active',
+                                                                  'bg-secondary-subtle text-secondary-emphasis': user.status === 'inactive',
                                                               }"
                                                               x-text="user.status"></span>
                                                     </td>
                                                     <td>
-                                                        <div x-text="user.last_login_at"></div>
-                                                        <small class="text-muted" x-show="user.last_login_at !== 'Never'">
-                                                            <i class="bi" :class="user.device_type === 'Mobile' ? 'bi-phone' : 'bi-laptop'"></i>
-                                                            <span x-text="user.device_type"></span>
-                                                        </small>
+                                                        <div class="d-flex flex-column gap-1">
+                                                            <div class="text-body small d-flex align-items-center" title="Last Active">
+                                                                <i class="bi bi-clock-history text-muted me-2"></i> <span x-text="user.lastActive"></span>
+                                                            </div>
+                                                            <div class="text-muted small d-flex align-items-center" title="Last Login">
+                                                                <i class="bi bi-box-arrow-in-right text-muted me-2"></i> 
+                                                                <span x-text="user.last_login_at === 'Never' ? 'Never logged in' : user.last_login_at"></span>
+                                                                <span x-show="user.last_login_at !== 'Never'" class="ms-1">
+                                                                    (<i class="bi" :class="user.device_type === 'Mobile' ? 'bi-phone' : 'bi-laptop'"></i> <span x-text="user.device_type"></span>)
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </td>
-                                                    <td x-text="user.lastActive"></td>
                                                     <td>
                                                         <div class="dropdown">
                                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
@@ -522,13 +531,6 @@
                                                                 <i class="bi bi-three-dots"></i>
                                                             </button>
                                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                                                @can('user-view')
-                                                                <li>
-                                                                    <a class="dropdown-item" href="#" @click.prevent="viewUser(user)">
-                                                                        <i class="bi bi-eye me-2"></i>View Profile
-                                                                    </a>
-                                                                </li>
-                                                                @endcan
                                                                 @can('user-edit')
                                                                 <li>
                                                                     <a class="dropdown-item" href="#" @click.prevent="editUser(user)" x-show="!user.isDeleted">
@@ -628,15 +630,235 @@
 <div class="modal fade" id="userModal" aria-labelledby="userModalLabel" :class="{ 'view-mode-active': isViewMode }" x-data="userForm">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header border-bottom-0 pb-0">
+            <div class="modal-header border-bottom-0 pb-0" x-show="!isViewMode">
                 <h5 class="modal-title fw-bold" id="userModalLabel">
-                    <span x-text="isViewMode ? 'View Profile' : (editingUserId ? 'Edit User' : 'Add New User')"></span>
+                    <span x-text="editingUserId ? 'Edit User' : 'Add New User'"></span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             
             <div class="modal-body pt-3">
-                <form id="userModalForm" @submit.prevent="saveUser()">
+                <!-- REDESIGNED VIEW PROFILE -->
+                <div x-show="isViewMode" style="display: none;" class="view-profile-container pb-4">
+                    <!-- Profile Header (Simplified for Theme Compatibility) -->
+                    <div class="d-flex align-items-start justify-content-between mb-4 pb-4 border-bottom">
+                        <div class="d-flex align-items-center gap-4">
+                            <div class="position-relative">
+                                <img :src="form.photo || '/assets/images/avatar-placeholder.svg'" class="rounded-circle border border-3 shadow-sm bg-body-tertiary" style="width: 110px; height: 110px; object-fit: cover; border-color: var(--bs-border-color) !important;" alt="Profile Picture">
+                                <span class="position-absolute bottom-0 end-0 p-2 border border-2 rounded-circle shadow-sm" :class="form.is_active ? 'bg-success' : 'bg-secondary'" style="width: 22px; height: 22px; right: 6px !important; bottom: 6px !important; border-color: var(--bs-body-bg) !important;"></span>
+                            </div>
+                            <div>
+                                <h3 class="mb-1 fw-bold text-body" x-text="`${form.first_name || ''} ${form.middle_name || ''} ${form.last_name || ''}`.trim()"></h3>
+                                <div class="text-muted mb-2 d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                                    <span class="fw-medium text-body d-flex align-items-center gap-1"><i class="bi bi-briefcase text-muted"></i> <span x-text="form.designation || 'No Designation'"></span></span>
+                                    <span class="text-muted">•</span>
+                                    <span class="d-flex align-items-center gap-1"><i class="bi bi-geo-alt text-muted"></i> <span x-text="form.city || form.district || 'Location Unknown'"></span></span>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill px-3 py-1 fw-medium border border-primary-subtle" x-text="form.role"></span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <div class="row g-4 mt-2">
+                        <!-- Left Column: Core Identity & Contact -->
+                        <div class="col-lg-4">
+                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                                    <h6 class="fw-bold text-uppercase text-muted mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-person-badge me-2"></i>Core Identity</h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled mb-0">
+                                        <li class="d-flex align-items-center mb-4">
+                                            <div class="bg-primary-subtle text-primary-emphasis rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-hash fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <small class="text-muted d-block fw-medium" style="font-size: 0.75rem;">Employee ID</small>
+                                                <span class="fw-semibold text-body" x-text="form.employee_id || '—'"></span>
+                                            </div>
+                                        </li>
+                                        <li class="d-flex align-items-center mb-4">
+                                            <div class="bg-info-subtle text-info-emphasis rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-envelope-fill fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <small class="text-muted d-block fw-medium" style="font-size: 0.75rem;">Email Address</small>
+                                                <a :href="`mailto:${form.email}`" class="fw-semibold text-body text-decoration-none" x-text="form.email || '—'"></a>
+                                            </div>
+                                        </li>
+                                        <li class="d-flex align-items-center mb-4">
+                                            <div class="bg-success-subtle text-success-emphasis rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-telephone-fill fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <small class="text-muted d-block fw-medium" style="font-size: 0.75rem;">Phone Number</small>
+                                                <a :href="`tel:${form.phone}`" class="fw-semibold text-body text-decoration-none" x-text="form.phone || '—'"></a>
+                                            </div>
+                                        </li>
+                                        <li class="d-flex align-items-center">
+                                            <div class="bg-warning-subtle text-warning-emphasis rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-shield-check fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <small class="text-muted d-block fw-medium" style="font-size: 0.75rem;">Account Status</small>
+                                                <span class="badge rounded-pill px-3 py-1 mt-1" :class="form.is_active ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'" x-text="form.is_active ? 'Active' : 'Inactive'"></span>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- Emergency Contact -->
+                            <div class="card border-0 shadow-sm bg-danger-subtle border border-danger-subtle">
+                                <div class="card-body p-4">
+                                    <h6 class="fw-bold text-danger-emphasis mb-3 d-flex align-items-center gap-2"><i class="bi bi-heart-pulse-fill"></i> Emergency Contact</h6>
+                                    <div class="mb-3">
+                                        <small class="text-danger-emphasis text-opacity-75 d-block mb-1 fw-medium" style="font-size: 0.75rem;">Contact Name</small>
+                                        <div class="fw-semibold text-body-emphasis" x-text="form.emergency_contact_name || 'No contact provided'"></div>
+                                    </div>
+                                    <div>
+                                        <small class="text-danger-emphasis text-opacity-75 d-block mb-1 fw-medium" style="font-size: 0.75rem;">Phone Number</small>
+                                        <div class="fw-semibold text-body-emphasis" x-text="form.emergency_contact_phone || '—'"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Details grid -->
+                        <div class="col-lg-8">
+                            <!-- Personal Details -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                                    <h6 class="fw-bold text-uppercase text-primary-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-person-vcard me-2"></i>Personal Information</h6>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="row g-4">
+                                        <div class="col-sm-4">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="bg-body-secondary rounded p-2 text-body-secondary"><i class="bi bi-calendar-event"></i></div>
+                                                <div>
+                                                    <small class="text-muted text-uppercase d-block fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Date of Birth</small>
+                                                    <span class="fw-semibold text-body" x-text="form.date_of_birth ? new Date(form.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="bg-body-secondary rounded p-2 text-body-secondary"><i class="bi bi-gender-ambiguous"></i></div>
+                                                <div>
+                                                    <small class="text-muted text-uppercase d-block fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Gender</small>
+                                                    <span class="fw-semibold text-body" x-text="form.gender || '—'"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="bg-body-secondary rounded p-2 text-danger"><i class="bi bi-droplet-fill"></i></div>
+                                                <div>
+                                                    <small class="text-muted text-uppercase d-block fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Blood Group</small>
+                                                    <span class="fw-semibold text-body" x-text="form.blood_group || '—'"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Employment Details -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                                    <h6 class="fw-bold text-uppercase text-success-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-briefcase me-2"></i>Employment Details</h6>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="row g-4">
+                                        <div class="col-sm-6">
+                                            <div class="p-3 bg-body-tertiary rounded-3 h-100 border border-secondary-subtle">
+                                                <small class="text-muted text-uppercase d-block fw-semibold mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">Department</small>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <i class="bi bi-diagram-3 text-success"></i>
+                                                    <span class="fw-semibold text-body" x-text="departments.find(d => d.id == form.department_id)?.name || '—'"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="p-3 bg-body-tertiary rounded-3 h-100 border border-secondary-subtle">
+                                                <small class="text-muted text-uppercase d-block fw-semibold mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">Designation</small>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <i class="bi bi-person-workspace text-success"></i>
+                                                    <span class="fw-semibold text-body" x-text="form.designation || '—'"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="p-3 bg-body-tertiary rounded-3 h-100 border border-secondary-subtle">
+                                                <small class="text-muted text-uppercase d-block fw-semibold mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">Manager</small>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <i class="bi bi-person-check text-success"></i>
+                                                    <span class="fw-semibold text-body" x-text="managers.find(m => m.id == form.manager_id)?.name || '—'"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="p-3 bg-body-tertiary rounded-3 h-100 border border-secondary-subtle">
+                                                <small class="text-muted text-uppercase d-block fw-semibold mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">Employment Status</small>
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <span class="badge bg-info-subtle text-info-emphasis px-3 py-2" x-text="form.employment_type || '—'"></span>
+                                                    <small class="text-muted">Joined <span x-text="form.joining_date ? new Date(form.joining_date).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'"></span></small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Address Details -->
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                                    <h6 class="fw-bold text-uppercase text-info-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-geo-alt me-2"></i>Address Details</h6>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="row g-4">
+                                        <div class="col-sm-6">
+                                            <small class="text-muted text-uppercase d-block fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Address Line 1</small>
+                                            <span class="fw-semibold text-body" x-text="form.address_line_1 || '—'"></span>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <small class="text-muted text-uppercase d-block fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Address Line 2</small>
+                                            <span class="fw-semibold text-body" x-text="form.address_line_2 || '—'"></span>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <small class="text-muted text-uppercase d-block fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Village / City</small>
+                                            <span class="fw-semibold text-body" x-text="form.village_name || form.city || '—'"></span>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <small class="text-muted text-uppercase d-block fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Post Office</small>
+                                            <span class="fw-semibold text-body" x-text="form.post_office || '—'"></span>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <small class="text-muted text-uppercase d-block fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Taluka</small>
+                                            <span class="fw-semibold text-body" x-text="form.taluka || '—'"></span>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <small class="text-muted text-uppercase d-block fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">District</small>
+                                            <span class="fw-semibold text-body" x-text="form.district || '—'"></span>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <small class="text-muted text-uppercase d-block fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">State</small>
+                                            <span class="fw-semibold text-body" x-text="form.state || '—'"></span>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <small class="text-muted text-uppercase d-block fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Pincode</small>
+                                            <span class="fw-semibold text-body" x-text="form.pincode || '—'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="userModalForm" @submit.prevent="saveUser()" x-show="!isViewMode">
                     <fieldset :disabled="isViewMode">
                     <div class="row g-4">
                         <!-- Left Column -->
@@ -956,9 +1178,9 @@
                     </fieldset>
                 </form>
             </div>
-            <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" x-text="isViewMode ? 'Close' : 'Cancel'"></button>
-                <button type="submit" form="userModalForm" class="btn btn-primary px-4" :disabled="saving" x-show="!isViewMode">
+            <div class="modal-footer border-top-0 pt-0" x-show="!isViewMode">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="userModalForm" class="btn btn-primary px-4" :disabled="saving">
                     <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
                     <span x-text="editingUserId ? 'Save Changes' : 'Create User'"></span>
                 </button>
