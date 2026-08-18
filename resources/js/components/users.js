@@ -477,6 +477,12 @@ document.addEventListener('alpine:init', () => {
         city: u.city,
         state: u.state,
         pincode: u.pincode,
+        date_of_birth: u.date_of_birth,
+        gender: u.gender,
+        blood_group: u.blood_group,
+        designation: u.designation,
+        emergency_contact_name: u.emergency_contact_name,
+        emergency_contact_phone: u.emergency_contact_phone,
         avatar: '/assets/images/avatar-placeholder.svg',
       };
     },
@@ -592,6 +598,7 @@ document.addEventListener('alpine:init', () => {
       if (!form) return;
       form.isViewMode = isView;
       form.editingUserId = user.id;
+      form.villageSearchQuery = user.village_name ?? '';
       form.form.first_name = user.first_name ?? '';
       form.form.middle_name = user.middle_name ?? '';
       form.form.last_name = user.last_name ?? '';
@@ -602,7 +609,7 @@ document.addEventListener('alpine:init', () => {
       form.form.employment_type = user.employment_type ?? 'Full-time';
       form.form.employee_id = user.employee_id ?? '';
       form.form.photo = user.photo ?? '';
-      form.form.joining_date = user.joining_date ?? '';
+      form.form.joining_date = user.joining_date ? String(user.joining_date).split('T')[0] : '';
       form.form.role = user.roles && user.roles.length ? user.roles[0].name : 'User';
       form.form.permissions = (user.permissions ?? []).map(p => p.name);
       form.form.is_active = user.is_active ?? true;
@@ -616,7 +623,7 @@ document.addEventListener('alpine:init', () => {
       form.form.city = user.city ?? '';
       form.form.state = user.state ?? '';
       form.form.pincode = user.pincode ?? '';
-      form.form.date_of_birth = user.date_of_birth ?? '';
+      form.form.date_of_birth = user.date_of_birth ? String(user.date_of_birth).split('T')[0] : '';
       form.form.gender = user.gender ?? '';
       form.form.blood_group = user.blood_group ?? '';
       form.form.designation = user.designation ?? '';
@@ -1248,15 +1255,15 @@ document.addEventListener('alpine:init', () => {
         const formData = new FormData();
         formData.append('name', name);
         formData.append('first_name', this.form.first_name);
-        if (this.form.middle_name) formData.append('middle_name', this.form.middle_name);
-        if (this.form.last_name) formData.append('last_name', this.form.last_name);
+        formData.append('middle_name', this.form.middle_name ?? '');
+        formData.append('last_name', this.form.last_name ?? '');
         formData.append('email', this.form.email);
-        if (formattedPhone) formData.append('phone', formattedPhone);
-        if (this.form.department_id) formData.append('department_id', this.form.department_id);
-        if (this.form.manager_id) formData.append('manager_id', this.form.manager_id);
-        if (this.form.employment_type) formData.append('employment_type', this.form.employment_type);
-        if (this.form.employee_id) formData.append('employee_id', this.form.employee_id);
-        if (this.form.joining_date) formData.append('joining_date', this.form.joining_date);
+        formData.append('phone', formattedPhone ?? '');
+        formData.append('department_id', this.form.department_id ?? '');
+        formData.append('manager_id', this.form.manager_id ?? '');
+        formData.append('employment_type', this.form.employment_type ?? '');
+        formData.append('employee_id', this.form.employee_id ?? '');
+        formData.append('joining_date', this.form.joining_date ?? '');
         formData.append('is_active', this.form.is_active ? '1' : '0');
         formData.append('roles[]', this.form.role);
         
@@ -1266,12 +1273,12 @@ document.addEventListener('alpine:init', () => {
 
         const addressFields = ['address_line_1', 'address_line_2', 'village_id', 'village_name', 'post_office', 'taluka', 'district', 'city', 'state', 'pincode'];
         for (const field of addressFields) {
-          if (this.form[field]) formData.append(field, this.form[field]);
+          formData.append(field, this.form[field] ?? '');
         }
 
         const advancedFields = ['date_of_birth', 'gender', 'blood_group', 'designation', 'emergency_contact_name', 'emergency_contact_phone'];
         for (const field of advancedFields) {
-          if (this.form[field]) formData.append(field, this.form[field]);
+          formData.append(field, this.form[field] ?? '');
         }
 
         if (this.form.password) {

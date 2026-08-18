@@ -860,16 +860,14 @@
 
                 <form id="userModalForm" @submit.prevent="saveUser()" x-show="!isViewMode">
                     <fieldset :disabled="isViewMode">
-                    <div class="row g-4">
+                    <div class="row g-3">
                         <!-- Left Column -->
                         <div class="col-lg-8">
                             <!-- Card 1: Personal Info -->
-                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                <div class="card-body p-4">
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                            <i class="bi bi-person-lines-fill"></i>
-                                        </div>
+                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+                                        <i class="bi bi-person-lines-fill text-primary fs-5 me-2"></i>
                                         <h6 class="card-title mb-0 fw-bold">Personal Information</h6>
                                     </div>
                                     <div class="row g-3">
@@ -901,19 +899,27 @@
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label fw-medium text-muted small">Blood Group</label>
-                                            <input type="text" class="form-control form-control-sm" x-model="form.blood_group" placeholder="e.g. O+">
+                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.blood_group">
+                                                <option value="">Unknown</option>
+                                                <option value="A+">A+</option>
+                                                <option value="A-">A-</option>
+                                                <option value="B+">B+</option>
+                                                <option value="B-">B-</option>
+                                                <option value="AB+">AB+</option>
+                                                <option value="AB-">AB-</option>
+                                                <option value="O+">O+</option>
+                                                <option value="O-">O-</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             
                             <!-- Card 2: Contact & Address -->
-                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary" style="z-index: 10;" style="z-index: 10;">
-                                <div class="card-body p-4">
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                            <i class="bi bi-geo-alt-fill"></i>
-                                        </div>
+                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary" style="z-index: 10;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+                                        <i class="bi bi-geo-alt-fill text-info fs-5 me-2"></i>
                                         <h6 class="card-title mb-0 fw-bold">Contact & Address</h6>
                                     </div>
                                     <div class="row g-3">
@@ -1035,12 +1041,10 @@
                             </div>
 
                             <!-- Card 3: Employment Details -->
-                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                <div class="card-body p-4">
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                            <i class="bi bi-briefcase-fill"></i>
-                                        </div>
+                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+                                        <i class="bi bi-briefcase-fill text-success fs-5 me-2"></i>
                                         <h6 class="card-title mb-0 fw-bold">Employment Details</h6>
                                     </div>
                                     <div class="row g-3">
@@ -1096,12 +1100,10 @@
                         <!-- Right Column -->
                         <div class="col-lg-4">
                             <!-- Card 4: Status & Media -->
-                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                <div class="card-body p-4">
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                            <i class="bi bi-image"></i>
-                                        </div>
+                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+                                        <i class="bi bi-image text-warning fs-5 me-2"></i>
                                         <h6 class="card-title mb-0 fw-bold">Status & Media</h6>
                                     </div>
                                     <div class="row g-3">
@@ -1133,12 +1135,10 @@
                             </div>
 
                             <!-- Card 5: Account Settings -->
-                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                <div class="card-body p-4">
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                            <i class="bi bi-shield-lock-fill"></i>
-                                        </div>
+                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+                                        <i class="bi bi-shield-lock-fill text-danger fs-5 me-2"></i>
                                         <h6 class="card-title mb-0 fw-bold">Account Settings</h6>
                                     </div>
                                     <div class="row g-3">
