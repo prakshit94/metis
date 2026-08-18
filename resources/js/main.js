@@ -31,7 +31,6 @@ import { iconManager } from './utils/icon-manager.js';
 import { createSearchComponent } from './utils/search-component.js';
 
 // Import Alpine.js for reactive components
-import TomSelect from 'tom-select';
 import Alpine from 'alpinejs';
 window.Alpine = Alpine;
 
@@ -109,14 +108,6 @@ class AdminApp {
 
   // Initialize Bootstrap components
   initBootstrapComponents() {
-    // Disable focus enforcement globally for all modals so TomSelect (appended to body) doesn't get focus-stolen
-    document.addEventListener('show.bs.modal', (e) => {
-      const modal = bootstrap.Modal.getInstance(e.target);
-      if (modal) {
-        modal._config.focus = false;
-      }
-    });
-
     // Initialize dropdowns
     document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(element => {
       new Dropdown(element);
@@ -124,7 +115,7 @@ class AdminApp {
 
     // Initialize modals
     document.querySelectorAll('.modal').forEach(element => {
-      new Modal(element, { focus: false });
+      new Modal(element);
     });
 
     // Initialize collapse elements (toggle:false — don't auto-open on construction)
@@ -721,111 +712,6 @@ class AdminApp {
 
     // Expose Alpine globally BEFORE starting it so alpine:init listeners can use it
     window.Alpine = Alpine;
-    // Register global TomSelect directive
-    Alpine.directive('select', (el, { expression }, { evaluate, effect, cleanup }) => {
-      setTimeout(() => {
-        const isMultiple = el.hasAttribute('multiple');
-        const forceSearch = el.hasAttribute('data-search');
-        const forceNoSearch = el.hasAttribute('data-no-search');
-
-        let disableSearch = forceNoSearch;
-        if (!forceSearch && !forceNoSearch && !isMultiple) {
-          disableSearch = el.options.length <= 10;
-        }
-
-        const ts = new TomSelect(el, {
-          plugins: isMultiple ? ['remove_button'] : [],
-          maxOptions: null,
-          controlInput: disableSearch ? '<input readonly style="cursor: pointer;">' : '<input>',
-          dropdownParent: 'body',
-          hideSelected: false
-        });
-
-        let isUpdating = false;
-
-        // If it's a dynamic select, we need to observe DOM changes to the <select> element
-        // (like when Alpine adds <option> tags via x-for)
-        const observer = new MutationObserver((mutations) => {
-          let shouldSync = false;
-          mutations.forEach((mutation) => {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'disabled') {
-              if (el.disabled) {
-                ts.disable();
-              } else {
-                ts.enable();
-              }
-            }
-            if (mutation.type === 'childList') {
-              shouldSync = true;
-            }
-          });
-          if (shouldSync) {
-            setTimeout(() => {
-              ts.sync();
-
-              // Dynamically adjust search feature for asynchronously loaded options
-              if (!forceSearch && !forceNoSearch && !isMultiple) {
-                const shouldDisable = el.options.length <= 10;
-                if (ts.control_input) {
-                  if (shouldDisable) {
-                    ts.control_input.setAttribute('readonly', 'readonly');
-                    ts.control_input.style.cursor = 'pointer';
-                  } else {
-                    ts.control_input.removeAttribute('readonly');
-                    ts.control_input.style.cursor = 'text';
-                  }
-                }
-              }
-
-              if (el.hasAttribute('x-model')) {
-                const val = evaluate(el.getAttribute('x-model'));
-                if (val !== undefined && val !== null) {
-                  isUpdating = true;
-                  ts.setValue(val, true);
-                  setTimeout(() => { isUpdating = false; }, 50);
-                }
-              }
-            }, 100);
-          }
-        });
-        observer.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled'] });
-
-        // If it has x-model, sync from Alpine to TomSelect
-        if (el.hasAttribute('x-model')) {
-          const modelExpression = el.getAttribute('x-model');
-
-          ts.on('change', () => {
-            isUpdating = true;
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-            setTimeout(() => { isUpdating = false; }, 50);
-          });
-
-          effect(() => {
-            if (isUpdating) return;
-            const val = evaluate(modelExpression);
-            if (val !== undefined && val !== null) {
-              const currentTsVal = ts.getValue();
-              // Array comparison for multiple selects, string for single
-              const isDiff = Array.isArray(val)
-                ? JSON.stringify(val.map(String)) !== JSON.stringify(Array.isArray(currentTsVal) ? currentTsVal : [currentTsVal])
-                : String(val) !== String(currentTsVal);
-
-              if (isDiff) {
-                isUpdating = true;
-                ts.setValue(val, true);
-                setTimeout(() => { isUpdating = false; }, 50);
-              }
-            }
-          });
-        }
-
-        cleanup(() => {
-          observer.disconnect();
-          ts.destroy();
-        });
-      }, 50);
-    });
-
 
     Alpine.start();
   }
