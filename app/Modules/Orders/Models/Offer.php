@@ -72,6 +72,8 @@ class Offer extends Model implements Auditable
         'applicable_products',
         'excluded_categories',
         'excluded_products',
+        'cashback_percent',
+        'cashback_fixed',
     ];
 
     protected $casts = [
@@ -89,6 +91,8 @@ class Offer extends Model implements Auditable
         'applicable_products' => 'array',
         'excluded_categories' => 'array',
         'excluded_products' => 'array',
+        'cashback_percent' => 'decimal:2',
+        'cashback_fixed' => 'decimal:2',
     ];
 
     public function product(): BelongsTo

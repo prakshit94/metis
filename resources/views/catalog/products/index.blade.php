@@ -175,7 +175,7 @@
                                             </div>
                                             
                                             <!-- Category Filter -->
-                                            <select class="form-select form-select-sm" 
+                                            <select x-select class="form-select form-select-sm" 
                                                     x-model="categoryFilter" 
                                                     @change="filterProducts()"
                                                     style="width: 150px;">
@@ -191,7 +191,7 @@
                                             </select>
                                             
                                             <!-- Stock Filter -->
-                                            <select class="form-select form-select-sm" 
+                                            <select x-select class="form-select form-select-sm" 
                                                     x-model="stockFilter" 
                                                     @change="filterProducts()"
                                                     style="width: 150px;">
@@ -202,7 +202,7 @@
                                             </select>
 
                                             <!-- Items Per Page -->
-                                            <select class="form-select form-select-sm"
+                                            <select x-select class="form-select form-select-sm"
                                                     x-model.number="itemsPerPage"
                                                     @change="filterProducts()"
                                                     style="width: 120px;">
@@ -442,7 +442,7 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Category <span class="text-danger">*</span></label>
-                                                <select class="form-select" x-model="form.category_id" required>
+                                                <select x-select class="form-select" x-model="form.category_id" required>
                                                     <option value="">Select Category</option>
                                                     <template x-for="category in options.categories" :key="category.id">
                                                         <optgroup :label="category.name">
@@ -456,7 +456,7 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Brand</label>
-                                                <select class="form-select" x-model="form.brand_id">
+                                                <select x-select class="form-select" x-model="form.brand_id">
                                                     <option value="">No Brand</option>
                                                     <template x-for="brand in options.brands" :key="brand.id">
                                                         <option :value="String(brand.id)" x-text="brand.name"></option>
@@ -507,14 +507,14 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Discount Type</label>
-                                                <select class="form-select" x-model="form.default_discount_type">
+                                                <select x-select class="form-select" x-model="form.default_discount_type">
                                                     <option value="percent">Percent (%)</option>
                                                     <option value="flat">Flat (₹)</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Tax Rate <span class="text-danger">*</span></label>
-                                                <select class="form-select" x-model="form.tax_rate_id" required>
+                                                <select x-select class="form-select" x-model="form.tax_rate_id" required>
                                                     <option value="">No Tax</option>
                                                     <template x-for="rate in options.taxRates" :key="rate.id">
                                                         <option :value="String(rate.id)" x-text="rate.name + ' (' + rate.rate + '%)'"></option>
@@ -523,7 +523,7 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">HSN Code <span class="text-danger">*</span></label>
-                                                <select class="form-select" x-model="form.hsn_code_id" required>
+                                                <select x-select class="form-select" x-model="form.hsn_code_id" required>
                                                     <option value="">No HSN</option>
                                                     <template x-for="hsn in options.hsnCodes" :key="hsn.id">
                                                         <option :value="String(hsn.id)" x-text="hsn.code + (hsn.description ? ' - ' + hsn.description : '')"></option>
@@ -571,7 +571,7 @@
                                         <div class="row g-3">
                                             <div class="col-12">
                                                 <label class="form-label fw-medium text-muted small">Product Status <span class="text-danger">*</span></label>
-                                                <select class="form-select" x-model="form.status" required>
+                                                <select x-select class="form-select" x-model="form.status" required>
                                                     <option value="">Select Status</option>
                                                     <template x-for="status in options.statusList" :key="status.value">
                                                         <option :value="status.value" x-text="status.label"></option>
@@ -617,7 +617,7 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Unit (UOM) <span class="text-danger">*</span></label>
-                                                <select class="form-select" x-model="form.uom_id" required>
+                                                <select x-select class="form-select" x-model="form.uom_id" required>
                                                     <option value="">Select Unit</option>
                                                     <template x-for="uom in options.uoms" :key="uom.id">
                                                         <option :value="String(uom.id)" x-text="uom.name + (uom.short_name ? ' (' + uom.short_name + ')' : '')"></option>
@@ -626,7 +626,7 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Warehouse</label>
-                                                <select class="form-select" x-model="form.default_warehouse_id">
+                                                <select x-select class="form-select" x-model="form.default_warehouse_id">
                                                     <option value="">No Default</option>
                                                     <template x-for="warehouse in options.warehouses" :key="warehouse.id">
                                                         <option :value="String(warehouse.id)" x-text="warehouse.name"></option>
@@ -639,7 +639,7 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Grade</label>
-                                                <select class="form-select" x-model="form.grade">
+                                                <select x-select class="form-select" x-model="form.grade">
                                                     <option value="">No Grade</option>
                                                     <option value="A">A</option>
                                                     <option value="B">B</option>

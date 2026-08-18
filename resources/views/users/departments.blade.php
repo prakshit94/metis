@@ -158,7 +158,7 @@
                 </div>
                 
                 <div class="form-floating mb-3">
-                    <select class="form-select" id="deptManager" x-model="form.manager_id">
+                    <select x-select class="form-select" id="deptManager" x-model="form.manager_id">
                         <option value="">None</option>
                         <template x-for="user in users" :key="user.id">
                             <option :value="user.id" x-text="user.name"></option>

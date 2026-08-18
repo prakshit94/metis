@@ -49,6 +49,12 @@ class StoreUserRequest extends FormRequest
             'roles.*' => ['string', 'exists:roles,name'],
             'permissions' => ['sometimes', 'array'],
             'permissions.*' => ['string', 'exists:permissions,name'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date'],
+            'gender' => ['sometimes', 'nullable', 'string', 'in:Male,Female,Other,Prefer not to say'],
+            'blood_group' => ['sometimes', 'nullable', 'string', 'max:10'],
+            'designation' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'emergency_contact_name' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'emergency_contact_phone' => ['sometimes', 'nullable', 'string', 'regex:/^\d{10}$/'],
         ];
     }
 

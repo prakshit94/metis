@@ -37,7 +37,7 @@
                                 <div class="row g-3 align-items-end">
                                     <div class="col-md-3">
                                         <label class="form-label fw-medium text-secondary small text-uppercase">Report Type</label>
-                                        <select class="form-select form-select-lg shadow-sm border-0 bg-body rounded-3" x-model="reportType" style="font-size: 0.95rem;">
+                                        <select x-select class="form-select form-select-lg shadow-sm border-0 bg-body rounded-3" x-model="reportType" style="font-size: 0.95rem;">
                                             <optgroup label="Sales & Revenue">
                                                 <option value="sales_overview">Sales Performance Overview (Detailed)</option>
                                                 <option value="product_sales">Product Sales (Bestsellers)</option>

@@ -582,7 +582,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     // ── CRUD Operations ───────────────────────────────────────────────────────
-    editUser(user) {
+    editUser(user, isView = false) {
       if (user.isDeleted) {
         showToast('Restore this user before editing.', 'warning');
         return;
@@ -590,6 +590,7 @@ document.addEventListener('alpine:init', () => {
 
       const form = Alpine.$data(document.querySelector('[x-data="userForm"]'));
       if (!form) return;
+      form.isViewMode = isView;
       form.editingUserId = user.id;
       form.form.first_name = user.first_name ?? '';
       form.form.middle_name = user.middle_name ?? '';
@@ -615,6 +616,12 @@ document.addEventListener('alpine:init', () => {
       form.form.city = user.city ?? '';
       form.form.state = user.state ?? '';
       form.form.pincode = user.pincode ?? '';
+      form.form.date_of_birth = user.date_of_birth ?? '';
+      form.form.gender = user.gender ?? '';
+      form.form.blood_group = user.blood_group ?? '';
+      form.form.designation = user.designation ?? '';
+      form.form.emergency_contact_name = user.emergency_contact_name ?? '';
+      form.form.emergency_contact_phone = user.emergency_contact_phone ?? '';
       form.form.password = '';
       form.form.password_confirmation = '';
 
@@ -634,21 +641,27 @@ document.addEventListener('alpine:init', () => {
     },
 
     async viewUser(user) {
-      const form = Alpine.$data(document.querySelector('[x-data="userProfile"]'));
+      const form = Alpine.$data(document.querySelector('[x-data="userForm"]'));
       if (!form) return;
-      form.loading = true;
-      form.user = user;
 
-      getModal('#viewUserModal')?.show();
+      form.isViewMode = true;
+      form.editingUserId = user.id;
 
       try {
-        const data = await apiFetch(`/api/users/${user.id}`);
-        form.user = this._mapUser(data.data ?? data);
-        form.loginHistory = data.login_history ?? [];
-      } catch (err) {
-        showToast('Could not load full profile: ' + err.message, 'warning');
-      } finally {
-        form.loading = false;
+        const response = await apiFetch(`/api/users/${user.id}`);
+        const fullUser = response.data ?? response;
+        
+        // Merge fullUser with mapped user to get all fields
+        const completeUser = { ...user, ...fullUser };
+        
+        // Call editUser but flag as view mode
+        this.editUser(completeUser, true);
+        
+        // Ensure the modal is shown
+        getModal('#userModal')?.show();
+      } catch (error) {
+        showToast('Could not load user profile details.', 'danger');
+        form.isViewMode = false;
       }
     },
 
@@ -1031,6 +1044,12 @@ document.addEventListener('alpine:init', () => {
       city: '',
       state: '',
       pincode: '',
+      date_of_birth: '',
+      gender: '',
+      blood_group: '',
+      designation: '',
+      emergency_contact_name: '',
+      emergency_contact_phone: '',
       password: '',
       password_confirmation: '',
       permissions: [],
@@ -1050,6 +1069,7 @@ document.addEventListener('alpine:init', () => {
     roles: [],
     rolesLoading: false,
     rolesError: '',
+    isViewMode: false,
 
     async searchVillages() {
       if (!this.villageSearchQuery || this.villageSearchQuery.length < 3) {
@@ -1166,6 +1186,12 @@ document.addEventListener('alpine:init', () => {
         city: '',
         state: '',
         pincode: '',
+        date_of_birth: '',
+        gender: '',
+        blood_group: '',
+        designation: '',
+        emergency_contact_name: '',
+        emergency_contact_phone: '',
         password: '',
         password_confirmation: '',
       };
@@ -1173,6 +1199,7 @@ document.addEventListener('alpine:init', () => {
       this.villageResults = [];
       this.editingUserId = null;
       this.saving = false;
+      this.isViewMode = false;
     },
 
     generateEmployeeId() {
@@ -1242,6 +1269,11 @@ document.addEventListener('alpine:init', () => {
           if (this.form[field]) formData.append(field, this.form[field]);
         }
 
+        const advancedFields = ['date_of_birth', 'gender', 'blood_group', 'designation', 'emergency_contact_name', 'emergency_contact_phone'];
+        for (const field of advancedFields) {
+          if (this.form[field]) formData.append(field, this.form[field]);
+        }
+
         if (this.form.password) {
           formData.append('password', this.form.password);
           formData.append('password_confirmation', this.form.password_confirmation);
@@ -1281,36 +1313,7 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 
-  // ─── userProfile ────────────────────────────────────────────────────────────
-  Alpine.data('userProfile', () => ({
-    user: null,
-    loginHistory: [],
-    loading: false,
-    saving: false,
 
-    editFromProfile() {
-      if (!this.user) return;
-      getModal('#viewUserModal')?.hide();
-
-      this.$nextTick(() => {
-        const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
-        if (table) table.editUser(this.user);
-      });
-    },
-
-    async toggleActive() {
-      if (!this.user) return;
-      this.saving = true;
-      try {
-        const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
-        if (table) {
-          await table.toggleActive(this.user);
-        }
-      } finally {
-        this.saving = false;
-      }
-    },
-  }));
 
   // ─── importForm ─────────────────────────────────────────────────────────────
   Alpine.data('importForm', () => ({

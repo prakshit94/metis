@@ -80,7 +80,7 @@
                             <input type="search" class="form-control form-control-sm pe-4" placeholder="Search RMA / Order…" x-model="searchQuery" @input.debounce.400ms="filterReturns()" style="width:220px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted small"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterReturns()" style="width:160px;">
+                        <select x-select class="form-select form-select-sm" x-model="statusFilter" @change="filterReturns()" style="width:160px;">
                             <option value="">All Statuses</option>
                             <option value="pending">Pending</option>
                             <option value="received">Received</option>
@@ -88,7 +88,7 @@
                             <option value="completed">Completed</option>
                             <option value="rejected">Rejected</option>
                         </select>
-                        <select class="form-select form-select-sm" x-model="serviceFilter" @change="filterReturns()" style="width:160px;" x-show="shippingServices.length > 0">
+                        <select x-select class="form-select form-select-sm" x-model="serviceFilter" @change="filterReturns()" style="width:160px;" x-show="shippingServices.length > 0">
                             <option value="">All Carriers</option>
                             <template x-for="svc in shippingServices" :key="svc">
                                 <option :value="svc" x-text="svc"></option>

@@ -164,19 +164,29 @@ class OrderService
 
             if (! empty($data['use_wallet_balance'])) {
                 $party = Party::find($data['party_id']);
-                if ($party && (float) $party->outstanding_balance > 0.0) {
-                    // outstanding_balance is a positive credit — subtract from net payable
-                    $netPayable = $order->net_amount - (float) $party->outstanding_balance;
+                if ($party && (float) $party->wallet_balance > 0.0) {
+                    $usedAmount = 0;
+                    $netPayable = $order->net_amount - (float) $party->wallet_balance;
                     if ($netPayable <= 0) {
-                        // Wallet covers the full order — deduct only the order amount from wallet
-                        $party->outstanding_balance = abs($netPayable);
-                        $order->update(['net_amount' => 0]);
+                        $usedAmount = $order->net_amount;
+                        $party->wallet_balance = abs($netPayable);
+                        $order->update(['net_amount' => 0, 'wallet_amount_used' => $usedAmount]);
                     } else {
-                        // Wallet partially covers the order — drain wallet, reduce payable
-                        $party->outstanding_balance = 0;
-                        $order->update(['net_amount' => $netPayable]);
+                        $usedAmount = $party->wallet_balance;
+                        $party->wallet_balance = 0;
+                        $order->update(['net_amount' => $netPayable, 'wallet_amount_used' => $usedAmount]);
                     }
                     $party->save();
+
+                    \App\Modules\Customers\Models\WalletTransaction::create([
+                        'party_id' => $party->id,
+                        'amount' => $usedAmount,
+                        'type' => 'debit',
+                        'reference_type' => 'order',
+                        'reference_id' => $order->id,
+                        'description' => 'Wallet balance redeemed on order #' . $order->order_no,
+                        'created_by' => auth()->id() ?? $order->created_by,
+                    ]);
                 }
             }
 

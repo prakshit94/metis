@@ -101,7 +101,7 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search Invoice #..." x-model="searchQuery" @input.debounce.300ms="filterInvoices()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterInvoices()" style="width: 150px;">
+                        <select x-select class="form-select form-select-sm" x-model="statusFilter" @change="filterInvoices()" style="width: 150px;">
                             <option value="">All Statuses</option>
                             <option value="paid">Paid</option>
                             <option value="partially_paid">Partially Paid</option>
@@ -392,7 +392,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-muted">Payment Method</label>
-                                <select class="form-select" x-model="paymentForm.payment_method" required>
+                                <select x-select class="form-select" x-model="paymentForm.payment_method" required>
                                     <option value="credit_card">Credit Card</option>
                                     <option value="paypal">PayPal</option>
                                     <option value="cod">Cash on Delivery (COD)</option>

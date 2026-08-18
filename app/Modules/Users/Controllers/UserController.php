@@ -170,6 +170,12 @@ class UserController extends Controller implements HasMiddleware
             'city' => $validated['city'] ?? null,
             'state' => $validated['state'] ?? null,
             'pincode' => $validated['pincode'] ?? null,
+            'date_of_birth' => $validated['date_of_birth'] ?? null,
+            'gender' => $validated['gender'] ?? null,
+            'blood_group' => $validated['blood_group'] ?? null,
+            'designation' => $validated['designation'] ?? null,
+            'emergency_contact_name' => $validated['emergency_contact_name'] ?? null,
+            'emergency_contact_phone' => $validated['emergency_contact_phone'] ?? null,
         ]);
 
         if ($request->hasFile('photo_file')) {
@@ -241,6 +247,7 @@ class UserController extends Controller implements HasMiddleware
             'department_id', 'manager_id', 'employment_type', 'employee_id', 'photo', 'joining_date',
             'address_line_1', 'address_line_2', 'village_id', 'village_name', 'post_office',
             'taluka', 'district', 'city', 'state', 'pincode',
+            'date_of_birth', 'gender', 'blood_group', 'designation', 'emergency_contact_name', 'emergency_contact_phone',
         ];
 
         foreach ($allowedFields as $field) {

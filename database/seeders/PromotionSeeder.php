@@ -43,6 +43,8 @@ class PromotionSeeder extends Seeder
                 'used_count' => 0,
                 'status' => 'active',
                 'is_active' => true,
+                'cashback_percent' => null,
+                'cashback_fixed' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -64,6 +66,8 @@ class PromotionSeeder extends Seeder
                 'used_count' => 0,
                 'status' => 'active',
                 'is_active' => true,
+                'cashback_percent' => 5.00, // 5% cashback
+                'cashback_fixed' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -85,6 +89,8 @@ class PromotionSeeder extends Seeder
                 'used_count' => 0,
                 'status' => 'active',
                 'is_active' => true,
+                'cashback_percent' => null,
+                'cashback_fixed' => 50.00, // Rs 50 flat cashback
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -106,6 +112,8 @@ class PromotionSeeder extends Seeder
                 'used_count' => 0,
                 'status' => 'active',
                 'is_active' => true,
+                'cashback_percent' => null,
+                'cashback_fixed' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -139,6 +147,8 @@ class PromotionSeeder extends Seeder
                 'priority' => 10,
                 'is_active' => true,
                 'used_count' => 0,
+                'cashback_percent' => 10.00, // 10% cashback
+                'cashback_fixed' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -162,6 +172,8 @@ class PromotionSeeder extends Seeder
                 'priority' => 5,
                 'is_active' => true,
                 'used_count' => 0,
+                'cashback_percent' => null,
+                'cashback_fixed' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -185,6 +197,9 @@ class PromotionSeeder extends Seeder
                 'priority' => 20, // Higher priority applies first
                 'is_active' => true,
                 'used_count' => 0,
+                'cashback_percent' => null,
+                'cashback_fixed' => 100.00, // Rs 100 flat cashback
+
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -208,6 +223,8 @@ class PromotionSeeder extends Seeder
                 'priority' => 15,
                 'is_active' => true,
                 'used_count' => 0,
+                'cashback_percent' => null,
+                'cashback_fixed' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

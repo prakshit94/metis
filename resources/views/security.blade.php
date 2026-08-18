@@ -170,7 +170,7 @@
                                             <h6>Profile Visibility</h6>
                                             <small>Control who can view your profile information</small>
                                         </div>
-                                        <select class="form-select" style="width: auto;" x-model="securityData.privacy.profileVisibility">
+                                        <select x-select class="form-select" style="width: auto;" x-model="securityData.privacy.profileVisibility">
                                             <option value="public">Public</option>
                                             <option value="team">Team Members Only</option>
                                             <option value="private">Private</option>

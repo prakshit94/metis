@@ -779,6 +779,8 @@ class OrderController extends Controller implements HasMiddleware
                 'notes' => $request->input('notes') ?? 'Order delivered.',
                 'changed_by' => auth()->id(),
             ]);
+
+            $this->applyCashback($order);
         } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
@@ -897,6 +899,7 @@ class OrderController extends Controller implements HasMiddleware
                     } elseif ($targetStatus === 'delivered') {
                         if (in_array($order->status, ['dispatched', 'shipped'], true)) {
                             $inventoryService->deliverOrder($order);
+                            $this->applyCashback($order);
                             $count++;
                         } else {
                             $skipped++;
@@ -1420,6 +1423,60 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         return array_values(array_intersect($orderedStatuses, array_unique($statuses)));
+    }
+
+    private function applyCashback(Order $order): void
+    {
+        if (!$order->party_id || $order->cashback_earned > 0) {
+            return; // Already earned or no customer
+        }
+
+        $cashbackEarned = 0;
+        
+        if ($order->applied_offer_id) {
+            $offer = \App\Modules\Orders\Models\Offer::find($order->applied_offer_id);
+            if ($offer) {
+                if ($offer->cashback_percent && $offer->cashback_percent > 0) {
+                    $cashbackEarned += ($order->net_amount * ($offer->cashback_percent / 100));
+                }
+                if ($offer->cashback_fixed && $offer->cashback_fixed > 0) {
+                    $cashbackEarned += $offer->cashback_fixed;
+                }
+            }
+        }
+
+        if ($order->coupon_code) {
+            $coupon = \App\Modules\Orders\Models\Coupon::where('code', $order->coupon_code)->first();
+            if ($coupon) {
+                if ($coupon->cashback_percent && $coupon->cashback_percent > 0) {
+                    $cashbackEarned += ($order->net_amount * ($coupon->cashback_percent / 100));
+                }
+                if ($coupon->cashback_fixed && $coupon->cashback_fixed > 0) {
+                    $cashbackEarned += $coupon->cashback_fixed;
+                }
+            }
+        }
+
+        if ($cashbackEarned > 0) {
+            $order->cashback_earned = $cashbackEarned;
+            $order->saveQuietly();
+
+            $party = \App\Modules\Customers\Models\Party::find($order->party_id);
+            if ($party) {
+                $party->wallet_balance += $cashbackEarned;
+                $party->saveQuietly();
+
+                \App\Modules\Customers\Models\WalletTransaction::create([
+                    'party_id' => $party->id,
+                    'amount' => $cashbackEarned,
+                    'type' => 'credit',
+                    'reference_type' => 'order',
+                    'reference_id' => $order->id,
+                    'description' => 'Cashback earned for order #' . $order->order_no,
+                    'created_by' => auth()->id() ?? $order->created_by,
+                ]);
+            }
+        }
     }
 
     private function generateCsvExportCallback($orders)

@@ -123,7 +123,7 @@
                                    style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm"
+                        <select x-select class="form-select form-select-sm"
                                 x-model.number="itemsPerPage"
                                 @change="filterData()"
                                 style="width: 120px;">
@@ -153,7 +153,7 @@
                     <!-- Status Filter -->
                     <div class="col-md-3">
                         <label class="form-label small fw-semibold text-body-secondary">Status</label>
-                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterData()">
+                        <select x-select class="form-select form-select-sm" x-model="statusFilter" @change="filterData()">
                             <option value="">All Statuses</option>
                             <option value="1">Active</option>
                             <option value="0">Inactive</option>

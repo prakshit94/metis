@@ -95,7 +95,7 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search by ID or Customer..." x-model.debounce.400ms="searchQuery" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="statusFilter" @change="fetchData()" style="width: 150px;">
+                        <select x-select class="form-select form-select-sm" x-model="statusFilter" @change="fetchData()" style="width: 150px;">
                             <option value="">All Statuses</option>
                             <option value="active">Active</option>
                             <option value="used">Used</option>
@@ -321,7 +321,7 @@
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Status</label>
-                                                        <select class="form-select form-select-sm fw-semibold" x-model="form.status">
+                                                        <select x-select class="form-select form-select-sm fw-semibold" x-model="form.status">
                                                             <option value="active">Active</option>
                                                             <option value="used">Used</option>
                                                             <option value="cancelled">Cancelled</option>
@@ -331,7 +331,7 @@
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
                                                         <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Related Invoice (Opt)</label>
-                                                        <select class="form-select form-select-sm fw-semibold" x-model="form.invoice_id">
+                                                        <select x-select class="form-select form-select-sm fw-semibold" x-model="form.invoice_id">
                                                             <option value="">None</option>
                                                             <template x-for="inv in invoices" :key="inv.id">
                                                                 <option :value="inv.id" x-text="inv.invoice_number"></option>
@@ -340,7 +340,7 @@
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Related Return (Opt)</label>
-                                                        <select class="form-select form-select-sm fw-semibold" x-model="form.order_return_id">
+                                                        <select x-select class="form-select form-select-sm fw-semibold" x-model="form.order_return_id">
                                                             <option value="">None</option>
                                                             <template x-for="ret in returns" :key="ret.id">
                                                                 <option :value="ret.id" x-text="ret.return_number"></option>
@@ -379,7 +379,7 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Status</label>
-                                                    <select class="form-select form-select-sm fw-semibold" x-model="form.status">
+                                                    <select x-select class="form-select form-select-sm fw-semibold" x-model="form.status">
                                                         <option value="active">Active</option>
                                                         <option value="used">Used</option>
                                                         <option value="cancelled">Cancelled</option>

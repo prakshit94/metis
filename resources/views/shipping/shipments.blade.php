@@ -237,7 +237,7 @@
                                    style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" 
+                        <select x-select class="form-select form-select-sm" 
                                 x-model="statusFilter" 
                                 @change="filterData()"
                                 style="width: 150px;">
@@ -249,7 +249,7 @@
                             <option value="failed">Failed</option>
                         </select>
 
-                        <select class="form-select form-select-sm"
+                        <select x-select class="form-select form-select-sm"
                                 x-model.number="itemsPerPage"
                                 @change="filterData()"
                                 style="width: 120px;">
@@ -279,7 +279,7 @@
                     <!-- Carrier Filter -->
                     <div class="col-md-3">
                         <label class="form-label small fw-semibold text-body-secondary">Carrier</label>
-                        <select class="form-select form-select-sm" x-model="carrierFilter" @change="filterData()">
+                        <select x-select class="form-select form-select-sm" x-model="carrierFilter" @change="filterData()">
                             <option value="">All Carriers</option>
                             @foreach($carriersList as $carrier)
                                 <option value="{{ $carrier }}">{{ $carrier }}</option>
@@ -496,7 +496,7 @@
                     <form @submit.prevent="saveStatus">
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
-                            <select class="form-select" x-model="statusForm.status" required>
+                            <select x-select class="form-select" x-model="statusForm.status" required>
                                 <option value="pending">Pending</option>
                                 <option value="in_transit">In Transit</option>
                                 <option value="delivered">Delivered</option>
@@ -520,7 +520,7 @@
                         </div>
                         <div class="mb-3" x-show="statusForm.next_followup_date">
                             <label class="form-label fw-semibold">Reschedule Reason</label>
-                            <select class="form-select" x-model="statusForm.reschedule_reason">
+                            <select x-select class="form-select" x-model="statusForm.reschedule_reason">
                                 <option value="">Select a reason...</option>
                                 <option value="Customer unavailable">Customer unavailable</option>
                                 <option value="Customer requested future delivery">Customer requested future delivery</option>
@@ -711,7 +711,7 @@
                     <form @submit.prevent="submitReturn">
                         <div class="mb-4">
                             <label class="form-label fw-semibold text-body-secondary small text-uppercase">Reason for Return <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-lg shadow-sm border-secondary border-opacity-25 rounded-3" x-model="returnForm.reason" required>
+                            <select x-select class="form-select form-select-lg shadow-sm border-secondary border-opacity-25 rounded-3" x-model="returnForm.reason" required>
                                 <option value="">Select a reason...</option>
                                 <option value="defective">Defective / Damaged in Transit</option>
                                 <option value="wrong_item">Wrong Item Sent</option>

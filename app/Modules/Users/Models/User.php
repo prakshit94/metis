@@ -62,6 +62,12 @@ class User extends Authenticatable implements Auditable
         'city',
         'state',
         'pincode',
+        'date_of_birth',
+        'gender',
+        'blood_group',
+        'designation',
+        'emergency_contact_name',
+        'emergency_contact_phone',
     ];
 
     /**
@@ -89,6 +95,7 @@ class User extends Authenticatable implements Auditable
             'password_changed_at' => 'datetime',
             'suspended_until' => 'datetime',
             'deleted_at' => 'datetime',
+            'date_of_birth' => 'date',
         ];
     }
 

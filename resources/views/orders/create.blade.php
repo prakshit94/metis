@@ -296,7 +296,8 @@
                                                 <h6 class="fw-bold text-warning-emphasis mb-0" style="text-transform: uppercase; font-size: 11px;">Financial & Stats</h6>
                                             </div>
                                             <div class="mb-2"><span class="text-muted d-block small mb-1">Credit Limit</span><span class="fw-bold text-body-emphasis">Rs <span x-text="Number(customerDetails.credit_limit || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
-                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Wallet Balance</span><span class="fw-bold fs-6" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">Rs <span x-text="Number(customerDetails.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Outstanding Bal</span><span class="fw-bold fs-6" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">Rs <span x-text="Number(customerDetails.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Cashback Wallet</span><span class="fw-bold fs-6 text-success">Rs <span x-text="Number(customerDetails.wallet_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
                                             
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <div><span class="text-muted d-block small mb-1">Cr. Days</span><span class="fw-medium text-body-emphasis" x-text="(customerDetails.credit_days || '0') + ' Days'"></span></div>
@@ -478,7 +479,7 @@
                                     <div class="small fw-bold text-muted text-uppercase mb-1" style="font-size: 11px; letter-spacing: 1px;">Warehouse</div>
                                     <h6 class="mb-0 fw-bold">Select fulfillment warehouse</h6>
                                 </div>
-                                <select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId" @change="searchProducts(true)">
+                                <select x-select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId" @change="searchProducts(true)">
                                     <option value="">Select Warehouse</option>
                                     @foreach($warehouses as $w)
                                     <option value="{{ $w->id }}" data-state="{{ $w->state }}">{{ $w->name }}</option>
@@ -506,18 +507,18 @@
                                 <input type="search" class="form-control pe-5" placeholder="Search SKU, name..." x-model="productQuery" @input.debounce.350ms="searchProducts(true)">
                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
                             </div>
-                            <select class="form-select" style="max-width:180px" x-model="warehouseId" @change="searchProducts(true)">
+                            <select x-select class="form-select" style="max-width:180px" x-model="warehouseId" @change="searchProducts(true)">
                                 <option value="">Select Warehouse</option>
                                 @foreach($warehouses as $w)
                                 <option value="{{ $w->id }}">{{ $w->name }}</option>
                                 @endforeach
                             </select>
-                            <select class="form-select" style="max-width:140px" x-model="stockFilter" @change="searchProducts(true)">
+                            <select x-select class="form-select" style="max-width:140px" x-model="stockFilter" @change="searchProducts(true)">
                                 <option value="available">In Stock</option>
                                 <option value="">All Stock</option>
                                 <option value="out_of_stock">Out of Stock</option>
                             </select>
-                            <select class="form-select" style="max-width:160px" x-model="categoryFilter" @change="searchProducts(true)">
+                            <select x-select class="form-select" style="max-width:160px" x-model="categoryFilter" @change="searchProducts(true)">
                                 <option value="">All Categories</option>
                                 @foreach($categories as $cat)
                                 <option value="{{ $cat->id }}">{{ $cat->name }}</option>
@@ -1000,14 +1001,13 @@
                                 <span class="fw-black text-primary fs-3" x-text="'Rs ' + Number(grandTotal).toFixed(2)"></span>
                             </div>
 
-                            <template x-if="customerDetails && Number(customerDetails.outstanding_balance) !== 0">
+                            <template x-if="customerDetails && Number(customerDetails.wallet_balance) > 0">
                                 <div class="mt-4 p-3 bg-body-tertiary rounded-4 border shadow-sm transition-all" :class="useWalletBalance ? 'border-primary' : ''">
                                     <div class="form-check form-switch d-flex align-items-center justify-content-between gap-3 p-0 m-0 cursor-pointer" @click="useWalletBalance = !useWalletBalance">
                                         <div>
-                                            <label class="form-check-label fw-bold mb-0 text-body-emphasis" style="cursor: pointer;">Settle Wallet Balance</label>
+                                            <label class="form-check-label fw-bold mb-0 text-body-emphasis" style="cursor: pointer;">Redeem Cashback Wallet</label>
                                             <div class="small text-muted mt-1" style="font-size: 11px;">
-                                                Current Balance: <span :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'" x-text="'Rs ' + Math.abs(Number(customerDetails.outstanding_balance)).toFixed(2)"></span> 
-                                                <span x-text="Number(customerDetails.outstanding_balance) > 0 ? '(Due)' : '(Credit)'"></span>
+                                                Available Balance: <span class="text-success" x-text="'Rs ' + Number(customerDetails.wallet_balance).toFixed(2)"></span> 
                                             </div>
                                         </div>
                                         <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" x-model="useWalletBalance" @click.stop>
@@ -1015,10 +1015,10 @@
                                     <div x-show="useWalletBalance" x-cloak class="mt-3 pt-3 border-top">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <span class="fw-bold text-uppercase tracking-widest text-primary" style="font-size: 14px;">Net Payable</span>
-                                            <span class="fw-black text-primary fs-4" x-text="'Rs ' + Math.max(0, Number(grandTotal) + Number(customerDetails.outstanding_balance)).toFixed(2)"></span>
+                                            <span class="fw-black text-primary fs-4" x-text="'Rs ' + Math.max(0, Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
                                         </div>
-                                        <div class="small text-muted mt-1" x-show="(Number(grandTotal) + Number(customerDetails.outstanding_balance)) < 0">
-                                            * Remaining credit: Rs <span x-text="Math.abs(Number(grandTotal) + Number(customerDetails.outstanding_balance)).toFixed(2)"></span>
+                                        <div class="small text-muted mt-1" x-show="(Number(grandTotal) - Number(customerDetails.wallet_balance)) < 0">
+                                            * Remaining wallet: Rs <span x-text="Math.abs(Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -1055,7 +1055,7 @@
                             
                             <div x-show="confirmAction === 'schedule'" x-cloak x-transition class="mb-3">
                                 <label class="form-label fw-semibold small text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Reason for Reschedule <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm mb-2" x-model="scheduleReason">
+                                <select x-select class="form-select form-select-sm mb-2" x-model="scheduleReason">
                                     <option value="" disabled selected>Select a reason...</option>
                                     <template x-for="reason in rescheduleReasons" :key="reason.id">
                                         <option :value="reason.reason" x-text="reason.reason"></option>
@@ -1841,7 +1841,7 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Reason for Cancellation <span class="text-danger">*</span></label>
-                        <select class="form-select" x-model="cancelReason">
+                        <select x-select class="form-select" x-model="cancelReason">
                             <option value="" disabled selected>Select a reason...</option>
                             @foreach($cancelReasons ?? [] as $reason)
                                 <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>

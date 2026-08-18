@@ -182,7 +182,7 @@
                         </div>
                         
                         <!-- Deleted Filter -->
-                        <select class="form-select form-select-sm"
+                        <select x-select class="form-select form-select-sm"
                                 x-model="deletedFilter"
                                 @change="filterVillages()"
                                 style="width: 130px;">
@@ -192,7 +192,7 @@
                         </select>
 
                         <!-- Items Per Page -->
-                        <select class="form-select form-select-sm"
+                        <select x-select class="form-select form-select-sm"
                                 x-model.number="itemsPerPage"
                                 @change="filterVillages()"
                                 style="width: 110px;">
@@ -223,7 +223,7 @@
                     <!-- Service Filter -->
                     <div class="col-md-2">
                         <label class="form-label small fw-semibold text-body-secondary">Service</label>
-                        <select class="form-select form-select-sm" x-model="serviceFilter" @change="filterVillages()">
+                        <select x-select class="form-select form-select-sm" x-model="serviceFilter" @change="filterVillages()">
                             <option value="">All Services</option>
                             <template x-for="s in servicesOptions" :key="s.id">
                                 <option :value="s.id" x-text="s.name"></option>

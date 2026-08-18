@@ -173,7 +173,7 @@
                 
                 <input type="date" class="form-select form-select-sm" x-model="dateFilter" @change="filterItems()" style="max-width: 150px;" x-show="currentView === 'list'">
                 
-                <select class="form-select form-select-sm" x-model="statusFilter" @change="filterItems()" style="max-width: 150px;">
+                <select x-select class="form-select form-select-sm" x-model="statusFilter" @change="filterItems()" style="max-width: 150px;">
                     <option value="">All Statuses</option>
                     <option value="Present">Present</option>
                     <option value="Absent">Absent</option>
@@ -181,7 +181,7 @@
                     <option value="Half-Day">Half-Day</option>
                 </select>
                 
-                <select class="form-select form-select-sm" x-model="userFilter" @change="filterItems()" style="max-width: 150px;" x-show="usersList.length > 0" style="display: none;">
+                <select x-select class="form-select form-select-sm" x-model="userFilter" @change="filterItems()" style="max-width: 150px;" x-show="usersList.length > 0" style="display: none;">
                     <option value="">My Attendances / All</option>
                     <template x-for="u in usersList" :key="u.id">
                         <option :value="u.id" x-text="u.name"></option>
@@ -448,7 +448,7 @@
                 
                 <div class="mb-3">
                     <label for="attUser" class="form-label fw-semibold">Employee <span class="text-danger">*</span></label>
-                    <select class="form-select" id="attUser" x-model="form.user_id" required>
+                    <select x-select class="form-select" id="attUser" x-model="form.user_id" required>
                         <option value="">Select Employee</option>
                         <template x-for="user in users" :key="user.id">
                             <option :value="user.id" x-text="user.name + (user.employee_id ? ` (${user.employee_id})` : '')"></option>
@@ -474,7 +474,7 @@
 
                 <div class="mb-3">
                     <label for="attStatus" class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
-                    <select class="form-select" id="attStatus" x-model="form.status" required>
+                    <select x-select class="form-select" id="attStatus" x-model="form.status" required>
                         <option value="Present">Present</option>
                         <option value="Absent">Absent</option>
                         <option value="Late">Late</option>
@@ -513,7 +513,7 @@
                 <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
                 
                 <div class="form-floating mb-3">
-                    <select class="form-select" id="leaveUser" x-model="form.user_id" required>
+                    <select x-select class="form-select" id="leaveUser" x-model="form.user_id" required>
                         <option value="">Select Employee</option>
                         <template x-for="user in users" :key="user.id">
                             <option :value="user.id" x-text="user.name"></option>
@@ -523,7 +523,7 @@
                 </div>
                 
                 <div class="form-floating mb-3">
-                    <select class="form-select" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
+                    <select x-select class="form-select" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
                         <option value="">Select Leave Type</option>
                         <template x-for="balance in userBalances" :key="balance.id">
                             <option :value="balance.leave_type" 
@@ -558,7 +558,7 @@
                 </div>
 
                 <div class="form-floating mb-3" x-show="editingId">
-                    <select class="form-select" id="leaveStatus" x-model="form.status">
+                    <select x-select class="form-select" id="leaveStatus" x-model="form.status">
                         <option value="Pending">Pending</option>
                         <option value="Approved">Approved</option>
                         <option value="Rejected">Rejected</option>

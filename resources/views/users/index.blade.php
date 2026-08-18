@@ -324,7 +324,7 @@
                                             </div>
                                             
                                             <!-- Status Filter -->
-                                                <select class="form-select form-select-sm" 
+                                                <select x-select data-no-search class="form-select form-select-sm" 
                                                     x-model="statusFilter" 
                                                     @change="filterUsers()"
                                                     style="width: 150px;">
@@ -335,7 +335,7 @@
                                             </select>
                                             
                                             <!-- Role Filter -->
-                                            <select class="form-select form-select-sm" 
+                                            <select x-select data-no-search class="form-select form-select-sm" 
                                                     x-model="roleFilter" 
                                                     @change="filterUsers()"
                                                     style="width: 150px;">
@@ -346,7 +346,7 @@
                                             </select>
                                             
                                             <!-- Page Size -->
-                                            <select class="form-select form-select-sm"
+                                            <select x-select data-no-search class="form-select form-select-sm"
                                                     x-model.number="itemsPerPage"
                                                     @change="filterUsers()"
                                                     style="width: 120px;">
@@ -625,332 +625,351 @@
     </div> <!-- End showAnalytics wrapper -->
 
 {{-- ═══════════════════════ Add / Edit User Modal ═══════════════════════════ --}}
-<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content" x-data="userForm">
-            <div class="modal-header">
-                <h5 class="modal-title" id="userModalLabel">Add New User</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="modal fade" id="userModal" aria-labelledby="userModalLabel" :class="{ 'view-mode-active': isViewMode }" x-data="userForm">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="userModalLabel">
+                    <span x-text="isViewMode ? 'View Profile' : (editingUserId ? 'Edit User' : 'Add New User')"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <form @submit.prevent="saveUser()">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="form.first_name"
-                                   placeholder="e.g. Jane" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Middle Name</label>
-                            <input type="text" class="form-control" x-model="form.middle_name"
-                                   placeholder="e.g. Marie">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Last Name</label>
-                            <input type="text" class="form-control" x-model="form.last_name"
-                                   placeholder="e.g. Smith">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" x-model="form.email"
-                                   placeholder="jane@example.com" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Phone</label>
-                            <input type="tel" class="form-control" x-model="form.phone"
-                                   maxlength="10" minlength="10" pattern="\d{10}"
-                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                                   placeholder="5550000000">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Employee ID</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" x-model="form.employee_id"
-                                       placeholder="e.g. EMP-1234">
-                                <button class="btn btn-outline-secondary" type="button" @click="generateEmployeeId" title="Auto Generate">
-                                    <i class="bi bi-magic"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Joining Date</label>
-                            <input type="date" class="form-control" x-model="form.joining_date">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">User Photo</label>
-                            <div class="border border-dashed rounded p-3 text-center bg-body-secondary d-flex flex-column align-items-center justify-content-center" style="min-height: 150px; border-style: dashed !important;">
-                                <div class="mb-2">
-                                    <template x-if="form.photo">
-                                        <img :src="form.photo" alt="Preview" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
-                                    </template>
-                                    <template x-if="!form.photo">
-                                        <i class="bi bi-cloud-arrow-up fs-2 text-muted"></i>
-                                    </template>
+            
+            <div class="modal-body pt-3">
+                <form id="userModalForm" @submit.prevent="saveUser()">
+                    <fieldset :disabled="isViewMode">
+                    <div class="row g-4">
+                        <!-- Left Column -->
+                        <div class="col-lg-8">
+                            <!-- Card 1: Personal Info -->
+                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-person-lines-fill"></i>
+                                        </div>
+                                        <h6 class="card-title mb-0 fw-bold">Personal Information</h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-medium text-muted small">First Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control form-control-sm" x-model="form.first_name" placeholder="e.g. Jane" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-medium text-muted small">Middle Name</label>
+                                            <input type="text" class="form-control form-control-sm" x-model="form.middle_name" placeholder="e.g. Marie">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-medium text-muted small">Last Name</label>
+                                            <input type="text" class="form-control form-control-sm" x-model="form.last_name" placeholder="e.g. Smith">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-medium text-muted small">Date of Birth</label>
+                                            <input type="date" class="form-control form-control-sm" x-model="form.date_of_birth">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-medium text-muted small">Gender</label>
+                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.gender">
+                                                <option value="">None</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
+                                                <option value="Prefer not to say">Prefer not to say</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-medium text-muted small">Blood Group</label>
+                                            <input type="text" class="form-control form-control-sm" x-model="form.blood_group" placeholder="e.g. O+">
+                                        </div>
+                                    </div>
                                 </div>
-                                <input type="file" class="form-control form-control-sm" accept="image/*" @change="handlePhotoUpload($event)">
-                                <small class="text-muted mt-1" style="font-size: 0.7rem;">Click to upload photo (Max 2MB)</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Department</label>
-                            <select class="form-select" x-model="form.department_id">
-                                <option value="">None</option>
-                                <template x-for="dept in departments" :key="dept.id">
-                                    <option :value="dept.id" x-text="dept.name"></option>
-                                </template>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Manager</label>
-                            <select class="form-select" x-model="form.manager_id">
-                                <option value="">None</option>
-                                <template x-for="mgr in managers" :key="mgr.id">
-                                    <option :value="mgr.id" x-text="mgr.name"></option>
-                                </template>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Employment Type</label>
-                            <select class="form-select" x-model="form.employment_type">
-                                <option value="Full-time">Full-time</option>
-                                <option value="Part-time">Part-time</option>
-                                <option value="Contract">Contract</option>
-                                <option value="Intern">Intern</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
-                            <template x-if="rolesLoading">
-                                <div class="border rounded p-2 text-muted small">
-                                    <span class="spinner-border spinner-border-sm me-2"></span>Loading roles...
-                                </div>
-                            </template>
-                            <template x-if="!rolesLoading && rolesError">
-                                <div class="alert alert-warning mb-0 py-2">
-                                    <i class="bi bi-exclamation-triangle me-2"></i>
-                                    <span x-text="`Unable to load roles: ${rolesError}`"></span>
-                                </div>
-                            </template>
-                            <template x-if="!rolesLoading && !rolesError">
-                                <select class="form-select" x-model="form.role" required :disabled="roles.length === 0">
-                                    <option value="" disabled x-show="roles.length === 0">No roles available</option>
-                                    <template x-for="r in roles" :key="r.id">
-                                        <option :value="r.name" x-text="r.name"></option>
-                                    </template>
-                                </select>
-                            </template>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Status</label>
-                            <div class="form-check form-switch mt-2">
-                                <input class="form-check-input" type="checkbox" id="userActiveSwitch"
-                                       x-model="form.is_active">
-                                <label class="form-check-label" for="userActiveSwitch">
-                                    <span x-text="form.is_active ? 'Active' : 'Inactive'"></span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="col-12 mt-4" x-data="{ showDirectPermissions: false }">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div>
-                                    <label class="form-label fw-semibold mb-0">Direct Permissions (Optional)</label>
-                                    <p class="text-muted small mb-0">Assign specific permissions to this user directly, in addition to their role.</p>
-                                </div>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" @click="showDirectPermissions = !showDirectPermissions">
-                                    <i class="bi" :class="showDirectPermissions ? 'bi-eye-slash' : 'bi-eye'"></i> <span x-text="showDirectPermissions ? 'Hide' : 'Show'"></span> Permissions
-                                </button>
                             </div>
                             
-                            <div x-show="showDirectPermissions" x-collapse x-cloak>
-                                <template x-if="rolesLoading">
-                                <div class="border rounded p-3 text-center text-muted small">
-                                    <span class="spinner-border spinner-border-sm me-2"></span>Loading permissions...
-                                </div>
-                            </template>
-                            
-                            <template x-if="!rolesLoading && availablePermissions.length > 0">
-                                <div class="border rounded p-3 bg-body-tertiary" style="max-height: 400px; overflow-y: auto;">
-                                    <template x-for="group in groupedAvailablePermissions" :key="group.key">
-                                        <div class="mb-4 bg-body border rounded p-3 shadow-sm">
-                                            <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
-                                                <i class="bi fs-5 text-primary me-2" :class="`bi-${group.icon}`"></i>
-                                                <h6 class="mb-0 fw-bold text-body" x-text="group.label"></h6>
+                            <!-- Card 2: Contact & Address -->
+                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary" style="z-index: 10;" style="z-index: 10;">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-geo-alt-fill"></i>
+                                        </div>
+                                        <h6 class="card-title mb-0 fw-bold">Contact & Address</h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Email Address <span class="text-danger">*</span></label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body-secondary"><i class="bi bi-envelope"></i></span>
+                                                <input type="email" class="form-control form-control-sm" x-model="form.email" placeholder="jane@example.com" required>
                                             </div>
-                                            <template x-for="(subGroup, index) in group.subGroups" :key="index">
-                                                <div :class="index > 0 ? 'mt-3 pt-3 border-top border-light-subtle' : ''">
-                                                    <h6 class="fw-semibold text-muted small mb-2 text-uppercase" style="letter-spacing: 0.05em;" x-text="subGroup.label"></h6>
-                                                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2 w-100 m-0">
-                                                        <template x-for="perm in subGroup.items" :key="perm.id">
-                                                            <div class="col px-1">
-                                                                <div class="form-check d-flex align-items-start mb-0">
-                                                                    <input class="form-check-input shadow-sm flex-shrink-0" type="checkbox" :value="perm.name" :id="'perm_' + perm.id" x-model="form.permissions" style="margin-top: 0.2em;">
-                                                                    <label class="form-check-label ms-2 cursor-pointer w-100" :for="'perm_' + perm.id">
-                                                                        <span class="fw-medium text-body d-block" style="font-size: 0.85rem;" x-text="perm.actionLabel"></span>
-                                                                        <span class="text-muted d-block" style="font-size: 0.7rem; line-height: 1.1;" x-text="perm.name"></span>
-                                                                    </label>
-                                                                </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Phone Number</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body-secondary"><i class="bi bi-telephone"></i></span>
+                                                <input type="tel" class="form-control form-control-sm" x-model="form.phone" maxlength="10" minlength="10" pattern="\d{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="10-digit number">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Emergency Contact Name</label>
+                                            <input type="text" class="form-control form-control-sm" x-model="form.emergency_contact_name" placeholder="Name">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Emergency Contact Phone</label>
+                                            <input type="tel" class="form-control form-control-sm" x-model="form.emergency_contact_phone" placeholder="10 digits" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Address Line 1</label>
+                                            <input type="text" name="address_line_1" class="form-control form-control-sm" placeholder="House/Flat No., Street" x-model="form.address_line_1">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Address Line 2</label>
+                                            <input type="text" name="address_line_2" class="form-control form-control-sm" placeholder="Landmark, Area" x-model="form.address_line_2">
+                                        </div>
+                                        
+                                        <!-- Village Search -->
+                                        <div class="col-12">
+                                            <label class="form-label fw-medium text-muted small">Village Search</label>
+                                            <div class="position-relative">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body-secondary"><i class="bi bi-search"></i></span>
+                                                    <input type="text" class="form-control form-control-sm" placeholder="Type 3 letters to search village..." x-model="villageSearchQuery" @input.debounce.300ms="searchVillages()">
+                                                </div>
+                                                <div class="position-absolute w-100 dropdown-menu show shadow overflow-auto mt-1" style="max-height: 200px; z-index: 1060;" x-show="villageResults.length > 0">
+                                                    <template x-for="v in villageResults" :key="v.id">
+                                                        <button type="button" class="dropdown-item py-2 px-3 border-bottom text-wrap" @click="selectVillage(v)">
+                                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                <span class="fw-bold text-primary" x-text="v.village_name"></span>
+                                                                <span class="badge bg-secondary" x-text="v.pincode"></span>
                                                             </div>
-                                                        </template>
+                                                            <div class="text-muted small">
+                                                                <span x-show="v.post_so_name" x-text="'PO: ' + v.post_so_name + ' · '"></span>
+                                                                <span x-show="v.taluka_name" x-text="'Taluka: ' + v.taluka_name + ' · '"></span>
+                                                                <span x-show="v.district_name" x-text="'District: ' + v.district_name + ' · '"></span>
+                                                                <span x-show="v.state_name" x-text="'State: ' + v.state_name"></span>
+                                                            </div>
+                                                        </button>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Selected Village Details -->
+                                        <template x-if="form.village_name">
+                                            <div class="col-12">
+                                                <div class="card border border-info border-opacity-25 bg-info bg-opacity-10 shadow-sm mt-2">
+                                                    <div class="card-body p-3">
+                                                        <div class="row g-2 small">
+                                                            <div class="col-md-4">
+                                                                <div class="fw-bold text-muted text-uppercase" style="font-size: 10px;">Village</div>
+                                                                <div class="fw-medium text-body" x-text="form.village_name || '—'"></div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <div class="fw-bold text-muted text-uppercase" style="font-size: 10px;">Post Office</div>
+                                                                <div class="fw-medium text-body" x-text="form.post_office || '—'"></div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <div class="fw-bold text-muted text-uppercase" style="font-size: 10px;">Taluka</div>
+                                                                <div class="fw-medium text-body" x-text="form.taluka || '—'"></div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <div class="fw-bold text-muted text-uppercase" style="font-size: 10px;">District</div>
+                                                                <div class="fw-medium text-body" x-text="form.district || '—'"></div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <div class="fw-bold text-muted text-uppercase" style="font-size: 10px;">State</div>
+                                                                <div class="fw-medium text-body" x-text="form.state || '—'"></div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <div class="fw-bold text-muted text-uppercase" style="font-size: 10px;">Pincode</div>
+                                                                <div class="fw-bold text-primary" x-text="form.pincode || '—'"></div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </template>
-                                        </div>
-                                    </template>
-                                </div>
-                            </template>
-                            </div>
-                        </div>
-                        
-                        <div class="col-12"><hr class="my-1"></div>
-                        
-                        <!-- Address Details -->
-                        <div class="col-12">
-                            <h6 class="fw-bold mb-3">Address Details</h6>
-                            <div class="row g-3">
-                                <div class="col-sm-6">
-                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 1</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-house"></i></span>
-                                        <input type="text" name="address_line_1" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_1">
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 2</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-signpost"></i></span>
-                                        <input type="text" name="address_line_2" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_2">
-                                    </div>
-                                </div>
+                                            </div>
+                                        </template>
 
-                                <div class="col-12">
-                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Village Search</label>
-                                    <div class="position-relative">
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-search"></i></span>
-                                            <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" placeholder="Type 3 letters to search village..." 
-                                                   x-model="villageSearchQuery" @input.debounce.300ms="searchVillages()">
+                                        <template x-if="!form.village_name">
+                                            <div class="col-12">
+                                                <div class="row g-3">
+                                                    <div class="col-md-4">
+                                                        <label class="form-label fw-medium text-muted small">City</label>
+                                                        <input type="text" name="city" class="form-control form-control-sm" x-model="form.city">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label fw-medium text-muted small">State</label>
+                                                        <input type="text" name="state" class="form-control form-control-sm" x-model="form.state">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label fw-medium text-muted small">Pincode</label>
+                                                        <input type="text" name="pincode" class="form-control form-control-sm" x-model="form.pincode">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 3: Employment Details -->
+                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-briefcase-fill"></i>
                                         </div>
-                                        <div class="position-absolute w-100 dropdown-menu show shadow overflow-auto" style="max-height: 200px; z-index: 1060;" x-show="villageResults.length > 0">
-                                            <template x-for="v in villageResults" :key="v.id">
-                                                <button type="button" class="dropdown-item w-100 text-start py-2 px-3 border-bottom border-light-subtle"
-                                                        @click="selectVillage(v)">
-                                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                                        <span class="fw-bold text-primary" style="font-size: 12px;" x-text="v.village_name"></span>
-                                                        <span class="badge bg-secondary-subtle text-secondary-emphasis" x-text="v.pincode"></span>
-                                                    </div>
-                                                    <div class="text-muted small" style="font-size: 0.75rem; line-height: 1.4;">
-                                                        <span x-show="v.post_so_name" x-text="'PO: ' + v.post_so_name + ' · '"></span>
-                                                        <span x-show="v.taluka_name" x-text="'Taluka: ' + v.taluka_name + ' · '"></span>
-                                                        <span x-show="v.district_name" x-text="'District: ' + v.district_name + ' · '"></span>
-                                                        <span x-show="v.state_name" x-text="'State: ' + v.state_name"></span>
-                                                    </div>
+                                        <h6 class="card-title mb-0 fw-bold">Employment Details</h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Employee ID</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" class="form-control form-control-sm" x-model="form.employee_id" placeholder="e.g. EMP-1234">
+                                                <button class="btn btn-sm btn-outline-secondary bg-body" type="button" @click="generateEmployeeId" title="Auto Generate">
+                                                    <i class="bi bi-magic"></i>
                                                 </button>
-                                            </template>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Joining Date</label>
+                                            <input type="date" class="form-control form-control-sm" x-model="form.joining_date">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Designation</label>
+                                            <input type="text" class="form-control form-control-sm" x-model="form.designation" placeholder="e.g. Senior Developer">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Employment Type</label>
+                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.employment_type">
+                                                <option value="Full-time">Full-time</option>
+                                                <option value="Part-time">Part-time</option>
+                                                <option value="Contract">Contract</option>
+                                                <option value="Intern">Intern</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Department</label>
+                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.department_id">
+                                                <option value="">None</option>
+                                                <template x-for="dept in departments" :key="dept.id">
+                                                    <option :value="dept.id" x-text="dept.name"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Manager</label>
+                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.manager_id">
+                                                <option value="">None</option>
+                                                <template x-for="mgr in managers" :key="mgr.id">
+                                                    <option :value="mgr.id" x-text="mgr.name"></option>
+                                                </template>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
 
-                                <!-- Selected Village Details -->
-                                <template x-if="form.village_name">
-                                    <div class="col-12">
-                                        <div class="card bg-body border-0 border-start border-4 border-primary shadow-sm mt-2">
-                                            <div class="card-body p-3">
-                                                <div class="row g-2">
-                                                    <div class="col-md-4">
-                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Village</label>
-                                                        <div class="fw-semibold text-truncate text-body" style="font-size: 12px;" x-text="form.village_name || '—'"></div>
-                                                        <input type="hidden" name="village_name" :value="form.village_name">
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Post Office</label>
-                                                        <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.post_office || '—'"></div>
-                                                        <input type="hidden" name="post_office" :value="form.post_office">
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Taluka</label>
-                                                        <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.taluka || '—'"></div>
-                                                        <input type="hidden" name="taluka" :value="form.taluka">
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">District</label>
-                                                        <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.district || '—'"></div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">State</label>
-                                                        <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.state || '—'"></div>
-                                                        <input type="hidden" name="state" :value="form.state">
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Pincode</label>
-                                                        <div class="fw-bold text-body" style="font-size: 12px;" x-text="form.pincode || '—'"></div>
-                                                        <input type="hidden" name="pincode" :value="form.pincode">
-                                                    </div>
+                        <!-- Right Column -->
+                        <div class="col-lg-4">
+                            <!-- Card 4: Status & Media -->
+                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-image"></i>
+                                        </div>
+                                        <h6 class="card-title mb-0 fw-bold">Status & Media</h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <div class="p-2 border rounded bg-body-secondary">
+                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
+                                                    <label class="form-check-label fw-medium small" for="userActiveSwitch">Active Account</label>
+                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.is_active" id="userActiveSwitch">
                                                 </div>
                                             </div>
                                         </div>
-                                        <input type="hidden" name="village_id" x-model="form.village_id">
-                                        <input type="hidden" name="city" x-model="form.city">
-                                    </div>
-                                </template>
-
-                                <!-- Manual Input Fields (no village selected) -->
-                                <template x-if="!form.village_name">
-                                    <div class="col-12 mt-2">
-                                        <div class="row g-2">
-                                            <div class="col-md-4">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">City</label>
-                                                <input type="text" name="city" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.city">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">State</label>
-                                                <input type="text" name="state" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.state">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Pincode</label>
-                                                <input type="text" name="pincode" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.pincode">
+                                        <div class="col-12 mt-3">
+                                            <label class="form-label fw-medium text-muted small">Profile Photo</label>
+                                            <div class="border border-dashed rounded p-3 text-center bg-body-secondary d-flex flex-column align-items-center justify-content-center" style="min-height: 150px; border-style: dashed !important;">
+                                                <div class="mb-2">
+                                                    <template x-if="form.photo">
+                                                        <img :src="form.photo" alt="Preview" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                                                    </template>
+                                                    <template x-if="!form.photo">
+                                                        <i class="bi bi-cloud-arrow-up fs-2 text-muted"></i>
+                                                    </template>
+                                                </div>
+                                                <input type="file" class="form-control form-control-sm" accept="image/*" @change="handlePhotoUpload($event)">
+                                                <small class="text-muted mt-1" style="font-size: 0.7rem;">Click to upload (Max 2MB)</small>
                                             </div>
                                         </div>
                                     </div>
-                                </template>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-12"><hr class="my-1"></div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">
-                                Password
-                                <span class="text-danger" x-show="!editingUserId">*</span>
-                                <small class="text-muted fw-normal" x-show="editingUserId">(leave blank to keep current)</small>
-                            </label>
-                            <input type="password" class="form-control" x-model="form.password"
-                                   :required="!editingUserId"
-                                   placeholder="Min 8 chars, mixed case + number"
-                                   autocomplete="new-password">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Confirm Password</label>
-                            <input type="password" class="form-control" x-model="form.password_confirmation"
-                                   :required="!editingUserId && form.password.length > 0"
-                                   placeholder="Repeat password"
-                                   autocomplete="new-password">
-                        </div>
-                    </div>
 
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary" :disabled="saving">
-                            <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
-                            <span x-text="editingUserId ? 'Save Changes' : 'Create User'"></span>
-                        </button>
+                            <!-- Card 5: Account Settings -->
+                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-shield-lock-fill"></i>
+                                        </div>
+                                        <h6 class="card-title mb-0 fw-bold">Account Settings</h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label fw-medium text-muted small">Primary Role <span class="text-danger">*</span></label>
+                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.role" required :disabled="roles.length === 0">
+                                                <option value="" disabled x-show="roles.length === 0">No roles available</option>
+                                                <template x-for="r in roles" :key="r.id">
+                                                    <option :value="r.name" x-text="r.name"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 mt-3 border-top pt-3">
+                                            <label class="form-label fw-medium text-muted small">
+                                                Password
+                                                <span class="text-danger" x-show="!editingUserId">*</span>
+                                            </label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body-secondary"><i class="bi bi-key"></i></span>
+                                                <input type="password" class="form-control form-control-sm" x-model="form.password" :required="!editingUserId" placeholder="Min 8 characters">
+                                            </div>
+                                            <small class="text-muted mt-1" x-show="editingUserId" style="font-size: 11px;">Leave blank to keep current password.</small>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-medium text-muted small">Confirm Password</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body-secondary"><i class="bi bi-key-fill"></i></span>
+                                                <input type="password" class="form-control form-control-sm" x-model="form.password_confirmation" :required="!editingUserId && form.password.length > 0" placeholder="Repeat password">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                                                    </div>
                     </div>
+                    </fieldset>
                 </form>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" x-text="isViewMode ? 'Close' : 'Cancel'"></button>
+                <button type="submit" form="userModalForm" class="btn btn-primary px-4" :disabled="saving" x-show="!isViewMode">
+                    <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
+                    <span x-text="editingUserId ? 'Save Changes' : 'Create User'"></span>
+                </button>
             </div>
         </div>
     </div>
 </div>
 
+
 {{-- ═══════════════════════ Import Users Modal ═══════════════════════════════ --}}
-<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel">
+<div class="modal fade" id="importModal" aria-labelledby="importModalLabel">
     <div class="modal-dialog" x-data="importForm">
         <div class="modal-content">
             <div class="modal-header">
@@ -1000,185 +1019,40 @@
     </div>
 </div>
 
-{{-- ═══════════════════════ View Profile Modal ═══════════════════════════════ --}}
-<div class="modal fade" id="viewUserModal" tabindex="-1" aria-labelledby="viewUserModalLabel">
-    <div class="modal-dialog modal-lg" x-data="userProfile">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="viewUserModalLabel">
-                    <i class="bi bi-person-circle me-2"></i>User Profile
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Loading skeleton -->
-                <template x-if="loading">
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status"></div>
-                        <p class="mt-2 text-muted">Loading profile…</p>
-                    </div>
-                </template>
+<style>
+/* Seamless View Mode Styling */
+.view-mode-active .form-control,
+.view-mode-active .form-select,
+.view-mode-active .input-group-text {
+    background-color: transparent !important;
+    border-color: transparent !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-shadow: none !important;
+    color: var(--bs-body-color) !important;
+    font-weight: 500 !important;
+}
+.view-mode-active select.form-select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-image: none !important;
+}
+.view-mode-active .input-group {
+    border: none !important;
+}
+.view-mode-active textarea {
+    resize: none !important;
+}
+.view-mode-active .form-check-input,
+.view-mode-active .form-check-label {
+    opacity: 0.8 !important;
+}
+.view-mode-active .form-control:disabled, 
+.view-mode-active .form-select:disabled {
+    background-color: transparent !important;
+}
+</style>
 
-                <template x-if="!loading && user">
-                    <div>
-                        <!-- Header row -->
-                        <div class="d-flex align-items-center gap-3 mb-4">
-                            <img :src="user.avatar" class="rounded-circle" width="72" height="72" :alt="user.name">
-                            <div>
-                                <h5 class="mb-0 fw-bold" x-text="user.name"></h5>
-                                <p class="text-muted mb-1" x-text="user.email"></p>
-                                <span class="badge"
-                                      :class="{'bg-success':user.status==='active','bg-secondary':user.status==='inactive','bg-danger':user.status==='deleted'}"
-                                      x-text="user.status"></span>
-                                <span class="badge ms-1"
-                                      :class="user.roleClass"
-                                      x-text="user.roleLabel"></span>
-                            </div>
-                        </div>
-
-                        <!-- Details grid -->
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-4">
-                                <div class="card bg-body-tertiary border-0 h-100">
-                                    <div class="card-body">
-                                        <p class="small text-muted mb-1">First Name</p>
-                                        <p class="mb-0 fw-medium" x-text="user.first_name || '—'"></p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-body-tertiary border-0 h-100">
-                                    <div class="card-body">
-                                        <p class="small text-muted mb-1">Middle Name</p>
-                                        <p class="mb-0 fw-medium" x-text="user.middle_name || '—'"></p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-body-tertiary border-0 h-100">
-                                    <div class="card-body">
-                                        <p class="small text-muted mb-1">Last Name</p>
-                                        <p class="mb-0 fw-medium" x-text="user.last_name || '—'"></p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card bg-body-tertiary border-0 h-100">
-                                    <div class="card-body">
-                                        <p class="small text-muted mb-1">Email</p>
-                                        <p class="mb-0 fw-medium" x-text="user.email || '—'"></p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card bg-body-tertiary border-0 h-100">
-                                    <div class="card-body">
-                                        <p class="small text-muted mb-1">Phone</p>
-                                        <p class="mb-0 fw-medium" x-text="user.phone || '—'"></p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card bg-body-tertiary border-0 h-100">
-                                    <div class="card-body">
-                                        <p class="small text-muted mb-1">Department</p>
-                                        <p class="mb-0 fw-medium" x-text="user.department || '—'"></p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card bg-body-tertiary border-0 h-100">
-                                    <div class="card-body">
-                                        <p class="small text-muted mb-1">Joined</p>
-                                        <p class="mb-0 fw-medium" x-text="user.joinDate"></p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card bg-body-tertiary border-0 h-100">
-                                    <div class="card-body">
-                                        <p class="small text-muted mb-1">Last Active</p>
-                                        <p class="mb-0 fw-medium" x-text="user.lastActive"></p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="card bg-body-tertiary border-0 h-100">
-                                    <div class="card-body">
-                                        <p class="small text-muted mb-1">Full Address</p>
-                                        <p class="mb-0 fw-medium">
-                                            <template x-if="user.address_line_1 || user.village_name || user.city">
-                                                <span>
-                                                    <span x-text="user.address_line_1"></span><span x-show="user.address_line_2" x-text="', ' + user.address_line_2"></span><br x-show="user.address_line_1">
-                                                    <span x-show="user.village_name" x-text="'Village: ' + user.village_name + ', '"></span>
-                                                    <span x-show="user.post_office" x-text="'PO: ' + user.post_office + ', '"></span>
-                                                    <span x-show="user.taluka" x-text="user.taluka + ', '"></span>
-                                                    <span x-show="user.district" x-text="user.district + ', '"></span>
-                                                    <span x-show="user.city && !user.district" x-text="user.city + ', '"></span>
-                                                    <span x-show="user.state" x-text="user.state + ' - '"></span>
-                                                    <span x-show="user.pincode" x-text="user.pincode"></span>
-                                                </span>
-                                            </template>
-                                            <template x-if="!user.address_line_1 && !user.city && !user.village_name">
-                                                <span class="text-muted fst-italic">No address provided</span>
-                                            </template>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Login history -->
-                        <h6 class="fw-semibold mb-3">Recent Login History</h6>
-                        <template x-if="loginHistory.length === 0">
-                            <div class="text-center p-4 bg-body-tertiary rounded">
-                                <i class="bi bi-clock-history text-muted fs-2 mb-2"></i>
-                                <p class="text-muted small mb-0">No login history available.</p>
-                            </div>
-                        </template>
-                        <div class="row g-2" x-show="loginHistory.length > 0">
-                            <template x-for="(h, i) in loginHistory.slice(0, 6)" :key="i">
-                                <div class="col-md-6">
-                                    <div class="card border-0 bg-body-tertiary h-100">
-                                        <div class="card-body p-3">
-                                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <div class="p-2 rounded" :class="h.status === 'success' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
-                                                        <i class="bi" :class="h.status === 'success' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
-                                                    </div>
-                                                    <div>
-                                                        <p class="mb-0 fw-medium small" x-text="h.status === 'success' ? 'Successful Login' : 'Failed Attempt'"></p>
-                                                        <small class="text-muted font-monospace" x-text="h.ip_address ?? 'Unknown IP'"></small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex align-items-center text-muted small mt-2">
-                                                <i class="bi bi-calendar3 me-1"></i>
-                                                <span x-text="h.attempted_at ? new Date(h.attempted_at).toLocaleString() : '—'"></span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </template>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-warning" x-show="user && !user.isDeleted" @click="toggleActive()" :disabled="saving">
-                    <i class="bi" :class="user?.is_active ? 'bi-person-dash' : 'bi-person-check'"></i>
-                    <span x-text="user?.is_active ? 'Deactivate' : 'Activate'"></span>
-                </button>
-                <button type="button" class="btn btn-primary" x-show="user && !user.isDeleted" @click="editFromProfile()">
-                    <i class="bi bi-pencil me-1"></i>Edit User
-                </button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-</div>
 @endsection
 
-@push('scripts')
-@endpush
+

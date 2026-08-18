@@ -402,19 +402,19 @@
                 @endcanany
 
                 {{-- CRM & People Dropdown --}}
-                @canany(['user-view', 'role-view', 'department-view', 'attendance-view', 'leave-view'])
+                @canany(['user-view', 'role-view', 'department-view'])
                 <li class="nav-item">
-                    <a class="nav-link {{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments', 'attendances', 'leaves']) ? 'active' : 'collapsed' }}"
+                    <a class="nav-link {{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments']) ? 'active' : 'collapsed' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#crmSubmenu"
-                       aria-expanded="{{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments', 'attendances', 'leaves']) ? 'true' : 'false' }}"
+                       aria-expanded="{{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments']) ? 'true' : 'false' }}"
                        aria-controls="crmSubmenu">
                         <i class="bi bi-people-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">CRM &amp; People</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments', 'attendances', 'leaves']) ? 'show' : '' }}" id="crmSubmenu">
+                    <div class="collapse {{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments']) ? 'show' : '' }}" id="crmSubmenu">
                         <ul class="nav nav-submenu">
                             @role('Super Admin')
                             <li class="nav-item">
@@ -454,6 +454,26 @@
                                 </a>
                             </li>
                             @endcan
+                        </ul>
+                    </div>
+                </li>
+                @endcanany
+
+                {{-- Time Management Dropdown --}}
+                @canany(['attendance-view', 'leave-view'])
+                <li class="nav-item">
+                    <a class="nav-link {{ in_array($current, ['attendances', 'leaves']) ? 'active' : 'collapsed' }}"
+                       href="#"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#timeManagementSubmenu"
+                       aria-expanded="{{ in_array($current, ['attendances', 'leaves']) ? 'true' : 'false' }}"
+                       aria-controls="timeManagementSubmenu">
+                        <i class="bi bi-clock-history"></i>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Time Management</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse {{ in_array($current, ['attendances', 'leaves']) ? 'show' : '' }}" id="timeManagementSubmenu">
+                        <ul class="nav nav-submenu">
                             @can('attendance-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'attendances' ? 'active' : '' }}" href="{{ route('attendances') }}">

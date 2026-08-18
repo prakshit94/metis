@@ -120,7 +120,7 @@
                                    style="width:250px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterData()" style="width:150px;">
+                        <select x-select class="form-select form-select-sm" x-model="statusFilter" @change="filterData()" style="width:150px;">
                             <option value="">All Statuses</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>

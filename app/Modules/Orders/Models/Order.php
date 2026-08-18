@@ -139,6 +139,7 @@ class Order extends Model implements Auditable
         'billing_village_id', 'billing_village_name', 'billing_post_office', 'billing_taluka',
         'billing_district', 'billing_city', 'billing_state', 'billing_pincode',
         'is_draft', 'future_order_date', 'scheduled_confirmation_date', 'confirmation_attempts', 'created_by', 'updated_by',
+        'wallet_amount_used', 'cashback_earned',
     ];
 
     protected $casts = [
@@ -234,11 +235,22 @@ class Order extends Model implements Auditable
 
     public function getTotalPaidAttribute(): float
     {
+        if ($this->relationLoaded('payments')) {
+            return (float) $this->payments->where('status', 'completed')->sum('amount');
+        }
         return (float) $this->payments()->where('status', 'completed')->sum('amount');
     }
 
     public function getTotalRefundedAttribute(): float
     {
+        if ($this->relationLoaded('refunds')) {
+            return (float) $this->refunds->where('status', 'completed')->sum('amount');
+        }
         return (float) $this->refunds()->where('status', 'completed')->sum('amount');
+    }
+
+    public function walletTransactions(): HasMany
+    {
+        return $this->hasMany(\App\Modules\Customers\Models\WalletTransaction::class, 'reference_id')->where('reference_type', 'order');
     }
 }

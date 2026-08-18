@@ -94,12 +94,12 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search offers..." x-model="search" @input.debounce.400ms="fetchOffers()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="filterType" @change="fetchOffers()" style="width: 150px;">
+                        <select x-select class="form-select form-select-sm" x-model="filterType" @change="fetchOffers()" style="width: 150px;">
                             <option value="">All Types</option>
                             <option value="order_discount">Order Discount</option>
                             <option value="bogo">BOGO</option>
                         </select>
-                        <select class="form-select form-select-sm" x-model="filterStatus" @change="fetchOffers()" style="width: 150px;">
+                        <select x-select class="form-select form-select-sm" x-model="filterStatus" @change="fetchOffers()" style="width: 150px;">
                             <option value="">All Statuses</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -165,7 +165,7 @@
                                             <i class="fs-5" :class="o.type === 'bogo' ? 'bi bi-tags-fill' : 'bi bi-percent'"></i>
                                         </div>
                                         <div>
-                                            <div class="fw-bold text-body-emphasis" x-text="o.name"></div>
+                                            <div class="fw-bold text-primary text-decoration-underline cursor-pointer" style="cursor: pointer;" @click="viewDetails(o)" x-text="o.name"></div>
                                             <div class="text-muted small" style="font-size: 10px;" x-text="'ID: #' + o.id"></div>
                                         </div>
                                     </div>
@@ -341,7 +341,7 @@
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Offer Type *</label>
-                                            <select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.type" style="font-size: 14px;">
+                                            <select x-select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.type" style="font-size: 14px;">
                                                 <option value="order_discount">Order Discount</option>
                                                 <option value="bogo">Buy X Get Y (BOGO)</option>
                                                 <option value="free_product">Free Product</option>
@@ -373,7 +373,7 @@
                                     <div class="row g-4" x-show="form.type === 'order_discount' || form.type === 'category_discount'" style="display: none;">
                                         <div class="col-md-6" x-show="form.type === 'order_discount' || form.type === 'category_discount'">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Discount Type *</label>
-                                            <select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.discount_type" style="font-size: 14px;">
+                                            <select x-select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.discount_type" style="font-size: 14px;">
                                                 <option value="percentage">Percentage (%)</option>
                                                 <option value="fixed">Flat Amount (Rs )</option>
                                             </select>
@@ -414,6 +414,24 @@
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Get Qty Free *</label>
                                             <input type="number" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.get_qty" min="1" style="font-size: 14px;">
                                             <small class="text-muted d-block mt-2" style="font-size: 11px;">Quantity rewarded for free.</small>
+                                        </div>
+                                    </div>
+                                    <div class="row g-4 mt-1 border-top border-secondary border-opacity-25 pt-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Cashback Percentage</label>
+                                            <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
+                                                <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-3" x-model="form.cashback_percent" min="0" max="100" step="0.01" placeholder="e.g. 5" style="font-size: 14px;">
+                                                <span class="input-group-text border-0 bg-transparent text-muted fw-bold">%</span>
+                                            </div>
+                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">Percent of net amount to credit to wallet on delivery.</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Cashback Fixed Amount</label>
+                                            <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
+                                                <span class="input-group-text border-0 bg-transparent text-muted fw-bold">Rs</span>
+                                                <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" x-model="form.cashback_fixed" min="0" step="0.01" placeholder="e.g. 100" style="font-size: 14px;">
+                                            </div>
+                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">Fixed amount to credit to wallet on delivery.</small>
                                         </div>
                                     </div>
                                 </div>
@@ -487,7 +505,7 @@
                                             
                                             <div class="col-12 mt-4" x-show="form.type === 'free_product'" style="display: none;">
                                                 <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Gift Product (Free Item) *</label>
-                                                <select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.product_id" style="font-size: 14px;">
+                                                <select x-select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.product_id" style="font-size: 14px;">
                                                     <option value="">Select Free Product...</option>
                                                     <template x-for="p in allProducts" :key="p.id">
                                                         <option :value="p.id" x-text="p.name + ' (' + p.sku + ')'"></option>
@@ -577,8 +595,43 @@ function offersModule() {
         search: '', filterType: '', filterStatus: '', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0,
         selected: [], stats: { total: 0, active: 0, bogo: 0, order_discount: 0 },
-        form: { id: null, name: '', type: 'order_discount', discount_type: 'percentage', value: '', min_spend: '', max_discount: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true },
+        form: { id: null, name: '', type: 'order_discount', discount_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_percent: '', cashback_fixed: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true },
         formError: null,
+
+        generateDescription(o) {
+            let desc = '';
+            if (o.type === 'order_discount') desc += 'Order Discount that grants a ';
+            else if (o.type === 'category_discount') desc += 'Category Discount that grants a ';
+            else if (o.type === 'bogo') return `Buy ${o.buy_qty} Get ${o.get_qty} Free`;
+            else if (o.type === 'free_product') return `Free Product Offer (Buy ${o.buy_qty} Get ${o.get_qty})`;
+
+            if (o.discount_type === 'percentage') desc += parseFloat(o.value) + '% Discount';
+            else desc += 'Rs ' + parseFloat(o.value) + ' Discount';
+
+            if (o.cashback_percent > 0 && o.cashback_fixed > 0) {
+                desc += ` AND additionally grants ${parseFloat(o.cashback_percent)}% + Rs ${parseFloat(o.cashback_fixed)} Cashback simultaneously!`;
+            } else if (o.cashback_percent > 0) {
+                desc += ` AND additionally grants ${parseFloat(o.cashback_percent)}% Cashback simultaneously!`;
+            } else if (o.cashback_fixed > 0) {
+                desc += ` AND additionally grants a Rs ${parseFloat(o.cashback_fixed)} flat Cashback simultaneously!`;
+            }
+            return desc;
+        },
+
+        viewDetails(o) {
+            const desc = this.generateDescription(o);
+            // Check if Swal is available (often loaded globally), otherwise fallback to standard alert
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Promotion Details',
+                    text: desc,
+                    icon: 'info',
+                    confirmButtonText: 'Got it!'
+                });
+            } else {
+                alert("Promotion Details:\n\n" + desc);
+            }
+        },
 
         formatDateTime(dateStr) {
             if (!dateStr) return '';
@@ -610,9 +663,9 @@ function offersModule() {
         openModal(o = null) {
             this.formError = null;
             if (o) {
-                this.form = { id: o.id, name: o.name, type: o.type, discount_type: o.discount_type, value: o.value, min_spend: o.min_spend || '', max_discount: o.max_discount || '', product_ids: typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : (o.applicable_products || []), product_id: o.type === 'free_product' ? o.product_id : '', applicable_categories: typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : (o.applicable_categories || []), buy_qty: o.buy_qty || 1, get_qty: o.get_qty || 1, starts_at: o.starts_at ? o.starts_at.substring(0,16) : '', ends_at: o.ends_at ? o.ends_at.substring(0,16) : '', priority: o.priority || 0, is_active: o.is_active };
+                this.form = { id: o.id, name: o.name, type: o.type, discount_type: o.discount_type, value: o.value, min_spend: o.min_spend || '', max_discount: o.max_discount || '', cashback_percent: o.cashback_percent || '', cashback_fixed: o.cashback_fixed || '', product_ids: typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : (o.applicable_products || []), product_id: o.type === 'free_product' ? o.product_id : '', applicable_categories: typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : (o.applicable_categories || []), buy_qty: o.buy_qty || 1, get_qty: o.get_qty || 1, starts_at: o.starts_at ? o.starts_at.substring(0,16) : '', ends_at: o.ends_at ? o.ends_at.substring(0,16) : '', priority: o.priority || 0, is_active: o.is_active };
             } else {
-                this.form = { id: null, name: '', type: 'order_discount', discount_type: 'percentage', value: '', min_spend: '', max_discount: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true };
+                this.form = { id: null, name: '', type: 'order_discount', discount_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_percent: '', cashback_fixed: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true };
             }
             new bootstrap.Modal(document.getElementById('offerModal')).show();
         },

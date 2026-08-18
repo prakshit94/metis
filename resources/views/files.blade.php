@@ -132,7 +132,7 @@
                                                 <i class="bi bi-list-ul"></i>
                                             </button>
                                         </div>
-                                        <select class="form-select form-select-sm" style="width: auto;" x-model="sortBy" @change="sortFiles()">
+                                        <select x-select class="form-select form-select-sm" style="width: auto;" x-model="sortBy" @change="sortFiles()">
                                             <option value="name">Sort by Name</option>
                                             <option value="date">Sort by Date</option>
                                             <option value="size">Sort by Size</option>

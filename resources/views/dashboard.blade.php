@@ -24,7 +24,7 @@
 
         <div x-show="activeTab === 'dashboard'" x-transition.opacity.duration.300ms class="d-flex align-items-center gap-2">
             <label class="text-muted small fw-bold mb-0 text-nowrap"><i class="bi bi-calendar3 me-1"></i> Date Filter:</label>
-            <select class="form-select form-select-sm fw-semibold shadow-sm border-0 bg-body-tertiary rounded-pill px-3" style="min-width: 140px; cursor: pointer;" onchange="window.location.href = '?filter=' + this.value">
+            <select x-select class="form-select form-select-sm fw-semibold shadow-sm border-0 bg-body-tertiary rounded-pill px-3" style="min-width: 140px; cursor: pointer;" onchange="window.location.href = '?filter=' + this.value">
                 <option value="today" {{ ($filter ?? 'today') === 'today' ? 'selected' : '' }}>Today</option>
                 <option value="yesterday" {{ ($filter ?? 'today') === 'yesterday' ? 'selected' : '' }}>Yesterday</option>
                 <option value="this_week" {{ ($filter ?? 'today') === 'this_week' ? 'selected' : '' }}>This Week</option>
@@ -53,7 +53,7 @@
                 </div>
                 <div class="mx-auto position-relative" style="max-width: 650px;" x-data="customerSearchApp()">
                     <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden bg-body border">
-                        <select class="form-select border-0 bg-transparent fw-semibold text-body shadow-none px-4" style="max-width: 200px; cursor: pointer; border-right: 1px solid var(--bs-border-color) !important;">
+                        <select x-select class="form-select border-0 bg-transparent fw-semibold text-body shadow-none px-4" style="max-width: 200px; cursor: pointer; border-right: 1px solid var(--bs-border-color) !important;">
                             <option value="mobile">Mobile Number</option>
                             <option value="customer_id">Customer ID</option>
                             <option value="name">Name</option>

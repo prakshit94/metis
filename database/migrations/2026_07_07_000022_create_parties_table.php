@@ -46,6 +46,7 @@ return new class extends Migration {
             $table->decimal('credit_limit', 15, 2)->default(0);
             $table->integer('credit_days')->default(0);
             $table->decimal('outstanding_balance', 15, 2)->default(0);
+            $table->decimal('wallet_balance', 15, 2)->default(0);
             $table->date('credit_valid_till')->nullable();
 
             // KYC & Compliance

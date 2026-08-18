@@ -181,7 +181,7 @@
                         </div>
                         
                         <!-- Status Filter -->
-                        <select class="form-select form-select-sm" 
+                        <select x-select class="form-select form-select-sm" 
                                 x-model="statusFilter" 
                                 @change="filterCustomers()"
                                 style="width: 150px;">
@@ -193,7 +193,7 @@
                         </select>
                         
                         <!-- Category Filter -->
-                        <select class="form-select form-select-sm" 
+                        <select x-select class="form-select form-select-sm" 
                                 x-model="categoryFilter" 
                                 @change="filterCustomers()"
                                 style="width: 150px;">
@@ -203,7 +203,7 @@
                         </select>
 
                         <!-- Items Per Page -->
-                        <select class="form-select form-select-sm"
+                        <select x-select class="form-select form-select-sm"
                                 x-model.number="itemsPerPage"
                                 @change="filterCustomers()"
                                 style="width: 120px;">
@@ -751,7 +751,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold">Address Label</label>
-                                <select class="form-select form-select-sm" x-model="addressForm.label" required>
+                                <select x-select class="form-select form-select-sm" x-model="addressForm.label" required>
                                     <option value="Home">🏠 Home</option>
                                     <option value="Office">🏢 Office</option>
                                     <option value="Farm">🌾 Farm</option>

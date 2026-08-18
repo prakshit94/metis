@@ -94,7 +94,7 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search code..." x-model="search" @input.debounce.400ms="fetchCoupons()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="filterStatus" @change="fetchCoupons()" style="width: 150px;">
+                        <select x-select class="form-select form-select-sm" x-model="filterStatus" @change="fetchCoupons()" style="width: 150px;">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -156,7 +156,7 @@
                                             <i class="fs-5 bi bi-ticket-perforated-fill"></i>
                                         </div>
                                         <div>
-                                            <code class="badge bg-body-secondary text-body-emphasis fs-6 px-3 py-2 font-monospace" x-text="c.code"></code>
+                                            <code class="badge bg-body-secondary text-primary text-decoration-underline cursor-pointer fs-6 px-3 py-2 font-monospace" style="cursor: pointer;" @click="viewDetails(c)" x-text="c.code"></code>
                                         </div>
                                     </div>
                                 </td>
@@ -314,7 +314,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Type *</label>
-                                            <select class="form-select form-select-sm fw-semibold" x-model="form.type">
+                                            <select x-select class="form-select form-select-sm fw-semibold" x-model="form.type">
                                                 <option value="percentage">Percentage (%)</option>
                                                 <option value="fixed">Flat Amount (Rs )</option>
                                                 <option value="free_shipping">Free Shipping</option>
@@ -346,7 +346,7 @@
                                         </div>
                                         <div class="col-md-4" x-show="form.type === 'free_product'" style="display: none;">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Free Product *</label>
-                                            <select class="form-select form-select-sm fw-semibold" x-model="form.free_product_id">
+                                            <select x-select class="form-select form-select-sm fw-semibold" x-model="form.free_product_id">
                                                 <option value="">Select Product...</option>
                                                 <template x-for="p in allProducts" :key="p.id">
                                                     <option :value="p.id" x-text="p.name + ' (' + p.sku + ')'"></option>
@@ -369,6 +369,26 @@
                                                 <input type="number" class="form-control fw-semibold" x-model="form.max_discount" min="0" step="0.01" placeholder="Unlimited">
                                             </div>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Maximum cap. Leave empty/0 for unlimited.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-primary">Use Case:</strong> Crucial when using Percentage discounts to protect your margins on very large bulk orders (e.g. 50% off up to Rs 1000).</div>
+                                        </div>
+                                        <div class="col-12 mt-3 pt-3 border-top">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Cashback Percentage</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" class="form-control fw-semibold" x-model="form.cashback_percent" min="0" max="100" step="0.01">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                    <small class="text-muted d-block mt-1" style="font-size: 10px;">Percent of net amount to credit to wallet on delivery.</small>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Cashback Fixed Amount</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text">Rs </span>
+                                                        <input type="number" class="form-control fw-semibold" x-model="form.cashback_fixed" min="0" step="0.01">
+                                                    </div>
+                                                    <small class="text-muted d-block mt-1" style="font-size: 10px;">Fixed amount to credit to wallet on delivery.</small>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -443,8 +463,39 @@ function couponsModule() {
         search: '', filterStatus: '', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0,
         selected: [], stats: { total: 0, active: 0, inactive: 0, expiring_soon: 0 },
-        form: { id: null, code: '', type: 'percentage', value: '', min_spend: '', max_discount: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true },
+        form: { id: null, code: '', type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_percent: '', cashback_fixed: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true },
         formError: null,
+
+        generateDescription(c) {
+            let desc = '';
+            if (c.type === 'percentage') desc += parseFloat(c.value) + '% Discount Coupon';
+            else if (c.type === 'fixed') desc += 'Rs ' + parseFloat(c.value) + ' Discount Coupon';
+            else if (c.type === 'free_shipping') desc += 'Free Shipping Coupon';
+            else if (c.type === 'free_product') desc += 'Free Product Coupon';
+
+            if (c.cashback_percent > 0 && c.cashback_fixed > 0) {
+                desc += ` AND additionally grants ${parseFloat(c.cashback_percent)}% + Rs ${parseFloat(c.cashback_fixed)} Cashback simultaneously!`;
+            } else if (c.cashback_percent > 0) {
+                desc += ` AND additionally grants ${parseFloat(c.cashback_percent)}% Cashback simultaneously!`;
+            } else if (c.cashback_fixed > 0) {
+                desc += ` AND additionally grants a Rs ${parseFloat(c.cashback_fixed)} flat Cashback simultaneously!`;
+            }
+            return desc;
+        },
+
+        viewDetails(c) {
+            const desc = this.generateDescription(c);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Promotion Details',
+                    text: desc,
+                    icon: 'info',
+                    confirmButtonText: 'Got it!'
+                });
+            } else {
+                alert("Promotion Details:\n\n" + desc);
+            }
+        },
 
         formatDateTime(dateStr) {
             if (!dateStr) return '';
@@ -476,9 +527,9 @@ function couponsModule() {
         openModal(c = null) {
             this.formError = null;
             if (c) {
-                this.form = { id: c.id, code: c.code, type: c.type, value: c.value, min_spend: c.min_spend || '', max_discount: c.max_discount || '', free_product_id: c.free_product_id || '', free_qty: c.free_qty || 1, expiry_date: c.expiry_date || '', usage_limit: c.usage_limit || '', is_active: c.is_active };
+                this.form = { id: c.id, code: c.code, type: c.type, value: c.value, min_spend: c.min_spend || '', max_discount: c.max_discount || '', cashback_percent: c.cashback_percent || '', cashback_fixed: c.cashback_fixed || '', free_product_id: c.free_product_id || '', free_qty: c.free_qty || 1, expiry_date: c.expiry_date || '', usage_limit: c.usage_limit || '', is_active: c.is_active };
             } else {
-                this.form = { id: null, code: '', type: 'percentage', value: '', min_spend: '', max_discount: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true };
+                this.form = { id: null, code: '', type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_percent: '', cashback_fixed: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true };
             }
             new bootstrap.Modal(document.getElementById('couponModal')).show();
         },

@@ -12,6 +12,8 @@ return new class extends Migration {
             $table->enum('type', ['order_discount', 'bogo', 'category_discount', 'free_product']);
             $table->enum('discount_type', ['fixed', 'percentage'])->nullable();
             $table->decimal('value', 15, 2)->default(0);
+            $table->decimal('cashback_percent', 5, 2)->nullable();
+            $table->decimal('cashback_fixed', 15, 2)->nullable();
             $table->decimal('min_spend', 15, 2)->default(0);
             $table->decimal('max_discount', 15, 2)->nullable();
             

@@ -52,6 +52,8 @@ class Coupon extends Model implements Auditable
         'excluded_products',
         'free_product_id',
         'free_qty',
+        'cashback_percent',
+        'cashback_fixed',
     ];
 
     protected $casts = [
@@ -68,6 +70,8 @@ class Coupon extends Model implements Auditable
         'excluded_products' => 'array',
         'free_product_id' => 'integer',
         'free_qty' => 'integer',
+        'cashback_percent' => 'decimal:2',
+        'cashback_fixed' => 'decimal:2',
     ];
 
     public function creator()

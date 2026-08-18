@@ -11,6 +11,8 @@ return new class extends Migration {
             $table->string('code')->unique();
             $table->enum('type', ['fixed', 'percentage', 'free_shipping', 'free_product'])->default('fixed');
             $table->decimal('value', 15, 2)->default(0);
+            $table->decimal('cashback_percent', 5, 2)->nullable();
+            $table->decimal('cashback_fixed', 15, 2)->nullable();
             $table->decimal('min_spend', 15, 2)->default(0);
             $table->decimal('max_discount', 15, 2)->nullable();
             

@@ -152,7 +152,7 @@
                                             <i class="fs-5 bi bi-diagram-3-fill"></i>
                                         </div>
                                         <div>
-                                            <div class="fw-bold text-body-emphasis">{{ $program->name }}</div>
+                                            <div class="fw-bold text-primary text-decoration-underline cursor-pointer" style="cursor: pointer;" onclick="viewReferralDetails({{ $program->milestones->count() }})">{{ $program->name }}</div>
                                             <div class="text-muted small" style="font-size: 10px;">ID: #{{ $program->id }}</div>
                                         </div>
                                     </div>
@@ -331,7 +331,7 @@
                                                     </div>
                                                     <div class="col-md-4">
                                                         <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Reward Type</label>
-                                                        <select x-model="milestone.reward_type" :name="`milestones[${index}][reward_type]`" class="form-select fw-semibold border-secondary border-opacity-25 shadow-none" required style="font-size: 13px;">
+                                                        <select x-select x-model="milestone.reward_type" :name="`milestones[${index}][reward_type]`" class="form-select fw-semibold border-secondary border-opacity-25 shadow-none" required style="font-size: 13px;">
                                                             <option value="wallet">Wallet Balance</option>
                                                             <option value="product">Free Product</option>
                                                             <option value="coupon">Discount Coupon</option>
@@ -413,6 +413,20 @@
 </style>
 
 <script>
+function viewReferralDetails(mCount) {
+    const desc = "Referral Program with " + mCount + " milestone reward" + (mCount > 1 || mCount === 0 ? 's' : '') + " configured.";
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Promotion Details',
+            text: desc,
+            icon: 'info',
+            confirmButtonText: 'Got it!'
+        });
+    } else {
+        alert("Promotion Details:\n\n" + desc);
+    }
+}
+
     document.addEventListener('alpine:init', () => {
         Alpine.data('referralPrograms', () => ({
             programs: @json($programs->pluck('id')),

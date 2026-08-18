@@ -356,7 +356,7 @@
                                         <label for="eventType" class="form-label fw-semibold">
                                             <i class="bi bi-tag me-1"></i>Event Type
                                         </label>
-                                        <select class="form-select" id="eventType" x-model="eventData.type">
+                                        <select x-select class="form-select" id="eventType" x-model="eventData.type">
                                             <option value="event">📅 Event</option>
                                             <option value="meeting">🤝 Meeting</option>
                                             <option value="task">✅ Task</option>
@@ -368,7 +368,7 @@
                                         <label for="eventPriority" class="form-label fw-semibold">
                                             <i class="bi bi-flag me-1"></i>Priority
                                         </label>
-                                        <select class="form-select" id="eventPriority" x-model="eventData.priority">
+                                        <select x-select class="form-select" id="eventPriority" x-model="eventData.priority">
                                             <template x-for="priority in priorityOptions" :key="priority.value">
                                                 <option :value="priority.value" x-text="priority.label"></option>
                                             </template>
@@ -398,7 +398,7 @@
                                         <label for="eventDuration" class="form-label fw-semibold">
                                             <i class="bi bi-hourglass-split me-1"></i>Duration
                                         </label>
-                                        <select class="form-select" id="eventDuration" x-model="eventData.duration">
+                                        <select x-select class="form-select" id="eventDuration" x-model="eventData.duration">
                                             <option value="15">15 minutes</option>
                                             <option value="30">30 minutes</option>
                                             <option value="45">45 minutes</option>
@@ -452,7 +452,7 @@
                                     <label class="form-label fw-semibold">
                                         <i class="bi bi-bell me-1"></i>Reminders
                                     </label>
-                                    <select class="form-select" x-model="eventData.reminders" multiple>
+                                    <select x-select class="form-select" x-model="eventData.reminders" multiple>
                                         <template x-for="reminder in reminderOptions" :key="reminder.value">
                                             <option :value="reminder.value" x-text="reminder.label"></option>
                                         </template>
@@ -476,7 +476,7 @@
                                      x-transition:enter-end="opacity-100 transform scale-100"
                                      class="mb-4">
                                     <label for="eventRecurrence" class="form-label fw-semibold">Repeat Pattern</label>
-                                    <select class="form-select" id="eventRecurrence" x-model="eventData.recurrence">
+                                    <select x-select class="form-select" id="eventRecurrence" x-model="eventData.recurrence">
                                         <option value="daily">Daily</option>
                                         <option value="weekly">Weekly</option>
                                         <option value="biweekly">Every 2 weeks</option>

@@ -17,7 +17,8 @@
     "bootstrap-icons": "^1.13.1",
     "dayjs": "^1.11.20",
     "playwright": "^1.61.1",
-    "sweetalert2": "^11.26.24"
+    "sweetalert2": "^11.26.24",
+    "tom-select": "^2.6.2"
   },
   "optionalDependencies": {
     "lucide": "^1.11.0"

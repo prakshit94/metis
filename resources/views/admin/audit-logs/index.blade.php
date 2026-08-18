@@ -107,7 +107,7 @@
                         </div>
                         
                         <!-- Event Filter -->
-                        <select class="form-select form-select-sm" 
+                        <select x-select class="form-select form-select-sm" 
                                 x-model="eventFilter" 
                                 @change="fetchData()"
                                 style="width: 150px;">
@@ -119,7 +119,7 @@
                         </select>
 
                         <!-- Items Per Page -->
-                        <select class="form-select form-select-sm"
+                        <select x-select class="form-select form-select-sm"
                                 x-model.number="itemsPerPage"
                                 @change="fetchData()"
                                 style="width: 120px;">

@@ -19,8 +19,11 @@ class UpdateUserRequest extends FormRequest
         if ($this->user()->can('user-edit')) {
             return true;
         }
-        
-        return $this->user()->id === (int) $this->route('user')?->id;
+
+        $routeUser = $this->route('user');
+        $targetUserId = is_object($routeUser) ? $routeUser->id : (int) $routeUser;
+
+        return $this->user()->id === $targetUserId;
     }
 
     /**
@@ -28,7 +31,8 @@ class UpdateUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $userId = $this->route('user')?->id;
+        $routeUser = $this->route('user');
+        $userId = is_object($routeUser) ? $routeUser->id : (int) $routeUser;
 
         return [
             'name' => ['sometimes', 'string', 'max:255'],
@@ -72,6 +76,12 @@ class UpdateUserRequest extends FormRequest
             'roles.*' => ['string', 'exists:roles,name'],
             'permissions' => ['sometimes', 'array'],
             'permissions.*' => ['string', 'exists:permissions,name'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date'],
+            'gender' => ['sometimes', 'nullable', 'string', 'in:Male,Female,Other,Prefer not to say'],
+            'blood_group' => ['sometimes', 'nullable', 'string', 'max:10'],
+            'designation' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'emergency_contact_name' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'emergency_contact_phone' => ['sometimes', 'nullable', 'string', 'regex:/^\d{10}$/'],
         ];
     }
 

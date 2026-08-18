@@ -91,7 +91,7 @@
                         </div>
                         
                         <!-- Status Filter -->
-                        <select class="form-select form-select-sm" 
+                        <select x-select class="form-select form-select-sm" 
                                 x-model="statusFilter" 
                                 @change="filterData()"
                                 style="width: 150px;">
@@ -272,7 +272,7 @@
 
                                     <div class="col-12">
                                         <label class="form-label fw-medium text-muted small">Parent Category</label>
-                                        <select class="form-select" x-model="form.parent_id">
+                                        <select x-select class="form-select" x-model="form.parent_id">
                                             <option value="">None (Root Category)</option>
                                             <template x-for="cat in parentCategories" :key="cat.id">
                                                 <option :value="String(cat.id)" x-text="cat.name" :selected="cat.id == form.parent_id"></option>
@@ -282,7 +282,7 @@
 
                                     <div class="col-12">
                                         <label class="form-label fw-medium text-muted small">Status</label>
-                                        <select class="form-select" x-model="form.status">
+                                        <select x-select class="form-select" x-model="form.status">
                                             <option value="active">Active</option>
                                             <option value="inactive">Inactive</option>
                                         </select>

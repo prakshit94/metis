@@ -51,7 +51,7 @@
                                         </div>
                                         <div class="col-sm-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Status *</label>
-                                            <select name="status" x-model="form.status" class="form-select form-select-sm fw-semibold" style="font-size: 12px;">
+                                            <select x-select name="status" x-model="form.status" class="form-select form-select-sm fw-semibold" style="font-size: 12px;">
                                                 <option value="active">Active</option>
                                                 <option value="inactive">Inactive</option>
                                                 <option value="suspended">Suspended</option>
@@ -59,7 +59,7 @@
                                         </div>
                                         <div class="col-sm-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Category</label>
-                                            <select name="category" x-model="form.category" class="form-select form-select-sm fw-semibold" style="font-size: 12px;">
+                                            <select x-select name="category" x-model="form.category" class="form-select form-select-sm fw-semibold" style="font-size: 12px;">
                                                 <option value="">— Select —</option>
                                                 <option value="individual">Individual</option>
                                                 <option value="business">Business</option>
@@ -231,7 +231,7 @@
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Land Area & Unit</label>
                                             <div class="input-group input-group-sm">
                                                 <input type="number" step="0.01" name="land_area" x-model="form.land_area" class="form-control w-50 fw-semibold" style="font-size: 12px;">
-                                                <select name="land_unit" x-model="form.land_unit" class="form-select w-50 fw-semibold" style="font-size: 12px;">
+                                                <select x-select name="land_unit" x-model="form.land_unit" class="form-select w-50 fw-semibold" style="font-size: 12px;">
                                                     <template x-for="unit in landUnits" :key="unit">
                                                         <option :value="unit" x-text="unit"></option>
                                                     </template>

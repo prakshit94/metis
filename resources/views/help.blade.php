@@ -489,7 +489,7 @@
                                                             </div>
                                                             <div class="col-md-6">
                                                                 <label class="form-label">Priority</label>
-                                                                <select class="form-select" x-model="supportTicket.priority" required>
+                                                                <select x-select class="form-select" x-model="supportTicket.priority" required>
                                                                     <option value="">Select Priority</option>
                                                                     <option value="low">Low - General Question</option>
                                                                     <option value="medium">Medium - Feature Issue</option>
@@ -499,7 +499,7 @@
                                                             </div>
                                                             <div class="col-md-6">
                                                                 <label class="form-label">Category</label>
-                                                                <select class="form-select" x-model="supportTicket.category" required>
+                                                                <select x-select class="form-select" x-model="supportTicket.category" required>
                                                                     <option value="">Select Category</option>
                                                                     <option value="technical">Technical Issue</option>
                                                                     <option value="billing">Billing & Account</option>
@@ -572,7 +572,7 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label">Category</label>
-                                                    <select class="form-select" x-model="featureRequest.category" required>
+                                                    <select x-select class="form-select" x-model="featureRequest.category" required>
                                                         <option value="">Select Category</option>
                                                         <option value="ui">User Interface</option>
                                                         <option value="analytics">Analytics</option>

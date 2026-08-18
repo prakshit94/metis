@@ -114,7 +114,7 @@
                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                             </div>
                             {{-- Status Filter --}}
-                            <select class="form-select form-select-sm"
+                            <select x-select class="form-select form-select-sm"
                                     x-model="statusFilter"
                                     @change="loadData()"
                                     style="width: 150px;">
@@ -326,7 +326,7 @@
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Source Warehouse <span class="text-danger">*</span></label>
-                                                <select class="form-select" x-model="form.from_warehouse_id" @change="fetchWarehouseStocks()" required :disabled="isEditing">
+                                                <select x-select class="form-select" x-model="form.from_warehouse_id" @change="fetchWarehouseStocks()" required :disabled="isEditing">
                                                     <option value="">Select source location...</option>
                                                     <template x-for="wh in warehouses" :key="wh.id">
                                                         <option :value="wh.id" x-text="wh.name"></option>
@@ -335,7 +335,7 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Destination Warehouse <span class="text-danger">*</span></label>
-                                                <select class="form-select" x-model="form.to_warehouse_id" required :disabled="isEditing">
+                                                <select x-select class="form-select" x-model="form.to_warehouse_id" required :disabled="isEditing">
                                                     <option value="">Select destination location...</option>
                                                     <template x-for="wh in warehouses.filter(w => w.id != form.from_warehouse_id)" :key="wh.id">
                                                         <option :value="wh.id" x-text="wh.name"></option>

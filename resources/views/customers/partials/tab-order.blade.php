@@ -30,7 +30,7 @@
             <div class="d-flex flex-wrap align-items-center gap-2">
 
                 {{-- Per Page --}}
-                <select x-model="productPerPage" @change="searchProducts(true)"
+                <select x-select x-model="productPerPage" @change="searchProducts(true)"
                     class="form-select form-select-sm fw-bold w-auto shadow-sm" style="font-size: 11px;">
                     <option value="10">10 / page</option>
                     <option value="15" selected>15 / page</option>
@@ -50,7 +50,7 @@
                 </div>
 
                 {{-- Category Filter --}}
-                <select x-model="productCategoryFilter" @change="searchProducts(true)"
+                <select x-select x-model="productCategoryFilter" @change="searchProducts(true)"
                     class="form-select form-select-sm fw-bold w-auto shadow-sm" style="font-size: 11px; min-width: 140px;">
                     <option value="">All Categories</option>
                     @foreach($categories as $cat)

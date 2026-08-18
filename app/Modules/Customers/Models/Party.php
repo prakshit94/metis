@@ -62,11 +62,13 @@ class Party extends Model implements Auditable
         'created_by',
         'updated_by',
         'orders_count',
+        'wallet_balance',
     ];
 
     protected $casts = [
         'credit_limit' => 'decimal:2',
         'outstanding_balance' => 'decimal:2',
+        'wallet_balance' => 'decimal:2',
         'land_area' => 'decimal:2',
         'credit_days' => 'integer',
         'orders_count' => 'integer',
@@ -100,6 +102,11 @@ class Party extends Model implements Auditable
     public function callLogs(): HasMany
     {
         return $this->hasMany(\App\Models\CallLog::class, 'customer_id');
+    }
+
+    public function walletTransactions(): HasMany
+    {
+        return $this->hasMany(WalletTransaction::class, 'party_id');
     }
 
     public function getNameAttribute(): string

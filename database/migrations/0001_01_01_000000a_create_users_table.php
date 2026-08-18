@@ -24,6 +24,10 @@ return new class extends Migration
             $table->foreignId('department_id')->nullable()->constrained('departments')->nullOnDelete();
             $table->foreignId('manager_id')->nullable()->constrained('users')->nullOnDelete();
             $table->enum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern'])->default('Full-time');
+            $table->date('date_of_birth')->nullable();
+            $table->enum('gender', ['Male', 'Female', 'Other', 'Prefer not to say'])->nullable();
+            $table->string('blood_group', 10)->nullable();
+            $table->string('designation')->nullable();
             
             // Address details
             $table->string('address_line_1')->nullable();
@@ -36,6 +40,9 @@ return new class extends Migration
             $table->string('city')->nullable();
             $table->string('state')->nullable();
             $table->string('pincode', 20)->nullable();
+            
+            $table->string('emergency_contact_name')->nullable();
+            $table->string('emergency_contact_phone')->nullable();
 
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

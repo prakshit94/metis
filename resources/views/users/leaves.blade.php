@@ -244,7 +244,7 @@
                 <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
                 
                 <div class="form-floating mb-3">
-                    <select class="form-select" id="leaveUser" x-model="form.user_id" required>
+                    <select x-select class="form-select" id="leaveUser" x-model="form.user_id" required>
                         <option value="">Select Employee</option>
                         <template x-for="user in users" :key="user.id">
                             <option :value="user.id" x-text="user.name"></option>
@@ -254,7 +254,7 @@
                 </div>
                 
                 <div class="form-floating mb-3">
-                    <select class="form-select" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
+                    <select x-select class="form-select" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
                         <option value="">Select Leave Type</option>
                         <template x-for="balance in userBalances" :key="balance.id">
                             <option :value="balance.leave_type" 
@@ -289,7 +289,7 @@
                 </div>
 
                 <div class="form-floating mb-3" x-show="editingId">
-                    <select class="form-select" id="leaveStatus" x-model="form.status">
+                    <select x-select class="form-select" id="leaveStatus" x-model="form.status">
                         <option value="Pending">Pending</option>
                         <option value="Approved">Approved</option>
                         <option value="Rejected">Rejected</option>
@@ -323,7 +323,7 @@
                 <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
                 
                 <div class="form-floating mb-3">
-                    <select class="form-select" x-model="form.user_id" required :disabled="editingId">
+                    <select x-select class="form-select" x-model="form.user_id" required :disabled="editingId">
                         <option value="">Select Employee</option>
                         <template x-for="user in users" :key="user.id">
                             <option :value="user.id" x-text="user.name"></option>
@@ -333,7 +333,7 @@
                 </div>
 
                 <div class="form-floating mb-3">
-                    <select class="form-select" x-model="form.leave_type" required :disabled="editingId">
+                    <select x-select class="form-select" x-model="form.leave_type" required :disabled="editingId">
                         <option value="Sick">Sick Leave</option>
                         <option value="Casual">Casual Leave</option>
                         <option value="Annual">Annual Leave</option>
@@ -394,7 +394,7 @@
                 </div>
 
                 <div class="form-floating mb-3">
-                    <select class="form-select" x-model="form.type" required>
+                    <select x-select class="form-select" x-model="form.type" required>
                         <option value="National">National</option>
                         <option value="Optional">Optional</option>
                         <option value="Company">Company</option>

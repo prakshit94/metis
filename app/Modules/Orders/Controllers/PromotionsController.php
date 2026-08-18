@@ -99,6 +99,8 @@ class PromotionsController extends Controller implements HasMiddleware
             'expiry_date' => 'nullable|date',
             'usage_limit' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
+            'cashback_percent' => 'nullable|numeric|min:0|max:100',
+            'cashback_fixed' => 'nullable|numeric|min:0',
         ]);
 
         if (isset($data['applicable_categories'])) {
@@ -111,6 +113,8 @@ class PromotionsController extends Controller implements HasMiddleware
         $data['value'] = isset($data['value']) && $data['value'] !== '' ? (float) $data['value'] : 0;
         $data['min_spend'] = isset($data['min_spend']) && $data['min_spend'] !== '' ? (float) $data['min_spend'] : 0;
         $data['max_discount'] = isset($data['max_discount']) && $data['max_discount'] !== '' ? (float) $data['max_discount'] : null;
+        $data['cashback_percent'] = isset($data['cashback_percent']) && $data['cashback_percent'] !== '' ? (float) $data['cashback_percent'] : null;
+        $data['cashback_fixed'] = isset($data['cashback_fixed']) && $data['cashback_fixed'] !== '' ? (float) $data['cashback_fixed'] : null;
 
         $data['code'] = strtoupper(trim($data['code']));
         $data['status'] = ($data['is_active'] ?? true) ? 'active' : 'inactive';
@@ -140,6 +144,8 @@ class PromotionsController extends Controller implements HasMiddleware
             'expiry_date' => 'nullable|date',
             'usage_limit' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
+            'cashback_percent' => 'nullable|numeric|min:0|max:100',
+            'cashback_fixed' => 'nullable|numeric|min:0',
         ]);
 
         if (array_key_exists('applicable_categories', $data)) {
@@ -157,6 +163,12 @@ class PromotionsController extends Controller implements HasMiddleware
         }
         if (array_key_exists('max_discount', $data)) {
             $data['max_discount'] = $data['max_discount'] !== '' && $data['max_discount'] !== null ? (float) $data['max_discount'] : null;
+        }
+        if (array_key_exists('cashback_percent', $data)) {
+            $data['cashback_percent'] = $data['cashback_percent'] !== '' && $data['cashback_percent'] !== null ? (float) $data['cashback_percent'] : null;
+        }
+        if (array_key_exists('cashback_fixed', $data)) {
+            $data['cashback_fixed'] = $data['cashback_fixed'] !== '' && $data['cashback_fixed'] !== null ? (float) $data['cashback_fixed'] : null;
         }
 
         if (isset($data['code'])) {
@@ -201,11 +213,11 @@ class PromotionsController extends Controller implements HasMiddleware
         $action = $data['action'];
 
         if ($action === 'delete') {
-            Coupon::whereIn('id', $ids)->get()->each->delete();
+            Coupon::whereIn('id', $ids)->delete();
         } elseif ($action === 'activate') {
-            Coupon::whereIn('id', $ids)->get()->each->update(['is_active' => true, 'status' => 'active']);
+            Coupon::whereIn('id', $ids)->update(['is_active' => true, 'status' => 'active']);
         } elseif ($action === 'deactivate') {
-            Coupon::whereIn('id', $ids)->get()->each->update(['is_active' => false, 'status' => 'inactive']);
+            Coupon::whereIn('id', $ids)->update(['is_active' => false, 'status' => 'inactive']);
         }
 
         return response()->json(['message' => count($ids).' coupon(s) '.$action.'d successfully.']);
@@ -261,6 +273,8 @@ class PromotionsController extends Controller implements HasMiddleware
             'ends_at' => 'nullable|date|after_or_equal:starts_at',
             'priority' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
+            'cashback_percent' => 'nullable|numeric|min:0|max:100',
+            'cashback_fixed' => 'nullable|numeric|min:0',
         ]);
 
         if (isset($data['applicable_categories'])) {
@@ -270,6 +284,8 @@ class PromotionsController extends Controller implements HasMiddleware
         $data['value'] = isset($data['value']) && $data['value'] !== '' ? (float) $data['value'] : 0;
         $data['min_spend'] = isset($data['min_spend']) && $data['min_spend'] !== '' ? (float) $data['min_spend'] : 0;
         $data['max_discount'] = isset($data['max_discount']) && $data['max_discount'] !== '' ? (float) $data['max_discount'] : null;
+        $data['cashback_percent'] = isset($data['cashback_percent']) && $data['cashback_percent'] !== '' ? (float) $data['cashback_percent'] : null;
+        $data['cashback_fixed'] = isset($data['cashback_fixed']) && $data['cashback_fixed'] !== '' ? (float) $data['cashback_fixed'] : null;
         
         $productIds = $request->input('product_ids', []);
         
@@ -312,6 +328,8 @@ class PromotionsController extends Controller implements HasMiddleware
             'ends_at' => 'nullable|date',
             'priority' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
+            'cashback_percent' => 'nullable|numeric|min:0|max:100',
+            'cashback_fixed' => 'nullable|numeric|min:0',
         ]);
 
         if (array_key_exists('applicable_categories', $data)) {
@@ -335,6 +353,12 @@ class PromotionsController extends Controller implements HasMiddleware
         }
         if (array_key_exists('max_discount', $data)) {
             $data['max_discount'] = isset($data['max_discount']) && $data['max_discount'] !== '' ? (float) $data['max_discount'] : null;
+        }
+        if (array_key_exists('cashback_percent', $data)) {
+            $data['cashback_percent'] = $data['cashback_percent'] !== '' && $data['cashback_percent'] !== null ? (float) $data['cashback_percent'] : null;
+        }
+        if (array_key_exists('cashback_fixed', $data)) {
+            $data['cashback_fixed'] = $data['cashback_fixed'] !== '' && $data['cashback_fixed'] !== null ? (float) $data['cashback_fixed'] : null;
         }
 
         $data['updated_by'] = auth()->id();
@@ -370,11 +394,11 @@ class PromotionsController extends Controller implements HasMiddleware
         $action = $data['action'];
 
         if ($action === 'delete') {
-            Offer::whereIn('id', $ids)->get()->each->delete();
+            Offer::whereIn('id', $ids)->delete();
         } elseif ($action === 'activate') {
-            Offer::whereIn('id', $ids)->get()->each->update(['is_active' => true]);
+            Offer::whereIn('id', $ids)->update(['is_active' => true]);
         } elseif ($action === 'deactivate') {
-            Offer::whereIn('id', $ids)->get()->each->update(['is_active' => false]);
+            Offer::whereIn('id', $ids)->update(['is_active' => false]);
         }
 
         return response()->json(['message' => count($ids).' offer(s) '.$action.'d successfully.']);
