@@ -52,7 +52,7 @@
 &lt;/button&gt;
 
 &lt;!-- Modal --&gt;
-&lt;div class="modal fade" id="basicModal" tabindex="-1" aria-labelledby="basicModalLabel" aria-hidden="true"&gt;
+&lt;div class="modal fade" id="basicModal" aria-labelledby="basicModalLabel" aria-hidden="true"&gt;
   &lt;div class="modal-dialog"&gt;
     &lt;div class="modal-content"&gt;
       &lt;div class="modal-header"&gt;
@@ -197,7 +197,7 @@
                                         </button>
                                     </div>
                                     <div class="element-code-block">
-                                        <pre><code class="language-html">&lt;div class="modal fade" id="formModal" tabindex="-1"&gt;
+                                        <pre><code class="language-html">&lt;div class="modal fade" id="formModal"&gt;
   &lt;div class="modal-dialog"&gt;
     &lt;div class="modal-content"&gt;
       &lt;div class="modal-header"&gt;
@@ -250,7 +250,7 @@
 &lt;/button&gt;
 
 &lt;!-- Modal --&gt;
-&lt;div class="modal fade" id="staticBackdropModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"&gt;
+&lt;div class="modal fade" id="staticBackdropModal" data-bs-backdrop="static" data-bs-keyboard="false"&gt;
   &lt;div class="modal-dialog"&gt;
     &lt;div class="modal-content"&gt;
       &lt;div class="modal-header"&gt;
@@ -364,7 +364,7 @@
 @endsection
 
 @push('modals')
-<div class="modal fade" id="basicModal" tabindex="-1" aria-labelledby="basicModalLabel" aria-hidden="true">
+<div class="modal fade" id="basicModal" aria-labelledby="basicModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -381,7 +381,7 @@
             </div>
         </div>
 
-<div class="modal fade" id="smallModal" tabindex="-1" aria-labelledby="smallModalLabel" aria-hidden="true">
+<div class="modal fade" id="smallModal" aria-labelledby="smallModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
@@ -394,7 +394,7 @@
             </div>
         </div>
 
-<div class="modal fade" id="largeModal" tabindex="-1" aria-labelledby="largeModalLabel" aria-hidden="true">
+<div class="modal fade" id="largeModal" aria-labelledby="largeModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -407,7 +407,7 @@
             </div>
         </div>
 
-<div class="modal fade" id="extraLargeModal" tabindex="-1" aria-labelledby="extraLargeModalLabel" aria-hidden="true">
+<div class="modal fade" id="extraLargeModal" aria-labelledby="extraLargeModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
@@ -420,7 +420,7 @@
             </div>
         </div>
 
-<div class="modal fade" id="fullscreenModal" tabindex="-1" aria-labelledby="fullscreenModalLabel" aria-hidden="true">
+<div class="modal fade" id="fullscreenModal" aria-labelledby="fullscreenModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-fullscreen">
             <div class="modal-content">
                 <div class="modal-header">
@@ -436,7 +436,7 @@
             </div>
         </div>
 
-<div class="modal fade" id="fullscreenSmModal" tabindex="-1" aria-labelledby="fullscreenSmModalLabel" aria-hidden="true">
+<div class="modal fade" id="fullscreenSmModal" aria-labelledby="fullscreenSmModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-fullscreen-sm-down">
             <div class="modal-content">
                 <div class="modal-header">
@@ -452,7 +452,7 @@
             </div>
         </div>
 
-<div class="modal fade" id="centeredModal" tabindex="-1" aria-labelledby="centeredModalLabel" aria-hidden="true">
+<div class="modal fade" id="centeredModal" aria-labelledby="centeredModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -469,7 +469,7 @@
             </div>
         </div>
 
-<div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalLabel" aria-hidden="true">
+<div class="modal fade" id="formModal" aria-labelledby="formModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -495,7 +495,7 @@
             </div>
         </div>
 
-<div class="modal fade" id="staticBackdropModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropModalLabel" aria-hidden="true">
+<div class="modal fade" id="staticBackdropModal" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="staticBackdropModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -514,7 +514,7 @@
 @endpush
 
 @push('scripts')
-<script type="module" src="./scripts/main.js"></script>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
 
@@ -551,10 +551,8 @@
                 Prism.highlightAll();
             }
         }
-            }
 
             // Apply syntax highlighting
-            initializeSyntaxHighlighting();
-        });
+            document.addEventListener('DOMContentLoaded', initializeSyntaxHighlighting);
     </script>
 @endpush

@@ -12,6 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->api(prepend: [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+        ]);
+
         // Alias Spatie's middleware for convenient use in route definitions
         $middleware->alias([
             'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
@@ -20,5 +25,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->renderable(function (\Spatie\Permission\Exceptions\UnauthorizedException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'You do not have the required authorization.'], 403);
+            }
+            
+            if (auth()->check()) {
+                return redirect()->route('dashboard')->with('error', 'You do not have the required authorization.');
+            }
+            
+            return redirect()->route('login')->with('error', 'You do not have the required authorization.');
+        });
     })->create();

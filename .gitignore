@@ -54,3 +54,7 @@ TODO.md
 # Build output
 dist-modern/
 dist/
+/public/build
+/storage/framework/views/*
+test_dropdown.js
+/storage/app/public/products/*

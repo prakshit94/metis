@@ -13,12 +13,16 @@
             <p class="text-muted mb-0">Monitor and adjust real-time stock levels per warehouse</p>
         </div>
         <div class="d-flex gap-2">
+            @can('product-export')
             <button type="button" class="btn btn-outline-secondary" @click="exportStock()">
                 <i class="bi bi-download me-2"></i>Export
             </button>
+            @endcan
+            @can('stockmanagement-edit')
             <button type="button" class="btn btn-primary" @click.prevent="openAdjustModal(null)">
                 <i class="bi bi-plus-lg me-2"></i>Set Stock
             </button>
+            @endcan
         </div>
     </div>
 
@@ -106,8 +110,8 @@
                     <div class="col">
                         <h2 class="h5 card-title mb-0">Stock Levels</h2>
                     </div>
-                    <div class="col-auto">
-                        <div class="d-flex gap-2">
+                    <div class="col-auto mt-3 mt-md-0">
+                        <div class="d-flex flex-wrap gap-2 justify-content-end">
                             {{-- Search --}}
                             <div class="position-relative">
                                 <input type="search"
@@ -119,17 +123,17 @@
                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                             </div>
                             {{-- Warehouse Filter --}}
-                            <select class="form-select form-select-sm"
+                            <select x-select class="form-select form-select-sm"
                                     x-model="warehouseFilter"
                                     @change="loadData()"
                                     style="width: 170px;">
                                 <option value="">All Warehouses</option>
                                 <template x-for="wh in warehouses" :key="wh.id">
-                                    <option :value="wh.id" x-text="wh.name"></option>
+                                    <option :value="wh.id" x-text="wh.name + (wh.is_default ? ' (Default)' : '')"></option>
                                 </template>
                             </select>
                             {{-- Stock Level Filter --}}
-                            <select class="form-select form-select-sm"
+                            <select x-select class="form-select form-select-sm"
                                     x-model="stockLevelFilter"
                                     @change="loadData()"
                                     style="width: 150px;">
@@ -155,16 +159,18 @@
                             </span>
                         </div>
                         <div class="d-flex gap-2">
+                            @can('product-export')
                             <button class="btn btn-sm btn-secondary" @click="exportStock(true)">
                                 <i class="bi bi-download me-1"></i>Export Selected
                             </button>
+                            @endcan
                         </div>
                     </div>
                 </div>
 
                 {{-- Table --}}
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                    <table class="table table-hover align-middle mb-0 text-nowrap">
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 50px;" class="ps-3">
@@ -173,19 +179,24 @@
                                            @change="$event.isTrusted && toggleAll($event.target.checked)"
                                            :checked="selectedItems.length === paginatedItems.length && paginatedItems.length > 0">
                                 </th>
-                                <th @click="sortBy('product_id')" class="sortable">Product</th>
-                                <th @click="sortBy('warehouse_id')" class="sortable">Warehouse</th>
-                                <th @click="sortBy('quantity')" class="sortable text-center">On Hand</th>
-                                <th class="text-center">Reserved</th>
-                                <th @click="sortBy('available')" class="sortable text-center">Available</th>
-                                <th class="text-center">In Transit</th>
-                                <th style="width: 120px;" class="text-end pe-4">Actions</th>
+                                <th @click="sortBy('product_id')" class="sortable"><i class="bi bi-box-seam me-1 text-secondary"></i>Product</th>
+                                <th @click="sortBy('warehouse_id')" class="sortable"><i class="bi bi-buildings-fill me-1 text-secondary"></i>Warehouse</th>
+                                <th @click="sortBy('quantity')" class="sortable text-center"><i class="bi bi-inboxes me-1 text-secondary"></i>In Stock</th>
+                                <th @click="sortBy('available')" class="sortable text-center"><i class="bi bi-check-circle me-1 text-secondary"></i>Available For Sell</th>
+                                <th @click="sortBy('pending_qty')" class="sortable text-center"><i class="bi bi-hourglass-split me-1 text-secondary"></i>Order Placed</th>
+                                <th @click="sortBy('reserved_qty')" class="sortable text-center"><i class="bi bi-bookmark-dash me-1 text-secondary"></i>Reserved</th>
+                                <th @click="sortBy('dispatched_qty')" class="sortable text-center"><i class="bi bi-send-check me-1 text-secondary"></i>Dispatched</th>
+                                <th @click="sortBy('delivered_qty')" class="sortable text-center"><i class="bi bi-box2-heart me-1 text-secondary"></i>Delivered</th>
+                                <th @click="sortBy('return_requested_qty')" class="sortable text-center"><i class="bi bi-arrow-return-left me-1 text-secondary"></i>Return Req</th>
+                                <th @click="sortBy('in_transit_qty')" class="sortable text-center"><i class="bi bi-truck me-1 text-secondary"></i>In Transit</th>
+                                <th @click="sortBy('damaged_qty')" class="sortable text-center"><i class="bi bi-exclamation-octagon me-1 text-secondary"></i>Bad Qty</th>
+                                <th style="width: 120px;" class="text-end pe-4"><i class="bi bi-lightning-charge me-1 text-secondary"></i>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <template x-if="paginatedItems.length === 0">
                                 <tr>
-                                    <td colspan="8" class="text-center py-5 text-muted">
+                                    <td colspan="12" class="text-center py-5 text-muted">
                                         <div x-show="isLoading" class="spinner-border text-primary" role="status">
                                             <span class="visually-hidden">Loading...</span>
                                         </div>
@@ -222,30 +233,50 @@
                                     <td class="text-center">
                                         <span class="badge stock-badge"
                                               :class="{
-                                                  'in-stock':     parseFloat(item.quantity || 0) > 5,
-                                                  'low-stock':    parseFloat(item.quantity || 0) > 0 && parseFloat(item.quantity || 0) <= 5,
-                                                  'out-of-stock': parseFloat(item.quantity || 0) === 0
+                                                  'in-stock':     parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > (item.product?.min_stock_level ?? 5),
+                                                  'low-stock':    parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > 0 && parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= (item.product?.min_stock_level ?? 5),
+                                                  'out-of-stock': parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= 0
                                               }"
-                                              x-text="parseFloat(item.quantity || 0).toFixed(2) + ' units'">
+                                              x-text="parseFloat(item.quantity || 0) + ' units'">
                                         </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge stock-badge"
+                                              :class="{
+                                                  'in-stock':     (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 5,
+                                                  'low-stock':    (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 0 && (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 5,
+                                                  'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 0
+                                              }"
+                                              x-text="parseFloat(Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)).toFixed(4))">
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"
+                                              x-text="parseFloat(item.pending_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-warning-subtle text-warning border border-warning-subtle"
                                               x-text="parseFloat(item.reserved_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge stock-badge"
-                                              :class="{
-                                                  'in-stock':     (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)) > 5,
-                                                  'low-stock':    (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)) > 0 && (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)) <= 5,
-                                                  'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)) <= 0
-                                              }"
-                                              x-text="Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)).toFixed(2)">
-                                        </span>
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle"
+                                              x-text="parseFloat(item.dispatched_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle"
+                                              x-text="parseFloat(item.delivered_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.return_requested_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
                                               x-text="parseFloat(item.in_transit_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle"
+                                              x-text="parseFloat(item.damaged_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-end pe-4">
                                         <div class="dropdown">
@@ -255,16 +286,20 @@
                                                 <i class="bi bi-three-dots"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                                @can('stockmanagement-edit')
                                                 <li>
                                                     <a class="dropdown-item" href="#" @click.prevent="openAdjustModal(item)">
                                                         <i class="bi bi-pencil me-2"></i>Set Stock Level
                                                     </a>
                                                 </li>
+                                                @endcan
+                                                @can('stocktransfer-create')
                                                 <li>
                                                     <a class="dropdown-item" href="{{ route('inventory.stock-transfers') }}">
                                                         <i class="bi bi-arrow-left-right me-2"></i>Create Transfer
                                                     </a>
                                                 </li>
+                                                @endcan
                                             </ul>
                                         </div>
                                     </td>
@@ -370,7 +405,7 @@
                                             </div>
                                             <div class="col-12" x-show="!isEditing">
                                                 <label class="form-label fw-medium text-muted small">Warehouse <span class="text-danger">*</span></label>
-                                                <select class="form-select" x-model="adjustForm.warehouseId" @change="fetchCurrentStock()" required>
+                                                <select x-select class="form-select" x-model="adjustForm.warehouseId" @change="fetchCurrentStock()" required>
                                                     <option value="">Select warehouse...</option>
                                                     <template x-for="wh in warehouses" :key="wh.id">
                                                         <option :value="wh.id" x-text="wh.name"></option>
@@ -388,6 +423,14 @@
                                             <div class="col-6">
                                                 <label class="form-label fw-medium text-muted small">New Quantity <span class="text-danger">*</span></label>
                                                 <input type="number" class="form-control" x-model.number="adjustForm.newQty" min="0" step="0.01" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label fw-medium text-muted small">Current Bad Qty</label>
+                                                <input type="number" class="form-control bg-body-secondary" :value="adjustForm.currentDamagedQty" disabled>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label fw-medium text-muted small">New Bad Qty <span class="text-danger">*</span></label>
+                                                <input type="number" class="form-control" x-model.number="adjustForm.newDamagedQty" min="0" step="0.01" required>
                                             </div>
                                         </div>
                                     </div>

@@ -1,0 +1,21 @@
+// ==========================================================================
+// Warehouses Page Styles
+// ==========================================================================
+
+.warehouses-management {
+  .stats-card {
+    @include stats-card-hover();
+  }
+
+  .stats-icon {
+    @include stats-icon();
+  }
+
+  .card {
+    @include admin-card();
+  }
+
+  .card-header {
+    @include admin-card-header();
+  }
+}

@@ -34,6 +34,10 @@ import { createSearchComponent } from './utils/search-component.js';
 import Alpine from 'alpinejs';
 window.Alpine = Alpine;
 
+// Import SweetAlert2
+import Swal from 'sweetalert2';
+window.Swal = Swal;
+
 // Import styles (Bootstrap Icons are included in SCSS)
 import '../scss/main.scss';
 
@@ -148,6 +152,9 @@ class AdminApp {
       case 'users':
         await this.initUsersPage();
         break;
+      case 'attendances':
+        await this.initAttendancesPage();
+        break;
       case 'customers':
         await this.initCustomersPage();
         break;
@@ -159,6 +166,9 @@ class AdminApp {
         break;
       case 'analytics':
         await this.initAnalyticsPage();
+        break;
+      case 'order.reasons':
+        await this.initOrderReasonsPage();
         break;
       case 'forms':
         await this.initFormsPage();
@@ -179,6 +189,18 @@ class AdminApp {
       case 'orders':
         await this.initOrdersPage();
         break;
+      case 'returns':
+        await this.initReturnsPage();
+        break;
+      case 'invoices':
+        await this.initInvoicesPage();
+        break;
+      case 'payments':
+        await this.initPaymentsPage();
+        break;
+      case 'refunds':
+        await this.initRefundsPage();
+        break;
       case 'reports':
         await this.initReportsPage();
         break;
@@ -196,6 +218,12 @@ class AdminApp {
         break;
       case 'files':
         await this.initFilesPage();
+        break;
+      case 'shipping-shipments':
+        await this.initShippingShipmentsPage();
+        break;
+      case 'shipping-services':
+        await this.initShippingServicesPage();
         break;
       case 'help':
         await this.initHelpPage();
@@ -225,6 +253,15 @@ class AdminApp {
       console.log('👥 Users page script loaded successfully');
     } catch (error) {
       console.error('Failed to load users page script:', error);
+    }
+  }
+
+  async initAttendancesPage() {
+    try {
+      await import('./components/attendances.js');
+      console.log('🕒 Attendances page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load attendances page script:', error);
     }
   }
 
@@ -264,17 +301,26 @@ class AdminApp {
     }
   }
 
+  async initOrderReasonsPage() {
+    try {
+      await import('./components/order-reasons.js');
+      console.log('📋 Order Reasons page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load order reasons page script:', error);
+    }
+  }
 
-  async initCatalogBrands() { try { const m = await import('./components/catalog/brands.js'); window.Alpine.data('brandsTable', m.default); console.log('Loaded brands'); } catch(e) { console.error(e); } }
-  async initCatalogCategories() { try { const m = await import('./components/catalog/categories.js'); window.Alpine.data('categoriesTable', m.default); console.log('Loaded categories'); } catch(e) { console.error(e); } }
-  async initCatalogUom() { try { const m = await import('./components/catalog/uom.js'); window.Alpine.data('uomTable', m.default); console.log('Loaded uom'); } catch(e) { console.error(e); } }
-  async initCatalogTaxRates() { try { const m = await import('./components/catalog/tax-rates.js'); window.Alpine.data('taxRatesTable', m.default); console.log('Loaded tax rates'); } catch(e) { console.error(e); } }
-  async initCatalogHsnCodes() { try { const m = await import('./components/catalog/hsn-codes.js'); window.Alpine.data('hsnCodesTable', m.default); console.log('Loaded hsn codes'); } catch(e) { console.error(e); } }
-  async initCatalogWarehouses() { try { const m = await import('./components/catalog/warehouses.js'); window.Alpine.data('warehousesTable', m.default); console.log('Loaded warehouses'); } catch(e) { console.error(e); } }
-  async initCatalogAttributes() { try { const m = await import('./components/catalog/attributes.js'); window.Alpine.data('attributesTable', m.default); console.log('Loaded attributes'); } catch(e) { console.error(e); } }
-  async initInventoryStockManagement() { try { const m = await import('./components/inventory/stock-management.js'); window.Alpine.data('stockManagement', m.default); console.log('Loaded stock management'); } catch(e) { console.error(e); } }
-  async initInventoryStockTransfers() { try { const m = await import('./components/inventory/stock-transfers.js'); window.Alpine.data('stockTransfers', m.default); console.log('Loaded stock transfers'); } catch(e) { console.error(e); } }
-  async initInventoryAdjustments() { try { const m = await import('./components/inventory/adjustments.js'); window.Alpine.data('inventoryAdjustments', m.default); console.log('Loaded inventory adjustments'); } catch(e) { console.error(e); } }
+
+  async initCatalogBrands() { try { const m = await import('./components/catalog/brands.js'); window.Alpine.data('brandsTable', m.default); console.log('Loaded brands'); } catch (e) { console.error(e); } }
+  async initCatalogCategories() { try { const m = await import('./components/catalog/categories.js'); window.Alpine.data('categoriesTable', m.default); console.log('Loaded categories'); } catch (e) { console.error(e); } }
+  async initCatalogUom() { try { const m = await import('./components/catalog/uom.js'); window.Alpine.data('uomTable', m.default); console.log('Loaded uom'); } catch (e) { console.error(e); } }
+  async initCatalogTaxRates() { try { const m = await import('./components/catalog/tax-rates.js'); window.Alpine.data('taxRatesTable', m.default); console.log('Loaded tax rates'); } catch (e) { console.error(e); } }
+  async initCatalogHsnCodes() { try { const m = await import('./components/catalog/hsn-codes.js'); window.Alpine.data('hsnCodesTable', m.default); console.log('Loaded hsn codes'); } catch (e) { console.error(e); } }
+  async initCatalogWarehouses() { try { const m = await import('./components/catalog/warehouses.js'); window.Alpine.data('warehousesTable', m.default); console.log('Loaded warehouses'); } catch (e) { console.error(e); } }
+  async initCatalogAttributes() { try { const m = await import('./components/catalog/attributes.js'); window.Alpine.data('attributesTable', m.default); console.log('Loaded attributes'); } catch (e) { console.error(e); } }
+  async initInventoryStockManagement() { try { const m = await import('./components/inventory/stock-management.js'); window.Alpine.data('stockManagement', m.default); console.log('Loaded stock management'); } catch (e) { console.error(e); } }
+  async initInventoryStockTransfers() { try { const m = await import('./components/inventory/stock-transfers.js'); window.Alpine.data('stockTransfers', m.default); console.log('Loaded stock transfers'); } catch (e) { console.error(e); } }
+  async initInventoryAdjustments() { try { const m = await import('./components/inventory/adjustments.js'); window.Alpine.data('inventoryAdjustments', m.default); console.log('Loaded inventory adjustments'); } catch (e) { console.error(e); } }
 
   async initProductsPage() {
     try {
@@ -291,6 +337,42 @@ class AdminApp {
       console.log('🛒 Orders page script loaded successfully');
     } catch (error) {
       console.error('Failed to load orders page script:', error);
+    }
+  }
+
+  async initReturnsPage() {
+    try {
+      await import('./components/returns.js');
+      console.log('↩️ Returns page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load returns page script:', error);
+    }
+  }
+
+  async initInvoicesPage() {
+    try {
+      await import('./components/invoices.js');
+      console.log('🧾 Invoices page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load invoices page script:', error);
+    }
+  }
+
+  async initPaymentsPage() {
+    try {
+      await import('./components/payments.js');
+      console.log('💳 Payments page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load payments page script:', error);
+    }
+  }
+
+  async initRefundsPage() {
+    try {
+      await import('./components/refunds.js');
+      console.log('💵 Refunds page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load refunds page script:', error);
     }
   }
 
@@ -363,6 +445,26 @@ class AdminApp {
       console.log('🧩 Elements page script loaded successfully');
     } catch (error) {
       console.error('Failed to load elements page script:', error);
+    }
+  }
+
+  async initShippingShipmentsPage() {
+    try {
+      const m = await import('./components/shipping/shipments.js');
+      window.Alpine.data('shipmentsTable', m.default);
+      console.log('🚚 Shipments page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load shipments page script:', error);
+    }
+  }
+
+  async initShippingServicesPage() {
+    try {
+      const m = await import('./components/shipping/services.js');
+      window.Alpine.data('shippingServices', m.default);
+      console.log('⚙️ Shipping Services page script loaded successfully');
+    } catch (error) {
+      console.error('Failed to load shipping services page script:', error);
     }
   }
 
@@ -464,47 +566,52 @@ class AdminApp {
       }
     }
 
-    // Handle submenu toggle persistence
-    document.addEventListener('click', (e) => {
-      const toggleButton = e.target.closest('[data-bs-toggle="collapse"]');
-      if (toggleButton) {
-        const targetId = toggleButton.getAttribute('data-bs-target');
-        const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
-        localStorage.setItem(`submenu-${targetId}`, (!isExpanded).toString());
-      }
-    });
 
-    // Restore submenu states from localStorage
-    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(toggle => {
-      const targetId = toggle.getAttribute('data-bs-target');
-      const savedState = localStorage.getItem(`submenu-${targetId}`);
 
-      if (savedState === 'true' && !isElementsPage) {
-        const targetElement = document.querySelector(targetId);
-        if (targetElement) {
-          targetElement.classList.add('show');
-          toggle.setAttribute('aria-expanded', 'true');
-        }
-      }
-    });
+
   }
 
   // Initialize Alpine.js
   initAlpine() {
     // Shared navbar search — uses the factory from search-component.js
     const navbarPages = [
-      { title: 'Dashboard',  url: '/',             type: 'page' },
-      { title: 'Users',      url: '/users',         type: 'page' },
-      { title: 'Analytics',  url: '/analytics',     type: 'page' },
-      { title: 'Products',   url: '/products',      type: 'page' },
-      { title: 'Orders',     url: '/orders',        type: 'page' },
-      { title: 'Reports',    url: '/reports',       type: 'page' },
-      { title: 'Messages',   url: '/messages',      type: 'page' },
-      { title: 'Calendar',   url: '/calendar',      type: 'page' },
-      { title: 'Files',      url: '/files',         type: 'page' },
-      { title: 'Settings',   url: '/settings',      type: 'page' },
-      { title: 'Security',   url: '/security',      type: 'page' },
-      { title: 'Help',       url: '/help',          type: 'page' },
+      { title: 'Dashboard', url: '/', type: 'page' },
+      { title: 'Analytics', url: '/analytics', type: 'page' },
+      { title: 'Reports', url: '/reports', type: 'page' },
+      { title: 'Orders', url: '/orders', type: 'page' },
+      { title: 'Coupon Codes', url: '/promotions/coupons', type: 'page' },
+      { title: 'Offers & Deals', url: '/promotions/offers', type: 'page' },
+      { title: 'Invoices', url: '/invoices', type: 'page' },
+      { title: 'Payments', url: '/payments', type: 'page' },
+      { title: 'Refunds', url: '/refunds', type: 'page' },
+      { title: 'Returns', url: '/returns', type: 'page' },
+      { title: 'Shipments & Tracking', url: '/shipping/shipments', type: 'page' },
+      { title: 'Shipping Services', url: '/shipping/services', type: 'page' },
+      { title: 'Warehouses', url: '/catalog/warehouses', type: 'page' },
+      { title: 'Stock Levels', url: '/inventory/stock-management', type: 'page' },
+      { title: 'Stock Transfers', url: '/inventory/stock-transfers', type: 'page' },
+      { title: 'Adjustments', url: '/inventory/adjustments', type: 'page' },
+      { title: 'Products', url: '/catalog/products', type: 'page' },
+      { title: 'Categories', url: '/catalog/categories', type: 'page' },
+      { title: 'Brands', url: '/catalog/brands', type: 'page' },
+      { title: 'Attributes', url: '/catalog/attributes', type: 'page' },
+      { title: 'Units of Measure', url: '/catalog/uom', type: 'page' },
+      { title: 'Tax Rates', url: '/catalog/tax-rates', type: 'page' },
+      { title: 'HSN Codes', url: '/catalog/hsn-codes', type: 'page' },
+      { title: 'Users', url: '/users', type: 'page' },
+      { title: 'Roles & Permissions', url: '/roles-permissions', type: 'page' },
+      { title: 'Customers', url: '/customers', type: 'page' },
+      { title: 'Villages', url: '/villages', type: 'page' },
+      { title: 'Order Reasons', url: '/order-reasons', type: 'page' },
+      { title: 'Team Chat', url: '/chat', type: 'page' },
+      { title: 'Messages', url: '/messages', type: 'page' },
+      { title: 'Calendar', url: '/calendar', type: 'page' },
+      { title: 'Files', url: '/files', type: 'page' },
+      { title: 'Forms', url: '/forms', type: 'page' },
+      { title: 'UI Elements', url: '/elements', type: 'page' },
+      { title: 'Settings', url: '/settings', type: 'page' },
+      { title: 'Security', url: '/security', type: 'page' },
+      { title: 'Help & Support', url: '/help', type: 'page' },
     ];
 
     Alpine.data('searchComponent', createSearchComponent({
@@ -512,22 +619,25 @@ class AdminApp {
         navbarPages.filter(p => p.title.toLowerCase().includes(query.toLowerCase())),
     }));
 
-    // Stats counter — tracked interval so it can be cleaned up on pagehide
-    Alpine.data('statsCounter', (initialValue = 0, increment = 1) => ({
-      value: initialValue,
-      _intervalId: null,
+    // Stats counter — animates from 0 to target on load
+    Alpine.data('statsCounter', (targetValue = 0) => ({
+      value: 0,
 
       init() {
-        this._intervalId = setInterval(() => {
-          this.value += Math.floor(Math.random() * increment) + 1;
-        }, 5000);
-      },
+        const duration = 1000;
+        const steps = 30;
+        const stepValue = targetValue / steps;
+        let currentStep = 0;
 
-      destroy() {
-        if (this._intervalId !== null) {
-          clearInterval(this._intervalId);
-          this._intervalId = null;
-        }
+        const timer = setInterval(() => {
+          this.value = Math.floor(this.value + stepValue);
+          currentStep++;
+
+          if (currentStep >= steps) {
+            this.value = targetValue;
+            clearInterval(timer);
+          }
+        }, duration / steps);
       },
     }));
 
@@ -602,6 +712,7 @@ class AdminApp {
 
     // Expose Alpine globally BEFORE starting it so alpine:init listeners can use it
     window.Alpine = Alpine;
+
     Alpine.start();
   }
 

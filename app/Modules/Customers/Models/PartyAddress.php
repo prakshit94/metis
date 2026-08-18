@@ -1,0 +1,51 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Customers\Models;
+
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+
+use App\Modules\Core\Models\Village;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class PartyAddress extends Model implements Auditable
+{
+    use AuditableTrait;
+    use SoftDeletes;
+
+
+    protected $fillable = [
+        'party_id',
+        'label',
+        'address_line_1',
+        'address_line_2',
+        'village_id',
+        'village_name',
+        'post_office',
+        'taluka',
+        'district',
+        'city',
+        'state',
+        'pincode',
+        'status',
+        'is_default',
+    ];
+
+    protected $casts = [
+        'is_default' => 'boolean',
+    ];
+
+    public function party(): BelongsTo
+    {
+        return $this->belongsTo(Party::class, 'party_id');
+    }
+
+    public function village(): BelongsTo
+    {
+        return $this->belongsTo(Village::class);
+    }
+}

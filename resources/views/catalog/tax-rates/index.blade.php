@@ -91,7 +91,7 @@
                         </div>
                         
                         <!-- Status Filter -->
-                        <select class="form-select form-select-sm" 
+                        <select x-select class="form-select form-select-sm" 
                                 x-model="statusFilter" 
                                 @change="filterData()"
                                 style="width: 150px;">
@@ -105,7 +105,7 @@
         </div>
         <div class="card-body p-0">
             <!-- Bulk Actions Bar -->
-            <div class="bulk-actions-bar p-3 bg-light border-bottom" x-show="selectedItems.length > 0" x-transition>
+            <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedItems.length > 0" x-transition>
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted">
                         <span x-text="selectedItems.length"></span> item(s) selected
@@ -137,7 +137,9 @@
                             </th>
                             <th @click="sortBy('id')" class="sortable" style="width: 80px;">ID</th>
                             <th @click="sortBy('name')" class="sortable">Name / Code</th>
-                            <th @click="sortBy('rate')" class="sortable">Rate (%)</th>
+                            <th @click="sortBy('rate')" class="sortable">Total GST (%)</th>
+                            <th>CGST / SGST</th>
+                            <th>IGST</th>
                             <th @click="sortBy('status')" class="sortable">Status</th>
                             <th style="width: 120px;" class="text-end pe-4">Actions</th>
                         </tr>
@@ -165,10 +167,15 @@
                                 </td>
                                 <td class="text-muted" x-text="item.id"></td>
                                 <td>
-                                    <div class="fw-medium text-dark" x-text="item.name || item.code"></div>
+                                    <div class="fw-medium text-body-emphasis" x-text="item.name || item.code"></div>
                                     
                                 </td>
                                 <td x-text="`${item.rate}%`"></td>
+                                <td class="text-muted">
+                                    <span x-text="`${(item.rate / 2).toFixed(1)}%`"></span> / 
+                                    <span x-text="`${(item.rate / 2).toFixed(1)}%`"></span>
+                                </td>
+                                <td class="text-muted" x-text="`${item.rate}%`"></td>
                                 <td>
                                     <span class="badge rounded-pill" 
                                           :class="{
@@ -261,12 +268,16 @@
                                         <input type="number" class="form-control" x-model="form.rate" step="0.01" required placeholder="e.g. 18.00">
                                     </div>
                     
-                                    <div class="col-12">
-                                        <label class="form-label fw-medium text-muted small">Status</label>
-                                        <select class="form-select" x-model="form.status">
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                        </select>
+                                    <div class="col-12 mt-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   id="tax_status"
+                                                   :checked="form.status === 'active'"
+                                                   @change="form.status = $event.target.checked ? 'active' : 'inactive'">
+                                            <label class="form-check-label fw-semibold" for="tax_status">
+                                                Is Active
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

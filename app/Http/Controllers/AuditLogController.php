@@ -1,0 +1,162 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use OwenIt\Auditing\Models\Audit;
+use Illuminate\Support\Facades\Gate;
+use App\Modules\Core\Controllers\Controller;
+
+class AuditLogController extends Controller implements HasMiddleware
+{
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:audit-log-view', only: ['index']),
+            new Middleware('permission:audit-log-delete', only: ['clearAll', 'destroy']),
+        ];
+    }
+
+    /**
+     * Display a listing of the audit logs.
+     */
+    public function index(Request $request)
+    {
+        // Enforce basic permission if you have one, or just require auth for now.
+        // Assuming Super Admin can view, but let's allow basic view logic.
+        // We will pass the data as JSON if it's an AJAX request (for Alpine) or standard Blade.
+
+        if ($request->wantsJson()) {
+            $query = Audit::with('user')->latest();
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('event', 'like', "%{$search}%")
+                      ->orWhere('auditable_type', 'like', "%{$search}%")
+                      ->orWhereHas('user', function($uq) use ($search) {
+                          $uq->where('name', 'like', "%{$search}%");
+                      });
+                });
+            }
+
+            if ($request->filled('event')) {
+                $query->where('event', $request->event);
+            }
+
+            $perPage = $request->input('per_page', 15);
+            $audits = $query->paginate($perPage);
+
+            // Transform the class names for frontend friendly display
+            $audits->getCollection()->transform(function ($audit) {
+                $modelParts = explode('\\', $audit->auditable_type);
+                $audit->model_name = end($modelParts);
+                return $audit;
+            });
+
+            // Calculate stats
+            $stats = [
+                'total' => Audit::count(),
+                'created' => Audit::where('event', 'created')->count(),
+                'updated' => Audit::where('event', 'updated')->count(),
+                'deleted' => Audit::where('event', 'deleted')->count(),
+            ];
+
+            return response()->json([
+                'data' => $audits->items(),
+                'total' => $audits->total(),
+                'current_page' => $audits->currentPage(),
+                'last_page' => $audits->lastPage(),
+                'stats' => $stats,
+            ]);
+        }
+
+        return view('admin.audit-logs.index');
+    }
+
+    /**
+     * Clear all audit logs (Super Admin only).
+     */
+    public function clearAll(Request $request)
+    {
+        if (!auth()->user()->hasRole('Super Admin')) {
+            return response()->json(['message' => 'Unauthorized action. Only Super Admin can clear logs.'], 403);
+        }
+
+        Audit::truncate();
+
+        return response()->json(['message' => 'All audit logs have been cleared successfully.']);
+    }
+
+    /**
+     * Delete specific logs.
+     */
+    public function destroy(Request $request)
+    {
+        if (!auth()->user()->hasRole('Super Admin')) {
+            return response()->json(['message' => 'Unauthorized action.'], 403);
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:audits,id'
+        ]);
+
+        Audit::whereIn('id', $request->ids)->delete();
+
+        return response()->json(['message' => 'Selected logs deleted.']);
+    }
+    /**
+     * Fetch recent activity logs for the authenticated user.
+     */
+    public function recentActivities(Request $request)
+    {
+        abort_unless(
+            $request->user()?->can('audit-log-view')
+            || $request->user()?->hasAnyRole(['Super Admin', 'Admin']),
+            403,
+            'You do not have permission to view activity logs.'
+        );
+
+        $user = auth()->user();
+        $activities = \Spatie\Activitylog\Models\Activity::with('causer')->latest()->limit(15)->get();
+        $readIds = $user ? $user->readActivities()->whereIn('activity_id', $activities->pluck('id'))->pluck('activity_id')->toArray() : [];
+
+        $unreadCount = $activities->whereNotIn('id', $readIds)->count();
+
+        return response()->json([
+            'count' => $unreadCount,
+            'activities' => $activities->map(function ($a) use ($readIds) {
+                return [
+                    'id'           => $a->id,
+                    'description'  => $a->description,
+                    'subject_type' => class_basename($a->subject_type),
+                    'causer_name'  => $a->causer->name ?? 'System',
+                    'causer_photo' => $a->causer->photo ?? null,
+                    'time_ago'     => $a->created_at->diffForHumans(),
+                    'is_read'      => in_array($a->id, $readIds),
+                ];
+            })
+        ]);
+    }
+
+    /**
+     * Mark specific or all activities as read.
+     */
+    public function markAsRead(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$user) return response()->json(['success' => false], 401);
+        
+        if ($id === 'all') {
+            $activityIds = \Spatie\Activitylog\Models\Activity::latest()->limit(50)->pluck('id');
+            $user->readActivities()->syncWithoutDetaching($activityIds);
+        } else {
+            $user->readActivities()->syncWithoutDetaching([$id]);
+        }
+        
+        return response()->json(['success' => true]);
+    }
+}

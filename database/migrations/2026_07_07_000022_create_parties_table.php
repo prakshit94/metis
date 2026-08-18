@@ -10,6 +10,8 @@ return new class extends Migration {
             $table->id();
             $table->uuid('uuid')->nullable()->unique();
             $table->string('party_code')->nullable()->unique();
+            $table->string('referral_code')->nullable()->unique();
+            $table->unsignedBigInteger('referred_by')->nullable();
             $table->string('type')->index(); // customer, supplier, vendor, etc.
 
             // Name breakdown
@@ -21,8 +23,7 @@ return new class extends Migration {
             $table->string('email')->nullable()->index();
             $table->string('phone')->nullable()->index();
             $table->string('alternatemobile')->nullable();
-            $table->string('relative_mobile')->nullable();
-            $table->string('phone_number_2', 20)->nullable();
+            $table->string('relative_name')->nullable();
             $table->string('relative_phone', 20)->nullable();
 
             // Source / Classification
@@ -45,6 +46,7 @@ return new class extends Migration {
             $table->decimal('credit_limit', 15, 2)->default(0);
             $table->integer('credit_days')->default(0);
             $table->decimal('outstanding_balance', 15, 2)->default(0);
+            $table->decimal('wallet_balance', 15, 2)->default(0);
             $table->date('credit_valid_till')->nullable();
 
             // KYC & Compliance
@@ -80,6 +82,8 @@ return new class extends Migration {
 
             $table->timestamps();
             $table->softDeletes()->index();
+
+            $table->foreign('referred_by')->references('id')->on('parties')->nullOnDelete();
 
             // Performance indexes
             $table->index('created_at');

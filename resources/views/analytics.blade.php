@@ -38,7 +38,7 @@
                                         <div class="d-flex align-items-center justify-content-between">
                                             <div>
                                                 <h6 class="text-muted mb-1">Total Revenue</h6>
-                                                <div class="h3 mb-0" aria-live="polite"><span x-text="formatCurrency(metrics.revenue)">$124,592</span></div>
+                                                <div class="h3 mb-0" aria-live="polite"><span x-text="formatCurrency(metrics.revenue)">₹124,592</span></div>
                                                 <small class="trend-up">
                                                     <i class="bi bi-arrow-up"></i> +12.5% from last month
                                                 </small>

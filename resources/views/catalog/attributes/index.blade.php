@@ -91,7 +91,7 @@
                         </div>
                         
                         <!-- Status Filter -->
-                        <select class="form-select form-select-sm" 
+                        <select x-select class="form-select form-select-sm" 
                                 x-model="statusFilter" 
                                 @change="filterData()"
                                 style="width: 150px;">
@@ -287,7 +287,7 @@
                                     
                                     <div class="col-md-6">
                                         <label class="form-label fw-medium text-muted small">Input Type <span class="text-danger">*</span></label>
-                                        <select class="form-select" x-model="form.type" required>
+                                        <select x-select class="form-select" x-model="form.type" required>
                                             <option value="text">Text</option>
                                             <option value="color">Color</option>
                                             <option value="select">Select</option>
@@ -296,7 +296,7 @@
 
                                     <div class="col-md-6">
                                         <label class="form-label fw-medium text-muted small">Status</label>
-                                        <select class="form-select" x-model="form.status">
+                                        <select x-select class="form-select" x-model="form.status">
                                             <option value="active">Active</option>
                                             <option value="inactive">Inactive</option>
                                         </select>

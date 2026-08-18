@@ -247,7 +247,7 @@ const appendAlert = (message, type) => {
 @endsection
 
 @push('scripts')
-<script type="module" src="./scripts/main.js"></script>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
 
@@ -307,10 +307,8 @@ const appendAlert = (message, type) => {
                 Prism.highlightAll();
             }
         }
-            }
 
             // Apply syntax highlighting
-            initializeSyntaxHighlighting();
-        });
+            document.addEventListener('DOMContentLoaded', initializeSyntaxHighlighting);
     </script>
 @endpush

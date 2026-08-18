@@ -26,6 +26,7 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
+    if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
     throw new Error(message);
   }
 
@@ -97,16 +98,116 @@ document.addEventListener('alpine:init', () => {
     totalPages: 1,
     totalVillages: 0,
     itemsPerPage: 15,
+    
+    // Import state
+    importing: false,
+    importRows: [],
+    importFile: null,
 
     // Filters
     searchQuery: '',
-    stateFilter: '',
-    districtFilter: '',
-    talukaFilter: '',
+    stateFilter: [],
+    districtFilter: [],
+    talukaFilter: [],
+    villageFilter: [],
     serviceFilter: '',
     deletedFilter: '',
     sortField: 'id',
     sortDirection: 'desc',
+
+    // Multi-select dropdown states
+    showStateDropdown: false,
+    stateSearch: '',
+    showDistrictDropdown: false,
+    districtSearch: '',
+    showTalukaDropdown: false,
+    talukaSearch: '',
+    showVillageDropdown: false,
+    villageSearch: '',
+
+    get filteredStates() {
+        let list = Object.values(this.statesList || {});
+        if (!this.stateSearch) return list;
+        return list.filter(s => s && s.toLowerCase().includes(this.stateSearch.toLowerCase()));
+    },
+    
+    get filteredDistricts() {
+        let list = Object.values(this.districtsList || {});
+        if (!this.districtSearch) return list;
+        return list.filter(d => d && d.toLowerCase().includes(this.districtSearch.toLowerCase()));
+    },
+
+    get filteredTalukas() {
+        let list = Object.values(this.talukasList || {});
+        if (!this.talukaSearch) return list;
+        return list.filter(t => t && t.toLowerCase().includes(this.talukaSearch.toLowerCase()));
+    },
+
+    get filteredVillages() {
+        let list = Object.values(this.villagesList || {});
+        if (!this.villageSearch) return list;
+        return list.filter(v => v && v.toLowerCase().includes(this.villageSearch.toLowerCase()));
+    },
+
+    toggleFilter(type, value) {
+        if (type === 'state') {
+            if (this.stateFilter.includes(value)) this.stateFilter = this.stateFilter.filter(v => v !== value);
+            else this.stateFilter.push(value);
+            this.districtFilter = [];
+            this.talukaFilter = [];
+            this.villageFilter = [];
+        } else if (type === 'district') {
+            if (this.districtFilter.includes(value)) this.districtFilter = this.districtFilter.filter(v => v !== value);
+            else this.districtFilter.push(value);
+            this.talukaFilter = [];
+            this.villageFilter = [];
+        } else if (type === 'taluka') {
+            if (this.talukaFilter.includes(value)) this.talukaFilter = this.talukaFilter.filter(v => v !== value);
+            else this.talukaFilter.push(value);
+            this.villageFilter = [];
+        } else if (type === 'village') {
+            if (this.villageFilter.includes(value)) this.villageFilter = this.villageFilter.filter(v => v !== value);
+            else this.villageFilter.push(value);
+        }
+        this.filterVillages();
+    },
+
+    toggleAllFilter(type) {
+        if (type === 'state') {
+            let list = Object.values(this.statesList || {});
+            if (this.stateFilter.length === list.length) this.stateFilter = [];
+            else this.stateFilter = [...list];
+            this.districtFilter = [];
+            this.talukaFilter = [];
+            this.villageFilter = [];
+        } else if (type === 'district') {
+            let list = Object.values(this.districtsList || {});
+            if (this.districtFilter.length === list.length) this.districtFilter = [];
+            else this.districtFilter = [...list];
+            this.talukaFilter = [];
+            this.villageFilter = [];
+        } else if (type === 'taluka') {
+            let list = Object.values(this.talukasList || {});
+            if (this.talukaFilter.length === list.length) this.talukaFilter = [];
+            else this.talukaFilter = [...list];
+            this.villageFilter = [];
+        } else if (type === 'village') {
+            let list = Object.values(this.villagesList || {});
+            if (this.villageFilter.length === list.length) this.villageFilter = [];
+            else this.villageFilter = [...list];
+        }
+        this.filterVillages();
+    },
+
+    hasActiveAdvancedFilters() {
+      return Boolean(
+        this.serviceFilter ||
+        this.stateFilter.length > 0 ||
+        this.districtFilter.length > 0 ||
+        this.talukaFilter.length > 0 ||
+        this.villageFilter.length > 0
+      );
+    },
 
     // Selection
     selectedVillages: [],
@@ -115,6 +216,7 @@ document.addEventListener('alpine:init', () => {
     statesList: [],
     districtsList: [],
     talukasList: [],
+    villagesList: [],
     servicesOptions: [],
 
     charts: {},
@@ -145,9 +247,10 @@ document.addEventListener('alpine:init', () => {
         });
 
         if (this.searchQuery)    params.set('search', this.searchQuery);
-        if (this.stateFilter)    params.set('state', this.stateFilter);
-        if (this.districtFilter) params.set('district', this.districtFilter);
-        if (this.talukaFilter)   params.set('taluka', this.talukaFilter);
+        if (this.stateFilter.length > 0)    params.set('state', this.stateFilter.join(','));
+        if (this.districtFilter.length > 0) params.set('district', this.districtFilter.join(','));
+        if (this.talukaFilter.length > 0)   params.set('taluka', this.talukaFilter.join(','));
+        if (this.villageFilter.length > 0)  params.set('village', this.villageFilter.join(','));
         if (this.serviceFilter)  params.set('service_id', this.serviceFilter);
         if (this.deletedFilter)  params.set('deleted', this.deletedFilter);
 
@@ -163,6 +266,7 @@ document.addEventListener('alpine:init', () => {
         this.statesList    = data.states    ?? [];
         this.districtsList = data.districts ?? [];
         this.talukasList   = data.talukas   ?? [];
+        this.villagesList  = data.villages  ?? [];
 
         this.$nextTick(() => {
           this.initCharts(data.stats ?? {});
@@ -175,7 +279,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     _mapVillage(v) {
-      const activeMappings = (v.mappings ?? []).filter(m => m.is_available);
+      const activeMappings = (v.mappings ?? [])
+        .filter(m => m.is_available)
+        .sort((a, b) => Number(a.priority ?? 0) - Number(b.priority ?? 0));
       return {
         ...v,
         active_mappings: activeMappings,
@@ -236,9 +342,10 @@ document.addEventListener('alpine:init', () => {
 
     resetFilters() {
       this.searchQuery    = '';
-      this.stateFilter    = '';
-      this.districtFilter = '';
-      this.talukaFilter   = '';
+      this.stateFilter    = [];
+      this.districtFilter = [];
+      this.talukaFilter   = [];
+      this.villageFilter  = [];
       this.serviceFilter  = '';
       this.deletedFilter  = '';
       this.currentPage    = 1;
@@ -247,7 +354,16 @@ document.addEventListener('alpine:init', () => {
 
     // Selection
     toggleAll(checked) {
-      this.selectedVillages = checked ? this.villages.map(v => v.id) : [];
+      if (checked) {
+        this.villages.forEach(item => {
+          if (!this.selectedVillages.includes(String(item.id))) {
+            this.selectedVillages.push(String(item.id));
+          }
+        });
+      } else {
+        const currentIds = this.villages.map(item => String(item.id));
+        this.selectedVillages = this.selectedVillages.filter(id => !currentIds.includes(id));
+      }
     },
 
     toggleVillage(id) {
@@ -425,6 +541,118 @@ document.addEventListener('alpine:init', () => {
         grid: { show: false },
       });
       this.charts.distribution.render();
+    },
+
+    // ─── Export Methods ──────────────────────────────────────────────────────
+    exportVillages() {
+      const params = new URLSearchParams();
+      if (this.searchQuery)             params.set('search', this.searchQuery);
+      if (this.deletedFilter)           params.set('deleted', this.deletedFilter);
+      if (this.serviceFilter)           params.set('service_id', this.serviceFilter);
+      if (this.stateFilter.length)      params.set('state', this.stateFilter.join(','));
+      if (this.districtFilter.length)   params.set('district', this.districtFilter.join(','));
+      if (this.talukaFilter.length)     params.set('taluka', this.talukaFilter.join(','));
+      if (this.villageFilter.length)    params.set('village', this.villageFilter.join(','));
+      window.open(`/api/villages/export?${params.toString()}`, '_blank');
+    },
+
+    async exportSelectedVillages() {
+      if (!this.selectedVillages.length) {
+        showToast('Please select villages to export.', 'warning');
+        return;
+      }
+      try {
+        const res = await fetch('/api/villages/export-selected', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken()
+          },
+          body: JSON.stringify({ ids: this.selectedVillages })
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Export failed');
+        }
+        const blob = await res.blob();
+        const url  = window.URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `villages-export-selected-${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        showToast(`${this.selectedVillages.length} villages exported.`, 'success');
+      } catch (err) {
+        showToast(err.message || 'Export failed.', 'danger');
+      }
+    },
+
+    // ─── Import Methods ──────────────────────────────────────────────────────
+    async handleImportFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      this.importing = true;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('preview', '1');
+      try {
+        const res  = await fetch('/api/villages/import', {
+          method : 'POST',
+          body   : formData,
+          headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': getCsrfToken() }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Preview failed');
+        if (data.preview) {
+          this.importRows = data.rows || [];
+          this.importFile = file;
+          getModal('#importPreviewModal')?.show();
+        } else {
+          showToast(data.message || 'Unexpected response.', 'warning');
+        }
+      } catch (err) {
+        showToast(err.message || 'Error reading file.', 'danger');
+      } finally {
+        this.importing = false;
+        event.target.value = '';
+      }
+    },
+
+    cancelImport() {
+      this.importRows = [];
+      this.importFile = null;
+      getModal('#importPreviewModal')?.hide();
+    },
+
+    async confirmImport() {
+      if (!this.importFile) return;
+      this.importing = true;
+      const formData = new FormData();
+      formData.append('file', this.importFile);
+      try {
+        const res  = await fetch('/api/villages/import', {
+          method : 'POST',
+          body   : formData,
+          headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': getCsrfToken() }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message || 'Import successful!', 'success');
+          getModal('#importPreviewModal')?.hide();
+          this.importFile  = null;
+          this.importRows  = [];
+          this.loadVillages();
+        } else {
+          showToast(data.message || 'Import failed.', 'danger');
+        }
+      } catch (err) {
+        showToast(err.message || 'An error occurred during import.', 'danger');
+      } finally {
+        this.importing = false;
+      }
     }
   }));
 
@@ -485,7 +713,8 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.saving = false;
       }
-    }
+    },
+
   }));
 
   // ─── Village Services Controller ───────────────────────────────────────────
@@ -513,7 +742,7 @@ document.addEventListener('alpine:init', () => {
         options.forEach(s => {
           this.mappings[s.id] = {
             is_available: false,
-            priority: 0,
+            priority: 1,
             remarks: '',
             serviceable_from_date: null,
             serviceable_to_date: null,
@@ -527,19 +756,27 @@ document.addEventListener('alpine:init', () => {
           if (this.mappings[m.service_id]) {
             this.mappings[m.service_id] = {
               is_available: !!m.is_available,
-              priority: m.priority ?? 0,
+              priority: m.priority ?? 1,
               remarks: m.remarks ?? '',
               serviceable_from_date: m.serviceable_from_date ?? null,
               serviceable_to_date: m.serviceable_to_date ?? null,
             };
           }
         });
+        // Keep existing mappings consistent with the new 1, 2, 3… priority
+        // sequence before the administrator makes further changes.
+        existing.forEach(m => this.ensureUniquePriority(m.service_id));
       } catch (err) {
         showToast('Failed to load mappings: ' + err.message, 'danger');
       }
     },
 
     async saveServices() {
+      if (this.hasDuplicatePriorities() || this.hasInvalidPriorities()) {
+        showToast('Each available service must have a unique priority of 1 or higher.', 'warning');
+        return;
+      }
+
       this.saving = true;
       try {
         const res = await apiFetch(`/api/villages/${this.villageId}`, {
@@ -559,6 +796,51 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.saving = false;
       }
+    },
+
+    isPriorityDuplicate(serviceId) {
+      const mapping = this.mappings[serviceId];
+      if (!mapping?.is_available) return false;
+
+      const priority = Number(mapping.priority ?? 0);
+      return Object.entries(this.mappings).some(([id, other]) =>
+        String(id) !== String(serviceId)
+        && other.is_available
+        && Number(other.priority ?? 0) === priority
+      );
+    },
+
+    hasDuplicatePriorities() {
+      const priorities = new Set();
+      return Object.values(this.mappings)
+        .filter(mapping => mapping.is_available)
+        .some(mapping => {
+          const priority = Number(mapping.priority ?? 0);
+          if (priorities.has(priority)) return true;
+          priorities.add(priority);
+          return false;
+        });
+    },
+
+    hasInvalidPriorities() {
+      return Object.values(this.mappings)
+        .filter(mapping => mapping.is_available)
+        .some(mapping => Number(mapping.priority) < 1);
+    },
+
+    ensureUniquePriority(serviceId) {
+      const mapping = this.mappings[serviceId];
+      if (!mapping?.is_available) return;
+
+      const priority = Number(mapping.priority ?? 0);
+      if (priority >= 1 && !this.isPriorityDuplicate(serviceId)) return;
+
+      const usedPriorities = new Set(Object.entries(this.mappings)
+        .filter(([id, other]) => String(id) !== String(serviceId) && other.is_available)
+        .map(([, other]) => Number(other.priority ?? 0)));
+      let nextPriority = 1;
+      while (usedPriorities.has(nextPriority)) nextPriority += 1;
+      mapping.priority = nextPriority;
     }
   }));
 
@@ -566,13 +848,13 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('bulkServicesForm', () => ({
     count: 0,
     ids: [],
-    serviceId: '',
+    serviceIds: [],
     status: 'available',
     saving: false,
     services: [],
 
     resetForm() {
-      this.serviceId = '';
+      this.serviceIds = [];
       this.status = 'available';
       
       const table = Alpine.$data(document.querySelector('[x-data="villageTable"]'));
@@ -580,19 +862,28 @@ document.addEventListener('alpine:init', () => {
     },
 
     async updateServices() {
+      if (!this.serviceIds.length) {
+        showToast('Please select at least one service.', 'warning');
+        return;
+      }
+
       this.saving = true;
       try {
-        const res = await apiFetch('/api/villages/bulk-action', {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'service-update',
-            ids: this.ids,
-            service_id: this.serviceId,
-            status: this.status,
-          })
-        });
+        // Reuse the existing single-service bulk endpoint for each selected
+        // service, keeping the server-side mapping logic unchanged.
+        for (const serviceId of this.serviceIds) {
+          await apiFetch('/api/villages/bulk-action', {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'service-update',
+              ids: this.ids,
+              service_id: serviceId,
+              status: this.status,
+            })
+          });
+        }
 
-        showToast(res.message || 'Bulk update applied.', 'success');
+        showToast(`${this.serviceIds.length} service(s) updated for ${this.ids.length} village(s).`, 'success');
         
         const table = Alpine.$data(document.querySelector('[x-data="villageTable"]'));
         if (table) {

@@ -20,19 +20,41 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'          => ['sometimes', 'string', 'max:255'],
-            'first_name'    => ['required_without:name', 'string', 'max:100'],
-            'middle_name'   => ['sometimes', 'nullable', 'string', 'max:100'],
-            'last_name'     => ['sometimes', 'nullable', 'string', 'max:100'],
-            'email'         => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password'      => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
-            'is_active'     => ['sometimes', 'boolean'],
-            'phone'         => ['sometimes', 'nullable', 'string', 'max:30'],
-            'department'    => ['sometimes', 'nullable', 'string', 'max:100'],
-            'roles'         => ['sometimes', 'array'],
-            'roles.*'       => ['string', 'exists:roles,name'],
-            'permissions'   => ['sometimes', 'array'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'first_name' => ['required_without:name', 'string', 'max:100'],
+            'middle_name' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'last_name' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'is_active' => ['sometimes', 'boolean'],
+            'phone' => ['sometimes', 'nullable', 'string', 'regex:/^\d{10}$/'],
+            'department_id' => ['sometimes', 'nullable', 'exists:departments,id'],
+            'manager_id' => ['sometimes', 'nullable', 'exists:users,id'],
+            'employment_type' => ['sometimes', 'string', 'in:Full-time,Part-time,Contract,Intern'],
+            'employee_id' => ['sometimes', 'nullable', 'string', 'max:100', 'unique:users,employee_id'],
+            'photo' => ['sometimes', 'nullable', 'string'],
+            'photo_file' => ['sometimes', 'nullable', 'image', 'max:2048'],
+            'joining_date' => ['sometimes', 'nullable', 'date'],
+            'address_line_1' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'address_line_2' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'village_id' => ['sometimes', 'nullable', 'integer'],
+            'village_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'post_office' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'taluka' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'district' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'city' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'state' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'pincode' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'roles' => ['sometimes', 'array'],
+            'roles.*' => ['string', 'exists:roles,name'],
+            'permissions' => ['sometimes', 'array'],
             'permissions.*' => ['string', 'exists:permissions,name'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date'],
+            'gender' => ['sometimes', 'nullable', 'string', 'in:Male,Female,Other,Prefer not to say'],
+            'blood_group' => ['sometimes', 'nullable', 'string', 'max:10'],
+            'designation' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'emergency_contact_name' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'emergency_contact_phone' => ['sometimes', 'nullable', 'string', 'regex:/^\d{10}$/'],
         ];
     }
 
@@ -46,7 +68,7 @@ class StoreUserRequest extends FormRequest
 
         $this->merge([
             'email' => strtolower(trim((string) $this->input('email', ''))),
-            'name'  => $name !== '' ? $name : $this->input('name'),
+            'name' => $name !== '' ? $name : $this->input('name'),
         ]);
     }
 }

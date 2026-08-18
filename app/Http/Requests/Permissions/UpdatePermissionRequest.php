@@ -22,13 +22,15 @@ class UpdatePermissionRequest extends FormRequest
         $permissionId = $this->route('permission')?->id;
 
         return [
-            'name'       => [
+            'name' => [
                 'required',
                 'string',
                 'max:100',
                 Rule::unique('permissions', 'name')->ignore($permissionId),
             ],
             'guard_name' => ['sometimes', 'string', 'max:100'],
+            'roles' => ['sometimes', 'array'],
+            'roles.*' => ['string', 'exists:roles,name'],
         ];
     }
 }

@@ -13,7 +13,7 @@ return new class extends Migration {
             $table->string('reference_type')->nullable(); // Order, Adjustment, Transfer
             $table->unsignedBigInteger('reference_id')->nullable();
             $table->decimal('quantity', 15, 4);
-            $table->enum('type', ['in', 'out', 'adjustment', 'transfer', 'reserve', 'release'])->index();
+            $table->enum('type', ['in', 'out', 'adjustment', 'transfer', 'reserve', 'release', 'damage'])->index();
             $table->string('status')->default('active')->index();
             $table->foreignId('performed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

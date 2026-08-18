@@ -111,7 +111,7 @@
                                     <div class="element-preview-container">
                                         <input class="form-control mb-3" type="text" placeholder="Disabled input" aria-label="Disabled input example" disabled>
                                         <input class="form-control mb-3" type="text" value="Disabled readonly input" aria-label="Disabled input example" disabled readonly>
-                                        <select class="form-select" aria-label="Disabled select example" disabled>
+                                        <select x-select class="form-select" aria-label="Disabled select example" disabled>
                                             <option selected>Open this select menu</option>
                                             <option value="1">One</option>
                                             <option value="2">Two</option>
@@ -143,19 +143,19 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="element-preview-container">
-                                        <select class="form-select mb-3" aria-label="Default select example">
+                                        <select x-select class="form-select mb-3" aria-label="Default select example">
                                             <option selected>Open this select menu</option>
                                             <option value="1">One</option>
                                             <option value="2">Two</option>
                                             <option value="3">Three</option>
                                         </select>
-                                        <select class="form-select form-select-lg mb-3" aria-label="Large select example">
+                                        <select x-select class="form-select form-select-lg mb-3" aria-label="Large select example">
                                             <option selected>Open this select menu</option>
                                             <option value="1">One</option>
                                             <option value="2">Two</option>
                                             <option value="3">Three</option>
                                         </select>
-                                        <select class="form-select form-select-sm" aria-label="Small select example">
+                                        <select x-select class="form-select form-select-sm" aria-label="Small select example">
                                             <option selected>Open this select menu</option>
                                             <option value="1">One</option>
                                             <option value="2">Two</option>
@@ -320,7 +320,7 @@
                                             <span class="input-group-text" id="basic-addon2">@example.com</span>
                                         </div>
                                         <div class="input-group mb-3">
-                                            <span class="input-group-text">$</span>
+                                            <span class="input-group-text">₹</span>
                                             <input type="text" class="form-control" aria-label="Amount (to the nearest dollar)">
                                             <span class="input-group-text">.00</span>
                                         </div>
@@ -377,7 +377,7 @@
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-floating">
-                                                    <select class="form-select" id="floatingSelect" aria-label="Floating label select example">
+                                                    <select x-select class="form-select" id="floatingSelect" aria-label="Floating label select example">
                                                         <option selected>Open this select menu</option>
                                                         <option value="1">One</option>
                                                         <option value="2">Two</option>
@@ -460,7 +460,7 @@
                                             </div>
                                             <div class="col-md-3">
                                                 <label for="validationCustom04" class="form-label">State</label>
-                                                <select class="form-select" id="validationCustom04" required>
+                                                <select x-select class="form-select" id="validationCustom04" required>
                                                     <option selected disabled value="">Choose...</option>
                                                     <option>...</option>
                                                 </select>
@@ -534,7 +534,7 @@
 @endsection
 
 @push('scripts')
-<script type="module" src="./scripts/main.js"></script>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
 
@@ -571,7 +571,6 @@
                 Prism.highlightAll();
             }
         }
-            }
 
             // Form validation
             const forms = document.querySelectorAll('.needs-validation');
@@ -586,7 +585,6 @@
             });
 
             // Apply syntax highlighting
-            initializeSyntaxHighlighting();
-        });
+            document.addEventListener('DOMContentLoaded', initializeSyntaxHighlighting);
     </script>
 @endpush

@@ -1,6 +1,6 @@
 {
-  "name": "metis-admin-laravel",
-  "description": "Metis Modern Bootstrap 5 Admin Template - Laravel 12",
+  "name": "ecommerce-admin-laravel",
+  "description": "Ecommerce Modern Bootstrap 5 Admin Template - Laravel 12",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -16,15 +16,13 @@
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "dayjs": "^1.11.20",
-    "playwright": "^1.61.1",
-    "sweetalert2": "^11.26.24"
-  },
-  "optionalDependencies": {
-    "lucide": "^1.11.0"
+    "lucide": "^1.11.0",
+    "sweetalert2": "^11.26.24",
+    "tom-select": "^2.6.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitejs/plugin-legacy": "^8.0.1",
+    "@vitejs/plugin-legacy": "^6.0.0",
     "autoprefixer": "^10.5.0",
     "eslint": "^10.2.1",
     "globals": "^17.5.0",

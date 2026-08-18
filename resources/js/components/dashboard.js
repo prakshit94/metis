@@ -38,7 +38,6 @@ export class DashboardManager {
     this.initSalesByLocationChart();
     this.populateRecentOrders();
 
-    this.startRealTimeUpdates();
     this.initInteractiveElements();
     this.initResizeHandler();
 
@@ -60,83 +59,30 @@ export class DashboardManager {
     };
     window.addEventListener('resize', onResize);
     this.cleanupFns.push(() => window.removeEventListener('resize', onResize));
+
+    const onThemeChange = (e) => {
+      const theme = e.detail?.theme || 'light';
+      this.charts.forEach(chart => {
+        if (typeof chart.updateOptions === 'function') {
+          chart.updateOptions({ theme: { mode: theme } });
+        }
+      });
+    };
+    window.addEventListener('themeChanged', onThemeChange);
+    this.cleanupFns.push(() => window.removeEventListener('themeChanged', onThemeChange));
   }
 
   async loadDashboardData() {
-    this.data.revenue = this.generateRevenueData();
-    this.data.users = this.generateUserData();
-    this.data.orders = this.generateOrderData();
-    this.data.performance = this.generatePerformanceData();
-    this.data.recentOrders = this.generateRecentOrders();
-    this.data.salesByLocation = this.generateSalesByLocation();
-  }
-
-  generateRevenueData() {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months.map(month => ({
-      month,
-      revenue: Math.floor(Math.random() * 50000) + 10000,
-      profit: Math.floor(Math.random() * 20000) + 5000
-    }));
-  }
-
-  generateUserData() {
-    const days = Array.from({length: 30}, (_, i) => i + 1);
-    return days.map(day => ({
-      day,
-      newUsers: Math.floor(Math.random() * 100) + 20,
-      activeUsers: Math.floor(Math.random() * 500) + 200
-    }));
-  }
-
-  generateOrderData() {
-    return {
-      completed: 1245,
-      pending: 87,
-      cancelled: 23,
-      processing: 156
-    };
-  }
-
-  generateRecentOrders() {
-    const customers = ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Wilson', 'Bob Brown'];
-    const statuses = [
-        { text: 'Completed', class: 'bg-success' },
-        { text: 'Pending', class: 'bg-warning' },
-        { text: 'Shipped', class: 'bg-info' },
-        { text: 'Cancelled', class: 'bg-danger' }
-    ];
-    return Array.from({length: 5}, () => ({
-        id: `#${Math.floor(Math.random() * 9000) + 1000}`,
-        customer: customers[Math.floor(Math.random() * customers.length)],
-        amount: `$${(Math.random() * 500 + 50).toFixed(2)}`,
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        date: new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 7).toLocaleDateString()
-    }));
-  }
-
-  generateSalesByLocation() {
-    return [
-        { name: 'United States', value: 2822 },
-        { name: 'Canada', value: 1432 },
-        { name: 'United Kingdom', value: 980 },
-        { name: 'Australia', value: 780 },
-        { name: 'Germany', value: 650 },
-        { name: 'Brazil', value: 450 },
-        { name: 'India', value: 1800 },
-        { name: 'China', value: 2100 },
-        { name: 'Japan', value: 850 },
-        { name: 'Russia', value: 550 }
-    ];
-  }
-
-  generatePerformanceData() {
-    const hours = Array.from({length: 24}, (_, i) => i);
-    return hours.map(hour => ({
-      hour: `${hour.toString().padStart(2, '0')}:00`,
-      responseTime: Math.random() * 2 + 0.5,
-      requests: Math.floor(Math.random() * 1000) + 100
-    }));
+    if (window.dashboardData) {
+      this.data.revenue = window.dashboardData.revenue_monthly || [];
+      this.data.dailyRevenue = window.dashboardData.revenue_daily || [];
+      this.data.users = window.dashboardData.users || [];
+      this.data.orders = window.dashboardData.orders || {
+        completed: 0, pending: 0, cancelled: 0, processing: 0
+      };
+      this.data.recentOrders = window.dashboardData.recentOrders || [];
+      this.data.salesByLocation = window.dashboardData.salesByLocation || [];
+    }
   }
 
   initRevenueChart() {
@@ -328,6 +274,12 @@ export class DashboardManager {
       const customerCell = document.createElement('td');
       customerCell.textContent = order.customer;
 
+      const itemsCell = document.createElement('td');
+      itemsCell.textContent = order.items || '-';
+      itemsCell.className = 'text-truncate text-muted small';
+      itemsCell.style.maxWidth = '200px';
+      itemsCell.title = order.items || '';
+
       const amountCell = document.createElement('td');
       amountCell.textContent = order.amount;
 
@@ -340,62 +292,11 @@ export class DashboardManager {
       const dateCell = document.createElement('td');
       dateCell.textContent = order.date;
 
-      tr.append(idCell, customerCell, amountCell, statusCell, dateCell);
+      tr.append(idCell, customerCell, itemsCell, amountCell, statusCell, dateCell);
       tableBody.appendChild(tr);
     }
   }
 
-  startRealTimeUpdates() {
-    const id = setInterval(() => this.updateChartsWithRealTimeData(), REALTIME_DASHBOARD_POLL_MS);
-    this.intervals.add(id);
-  }
-
-  updateChartsWithRealTimeData() {
-    const revenueChart = this.charts.get('revenue');
-    if (revenueChart) {
-      const newRevenue = Math.floor(Math.random() * 50000) + 10000;
-      const newProfit = Math.floor(Math.random() * 20000) + 5000;
-      this.data.revenue.push({ month: 'New', revenue: newRevenue, profit: newProfit });
-      if (this.data.revenue.length > 12) this.data.revenue.shift();
-
-      // Instead of overwriting with all data, respect the current filtered view
-      this.updateChartPeriod(this.currentPeriod);
-    }
-
-    this.updateStatsCards();
-  }
-
-  updateStatsCards() {
-    const statsElements = document.querySelectorAll('[data-stat-value]');
-    statsElements.forEach(element => {
-      const currentValue = parseInt(element.textContent.replace(/[^0-9]/g, ''));
-      const newValue = currentValue + Math.floor(Math.random() * 10) - 5;
-      if (newValue > 0) this.animateNumber(element, currentValue, newValue);
-    });
-  }
-
-  animateNumber(element, start, end) {
-    const stepValue = (end - start) / STAT_ANIMATION_STEPS;
-    let current = start;
-    let step = 0;
-
-    // Target the <span x-text> child if present; otherwise the element itself
-    const target = element.querySelector('span') || element;
-
-    const timer = setInterval(() => {
-      current += stepValue;
-      step++;
-
-      target.textContent = Math.floor(current).toLocaleString();
-
-      if (step >= STAT_ANIMATION_STEPS) {
-        clearInterval(timer);
-        this.intervals.delete(timer);
-        target.textContent = end.toLocaleString();
-      }
-    }, STAT_ANIMATION_DURATION_MS / STAT_ANIMATION_STEPS);
-    this.intervals.add(timer);
-  }
 
   initInteractiveElements() {
     const onPeriodClick = (e) => {
@@ -431,26 +332,27 @@ export class DashboardManager {
   loadWeeklyData() {
     const chart = this.charts.get('revenue');
     if (!chart) return;
-    // Show last 7 data points
-    const slice = this.data.revenue.slice(-7);
+    // Show last 7 data points from daily revenue
+    const slice = (this.data.dailyRevenue || []).slice(-7);
     chart.updateOptions({
       series: [
         { name: 'Revenue', data: slice.map(d => d.revenue) },
         { name: 'Profit',  data: slice.map(d => d.profit)  },
       ],
-      xaxis: { categories: slice.map(d => d.month) }
+      xaxis: { categories: slice.map(d => d.month) } // month contains the formatted date (e.g., M d)
     });
   }
 
   loadMonthlyData() {
     const chart = this.charts.get('revenue');
     if (!chart) return;
+    const slice = (this.data.dailyRevenue || []);
     chart.updateOptions({
       series: [
-        { name: 'Revenue', data: this.data.revenue.map(d => d.revenue) },
-        { name: 'Profit',  data: this.data.revenue.map(d => d.profit)  },
+        { name: 'Revenue', data: slice.map(d => d.revenue) },
+        { name: 'Profit',  data: slice.map(d => d.profit)  },
       ],
-      xaxis: { categories: this.data.revenue.map(d => d.month) }
+      xaxis: { categories: slice.map(d => d.month) }
     });
   }
 

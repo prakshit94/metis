@@ -231,8 +231,17 @@ export default () => {
         },
 
         toggleAll(checked) {
-            this.selectedItems = checked ? this.paginatedItems.map(i => i.id) : [];
-        },
+      if (checked) {
+        this.paginatedItems.forEach(item => {
+          if (!this.selectedItems.includes(String(item.id))) {
+            this.selectedItems.push(String(item.id));
+          }
+        });
+      } else {
+        const currentIds = this.paginatedItems.map(item => String(item.id));
+        this.selectedItems = this.selectedItems.filter(id => !currentIds.includes(id));
+      }
+    },
 
         toggleItem(id) {
             if (this.selectedItems.includes(id)) {

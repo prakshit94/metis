@@ -55,6 +55,7 @@ document.addEventListener('alpine:init', () => {
     // Cleanup tracking
     _intervals: new Set(),
     _resizeHandler: null,
+    _themeHandler: null,
 
     // Initialize component
     init() {
@@ -64,6 +65,16 @@ document.addEventListener('alpine:init', () => {
         });
         const onHide = () => this.destroy();
         window.addEventListener('pagehide', onHide, { once: true });
+
+        this._themeHandler = (e) => {
+            const theme = e.detail?.theme || 'light';
+            Object.values(this.charts).forEach(chart => {
+                if (chart && typeof chart.updateOptions === 'function') {
+                    chart.updateOptions({ theme: { mode: theme } });
+                }
+            });
+        };
+        window.addEventListener('themeChanged', this._themeHandler);
     },
 
     destroy() {
@@ -72,6 +83,10 @@ document.addEventListener('alpine:init', () => {
         if (this._resizeHandler) {
             window.removeEventListener('resize', this._resizeHandler);
             this._resizeHandler = null;
+        }
+        if (this._themeHandler) {
+            window.removeEventListener('themeChanged', this._themeHandler);
+            this._themeHandler = null;
         }
         this.clearExistingCharts();
     },
@@ -469,7 +484,7 @@ document.addEventListener('alpine:init', () => {
     
     // Formatters
     formatCurrency(value) {
-        return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return '₹' + value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     },
     
     formatNumber(value) {

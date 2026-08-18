@@ -5,24 +5,33 @@
 // ==========================================================================
 
 .admin-sidebar {
-  overflow-y: auto;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 
-  // Custom scrollbar
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: var(--bs-border-color);
-    border-radius: 4px;
+  .sidebar-search {
+    flex-shrink: 0;
+    padding: 1rem 0.75rem 0.5rem;
   }
 
   .sidebar-content {
-    padding: 1rem 0.75rem;
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.5rem 0.75rem 1rem;
+
+    // Custom scrollbar
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--bs-border-color);
+      border-radius: 4px;
+    }
   }
 }

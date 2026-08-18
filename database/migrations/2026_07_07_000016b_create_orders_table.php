@@ -15,16 +15,63 @@ return new class extends Migration {
             $table->decimal('total_amount', 15, 2)->default(0);
             $table->decimal('tax_amount', 15, 2)->default(0);
             $table->decimal('discount_amount', 15, 2)->default(0);
+            $table->string('coupon_code')->nullable();
+            $table->foreignId('applied_offer_id')->nullable()->constrained('offers')->nullOnDelete();
             $table->decimal('net_amount', 15, 2)->default(0);
+            $table->decimal('wallet_amount_used', 15, 2)->default(0);
+            $table->decimal('cashback_earned', 15, 2)->default(0);
             $table->enum('status', ['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'cancelled', 'returned', 'return_requested'])->default('pending')->index();
             $table->boolean('is_draft')->default(false)->index();
             $table->date('future_order_date')->nullable();
+            $table->dateTime('scheduled_confirmation_date')->nullable();
+            $table->integer('confirmation_attempts')->default(0);
+
+            // Status tracking
+            $table->dateTime('pending_at')->nullable();
+            $table->foreignId('pending_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('confirmed_at')->nullable();
+            $table->foreignId('confirmed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('processing_at')->nullable();
+            $table->foreignId('processing_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('ready_to_ship_at')->nullable();
+            $table->foreignId('ready_to_ship_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('dispatched_at')->nullable();
+            $table->foreignId('dispatched_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('shipped_at')->nullable();
+            $table->foreignId('shipped_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('delivered_at')->nullable();
+            $table->foreignId('delivered_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('cancelled_at')->nullable();
+            $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('returned_at')->nullable();
+            $table->foreignId('returned_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('return_requested_at')->nullable();
+            $table->foreignId('return_requested_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('warehouse_id')->nullable()->constrained()->nullOnDelete();
 
             $table->unsignedBigInteger('shipping_address_id')->nullable();
+            $table->string('shipping_address_line_1')->nullable();
+            $table->string('shipping_address_line_2')->nullable();
+            $table->foreignId('shipping_village_id')->nullable()->constrained('villages')->nullOnDelete();
+            $table->string('shipping_village_name')->nullable();
+            $table->string('shipping_post_office')->nullable();
+            $table->string('shipping_taluka')->nullable();
+            $table->string('shipping_district')->nullable();
+            $table->string('shipping_city')->nullable();
+            $table->string('shipping_state')->nullable();
+            $table->string('shipping_pincode')->nullable();
+
             $table->unsignedBigInteger('billing_address_id')->nullable();
-            $table->text('shipping_address')->nullable();
-            $table->text('billing_address')->nullable();
+            $table->string('billing_address_line_1')->nullable();
+            $table->string('billing_address_line_2')->nullable();
+            $table->foreignId('billing_village_id')->nullable()->constrained('villages')->nullOnDelete();
+            $table->string('billing_village_name')->nullable();
+            $table->string('billing_post_office')->nullable();
+            $table->string('billing_taluka')->nullable();
+            $table->string('billing_district')->nullable();
+            $table->string('billing_city')->nullable();
+            $table->string('billing_state')->nullable();
+            $table->string('billing_pincode')->nullable();
 
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
@@ -52,9 +99,19 @@ return new class extends Migration {
 
             $table->index(['order_id', 'product_id'], 'idx_order_items_lookup');
         });
+
+        Schema::create('order_status_logs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('order_id')->constrained()->cascadeOnDelete();
+            $table->string('status')->index();
+            $table->text('notes')->nullable();
+            $table->foreignId('changed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamps();
+        });
     }
 
     public function down(): void {
+        Schema::dropIfExists('order_status_logs');
         Schema::dropIfExists('order_items');
         Schema::dropIfExists('orders');
     }

@@ -40,7 +40,7 @@ export default () => ({
     totalItems: 0,
     totalPages: 1,
     modalInstance: null,
-    adjustForm: { productId: null, warehouseId: null, productName: '', warehouseName: '', currentQty: 0, newQty: 0 },
+    adjustForm: { productId: null, warehouseId: null, productName: '', warehouseName: '', currentQty: 0, newQty: 0, currentDamagedQty: 0, newDamagedQty: 0 },
     
     // Selection state
     selectedItems: [],
@@ -72,6 +72,14 @@ export default () => ({
             const data = await this.apiRequest('/api/inventory/transfers/options');
             this.warehouses = data.warehouses || [];
             this.productOptions = data.products || [];
+            
+            // Automatically select default warehouse if not already filtered
+            if (!this.warehouseFilter) {
+                const defaultWh = this.warehouses.find(w => w.is_default);
+                if (defaultWh) {
+                    this.warehouseFilter = defaultWh.id.toString();
+                }
+            }
         } catch (e) { console.error(e); }
     },
 
@@ -99,7 +107,16 @@ export default () => ({
 
     // Selection helper methods
     toggleAll(checked) {
-        this.selectedItems = checked ? this.items.map(i => i.id) : [];
+      if (checked) {
+        this.items.forEach(item => {
+          if (!this.selectedItems.includes(item.id)) {
+            this.selectedItems.push(item.id);
+          }
+        });
+      } else {
+        const currentIds = this.items.map(item => item.id);
+        this.selectedItems = this.selectedItems.filter(id => !currentIds.includes(id));
+      }
     },
 
     toggleItem(itemId) {
@@ -162,9 +179,14 @@ export default () => ({
                 exportItems = await this.fetchAllFiltered();
             }
 
-            const headers = ['Product Name', 'SKU', 'Warehouse', 'Quantity', 'Alert Level', 'Status'];
+            const headers = ['Product Name', 'SKU', 'Warehouse', 'Quantity', 'Reserved', 'Dispatched', 'Delivered', 'In Transit', 'Bad Qty', 'Alert Level', 'Status'];
             const rows = exportItems.map(item => {
                 const qty = parseFloat(item.quantity || 0);
+                const reserved = parseFloat(item.reserved_qty || 0);
+                const dispatched = parseFloat(item.dispatched_qty || 0);
+                const delivered = parseFloat(item.delivered_qty || 0);
+                const inTransit = parseFloat(item.in_transit_qty || 0);
+                const damaged = parseFloat(item.damaged_qty || 0);
                 const alert = parseFloat(item.product?.alert_quantity || 0);
                 let status = 'In Stock';
                 if (qty <= 0) status = 'Out of Stock';
@@ -175,6 +197,11 @@ export default () => ({
                     item.product?.sku || '',
                     item.warehouse?.name || '',
                     qty,
+                    reserved,
+                    dispatched,
+                    delivered,
+                    inTransit,
+                    damaged,
                     alert,
                     status
                 ];
@@ -208,6 +235,8 @@ export default () => ({
                 warehouseName: '',
                 currentQty: 0,
                 newQty: 0,
+                currentDamagedQty: 0,
+                newDamagedQty: 0,
             };
         } else {
             this.isEditing = true;
@@ -218,6 +247,8 @@ export default () => ({
                 warehouseName: item.warehouse?.name || '',
                 currentQty: parseFloat(item.quantity || 0),
                 newQty: parseFloat(item.quantity || 0),
+                currentDamagedQty: parseFloat(item.damaged_qty || 0),
+                newDamagedQty: parseFloat(item.damaged_qty || 0),
             };
         }
         this.modalInstance?.show();
@@ -228,13 +259,16 @@ export default () => ({
         const whId = this.adjustForm.warehouseId;
         if (!prodId || !whId) {
             this.adjustForm.currentQty = 0;
+            this.adjustForm.currentDamagedQty = 0;
             return;
         }
         try {
             const data = await this.apiRequest(`/api/inventory/stocks/show?product_id=${prodId}&warehouse_id=${whId}`);
             this.adjustForm.currentQty = parseFloat(data.data?.quantity || 0);
+            this.adjustForm.currentDamagedQty = parseFloat(data.data?.damaged_qty || 0);
         } catch (e) {
             this.adjustForm.currentQty = 0;
+            this.adjustForm.currentDamagedQty = 0;
         }
     },
 
@@ -247,6 +281,10 @@ export default () => ({
             showToast('Please enter a valid non-negative new quantity.', 'error');
             return;
         }
+        if (this.adjustForm.newDamagedQty === undefined || this.adjustForm.newDamagedQty === null || parseFloat(this.adjustForm.newDamagedQty) < 0) {
+            showToast('Please enter a valid non-negative bad quantity.', 'error');
+            return;
+        }
         this.saving = true;
         try {
             await this.apiRequest('/api/inventory/stocks/set', {
@@ -255,6 +293,7 @@ export default () => ({
                     product_id: this.adjustForm.productId,
                     warehouse_id: this.adjustForm.warehouseId,
                     quantity: this.adjustForm.newQty,
+                    damaged_qty: this.adjustForm.newDamagedQty,
                 }),
             });
             showToast('Stock level updated successfully.', 'success');

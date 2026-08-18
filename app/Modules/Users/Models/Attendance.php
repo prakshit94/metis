@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Modules\Users\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Attendance extends Model
+{
+    use SoftDeletes;
+
+    protected $appends = ['total_time'];
+
+    protected $fillable = [
+        'user_id',
+        'date',
+        'check_in',
+        'check_out',
+        'status',
+        'notes',
+    ];
+
+    protected $casts = [
+        'date' => 'date:Y-m-d',
+        'check_in' => 'datetime:H:i',
+        'check_out' => 'datetime:H:i',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function getTotalTimeAttribute(): ?string
+    {
+        if ($this->check_in && $this->check_out) {
+            $checkIn = \Carbon\Carbon::parse($this->check_in);
+            $checkOut = \Carbon\Carbon::parse($this->check_out);
+            
+            if ($checkOut->lessThan($checkIn)) {
+                $checkOut->addDay(); // Handle night shifts
+            }
+            
+            $diff = $checkIn->diff($checkOut);
+            
+            $hours = $diff->h + ($diff->days * 24);
+            $minutes = str_pad((string)$diff->i, 2, '0', STR_PAD_LEFT);
+            
+            return "{$hours}h {$minutes}m";
+        }
+
+        return null;
+    }
+}

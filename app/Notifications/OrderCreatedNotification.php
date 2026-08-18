@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Notifications;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+
+class OrderCreatedNotification extends Notification
+{
+    use Queueable;
+
+    public $orderNumber;
+    public $amount;
+    public $customerName;
+
+    /**
+     * Create a new notification instance.
+     */
+    public function __construct(string $orderNumber, float $amount, string $customerName)
+    {
+        $this->orderNumber = $orderNumber;
+        $this->amount = $amount;
+        $this->customerName = $customerName;
+    }
+
+    /**
+     * Get the notification's delivery channels.
+     *
+     * @return array<int, string>
+     */
+    public function via(object $notifiable): array
+    {
+        return ['database'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->line('The introduction to the notification.')
+            ->action('Notification Action', url('/'))
+            ->line('Thank you for using our application!');
+    }
+
+    /**
+     * Get the array representation of the notification.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'type' => 'order_created',
+            'title' => 'New Order Received',
+            'message' => "Order #{$this->orderNumber} was placed by {$this->customerName} for Rs {$this->amount}.",
+            'order_number' => $this->orderNumber,
+            'amount' => $this->amount,
+            'customer' => $this->customerName,
+        ];
+    }
+}

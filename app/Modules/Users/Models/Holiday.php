@@ -1,0 +1,18 @@
+<?php
+
+namespace App\Modules\Users\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Holiday extends Model
+{
+    protected $fillable = [
+        'name',
+        'date',
+        'type',
+    ];
+
+    protected $casts = [
+        'date' => 'date',
+    ];
+}

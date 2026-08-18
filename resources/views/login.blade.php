@@ -1,7 +1,7 @@
 @extends('layouts.auth')
 
 @section('title', 'Sign In')
-@section('description', 'Sign in to your Metis Admin account')
+@section('description', 'Sign in to your Ecommerce Admin account')
 @section('page', 'login')
 
 @section('content')
@@ -11,16 +11,16 @@
         {{-- ── Logo ───────────────────────────────────────────────────────── --}}
         <div class="auth-logo mb-4">
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <rect width="36" height="36" rx="10" fill="url(#metis-grad)"/>
+                <rect width="36" height="36" rx="10" fill="url(#ecommerce-grad)"/>
                 <path d="M10 26V12l8 8 8-8v14" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                 <defs>
-                    <linearGradient id="metis-grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                    <linearGradient id="ecommerce-grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
                         <stop stop-color="#6366f1"/>
                         <stop offset="1" stop-color="#8b5cf6"/>
                     </linearGradient>
                 </defs>
             </svg>
-            <span class="auth-brand-name">Metis</span>
+            <span class="auth-brand-name">Ecommerce</span>
         </div>
 
         {{-- ════════════════════════════════════════════════════════════════ --}}
@@ -53,37 +53,38 @@
                 @csrf
 
                 {{-- Email ------------------------------------------------- --}}
-                <div class="mb-3">
-                    <label for="loginEmail" class="form-label fw-semibold">Email address</label>
-                    <input type="email"
-                           class="form-control @error('email') is-invalid @enderror"
-                           id="loginEmail"
-                           name="email"
-                           value="{{ old('email', request()->cookie('remembered_email')) }}"
-                           placeholder="you@example.com"
-                           autocomplete="email"
-                           autofocus
-                           required>
-                    @error('email')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                <div class="mb-4">
+                    <label for="loginEmail" class="form-label fw-semibold small text-muted">Email address</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-body-secondary border-end-0 text-muted px-3"><i class="bi bi-envelope"></i></span>
+                        <input type="email"
+                               class="form-control bg-body border-start-0 ps-0 shadow-none fs-6 @error('email') is-invalid @enderror"
+                               id="loginEmail"
+                               name="email"
+                               value="{{ old('email', request()->cookie('remembered_email')) }}"
+                               placeholder="you@example.com"
+                               autocomplete="email"
+                               autofocus
+                               required>
+                        @error('email')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
 
                 {{-- Password ----------------------------------------------- --}}
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <label for="loginPassword" class="form-label fw-semibold mb-0">Password</label>
-                        <a href="#" class="auth-forgot-link" tabindex="-1">Forgot password?</a>
-                    </div>
-                    <div class="input-group">
+                <div class="mb-4">
+                    <label for="loginPassword" class="form-label fw-semibold small text-muted">Password</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-body-secondary border-end-0 text-muted px-3"><i class="bi bi-lock"></i></span>
                         <input :type="showPassword ? 'text' : 'password'"
-                               class="form-control @error('password') is-invalid @enderror"
+                               class="form-control bg-body border-start-0 border-end-0 ps-0 shadow-none fs-6 @error('password') is-invalid @enderror"
                                id="loginPassword"
                                name="password"
                                placeholder="••••••••"
                                autocomplete="current-password"
                                required>
-                        <button class="btn btn-outline-secondary password-toggle"
+                        <button class="btn btn-outline-secondary border-start-0 password-toggle px-3"
                                 type="button"
                                 @click="showPassword = !showPassword"
                                 :aria-label="showPassword ? 'Hide password' : 'Show password'"
@@ -118,11 +119,11 @@
 
                 {{-- Submit ------------------------------------------------- --}}
                 <button type="submit"
-                        class="btn btn-primary w-100 auth-submit-btn"
+                        class="btn btn-primary w-100 auth-submit-btn py-3 fs-6 rounded-3 mt-2"
                         id="loginSubmitBtn"
                         :disabled="isSubmitting">
                     <span x-show="!isSubmitting" class="d-flex align-items-center justify-content-center gap-2">
-                        <i class="bi bi-box-arrow-in-right"></i>
+                        <i class="bi bi-box-arrow-in-right fs-5"></i>
                         Sign In
                     </span>
                     <span x-show="isSubmitting" style="display: none;" class="d-flex align-items-center justify-content-center gap-2">

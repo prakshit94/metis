@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->decimal('dispatched_qty', 15, 4)->default(0);
             $table->decimal('committed_qty', 15, 4)->default(0);
             $table->decimal('in_transit_qty', 15, 4)->default(0);
+            $table->decimal('damaged_qty', 15, 4)->default(0);
             $table->string('status')->default('active')->index();
             $table->timestamps();
             $table->softDeletes()->index();

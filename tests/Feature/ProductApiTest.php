@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\Category;
-use App\Models\Permission;
-use App\Models\Product;
-use App\Models\Role;
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Users\Models\Permission;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Users\Models\Role;
+use App\Modules\Users\Models\User;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ProductApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected function setUp(): void
     {
@@ -46,7 +46,7 @@ class ProductApiTest extends TestCase
         $superAdminRole = Role::findOrCreate('Super Admin', 'web');
         $superAdminRole->syncPermissions($permissions);
 
-        $admin = $this->createUser('admin@example.com');
+        $admin = $this->createUser('admin_' . uniqid() . '@example.com');
         $admin->assignRole('Super Admin');
 
         $this->actingAs($admin);
@@ -233,7 +233,7 @@ class ProductApiTest extends TestCase
     public function test_import_products_with_fallback_and_dynamic_categories(): void
     {
         // Ensure a warehouse exists so the fallback can trigger
-        \App\Models\Warehouse::create(['name' => 'First Main Warehouse', 'code' => 'WH01', 'is_active' => true]);
+        \App\Modules\Catalog\Models\Warehouse::create(['name' => 'First Main Warehouse', 'code' => 'WH01', 'is_active' => true]);
 
         // CSV data with missing categories and missing default_warehouse_id but having stock
         $csvContent = "Name,SKU,Category,Selling_Price,Stock\n" .

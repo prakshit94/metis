@@ -138,27 +138,67 @@ function endpointFor(type) {
   return type === 'roles' ? '/api/roles' : '/api/permissions';
 }
 
-const permissionGroupMeta = {
-  user:       { label: 'Users',       icon: 'people',       order: 10 },
-  role:       { label: 'Roles',       icon: 'shield-lock',  order: 20 },
-  permission: { label: 'Permissions', icon: 'key',          order: 30 },
-  audit:      { label: 'Audit',       icon: 'journal-text', order: 40 },
-};
-
 function permissionGroupFor(name) {
-  const prefix = String(name ?? '').split('-')[0] || 'other';
-  const meta = permissionGroupMeta[prefix] ?? { label: 'Other', icon: 'grid', order: 999 };
+  let prefix = String(name ?? '').split(/[-.]/)[0] || 'other';
+  
+  if (name === 'view_all_order') prefix = 'orders';
+  if (name === 'view-all-data') prefix = 'view-all-data';
+  if (prefix === 'bulkuser') prefix = 'user';
+  if (prefix === 'audit-log') prefix = 'audit';
 
-  return { key: prefix, ...meta };
+  const label = getEntityLabel(name);
+
+  const icons = {
+    orders: 'cart', invoices: 'receipt', payments: 'credit-card', refunds: 'arrow-return-left', returns: 'box-arrow-in-down-left',
+    customer: 'people', customeraddress: 'geo-alt',
+    product: 'box', category: 'tags', brand: 'award', catalog: 'collection', productattribute: 'list-ul', hsncode: 'upc-scan', taxrate: 'percent', unitofmeasure: 'rulers',
+    warehouse: 'building', inventoryadjustment: 'sliders', stockmanagement: 'boxes', stocktransfer: 'arrow-left-right',
+    coupon: 'ticket', promotions: 'megaphone',
+    chat: 'chat', messages: 'envelope', calendar: 'calendar', files: 'folder', forms: 'ui-radios', security: 'shield-lock', help: 'question-circle',
+    village: 'pin-map', shipping: 'truck', role: 'shield-shaded', permission: 'key', user: 'person-badge', dashboard: 'speedometer2', analytics: 'graph-up', reports: 'file-earmark-bar-graph', settings: 'gear', audit: 'journal-text',
+    'view-all-data': 'globe'
+  };
+
+  return { 
+    key: prefix, 
+    label: label, 
+    icon: icons[prefix] || 'grid', 
+    order: 99 
+  };
 }
 
 function permissionActionLabel(name) {
-  const parts = String(name ?? '').split('-');
+  if (name === 'view_all_order') return 'View All';
+  if (name === 'bulkuser-manage') return 'Bulk Manage';
+  if (name === 'bulkuser-view') return 'Bulk View';
+
+  const parts = String(name ?? '').split(/[-.]/);
   if (parts.length <= 1) return String(name ?? '');
 
   return parts.slice(1)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).replace(/_/g, ' '))
     .join(' ');
+}
+
+function getEntityLabel(name) {
+  let prefix = String(name ?? '').split(/[-.]/)[0] || 'other';
+  if (name === 'view_all_order') prefix = 'orders';
+  if (name === 'view-all-data') prefix = 'view-all-data';
+  if (prefix === 'bulkuser') prefix = 'user';
+  if (prefix === 'audit-log') prefix = 'audit';
+  
+  const labels = {
+    brand: 'Brands', catalog: 'Catalogs', category: 'Categories', productattribute: 'Product Attributes',
+    hsncode: 'HSN Codes', taxrate: 'Tax Rates', unitofmeasure: 'Units of Measure', product: 'Products',
+    warehouse: 'Warehouses', inventoryadjustment: 'Inventory Adjustments', stockmanagement: 'Stock Management',
+    stocktransfer: 'Stock Transfers', orders: 'Orders', invoices: 'Invoices', payments: 'Payments',
+    refunds: 'Refunds', returns: 'Returns', customer: 'Customers', customeraddress: 'Customer Addresses',
+    coupon: 'Coupons', promotions: 'Promotions', village: 'Villages', shipping: 'Shipping', role: 'Roles',
+    permission: 'Permissions', user: 'Users', audit: 'Audit Logs', dashboard: 'Dashboard', 'view-all-data': 'Global Data Visibility',
+    chat: 'Team Chat', messages: 'Messages', calendar: 'Calendar', files: 'Files', forms: 'Forms', security: 'Security', help: 'Help & Support',
+    analytics: 'Analytics', reports: 'Reports', settings: 'Settings'
+  };
+  return labels[prefix] || (prefix.charAt(0).toUpperCase() + prefix.slice(1));
 }
 
 function groupPermissions(permissions) {
@@ -172,12 +212,25 @@ function groupPermissions(permissions) {
         groups.set(group.key, {
           ...group,
           items: [],
+          subGroups: [],
         });
       }
-      groups.get(group.key).items.push({
+      
+      const permObj = {
         ...permission,
         actionLabel: permissionActionLabel(permission.name),
-      });
+      };
+      
+      const groupData = groups.get(group.key);
+      groupData.items.push(permObj);
+      
+      const subLabel = getEntityLabel(permission.name);
+      let subGroup = groupData.subGroups.find(s => s.label === subLabel);
+      if (!subGroup) {
+        subGroup = { label: subLabel, items: [] };
+        groupData.subGroups.push(subGroup);
+      }
+      subGroup.items.push(permObj);
     });
 
   return [...groups.values()].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
@@ -337,7 +390,7 @@ document.addEventListener('alpine:init', () => {
 
     filterItems() {
       this.currentPage = 1;
-      this.selectedItems = [];
+      
       this.loadCurrent();
     },
 
@@ -399,7 +452,16 @@ document.addEventListener('alpine:init', () => {
     },
 
     toggleAll(checked) {
-      this.selectedItems = checked ? this.currentItems.map(item => item.id) : [];
+      if (checked) {
+        this.currentItems.forEach(item => {
+          if (!this.selectedItems.includes(String(item.id))) {
+            this.selectedItems.push(String(item.id));
+          }
+        });
+      } else {
+        const currentIds = this.currentItems.map(item => String(item.id));
+        this.selectedItems = this.selectedItems.filter(id => !currentIds.includes(id));
+      }
     },
 
     toggleItem(itemId) {
@@ -528,10 +590,10 @@ document.addEventListener('alpine:init', () => {
 
     async exportItems() {
       try {
-        const first = await apiFetch(`${endpointFor(this.activeTab)}?${this.params({ page: 1, per_page: 100 })}`);
+        const first = await apiFetch(`${endpointFor(this.activeTab)}?${this.params({ page: 1, per_page: 500 })}`);
         const rows = (first.data ?? []).map(item => this.mapItem(item));
         for (let page = 2; page <= (first.last_page ?? 1); page++) {
-          const data = await apiFetch(`${endpointFor(this.activeTab)}?${this.params({ page, per_page: 100 })}`);
+          const data = await apiFetch(`${endpointFor(this.activeTab)}?${this.params({ page, per_page: 500 })}`);
           rows.push(...(data.data ?? []).map(item => this.mapItem(item)));
         }
 
@@ -694,7 +756,9 @@ document.addEventListener('alpine:init', () => {
       name: '',
       guard_name: 'web',
       permissions: [],
+      roles: [],
     },
+    rolesList: [],
 
     get title() {
       if (this.editingId) return this.type === 'roles' ? 'Edit Role' : 'Edit Permission';
@@ -722,7 +786,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async init() {
-      await this.loadPermissions();
+      await Promise.all([this.loadPermissions(), this.loadRoles()]);
       document.getElementById('accessModal')?.addEventListener('hidden.bs.modal', () => this.resetForm(this.type));
     },
 
@@ -730,14 +794,14 @@ document.addEventListener('alpine:init', () => {
       this.permissionsLoading = true;
       this.permissionsError = '';
       try {
-        const data = await apiFetch('/api/permissions/options');
+        const data = await apiFetch(`/api/permissions/options?_t=${Date.now()}`);
         this.permissions = (data.data ?? data).map(permission => ({
           ...permission,
           actionLabel: permissionActionLabel(permission.name),
         }));
       } catch (err) {
         try {
-          const data = await apiFetch('/api/permissions?per_page=100&deleted=without&sort_by=name&sort_dir=asc');
+          const data = await apiFetch('/api/permissions?per_page=500&deleted=without&sort_by=name&sort_dir=asc');
           this.permissions = (data.data ?? data).map(permission => ({
             ...permission,
             actionLabel: permissionActionLabel(permission.name),
@@ -750,6 +814,20 @@ document.addEventListener('alpine:init', () => {
         this.permissionsLoading = false;
       }
     },
+    
+    async loadRoles() {
+      try {
+        const data = await apiFetch(`/api/roles/options?_t=${Date.now()}`);
+        this.rolesList = (data.data ?? data).map(role => role.name);
+      } catch (err) {
+        try {
+          const data = await apiFetch('/api/roles?per_page=500&deleted=without&sort_by=name&sort_dir=asc');
+          this.rolesList = (data.data ?? data).map(role => role.name);
+        } catch (fallbackErr) {
+          this.rolesList = [];
+        }
+      }
+    },
 
     resetForm(type = 'roles') {
       this.type = type;
@@ -759,6 +837,7 @@ document.addEventListener('alpine:init', () => {
         name: '',
         guard_name: 'web',
         permissions: [],
+        roles: [],
       };
       this.permissionSearch = '';
       if (type === 'roles') this.loadPermissions();
@@ -769,7 +848,8 @@ document.addEventListener('alpine:init', () => {
       this.editingId = item.id;
       this.form.name = item.name;
       this.form.guard_name = item.guard_name || 'web';
-      this.form.permissions = (item.permissions ?? []).map(permission => permission.name);
+      this.form.permissions = type === 'roles' ? (item.permissions ?? []).map(permission => permission.name) : [];
+      this.form.roles = type === 'permissions' ? (item.roles ?? []).map(r => r.name) : [];
     },
 
     isPermissionSelected(permissionName) {
@@ -794,6 +874,10 @@ document.addEventListener('alpine:init', () => {
       this.form.permissions = [...new Set([...this.form.permissions, ...groupNames])];
     },
 
+    selectAllPermissions() {
+      this.form.permissions = this.permissions.map(permission => permission.name);
+    },
+
     clearPermissions() {
       this.form.permissions = [];
     },
@@ -811,6 +895,7 @@ document.addEventListener('alpine:init', () => {
           guard_name: this.form.guard_name || 'web',
         };
         if (this.type === 'roles') payload.permissions = this.form.permissions;
+        if (this.type === 'permissions') payload.roles = this.form.roles;
 
         const url = this.editingId ? `${endpointFor(this.type)}/${this.editingId}` : endpointFor(this.type);
         const method = this.editingId ? 'PUT' : 'POST';

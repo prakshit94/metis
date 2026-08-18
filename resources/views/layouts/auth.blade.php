@@ -11,14 +11,14 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Title -->
-    <title>@yield('title', 'Login') - Metis Admin</title>
+    <title>@yield('title', 'Login') - Ecommerce Admin</title>
 
     <!-- Theme Color -->
     <meta name="theme-color" content="#6366f1">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg">
-    <link rel="icon" type="image/png" href="/assets/icons/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/icons/favicon.svg') }}">
+    <link rel="icon" type="image/png" href="{{ asset('assets/icons/favicon.png') }}">
 
     <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
