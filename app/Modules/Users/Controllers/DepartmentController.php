@@ -22,6 +22,7 @@ class DepartmentController extends Controller
             'name' => 'required|string|unique:departments,name',
             'code' => 'nullable|string|unique:departments,code',
             'manager_id' => 'nullable|exists:users,id',
+            'parent_id' => 'nullable|exists:departments,id',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
@@ -43,6 +44,7 @@ class DepartmentController extends Controller
             'name' => 'sometimes|required|string|unique:departments,name,' . $department->id,
             'code' => 'nullable|string|unique:departments,code,' . $department->id,
             'manager_id' => 'nullable|exists:users,id',
+            'parent_id' => 'nullable|exists:departments,id|not_in:' . $department->id,
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);

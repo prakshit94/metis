@@ -1064,6 +1064,8 @@ document.addEventListener('alpine:init', () => {
     availablePermissions: [],
     departments: [],
     managers: [],
+    designations: [],
+    employmentTypes: [],
     
     get groupedAvailablePermissions() {
       return groupPermissions(this.availablePermissions);
@@ -1134,6 +1136,18 @@ document.addEventListener('alpine:init', () => {
         this.managers = mData.data ?? mData;
       } catch (e) {
         this.managers = [];
+      }
+      try {
+        const desData = await apiFetch('/api/hr-settings/designations');
+        this.designations = desData.data ?? desData;
+      } catch (e) {
+        this.designations = [];
+      }
+      try {
+        const empData = await apiFetch('/api/hr-settings/employment_types');
+        this.employmentTypes = empData.data ?? empData;
+      } catch (e) {
+        this.employmentTypes = [];
       }
     },
 

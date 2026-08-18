@@ -11,14 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('departments', function (Blueprint $table) {
+        Schema::create('designations', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
-            $table->string('code')->unique()->nullable();
-            // We will define the foreign key for manager_id later if needed, or we can just make it unsignedBigInteger since users table might not exist yet
-            $table->unsignedBigInteger('manager_id')->nullable();
-            $table->foreignId('parent_id')->nullable()->constrained('departments')->nullOnDelete();
-            $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
@@ -30,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('departments');
+        Schema::dropIfExists('designations');
     }
 };

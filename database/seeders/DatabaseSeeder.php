@@ -38,6 +38,7 @@ class DatabaseSeeder extends Seeder
             ReferralProgramSeeder::class,
             HolidaySeeder::class,
             LeaveBalanceSeeder::class,
+            HrSettingsSeeder::class,
         ]);
     }
 }

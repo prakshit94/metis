@@ -15,6 +15,7 @@ class Department extends Model
         'name',
         'code',
         'manager_id',
+        'parent_id',
         'description',
         'is_active',
     ];
@@ -31,5 +32,15 @@ class Department extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class, 'department_id');
+    }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(Department::class, 'parent_id');
     }
 }

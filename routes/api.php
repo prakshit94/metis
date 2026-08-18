@@ -7,6 +7,7 @@ use App\Modules\Users\Controllers\PermissionController;
 use App\Modules\Users\Controllers\RoleController;
 use App\Modules\Users\Controllers\UserController;
 use App\Modules\Users\Controllers\DepartmentController;
+use App\Modules\Users\Controllers\OrgChartController;
 use App\Modules\Users\Controllers\AttendanceController;
 use App\Modules\Users\Controllers\LeaveController;
 use Illuminate\Support\Facades\Route;
@@ -129,6 +130,15 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::middleware('permission:department-create')->post('/departments', [DepartmentController::class, 'store']);
         Route::middleware('permission:department-edit')->put('/departments/{department}', [DepartmentController::class, 'update']);
         Route::middleware('permission:department-delete')->delete('/departments/{department}', [DepartmentController::class, 'destroy']);
+        
+        // Org Chart
+        Route::middleware('permission:department-view')->get('/org-chart', [OrgChartController::class, 'index']);
+        
+        Route::middleware('permission:department-view')->get('/hr-settings/{type}', [\App\Modules\Users\Controllers\HrSettingController::class, 'list']);
+        Route::middleware('permission:department-create')->post('/hr-settings/{type}', [\App\Modules\Users\Controllers\HrSettingController::class, 'store']);
+        Route::middleware('permission:department-edit')->put('/hr-settings/{type}/{id}', [\App\Modules\Users\Controllers\HrSettingController::class, 'update']);
+        Route::middleware('permission:department-edit')->patch('/hr-settings/{type}/{id}/toggle', [\App\Modules\Users\Controllers\HrSettingController::class, 'toggleActive']);
+        Route::middleware('permission:department-delete')->delete('/hr-settings/{type}/{id}', [\App\Modules\Users\Controllers\HrSettingController::class, 'destroy']);
 
         // Attendance
         Route::get('/attendances/export/summary', [AttendanceController::class, 'exportSummary']);

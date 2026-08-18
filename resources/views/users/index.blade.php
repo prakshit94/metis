@@ -1063,15 +1063,20 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Designation</label>
-                                            <input type="text" class="form-control form-control-sm" x-model="form.designation" placeholder="e.g. Senior Developer">
+                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.designation">
+                                                <option value="">None</option>
+                                                <template x-for="desig in designations.filter(d => d.is_active)" :key="desig.id">
+                                                    <option :value="desig.name" x-text="desig.name"></option>
+                                                </template>
+                                            </select>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Employment Type</label>
                                             <select x-select data-no-search class="form-select form-select-sm" x-model="form.employment_type">
-                                                <option value="Full-time">Full-time</option>
-                                                <option value="Part-time">Part-time</option>
-                                                <option value="Contract">Contract</option>
-                                                <option value="Intern">Intern</option>
+                                                <option value="">None</option>
+                                                <template x-for="emp in employmentTypes.filter(e => e.is_active)" :key="emp.id">
+                                                    <option :value="emp.name" x-text="emp.name"></option>
+                                                </template>
                                             </select>
                                         </div>
                                         <div class="col-md-6">

@@ -450,7 +450,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'departments' ? 'active' : '' }}" href="{{ route('departments') }}">
                                     <i class="bi bi-diagram-3-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Departments</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Organization Structure</span>
                                 </a>
                             </li>
                             @endcan
