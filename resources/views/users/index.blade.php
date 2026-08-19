@@ -1211,16 +1211,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3 d-flex align-items-center gap-3 bg-body-tertiary border p-3 rounded">
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="importType" id="importTypeBasic" value="basic" x-model="importType" @change="reset()">
-                        <label class="form-check-label fw-semibold" for="importTypeBasic">Basic Import</label>
+                <div class="mb-3 d-flex align-items-center justify-content-between bg-body-tertiary border p-3 rounded">
+                    <div>
+                        <span class="fw-semibold">Import Users</span>
                     </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="importType" id="importTypeFull" value="full" x-model="importType" @change="reset()">
-                        <label class="form-check-label fw-semibold" for="importTypeFull">Full Details Import</label>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary ms-auto" @click="downloadTemplate()">
+                    <button type="button" class="btn btn-sm btn-outline-primary" @click="downloadTemplate()">
                         <i class="bi bi-download me-1"></i>Download Template
                     </button>
                 </div>
@@ -1228,7 +1223,7 @@
                 <div class="alert alert-info mb-3">
                     <i class="bi bi-info-circle me-2"></i>
                     <strong>Expected Columns:</strong>
-                    <div x-text="importType === 'basic' ? basicHeaders.join(', ') : fullHeaders.join(', ')" class="small mt-1 text-break"></div>
+                    <div x-text="headers.join(', ')" class="small mt-1 text-break"></div>
                     <small class="d-block mt-2 opacity-75">You can download the template above to ensure your columns match exactly.</small>
                 </div>
                 <div class="mb-3">

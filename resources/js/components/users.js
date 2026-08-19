@@ -1360,12 +1360,10 @@ document.addEventListener('alpine:init', () => {
     file: null,
     importing: false,
     result: null,
-    importType: 'basic',
     parsedHeaders: [],
     parsedRows: [],
     previewRows: [],
-    basicHeaders: ['First Name', 'Middle Name', 'Last Name', 'Email', 'Phone', 'Department', 'Manager', 'Role', 'Status'],
-    fullHeaders: ['First Name', 'Middle Name', 'Last Name', 'Email', 'Phone', 'Employee ID', 'Employment Type', 'Designation', 'Department', 'Manager', 'Role', 'Status', 'Date of Birth', 'Gender', 'Blood Group', 'Emergency Contact Name', 'Emergency Contact Phone', 'Address Line 1', 'Address Line 2', 'Village Name', 'Post Office', 'Taluka', 'District', 'City', 'State', 'Pincode'],
+    headers: ['First Name', 'Middle Name', 'Last Name', 'Email', 'Phone', 'password'],
 
     init() {
       // Reset form when modal is hidden
@@ -1385,10 +1383,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     downloadTemplate() {
-      const headers = this.importType === 'basic' ? this.basicHeaders : this.fullHeaders;
-      const csv = headers.map(csvEscape).join(',');
-      downloadBlob(`users-${this.importType}-template.csv`, csv, 'text/csv;charset=utf-8;');
-      showToast(`Downloaded ${this.importType} template.`);
+      const csv = this.headers.map(csvEscape).join(',');
+      downloadBlob(`users-import-template.csv`, csv, 'text/csv;charset=utf-8;');
+      showToast(`Downloaded template.`);
     },
 
     async handleFile(event) {
@@ -1434,25 +1431,13 @@ document.addEventListener('alpine:init', () => {
       for (let i = 0; i < this.parsedRows.length; i++) {
         const row = this.parsedRows[i];
         
-        let firstName, middleName, lastName, email, phone, employeeId, employmentType, designation, departmentName, managerName, role, statusRaw, dob, gender, bloodGroup, emergName, emergPhone, addr1, addr2, village, po, taluka, district, city, state, pin;
-
-        if (this.importType === 'basic') {
-            [firstName, middleName, lastName, email, phone, departmentName, managerName, role, statusRaw] = row;
-        } else {
-            [firstName, middleName, lastName, email, phone, employeeId, employmentType, designation, departmentName, managerName, role, statusRaw, dob, gender, bloodGroup, emergName, emergPhone, addr1, addr2, village, po, taluka, district, city, state, pin] = row;
-        }
+        let [firstName, middleName, lastName, email, phone, password] = row;
 
         if (!firstName || !email) { errors.push(`Row ${i + 2}: missing first name or email`); continue; }
 
-        const isActive = statusRaw?.toLowerCase() !== 'inactive' && statusRaw?.toLowerCase() !== 'deleted';
         const name = buildFullName(firstName, middleName, lastName);
 
-        // Resolve IDs
-        const dObj = deps.find(d => d.name.toLowerCase() === String(departmentName || '').toLowerCase().trim());
-        const mObj = mgrs.find(m => m.name.toLowerCase() === String(managerName || '').toLowerCase().trim());
-
         try {
-          const tempPw = `Temp@${Math.random().toString(36).slice(2, 8)}1Aa`;
           await apiFetch('/api/users', {
             method: 'POST',
             body: JSON.stringify({
@@ -1462,29 +1447,10 @@ document.addEventListener('alpine:init', () => {
               last_name: lastName || null,
               email,
               phone: phone || null,
-              employee_id: employeeId || null,
-              employment_type: employmentType || 'Full-time',
-              designation: designation || null,
-              department_id: dObj ? dObj.id : null,
-              manager_id: mObj ? mObj.id : null,
-              password: tempPw,
-              password_confirmation: tempPw,
-              is_active: isActive,
-              roles: role ? [formatRoleName(role)] : ['User'],
-              date_of_birth: dob || null,
-              gender: gender || null,
-              blood_group: bloodGroup || null,
-              emergency_contact_name: emergName || null,
-              emergency_contact_phone: emergPhone || null,
-              address_line_1: addr1 || null,
-              address_line_2: addr2 || null,
-              village_name: village || null,
-              post_office: po || null,
-              taluka: taluka || null,
-              district: district || null,
-              city: city || null,
-              state: state || null,
-              pincode: pin || null,
+              password: password || 'Default@123',
+              password_confirmation: password || 'Default@123',
+              is_active: true,
+              roles: ['User'],
             }),
           });
           created++;

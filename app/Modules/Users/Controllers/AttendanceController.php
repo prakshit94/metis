@@ -49,10 +49,10 @@ class AttendanceController extends Controller implements HasMiddleware
             ->select('attendances.*')
             ->join('users', 'attendances.user_id', '=', 'users.id')
             ->when(!$isGlobalView, fn ($q) => $q->where('attendances.user_id', $request->user()->id))
-            ->when($isGlobalView, function($q) use ($request, $filterUserId, $perPage) {
+            ->when($isGlobalView, function($q) use ($request, $filterUserId) {
                 if ($filterUserId) {
                     $q->where('attendances.user_id', $filterUserId);
-                } elseif ($perPage === -1) {
+                } else {
                     $q->where('attendances.user_id', $request->user()->id);
                 }
             })
@@ -96,10 +96,10 @@ class AttendanceController extends Controller implements HasMiddleware
                 $endDate = $request->input('end_date');
                 
                 $leaves = \App\Modules\Users\Models\Leave::when(!$isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
-                    ->when($isGlobalView, function($q) use ($request, $filterUserId, $perPage) {
+                    ->when($isGlobalView, function($q) use ($request, $filterUserId) {
                         if ($filterUserId) {
                             $q->where('user_id', $filterUserId);
-                        } elseif ($perPage === -1) {
+                        } else {
                             $q->where('user_id', $request->user()->id);
                         }
                     })
@@ -134,10 +134,10 @@ class AttendanceController extends Controller implements HasMiddleware
             $endDate = $request->input('end_date');
             
             $leaves = \App\Modules\Users\Models\Leave::when(!$isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
-                ->when($isGlobalView, function($q) use ($request, $filterUserId, $perPage) {
+                ->when($isGlobalView, function($q) use ($request, $filterUserId) {
                     if ($filterUserId) {
                         $q->where('user_id', $filterUserId);
-                    } elseif ($perPage === -1) {
+                    } else {
                         $q->where('user_id', $request->user()->id);
                     }
                 })
@@ -170,6 +170,11 @@ class AttendanceController extends Controller implements HasMiddleware
             'notes' => 'nullable|string',
         ]);
 
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (!$isGlobalView) {
+            $validated['user_id'] = $request->user()->id;
+        }
+
         $checkIn = !empty($validated['check_in_time']) ? date('H:i:s', strtotime($validated['check_in_time'])) : null;
         $checkOut = !empty($validated['check_out_time']) ? date('H:i:s', strtotime($validated['check_out_time'])) : null;
 
@@ -191,6 +196,11 @@ class AttendanceController extends Controller implements HasMiddleware
 
         $attendance = Attendance::withTrashed()->findOrFail($id);
 
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (!$isGlobalView && $attendance->user_id !== $request->user()->id) {
+            abort(403, 'Unauthorized to modify this attendance record.');
+        }
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'date' => 'required|date',
@@ -199,6 +209,10 @@ class AttendanceController extends Controller implements HasMiddleware
             'status' => 'required|in:Present,Absent,Half-Day,Late',
             'notes' => 'nullable|string',
         ]);
+
+        if (!$isGlobalView) {
+            $validated['user_id'] = $request->user()->id;
+        }
 
         $checkIn = !empty($validated['check_in_time']) ? date('H:i:s', strtotime($validated['check_in_time'])) : null;
         $checkOut = !empty($validated['check_out_time']) ? date('H:i:s', strtotime($validated['check_out_time'])) : null;
@@ -220,6 +234,12 @@ class AttendanceController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('attendance-view'), 403);
 
         $attendance = Attendance::withTrashed()->with('user')->findOrFail($id);
+        
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (!$isGlobalView && $attendance->user_id !== $request->user()->id) {
+            abort(403, 'Unauthorized to view this attendance record.');
+        }
+
         return response()->json(['data' => $attendance]);
     }
     
@@ -228,6 +248,11 @@ class AttendanceController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('attendance-delete'), 403);
 
         $attendance = Attendance::withTrashed()->findOrFail($id);
+        
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (!$isGlobalView && $attendance->user_id !== $request->user()->id) {
+            abort(403, 'Unauthorized to delete this attendance record.');
+        }
 
         if ($attendance->trashed()) {
             return response()->json([
@@ -248,6 +273,11 @@ class AttendanceController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('attendance-edit'), 403);
 
         $attendance = Attendance::withTrashed()->findOrFail($id);
+        
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (!$isGlobalView && $attendance->user_id !== $request->user()->id) {
+            abort(403, 'Unauthorized to restore this attendance record.');
+        }
 
         if (! $attendance->trashed()) {
             return response()->json([
@@ -267,6 +297,12 @@ class AttendanceController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('attendance-delete'), 403);
 
         $attendance = Attendance::withTrashed()->findOrFail($id);
+        
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (!$isGlobalView && $attendance->user_id !== $request->user()->id) {
+            abort(403, 'Unauthorized to permanently delete this attendance record.');
+        }
+        
         $attendance->forceDelete();
 
         return response()->json([
@@ -287,9 +323,10 @@ class AttendanceController extends Controller implements HasMiddleware
         $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
         $filterUserId = $request->input('user_id');
 
-        $attendances = Attendance::with('user:id,name,employee_id')
+        $attendances = Attendance::with('user:id,name,employee_id,joining_date')
             ->when(!$isGlobalView, fn($q) => $q->where('user_id', $request->user()->id))
             ->when($isGlobalView && $filterUserId, fn($q) => $q->where('user_id', $filterUserId))
+            ->when($isGlobalView && !$filterUserId, fn($q) => $q->where('user_id', $request->user()->id))
             ->whereYear('date', $year)
             ->whereMonth('date', $m)
             ->get();
@@ -321,8 +358,15 @@ class AttendanceController extends Controller implements HasMiddleware
                     return \Carbon\Carbon::parse($item->date)->format('Y-m-d');
                 });
                 
+                $joiningDate = $user->joining_date ? \Carbon\Carbon::parse($user->joining_date)->format('Y-m-d') : null;
+                
                 for ($i = 1; $i <= $daysInMonth; $i++) {
                     $dateStr = sprintf('%04d-%02d-%02d', $year, $m, $i);
+                    
+                    if ($joiningDate && $dateStr < $joiningDate) {
+                        $row[] = '-';
+                        continue;
+                    }
                     
                     if (isset($groupedByDate[$dateStr])) {
                         $dayAttendances = $groupedByDate[$dateStr];
@@ -360,6 +404,7 @@ class AttendanceController extends Controller implements HasMiddleware
         $attendances = Attendance::with('user:id,name,employee_id')
             ->when(!$isGlobalView, fn($q) => $q->where('user_id', $request->user()->id))
             ->when($isGlobalView && $filterUserId, fn($q) => $q->where('user_id', $filterUserId))
+            ->when($isGlobalView && !$filterUserId, fn($q) => $q->where('user_id', $request->user()->id))
             ->whereYear('date', $year)
             ->whereMonth('date', $m)
             ->orderBy('date', 'asc')
@@ -410,13 +455,20 @@ class AttendanceController extends Controller implements HasMiddleware
         $ids = $validated['ids'];
         $action = $validated['action'];
         
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        
+        $query = Attendance::whereIn('id', $ids);
+        if (!$isGlobalView) {
+            $query->where('user_id', $request->user()->id);
+        }
+        
         if ($action === 'delete') {
-            Attendance::whereIn('id', $ids)->delete();
+            $query->delete();
             return response()->json(['message' => 'Selected records temporarily deleted.']);
         }
         
         if ($action === 'force-delete') {
-            Attendance::whereIn('id', $ids)->forceDelete();
+            $query->forceDelete();
             return response()->json(['message' => 'Selected records permanently deleted.']);
         }
         

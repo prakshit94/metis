@@ -468,279 +468,6 @@
       "name": "User Management",
       "item": [
         {
-          "id": "680a5d6d-5a49-4be3-adf8-a9232b25e9f5",
-          "name": "Get Users",
-          "request": {
-            "name": "chat.user.index",
-            "description": {},
-            "url": {
-              "path": [
-                "api",
-                "chat",
-                "users"
-              ],
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "query": [
-                {
-                  "disabled": false,
-                  "description": {
-                    "content": "",
-                    "type": "text/plain"
-                  },
-                  "key": "q",
-                  "value": "example"
-                },
-                {
-                  "disabled": false,
-                  "description": {
-                    "content": "",
-                    "type": "text/plain"
-                  },
-                  "key": "include_self",
-                  "value": true
-                }
-              ],
-              "variable": []
-            },
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "method": "GET",
-            "body": {}
-          },
-          "response": [
-            {
-              "id": "18d76b1c-64cf-49df-9b58-d6254db34f66",
-              "name": "200",
-              "originalRequest": {
-                "url": {
-                  "path": [
-                    "chat",
-                    "users"
-                  ],
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "query": [
-                    {
-                      "disabled": false,
-                      "description": {
-                        "content": "",
-                        "type": "text/plain"
-                      },
-                      "key": "q",
-                      "value": "example"
-                    },
-                    {
-                      "disabled": false,
-                      "description": {
-                        "content": "",
-                        "type": "text/plain"
-                      },
-                      "key": "include_self",
-                      "value": true
-                    }
-                  ],
-                  "variable": []
-                },
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "method": "GET",
-                "body": {}
-              },
-              "status": "OK",
-              "code": 200,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"1\",\n      \"name\": \"example\",\n      \"email\": \"example\",\n      \"employee_id\": \"example\",\n      \"photo\": \"example\",\n      \"location\": \"example\",\n      \"is_online\": \"example\",\n      \"presence_status\": \"offline\",\n      \"last_seen_at\": \"example\",\n      \"last_seen_label\": \"example\",\n      \"active_device\": \"desktop\",\n      \"today_orders\": \"1\",\n      \"today_revenue\": \"1.5\"\n    },\n    {\n      \"id\": \"1\",\n      \"name\": \"example\",\n      \"email\": \"example\",\n      \"employee_id\": \"example\",\n      \"photo\": \"example\",\n      \"location\": \"example\",\n      \"is_online\": \"example\",\n      \"presence_status\": \"online\",\n      \"last_seen_at\": \"example\",\n      \"last_seen_label\": \"example\",\n      \"active_device\": \"desktop\",\n      \"today_orders\": \"1\",\n      \"today_revenue\": \"1.5\"\n    }\n  ]\n}",
-              "cookie": [],
-              "_postman_previewlanguage": "json"
-            },
-            {
-              "id": "216e9296-e309-4997-9d6a-0b243747fb3d",
-              "name": "Unauthenticated",
-              "originalRequest": {
-                "url": {
-                  "path": [
-                    "chat",
-                    "users"
-                  ],
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "query": [
-                    {
-                      "disabled": false,
-                      "description": {
-                        "content": "",
-                        "type": "text/plain"
-                      },
-                      "key": "q",
-                      "value": "example"
-                    },
-                    {
-                      "disabled": false,
-                      "description": {
-                        "content": "",
-                        "type": "text/plain"
-                      },
-                      "key": "include_self",
-                      "value": true
-                    }
-                  ],
-                  "variable": []
-                },
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "method": "GET",
-                "body": {}
-              },
-              "status": "Unauthorized",
-              "code": 401,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"message\": \"example\"\n}",
-              "cookie": [],
-              "_postman_previewlanguage": "json"
-            },
-            {
-              "id": "a9623283-27cc-43f8-9804-4b1f7c80c68f",
-              "name": "Not found",
-              "originalRequest": {
-                "url": {
-                  "path": [
-                    "chat",
-                    "users"
-                  ],
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "query": [
-                    {
-                      "disabled": false,
-                      "description": {
-                        "content": "",
-                        "type": "text/plain"
-                      },
-                      "key": "q",
-                      "value": "example"
-                    },
-                    {
-                      "disabled": false,
-                      "description": {
-                        "content": "",
-                        "type": "text/plain"
-                      },
-                      "key": "include_self",
-                      "value": true
-                    }
-                  ],
-                  "variable": []
-                },
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "method": "GET",
-                "body": {}
-              },
-              "status": "Not Found",
-              "code": 404,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"message\": \"example\"\n}",
-              "cookie": [],
-              "_postman_previewlanguage": "json"
-            },
-            {
-              "id": "07602988-c4ab-4fe0-ad0d-a2f23d20ffcd",
-              "name": "Validation error",
-              "originalRequest": {
-                "url": {
-                  "path": [
-                    "chat",
-                    "users"
-                  ],
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "query": [
-                    {
-                      "disabled": false,
-                      "description": {
-                        "content": "",
-                        "type": "text/plain"
-                      },
-                      "key": "q",
-                      "value": "example"
-                    },
-                    {
-                      "disabled": false,
-                      "description": {
-                        "content": "",
-                        "type": "text/plain"
-                      },
-                      "key": "include_self",
-                      "value": true
-                    }
-                  ],
-                  "variable": []
-                },
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "method": "GET",
-                "body": {}
-              },
-              "status": "Unprocessable Entity (WebDAV) (RFC 4918)",
-              "code": 422,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"message\": \"example\",\n  \"errors\": {\n    \"key_0\": [\n      \"example\",\n      \"example\"\n    ],\n    \"key_1\": [\n      \"example\",\n      \"example\"\n    ],\n    \"key_2\": [\n      \"example\",\n      \"example\"\n    ]\n  }\n}",
-              "cookie": [],
-              "_postman_previewlanguage": "json"
-            }
-          ],
-          "event": [],
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          }
-        },
-        {
           "id": "37f8782b-de86-49ea-8787-552d28dac71f",
           "name": "Get Permissions",
           "request": {
@@ -6435,9 +6162,9 @@
         },
         {
           "id": "38a0b0af-aeeb-47df-b8da-2242ec127e43",
-          "name": "Create By User",
+          "name": "Update User",
           "request": {
-            "name": "Update user fields, roles, and direct permissions.\nOnly provided fields are updated (PATCH semantics)",
+            "name": "Update User",
             "description": {},
             "url": {
               "path": [
@@ -6472,7 +6199,7 @@
                 "value": "application/json"
               }
             ],
-            "method": "POST",
+            "method": "PUT",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -66526,6 +66253,284 @@
                 }
               ],
               "body": "{\n  \"message\": \"example\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "id": "680a5d6d-5a49-4be3-adf8-a9232b25e9f5",
+          "name": "Get Users",
+          "request": {
+            "name": "chat.user.index",
+            "description": {},
+            "url": {
+              "path": [
+                "api",
+                "chat",
+                "users"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "disabled": false,
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "key": "q",
+                  "value": "example"
+                },
+                {
+                  "disabled": false,
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "key": "include_self",
+                  "value": true
+                }
+              ],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "body": {}
+          },
+          "response": [
+            {
+              "id": "18d76b1c-64cf-49df-9b58-d6254db34f66",
+              "name": "200",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "chat",
+                    "users"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "key": "q",
+                      "value": "example"
+                    },
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "key": "include_self",
+                      "value": true
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"1\",\n      \"name\": \"example\",\n      \"email\": \"example\",\n      \"employee_id\": \"example\",\n      \"photo\": \"example\",\n      \"location\": \"example\",\n      \"is_online\": \"example\",\n      \"presence_status\": \"offline\",\n      \"last_seen_at\": \"example\",\n      \"last_seen_label\": \"example\",\n      \"active_device\": \"desktop\",\n      \"today_orders\": \"1\",\n      \"today_revenue\": \"1.5\"\n    },\n    {\n      \"id\": \"1\",\n      \"name\": \"example\",\n      \"email\": \"example\",\n      \"employee_id\": \"example\",\n      \"photo\": \"example\",\n      \"location\": \"example\",\n      \"is_online\": \"example\",\n      \"presence_status\": \"online\",\n      \"last_seen_at\": \"example\",\n      \"last_seen_label\": \"example\",\n      \"active_device\": \"desktop\",\n      \"today_orders\": \"1\",\n      \"today_revenue\": \"1.5\"\n    }\n  ]\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "216e9296-e309-4997-9d6a-0b243747fb3d",
+              "name": "Unauthenticated",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "chat",
+                    "users"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "key": "q",
+                      "value": "example"
+                    },
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "key": "include_self",
+                      "value": true
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"example\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "a9623283-27cc-43f8-9804-4b1f7c80c68f",
+              "name": "Not found",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "chat",
+                    "users"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "key": "q",
+                      "value": "example"
+                    },
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "key": "include_self",
+                      "value": true
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"example\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "07602988-c4ab-4fe0-ad0d-a2f23d20ffcd",
+              "name": "Validation error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "chat",
+                    "users"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "key": "q",
+                      "value": "example"
+                    },
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "key": "include_self",
+                      "value": true
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unprocessable Entity (WebDAV) (RFC 4918)",
+              "code": 422,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"example\",\n  \"errors\": {\n    \"key_0\": [\n      \"example\",\n      \"example\"\n    ],\n    \"key_1\": [\n      \"example\",\n      \"example\"\n    ],\n    \"key_2\": [\n      \"example\",\n      \"example\"\n    ]\n  }\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             }

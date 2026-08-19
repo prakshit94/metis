@@ -56,14 +56,14 @@ function getModal(selector) {
 }
 
 document.addEventListener('alpine:init', () => {
-  Alpine.data('attendancesTable', () => ({
+  Alpine.data('attendancesTable', (currentUserId = '') => ({
     items: [],
     leaves: [],
     selectedItems: [],
     searchQuery: '',
     statusFilter: '',
     dateFilter: '',
-    userFilter: '',
+    userFilter: currentUserId ? String(currentUserId) : '',
     usersList: [],
     sortField: 'date',
     sortDirection: 'desc',
@@ -336,8 +336,20 @@ document.addEventListener('alpine:init', () => {
       const pad = (n) => String(n).padStart(2, '0');
       const todayDateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
       
+      let joiningDateStr = null;
+      if (this.userFilter) {
+          const u = this.usersList.find(x => String(x.id) === String(this.userFilter));
+          if (u && u.joining_date) {
+              joiningDateStr = u.joining_date.split('T')[0];
+          }
+      } else if (this.items.length > 0 && this.items[0].user && this.items[0].user.joining_date) {
+          joiningDateStr = this.items[0].user.joining_date.split('T')[0];
+      }
+      
       this.calendarDays.forEach(day => {
         if (day.events.length === 0 && day.date <= todayDateStr && !day.isOtherMonth) {
+          if (joiningDateStr && day.date < joiningDateStr) return;
+          
           // Parse date properly across timezones avoiding shift
           const [year, month, date] = day.date.split('-');
           const d = new Date(year, month - 1, date);

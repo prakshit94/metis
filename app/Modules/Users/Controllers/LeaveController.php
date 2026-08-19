@@ -9,11 +9,24 @@ use Illuminate\Http\JsonResponse;
 
 class LeaveController extends Controller
 {
+    private function isGlobalView(Request $request): bool
+    {
+        return $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+    }
+
     public function index(Request $request): JsonResponse
     {
         abort_unless($request->user()?->can('leave-view'), 403);
 
-        $leaves = Leave::with(['user', 'approver', 'applier'])->orderBy('start_date', 'desc')->paginate(request('per_page', 15));
+        $isGlobalView = $this->isGlobalView($request);
+        $filterUserId = $request->input('user_id');
+
+        $query = Leave::with(['user', 'approver', 'applier'])
+            ->when(!$isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when($isGlobalView && $filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
+            ->orderBy('start_date', 'desc');
+
+        $leaves = $query->paginate(request('per_page', 15));
         return response()->json($leaves);
     }
 
@@ -29,6 +42,10 @@ class LeaveController extends Controller
             'reason' => 'nullable|string',
         ]);
 
+        if (!$this->isGlobalView($request)) {
+            $validated['user_id'] = $request->user()->id;
+        }
+
         $validated['status'] = 'Pending';
         $validated['applied_by'] = auth()->id();
 
@@ -41,6 +58,10 @@ class LeaveController extends Controller
     {
         abort_unless($request->user()?->can('leave-view'), 403);
 
+        if (!$this->isGlobalView($request) && $leave->user_id !== $request->user()->id) {
+            abort(403, 'Unauthorized to view this leave record.');
+        }
+
         $leave->load(['user', 'approver', 'applier']);
         return response()->json(['data' => $leave]);
     }
@@ -48,6 +69,10 @@ class LeaveController extends Controller
     public function update(Request $request, Leave $leave): JsonResponse
     {
         abort_unless($request->user()?->can('leave-edit'), 403);
+        
+        if (!$this->isGlobalView($request) && $leave->user_id !== $request->user()->id) {
+            abort(403, 'Unauthorized to modify this leave record.');
+        }
         
         if ($leave->status !== 'Pending') {
             return response()->json(['message' => 'Cannot modify an already processed leave request.'], 422);
@@ -61,6 +86,11 @@ class LeaveController extends Controller
             'reason' => 'nullable|string',
             'status' => 'required|in:Pending,Approved,Rejected',
         ]);
+
+        if (!$this->isGlobalView($request)) {
+            $validated['user_id'] = $request->user()->id;
+            $validated['status'] = 'Pending';
+        }
 
         if (in_array($validated['status'], ['Approved', 'Rejected'])) {
             $validated['approved_by'] = auth()->id();
@@ -109,6 +139,10 @@ class LeaveController extends Controller
     {
         abort_unless($request->user()?->can('leave-delete'), 403);
         
+        if (!$this->isGlobalView($request) && $leave->user_id !== $request->user()->id) {
+            abort(403, 'Unauthorized to delete this leave record.');
+        }
+        
         if ($leave->status !== 'Pending') {
             return response()->json(['message' => 'Cannot delete an already processed leave request.'], 422);
         }
@@ -125,6 +159,10 @@ class LeaveController extends Controller
     public function updateStatus(Request $request, Leave $leave): JsonResponse
     {
         abort_unless($request->user()?->can('leave-edit'), 403);
+
+        if (!$this->isGlobalView($request)) {
+            abort(403, 'Unauthorized to approve or reject leave requests.');
+        }
 
         if ($leave->status !== 'Pending') {
             return response()->json(['message' => 'Cannot modify an already processed leave request.'], 422);
@@ -166,7 +204,12 @@ class LeaveController extends Controller
 
         if ($action === 'delete') {
             abort_unless($request->user()?->can('leave-delete'), 403);
-            $leaves = Leave::whereIn('id', $ids)->where('status', 'Pending')->get();
+            
+            $query = Leave::whereIn('id', $ids)->where('status', 'Pending');
+            if (!$this->isGlobalView($request)) {
+                $query->where('user_id', $request->user()->id);
+            }
+            $leaves = $query->get();
             foreach ($leaves as $leave) {
                 // ... refunds aren't needed if they are always Pending, but we can keep it safe
                 if ($leave->status === 'Approved') {
@@ -178,6 +221,10 @@ class LeaveController extends Controller
         }
 
         abort_unless($request->user()?->can('leave-edit'), 403);
+
+        if (!$this->isGlobalView($request)) {
+            abort(403, 'Unauthorized to approve or reject leave requests.');
+        }
 
         $status = $action === 'approve' ? 'Approved' : 'Rejected';
         

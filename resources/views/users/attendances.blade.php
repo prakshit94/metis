@@ -4,7 +4,7 @@
 @section('page', 'attendances')
 
 @section('content')
-<div class="user-management" x-data="attendancesTable">
+<div class="user-management" x-data="attendancesTable({{ auth()->id() }})">
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
             <h1 class="h3 mb-0"><i class="bi bi-calendar-check-fill text-primary me-2"></i>Attendances</h1>
@@ -182,7 +182,7 @@
                 </select>
                 
                 <select x-select class="form-select form-select-sm" x-model="userFilter" @change="filterItems()" style="max-width: 150px;" x-show="usersList.length > 0" style="display: none;">
-                    <option value="">My Attendances / All</option>
+                    <option value="" disabled selected>Select Employee</option>
                     <template x-for="u in usersList" :key="u.id">
                         <option :value="u.id" x-text="u.name"></option>
                     </template>
