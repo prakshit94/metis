@@ -483,7 +483,7 @@ document.addEventListener('alpine:init', () => {
         designation: u.designation,
         emergency_contact_name: u.emergency_contact_name,
         emergency_contact_phone: u.emergency_contact_phone,
-        avatar: '/assets/images/avatar-placeholder.svg',
+        avatar: '/assets/images/default_avatar.jpeg',
       };
     },
 
@@ -531,6 +531,14 @@ document.addEventListener('alpine:init', () => {
 
     get hasSelectedActiveUsers() {
       return this.selectedRows.some(user => !user.isDeleted);
+    },
+
+    get canBulkActivate() {
+      return this.selectedRows.some(user => !user.isDeleted && !user.is_active);
+    },
+
+    get canBulkDeactivate() {
+      return this.selectedRows.some(user => !user.isDeleted && user.is_active);
     },
 
     get visiblePages() {
@@ -805,10 +813,21 @@ document.addEventListener('alpine:init', () => {
     async exportUsers() {
       try {
         const users = await this.fetchAllFilteredUsers();
-        const headers = ['ID', 'First Name', 'Middle Name', 'Last Name', 'Full Name', 'Email', 'Phone', 'Department', 'Role', 'Status', 'Join Date', 'Last Active'];
+        const headers = [
+          'ID', 'First Name', 'Middle Name', 'Last Name', 'Email', 'Phone',
+          'Employee ID', 'Employment Type', 'Designation', 'Department', 'Manager',
+          'Role', 'Status', 'Date of Birth', 'Gender', 'Blood Group',
+          'Emergency Contact Name', 'Emergency Contact Phone',
+          'Address Line 1', 'Address Line 2', 'Village Name', 'Post Office',
+          'Taluka', 'District', 'City', 'State', 'Pincode'
+        ];
         const rows = users.map(u => [
-          u.id, u.first_name, u.middle_name, u.last_name, u.name, u.email, u.phone,
-          u.department, u.roleLabel, u.status, u.joinDate, u.lastActive,
+          u.id, u.first_name, u.middle_name, u.last_name, u.email, u.phone,
+          u.employee_id, u.employment_type, u.designation, u.department, u.manager,
+          u.roleLabel, u.status, u.date_of_birth, u.gender, u.blood_group,
+          u.emergency_contact_name, u.emergency_contact_phone,
+          u.address_line_1, u.address_line_2, u.village_name, u.post_office,
+          u.taluka, u.district, u.city, u.state, u.pincode
         ]);
         const csv = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\n');
         downloadBlob('users-export.csv', csv, 'text/csv;charset=utf-8;');
@@ -1126,13 +1145,13 @@ document.addEventListener('alpine:init', () => {
 
     async loadHrData() {
       try {
-        const dData = await apiFetch('/api/departments');
+        const dData = await apiFetch('/api/departments?per_page=1000');
         this.departments = dData.data ?? dData;
       } catch (e) {
         this.departments = [];
       }
       try {
-        const mData = await apiFetch('/api/users?per_page=100');
+        const mData = await apiFetch('/api/users?per_page=1000');
         this.managers = mData.data ?? mData;
       } catch (e) {
         this.managers = [];
@@ -1341,33 +1360,96 @@ document.addEventListener('alpine:init', () => {
     file: null,
     importing: false,
     result: null,
+    importType: 'basic',
+    parsedHeaders: [],
+    parsedRows: [],
+    previewRows: [],
+    basicHeaders: ['First Name', 'Middle Name', 'Last Name', 'Email', 'Phone', 'Department', 'Manager', 'Role', 'Status'],
+    fullHeaders: ['First Name', 'Middle Name', 'Last Name', 'Email', 'Phone', 'Employee ID', 'Employment Type', 'Designation', 'Department', 'Manager', 'Role', 'Status', 'Date of Birth', 'Gender', 'Blood Group', 'Emergency Contact Name', 'Emergency Contact Phone', 'Address Line 1', 'Address Line 2', 'Village Name', 'Post Office', 'Taluka', 'District', 'City', 'State', 'Pincode'],
 
-    async importUsers() {
-      if (!this.file) {
-        showToast('Please select a CSV file.', 'warning');
-        return;
-      }
-      this.importing = true;
+    init() {
+      // Reset form when modal is hidden
+      document.getElementById('importModal')?.addEventListener('hidden.bs.modal', () => {
+        this.reset();
+      });
+    },
+
+    reset() {
+      this.file = null;
+      const fileInput = document.getElementById('importFileInput');
+      if (fileInput) fileInput.value = '';
       this.result = null;
+      this.parsedHeaders = [];
+      this.parsedRows = [];
+      this.previewRows = [];
+    },
+
+    downloadTemplate() {
+      const headers = this.importType === 'basic' ? this.basicHeaders : this.fullHeaders;
+      const csv = headers.map(csvEscape).join(',');
+      downloadBlob(`users-${this.importType}-template.csv`, csv, 'text/csv;charset=utf-8;');
+      showToast(`Downloaded ${this.importType} template.`);
+    },
+
+    async handleFile(event) {
+      this.file = event.target.files[0] ?? null;
+      this.result = null;
+      this.parsedHeaders = [];
+      this.parsedRows = [];
+      this.previewRows = [];
+
+      if (!this.file) return;
 
       const text = await this.file.text();
       const lines = text.trim().split('\n').filter(l => l.trim());
       if (lines.length < 2) {
         showToast('CSV file is empty or has no data rows.', 'warning');
-        this.importing = false;
         return;
       }
 
-      // Skip header row; parse: first_name, middle_name, last_name, email, role, status, phone, department
+      this.parsedHeaders = parseCsvLine(lines[0]);
+
+      for (let i = 1; i < lines.length; i++) {
+        this.parsedRows.push(parseCsvLine(lines[i]));
+      }
+      this.previewRows = this.parsedRows.slice(0, 3);
+    },
+
+    async importUsers() {
+      if (!this.file || this.parsedRows.length === 0) {
+        showToast('Please select a valid CSV file with data.', 'warning');
+        return;
+      }
+      this.importing = true;
+      this.result = null;
+
       let created = 0;
       let errors = [];
 
-      for (let i = 1; i < lines.length; i++) {
-        const [firstName, middleName, lastName, email, role, statusRaw, phone, department] = parseCsvLine(lines[i]);
-        if (!firstName || !email) { errors.push(`Row ${i + 1}: missing first name or email`); continue; }
+      // We need to resolve departments and managers to IDs
+      const formComp = Alpine.$data(document.querySelector('[x-data="userForm"]'));
+      const deps = formComp ? formComp.departments : [];
+      const mgrs = formComp ? formComp.managers : [];
 
-        const isActive = statusRaw?.toLowerCase() !== 'inactive';
+      for (let i = 0; i < this.parsedRows.length; i++) {
+        const row = this.parsedRows[i];
+        
+        let firstName, middleName, lastName, email, phone, employeeId, employmentType, designation, departmentName, managerName, role, statusRaw, dob, gender, bloodGroup, emergName, emergPhone, addr1, addr2, village, po, taluka, district, city, state, pin;
+
+        if (this.importType === 'basic') {
+            [firstName, middleName, lastName, email, phone, departmentName, managerName, role, statusRaw] = row;
+        } else {
+            [firstName, middleName, lastName, email, phone, employeeId, employmentType, designation, departmentName, managerName, role, statusRaw, dob, gender, bloodGroup, emergName, emergPhone, addr1, addr2, village, po, taluka, district, city, state, pin] = row;
+        }
+
+        if (!firstName || !email) { errors.push(`Row ${i + 2}: missing first name or email`); continue; }
+
+        const isActive = statusRaw?.toLowerCase() !== 'inactive' && statusRaw?.toLowerCase() !== 'deleted';
         const name = buildFullName(firstName, middleName, lastName);
+
+        // Resolve IDs
+        const dObj = deps.find(d => d.name.toLowerCase() === String(departmentName || '').toLowerCase().trim());
+        const mObj = mgrs.find(m => m.name.toLowerCase() === String(managerName || '').toLowerCase().trim());
 
         try {
           const tempPw = `Temp@${Math.random().toString(36).slice(2, 8)}1Aa`;
@@ -1380,16 +1462,34 @@ document.addEventListener('alpine:init', () => {
               last_name: lastName || null,
               email,
               phone: phone || null,
-              department: department || null,
+              employee_id: employeeId || null,
+              employment_type: employmentType || 'Full-time',
+              designation: designation || null,
+              department_id: dObj ? dObj.id : null,
+              manager_id: mObj ? mObj.id : null,
               password: tempPw,
               password_confirmation: tempPw,
               is_active: isActive,
-              roles: [formatRoleName(role)],
+              roles: role ? [formatRoleName(role)] : ['User'],
+              date_of_birth: dob || null,
+              gender: gender || null,
+              blood_group: bloodGroup || null,
+              emergency_contact_name: emergName || null,
+              emergency_contact_phone: emergPhone || null,
+              address_line_1: addr1 || null,
+              address_line_2: addr2 || null,
+              village_name: village || null,
+              post_office: po || null,
+              taluka: taluka || null,
+              district: district || null,
+              city: city || null,
+              state: state || null,
+              pincode: pin || null,
             }),
           });
           created++;
         } catch (err) {
-          errors.push(`Row ${i + 1} (${email}): ${err.message}`);
+          errors.push(`Row ${i + 2} (${email}): ${err.message}`);
         }
       }
 
@@ -1404,11 +1504,6 @@ document.addEventListener('alpine:init', () => {
       if (errors.length > 0) {
         showToast(`${errors.length} row(s) failed. See import result.`, 'warning');
       }
-    },
-
-    handleFile(event) {
-      this.file = event.target.files[0] ?? null;
-      this.result = null;
     },
   }));
 

@@ -303,6 +303,10 @@ class UserController extends Controller implements HasMiddleware
             ->with('roles')
             ->findOrFail($user);
 
+        if ($user->id === 1) {
+            return response()->json(['message' => 'The Master Admin cannot be deleted.'], 403);
+        }
+
         if ($user->trashed()) {
             return response()->json([
                 'message' => "User [{$user->email}] is already temporarily deleted.",
@@ -321,8 +325,9 @@ class UserController extends Controller implements HasMiddleware
             }
         }
 
-        // Revoke all active tokens before deleting
+        // Revoke all active tokens and web sessions before deleting
         $user->tokens()->delete();
+        DB::table('sessions')->where('user_id', $user->id)->delete();
 
         $email = $user->email;
         $user->delete();
@@ -370,6 +375,10 @@ class UserController extends Controller implements HasMiddleware
             ->with('roles')
             ->findOrFail($user);
 
+        if ($user->id === 1) {
+            return response()->json(['message' => 'The Master Admin cannot be permanently deleted.'], 403);
+        }
+
         if ($user->hasRole('Super Admin')) {
             if (! $request->user()?->hasRole('Super Admin')) {
                 return response()->json(['message' => 'You cannot permanently delete a Super Admin user.'], 403);
@@ -384,6 +393,7 @@ class UserController extends Controller implements HasMiddleware
 
         $email = $user->email;
         $user->tokens()->delete();
+        DB::table('sessions')->where('user_id', $user->id)->delete();
         $user->forceDelete();
 
         return response()->json([
@@ -401,6 +411,10 @@ class UserController extends Controller implements HasMiddleware
     {
         abort_unless($request->user()?->can('user-activate'), 403);
 
+        if ($user->id === 1) {
+            return response()->json(['message' => 'The Master Admin cannot be deactivated.'], 403);
+        }
+
         if ($user->hasRole('Super Admin') && ! $request->user()?->hasRole('Super Admin')) {
             return response()->json(['message' => 'You cannot modify a Super Admin user.'], 403);
         }
@@ -409,9 +423,10 @@ class UserController extends Controller implements HasMiddleware
 
         $user->update(['is_active' => $newState]);
 
-        // Revoke all active API tokens when deactivating the account
+        // Revoke all active API tokens and web sessions when deactivating the account
         if (! $newState) {
             $user->tokens()->delete();
+            DB::table('sessions')->where('user_id', $user->id)->delete();
         }
 
         return response()->json([

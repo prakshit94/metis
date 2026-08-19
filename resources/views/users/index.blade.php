@@ -372,10 +372,10 @@
                                         </div>
                                         <div class="d-flex gap-2">
                                             @can('user-activate')
-                                            <button class="btn btn-sm btn-success" @click="bulkAction('activate')" x-show="hasSelectedActiveUsers">
+                                            <button class="btn btn-sm btn-success" @click="bulkAction('activate')" x-show="canBulkActivate">
                                                 <i class="bi bi-check-circle me-1"></i>Activate
                                             </button>
-                                            <button class="btn btn-sm btn-warning" @click="bulkAction('deactivate')" x-show="hasSelectedActiveUsers">
+                                            <button class="btn btn-sm btn-warning" @click="bulkAction('deactivate')" x-show="canBulkDeactivate">
                                                 <i class="bi bi-x-circle me-1"></i>Deactivate
                                             </button>
                                             @endcan
@@ -466,13 +466,18 @@
                                                     <td>
                                                         <div class="d-flex align-items-center">
                                                             <div class="position-relative me-3">
-                                                                <img :src="user.photo || user.avatar || '/assets/images/avatar-placeholder.svg'" 
+                                                                <img :src="user.photo || user.avatar || '/assets/images/default_avatar.jpeg'" 
                                                                      class="rounded-circle shadow-sm" 
                                                                      width="42" 
                                                                      height="42"
                                                                      :alt="user.name"
                                                                      style="object-fit: cover;">
-                                                                <span class="position-absolute bottom-0 end-0 p-1 border border-2 border-white rounded-circle" :class="user.is_online ? 'bg-success' : 'bg-secondary'" style="width: 12px; height: 12px;"></span>
+                                                                <span class="position-absolute bottom-0 end-0 border border-2 border-white rounded-circle d-flex align-items-center justify-content-center" 
+                                                                      :class="user.is_online ? 'bg-success text-white' : 'bg-secondary text-white'" 
+                                                                      style="width: 18px; height: 18px; font-size: 9px; right: -2px !important; bottom: -2px !important;"
+                                                                      :title="user.is_online ? 'Online via ' + user.device_type : 'Offline'">
+                                                                    <i :class="user.device_type === 'Mobile' ? 'bi bi-phone' : 'bi bi-laptop'"></i>
+                                                                </span>
                                                             </div>
                                                             <div>
                                                                 <a href="#" class="fw-bold text-decoration-none text-primary d-block mb-1" @click.prevent="viewUser(user)" x-text="user.name || '—'"></a>
@@ -644,7 +649,7 @@
                     <div class="d-flex align-items-start justify-content-between mb-4 pb-4 border-bottom">
                         <div class="d-flex align-items-center gap-4">
                             <div class="position-relative">
-                                <img :src="form.photo || '/assets/images/avatar-placeholder.svg'" class="rounded-circle border border-3 shadow-sm bg-body-tertiary" style="width: 110px; height: 110px; object-fit: cover; border-color: var(--bs-border-color) !important;" alt="Profile Picture">
+                                <img :src="form.photo || '/assets/images/default_avatar.jpeg'" class="rounded-circle border border-3 shadow-sm bg-body-tertiary" style="width: 110px; height: 110px; object-fit: cover; border-color: var(--bs-border-color) !important;" alt="Profile Picture">
                                 <span class="position-absolute bottom-0 end-0 p-2 border border-2 rounded-circle shadow-sm" :class="form.is_active ? 'bg-success' : 'bg-secondary'" style="width: 22px; height: 22px; right: 6px !important; bottom: 6px !important; border-color: var(--bs-body-bg) !important;"></span>
                             </div>
                             <div>
@@ -1197,7 +1202,7 @@
 
 {{-- ═══════════════════════ Import Users Modal ═══════════════════════════════ --}}
 <div class="modal fade" id="importModal" aria-labelledby="importModalLabel">
-    <div class="modal-dialog" x-data="importForm">
+    <div class="modal-dialog modal-xl" x-data="importForm">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="importModalLabel">
@@ -1206,16 +1211,58 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <div class="mb-3 d-flex align-items-center gap-3 bg-body-tertiary border p-3 rounded">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="importType" id="importTypeBasic" value="basic" x-model="importType" @change="reset()">
+                        <label class="form-check-label fw-semibold" for="importTypeBasic">Basic Import</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="importType" id="importTypeFull" value="full" x-model="importType" @change="reset()">
+                        <label class="form-check-label fw-semibold" for="importTypeFull">Full Details Import</label>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary ms-auto" @click="downloadTemplate()">
+                        <i class="bi bi-download me-1"></i>Download Template
+                    </button>
+                </div>
+
                 <div class="alert alert-info mb-3">
                     <i class="bi bi-info-circle me-2"></i>
-                    <strong>CSV Format:</strong> first_name, middle_name, last_name, email, role, status, phone, department<br>
-                    <small>Example: Jane, Marie, Smith, jane@example.com, Admin, active, +1 555 000 0000, Engineering</small>
+                    <strong>Expected Columns:</strong>
+                    <div x-text="importType === 'basic' ? basicHeaders.join(', ') : fullHeaders.join(', ')" class="small mt-1 text-break"></div>
+                    <small class="d-block mt-2 opacity-75">You can download the template above to ensure your columns match exactly.</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Select CSV File</label>
-                    <input type="file" class="form-control" accept=".csv"
+                    <input type="file" id="importFileInput" class="form-control" accept=".csv"
                            @change="handleFile($event)">
                 </div>
+
+                <template x-if="previewRows.length > 0">
+                    <div class="mb-3">
+                        <h6 class="fw-semibold mb-2">Data Preview <span class="badge bg-secondary ms-1" x-text="parsedRows.length + ' rows found'"></span></h6>
+                        <div class="table-responsive border rounded" style="max-height: 250px; overflow-y: auto;">
+                            <table class="table table-sm table-hover mb-0" style="white-space: nowrap;">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <template x-for="header in parsedHeaders" :key="header">
+                                            <th x-text="header" class="text-truncate" style="max-width: 150px;"></th>
+                                        </template>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="(row, idx) in previewRows" :key="idx">
+                                        <tr>
+                                            <template x-for="(cell, cIdx) in row" :key="cIdx">
+                                                <td x-text="cell" class="text-truncate text-muted" style="max-width: 150px;"></td>
+                                            </template>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="small text-muted mt-1" x-show="parsedRows.length > 3">Showing first 3 rows of <span x-text="parsedRows.length"></span> rows.</div>
+                    </div>
+                </template>
                 <template x-if="result">
                     <div>
                         <div class="alert alert-success" x-show="result.created > 0">
@@ -1237,9 +1284,9 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" @click="importUsers()" :disabled="importing || !file">
+                <button type="button" class="btn btn-primary px-4" @click="importUsers()" :disabled="importing || parsedRows.length === 0">
                     <span x-show="importing" class="spinner-border spinner-border-sm me-1"></span>
-                    <span x-text="importing ? 'Importing…' : 'Import Users'"></span>
+                    <span x-text="importing ? 'Processing...' : 'Process Import'"></span>
                 </button>
             </div>
         </div>

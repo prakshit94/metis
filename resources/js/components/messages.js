@@ -45,7 +45,7 @@ document.addEventListener('alpine:init', () => {
         {
           id: 1,
           name: 'John Smith',
-          avatar: '/assets/images/avatar-placeholder.svg',
+          avatar: '/assets/images/default_avatar.jpeg',
           type: 'Customer',
           location: 'Mumbai, Maharashtra',
           online: true,
@@ -149,7 +149,7 @@ document.addEventListener('alpine:init', () => {
         {
           id: 2,
           name: 'Sarah Johnson',
-          avatar: '/assets/images/avatar-placeholder.svg',
+          avatar: '/assets/images/default_avatar.jpeg',
           type: 'Team',
           location: 'Pune, Maharashtra',
           online: true,
@@ -181,7 +181,7 @@ document.addEventListener('alpine:init', () => {
         {
           id: 3,
           name: 'Mike Davis',
-          avatar: '/assets/images/avatar-placeholder.svg',
+          avatar: '/assets/images/default_avatar.jpeg',
           type: 'Vendor',
           location: 'Surat, Gujarat',
           online: false,
@@ -219,7 +219,7 @@ document.addEventListener('alpine:init', () => {
         {
           id: 4,
           name: 'Emily Brown',
-          avatar: '/assets/images/avatar-placeholder.svg',
+          avatar: '/assets/images/default_avatar.jpeg',
           type: 'Customer',
           location: 'Delhi, NCR',
           online: false,
@@ -263,7 +263,7 @@ document.addEventListener('alpine:init', () => {
         {
           id: 5,
           name: 'David Wilson',
-          avatar: '/assets/images/avatar-placeholder.svg',
+          avatar: '/assets/images/default_avatar.jpeg',
           type: 'Support',
           location: 'Bangalore, Karnataka',
           online: true,

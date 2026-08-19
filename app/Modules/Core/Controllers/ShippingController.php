@@ -31,7 +31,7 @@ class ShippingController extends Controller implements HasMiddleware
     public function shipmentsIndex(Request $request): JsonResponse
     {
 
-        $query = Shipment::with(['order', 'service.providers:id,name,email,phone,department,is_active']);
+        $query = Shipment::with(['order', 'service.providers:id,name,email,phone,department_id,is_active']);
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -298,7 +298,7 @@ class ShippingController extends Controller implements HasMiddleware
     public function servicesIndex(Request $request): JsonResponse
     {
 
-        $query = Service::query()->with(['providers:id,name,email,phone,department,is_active']);
+        $query = Service::query()->with(['providers:id,name,email,phone,department_id,is_active']);
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -328,7 +328,7 @@ class ShippingController extends Controller implements HasMiddleware
         return response()->json(User::query()
             ->where('is_active', true)
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'phone', 'department']));
+            ->get(['id', 'name', 'email', 'phone', 'department_id']));
     }
 
     /**
@@ -348,7 +348,7 @@ class ShippingController extends Controller implements HasMiddleware
 
         $service = Service::create(collect($validated)->except('provider_user_ids')->all());
         $service->providers()->sync($validated['provider_user_ids'] ?? []);
-        $service->load('providers:id,name,email,phone,department,is_active');
+        $service->load('providers:id,name,email,phone,department_id,is_active');
 
         return response()->json([
             'message' => 'Shipping Service created successfully.',
@@ -373,7 +373,7 @@ class ShippingController extends Controller implements HasMiddleware
 
         $service->update(collect($validated)->except('provider_user_ids')->all());
         $service->providers()->sync($validated['provider_user_ids'] ?? []);
-        $service->load('providers:id,name,email,phone,department,is_active');
+        $service->load('providers:id,name,email,phone,department_id,is_active');
 
         return response()->json([
             'message' => 'Shipping Service updated successfully.',

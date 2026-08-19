@@ -50,7 +50,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => '',
+        'description' => 'Comprehensive API documentation for the Metis application. Includes detailed endpoints for Users, Roles, Inventory, Catalog, and more.',
     ],
 
     'ui' => [
@@ -169,6 +169,11 @@ return [
      *     ],
      * ],
      */
-    // 'security_strategy' => \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
-    'security_strategy' => null,
+    'security_strategy' => [
+        \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
+        [
+            'middleware' => ['auth:sanctum', 'auth', 'auth:*'],
+            'scheme' => \Dedoc\Scramble\Support\Generator\SecurityScheme::http('bearer', 'JWT'),
+        ],
+    ],
 ];

@@ -50,6 +50,8 @@ class UserManagementApiTest extends TestCase
 
     public function test_store_persists_phone_and_department(): void
     {
+        $department = \App\Modules\Users\Models\Department::firstOrCreate(['name' => 'Research']);
+
         $response = $this->postJson('/api/users', [
             'first_name' => 'Ada',
             'middle_name' => 'Byron',
@@ -58,7 +60,7 @@ class UserManagementApiTest extends TestCase
             'password' => 'Password123',
             'password_confirmation' => 'Password123',
             'phone' => '1234567890',
-            'department' => 'Research',
+            'department_id' => $department->id,
         ]);
 
         $response
@@ -68,7 +70,7 @@ class UserManagementApiTest extends TestCase
             ->assertJsonPath('data.middle_name', 'Byron')
             ->assertJsonPath('data.last_name', 'Lovelace')
             ->assertJsonPath('data.phone', '1234567890')
-            ->assertJsonPath('data.department', 'Research');
+            ->assertJsonPath('data.department_id', $department->id);
 
         $this->assertDatabaseHas('users', [
             'name' => 'Ada Byron Lovelace',
@@ -77,24 +79,27 @@ class UserManagementApiTest extends TestCase
             'last_name' => 'Lovelace',
             'email' => 'ada@example.com',
             'phone' => '1234567890',
-            'department' => 'Research',
+            'department_id' => $department->id,
         ]);
     }
 
     public function test_index_searches_new_profile_fields_and_ignores_unsafe_sort_columns(): void
     {
+        $opsDepartment = \App\Modules\Users\Models\Department::firstOrCreate(['name' => 'Operations']);
+        $salesDepartment = \App\Modules\Users\Models\Department::firstOrCreate(['name' => 'Sales']);
+
         $this->createUser('ops@example.com', [
             'name' => 'Ops User',
             'first_name' => 'Operations',
             'last_name' => 'User',
             'phone' => '5555557777',
-            'department' => 'Operations',
+            'department_id' => $opsDepartment->id,
         ]);
         $this->createUser('sales@example.com', [
             'name' => 'Sales User',
             'first_name' => 'Sales',
             'last_name' => 'User',
-            'department' => 'Sales',
+            'department_id' => $salesDepartment->id,
         ]);
 
         $response = $this->getJson('/api/users?search=Operations&sort_by=password&sort_dir=sideways&per_page=500');
@@ -123,6 +128,13 @@ class UserManagementApiTest extends TestCase
 
     public function test_bulk_delete_does_not_remove_last_super_admin(): void
     {
+        // Ensure only the currently authenticated test user is the Super Admin
+        foreach (User::role('Super Admin')->get() as $user) {
+            if ($user->id !== auth()->id()) {
+                $user->removeRole('Super Admin');
+            }
+        }
+
         $superAdmins = User::role('Super Admin')->get();
         $superAdminIds = $superAdmins->pluck('id')->toArray();
 

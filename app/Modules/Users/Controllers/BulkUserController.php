@@ -37,6 +37,13 @@ class BulkUserController extends Controller
 
         abort_unless($request->user()?->can($ability), 403);
 
+        // Gracefully skip the Master Admin (ID 1) from any bulk action
+        $ids = array_values(array_filter($ids, fn($id) => (int)$id !== 1));
+
+        if (empty($ids)) {
+            return response()->json(['message' => 'No valid users selected (Master Admin is protected).'], 422);
+        }
+
         // Prevent unauthorized modification of Super Admins
         $superAdminIds = User::role('Super Admin')->pluck('id')->toArray();
         $overlapping = array_intersect($ids, $superAdminIds);
@@ -69,6 +76,10 @@ class BulkUserController extends Controller
                 ->where('tokenable_type', User::class)
                 ->whereIn('tokenable_id', $ids)
                 ->delete();
+                
+            DB::table('sessions')
+                ->whereIn('user_id', $ids)
+                ->delete();
 
             User::whereIn('id', $ids)->delete();
 
@@ -82,6 +93,10 @@ class BulkUserController extends Controller
             DB::table('personal_access_tokens')
                 ->where('tokenable_type', User::class)
                 ->whereIn('tokenable_id', $ids)
+                ->delete();
+                
+            DB::table('sessions')
+                ->whereIn('user_id', $ids)
                 ->delete();
 
             User::withTrashed()->whereIn('id', $ids)->forceDelete();
@@ -100,6 +115,10 @@ class BulkUserController extends Controller
             DB::table('personal_access_tokens')
                 ->where('tokenable_type', User::class)
                 ->whereIn('tokenable_id', $ids)
+                ->delete();
+                
+            DB::table('sessions')
+                ->whereIn('user_id', $ids)
                 ->delete();
         }
 

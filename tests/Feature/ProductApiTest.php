@@ -84,6 +84,9 @@ class ProductApiTest extends TestCase
     public function test_store_creates_product(): void
     {
         $category = Category::create(['name' => 'Test Cat', 'slug' => 'test-cat-store']);
+        $uom = \App\Modules\Catalog\Models\UnitOfMeasure::create(['name' => 'Kg', 'code' => 'kg', 'slug' => 'kg']);
+        $taxRate = \App\Modules\Catalog\Models\TaxRate::create(['name' => 'GST 18%', 'rate' => 18]);
+        $hsnCode = \App\Modules\Catalog\Models\HsnCode::create(['code' => 'HSN1234']);
 
         $response = $this->postJson('/api/products', [
             'name' => 'New Awesome Product',
@@ -92,6 +95,10 @@ class ProductApiTest extends TestCase
             'purchase_price' => 10.00,
             'selling_price' => 15.00,
             'status' => 'published',
+            'uom_id' => $uom->id,
+            'tax_rate_id' => $taxRate->id,
+            'hsn_code_id' => $hsnCode->id,
+            'weight' => '1.5',
         ]);
 
         $response->assertCreated()
@@ -108,6 +115,10 @@ class ProductApiTest extends TestCase
     public function test_update_modifies_product(): void
     {
         $category = Category::create(['name' => 'Test Cat', 'slug' => 'test-cat-update']);
+        $uom = \App\Modules\Catalog\Models\UnitOfMeasure::create(['name' => 'Kg2', 'code' => 'kg2', 'slug' => 'kg2']);
+        $taxRate = \App\Modules\Catalog\Models\TaxRate::create(['name' => 'GST 12%', 'rate' => 12]);
+        $hsnCode = \App\Modules\Catalog\Models\HsnCode::create(['code' => 'HSN5678']);
+
         $product = Product::create([
             'category_id' => $category->id,
             'name' => 'Old Name',
@@ -116,6 +127,10 @@ class ProductApiTest extends TestCase
             'purchase_price' => 10.00,
             'selling_price' => 15.00,
             'status' => 'published',
+            'uom_id' => $uom->id,
+            'tax_rate_id' => $taxRate->id,
+            'hsn_code_id' => $hsnCode->id,
+            'weight' => 1.0,
         ]);
 
         $response = $this->patchJson('/api/products/' . $product->id, [
@@ -125,6 +140,10 @@ class ProductApiTest extends TestCase
             'purchase_price' => 10.00,
             'selling_price' => 20.00,
             'status' => 'published',
+            'uom_id' => $uom->id,
+            'tax_rate_id' => $taxRate->id,
+            'hsn_code_id' => $hsnCode->id,
+            'weight' => '2.5',
         ]);
 
         $response->assertOk()

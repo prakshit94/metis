@@ -580,7 +580,7 @@ document.addEventListener('alpine:init', () => {
         customer: {
           name: o.party ? `${o.party.firstname} ${o.party.lastname}` : 'N/A',
           email: o.party ? o.party.email : 'N/A',
-          avatar: o.party && o.party.avatar ? o.party.avatar : '/assets/images/avatar-placeholder.svg',
+          avatar: o.party && o.party.avatar ? o.party.avatar : '/assets/images/default_avatar.jpeg',
           phone: o.party ? o.party.phone : '',
           relativeName: o.party ? (o.party.relative_name || o.party.relative_name) : '',
           relativePhone: o.party ? o.party.relative_phone : '',
@@ -687,7 +687,7 @@ document.addEventListener('alpine:init', () => {
         createdBy: {
           name: o.creator ? (o.creator.name || '').trim() : 'N/A',
           email: o.creator ? (o.creator.email || '') : '',
-          avatar: o.creator && o.creator.avatar ? o.creator.avatar : '/assets/images/avatar-placeholder.svg',
+          avatar: o.creator && o.creator.avatar ? o.creator.avatar : '/assets/images/default_avatar.jpeg',
         },
         updatedBy: o.updater ? `${o.updater.name || ''}`.trim() : 'N/A',
         isUnfulfillable: o.is_unfulfillable || false,

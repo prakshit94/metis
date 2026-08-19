@@ -292,6 +292,11 @@ class ChatService
             ->orderByDesc('last_activity')
             ->limit(1);
 
+        $lastTokenActivity = DB::table('personal_access_tokens')
+            ->selectRaw('max(COALESCE(last_used_at, created_at))')
+            ->where('tokenable_type', User::class)
+            ->whereColumn('tokenable_id', 'users.id');
+
         $presenceStatus = DB::table('chat_presence')
             ->select('status')
             ->whereColumn('chat_presence.user_id', 'users.id')
@@ -316,6 +321,7 @@ class ChatService
             ->select('id', 'name', 'first_name', 'last_name', 'email', 'employee_id', 'photo', 'is_active as status', 'village_name', 'district', 'state')
             ->selectSub($lastSessionActivity, 'last_session_activity')
             ->selectSub($lastSessionUserAgent, 'last_session_user_agent')
+            ->selectSub($lastTokenActivity, 'last_token_activity')
             ->selectSub($presenceStatus, 'presence_status')
             ->selectSub($presenceLastSeen, 'presence_last_seen_at')
             ->selectSub($todayOrdersCount, 'today_orders')
@@ -337,17 +343,26 @@ class ChatService
             $lastSessionAt = $user->last_session_activity
                 ? now()->setTimestamp((int) $user->last_session_activity)
                 : null;
+            $lastTokenAt = $user->last_token_activity
+                ? Carbon::parse($user->last_token_activity)
+                : null;
             $presenceLastSeenAt = $user->presence_last_seen_at
                 ? Carbon::parse($user->presence_last_seen_at)
                 : null;
-            $lastSeenAt = collect([$lastSessionAt, $presenceLastSeenAt])
+            $lastSeenAt = collect([$lastSessionAt, $lastTokenAt, $presenceLastSeenAt])
                 ->filter()
                 ->sortDesc()
                 ->first();
             $isOnline = $lastSessionAt?->greaterThanOrEqualTo(now()->subMinutes(self::ONLINE_WINDOW_MINUTES)) === true
+                || $lastTokenAt?->greaterThanOrEqualTo(now()->subMinutes(self::ONLINE_WINDOW_MINUTES)) === true
                 || ($user->presence_status === 'online' && $presenceLastSeenAt?->greaterThanOrEqualTo(now()->subMinutes(self::ONLINE_WINDOW_MINUTES)) === true);
 
             $location = collect([$user->village_name, $user->district, $user->state])->filter()->implode(', ');
+
+            $activeDevice = $this->deviceFromUserAgent($user->last_session_user_agent);
+            if ($lastTokenAt && (!$lastSessionAt || $lastTokenAt->greaterThan($lastSessionAt))) {
+                $activeDevice = 'mobile';
+            }
 
             return [
                 'id' => $user->id,
@@ -360,7 +375,7 @@ class ChatService
                 'presence_status' => $isOnline ? 'online' : 'offline',
                 'last_seen_at' => $lastSeenAt?->toIso8601String(),
                 'last_seen_label' => $isOnline ? 'Active now' : ($lastSeenAt ? 'Last seen '.$lastSeenAt->diffForHumans() : 'Not seen yet'),
-                'active_device' => $this->deviceFromUserAgent($user->last_session_user_agent),
+                'active_device' => $activeDevice,
                 'today_orders' => (int) $user->today_orders,
                 'today_revenue' => (float) $user->today_revenue,
             ];
