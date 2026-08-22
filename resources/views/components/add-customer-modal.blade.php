@@ -33,6 +33,23 @@
                                         </div>
                                         <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Basic Identity</h6>
                                     </div>
+                                    <div class="d-flex align-items-center gap-3 mb-3">
+                                        <div class="position-relative">
+                                            <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center overflow-hidden border" style="width: 60px; height: 60px;">
+                                                <template x-if="avatarPreview">
+                                                    <img :src="avatarPreview" class="w-100 h-100 object-fit-cover">
+                                                </template>
+                                                <template x-if="!avatarPreview">
+                                                    <i class="bi bi-camera text-secondary fs-4"></i>
+                                                </template>
+                                            </div>
+                                            <input type="file" name="avatar" class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" accept="image/*" @change="handleAvatarUpload">
+                                        </div>
+                                        <div>
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Profile Photo</label>
+                                            <p class="mb-0 text-muted" style="font-size: 10px;">Click the icon to upload. Max 2MB (JPG, PNG)</p>
+                                        </div>
+                                    </div>
                                     <div class="row g-2">
                                         <div class="col-sm-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">First Name *</label>
@@ -372,6 +389,25 @@ document.addEventListener('alpine:init', () => {
             category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
             land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: '', referred_by_code: ''
         },
+        avatarPreview: '{{ asset('assets/images/farmersprofileimage.png') }}',
+
+        handleAvatarUpload(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                this.avatarPreview = '{{ asset('assets/images/farmersprofileimage.png') }}';
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                this.formError = 'Photo must be less than 2MB';
+                e.target.value = '';
+                this.avatarPreview = '{{ asset('assets/images/farmersprofileimage.png') }}';
+                return;
+            }
+            this.formError = '';
+            const reader = new FileReader();
+            reader.onload = e => this.avatarPreview = e.target.result;
+            reader.readAsDataURL(file);
+        },
 
         get filteredCrops() {
             if (!this.cropSearch) return this.allCrops;
@@ -435,6 +471,9 @@ document.addEventListener('alpine:init', () => {
             this.isValidatingReferral = false;
             this.referralValid = false;
             this.referralName = '';
+            this.avatarPreview = '{{ asset('assets/images/farmersprofileimage.png') }}';
+            const fileInput = document.querySelector('input[name="avatar"]');
+            if (fileInput) fileInput.value = '';
         },
 
         openModal(detail) {
@@ -461,6 +500,12 @@ document.addEventListener('alpine:init', () => {
                 this.selectedSources = detail.customer.source || [];
                 this.selectedIrrigation = detail.customer.irrigation_type || [];
                 this.selectedCrops = detail.customer.crops || [];
+                
+                if (detail.customer.avatar) {
+                    this.avatarPreview = '/storage/' + detail.customer.avatar;
+                } else {
+                    this.avatarPreview = '{{ asset('assets/images/farmersprofileimage.png') }}';
+                }
             } else if (detail && detail.phone) {
                 this.form.phone = detail.phone;
             }

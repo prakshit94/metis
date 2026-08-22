@@ -43,8 +43,8 @@
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-4 bg-body-tertiary">
             <div class="card-body p-4 p-md-5 text-center">
                 <div class="mb-4">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 80px; height: 80px;">
-                        <i class="bi bi-person-bounding-box fs-1"></i>
+                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 overflow-hidden" style="width: 80px; height: 80px;">
+                        <img src="{{ asset('assets/images/farmersprofileimage.png') }}" alt="Find a Customer" class="w-100 h-100 object-fit-cover">
                     </div>
                     <h2 class="h3 fw-bold text-body mb-2">Find a Customer</h2>
                     <p class="text-muted">Search by mobile number, customer ID, or name to quickly access records.</p>

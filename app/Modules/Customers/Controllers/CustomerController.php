@@ -183,7 +183,12 @@ class CustomerController extends Controller implements HasMiddleware
             'internal_notes' => ['nullable', 'string'],
             'tags' => ['nullable', 'array'],
             'referred_by_code' => ['nullable', 'string', 'exists:parties,referral_code'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ]);
+
+        if ($request->hasFile('avatar')) {
+            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
 
         $validated['type'] = 'customer';
         $validated['uuid'] = Str::uuid()->toString();
@@ -343,7 +348,15 @@ class CustomerController extends Controller implements HasMiddleware
             'is_blacklisted' => ['nullable', 'boolean'],
             'internal_notes' => ['nullable', 'string'],
             'tags' => ['nullable', 'array'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ]);
+
+        if ($request->hasFile('avatar')) {
+            if ($customer->avatar) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($customer->avatar);
+            }
+            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
 
         if ($request->user()) {
             $validated['updated_by'] = $request->user()->id;

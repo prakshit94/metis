@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->string('firstname')->nullable()->index();
             $table->string('middlename')->nullable();
             $table->string('lastname')->nullable()->index();
+            $table->string('avatar')->nullable();
 
             // Contact Information
             $table->string('email')->nullable()->index();

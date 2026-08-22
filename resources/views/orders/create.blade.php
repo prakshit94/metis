@@ -149,7 +149,14 @@
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <div class="d-flex align-items-start gap-4 flex-wrap">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;" x-text="customerDetails.firstname ? customerDetails.firstname.charAt(0) : '?'"></div>
+                                        <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 48px; height: 48px;">
+                                            <template x-if="customerDetails.avatar">
+                                                <img :src="'/storage/' + customerDetails.avatar" class="w-100 h-100 object-fit-cover" :alt="customerDisplayName">
+                                            </template>
+                                            <template x-if="!customerDetails.avatar">
+                                                <img src="{{ asset('assets/images/farmersprofileimage.png') }}" class="w-100 h-100 object-fit-cover" :alt="customerDisplayName">
+                                            </template>
+                                        </div>
                                         <div>
                                             <h5 class="mb-1 fw-bold" x-text="customerDisplayName"></h5>
                                             <div class="small text-muted d-flex align-items-center gap-2">

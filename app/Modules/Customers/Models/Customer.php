@@ -28,6 +28,7 @@ class Customer extends Model implements Auditable
         'firstname',
         'middlename',
         'lastname',
+        'avatar',
         'referral_code',
         'referred_by',
         'email',

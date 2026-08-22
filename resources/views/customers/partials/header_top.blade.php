@@ -7,8 +7,8 @@
             <div class="d-flex align-items-center gap-4">
                 {{-- Avatar --}}
                 <div class="position-relative flex-shrink-0">
-                    <div class="d-flex align-items-center justify-content-center bg-primary text-white fw-bold fs-3 rounded-4 shadow-sm" style="width: 64px; height: 64px;">
-                        {{ $customer->initials() }}
+                    <div class="d-flex align-items-center justify-content-center bg-primary text-white fw-bold fs-3 rounded-4 shadow-sm overflow-hidden" style="width: 64px; height: 64px;">
+                        <img src="{{ isset($customer->avatar) && $customer->avatar ? Storage::url($customer->avatar) : asset('assets/images/farmersprofileimage.png') }}" alt="{{ $customer->name }}" class="w-100 h-100 object-fit-cover">
                     </div>
                     @php
                         $dotClass = match($customer->status) {
