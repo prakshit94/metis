@@ -286,7 +286,7 @@
 
 
     <!-- View Details Modal -->
-    <div class="modal fade" id="viewAuditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="viewAuditModal" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content shadow-lg border-0 rounded-4">
                 <div class="modal-header border-bottom-0 pb-0 pt-4 px-4 px-lg-5">
@@ -379,7 +379,7 @@
     </div>
 
     <!-- Clear All Confirmation Modal -->
-    <div class="modal fade" id="clearAllModal" tabindex="-1" aria-labelledby="clearAllModalLabel" aria-hidden="true">
+    <div class="modal fade" id="clearAllModal" aria-labelledby="clearAllModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header border-bottom-0 pb-0">

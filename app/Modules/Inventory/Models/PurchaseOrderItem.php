@@ -16,14 +16,22 @@ class PurchaseOrderItem extends Model
         'quantity',
         'received_qty',
         'unit_price',
+        'tax_rate',
+        'tax_amount',
+        'discount_amount',
         'total_price',
+        'net_amount',
     ];
 
     protected $casts = [
         'quantity' => 'decimal:2',
         'received_qty' => 'decimal:2',
         'unit_price' => 'decimal:2',
+        'tax_rate' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'total_price' => 'decimal:2',
+        'net_amount' => 'decimal:2',
     ];
 
     public function purchaseOrder(): BelongsTo

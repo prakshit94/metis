@@ -159,7 +159,7 @@
                 {{-- Table --}}
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                        <thead class="table-group-divider">
                             <tr>
                                 <th style="width: 50px;" class="ps-3">
                                     <input type="checkbox"
@@ -205,10 +205,10 @@
                                         <span class="fw-semibold font-monospace text-primary" x-text="item.transfer_no"></span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark border" x-text="item.from_warehouse?.name || '-'"></span>
+                                        <span class="badge bg-body-secondary text-body-emphasis border" x-text="item.from_warehouse?.name || '-'"></span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark border" x-text="item.to_warehouse?.name || '-'"></span>
+                                        <span class="badge bg-body-secondary text-body-emphasis border" x-text="item.to_warehouse?.name || '-'"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle" x-text="item.items_count || 0"></span>
@@ -303,7 +303,7 @@
     </div>
 
     {{-- ── Transfer Form Modal ─────────────────────────────────── --}}
-    <div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal fade" id="transferModal">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -362,26 +362,27 @@
                                         </div>
                                         
                                         <div class="row g-2 mb-2 d-none d-md-flex">
-                                            <div class="col-md-7"><small class="text-muted fw-semibold">Product Name</small></div>
-                                            <div class="col-md-3"><small class="text-muted fw-semibold">Quantity to Transfer</small></div>
+                                            <div class="col-md-5"><small class="text-muted fw-semibold">Product Name</small></div>
+                                            <div class="col-md-3"><small class="text-muted fw-semibold">Batch # <span class="text-muted fw-normal">(optional)</span></small></div>
+                                            <div class="col-md-2"><small class="text-muted fw-semibold">Qty to Transfer</small></div>
                                             <div class="col-md-2"></div>
                                         </div>
 
                                         <template x-for="(item, index) in form.items" :key="index">
-                                            <div class="row g-2 mb-2 align-items-center">
-                                                <div class="col-md-7 col-12">
+                                            <div class="row g-2 mb-2 align-items-start">
+                                                <div class="col-md-5 col-12">
                                                     <div class="position-relative" x-data="{ open: false, search: '' }" @click.outside="open = false">
                                                         <div class="input-group input-group-sm" @click="open = !open">
                                                             <input type="text" 
-                                                                   class="form-control form-control-sm cursor-pointer bg-white" 
+                                                                   class="form-control form-control-sm cursor-pointer bg-body" 
                                                                    placeholder="Search & choose product..." 
                                                                    :value="item.product_id ? (products.find(p => p.id == item.product_id)?.name + ' (' + products.find(p => p.id == item.product_id)?.sku + ')') : ''"
                                                                    readonly>
-                                                            <span class="input-group-text bg-white"><i class="bi bi-chevron-down small text-muted"></i></span>
+                                                            <span class="input-group-text bg-body"><i class="bi bi-chevron-down small text-muted"></i></span>
                                                         </div>
                                                         
                                                         <div x-show="open" 
-                                                             class="position-absolute w-100 bg-white border rounded shadow-lg mt-1 p-2" 
+                                                             class="position-absolute w-100 bg-body border rounded shadow-lg mt-1 p-2" 
                                                              style="z-index: 1050; max-height: 200px; overflow-y: auto;"
                                                              x-transition>
                                                             <div class="mb-2">
@@ -408,11 +409,14 @@
                                                         </div>
                                                     </div>
                                                     <div class="form-text small mt-1 d-flex gap-3" x-show="item.product_id && form.from_warehouse_id">
-                                                        <span class="text-secondary">Current Stock: <strong class="text-dark" x-text="formatQty(getProductStock(item.product_id))"></strong></span>
+                                                        <span class="text-secondary">Current Stock: <strong class="text-body fw-bold" x-text="formatQty(getProductStock(item.product_id))"></strong></span>
                                                         <span class="text-secondary" x-show="item.quantity > 0">Remaining: <strong :class="getProductRemainingStock(item) < 0 ? 'text-danger' : 'text-success'" x-text="formatQty(getProductRemainingStock(item))"></strong></span>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-3 col-8">
+                                                <div class="col-md-3 col-12">
+                                                    <input type="text" class="form-control form-control-sm" x-model="item.batch_number" placeholder="Batch # (optional)" style="font-family: monospace;">
+                                                </div>
+                                                <div class="col-md-2 col-8">
                                                     <input type="number" class="form-control form-control-sm" x-model.number="item.quantity" min="0.01" step="0.01" placeholder="Quantity" required>
                                                 </div>
                                                 <div class="col-md-2 col-4">

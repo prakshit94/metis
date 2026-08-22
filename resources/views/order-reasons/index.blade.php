@@ -308,7 +308,7 @@
     </div>
 
     <!-- Add / Edit Modal -->
-    <div class="modal fade" id="reasonModal" tabindex="-1">
+    <div class="modal fade" id="reasonModal">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <form @submit.prevent="saveReason()">

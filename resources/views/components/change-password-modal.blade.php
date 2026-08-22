@@ -37,7 +37,7 @@
                                    x-model="formData.password" 
                                    :class="{'is-invalid': errors.password}"
                                    required>
-                            <button type="button" class="btn btn-outline-secondary border-start-0 shadow-none px-3" tabindex="-1" @click="showPassword = !showPassword">
+                            <button type="button" class="btn btn-outline-secondary border-start-0 shadow-none px-3" @click="showPassword = !showPassword">
                                 <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                             </button>
                         </div>
@@ -57,7 +57,7 @@
                                    x-model="formData.password_confirmation" 
                                    :class="{'is-invalid': errors.password_confirmation}"
                                    required>
-                            <button type="button" class="btn btn-outline-secondary border-start-0 shadow-none px-3" tabindex="-1" @click="showPasswordConfirmation = !showPasswordConfirmation">
+                            <button type="button" class="btn btn-outline-secondary border-start-0 shadow-none px-3" @click="showPasswordConfirmation = !showPasswordConfirmation">
                                 <i :class="showPasswordConfirmation ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                             </button>
                         </div>

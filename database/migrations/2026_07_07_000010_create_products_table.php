@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
             $table->foreignId('brand_id')->nullable()->constrained('brands')->nullOnDelete();
+            $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
             $table->foreignId('tax_rate_id')->nullable()->constrained('tax_rates')->nullOnDelete();
             $table->foreignId('hsn_code_id')->nullable()->constrained('hsn_codes')->nullOnDelete();
             $table->foreignId('uom_id')->nullable()->constrained('units_of_measure')->nullOnDelete();

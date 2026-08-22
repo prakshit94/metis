@@ -87,8 +87,7 @@
                         <button class="btn btn-outline-secondary border-start-0 password-toggle px-3"
                                 type="button"
                                 @click="showPassword = !showPassword"
-                                :aria-label="showPassword ? 'Hide password' : 'Show password'"
-                                tabindex="-1">
+                                :aria-label="showPassword ? 'Hide password' : 'Show password'">
                             <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                         </button>
                         @error('password')

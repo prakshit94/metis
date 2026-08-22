@@ -297,6 +297,10 @@ document.addEventListener('alpine:init', () => {
             this.formFields = [];
             this.formData = {};
             this.notes = '';
+            this.searchQuery = {};
+            this.searchResults = {};
+            this.selectedSearchItems = {};
+            this.submitting = false;
         },
         
         async fetchL1Tags() {

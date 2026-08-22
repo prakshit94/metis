@@ -230,7 +230,7 @@
 </div>
 
 <!-- Leave Modal -->
-<div class="modal fade" id="leaveModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="leaveModal" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" x-data="leaveForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">
@@ -309,7 +309,7 @@
 </div>
 
 <!-- Balance Modal -->
-<div class="modal fade" id="balanceModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="balanceModal" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" x-data="balanceForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">
@@ -370,7 +370,7 @@
 </div>
 
 <!-- Holiday Modal -->
-<div class="modal fade" id="holidayModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="holidayModal" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" x-data="holidayForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">

@@ -424,7 +424,7 @@
 
 {{-- ═══════════════════════ View Profile & Address Manager Modal ═══════════════════════════ --}}
 <div x-data="customerProfile">
-    <div class="modal fade" id="viewCustomerModal" tabindex="-1" aria-labelledby="viewCustomerModalLabel">
+    <div class="modal fade" id="viewCustomerModal" aria-labelledby="viewCustomerModalLabel">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content shadow-lg border-0 rounded-4">
             <div class="modal-header border-bottom-0 pb-0 pt-4 px-4 px-lg-5">
@@ -736,7 +736,7 @@
 </div>
 
     <!-- Address Modal -->
-    <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal fade" id="addressModal" aria-labelledby="addressModalLabel" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow-lg border-0 rounded-4">
                 <form @submit.prevent="saveAddress()">
@@ -875,7 +875,7 @@
 </div>
 
 {{-- ═══════════════════════ Import Customers Modal ═══════════════════════════ --}}
-<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel">
+<div class="modal fade" id="importModal" aria-labelledby="importModalLabel">
     <div class="modal-dialog modal-dialog-scrollable" x-data="importForm">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">

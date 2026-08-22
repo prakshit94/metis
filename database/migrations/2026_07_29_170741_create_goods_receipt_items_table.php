@@ -16,6 +16,9 @@ return new class extends Migration
             $table->foreignId('goods_receipt_id')->constrained('goods_receipts')->cascadeOnDelete();
             $table->foreignId('purchase_order_item_id')->constrained('purchase_order_items')->onDelete('restrict');
             $table->foreignId('product_id')->constrained('products')->onDelete('restrict');
+            $table->string('batch_number')->nullable();
+            $table->date('manufacturing_date')->nullable();
+            $table->date('expiry_date')->nullable();
             $table->decimal('received_qty', 10, 2);
             $table->decimal('accepted_qty', 10, 2)->default(0);
             $table->decimal('rejected_qty', 10, 2)->default(0);

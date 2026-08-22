@@ -249,7 +249,7 @@
     </div>
 
     <!-- Form Modal (Glossy Style) -->
-    <div class="modal fade" id="creditNoteModal" tabindex="-1" wire:ignore.self>
+    <div class="modal fade" id="creditNoteModal" wire:ignore.self>
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
                 {{-- GLOSSY STYLE HEADER WITH BOOTSTRAP --}}

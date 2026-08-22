@@ -105,7 +105,7 @@
         </div>
         <div class="card-body p-0">
             <!-- Bulk Actions Bar -->
-            <div class="bulk-actions-bar p-3 bg-light border-bottom" x-show="selectedItems.length > 0" x-transition>
+            <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedItems.length > 0" x-transition>
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted">
                         <span x-text="selectedItems.length"></span> item(s) selected
@@ -165,7 +165,7 @@
                                 </td>
                                 <td class="text-muted" x-text="item.id"></td>
                                 <td>
-                                    <div class="fw-medium text-dark" x-text="item.name || item.code"></div>
+                                    <div class="fw-medium text-body" x-text="item.name || item.code"></div>
                                     <div class="small text-muted" x-text="item.short_name"></div>
                                 </td>
                                 
@@ -230,7 +230,7 @@
     </div>
 
     <!-- Form Modal -->
-    <div class="modal fade" id="uomModal" tabindex="-1">
+    <div class="modal fade" id="uomModal">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">

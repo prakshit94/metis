@@ -10,6 +10,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('stock_transfer_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->string('batch_number')->nullable();
             $table->decimal('quantity', 15, 4);
             $table->timestamps();
         });

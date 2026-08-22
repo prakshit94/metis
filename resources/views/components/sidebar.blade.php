@@ -200,32 +200,40 @@
                 @endcanany
 
                 {{-- ── SUPPLY CHAIN ─────────────────────────── --}}
-                @canany(['purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view', 'warehouse-dashboard-view', 'shipping-view', 'warehouse-view', 'product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view'])
+                @canany(['supplier-view', 'purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view', 'warehouse-dashboard-view', 'shipping-view', 'warehouse-view', 'product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view'])
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Supply Chain</small>
                 </li>
                 @endcanany
 
                 {{-- Procurement & Inventory Dropdown --}}
-                @canany(['purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view', 'warehouse-dashboard-view'])
+                @canany(['supplier-view', 'purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view', 'warehouse-dashboard-view'])
                 <li class="nav-item">
-                    <a class="nav-link {{ in_array($current, ['inventory.dashboard', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'active' : 'collapsed' }}"
+                    <a class="nav-link {{ in_array($current, ['inventory.dashboard', 'procurement.suppliers.index', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'active' : 'collapsed' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#inventorySubmenu"
-                       aria-expanded="{{ in_array($current, ['inventory.dashboard', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'true' : 'false' }}"
+                       aria-expanded="{{ in_array($current, ['inventory.dashboard', 'procurement.suppliers.index', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'true' : 'false' }}"
                        aria-controls="inventorySubmenu">
                         <i class="bi bi-archive-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">Procurement &amp; Inventory</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ in_array($current, ['inventory.dashboard', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'show' : '' }}" id="inventorySubmenu">
+                    <div class="collapse {{ in_array($current, ['inventory.dashboard', 'procurement.suppliers.index', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'show' : '' }}" id="inventorySubmenu">
                         <ul class="nav nav-submenu">
                             @can('warehouse-dashboard-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'inventory.dashboard' ? 'active' : '' }}" href="{{ route('inventory.dashboard') }}">
                                     <i class="bi bi-buildings"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Command Center</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('supplier-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'procurement.suppliers.index' ? 'active' : '' }}" href="{{ route('procurement.suppliers.index') }}">
+                                    <i class="bi bi-truck-flatbed"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Suppliers</span>
                                 </a>
                             </li>
                             @endcan

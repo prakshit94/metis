@@ -434,8 +434,8 @@
     </div>
 </div>
 
-<div class="modal fade" id="attendanceModal" tabindex="-1" aria-labelledby="attendanceModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" x-data="attendanceForm">
+<div class="modal fade" id="attendanceModal" aria-labelledby="attendanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" x-data="attendanceForm({{ auth()->id() }})">
         <form class="modal-content shadow" @submit.prevent="saveItem()">
             <div class="modal-header bg-body-tertiary">
                 <h5 class="modal-title d-flex align-items-center" id="attendanceModalLabel">
@@ -499,7 +499,7 @@
 </div>
 @endsection
 
-<div class="modal fade" id="leaveModal" tabindex="-1" aria-labelledby="leaveModalLabel">
+<div class="modal fade" id="leaveModal" aria-labelledby="leaveModalLabel">
     <div class="modal-dialog modal-dialog-centered" x-data="leaveForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">

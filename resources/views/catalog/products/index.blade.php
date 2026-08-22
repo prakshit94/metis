@@ -97,7 +97,7 @@
                                             </div>
                                             <div>
                                                 <p class="h6 mb-0 text-muted">Total Value</p>
-                                                <div class="h3 mb-0" aria-live="polite"><span x-text="`$${stats.totalValue.toLocaleString()}`"></span></div>
+                                                <div class="h3 mb-0" aria-live="polite"><span x-text="`Rs ${stats.totalValue.toLocaleString()}`"></span></div>
                                                 <small class="text-info">
                                                     <i class="bi bi-info-circle"></i> Inventory value
                                                 </small>
@@ -108,51 +108,6 @@
                             </div>
                         </div>
 
-                        <!-- Charts Row -->
-                        <div class="row g-4 g-lg-5 mb-5">
-                            <!-- Sales Performance Chart -->
-                            <div class="col-lg-8">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h2 class="h5 card-title mb-0">Sales Performance</h2>
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <input type="radio" class="btn-check" name="salesPeriod" id="sales7d" autocomplete="off" checked>
-                                            <label class="btn btn-outline-secondary" for="sales7d">7D</label>
-                                            <input type="radio" class="btn-check" name="salesPeriod" id="sales30d" autocomplete="off">
-                                            <label class="btn btn-outline-secondary" for="sales30d">30D</label>
-                                            <input type="radio" class="btn-check" name="salesPeriod" id="sales90d" autocomplete="off">
-                                            <label class="btn btn-outline-secondary" for="sales90d">90D</label>
-                                        </div>
-                                    </div>
-                                    <div class="card-body p-3 p-lg-4">
-                                        <div id="salesChart" style="height: 300px;"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Category Distribution -->
-                            <div class="col-lg-4">
-                                <div class="card h-100">
-                                    <div class="card-header">
-                                        <h2 class="h5 card-title mb-0">Category Distribution</h2>
-                                    </div>
-                                    <div class="card-body p-3 p-lg-4">
-                                        <div id="categoryChart" style="height: 200px;"></div>
-                                        <div class="mt-3">
-                                            <template x-for="category in categoryStats" :key="category.name">
-                                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                                    <span class="small" x-text="category.name"></span>
-                                                    <div class="d-flex align-items-center">
-                                                        <span class="small text-muted me-2" x-text="`${category.percentage}%`"></span>
-                                                        <span class="small fw-medium" x-text="category.count"></span>
-                                                    </div>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                         <!-- Products Table -->
                         <div class="card">
@@ -301,9 +256,9 @@
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <span class="badge bg-light text-dark" x-text="product.category"></span>
+                                                        <span class="badge bg-secondary-subtle text-secondary-emphasis" x-text="product.category"></span>
                                                     </td>
-                                                    <td x-text="'$' + Number(product.price).toFixed(2)"></td>
+                                                    <td x-text="'Rs ' + Number(product.price).toFixed(2)"></td>
                                                     <td>
                                                         <span class="badge stock-badge" 
                                                               :class="{
@@ -395,7 +350,7 @@
                         
                     </div> <!-- End Product Management Container -->
     <!-- Modals -->
-<div class="modal fade" id="productModal" tabindex="-1">
+<div class="modal fade" id="productModal" >
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content" x-data="productForm">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -440,7 +395,7 @@
                                                     <input type="text" class="form-control" x-model="form.barcode" placeholder="Scan or enter barcode">
                                                 </div>
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
                                                 <label class="form-label fw-medium text-muted small">Category <span class="text-danger">*</span></label>
                                                 <select x-select class="form-select" x-model="form.category_id" required>
                                                     <option value="">Select Category</option>
@@ -454,12 +409,21 @@
                                                     </template>
                                                 </select>
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
                                                 <label class="form-label fw-medium text-muted small">Brand</label>
                                                 <select x-select class="form-select" x-model="form.brand_id">
                                                     <option value="">No Brand</option>
                                                     <template x-for="brand in options.brands" :key="brand.id">
                                                         <option :value="String(brand.id)" x-text="brand.name"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-medium text-muted small">Supplier</label>
+                                                <select x-select class="form-select" x-model="form.supplier_id">
+                                                    <option value="">Select Supplier</option>
+                                                    <template x-for="supplier in options.suppliers" :key="supplier.id">
+                                                        <option :value="String(supplier.id)" x-text="supplier.company_name ? supplier.company_name : (supplier.firstname + ' ' + (supplier.lastname || ''))"></option>
                                                     </template>
                                                 </select>
                                             </div>
@@ -609,7 +573,7 @@
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Stock Quantity <span class="text-danger">*</span></label>
-                                                <input type="number" class="form-control" x-model="form.stock" min="0" required placeholder="0">
+                                                <input type="number" class="form-control" x-model="form.stock" min="0" :required="!editingProductId" :disabled="!!editingProductId" placeholder="0">
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Min Stock Level</label>
@@ -733,7 +697,7 @@
         </div>
     </div>
 
-<div class="modal fade" id="productViewModal" tabindex="-1">
+<div class="modal fade" id="productViewModal" >
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content bg-body border-0 shadow-lg" x-data="{ get product() { return Alpine.store('productTable')?.previewProduct } }">
             <!-- Header -->
@@ -741,7 +705,7 @@
                 <div class="d-flex flex-wrap gap-2 align-items-center">
                     <h5 class="modal-title fw-bold mb-0" x-text="product ? product.name : ''"></h5>
                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" x-text="product ? product.sku : ''"></span>
-                    <span class="badge" :class="product && ['published', 'active'].includes(product.status) ? 'bg-success' : 'bg-warning text-dark'" x-text="product ? product.status : ''"></span>
+                    <span class="badge" :class="product && ['published', 'active'].includes(product.status) ? 'bg-success' : 'bg-warning-subtle text-warning-emphasis'" x-text="product ? product.status : ''"></span>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -758,7 +722,8 @@
                         <div x-show="product">
                             <div class="d-flex flex-wrap gap-2 mb-3">
                                 <span x-show="product && (product.category_label || product.category)" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-2 px-3"><i class="bi bi-tag-fill me-1"></i><span x-text="product ? (product.category_label || product.category) : ''"></span></span>
-                                <span x-show="product && product.brand" class="badge bg-dark bg-opacity-10 text-dark border py-2 px-3"><i class="bi bi-award-fill me-1"></i><span x-text="product ? product.brand : ''"></span></span>
+                                <span x-show="product && product.brand" class="badge bg-secondary-subtle text-secondary-emphasis border py-2 px-3"><i class="bi bi-award-fill me-1"></i><span x-text="product ? product.brand : ''"></span></span>
+                                <span x-show="product && product.supplier" class="badge bg-info-subtle text-info-emphasis border border-info border-opacity-25 py-2 px-3"><i class="bi bi-truck me-1"></i><span x-text="product ? product.supplier : ''"></span></span>
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-sm table-borderless small mb-0 text-muted">
@@ -818,7 +783,7 @@
                                 <div class="card h-100 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
-                                            <div class="bg-warning bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;color:#ffc107;"><i class="bi bi-box-seam-fill" style="font-size:12px;"></i></div>
+                                            <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-box-seam-fill" style="font-size:12px;"></i></div>
                                             <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Inventory</h6>
                                         </div>
                                         <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary border-opacity-25">
@@ -826,7 +791,7 @@
                                                 <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="product ? (parseFloat(product.available_stock !== undefined ? product.available_stock : product.stock) + ' ' + (product.uom || 'Units')) : ''"></div>
                                                 <div class="text-muted" style="font-size:10px;">Available to Order</div>
                                             </div>
-                                            <span class="badge" style="font-size:10px;" :class="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > (product.min_stock_level || 10) ? 'bg-success' : (product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'bg-warning text-dark' : 'bg-danger')" x-text="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'In Stock' : 'Out of Stock'"></span>
+                                            <span class="badge" style="font-size:10px;" :class="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > (product.min_stock_level || 10) ? 'bg-success' : (product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'bg-warning-subtle text-warning-emphasis' : 'bg-danger')" x-text="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'In Stock' : 'Out of Stock'"></span>
                                         </div>
                                         <div class="row text-center g-1 mb-2">
                                             <div class="col-4"><div class="fw-semibold" style="font-size:13px;" x-text="product ? parseFloat(product.physical_available !== undefined ? product.physical_available : product.stock) : 0"></div><div class="text-muted" style="font-size:9px;">Physical</div></div>
@@ -837,6 +802,7 @@
                                         <div class="list-group list-group-flush border border-secondary border-opacity-25 rounded-3">
                                             <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-box me-1"></i>Batch</span><span class="badge" style="font-size:9px;" :class="product && product.batch_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.batch_tracking ? 'ON' : 'OFF'"></span></div>
                                             <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-calendar-x me-1"></i>Expiry</span><span class="badge" style="font-size:9px;" :class="product && product.expiry_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.expiry_tracking ? 'ON' : 'OFF'"></span></div>
+                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span><span class="badge" style="font-size:9px;" :class="product && product.allow_overselling ? 'bg-success' : 'bg-secondary'" x-text="product && product.allow_overselling ? 'ON' + (product.overselling_qty ? ' (Limit ' + product.overselling_qty + ')' : '') : 'OFF'"></span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -904,7 +870,7 @@
     </div>
 </div>
 
-<div class="modal fade" id="importModal" tabindex="-1" x-data="{ get table() { return Alpine.store('productTable') } }">
+<div class="modal fade" id="importModal"  x-data="{ get table() { return Alpine.store('productTable') } }">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">

@@ -22,7 +22,6 @@ return new class extends Migration {
 
             // One row per product per warehouse
             $table->unique(['product_id', 'warehouse_id'], 'stocks_product_warehouse_unique');
-            $table->index(['product_id', 'warehouse_id'], 'idx_stocks_product_warehouse');
 
             // Optimization for high data load
             $table->index('created_at');

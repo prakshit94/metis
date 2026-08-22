@@ -104,7 +104,8 @@ class InventoryService
         string $type,
         ?string $referenceType = null,
         ?int $referenceId = null,
-        ?int $performedBy = null
+        ?int $performedBy = null,
+        ?string $batchNumber = null
     ): void {
         StockMovement::create([
             'product_id'     => $productId,
@@ -114,6 +115,7 @@ class InventoryService
             'reference_type' => $referenceType,
             'reference_id'   => $referenceId,
             'status'         => 'active',
+            'batch_number'   => $batchNumber,
             // Prefer explicitly passed value; fall back to HTTP auth; fall back to 0 (system)
             'performed_by'   => $performedBy ?? auth()->id() ?? 0,
         ]);
@@ -324,16 +326,32 @@ class InventoryService
         int $warehouseId,
         float $quantity,
         ?string $referenceType = null,
-        ?int $referenceId = null
+        ?int $referenceId = null,
+        ?string $batchNumber = null,
+        ?string $expiryDate = null
     ): Stock {
         $this->ensurePositive($quantity);
 
-        return DB::transaction(function () use ($productId, $warehouseId, $quantity, $referenceType, $referenceId) {
+        return DB::transaction(function () use ($productId, $warehouseId, $quantity, $referenceType, $referenceId, $batchNumber, $expiryDate) {
             $stock = $this->getStockForUpdate($productId, $warehouseId);
             $stock->quantity = (float) $stock->quantity + $quantity;
             $stock->save();
 
-            $this->logMovement($productId, $warehouseId, $quantity, 'in', $referenceType, $referenceId);
+            if ($batchNumber) {
+                $batch = \App\Modules\Inventory\Models\StockBatch::firstOrCreate([
+                    'product_id' => $productId,
+                    'warehouse_id' => $warehouseId,
+                    'batch_number' => $batchNumber,
+                ], [
+                    'quantity' => 0,
+                    'expiry_date' => $expiryDate,
+                    'status' => 'active',
+                ]);
+                $batch->quantity = (float) $batch->quantity + $quantity;
+                $batch->save();
+            }
+
+            $this->logMovement($productId, $warehouseId, $quantity, 'in', $referenceType, $referenceId, null, $batchNumber);
 
             $this->syncProductStatus($productId);
 
@@ -349,11 +367,12 @@ class InventoryService
         int $warehouseId,
         float $quantity,
         ?string $referenceType = null,
-        ?int $referenceId = null
+        ?int $referenceId = null,
+        ?string $batchNumber = null
     ): Stock {
         $this->ensurePositive($quantity);
 
-        return DB::transaction(function () use ($productId, $warehouseId, $quantity, $referenceType, $referenceId) {
+        return DB::transaction(function () use ($productId, $warehouseId, $quantity, $referenceType, $referenceId, $batchNumber) {
             $stock = $this->getStockForUpdate($productId, $warehouseId);
 
             if ((float) $stock->quantity < $quantity) {
@@ -373,7 +392,19 @@ class InventoryService
             $stock->quantity = $newQty;
             $stock->save();
 
-            $this->logMovement($productId, $warehouseId, $quantity, 'out', $referenceType, $referenceId);
+            if ($batchNumber) {
+                $batch = \App\Modules\Inventory\Models\StockBatch::where([
+                    'product_id' => $productId,
+                    'warehouse_id' => $warehouseId,
+                    'batch_number' => $batchNumber,
+                ])->first();
+                if ($batch) {
+                    $batch->quantity = max(0.0, (float) $batch->quantity - $quantity);
+                    $batch->save();
+                }
+            }
+
+            $this->logMovement($productId, $warehouseId, $quantity, 'out', $referenceType, $referenceId, null, $batchNumber);
 
             $this->syncProductStatus($productId);
 

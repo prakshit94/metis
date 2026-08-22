@@ -208,7 +208,7 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
             $this->authorize('product-edit');
         }
 
-        $adjustments = InventoryAdjustment::whereIn('id', $ids)->get();
+        $adjustments = InventoryAdjustment::with('items')->whereIn('id', $ids)->get();
         $processedCount = 0;
         $failedCount = 0;
         $errors = [];

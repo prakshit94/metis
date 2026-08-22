@@ -52,7 +52,7 @@ export default () => ({
     totalItems: 0,
     totalPages: 1,
     modalInstance: null,
-    form: { id: null, from_warehouse_id: '', to_warehouse_id: '', items: [{ product_id: '', quantity: 1 }] },
+    form: { id: null, from_warehouse_id: '', to_warehouse_id: '', items: [{ product_id: '', quantity: 1, batch_number: '' }] },
     warehouseStocks: {},
     
     // Selection state
@@ -203,7 +203,7 @@ export default () => ({
 
     resetForm() {
         this.isEditing = false;
-        this.form = { id: null, from_warehouse_id: '', to_warehouse_id: '', items: [{ product_id: '', quantity: 1 }] };
+        this.form = { id: null, from_warehouse_id: '', to_warehouse_id: '', items: [{ product_id: '', quantity: 1, batch_number: '' }] };
         this.warehouseStocks = {};
     },
 
@@ -215,14 +215,14 @@ export default () => ({
             id: item.id,
             from_warehouse_id: item.from_warehouse_id,
             to_warehouse_id: item.to_warehouse_id,
-            items: (item.items || []).map(i => ({ product_id: i.product_id, quantity: i.quantity })),
+            items: (item.items || []).map(i => ({ product_id: i.product_id, quantity: i.quantity, batch_number: i.batch_number || '' })),
         };
-        if (this.form.items.length === 0) this.form.items = [{ product_id: '', quantity: 1 }];
+        if (this.form.items.length === 0) this.form.items = [{ product_id: '', quantity: 1, batch_number: '' }];
         await this.fetchWarehouseStocks();
         this.modalInstance?.show();
     },
 
-    addItem() { this.form.items.push({ product_id: '', quantity: 1 }); },
+    addItem() { this.form.items.push({ product_id: '', quantity: 1, batch_number: '' }); },
     removeItem(index) { if (this.form.items.length > 1) this.form.items.splice(index, 1); },
 
     async saveItem() {

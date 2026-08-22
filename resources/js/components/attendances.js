@@ -87,6 +87,14 @@ document.addEventListener('alpine:init', () => {
       window.addEventListener('attendance-saved', () => {
         this.loadItems();
       });
+      
+      this.$watch('usersList', () => {
+        if (currentUserId) {
+          this.$nextTick(() => {
+            this.userFilter = String(currentUserId);
+          });
+        }
+      });
     },
 
     async loadUsersList() {
@@ -500,7 +508,7 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 
-  Alpine.data('leaveForm', () => ({
+  Alpine.data('leaveForm', (currentUserId = '') => ({
     editingId: null,
     originalLeaveType: null,
     saving: false,
@@ -509,7 +517,7 @@ document.addEventListener('alpine:init', () => {
     userBalances: [],
     isLoadingBalances: false,
     form: {
-      user_id: '',
+      user_id: currentUserId,
       leave_type: '',
       start_date: '',
       end_date: '',
@@ -533,7 +541,7 @@ document.addEventListener('alpine:init', () => {
         } else {
           this.editingId = null;
           this.originalLeaveType = null;
-          this.form.user_id = '';
+          this.form.user_id = currentUserId;
           this.form.leave_type = '';
           this.form.start_date = '';
           this.form.end_date = '';
@@ -545,6 +553,14 @@ document.addEventListener('alpine:init', () => {
 
       this.$watch('form.user_id', (value) => {
           this.fetchBalances(value);
+      });
+      
+      this.$watch('users', () => {
+          if (!this.editingId && currentUserId) {
+              this.$nextTick(() => {
+                  this.form.user_id = currentUserId;
+              });
+          }
       });
     },
 
@@ -572,6 +588,12 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await apiFetch('/api/users?per_page=100');
         this.users = res.data ?? res;
+        
+        if (!this.editingId && currentUserId) {
+          this.$nextTick(() => {
+            this.form.user_id = currentUserId;
+          });
+        }
       } catch(e) {}
     },
     
@@ -599,12 +621,12 @@ document.addEventListener('alpine:init', () => {
     }
   }));
 
-  Alpine.data('attendanceForm', () => ({
+  Alpine.data('attendanceForm', (currentUserId = '') => ({
     editingId: null,
     saving: false,
     users: [],
     form: {
-      user_id: '',
+      user_id: currentUserId,
       date: new Date().toISOString().split('T')[0],
       check_in_time: '',
       check_out_time: '',
@@ -636,12 +658,20 @@ document.addEventListener('alpine:init', () => {
         }
         getModal('#attendanceModal')?.show();
       });
+      
+      this.$watch('users', () => {
+          if (!this.editingId && currentUserId) {
+              this.$nextTick(() => {
+                  this.form.user_id = currentUserId;
+              });
+          }
+      });
     },
 
     resetForm() {
       this.editingId = null;
       this.form = {
-        user_id: '',
+        user_id: currentUserId,
         date: new Date().toISOString().split('T')[0],
         check_in_time: '',
         check_out_time: '',
@@ -655,6 +685,12 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await apiFetch('/api/users?per_page=100');
         this.users = res.data ?? res;
+        
+        if (!this.editingId && currentUserId) {
+          this.$nextTick(() => {
+            this.form.user_id = currentUserId;
+          });
+        }
       } catch(e) {}
     },
 

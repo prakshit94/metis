@@ -210,14 +210,29 @@ class OrderService
      * Recalculate order totals and validate coupon code.
      * Must be called inside a database transaction if a coupon is being updated.
      */
-    private function recalculateAndValidate(array $data, ?string $lastCouponCode = null): array
+    public function recalculateAndValidate(array $data, ?string $lastCouponCode = null): array
     {
-        $cart = json_decode($data['cart'], true);
+        $cart = [];
+        if (!empty($data['cart'])) {
+            $cart = json_decode($data['cart'], true) ?: [];
+        } elseif (!empty($data['items']) && is_array($data['items'])) {
+            foreach ($data['items'] as $item) {
+                if (!empty($item['product_id']) && isset($item['quantity'])) {
+                    $cart[] = [
+                        'id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                    ];
+                }
+            }
+        }
+
         if (empty($cart)) {
             throw ValidationException::withMessages([
                 'cart' => 'Cart is empty or contains invalid items.',
             ]);
         }
+
+        $isPurchase = ($data['type'] ?? 'sale') === 'purchase';
 
         // Load products to verify prices
         $productIds = array_filter(array_column($cart, 'id'));
@@ -263,7 +278,7 @@ class OrderService
             }
 
             $qty = (float) $item['quantity'];
-            $unitPrice = (float) $product->selling_price;
+            $unitPrice = $isPurchase ? (float) $product->purchase_price : (float) $product->selling_price;
             $itemBase = $unitPrice * $qty;
 
             // Product-level discount
@@ -525,115 +540,9 @@ class OrderService
             $lastCouponCode = $order->coupon_code;
             $lastOfferId = $order->applied_offer_id;
 
-            $usingCartPayload = array_key_exists('cart', $data);
+            $calc = $this->recalculateAndValidate($data, $lastCouponCode);
 
-            if ($usingCartPayload) {
-                $calc = $this->recalculateAndValidate($data, $lastCouponCode);
-
-                // If already confirmed, release all reservations before recalculating
-                if ($order->status === 'confirmed' && $order->type === 'sale' && $order->warehouse_id) {
-                    foreach ($order->items as $item) {
-                        $this->inventoryService->releaseReservedStock(
-                            (int) $item->product_id,
-                            (int) $order->warehouse_id,
-                            (float) $item->quantity,
-                            $order->id,
-                            'cancelled'
-                        );
-                    }
-                }
-
-                $orderPayload = array_merge([
-                    'warehouse_id' => $data['warehouse_id'] ?? $order->warehouse_id,
-                    'total_amount' => $calc['subtotal'],
-                    'tax_amount' => $calc['tax_amount'],
-                    'discount_amount' => $calc['total_discount'],
-                    'coupon_code' => $calc['coupon_code'],
-                    'applied_offer_id' => $calc['applied_offer_id'],
-                    'net_amount' => $calc['grand_total'],
-                    'is_draft' => isset($data['is_draft']) ? (bool) $data['is_draft'] : $order->is_draft,
-                    'future_order_date' => array_key_exists('future_order_date', $data) ? $data['future_order_date'] : $order->future_order_date,
-                    'updated_by' => auth()->id(),
-                ], $this->mapAddressFields($shippingAddr, 'shipping'), $this->mapAddressFields($billingAddr, 'billing'));
-
-                $order->update($orderPayload);
-
-                $order->items()->delete();
-                foreach ($calc['items'] as $item) {
-                    $order->items()->create($item);
-                }
-
-                if ($order->status === 'confirmed' && $order->type === 'sale' && $order->warehouse_id) {
-                    $order->load('items');
-                    foreach ($order->items as $item) {
-                        $this->inventoryService->reserveStock(
-                            (int) $item->product_id,
-                            (int) $order->warehouse_id,
-                            (float) $item->quantity,
-                            $order->id
-                        );
-                    }
-                }
-
-                $newCouponCode = $calc['coupon_code'];
-                if ($newCouponCode !== $lastCouponCode) {
-                    if ($lastCouponCode) {
-                    Coupon::where('code', $lastCouponCode)->where('used_count', '>', 0)->decrement('used_count');
-                    }
-                    if ($newCouponCode) {
-                        Coupon::where('code', $newCouponCode)->increment('used_count');
-                    }
-                }
-
-                if (($calc['applied_offer_id'] ?? null) !== $lastOfferId) {
-                    if ($lastOfferId) {
-                        Offer::where('id', $lastOfferId)->decrement('used_count');
-                    }
-                    if (! empty($calc['applied_offer_id'])) {
-                        Offer::where('id', $calc['applied_offer_id'])->increment('used_count');
-                    }
-                }
-
-                return $order->refresh();
-            }
-
-            if (empty($data['items']) || ! is_array($data['items'])) {
-                throw ValidationException::withMessages([
-                    'items' => 'Order items are required.',
-                ]);
-            }
-
-            $normalizedItems = [];
-            foreach ($data['items'] as $item) {
-                if (empty($item['product_id']) || (float) ($item['quantity'] ?? 0) <= 0) {
-                    continue;
-                }
-
-                $normalizedItems[] = [
-                    'product_id' => (int) $item['product_id'],
-                    'product_variant_id' => $item['product_variant_id'] ?? null,
-                    'quantity' => (float) $item['quantity'],
-                    'unit_price' => (float) ($item['unit_price'] ?? 0),
-                    'tax_rate' => (float) ($item['tax_rate'] ?? 0),
-                    'discount_amount' => (float) ($item['discount_amount'] ?? 0),
-                    'tax_amount' => (float) ($item['tax_amount'] ?? 0),
-                    'total_amount' => (float) ($item['total_amount'] ?? 0),
-                ];
-            }
-
-            if (empty($normalizedItems)) {
-                throw ValidationException::withMessages([
-                    'items' => 'Order items are required.',
-                ]);
-            }
-
-            $subtotal = array_reduce($normalizedItems, fn ($carry, $item) => $carry + (float) $item['total_amount'], 0.0);
-            $taxAmount = (float) ($data['tax_amount'] ?? array_reduce($normalizedItems, fn ($carry, $item) => $carry + (float) $item['tax_amount'], 0.0));
-            $discountAmount = (float) ($data['discount_amount'] ?? array_reduce($normalizedItems, fn ($carry, $item) => $carry + (float) $item['discount_amount'], 0.0));
-            $netAmount = (float) ($data['net_amount'] ?? max(0, $subtotal - $discountAmount + $taxAmount));
-            $newCouponCode = $data['coupon_code'] ?? null;
-            $newOfferId = $data['applied_offer_id'] ?? null;
-
+            // If already confirmed, release all reservations before recalculating
             if ($order->status === 'confirmed' && $order->type === 'sale' && $order->warehouse_id) {
                 foreach ($order->items as $item) {
                     $this->inventoryService->releaseReservedStock(
@@ -648,12 +557,12 @@ class OrderService
 
             $orderPayload = array_merge([
                 'warehouse_id' => $data['warehouse_id'] ?? $order->warehouse_id,
-                'total_amount' => $subtotal,
-                'tax_amount' => $taxAmount,
-                'discount_amount' => $discountAmount,
-                'coupon_code' => $newCouponCode,
-                'applied_offer_id' => $newOfferId,
-                'net_amount' => $netAmount,
+                'total_amount' => $calc['subtotal'],
+                'tax_amount' => $calc['tax_amount'],
+                'discount_amount' => $calc['total_discount'],
+                'coupon_code' => $calc['coupon_code'],
+                'applied_offer_id' => $calc['applied_offer_id'],
+                'net_amount' => $calc['grand_total'],
                 'is_draft' => isset($data['is_draft']) ? (bool) $data['is_draft'] : $order->is_draft,
                 'future_order_date' => array_key_exists('future_order_date', $data) ? $data['future_order_date'] : $order->future_order_date,
                 'updated_by' => auth()->id(),
@@ -662,7 +571,7 @@ class OrderService
             $order->update($orderPayload);
 
             $order->items()->delete();
-            foreach ($normalizedItems as $item) {
+            foreach ($calc['items'] as $item) {
                 $order->items()->create($item);
             }
 
@@ -678,6 +587,7 @@ class OrderService
                 }
             }
 
+            $newCouponCode = $calc['coupon_code'];
             if ($newCouponCode !== $lastCouponCode) {
                 if ($lastCouponCode) {
                     Coupon::where('code', $lastCouponCode)->where('used_count', '>', 0)->decrement('used_count');
@@ -687,12 +597,12 @@ class OrderService
                 }
             }
 
-            if ($newOfferId !== $lastOfferId) {
+            if (($calc['applied_offer_id'] ?? null) !== $lastOfferId) {
                 if ($lastOfferId) {
                     Offer::where('id', $lastOfferId)->decrement('used_count');
                 }
-                if ($newOfferId) {
-                    Offer::where('id', $newOfferId)->increment('used_count');
+                if (! empty($calc['applied_offer_id'])) {
+                    Offer::where('id', $calc['applied_offer_id'])->increment('used_count');
                 }
             }
 

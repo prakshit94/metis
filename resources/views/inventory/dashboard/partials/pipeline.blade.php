@@ -35,7 +35,7 @@
                         {{ $totalOrders }} Orders
                     </div>
                 </div>
-                <div class="p-3 bg-light bg-opacity-50 rounded-4 border border-secondary-subtle mb-3 shadow-sm">
+                <div class="p-3 bg-body-tertiary bg-opacity-50 rounded-4 border border-secondary-subtle mb-3 shadow-sm">
                     <span class="d-block text-muted small fw-medium mb-1 text-uppercase tracking-wider">Total Value</span>
                     <span class="fs-4 fw-bold text-success">₹{{ number_format($totalValue, 2) }}</span>
                 </div>
@@ -124,8 +124,8 @@
                     </div>
                     
                     <div class="d-flex align-items-center gap-2">
-                        <div class="bg-dark rounded-circle" style="width: 8px; height: 8px;"></div>
-                        <span class="small text-dark-emphasis fw-medium">Cancelled: <span>{{ $pipeline['cancelled']['count'] }}</span> (₹{{ number_format($pipeline['cancelled']['amount']) }})</span>
+                        <div class="bg-body-emphasis rounded-circle" style="width: 8px; height: 8px;"></div>
+                        <span class="small text-body-emphasis fw-medium">Cancelled: <span>{{ $pipeline['cancelled']['count'] }}</span> (₹{{ number_format($pipeline['cancelled']['amount']) }})</span>
                     </div>
                 </div>
             </div>

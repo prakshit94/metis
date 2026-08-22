@@ -399,6 +399,7 @@ document.addEventListener('alpine:init', () => {
         sku: product.sku ?? '',
         category_id: String(product.category_id ?? ''),
         brand_id: String(product.brand_id ?? ''),
+        supplier_id: String(product.supplier_id ?? ''),
         uom_id: String(product.uom_id ?? ''),
         tax_rate_id: String(product.tax_rate_id ?? ''),
         hsn_code_id: String(product.hsn_code_id ?? ''),
@@ -840,6 +841,7 @@ document.addEventListener('alpine:init', () => {
       sku: '',
       category_id: '',
       brand_id: '',
+      supplier_id: '',
       uom_id: '',
       tax_rate_id: '',
       hsn_code_id: '',
@@ -875,6 +877,7 @@ document.addEventListener('alpine:init', () => {
         sku: '',
         category_id: '',
         brand_id: '',
+        supplier_id: '',
         uom_id: '',
         tax_rate_id: '',
         hsn_code_id: '',
@@ -956,6 +959,7 @@ document.addEventListener('alpine:init', () => {
       formData.append('sku', String(this.form.sku).trim());
       formData.append('category_id', String(this.form.category_id || ''));
       if (this.form.brand_id) formData.append('brand_id', String(this.form.brand_id));
+      if (this.form.supplier_id) formData.append('supplier_id', String(this.form.supplier_id));
       if (this.form.uom_id) formData.append('uom_id', String(this.form.uom_id));
       if (this.form.tax_rate_id) formData.append('tax_rate_id', String(this.form.tax_rate_id));
       if (this.form.hsn_code_id) formData.append('hsn_code_id', String(this.form.hsn_code_id));
@@ -967,7 +971,9 @@ document.addEventListener('alpine:init', () => {
         formData.append('mrp', String(Number(this.form.mrp)));
       }
       formData.append('selling_price', String(Number(this.form.selling_price || 0)));
-      formData.append('stock', String(Number(this.form.stock || 0)));
+      if (!this.editingProductId) {
+        formData.append('stock', String(Number(this.form.stock || 0)));
+      }
       formData.append('min_stock_level', String(Number(this.form.min_stock_level || 0)));
       formData.append('overselling_qty', String(Number(this.form.overselling_qty || 0)));
       formData.append('default_discount', String(Number(this.form.default_discount || 0)));

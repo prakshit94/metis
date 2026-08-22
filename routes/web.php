@@ -59,9 +59,25 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     });
     Route::prefix('procurement')->name('procurement.')->group(function (): void {
         Route::get('/purchase-orders', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+        Route::get('/purchase-orders/bulk-pdf', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'bulkDownloadPdf'])->name('purchase-orders.bulk-pdf');
+        Route::get('/purchase-orders/{order}/pdf', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'downloadPdf'])->name('purchase-orders.pdf');
         Route::post('/purchase-orders', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+        Route::post('/purchase-orders/bulk', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'bulkAction'])->name('purchase-orders.bulk');
+        Route::delete('/purchase-orders/{order}', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'destroy'])->name('purchase-orders.destroy');
+        Route::post('/purchase-orders/{id}/restore', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'restore'])->name('purchase-orders.restore');
+        Route::post('/purchase-orders/{order}/approve', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'approve'])->name('purchase-orders.approve');
+        Route::post('/purchase-orders/{order}/reject', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'reject'])->name('purchase-orders.reject');
         Route::post('/purchase-orders/{order}/receive', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'store'])->name('purchase-orders.receive');
+        Route::post('/purchase-orders/{order}/invoice', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'uploadInvoice'])->name('purchase-orders.invoice');
+        
         Route::get('/goods-receipts', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'index'])->name('goods-receipts.index');
+        Route::get('/goods-receipts/{receipt}/pdf', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'downloadPdf'])->name('goods-receipts.pdf');
+        Route::post('/goods-receipts/bulk', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'bulkAction'])->name('goods-receipts.bulk');
+        Route::delete('/goods-receipts/{receipt}', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'destroy'])->name('goods-receipts.destroy');
+        Route::post('/goods-receipts/{id}/restore', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'restore'])->name('goods-receipts.restore');
+        
+        Route::post('/suppliers/bulk', [\App\Modules\Inventory\Controllers\SupplierController::class, 'bulkAction'])->name('suppliers.bulk');
+        Route::resource('/suppliers', \App\Modules\Inventory\Controllers\SupplierController::class)->except(['create', 'show', 'edit']);
     });
     Route::post('orders/bulk-status', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkStatus'])->name('orders.bulk-status');
     Route::post('orders/bulk-generate-invoices', [\App\Modules\Orders\Controllers\OrderController::class, 'generateBulkInvoices'])->name('orders.bulk-generate-invoices');

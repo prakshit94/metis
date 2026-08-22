@@ -1423,7 +1423,7 @@
     </div>
 
     {{-- Promotions Modal --}}
-    <div class="modal fade" id="promotionsModal" tabindex="-1">
+    <div class="modal fade" id="promotionsModal">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="modal-header bg-body-tertiary border-bottom-0 p-4">
@@ -1612,7 +1612,7 @@
     </div>
     
     <!-- Product Details Modal -->
-    <div class="modal fade" id="productDetailsModal" tabindex="-1" aria-labelledby="productDetailsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="productDetailsModal" aria-labelledby="productDetailsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content bg-body border-0 shadow-lg" x-show="selectedProductForModal">
                 <!-- Header -->
@@ -1819,7 +1819,7 @@
     </div>
 
     <!-- ═══════════════════════ Cancel Order Modal ═══════════════════════════ -->
-    <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel">
+    <div class="modal fade" id="cancelOrderModal" aria-labelledby="cancelOrderModalLabel">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -1963,6 +1963,15 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         cancelReasons: @json($cancelReasons ?? []),
 
         async init() {
+            // Intercept browser refresh/close tab
+            window.addEventListener('beforeunload', (e) => {
+                if (this.customerDetails && !this.isCallLoggedOrClosed) {
+                    e.preventDefault();
+                    e.returnValue = 'You must Log a Call before leaving this profile.';
+                    return e.returnValue;
+                }
+            });
+
             // Push initial state to trap back button
             window.history.pushState(null, null, window.location.href);
             window.addEventListener('popstate', (e) => {
@@ -2442,7 +2451,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+whStock+')'}}));
                     return;
                 }
-                this.cart.push({ id:p.id, name:p.name, sku:p.sku, price:p.selling_price, image_url:p.image_url, quantity:newQty, available:whStock, taxRate:parseFloat(p.tax_rate)||0, discountValue:disc, discountType:p.default_discount_type||'percent', category_id:p.category_id });
+                this.cart.push({ id:p.id, name:p.name, sku:p.sku, price:p.selling_price, image_url:p.image_url, quantity:newQty, available:whStock, taxRate:parseFloat(p.tax_rate)||0, discountValue:disc, discountType:p.default_discount_type||'percent', category_id:p.category_id, batch_number:'' });
             }
             window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:'Added '+p.name+' to cart'}}));
         },
@@ -2827,7 +2836,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
 <x-call-tagging-modal />
 
 <!-- Action Blocked Modal -->
-<div class="modal fade" id="actionBlockedModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="actionBlockedModal" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-danger bg-opacity-10 border-bottom-0 pb-0">

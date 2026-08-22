@@ -155,7 +155,7 @@
                 {{-- Table --}}
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                        <thead class="table-group-divider">
                             <tr>
                                 <th style="width: 50px;" class="ps-3">
                                     <input type="checkbox"
@@ -201,7 +201,7 @@
                                         <span class="fw-semibold font-monospace text-primary" x-text="item.reference_no"></span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark border" x-text="item.warehouse?.name || '-'"></span>
+                                        <span class="badge bg-body-secondary text-body-emphasis border" x-text="item.warehouse?.name || '-'"></span>
                                     </td>
                                     <td>
                                         <span class="text-muted small" x-text="item.reason || '-'"></span>
@@ -291,7 +291,7 @@
     </div>
 
     {{-- ── Adjustment Form Modal ───────────────────────────────── --}}
-    <div class="modal fade" id="adjustmentModal" tabindex="-1">
+    <div class="modal fade" id="adjustmentModal">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -358,15 +358,15 @@
                                                     <div class="position-relative" x-data="{ open: false, search: '' }" @click.outside="open = false">
                                                         <div class="input-group input-group-sm" @click="open = !open">
                                                             <input type="text" 
-                                                                   class="form-control form-control-sm cursor-pointer bg-white" 
+                                                                   class="form-control form-control-sm cursor-pointer bg-body" 
                                                                    placeholder="Search & choose product..." 
                                                                    :value="item.product_id ? (products.find(p => p.id == item.product_id)?.name + ' (' + products.find(p => p.id == item.product_id)?.sku + ')') : ''"
                                                                    readonly>
-                                                            <span class="input-group-text bg-white"><i class="bi bi-chevron-down small text-muted"></i></span>
+                                                            <span class="input-group-text bg-body"><i class="bi bi-chevron-down small text-muted"></i></span>
                                                         </div>
                                                         
                                                         <div x-show="open" 
-                                                             class="position-absolute w-100 bg-white border rounded shadow-lg mt-1 p-2" 
+                                                             class="position-absolute w-100 bg-body border rounded shadow-lg mt-1 p-2" 
                                                              style="z-index: 1050; max-height: 200px; overflow-y: auto;"
                                                              x-transition>
                                                             <div class="mb-2">
@@ -394,7 +394,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-2 col-6">
-                                                    <input type="number" class="form-control form-control-sm bg-light" x-model.number="item.current_qty" min="0" step="0.01" placeholder="Current Qty" readonly required>
+                                                    <input type="number" class="form-control form-control-sm bg-body-secondary" x-model.number="item.current_qty" min="0" step="0.01" placeholder="Current Qty" readonly required>
                                                 </div>
                                                 <div class="col-md-3 col-6 text-center">
                                                     <div class="btn-group btn-group-sm w-100" role="group">
@@ -411,7 +411,7 @@
                                                 <div class="col-md-2 col-6">
                                                     <input type="number" class="form-control form-control-sm" x-model.number="item.adjustment_value" min="0" step="0.01" placeholder="Val" @input="updateNewQty(item)" required>
                                                     <div class="form-text small mt-1" x-show="item.product_id" style="font-size: 0.75rem; white-space: nowrap;">
-                                                        New: <strong class="text-dark" x-text="formatQty(item.new_qty)">0</strong>
+                                                        New: <strong class="text-body fw-bold" x-text="formatQty(item.new_qty)">0</strong>
                                                         (<span :class="(item.new_qty - item.current_qty) > 0 ? 'text-success' : ((item.new_qty - item.current_qty) < 0 ? 'text-danger' : 'text-secondary')" x-text="formatDifference(item)">0</span>)
                                                     </div>
                                                 </div>

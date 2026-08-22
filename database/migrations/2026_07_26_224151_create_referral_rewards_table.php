@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('referrer_id')->index();
             $table->unsignedBigInteger('referred_id')->index();
-            $table->unsignedBigInteger('order_id')->nullable()->index();
+            $table->foreignId('order_id')->nullable()->constrained('orders')->nullOnDelete();
             $table->unsignedBigInteger('referral_program_id')->nullable();
             $table->unsignedBigInteger('milestone_id')->nullable();
             $table->string('reward_type')->default('wallet');

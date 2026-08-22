@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('user_read_activities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->unsignedBigInteger('activity_id');
+            $table->foreignId('activity_id')->constrained('activity_log')->cascadeOnDelete();
             $table->timestamps();
             
             $table->unique(['user_id', 'activity_id']);

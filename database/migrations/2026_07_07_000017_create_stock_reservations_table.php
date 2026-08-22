@@ -11,6 +11,7 @@ return new class extends Migration {
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->foreignId('warehouse_id')->constrained()->cascadeOnDelete();
             $table->foreignId('order_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('batch_number')->nullable();
             $table->decimal('quantity', 15, 4);
             $table->dateTime('expires_at')->nullable();
             $table->enum('status', ['active', 'used', 'expired', 'cancelled'])->default('active')->index();

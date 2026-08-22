@@ -9,6 +9,7 @@ return new class extends Migration {
         Schema::create('stock_movements', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->string('batch_number')->nullable();
             $table->foreignId('warehouse_id')->constrained()->cascadeOnDelete();
             $table->string('reference_type')->nullable(); // Order, Adjustment, Transfer
             $table->unsignedBigInteger('reference_id')->nullable();

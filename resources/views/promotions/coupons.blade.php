@@ -271,7 +271,7 @@
     </div>
 
     {{-- Modal --}}
-    <div class="modal fade" id="couponModal" tabindex="-1">
+    <div class="modal fade" id="couponModal">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
                 

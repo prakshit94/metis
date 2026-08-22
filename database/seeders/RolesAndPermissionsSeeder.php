@@ -99,6 +99,14 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // ── Inventory & Warehousing ──
 
+        // Suppliers
+        'supplier-view',
+        'supplier-create',
+        'supplier-edit',
+        'supplier-delete',
+        'supplier-restore',
+        'supplier-permanent-delete',
+
         // Warehouses
         'warehouse-view',
         'warehouse-create',
@@ -499,6 +507,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'refunds.view',
             'returns.view',
             'credit-notes.view',
+            'supplier-view',
+            'supplier-create',
+            'supplier-edit',
+            'supplier-delete',
             'purchaseorder-view',
             'goodsreceipt-view',
             'orders.view.future_order',
@@ -603,6 +615,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'inventoryadjustment-view',
             'stockmanagement-view',
             'stocktransfer-view',
+            'supplier-view',
+            'supplier-create',
+            'supplier-edit',
+            'supplier-delete',
             'purchaseorder-view',
             'goodsreceipt-view',
             'shipping-view',

@@ -29,6 +29,10 @@ class ProductController extends Controller
 
         $products = Product::query()
             ->with(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])
+            ->withSum('stocks as stocks_sum_quantity', 'quantity')
+            ->withSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
+            ->withSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+            ->withSum('pendingOrderItems as pending_orders_qty', 'quantity')
             ->latest()
             ->get()
             ->map(fn (Product $product) => $this->transform($product))
@@ -46,6 +50,10 @@ class ProductController extends Controller
         abort_unless($request->user()?->can('product-view'), 403);
 
         $product->load(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute']);
+        $product->loadSum('stocks as stocks_sum_quantity', 'quantity');
+        $product->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty');
+        $product->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty');
+        $product->loadSum('pendingOrderItems as pending_orders_qty', 'quantity');
 
         return response()->json([
             'data' => $this->transform($product),
@@ -67,7 +75,11 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product created successfully.',
-            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])),
+            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])
+                ->loadSum('stocks as stocks_sum_quantity', 'quantity')
+                ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
+                ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+                ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
         ], 201);
     }
 
@@ -90,7 +102,11 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product updated successfully.',
-            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])),
+            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])
+                ->loadSum('stocks as stocks_sum_quantity', 'quantity')
+                ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
+                ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+                ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
         ]);
     }
 
@@ -419,10 +435,15 @@ class ProductController extends Controller
                 'status',
                 'grade',
                 'description',
+                'batch_tracking',
+                'expiry_tracking',
+                'allow_overselling',
+                'overselling_qty',
             ]);
 
             Product::query()
                 ->with(['category', 'brand', 'uom', 'taxRate', 'hsnCode'])
+                ->withSum('stocks as stocks_sum_quantity', 'quantity')
                 ->latest()
                 ->chunk(100, function ($products) use ($handle): void {
                     foreach ($products as $product) {
@@ -444,6 +465,10 @@ class ProductController extends Controller
                             $product->status,
                             $product->grade,
                             $product->description,
+                            $product->batch_tracking ? '1' : '0',
+                            $product->expiry_tracking ? '1' : '0',
+                            $product->allow_overselling ? '1' : '0',
+                            $product->overselling_qty,
                         ]);
                     }
                 });
@@ -460,6 +485,7 @@ class ProductController extends Controller
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
             'uom_id' => ['required', 'integer', 'exists:units_of_measure,id'],
+            'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
             'default_warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
             'tax_rate_id' => ['required', 'integer', 'exists:tax_rates,id'],
             'hsn_code_id' => ['required', 'integer', 'exists:hsn_codes,id'],
@@ -502,6 +528,7 @@ class ProductController extends Controller
         $product->category_id = (int) $data['category_id'];
         $product->brand_id = $this->resolveId($data['brand_id'] ?? null);
         $product->uom_id = $this->resolveId($data['uom_id'] ?? null);
+        $product->supplier_id = $this->resolveId($data['supplier_id'] ?? null);
         $product->default_warehouse_id = $this->resolveId($data['default_warehouse_id'] ?? null);
         $product->tax_rate_id = $this->resolveId($data['tax_rate_id'] ?? null);
         $product->hsn_code_id = $this->resolveId($data['hsn_code_id'] ?? null);
@@ -511,12 +538,12 @@ class ProductController extends Controller
         $product->mrp = isset($data['mrp']) && $data['mrp'] !== '' ? (float) $data['mrp'] : (float) $data['selling_price'];
         $product->selling_price = (float) $data['selling_price'];
         $product->min_stock_level = (int) ($data['min_stock_level'] ?? 0);
-        $product->batch_tracking = (bool) ($data['batch_tracking'] ?? false);
-        $product->expiry_tracking = (bool) ($data['expiry_tracking'] ?? false);
-        $product->allow_overselling = (bool) ($data['allow_overselling'] ?? false);
+        $product->batch_tracking = filter_var($data['batch_tracking'] ?? false, FILTER_VALIDATE_BOOL);
+        $product->expiry_tracking = filter_var($data['expiry_tracking'] ?? false, FILTER_VALIDATE_BOOL);
+        $product->allow_overselling = filter_var($data['allow_overselling'] ?? false, FILTER_VALIDATE_BOOL);
         $product->overselling_qty = (int) ($data['overselling_qty'] ?? 0);
-        $product->manage_stock = (bool) ($data['manage_stock'] ?? true);
-        $product->is_sku_enabled = (bool) ($data['is_sku_enabled'] ?? true);
+        $product->manage_stock = filter_var($data['manage_stock'] ?? true, FILTER_VALIDATE_BOOL);
+        $product->is_sku_enabled = filter_var($data['is_sku_enabled'] ?? true, FILTER_VALIDATE_BOOL);
         $product->application_instructions = $this->nullableString($data['application_instructions'] ?? null);
         $product->status = $this->normalizeStatus((string) $data['status']);
         $product->is_active = in_array($product->status, ['published', 'active'], true);
@@ -538,6 +565,20 @@ class ProductController extends Controller
 
     private function transform(Product $product): array
     {
+        $totalQty = (float) ($product->stocks_sum_quantity ?? $product->stock_quantity ?? 0);
+        $reservedQty = (float) ($product->stocks_sum_reserved_qty ?? 0);
+        $dispatchedQty = (float) ($product->stocks_sum_dispatched_qty ?? 0);
+        $pendingQty = (float) ($product->pending_orders_qty ?? 0);
+
+        $rawAvailable = $totalQty - $reservedQty - $pendingQty;
+        $netAvailable = max(0.0, $rawAvailable);
+
+        if ($product->allow_overselling) {
+            $maxAllowedQty = max(0.0, $rawAvailable + (float) ($product->overselling_qty ?: 999));
+        } else {
+            $maxAllowedQty = $netAvailable;
+        }
+
         return [
             'id' => $product->id,
             'name' => $product->name,
@@ -549,6 +590,8 @@ class ProductController extends Controller
             'brand' => $product->brand?->name,
             'uom_id' => $product->uom_id,
             'uom' => $product->uom?->name,
+            'supplier_id' => $product->supplier_id,
+            'supplier' => trim($product->supplier?->company_name ?: ($product->supplier?->firstname . ' ' . $product->supplier?->lastname)),
             'tax_rate_id' => $product->tax_rate_id,
             'tax_rate' => $product->taxRate?->rate,
             'tax_label' => $product->taxRate?->name,
@@ -564,6 +607,12 @@ class ProductController extends Controller
             'mrp' => (float) $product->mrp,
             'stock' => (int) $product->stock_quantity,
             'stock_quantity' => (int) $product->stock_quantity,
+            'stock_qty' => $totalQty,
+            'reserved_qty' => $reservedQty,
+            'pending_qty' => $pendingQty,
+            'dispatched_qty' => $dispatchedQty,
+            'available_stock' => $maxAllowedQty,
+            'physical_available' => $netAvailable,
             'min_stock_level' => (int) $product->min_stock_level,
             'allow_overselling' => (bool) $product->allow_overselling,
             'manage_stock' => (bool) $product->manage_stock,
@@ -623,6 +672,7 @@ class ProductController extends Controller
                     ])->values(),
                 ])->values(),
             'brands' => Brand::query()->orderBy('name')->get(['id', 'name'])->values(),
+            'suppliers' => \App\Modules\Inventory\Models\Supplier::query()->orderBy('company_name')->get(['id', 'company_name', 'firstname', 'lastname'])->values(),
             'uoms' => UnitOfMeasure::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'short_name'])->values(),
             'taxRates' => TaxRate::query()->where('status', 'active')->orderBy('rate')->get(['id', 'name', 'rate'])->values(),
             'hsnCodes' => HsnCode::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'description'])->values(),

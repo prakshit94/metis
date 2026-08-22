@@ -27,6 +27,7 @@ class StockReservation extends Model implements Auditable
         'quantity',
         'expires_at',
         'status',
+        'batch_number',
     ];
 
     protected $casts = [

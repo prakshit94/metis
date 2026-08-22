@@ -10,7 +10,7 @@
     <div class="d-flex mb-4 activity-item">
         @if($activity->feed_type == 'movement')
             <div class="me-3">
-                <div class="bg-light text-secondary rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                <div class="bg-body-tertiary text-secondary rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
                     @if($activity->type == 'in')
                         <i class="bi bi-box-arrow-in-right text-success"></i>
                     @elseif($activity->type == 'out')

@@ -29,6 +29,7 @@ class StockMovement extends Model implements Auditable
         'type',
         'status',
         'performed_by',
+        'batch_number',
     ];
 
     protected $casts = [

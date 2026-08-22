@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Modules\Catalog\Models\Brand;
@@ -18,124 +20,115 @@ class ProductSeeder extends Seeder
     {
         $products = [
             [
-                'name' => 'Luxury Automatic Watch',
-                'sku' => 'WATCH-001',
-                'category_slug' => 'watches',
-                'brand_slug' => 'rolex',
-                'uom_slug' => 'piece',
-                'hsn_code' => '9101',
-                'tax_rate' => 18,
-                'purchase_price' => 5000,
-                'mrp' => 8000,
-                'selling_price' => 7500,
-                'description' => 'Premium luxury watch.',
-                'image_source' => 'watch.jpg',
+                'name' => 'Premium Hybrid Cotton Seeds',
+                'sku' => 'SEED-COT-001',
+                'category_slug' => 'seeds',
+                'brand_slug' => 'mahyco',
+                'uom_slug' => 'packet',
+                'hsn_code' => '1209',
+                'tax_rate' => 5,
+                'purchase_price' => 500,
+                'mrp' => 800,
+                'selling_price' => 700,
+                'description' => 'High yield hybrid cotton seeds suitable for various soils.',
                 'barcode' => '8901111222233',
-                'weight' => '0.5 kg',
-                'application_instructions' => 'Wind manually if not worn for 48 hours.',
+                'weight' => '1 kg',
+                'application_instructions' => 'Sow in well drained soil.',
                 'grade' => 'A',
                 'attributes' => [
-                    ['name' => 'Color', 'type' => 'color', 'value' => 'Silver', 'color_code' => '#C0C0C0'],
-                    ['name' => 'Material', 'type' => 'text', 'value' => 'Stainless Steel', 'color_code' => null],
+                    ['name' => 'Crop Type', 'type' => 'text', 'value' => 'Cotton', 'color_code' => null],
+                    ['name' => 'Season', 'type' => 'text', 'value' => 'Kharif', 'color_code' => null],
                 ],
+                'batch_tracking' => true,
+                'expiry_tracking' => true,
+                'allow_overselling' => false,
+                'overselling_qty' => 0,
             ],
             [
-                'name' => 'Noise Cancelling Headphones',
-                'sku' => 'HPHONE-001',
-                'category_slug' => 'headphones',
-                'brand_slug' => 'sony',
-                'uom_slug' => 'piece',
-                'hsn_code' => '8518',
-                'tax_rate' => 18,
-                'purchase_price' => 1500,
-                'mrp' => 2500,
-                'selling_price' => 2000,
-                'description' => 'High quality noise cancelling headphones.',
-                'image_source' => 'headphone.jpg',
+                'name' => 'Organic NPK Fertilizer',
+                'sku' => 'FERT-NPK-001',
+                'category_slug' => 'fertilizers',
+                'brand_slug' => 'upl-agro',
+                'uom_slug' => 'bag',
+                'hsn_code' => '3101',
+                'tax_rate' => 12,
+                'purchase_price' => 1200,
+                'mrp' => 1600,
+                'selling_price' => 1400,
+                'description' => 'Balanced nitrogen, phosphorus, and potassium formula.',
                 'barcode' => '8902222333344',
-                'weight' => '0.3 kg',
-                'application_instructions' => 'Charge fully before first use.',
+                'weight' => '50 kg',
+                'application_instructions' => 'Apply 50kg per acre during vegetative growth.',
                 'grade' => 'B',
                 'attributes' => [
-                    ['name' => 'Color', 'type' => 'color', 'value' => 'Black', 'color_code' => '#000000'],
-                    ['name' => 'Connectivity', 'type' => 'text', 'value' => 'Bluetooth 5.0', 'color_code' => null],
+                    ['name' => 'Formulation', 'type' => 'text', 'value' => 'Granular', 'color_code' => null],
+                    ['name' => 'Organic', 'type' => 'text', 'value' => 'Yes', 'color_code' => null],
                 ],
+                'batch_tracking' => true,
+                'expiry_tracking' => false,
+                'allow_overselling' => false,
+                'overselling_qty' => 0,
             ],
             [
-                'name' => 'Vintage Wall Clock',
-                'sku' => 'CLOCK-001',
-                'category_slug' => 'clocks',
-                'brand_slug' => 'casio',
-                'uom_slug' => 'piece',
-                'hsn_code' => '9105',
-                'tax_rate' => 12,
-                'purchase_price' => 500,
-                'mrp' => 1000,
-                'selling_price' => 800,
-                'description' => 'Classic vintage wall clock.',
+                'name' => 'Systemic Fungicide 1L',
+                'sku' => 'CHEM-FUN-001',
+                'category_slug' => 'crop-protection',
+                'brand_slug' => 'syngenta-crop',
+                'uom_slug' => 'liter',
+                'hsn_code' => '3808',
+                'tax_rate' => 18,
+                'purchase_price' => 800,
+                'mrp' => 1200,
+                'selling_price' => 1000,
+                'description' => 'Broad spectrum systemic fungicide for crop protection.',
                 'barcode' => '8903333444455',
                 'weight' => '1.2 kg',
-                'application_instructions' => 'Mount on a sturdy wall hook.',
-                'grade' => 'C',
-                'attributes' => [
-                    ['name' => 'Material', 'type' => 'text', 'value' => 'Wood', 'color_code' => null],
-                    ['name' => 'Color', 'type' => 'color', 'value' => 'Brown', 'color_code' => '#8B4513'],
-                ],
-            ],
-            [
-                'name' => 'Running Shoes',
-                'sku' => 'SHOES-001',
-                'category_slug' => 'shoes',
-                'brand_slug' => 'nike',
-                'uom_slug' => 'pair',
-                'hsn_code' => '6403',
-                'tax_rate' => 12,
-                'purchase_price' => 2000,
-                'mrp' => 4000,
-                'selling_price' => 3500,
-                'description' => 'Comfortable sports running shoes.',
-                'image_source' => 'shose.jpg',
-                'barcode' => '8904444555566',
-                'weight' => '0.8 kg',
-                'application_instructions' => 'Clean with a damp cloth; do not machine wash.',
+                'application_instructions' => 'Mix 2ml per liter of water.',
                 'grade' => 'A',
                 'attributes' => [
-                    ['name' => 'Size', 'type' => 'text', 'value' => '9', 'color_code' => null],
-                    ['name' => 'Color', 'type' => 'color', 'value' => 'Red', 'color_code' => '#FF0000'],
+                    ['name' => 'Chemical Type', 'type' => 'text', 'value' => 'Fungicide', 'color_code' => null],
+                    ['name' => 'Form', 'type' => 'text', 'value' => 'Liquid', 'color_code' => null],
                 ],
+                'batch_tracking' => true,
+                'expiry_tracking' => true,
+                'allow_overselling' => false,
+                'overselling_qty' => 0,
             ],
             [
-                'name' => 'Aviator Sunglasses',
-                'sku' => 'SUNGL-001',
-                'category_slug' => 'sunglasses',
-                'brand_slug' => 'ray-ban',
+                'name' => 'Drip Irrigation Pipe 16mm',
+                'sku' => 'MACH-DRIP-001',
+                'category_slug' => 'machinery',
+                'brand_slug' => 'upl-agro',
                 'uom_slug' => 'piece',
-                'hsn_code' => '9004',
+                'hsn_code' => '3917',
                 'tax_rate' => 18,
-                'purchase_price' => 1000,
-                'mrp' => 1800,
-                'selling_price' => 1500,
-                'description' => 'Stylish aviator sunglasses.',
-                'image_source' => 'sunglasses.jpg',
-                'barcode' => '8905555666677',
-                'weight' => '0.1 kg',
-                'application_instructions' => 'Store in case when not in use.',
-                'grade' => 'B',
+                'purchase_price' => 2000,
+                'mrp' => 3500,
+                'selling_price' => 3000,
+                'description' => 'High durability 16mm inline drip lateral pipe.',
+                'barcode' => '8904444555566',
+                'weight' => '15 kg',
+                'application_instructions' => 'Lay along crop rows, spacing as per crop requirement.',
+                'grade' => 'A',
                 'attributes' => [
-                    ['name' => 'Frame Color', 'type' => 'color', 'value' => 'Gold', 'color_code' => '#FFD700'],
-                    ['name' => 'Lens Color', 'type' => 'color', 'value' => 'Green', 'color_code' => '#008000'],
+                    ['name' => 'Material', 'type' => 'text', 'value' => 'PVC', 'color_code' => null],
+                    ['name' => 'Length', 'type' => 'text', 'value' => '400m', 'color_code' => null],
                 ],
+                'batch_tracking' => false,
+                'expiry_tracking' => false,
+                'allow_overselling' => false,
+                'overselling_qty' => 0,
             ],
         ];
 
-        $warehouse = Warehouse::where('code', 'MAIN-ECOM')->first();
+        $warehouse = Warehouse::where('code', 'MAIN-ECOM')->first() ?? Warehouse::first();
 
         foreach ($products as $item) {
-            $category = Category::where('slug', $item['category_slug'])->first();
-            $brand = Brand::where('slug', $item['brand_slug'])->first();
-            $uom = UnitOfMeasure::where('slug', $item['uom_slug'])->first();
-            $hsn = HsnCode::where('code', $item['hsn_code'])->first();
-            $tax = TaxRate::where('rate', $item['tax_rate'])->first();
+            $category = Category::where('slug', $item['category_slug'])->first() ?? Category::first();
+            $brand = Brand::where('slug', $item['brand_slug'])->first() ?? Brand::first();
+            $uom = UnitOfMeasure::where('slug', $item['uom_slug'])->first() ?? UnitOfMeasure::first();
+            $hsn = HsnCode::where('code', $item['hsn_code'])->first() ?? HsnCode::first();
+            $tax = TaxRate::where('rate', $item['tax_rate'])->first() ?? TaxRate::first();
             
             $imagePath = null;
             if (isset($item['image_source'])) {
@@ -179,6 +172,10 @@ class ProductSeeder extends Seeder
                     'grade' => $item['grade'] ?? null,
                     'default_discount' => 0,
                     'default_discount_type' => 'percent',
+                    'batch_tracking' => $item['batch_tracking'] ?? false,
+                    'expiry_tracking' => $item['expiry_tracking'] ?? false,
+                    'allow_overselling' => $item['allow_overselling'] ?? false,
+                    'overselling_qty' => $item['overselling_qty'] ?? 0,
                 ]
             );
 
@@ -196,6 +193,15 @@ class ProductSeeder extends Seeder
                     $attributeValueIds[] = $attributeValue->id;
                 }
                 $product->attributeValues()->sync($attributeValueIds);
+            }
+
+            if ($product->default_warehouse_id && class_exists(\App\Services\InventoryService::class)) {
+                try {
+                    // Seed some initial stock
+                    app(\App\Services\InventoryService::class)->setStock($product->id, $product->default_warehouse_id, 100);
+                } catch (\Exception $e) {
+                    // Fail silently if service requirements differ in runtime environments
+                }
             }
         }
     }

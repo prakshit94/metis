@@ -256,7 +256,7 @@
     </div>
     
     <!-- Details Modal -->
-    <div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal fade" id="detailModal">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow-lg border-0 rounded-4" x-show="selectedRefund">
                 <template x-if="selectedRefund">

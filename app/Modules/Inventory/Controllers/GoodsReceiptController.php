@@ -28,7 +28,15 @@ class GoodsReceiptController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         if ($request->wantsJson()) {
-            $query = GoodsReceipt::with(['purchaseOrder.supplier', 'warehouse', 'creator'])->latest();
+            $query = GoodsReceipt::with(['purchaseOrder.supplier', 'warehouse', 'creator', 'items.product'])->latest();
+            
+            if ($request->has('trashed')) {
+                if ($request->query('trashed') === 'only') {
+                    $query->onlyTrashed();
+                } elseif ($request->query('trashed') === 'with') {
+                    $query->withTrashed();
+                }
+            }
             
             if ($request->has('search') && !empty($request->query('search'))) {
                 $search = $request->query('search');
@@ -46,9 +54,16 @@ class GoodsReceiptController extends Controller implements HasMiddleware
         $stats = [
             'total' => GoodsReceipt::count(),
             'this_month' => GoodsReceipt::whereMonth('received_date', date('m'))->whereYear('received_date', date('Y'))->count(),
+            'pending' => 0, // Placeholder if you integrate putaway flow later
+            'discrepancies' => \App\Modules\Inventory\Models\GoodsReceiptItem::where('rejected_qty', '>', 0)->count(),
         ];
 
-        return view('procurement.goods-receipts.index', compact('stats'));
+        $pendingPOs = \App\Modules\Inventory\Models\PurchaseOrder::with(['items.product', 'warehouse', 'supplier', 'creator'])
+            ->whereIn('status', ['approved', 'partially_received'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('procurement.goods-receipts.index', compact('stats', 'pendingPOs'));
     }
     public function store(Request $request, $orderId): JsonResponse
     {
@@ -60,14 +75,17 @@ class GoodsReceiptController extends Controller implements HasMiddleware
             'items.*.accepted_qty' => 'required|numeric|min:0',
             'items.*.rejected_qty' => 'required|numeric|min:0',
             'items.*.notes' => 'nullable|string',
+            'items.*.batch_number' => 'nullable|string|max:255',
+            'items.*.manufacturing_date' => 'nullable|date',
+            'items.*.expiry_date' => 'nullable|date|after_or_equal:items.*.manufacturing_date',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $po = PurchaseOrder::with('items')->findOrFail($orderId);
+            $po = PurchaseOrder::with(['items.product'])->findOrFail($orderId);
 
-            if (!in_array($po->status, ['draft', 'sent', 'partially_received'])) {
+            if (!in_array($po->status, ['approved', 'partially_received'])) {
                 return response()->json(['message' => 'Purchase order cannot be received in its current status.'], 400);
             }
 
@@ -96,13 +114,16 @@ class GoodsReceiptController extends Controller implements HasMiddleware
                 $totalReceived = $acceptedQty + $rejectedQty;
 
                 if ($totalReceived > 0) {
-                    $grn->items()->create([
+                    $grnItem = $grn->items()->create([
                         'purchase_order_item_id' => $poItem->id,
                         'product_id' => $poItem->product_id,
                         'received_qty' => $totalReceived,
                         'accepted_qty' => $acceptedQty,
                         'rejected_qty' => $rejectedQty,
                         'notes' => $itemData['notes'] ?? null,
+                        'batch_number' => $itemData['batch_number'] ?? null,
+                        'manufacturing_date' => $itemData['manufacturing_date'] ?? null,
+                        'expiry_date' => $itemData['expiry_date'] ?? null,
                     ]);
 
                     $poItem->received_qty = (float)$poItem->received_qty + $acceptedQty;
@@ -124,11 +145,33 @@ class GoodsReceiptController extends Controller implements HasMiddleware
                         );
 
                         $stock->increment('quantity', $acceptedQty);
+                        
+                        // Handle Batch Tracking
+                        if ($poItem->product && $poItem->product->batch_tracking && !empty($itemData['batch_number'])) {
+                            $batch = \App\Modules\Inventory\Models\StockBatch::firstOrCreate(
+                                [
+                                    'product_id' => $poItem->product_id,
+                                    'warehouse_id' => $po->warehouse_id,
+                                    'batch_number' => $itemData['batch_number'],
+                                ],
+                                [
+                                    'quantity' => 0,
+                                    'manufacturing_date' => $itemData['manufacturing_date'] ?? null,
+                                    'expiry_date' => $itemData['expiry_date'] ?? null,
+                                    'status' => 'active',
+                                ]
+                            );
+                            $batch->increment('quantity', $acceptedQty);
+                            $batchMovementId = $batch->id;
+                        } else {
+                            $batchMovementId = null;
+                        }
 
                         // Log Stock Movement
                         StockMovement::create([
                             'product_id' => $poItem->product_id,
                             'warehouse_id' => $po->warehouse_id,
+                            'batch_number' => $itemData['batch_number'] ?? null,
                             'reference_type' => GoodsReceipt::class,
                             'reference_id' => $grn->id,
                             'quantity' => $acceptedQty,
@@ -159,5 +202,50 @@ class GoodsReceiptController extends Controller implements HasMiddleware
             DB::rollBack();
             return response()->json(['message' => 'Failed to process GRN: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function downloadPdf(GoodsReceipt $receipt)
+    {
+        $receipt->load(['purchaseOrder.supplier', 'warehouse', 'items.product.taxRate', 'creator']);
+        
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('procurement.goods-receipts.pdf', compact('receipt'));
+        return $pdf->download($receipt->grn_number . '.pdf');
+    }
+
+    public function destroy(GoodsReceipt $receipt): JsonResponse
+    {
+        $receipt->delete();
+        return response()->json(['message' => 'Goods Receipt deleted successfully.']);
+    }
+
+    public function restore($id): JsonResponse
+    {
+        $receipt = GoodsReceipt::withTrashed()->findOrFail($id);
+        $receipt->restore();
+        return response()->json(['message' => 'Goods Receipt restored successfully.']);
+    }
+
+    public function bulkAction(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'action' => 'required|string|in:delete,restore',
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+        ]);
+
+        $action = $validated['action'];
+        $ids = $validated['ids'];
+
+        if ($action === 'delete') {
+            GoodsReceipt::whereIn('id', $ids)->delete();
+            return response()->json(['message' => 'Selected Goods Receipts deleted successfully.']);
+        }
+
+        if ($action === 'restore') {
+            GoodsReceipt::withTrashed()->whereIn('id', $ids)->restore();
+            return response()->json(['message' => 'Selected Goods Receipts restored successfully.']);
+        }
+
+        return response()->json(['message' => 'Invalid action.'], 400);
     }
 }

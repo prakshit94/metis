@@ -10,6 +10,7 @@ use OwenIt\Auditing\Auditable as AuditableTrait;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockReservation;
+use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Orders\Models\OrderItem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,13 +23,14 @@ class Product extends Model implements Auditable
     use AuditableTrait;
     use SoftDeletes;
 
-
+    protected $appends = ['image_url'];
     protected $fillable = [
         'name',
         'sku',
         'slug',
         'category_id',
         'brand_id',
+        'supplier_id',
         'tax_rate_id',
         'hsn_code_id',
         'uom_id',
@@ -80,6 +82,11 @@ class Product extends Model implements Auditable
         return $this->belongsTo(Brand::class);
     }
 
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Inventory\Models\Supplier::class, 'supplier_id');
+    }
+
     public function taxRate(): BelongsTo
     {
         return $this->belongsTo(TaxRate::class);
@@ -113,6 +120,11 @@ class Product extends Model implements Auditable
     public function stocks(): HasMany
     {
         return $this->hasMany(Stock::class);
+    }
+
+    public function stockBatches(): HasMany
+    {
+        return $this->hasMany(StockBatch::class);
     }
 
     public function stockReservations(): HasMany

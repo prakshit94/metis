@@ -89,6 +89,7 @@ return new class extends Migration {
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->unsignedBigInteger('product_variant_id')->nullable();
+            $table->string('batch_number')->nullable();
             $table->decimal('quantity', 15, 4);
             $table->decimal('unit_price', 15, 2);
             $table->decimal('tax_rate', 5, 2)->default(0);

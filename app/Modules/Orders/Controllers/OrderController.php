@@ -579,6 +579,16 @@ class OrderController extends Controller implements HasMiddleware
     {
         $validated = $request->validated();
 
+        $calc = $orderService->recalculateAndValidate($validated);
+        $validated['items'] = $calc['items'];
+        $validated['total_amount'] = $calc['subtotal'];
+        $validated['tax_amount'] = $calc['tax_amount'];
+        $validated['discount_amount'] = $calc['total_discount'];
+        $validated['coupon_code'] = $calc['coupon_code'];
+        $validated['applied_offer_id'] = $calc['applied_offer_id'];
+        $validated['net_amount'] = $calc['grand_total'];
+        $validated['applied_bogo_ids'] = $calc['applied_bogo_ids'];
+
         $order = $orderService->createOrder($validated);
 
         if ($request->wantsJson() || $request->ajax()) {
@@ -594,11 +604,26 @@ class OrderController extends Controller implements HasMiddleware
 
     public function edit(Order $order)
     {
+        $order->load(['party', 'warehouse', 'items.product', 'shippingAddress', 'billingAddress', 'appliedOffer']);
+        
         $warehouses = Warehouse::orderBy('name')->get();
         $parties = Party::orderBy('firstname')->get();
-        $products = Product::orderBy('name')->get();
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
 
-        return view('orders.edit', compact('order', 'warehouses', 'parties', 'products'));
+        $activeOffers = Offer::active()->orderByDesc('priority')->get();
+        $activeCoupons = Coupon::active()->where(function($q) {
+            $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', now()->startOfDay());
+        })->get();
+
+        $initialCustomer = $order->party;
+        $initialOrder = $order;
+
+        $hideSidebar = true;
+        $lockSearch = true;
+        $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
+        $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
+
+        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
     }
 
     public function show(string $id)

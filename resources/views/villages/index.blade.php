@@ -533,7 +533,7 @@
         </div>
     </div>
 {{-- ═══════════════════════ Add / Edit Village Modal ═══════════════════════════ --}}
-<div class="modal fade" id="villageModal" tabindex="-1" aria-labelledby="villageModalLabel">
+<div class="modal fade" id="villageModal" aria-labelledby="villageModalLabel">
     <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content" x-data="villageForm">
             <div class="modal-header border-bottom-0 pb-0">
@@ -582,7 +582,7 @@
 </div>
 
 {{-- ═══════════════════════ Manage Village Services Modal ═══════════════════════════ --}}
-<div class="modal fade" id="servicesModal" tabindex="-1" aria-labelledby="servicesModalLabel">
+<div class="modal fade" id="servicesModal" aria-labelledby="servicesModalLabel">
     <div class="modal-dialog modal-lg modal-dialog-scrollable" x-data="villageServices">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
@@ -647,7 +647,7 @@
 </div>
 
 {{-- ═══════════════════════ Bulk Update Services Modal ═══════════════════════════ --}}
-<div class="modal fade" id="bulkServicesModal" tabindex="-1" aria-labelledby="bulkServicesModalLabel">
+<div class="modal fade" id="bulkServicesModal" aria-labelledby="bulkServicesModalLabel">
     <div class="modal-dialog modal-dialog-scrollable" x-data="bulkServicesForm">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
@@ -693,7 +693,7 @@
 </div>
 
 <!-- ═══════════════════════ CSV Import Preview Modal ═══════════════════════════ -->
-<div class="modal fade" id="importPreviewModal" tabindex="-1" aria-labelledby="importPreviewModalLabel" data-bs-backdrop="static">
+<div class="modal fade" id="importPreviewModal" aria-labelledby="importPreviewModalLabel" data-bs-backdrop="static">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">

@@ -270,7 +270,7 @@
     </div>
     
     <!-- Details Modal -->
-    <div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal fade" id="detailModal">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow-lg border-0 rounded-4" x-show="selectedInvoice">
                 <template x-if="selectedInvoice">
@@ -369,7 +369,7 @@
 </div>
     
     <!-- Record Payment Modal -->
-    <div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal fade" id="paymentModal">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <form @submit.prevent="submitPayment">

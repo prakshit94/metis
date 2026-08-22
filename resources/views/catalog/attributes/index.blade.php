@@ -105,7 +105,7 @@
         </div>
         <div class="card-body p-0">
             <!-- Bulk Actions Bar -->
-            <div class="bulk-actions-bar p-3 bg-light border-bottom" x-show="selectedItems.length > 0" x-transition>
+            <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedItems.length > 0" x-transition>
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted">
                         <span x-text="selectedItems.length"></span> item(s) selected
@@ -167,10 +167,10 @@
                                 </td>
                                 <td class="text-muted" x-text="item.id"></td>
                                 <td>
-                                    <div class="fw-semibold text-dark" x-text="item.name"></div>
+                                    <div class="fw-semibold text-body" x-text="item.name"></div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-secondary border text-uppercase" x-text="item.type" style="font-size: 0.72rem;"></span>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border text-uppercase" x-text="item.type" style="font-size: 0.72rem;"></span>
                                 </td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1" style="max-width: 250px;">
@@ -260,7 +260,7 @@
 
     <!-- Form Modal -->
     <!-- Form Modal -->
-    <div class="modal fade" id="attributesModal" tabindex="-1">
+    <div class="modal fade" id="attributesModal">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -328,7 +328,7 @@
     </div>
 
     <!-- Values Modal -->
-    <div class="modal fade" id="valuesModal" tabindex="-1">
+    <div class="modal fade" id="valuesModal">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -393,7 +393,7 @@
                                                 <template x-if="managingValues && managingValues.type === 'color'">
                                                     <div class="rounded-circle border" :style="`background-color: ${val.color_code}; width: 16px; height: 16px;`"></div>
                                                 </template>
-                                                <span class="fw-medium text-dark small" x-text="val.value"></span>
+                                                <span class="fw-medium text-body small" x-text="val.value"></span>
                                             </div>
                                             <button type="button" class="btn btn-sm btn-link text-danger p-0" @click="deleteValue(val)">
                                                 <i class="bi bi-trash"></i>

@@ -178,7 +178,7 @@ class StockTransferController extends Controller implements HasMiddleware
         $action = $validated['action'];
         $ids    = $validated['ids'];
 
-        $transfers = StockTransfer::whereIn('id', $ids)->get();
+        $transfers = StockTransfer::with('items')->whereIn('id', $ids)->get();
         $processedCount = 0;
         $failedCount = 0;
         $errors = [];

@@ -228,7 +228,7 @@
     </div>{{-- /card --}}
 
     {{-- ═══════════════════ QC Inspect Modal (inside x-data scope) ═══════════════════ --}}
-    <div class="modal fade" id="qcInspectModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="qcInspectModalLabel" aria-hidden="true">
+    <div class="modal fade" id="qcInspectModal" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="qcInspectModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content shadow-lg border-0 rounded-4">
                 <div class="d-flex flex-column h-100 bg-body rounded-4 overflow-hidden">
@@ -469,7 +469,7 @@
     </div>{{-- /qcInspectModal --}}
 
     {{-- bulkQcModal --}}
-    <div class="modal fade" id="bulkQcModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="bulkQcModalLabel" aria-hidden="true">
+    <div class="modal fade" id="bulkQcModal" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="bulkQcModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content shadow-lg border-0 rounded-4">
                 <div class="d-flex flex-column h-100 bg-body rounded-4 overflow-hidden">

@@ -56,7 +56,7 @@ class WarehouseAnalyticsService
                 ->join('products', 'stocks.product_id', '=', 'products.id')
                 ->whereRaw('stocks.quantity <= COALESCE(products.min_stock_level, 10)')
                 ->count(),
-            'pending_purchase_orders' => (clone $posQuery)->whereIn('status', ['pending', 'approved'])->count(),
+            'pending_purchase_orders' => (clone $posQuery)->whereIn('status', ['draft', 'sent'])->count(),
         ];
     }
 
@@ -82,7 +82,7 @@ class WarehouseAnalyticsService
                   ->orWhereHasMorph('reference', '*', function ($q, $type) use ($search) {
                        if ($type === \App\Modules\Orders\Models\Order::class) {
                            $q->where('order_no', 'like', "%{$search}%");
-                       } elseif ($type === \App\Modules\Procurement\Models\PurchaseOrder::class) {
+                       } elseif ($type === \App\Modules\Inventory\Models\PurchaseOrder::class) {
                            $q->where('po_number', 'like', "%{$search}%");
                        }
                   });
@@ -130,7 +130,7 @@ class WarehouseAnalyticsService
         $dateStart = $this->getDateStart($dateRange);
         
         $query = DB::table('inventory_adjustment_items')
-            ->join('inventory_adjustments', 'inventory_adjustment_items.inventory_adjustment_id', '=', 'inventory_adjustments.id')
+            ->join('inventory_adjustments', 'inventory_adjustment_items.adjustment_id', '=', 'inventory_adjustments.id')
             ->join('products', 'inventory_adjustment_items.product_id', '=', 'products.id')
             ->where('inventory_adjustments.status', 'completed')
             ->whereNull('inventory_adjustments.deleted_at')

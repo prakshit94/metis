@@ -18,6 +18,9 @@ class GoodsReceiptItem extends Model
         'accepted_qty',
         'rejected_qty',
         'notes',
+        'batch_number',
+        'manufacturing_date',
+        'expiry_date',
     ];
 
     protected $casts = [

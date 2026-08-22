@@ -358,7 +358,7 @@
 
 
     <!-- ═══════════════════════ Add / Edit Modal ════════════════════════════ -->
-    <div class="modal fade" id="warehousesModal" tabindex="-1" aria-labelledby="warehousesModalLabel" data-bs-backdrop="static">
+    <div class="modal fade" id="warehousesModal" aria-labelledby="warehousesModalLabel" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content shadow-lg border-0 rounded-4">
 
@@ -655,7 +655,7 @@
     </div>
 
     <!-- ═══════════════════════ View Details Modal ════════════════════════════ -->
-    <div class="modal fade" id="viewWarehouseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="viewWarehouseModal" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow-lg border-0 rounded-4">
                 <div class="modal-header border-bottom-0 pb-0">

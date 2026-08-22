@@ -237,7 +237,7 @@
     </div>
 
     <!-- Form Modal -->
-    <div class="modal fade" id="taxRatesModal" tabindex="-1">
+    <div class="modal fade" id="taxRatesModal">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">

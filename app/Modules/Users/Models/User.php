@@ -6,6 +6,8 @@ namespace App\Modules\Users\Models;
 
 use App\Models\Chat\Presence;
 use App\Modules\Catalog\Models\Service;
+use App\Modules\Users\Models\Designation;
+use App\Modules\Users\Models\EmploymentType;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -66,6 +68,8 @@ class User extends Authenticatable implements Auditable
         'gender',
         'blood_group',
         'designation',
+        'designation_id',
+        'employment_type_id',
         'emergency_contact_name',
         'emergency_contact_phone',
     ];
@@ -134,6 +138,16 @@ class User extends Authenticatable implements Auditable
     public function manager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'manager_id');
+    }
+    
+    public function designationRel(): BelongsTo
+    {
+        return $this->belongsTo(Designation::class, 'designation_id');
+    }
+    
+    public function employmentTypeRel(): BelongsTo
+    {
+        return $this->belongsTo(EmploymentType::class, 'employment_type_id');
     }
 
     public function subordinates(): HasMany

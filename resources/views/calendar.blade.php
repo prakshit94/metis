@@ -323,7 +323,7 @@
 @endsection
 
 @push('modals')
-<div class="modal fade" id="addEventModal" tabindex="-1" aria-labelledby="addEventModalLabel" aria-hidden="true">
+<div class="modal fade" id="addEventModal" aria-labelledby="addEventModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header border-0 pb-0">

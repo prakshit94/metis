@@ -17,7 +17,7 @@ class OrderItem extends Model implements Auditable
     use AuditableTrait;
     protected $fillable = [
         'order_id', 'product_id', 'product_variant_id', 'quantity', 'unit_price',
-        'tax_rate', 'tax_amount', 'discount_amount', 'total_amount',
+        'tax_rate', 'tax_amount', 'discount_amount', 'total_amount', 'batch_number',
     ];
 
     protected $casts = [

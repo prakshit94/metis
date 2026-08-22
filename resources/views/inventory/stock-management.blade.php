@@ -171,7 +171,7 @@
                 {{-- Table --}}
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0 text-nowrap">
-                        <thead class="table-light">
+                        <thead class="table-group-divider">
                             <tr>
                                 <th style="width: 50px;" class="ps-3">
                                     <input type="checkbox"
@@ -228,7 +228,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark border" x-text="item.warehouse?.name || '-'"></span>
+                                        <span class="badge bg-body-secondary text-body-emphasis border" x-text="item.warehouse?.name || '-'"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge stock-badge"
@@ -338,7 +338,7 @@
     </div> {{-- End stock management container --}}
 
     {{-- ── Set Stock Modal ─────────────────────────────────────── --}}
-    <div class="modal fade" id="adjustStockModal" tabindex="-1">
+    <div class="modal fade" id="adjustStockModal">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -364,15 +364,15 @@
                                                 <div class="position-relative" x-data="{ open: false, search: '' }" @click.outside="open = false">
                                                     <div class="input-group" @click="open = !open">
                                                         <input type="text" 
-                                                               class="form-control cursor-pointer bg-white" 
+                                                               class="form-control cursor-pointer bg-body" 
                                                                placeholder="Search & choose product..." 
                                                                :value="adjustForm.productId ? (productOptions.find(p => p.id == adjustForm.productId)?.name + ' (' + productOptions.find(p => p.id == adjustForm.productId)?.sku + ')') : ''"
                                                                readonly>
-                                                        <span class="input-group-text bg-white"><i class="bi bi-chevron-down small text-muted"></i></span>
+                                                        <span class="input-group-text bg-body"><i class="bi bi-chevron-down small text-muted"></i></span>
                                                     </div>
                                                     
                                                     <div x-show="open" 
-                                                         class="position-absolute w-100 bg-white border rounded shadow-lg mt-1 p-2" 
+                                                         class="position-absolute w-100 bg-body border rounded shadow-lg mt-1 p-2" 
                                                          style="z-index: 1050; max-height: 200px; overflow-y: auto;"
                                                          x-transition>
                                                         <div class="mb-2">

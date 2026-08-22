@@ -199,10 +199,9 @@ class PartyDataSeeder extends Seeder
 
         foreach ($suppliers as $s) {
             $partyCode = 'SUPP-' . strtoupper(Str::random(6));
-            $partyId = DB::table('parties')->insertGetId([
+            DB::table('suppliers')->insert([
                 'uuid'             => Str::uuid()->toString(),
                 'party_code'       => $partyCode,
-                'type'             => 'supplier',
                 'firstname'        => $s['firstname'],
                 'lastname'         => $s['lastname'],
                 'phone'            => $s['phone'],
@@ -212,27 +211,10 @@ class PartyDataSeeder extends Seeder
                 'company_name'     => $s['company_name'],
                 'credit_limit'     => $s['credit_limit'],
                 'credit_days'      => $s['credit_days'],
-                'category'         => 'business',
-                'outstanding_balance' => 0,
-                'orders_count'     => 0,
                 'is_active'        => true,
                 'status'           => 'active',
-                'account_type_id'  => null,
                 'created_at'       => now(),
                 'updated_at'       => now(),
-            ]);
-
-            DB::table('party_addresses')->insert([
-                'party_id'       => $partyId,
-                'label'          => 'Registered Office',
-                'address_line_1' => $s['address'],
-                'village_id'     => null,
-                'city'           => $s['city'],
-                'state'          => $s['state'],
-                'pincode'        => $s['pincode'],
-                'is_default'     => true,
-                'created_at'     => now(),
-                'updated_at'     => now(),
             ]);
         }
     }

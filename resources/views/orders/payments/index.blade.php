@@ -299,7 +299,7 @@
     </div>
     
     <!-- Details Modal -->
-    <div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal fade" id="detailModal">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow-lg border-0 rounded-4" x-show="selectedPayment">
                 <template x-if="selectedPayment">
@@ -402,7 +402,7 @@
     </div>
 
     <!-- Edit Modal -->
-    <div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal fade" id="editModal">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <form @submit.prevent="updatePayment">

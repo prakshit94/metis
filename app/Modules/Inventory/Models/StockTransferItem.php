@@ -19,6 +19,7 @@ class StockTransferItem extends Model implements Auditable
         'stock_transfer_id',
         'product_id',
         'quantity',
+        'batch_number',
     ];
 
     protected $casts = [

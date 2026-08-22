@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Models;
 
 use App\Modules\Catalog\Models\Warehouse;
-use App\Modules\Customers\Models\Party;
-use App\Models\User;
+use App\Modules\Inventory\Models\Supplier;
+use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -23,19 +23,32 @@ class PurchaseOrder extends Model
         'status',
         'expected_delivery_date',
         'total_amount',
+        'tax_amount',
+        'discount_amount',
+        'net_amount',
         'notes',
         'created_by',
         'updated_by',
+        'approved_by',
+        'approved_at',
+        'rejection_reason',
+        'invoice_path',
     ];
 
     protected $casts = [
         'expected_delivery_date' => 'date',
         'total_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'net_amount' => 'decimal:2',
+        'approved_at' => 'datetime',
     ];
+
+    protected $appends = ['invoice_url'];
 
     public function supplier(): BelongsTo
     {
-        return $this->belongsTo(Party::class, 'supplier_id');
+        return $this->belongsTo(Supplier::class, 'supplier_id');
     }
 
     public function warehouse(): BelongsTo
@@ -56,5 +69,15 @@ class PurchaseOrder extends Model
     public function goodsReceipts(): HasMany
     {
         return $this->hasMany(GoodsReceipt::class);
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function getInvoiceUrlAttribute(): ?string
+    {
+        return $this->invoice_path ? \Illuminate\Support\Facades\Storage::url($this->invoice_path) : null;
     }
 }

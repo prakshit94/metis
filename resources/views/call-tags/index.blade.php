@@ -256,7 +256,7 @@
     </div>
 
     {{-- Form Modal --}}
-    <div class="modal fade" id="tagFormModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="tagFormModal" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-body-tertiary border-bottom d-flex align-items-center justify-content-between p-4">

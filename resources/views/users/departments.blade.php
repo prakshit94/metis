@@ -424,7 +424,7 @@
 </style>
 
 <!-- Add / Edit Modal -->
-<div class="modal fade" id="itemModal" tabindex="-1">
+<div class="modal fade" id="itemModal">
     <div class="modal-dialog modal-dialog-centered" :class="{ 'modal-lg': window.Alpine.$data(document.querySelector('[x-data^=\'organizationTable\']')).activeTab === 'departments' }">
         <div class="modal-content border-0 shadow-lg rounded-4" x-data="itemForm">
             <form @submit.prevent="saveItem()">
@@ -508,7 +508,7 @@
 </div>
 
 <!-- View Department Modal -->
-<div class="modal fade" id="viewDepartmentModal" tabindex="-1">
+<div class="modal fade" id="viewDepartmentModal">
     <div class="modal-dialog modal-dialog-centered modal-xl" x-data="viewDepartmentData">
         <div class="modal-content border-0 shadow rounded-4">
             <div class="modal-header bg-light border-bottom-0 pb-3 pt-4 px-4">
