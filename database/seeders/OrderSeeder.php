@@ -254,7 +254,7 @@ class OrderSeeder extends Seeder
                             ShipmentTrackingEvent::create([
                                 'shipment_id' => $shipment->id,
                                 'event_name' => 'Delivered',
-                                'location' => $party->city,
+                                'location' => $address?->city ?? 'Local Hub',
                                 'description' => 'Consignment handed over to customer.',
                                 'occurred_at' => $orderDate->copy()->addDays(3),
                             ]);
