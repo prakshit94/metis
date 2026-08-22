@@ -169,11 +169,5 @@ return [
      *     ],
      * ],
      */
-    'security_strategy' => [
-        \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
-        [
-            'middleware' => ['auth:sanctum', 'auth', 'auth:*'],
-            'scheme' => \Dedoc\Scramble\Support\Generator\SecurityScheme::http('bearer', 'JWT'),
-        ],
-    ],
+    'security_strategy' => \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
 ];

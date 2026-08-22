@@ -474,8 +474,8 @@
                             data-bs-display="static"
                             aria-expanded="false"
                             aria-label="User menu">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm border border-2 border-body" style="width: 36px; height: 36px;">
-                            <i class="bi bi-person-fill fs-5"></i>
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm border border-2 border-body overflow-hidden" style="width: 36px; height: 36px;">
+                            <img src="{{ Auth::user()?->photo ? asset('storage/' . Auth::user()->photo) : asset('assets/images/default_avatar.jpeg') }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="this.onerror=null; this.src='{{ asset('assets/images/default_avatar.jpeg') }}';">
                         </div>
                         <span class="d-none d-md-flex flex-column text-start ms-1 lh-1">
                             <span class="fw-bold text-body" style="font-size: 13px;">{{ Auth::user()?->name ?? 'User' }}</span>
@@ -487,8 +487,8 @@
                         aria-labelledby="userMenuBtn" style="min-width: 240px;">
                         
                         <li class="px-4 py-3 d-flex align-items-center gap-3 border-bottom mb-2">
-                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
-                                <i class="bi bi-person-fill fs-3"></i>
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 48px; height: 48px;">
+                                <img src="{{ Auth::user()?->photo ? asset('storage/' . Auth::user()->photo) : asset('assets/images/default_avatar.jpeg') }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="this.onerror=null; this.src='{{ asset('assets/images/default_avatar.jpeg') }}';">
                             </div>
                             <div style="min-width: 0;">
                                 <h6 class="mb-1 fw-bold text-body text-truncate">{{ Auth::user()?->name ?? 'User' }}</h6>
@@ -502,22 +502,18 @@
                             </a>
                         </li>
                         <li>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="{{ route('security') }}">
+                                <i class="bi bi-gear text-muted fs-5"></i> Settings
+                            </a>
+                        </li>
+                        <li>
                             <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
                                 <i class="bi bi-key text-muted fs-5"></i> Change Password
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="{{ route('help') }}">
                                 <i class="bi bi-life-preserver text-muted fs-5"></i> Help Center
-                            </a>
-                        </li>
-                        
-                        <li><hr class="dropdown-divider opacity-10 my-2"></li>
-                        
-                        <li>
-                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
-                                <i class="bi bi-wallet2 text-muted fs-5"></i> 
-                                <span>Wallet Balance : <span class="fw-bold text-success">₹5971.67</span></span>
                             </a>
                         </li>
                         

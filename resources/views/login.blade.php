@@ -5,44 +5,34 @@
 @section('page', 'login')
 
 @section('content')
-<div class="auth-page" id="main-content">
-    <div class="auth-card" x-data="loginApp()">
+<div class="auth-page position-relative min-vh-100 d-flex align-items-center justify-content-center py-5" id="main-content" style="background-image: url('{{ asset('assets/images/background.png') }}'); background-size: cover; background-position: center; background-attachment: fixed;">
+    
+    <!-- Overlay for better contrast with the background image -->
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.35);"></div>
 
-        {{-- ── Logo ───────────────────────────────────────────────────────── --}}
-        <div class="auth-logo mb-4">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <rect width="36" height="36" rx="10" fill="url(#ecommerce-grad)"/>
-                <path d="M10 26V12l8 8 8-8v14" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <defs>
-                    <linearGradient id="ecommerce-grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-                        <stop stop-color="#6366f1"/>
-                        <stop offset="1" stop-color="#8b5cf6"/>
-                    </linearGradient>
-                </defs>
-            </svg>
-            <span class="auth-brand-name">Ecommerce</span>
-        </div>
+    <!-- Theme-aware Glassmorphism Card (Now Transparent & Smaller) -->
+    <div class="auth-card position-relative z-1 shadow-lg border border-secondary-subtle mx-3" x-data="loginApp()" style="background: transparent; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 20px; max-width: 380px; width: 100%; padding: 2.5rem 2rem;">
+
+
 
         {{-- ════════════════════════════════════════════════════════════════ --}}
         {{-- ── SIGN-IN PANEL ─────────────────────────────────────────────── --}}
         {{-- ════════════════════════════════════════════════════════════════ --}}
         <div>
-            <p class="auth-subtitle">Welcome back! Please sign in to your account.</p>
-
             {{-- ── Server-side session flash / validation errors ─────────── --}}
             @if (session('error'))
-                <div class="alert alert-danger d-flex align-items-center gap-2 mb-3 py-2 px-3" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
-                    <span>{{ session('error') }}</span>
+                <div class="alert alert-danger d-flex align-items-center gap-2 mb-4 py-3 px-3 border-0 rounded-3 shadow-sm" role="alert">
+                    <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                    <span class="fw-semibold">{{ session('error') }}</span>
                 </div>
             @endif
 
             @if ($errors->any())
-                <div class="alert alert-danger d-flex align-items-start gap-2 mb-3 py-2 px-3" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                <div class="alert alert-danger d-flex align-items-start gap-2 mb-4 py-3 px-3 border-0 rounded-3 shadow-sm" role="alert">
+                    <i class="bi bi-exclamation-octagon-fill fs-5 mt-1"></i>
                     <div>
                         @foreach ($errors->all() as $error)
-                            <div>{{ $error }}</div>
+                            <div class="fw-medium mb-1">{{ $error }}</div>
                         @endforeach
                     </div>
                 </div>
@@ -54,86 +44,109 @@
 
                 {{-- Email ------------------------------------------------- --}}
                 <div class="mb-4">
-                    <label for="loginEmail" class="form-label fw-semibold small text-muted">Email address</label>
-                    <div class="input-group input-group-lg">
-                        <span class="input-group-text bg-body-secondary border-end-0 text-muted px-3"><i class="bi bi-envelope"></i></span>
+                    <label for="loginEmail" class="form-label fw-bold text-body small" style="letter-spacing: 0.3px;">Email Address</label>
+                    <div class="input-group input-group-lg rounded-3 overflow-hidden border border-secondary-subtle focus-within-border-primary transition-all bg-body-tertiary">
+                        <span class="input-group-text bg-transparent border-0 text-secondary px-3"><i class="bi bi-envelope"></i></span>
                         <input type="email"
-                               class="form-control bg-body border-start-0 ps-0 shadow-none fs-6 @error('email') is-invalid @enderror"
+                               class="form-control bg-transparent border-0 shadow-none fs-6 fw-medium text-body @error('email') is-invalid @enderror"
                                id="loginEmail"
                                name="email"
                                value="{{ old('email', request()->cookie('remembered_email')) }}"
-                               placeholder="you@example.com"
+                               placeholder="name@company.com"
                                autocomplete="email"
                                autofocus
                                required>
-                        @error('email')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
                     </div>
+                    @error('email')
+                        <div class="text-danger small mt-2 fw-medium"><i class="bi bi-info-circle me-1"></i>{{ $message }}</div>
+                    @enderror
                 </div>
 
                 {{-- Password ----------------------------------------------- --}}
                 <div class="mb-4">
-                    <label for="loginPassword" class="form-label fw-semibold small text-muted">Password</label>
-                    <div class="input-group input-group-lg">
-                        <span class="input-group-text bg-body-secondary border-end-0 text-muted px-3"><i class="bi bi-lock"></i></span>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label for="loginPassword" class="form-label fw-bold text-body small mb-0" style="letter-spacing: 0.3px;">Password</label>
+                    </div>
+                    <div class="input-group input-group-lg rounded-3 overflow-hidden border border-secondary-subtle focus-within-border-primary transition-all bg-body-tertiary">
+                        <span class="input-group-text bg-transparent border-0 text-secondary px-3"><i class="bi bi-lock"></i></span>
                         <input :type="showPassword ? 'text' : 'password'"
-                               class="form-control bg-body border-start-0 border-end-0 ps-0 shadow-none fs-6 @error('password') is-invalid @enderror"
+                               class="form-control bg-transparent border-0 shadow-none fs-6 fw-medium text-body @error('password') is-invalid @enderror"
                                id="loginPassword"
                                name="password"
                                placeholder="••••••••"
                                autocomplete="current-password"
                                required>
-                        <button class="btn btn-outline-secondary border-start-0 password-toggle px-3"
+                        <button class="btn btn-link text-secondary text-decoration-none border-0 px-3 hover-text-primary"
                                 type="button"
                                 @click="showPassword = !showPassword"
                                 :aria-label="showPassword ? 'Hide password' : 'Show password'">
-                            <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                            <i :class="showPassword ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill'"></i>
                         </button>
-                        @error('password')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
                     </div>
+                    @error('password')
+                        <div class="text-danger small mt-2 fw-medium"><i class="bi bi-info-circle me-1"></i>{{ $message }}</div>
+                    @enderror
                 </div>
 
                 {{-- Remember Me -------------------------------------------- --}}
-                <div class="mb-4 d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2 mb-0">
-                        <input class="auth-checkbox"
+                <div class="mb-4 pb-2 d-flex align-items-center justify-content-between">
+                    <div class="form-check d-flex align-items-center gap-2">
+                        <input class="form-check-input mt-0 border-secondary"
                                type="checkbox"
                                id="rememberMe"
                                name="remember"
                                value="1"
                                {{ old('remember') ? 'checked' : '' }}
-                               x-model="remember">
-                        <label class="text-secondary" for="rememberMe">
-                            Remember me
+                               x-model="remember"
+                               style="width: 1.25em; height: 1.25em; cursor: pointer;">
+                        <label class="form-check-label fw-medium text-secondary" for="rememberMe" style="cursor: pointer;">
+                            Keep me logged in
                         </label>
                     </div>
-                    <span class="auth-remember-hint" x-show="remember" x-transition>
-                        <i class="bi bi-shield-check text-success"></i>
-                        <small class="text-success">30 days</small>
-                    </span>
                 </div>
 
                 {{-- Submit ------------------------------------------------- --}}
                 <button type="submit"
-                        class="btn btn-primary w-100 auth-submit-btn py-3 fs-6 rounded-3 mt-2"
+                        class="btn btn-primary w-100 py-3 rounded-3 shadow-sm fw-bold fs-6 transition-all position-relative overflow-hidden group"
                         id="loginSubmitBtn"
-                        :disabled="isSubmitting">
-                    <span x-show="!isSubmitting" class="d-flex align-items-center justify-content-center gap-2">
-                        <i class="bi bi-box-arrow-in-right fs-5"></i>
-                        Sign In
+                        :disabled="isSubmitting"
+                        style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none;">
+                    
+                    <!-- Hover Effect -->
+                    <div class="position-absolute top-0 start-0 w-100 h-100 bg-white opacity-0 transition-all group-hover-opacity-25"></div>
+
+                    <span x-show="!isSubmitting" class="d-flex align-items-center justify-content-center gap-2 position-relative z-1">
+                        Sign In to Account
+                        <i class="bi bi-arrow-right fw-bold fs-5 ms-1 transition-all group-hover-translate-x"></i>
                     </span>
-                    <span x-show="isSubmitting" style="display: none;" class="d-flex align-items-center justify-content-center gap-2">
+                    <span x-show="isSubmitting" style="display: none;" class="d-flex align-items-center justify-content-center gap-2 position-relative z-1">
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        Signing in…
+                        Authenticating…
                     </span>
                 </button>
             </form>
         </div>
     </div>{{-- /.auth-card --}}
+
 </div>{{-- /.auth-page --}}
+
+<style>
+/* Utilities for Login */
+.focus-within-border-primary:focus-within {
+    border-color: #6366f1 !important;
+    background-color: var(--bs-body-bg) !important;
+    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.15);
+}
+.group:hover .group-hover-opacity-25 {
+    opacity: 0.15 !important;
+}
+.group:hover .group-hover-translate-x {
+    transform: translateX(4px);
+}
+.hover-text-primary:hover {
+    color: #6366f1 !important;
+}
+</style>
 @endsection
 
 @push('scripts')
