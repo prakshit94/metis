@@ -28,7 +28,7 @@ class ProductController extends Controller
         abort_unless($request->user()?->can('product-view'), 403);
 
         $products = Product::query()
-            ->with(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])
+            ->with(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier'])
             ->withSum('stocks as stocks_sum_quantity', 'quantity')
             ->withSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
             ->withSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
@@ -49,7 +49,7 @@ class ProductController extends Controller
     {
         abort_unless($request->user()?->can('product-view'), 403);
 
-        $product->load(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute']);
+        $product->load(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier']);
         $product->loadSum('stocks as stocks_sum_quantity', 'quantity');
         $product->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty');
         $product->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty');
@@ -75,7 +75,7 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product created successfully.',
-            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])
+            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier'])
                 ->loadSum('stocks as stocks_sum_quantity', 'quantity')
                 ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
                 ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
@@ -102,7 +102,7 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product updated successfully.',
-            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])
+            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier'])
                 ->loadSum('stocks as stocks_sum_quantity', 'quantity')
                 ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
                 ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
@@ -186,7 +186,11 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product restored successfully.',
-            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])),
+            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier'])
+                ->loadSum('stocks as stocks_sum_quantity', 'quantity')
+                ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
+                ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+                ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
         ]);
     }
 
@@ -319,7 +323,11 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product duplicated successfully.',
-            'data' => $this->transform($clone->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute'])),
+            'data' => $this->transform($clone->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier'])
+                ->loadSum('stocks as stocks_sum_quantity', 'quantity')
+                ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
+                ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+                ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
         ], 201);
     }
 
@@ -479,7 +487,7 @@ class ProductController extends Controller
                             $product->selling_price,
                             $product->purchase_price,
                             $product->mrp,
-                            $product->stock_quantity,
+                            $product->stocks_sum_quantity ?? 0,
                             $product->min_stock_level,
                             $product->default_discount,
                             $product->default_discount_type,
@@ -586,7 +594,7 @@ class ProductController extends Controller
 
     private function transform(Product $product): array
     {
-        $totalQty = (float) ($product->stocks_sum_quantity ?? $product->stock_quantity ?? 0);
+        $totalQty = (float) (array_key_exists('stocks_sum_quantity', $product->getAttributes()) ? $product->stocks_sum_quantity : $product->stock_quantity);
         $reservedQty = (float) ($product->stocks_sum_reserved_qty ?? 0);
         $dispatchedQty = (float) ($product->stocks_sum_dispatched_qty ?? 0);
         $pendingQty = (float) ($product->pending_orders_qty ?? 0);
@@ -633,8 +641,8 @@ class ProductController extends Controller
             'selling_price' => (float) $product->selling_price,
             'purchase_price' => (float) $product->purchase_price,
             'mrp' => (float) $product->mrp,
-            'stock' => (int) $product->stock_quantity,
-            'stock_quantity' => (int) $product->stock_quantity,
+            'stock' => (int) $totalQty,
+            'stock_quantity' => (int) $totalQty,
             'stock_qty' => $totalQty,
             'reserved_qty' => $reservedQty,
             'pending_qty' => $pendingQty,
