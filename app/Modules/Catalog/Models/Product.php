@@ -195,6 +195,9 @@ class Product extends Model implements Auditable
 
     public function getImageUrlAttribute(): ?string
     {
+        if (!array_key_exists('image_path', $this->getAttributes())) {
+            return null;
+        }
         return $this->image_path ? asset('storage/'.$this->image_path) : null;
     }
 }
