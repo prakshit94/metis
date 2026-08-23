@@ -329,17 +329,22 @@ class ProductController extends Controller
 
         $data = $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
+            'import_mode' => ['nullable', 'in:overwrite,increment'],
         ]);
+
+        $importMode = $data['import_mode'] ?? 'overwrite';
 
         $handle = fopen($data['file']->getRealPath(), 'r');
         if ($handle === false) {
             return response()->json(['message' => 'Unable to read import file.'], 422);
         }
 
-        $headers = [];
+        $errors = [];
         $imported = 0;
+        $rowNum = 0;
 
         while (($row = fgetcsv($handle)) !== false) {
+            $rowNum++;
             if (empty($headers)) {
                 $headers = array_map(
                     fn ($value) => Str::of((string) $value)->trim()->lower()->toString(),
@@ -349,8 +354,14 @@ class ProductController extends Controller
                 continue;
             }
 
+            if (count($row) !== count($headers)) {
+                $errors[] = "Row {$rowNum}: Column count mismatch.";
+                continue;
+            }
+
             $record = array_combine($headers, $row);
             if (! is_array($record)) {
+                $errors[] = "Row {$rowNum}: Invalid record format.";
                 continue;
             }
 
@@ -384,7 +395,16 @@ class ProductController extends Controller
                 'is_sku_enabled' => filter_var($record['is_sku_enabled'] ?? true, FILTER_VALIDATE_BOOL),
             ];
 
-            if ($payload['name'] === '' || $payload['sku'] === '' || ! $payload['category_id']) {
+            if ($payload['name'] === '') {
+                $errors[] = "Row {$rowNum}: Missing product name.";
+                continue;
+            }
+            if ($payload['sku'] === '') {
+                $errors[] = "Row {$rowNum}: Missing SKU for product '{$payload['name']}'.";
+                continue;
+            }
+            if (! $payload['category_id']) {
+                $errors[] = "Row {$rowNum}: Invalid or missing category for SKU '{$payload['sku']}'.";
                 continue;
             }
 
@@ -392,7 +412,7 @@ class ProductController extends Controller
             $this->fillProduct($product, $payload, null);
             $product->save();
 
-            $this->syncStock($product, (int) $payload['stock']);
+            $this->syncStock($product, (int) $payload['stock'], $importMode);
 
             if ($product->trashed()) {
                 $product->restore();
@@ -406,6 +426,7 @@ class ProductController extends Controller
         return response()->json([
             'message' => "Imported {$imported} products successfully.",
             'imported' => $imported,
+            'errors' => $errors,
         ]);
     }
 
@@ -586,19 +607,26 @@ class ProductController extends Controller
             'category' => $product->category?->slug ?? '',
             'category_id' => $product->category_id,
             'category_label' => $product->category?->name ?? 'Uncategorized',
+            'category_data' => $product->category,
             'brand_id' => $product->brand_id,
             'brand' => $product->brand?->name,
+            'brand_data' => $product->brand,
             'uom_id' => $product->uom_id,
             'uom' => $product->uom?->name,
+            'uom_data' => $product->uom,
             'supplier_id' => $product->supplier_id,
             'supplier' => trim($product->supplier?->company_name ?: ($product->supplier?->firstname . ' ' . $product->supplier?->lastname)),
+            'supplier_data' => $product->supplier,
             'tax_rate_id' => $product->tax_rate_id,
             'tax_rate' => $product->taxRate?->rate,
             'tax_label' => $product->taxRate?->name,
+            'tax_rate_data' => $product->taxRate,
             'hsn_code_id' => $product->hsn_code_id,
             'hsn_code' => $product->hsnCode?->code,
+            'hsn_code_data' => $product->hsnCode,
             'warehouse_id' => $product->default_warehouse_id,
             'warehouse' => $product->warehouse?->name,
+            'warehouse_data' => $product->warehouse,
             'barcode' => $product->barcode,
             'weight' => $product->weight,
             'price' => (float) $product->selling_price,
@@ -695,9 +723,6 @@ class ProductController extends Controller
             'statusList' => [
                 ['value' => 'active', 'label' => 'Active'],
                 ['value' => 'draft', 'label' => 'Draft'],
-                ['value' => 'out_of_stock', 'label' => 'Out of Stock'],
-                ['value' => 'published', 'label' => 'Published'],
-                ['value' => 'pending', 'label' => 'Pending'],
             ],
         ];
     }
@@ -715,7 +740,7 @@ class ProductController extends Controller
      * Helper to insert or update the primary stock record when a product is saved.
      * This ensures the InventoryService logic doesn't fail when no stock is registered.
      */
-    private function syncStock(Product $product, int $qty): void
+    private function syncStock(Product $product, int $qty, string $importMode = 'overwrite'): void
     {
         // Determine the warehouse to assign stock to
         $warehouseId = $product->default_warehouse_id;
@@ -734,18 +759,24 @@ class ProductController extends Controller
             return;
         }
 
-        Stock::withTrashed()->updateOrCreate(
-            ['product_id' => $product->id, 'warehouse_id' => $warehouseId],
-            [
-                'quantity' => $qty,
-                'reserved_qty' => 0,
-                'dispatched_qty' => 0,
-                'committed_qty' => 0,
-                'in_transit_qty' => 0,
-                'status' => 'active',
-                'deleted_at' => null,
-            ]
-        );
+        $stock = Stock::withTrashed()->firstOrNew([
+            'product_id' => $product->id, 
+            'warehouse_id' => $warehouseId
+        ]);
+
+        if ($importMode === 'increment') {
+            $stock->quantity = ($stock->quantity ?? 0) + $qty;
+        } else {
+            $stock->quantity = $qty;
+        }
+
+        $stock->reserved_qty = $stock->reserved_qty ?? 0;
+        $stock->dispatched_qty = $stock->dispatched_qty ?? 0;
+        $stock->committed_qty = $stock->committed_qty ?? 0;
+        $stock->in_transit_qty = $stock->in_transit_qty ?? 0;
+        $stock->status = 'active';
+        $stock->deleted_at = null;
+        $stock->save();
     }
 
     private function resolveCategoryId(mixed $value): ?int

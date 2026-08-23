@@ -21,8 +21,8 @@ class BrandSeeder extends Seeder
             Brand::firstOrCreate(['slug' => $brand['slug']], [
                 'name' => $brand['name'],
                 'slug' => $brand['slug'],
-                'image' => null,
-                'logo' => null,
+                'image' => 'https://via.placeholder.com/300x200?text=' . urlencode($brand['name']),
+                'logo' => 'https://via.placeholder.com/150x150?text=' . urlencode($brand['name']),
                 'status' => 'active',
                 'is_active' => true,
             ]);

@@ -39,16 +39,16 @@ class DatabaseSeeder extends Seeder
             HolidaySeeder::class,
             LeaveBalanceSeeder::class,
             HrSettingsSeeder::class,
-            OrderSeeder::class,
+            // OrderSeeder::class,
             
             // Newly added seeders for comprehensive testing
-            SupplierSeeder::class,
-            PurchaseOrderSeeder::class,
-            StockTransferSeeder::class,
+            // SupplierSeeder::class,
+            // PurchaseOrderSeeder::class,
+            // StockTransferSeeder::class,
             InventoryAdjustmentSeeder::class,
-            AttendanceSeeder::class,
-            LeaveSeeder::class,
-            WalletTransactionSeeder::class,
+            // AttendanceSeeder::class,
+            // LeaveSeeder::class,
+            // WalletTransactionSeeder::class,
         ]);
     }
 }

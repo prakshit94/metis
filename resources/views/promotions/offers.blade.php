@@ -447,12 +447,12 @@
                                         <h6 class="mb-0 fw-bolder text-uppercase text-body" style="font-size: 11px; letter-spacing: 1.5px;">Targeting & Scope</h6>
                                     </div>
                                     <div class="row g-4">
-                                        <div class="col-12" x-show="form.type === 'category_discount'" style="display: none;">
+                                        <div class="col-12" x-show="form.type !== 'order_discount'" style="display: none;">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Applicable Category IDs (Comma Separated)</label>
                                             <input type="text" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.applicable_categories" placeholder="e.g. 1,2,3" style="font-size: 14px;">
-                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">Enter Category IDs that get the discount.</small>
+                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">Enter Category IDs that trigger the offer.</small>
                                         </div>
-                                        <div class="col-12" @click.away="showProductsDropdown = false" x-show="form.type !== 'category_discount'">
+                                        <div class="col-12" @click.away="showProductsDropdown = false" x-show="form.type !== 'order_discount'">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" x-text="form.type === 'free_product' ? 'Required Products (Trigger)' : 'Applicable Products'"></label>
                                             
                                             <div class="position-relative">

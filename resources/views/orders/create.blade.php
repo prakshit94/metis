@@ -571,11 +571,36 @@
                                                 <span class="badge" :class="getWarehouseStock(p) > 10 ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p))"></span>
                                             </div>
                                             <div class="d-flex flex-wrap gap-1 mb-3" x-show="getProductPromotions(p).length > 0">
-                                                <template x-for="promo in getProductPromotions(p)">
-                                                    <span class="badge border" :class="promo.class" style="font-size: 10px;">
-                                                        <i class="bi me-1" :class="promo.icon"></i><span x-text="promo.text"></span>
+                                                <div class="position-relative" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
+                                                    <span class="badge border bg-primary bg-opacity-10 text-primary border-primary" style="font-size: 10px; cursor: pointer;">
+                                                        <i class="bi bi-tags me-1"></i> View Offers (<span x-text="getProductPromotions(p).length"></span>)
                                                     </span>
-                                                </template>
+                                                    <div x-show="showTooltip" x-transition.opacity class="position-absolute z-3" style="bottom: 100%; left: 0; margin-bottom: 8px; width: 280px; cursor: default;" x-cloak>
+                                                        <div class="card border border-secondary-subtle shadow-lg rounded-3 overflow-hidden">
+                                                            <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
+                                                                <span class="fw-bold text-body" style="font-size: 12px;"><i class="bi bi-tags-fill me-1 text-primary"></i> Applicable Offers</span>
+                                                                <span class="badge bg-primary rounded-pill" x-text="getProductPromotions(p).length"></span>
+                                                            </div>
+                                                            <div class="card-body p-0" style="max-height: 220px; overflow-y: auto;">
+                                                                <template x-for="(promo, index) in getProductPromotions(p)">
+                                                                    <div class="p-2 px-3 border-bottom border-secondary-subtle transition-all">
+                                                                        <div class="d-flex align-items-start gap-2">
+                                                                            <div class="rounded d-flex align-items-center justify-content-center flex-shrink-0 mt-1" :class="'bg-' + promo.color + ' bg-opacity-10 text-' + promo.color" style="width: 24px; height: 24px;">
+                                                                                <i class="bi" :class="promo.icon"></i>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div class="fw-bold text-body mb-1" style="font-size: 12px; line-height: 1.3;" x-text="promo.title"></div>
+                                                                                <div class="text-body-secondary" style="font-size: 11px; line-height: 1.4;" x-html="promo.tooltip"></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Tooltip Arrow -->
+                                                        <div class="position-absolute bg-body border-bottom border-end border-secondary-subtle" style="width: 12px; height: 12px; transform: rotate(45deg); bottom: -6px; left: 20px; z-index: -1;"></div>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div class="row g-2">
                                                 <div class="col-8">
@@ -634,11 +659,36 @@
                                                 <div class="small text-muted text-decoration-line-through mb-1" x-show="p.mrp > p.selling_price" x-text="'MRP Rs ' + parseFloat(p.mrp).toFixed(2)"></div>
                                                 <div class="badge bg-success" x-show="p.default_discount > 0"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
                                                 <div class="d-flex flex-wrap gap-1 mt-1" x-show="getProductPromotions(p).length > 0">
-                                                    <template x-for="promo in getProductPromotions(p)">
-                                                        <span class="badge border" :class="promo.class" style="font-size: 10px;">
-                                                            <i class="bi me-1" :class="promo.icon"></i><span x-text="promo.text"></span>
+                                                    <div class="position-relative" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
+                                                        <span class="badge border bg-primary bg-opacity-10 text-primary border-primary" style="font-size: 10px; cursor: pointer;">
+                                                            <i class="bi bi-tags me-1"></i> View Offers (<span x-text="getProductPromotions(p).length"></span>)
                                                         </span>
-                                                    </template>
+                                                        <div x-show="showTooltip" x-transition.opacity class="position-absolute z-3" style="bottom: 100%; left: 0; margin-bottom: 8px; width: 280px; cursor: default;" x-cloak>
+                                                            <div class="card border border-secondary-subtle shadow-lg rounded-3 overflow-hidden">
+                                                                <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
+                                                                    <span class="fw-bold text-body" style="font-size: 12px;"><i class="bi bi-tags-fill me-1 text-primary"></i> Applicable Offers</span>
+                                                                    <span class="badge bg-primary rounded-pill" x-text="getProductPromotions(p).length"></span>
+                                                                </div>
+                                                                <div class="card-body p-0" style="max-height: 220px; overflow-y: auto;">
+                                                                    <template x-for="(promo, index) in getProductPromotions(p)">
+                                                                        <div class="p-2 px-3 border-bottom border-secondary-subtle transition-all">
+                                                                            <div class="d-flex align-items-start gap-2">
+                                                                                <div class="rounded d-flex align-items-center justify-content-center flex-shrink-0 mt-1" :class="'bg-' + promo.color + ' bg-opacity-10 text-' + promo.color" style="width: 24px; height: 24px;">
+                                                                                    <i class="bi" :class="promo.icon"></i>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <div class="fw-bold text-body mb-1" style="font-size: 12px; line-height: 1.3;" x-text="promo.title"></div>
+                                                                                    <div class="text-body-secondary" style="font-size: 11px; line-height: 1.4;" x-html="promo.tooltip"></div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                            <!-- Tooltip Arrow -->
+                                                            <div class="position-absolute bg-body border-bottom border-end border-secondary-subtle" style="width: 12px; height: 12px; transform: rotate(45deg); bottom: -6px; left: 20px; z-index: -1;"></div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td>
@@ -845,7 +895,7 @@
                                         </div>
                                         <div class="d-flex align-items-center justify-content-between mt-1" x-show="item.taxRate > 0">
                                             <span class="text-muted" style="font-size: 11px;" x-text="'+ GST ' + item.taxRate + '%'"></span>
-                                            <span class="text-muted" style="font-size: 11px;" x-text="'Rs ' + Number(lineTotal(item) * (item.taxRate / 100)).toFixed(2)"></span>
+                                            <span class="text-muted" style="font-size: 11px;" x-text="'Rs ' + Number(itemTaxAmount(item)).toFixed(2)"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -1125,98 +1175,171 @@
             <template x-if="bottomTab === 'history'">
                 <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden">
                     <template x-if="historyOrders && historyOrders.length > 0">
-                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
-                            <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
-                                <thead class="table-secondary sticky-top" style="z-index: 1;">
-                                    <tr>
-                                        <th scope="col" class="text-nowrap ps-4 py-2 border-bottom-0">Order #</th>
-                                        <th scope="col" class="text-nowrap py-2 border-bottom-0">Date</th>
-                                        <th scope="col" class="text-nowrap py-2 border-bottom-0">Status</th>
-                                        <th scope="col" class="text-nowrap py-2 border-bottom-0">Warehouse & Items</th>
-                                        <th scope="col" class="text-nowrap text-end pe-4 py-2 border-bottom-0">Total</th>
-                                    </tr>
-                                </thead>
-                                <template x-for="order in historyOrders" :key="'history-' + order.id">
-                                    <tbody class="border-top-0 border-bottom">
-                                        <tr @click="toggleOrderDetails(order.id)" class="transition-all" style="cursor: pointer;">
-                                            <td class="text-nowrap ps-4 py-2 fw-bold text-body-emphasis" x-text="order.order_no || order.order_number || ('Order #' + order.id)"></td>
-                                            <td class="text-nowrap py-2">
-                                                <div class="fw-medium text-body-emphasis" x-text="order.order_date ? new Date(order.order_date).toLocaleDateString() : 'No date'"></div>
-                                                <div class="small text-muted" x-show="order.order_date" x-text="new Date(order.order_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></div>
-                                                <div class="small text-muted mt-1" x-show="order.creator" x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
-                                            </td>
-                                            <td class="py-2">
-                                                <span class="badge rounded-pill px-2" :class="getStatusBadgeClass(order.status_label || order.lifecycle_status || order.status || 'Pending')" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
-                                                <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis px-2 ms-1" x-show="order.is_draft">Future</span>
-                                            </td>
-                                            <td class="py-2 text-muted">
-                                                <span x-text="order.warehouse?.name ? order.warehouse.name : 'N/A'"></span>
+                        <div class="list-group list-group-flush border-top" style="max-height: 500px; overflow-y: auto;">
+                            <div class="list-group-item bg-body-tertiary d-none d-lg-flex text-muted small fw-bold text-uppercase py-3 sticky-top" style="z-index: 1; letter-spacing: 0.5px; font-size: 0.75rem;">
+                                <div class="col-3 ps-4">Order Details</div>
+                                <div class="col-3">Logistics & Items</div>
+                                <div class="col-3">Status</div>
+                                <div class="col-3 text-end pe-5">Total Amount</div>
+                            </div>
+                            <template x-for="(order, index) in historyOrders" :key="'history-' + order.id">
+                                <div class="list-group-item p-0 border-bottom">
+                                    <div @click="toggleOrderDetails(order.id)" class="d-flex flex-column flex-lg-row align-items-lg-center p-3 px-lg-0 py-lg-3 hover-bg-body transition-all" style="cursor: pointer;">
+                                        
+                                        <div class="col-12 col-lg-3 ps-lg-4 mb-3 mb-lg-0">
+                                            <div class="fw-bold text-primary mb-1">
+                                                <span class="text-secondary opacity-75 me-1" x-text="(index + 1) + '.'"></span>
+                                                <span x-text="order.order_no || order.order_number || ('Order #' + order.id)"></span>
+                                            </div>
+                                            <div class="small text-muted d-flex flex-wrap align-items-center gap-1">
+                                                <i class="bi bi-calendar-event opacity-75"></i> <span x-text="order.order_date ? new Date(order.order_date).toLocaleDateString() : 'No date'"></span>
+                                                <span x-show="order.order_date" class="mx-1">•</span>
+                                                <span x-show="order.order_date" x-text="new Date(order.order_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-12 col-lg-3 mb-3 mb-lg-0">
+                                            <div class="fw-medium text-body-secondary small mb-1">
+                                                <span class="fw-bold text-body-emphasis" x-text="(order.items ? order.items.length : 0) + ' items'"></span>
                                                 <span class="mx-1">•</span>
-                                                <span x-text="(order.items ? order.items.length : 0) + ' items'"></span>
-                                            </td>
-                                            <td class="text-end pe-4 py-2 fw-bold text-body-emphasis" x-text="'Rs ' + Number(order.net_amount || 0).toFixed(2)"></td>
-                                        </tr>
-                                        <tr x-show="expandedOrderId === order.id" x-cloak>
-                                            <td colspan="5" class="p-0 border-0 bg-body-tertiary">
-                                                <div class="p-4 border-bottom border-top border-primary border-3 border-start-0 border-end-0 border-bottom-0 shadow-sm">
-                                                    <div class="row g-3 mb-4">
-                                                        <div class="col-lg-3">
-                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
-                                                                <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Order Info</div>
-                                                                <div class="small text-muted mb-1"><i class="bi bi-clock me-1"></i> <span x-text="order.order_date ? new Date(order.order_date).toLocaleString() : 'No date'"></span></div>
-                                                                <div class="small text-primary fw-medium" x-show="order.creator"><i class="bi bi-person me-1"></i> <span x-text="'Created by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></span></div>
+                                                <span x-text="order.warehouse?.name || 'N/A'"></span>
+                                            </div>
+                                            <div class="small text-muted" x-show="order.creator"><i class="bi bi-person me-1 opacity-75"></i><span x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></span></div>
+                                        </div>
+                                        
+                                        <div class="col-12 col-lg-3 mb-3 mb-lg-0">
+                                            <span class="badge rounded-pill px-3 py-1.5" :class="getStatusBadgeClass(order.status_label || order.lifecycle_status || order.status || 'Pending')" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                            <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis px-2 py-1 ms-1" x-show="order.is_draft">Future</span>
+                                        </div>
+                                        
+                                        <div class="col-12 col-lg-3 text-lg-end pe-lg-4 d-flex align-items-center justify-content-between justify-content-lg-end">
+                                            <span class="d-inline-block d-lg-none text-muted small me-2 fw-medium">Total:</span>
+                                            <div class="d-flex align-items-center">
+                                                <div class="fw-bolder fs-6 text-body-emphasis" x-text="'Rs ' + Number(order.net_amount || 0).toFixed(2)"></div>
+                                                <i class="bi ms-3 text-muted transition-all" :class="expandedOrderId === order.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div x-show="expandedOrderId === order.id" x-cloak x-collapse>
+                                        <div class="bg-body-tertiary">
+                                                <div class="p-4 border-bottom border-top border-primary border-3 border-start-0 border-end-0 border-bottom-0 shadow-inner bg-body-tertiary">
+                                                    <div class="bg-body rounded-4 border shadow-sm overflow-hidden">
+                                                        <div class="row g-0">
+                                                            <div class="col-lg-7 p-3 border-end-lg border-bottom border-bottom-lg-0 d-flex flex-column">
+                                                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start mb-3 pb-3 border-bottom border-secondary border-opacity-10">
+                                                                    <div>
+                                                                        <div class="fw-bold text-body-emphasis small text-uppercase mb-1" style="letter-spacing: 0.5px;"><i class="bi bi-clock me-1 opacity-75"></i>Order Placed</div>
+                                                                        <div class="small text-muted" style="font-size: 0.75rem;" x-text="order.order_date ? new Date(order.order_date).toLocaleString() : 'No date'"></div>
+                                                                    </div>
+                                                                    <div class="mt-2 mt-md-0 text-md-end" x-show="order.creator">
+                                                                        <div class="fw-bold text-body-emphasis small text-uppercase mb-1" style="letter-spacing: 0.5px;"><i class="bi bi-person me-1 opacity-75"></i>Created By</div>
+                                                                        <div class="small text-primary fw-medium" style="font-size: 0.75rem;" x-text="(order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                <div class="row g-3 mt-auto">
+                                                                    <div class="col-md-6" :class="{'border-end-md border-secondary border-opacity-10': order.billing_address_line_1 && (order.billing_address_line_1 !== order.shipping_address_line_1)}">
+                                                                        <div class="d-flex align-items-center mb-1">
+                                                                            <i class="bi bi-truck text-muted me-2 opacity-75"></i>
+                                                                            <div class="fw-bold text-body-emphasis" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Shipping Address</div>
+                                                                        </div>
+                                                                        <div class="small text-muted lh-sm" style="font-size: 0.75rem;" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name, order.shipping_post_office, order.shipping_taluka, order.shipping_city, order.shipping_district, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') : 'Not available'">
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    <div class="col-md-6" x-show="order.billing_address_line_1 && (order.billing_address_line_1 !== order.shipping_address_line_1)">
+                                                                        <div class="d-flex align-items-center mb-1">
+                                                                            <i class="bi bi-receipt text-muted me-2 opacity-75"></i>
+                                                                            <div class="fw-bold text-body-emphasis" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Billing Address</div>
+                                                                        </div>
+                                                                        <div class="small text-muted lh-sm" style="font-size: 0.75rem;" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name, order.billing_post_office, order.billing_taluka, order.billing_city, order.billing_district, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') : 'Not available'">
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div class="col-lg-3">
-                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
-                                                                <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Shipping</div>
-                                                                <div class="small text-muted" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name, order.shipping_post_office, order.shipping_taluka, order.shipping_city, order.shipping_district, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') : 'Not available'"></div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-lg-3">
-                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
-                                                                <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Billing</div>
-                                                                <div class="small text-muted" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name, order.billing_post_office, order.billing_taluka, order.billing_city, order.billing_district, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') : 'Same as shipping'"></div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-lg-3">
-                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
-                                                                <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Totals</div>
-                                                                <div class="small text-muted mb-1" x-text="'Subtotal Rs ' + Number(order.total_amount || 0).toFixed(2) + ' | GST Rs ' + Number(order.tax_amount || 0).toFixed(2)"></div>
-                                                                <div class="small text-primary fw-medium" x-show="order.applied_offer?.name" x-text="'Offer: ' + order.applied_offer?.name"></div>
+                                                            
+                                                            <div class="col-lg-5 p-3 bg-primary bg-opacity-10 d-flex flex-column justify-content-center">
+                                                                <div class="d-flex justify-content-between align-items-center mb-1 small">
+                                                                    <span class="text-body-secondary fw-medium" style="font-size: 0.75rem;">Subtotal</span>
+                                                                    <span class="text-body-emphasis fw-semibold" style="font-size: 0.75rem;" x-text="'Rs ' + Number(order.total_amount || 0).toFixed(2)"></span>
+                                                                </div>
+                                                                <div class="d-flex justify-content-between align-items-center mb-1 small" x-show="Number(order.tax_amount || 0) > 0">
+                                                                    <span class="text-body-secondary fw-medium" style="font-size: 0.75rem;">GST</span>
+                                                                    <span class="text-body-emphasis fw-semibold" style="font-size: 0.75rem;" x-text="'+Rs ' + Number(order.tax_amount || 0).toFixed(2)"></span>
+                                                                </div>
+                                                                <div class="d-flex justify-content-between align-items-center mb-2 small" x-show="Number(order.discount_amount || 0) > 0">
+                                                                    <span class="text-success fw-medium" style="font-size: 0.75rem;">Total Discount</span>
+                                                                    <span class="text-success fw-bold" style="font-size: 0.75rem;" x-text="'-Rs ' + Number(order.discount_amount || 0).toFixed(2)"></span>
+                                                                </div>
+                                                                
+                                                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                                                    <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-show="order.applied_offer?.name" x-text="'Offer: ' + order.applied_offer?.name"></div>
+                                                                    <template x-for="offerName in getAppliedItemOffers(order)" :key="offerName">
+                                                                        <div class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-text="'Item Offer: ' + offerName"></div>
+                                                                    </template>
+                                                                    <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-show="order.coupon_code" x-text="'Coupon: ' + order.coupon_code"></div>
+                                                                </div>
+                                                                
+                                                                <div class="pt-2 border-top border-primary border-opacity-25 d-flex justify-content-between align-items-center mt-auto">
+                                                                    <span class="fw-bold text-primary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Net Total</span>
+                                                                    <span class="fw-bolder fs-6 text-primary" x-text="'Rs ' + Number(order.net_amount || 0).toFixed(2)"></span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="bg-body rounded-3 border overflow-hidden shadow-sm">
-                                                        <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
-                                                            <thead class="table-secondary">
-                                                                <tr class="text-muted">
-                                                                    <th class="ps-3 py-2 fw-medium">Item</th>
-                                                                    <th class="py-2 fw-medium">SKU</th>
-                                                                    <th class="text-center py-2 fw-medium">Qty</th>
-                                                                    <th class="text-end py-2 fw-medium">Price</th>
-                                                                    <th class="text-end pe-3 py-2 fw-medium">Total</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                <template x-for="item in (order.items || [])" :key="'history-item-' + order.id + '-' + item.id">
-                                                                    <tr>
-                                                                        <td class="fw-semibold text-body-emphasis ps-3 py-2" x-text="item.product?.name || item.product_name || 'Product'"></td>
-                                                                        <td class="text-muted py-2" x-text="item.product?.sku || item.sku || 'N/A'"></td>
-                                                                        <td class="text-center fw-semibold py-2" x-text="item.quantity"></td>
-                                                                        <td class="text-end text-muted py-2" x-text="'Rs ' + Number(item.unit_price || 0).toFixed(2)"></td>
-                                                                        <td class="text-end fw-bold text-body-emphasis pe-3 py-2" x-text="'Rs ' + Number(item.total_amount || 0).toFixed(2)"></td>
-                                                                    </tr>
-                                                                </template>
-                                                                <template x-if="!order.items || order.items.length === 0">
-                                                                    <tr>
-                                                                        <td colspan="5" class="text-center text-muted py-3">No order items found.</td>
-                                                                    </tr>
-                                                                </template>
-                                                            </tbody>
-                                                        </table>
+                                                    <div class="border-top border-primary border-opacity-10 bg-body">
+                                                        <div class="list-group list-group-flush">
+                                                            <div class="list-group-item bg-body-tertiary d-none d-md-flex align-items-center text-muted fw-bold text-uppercase py-1" style="letter-spacing: 0.5px; font-size: 0.65rem;">
+                                                                <div class="col-5 ps-2">Item Details</div>
+                                                                <div class="col-2 text-center">Qty</div>
+                                                                <div class="col-2 text-end">Price</div>
+                                                                <div class="col-3 text-end pe-2">Total</div>
+                                                            </div>
+                                                            <template x-for="(item, idx) in (order.items || [])" :key="'history-item-' + order.id + '-' + item.id">
+                                                                <div class="list-group-item d-flex flex-column flex-md-row align-items-md-center py-2 hover-bg-body transition-all">
+                                                                    <div class="col-12 col-md-5 d-flex flex-column justify-content-center mb-1 mb-md-0 ps-md-2">
+                                                                        <div class="fw-semibold text-body-emphasis mb-0" style="font-size: 0.8rem;">
+                                                                            <span class="text-secondary opacity-75 me-1" x-text="(idx + 1) + '.'"></span>
+                                                                            <span x-text="item.product?.name || item.product_name || 'Product'"></span>
+                                                                            <span x-show="Number(item.unit_price || 0) === 0 || Number(item.total_amount || 0) === 0" class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success ms-1 px-1 py-0 rounded-pill" style="font-size: 0.55rem;">Free Gift</span>
+                                                                        </div>
+                                                                        <div class="small text-muted d-flex flex-wrap align-items-center gap-2 mt-0" style="font-size: 0.7rem;">
+                                                                            <span><i class="bi bi-upc-scan opacity-75"></i> <span x-text="item.product?.sku || item.sku || 'N/A'"></span></span>
+                                                                            <span class="border-start ps-2" x-show="Number(item.tax_amount || 0) > 0">
+                                                                                GST: <span class="fw-medium text-body-secondary" x-text="'Rs ' + Number(item.tax_amount || 0).toFixed(2)"></span> 
+                                                                                <span x-text="'(' + (item.tax_rate || 0) + '%)'"></span>
+                                                                            </span>
+                                                                        </div>
+                                                                        <div class="small text-info fw-medium mt-0" style="font-size: 0.65rem;" x-show="getSingleItemOffer(item)">
+                                                                            <i class="bi bi-tag-fill me-1"></i>Applied: <span x-text="getSingleItemOffer(item)"></span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12 col-md-2 text-md-center mb-1 mb-md-0">
+                                                                        <span class="d-inline-block d-md-none text-muted small me-2 fw-medium">Qty:</span>
+                                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill fw-bold" style="font-size: 0.7rem;" x-text="item.quantity + 'x'"></span>
+                                                                    </div>
+                                                                    <div class="col-12 col-md-2 text-md-end mb-1 mb-md-0">
+                                                                        <span class="d-inline-block d-md-none text-muted small me-2 fw-medium">Price:</span>
+                                                                        <div class="fw-medium text-body-secondary" style="font-size: 0.75rem;" x-text="'Rs ' + Number(item.unit_price || 0).toFixed(2)"></div>
+                                                                        <div x-show="Number(item.discount_amount || 0) > 0" class="text-success fw-bold d-flex align-items-center justify-content-md-end mt-0" style="font-size: 0.65rem;">
+                                                                            <i class="bi bi-tag-fill me-1 opacity-75"></i>-<span x-text="'Rs ' + Number(item.discount_amount || 0).toFixed(2)"></span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12 col-md-3 text-md-end pe-md-2 mt-1 mt-md-0 pt-1 pt-md-0 border-top border-md-0">
+                                                                        <span class="d-inline-block d-md-none text-muted small me-2 fw-medium">Total:</span>
+                                                                        <div class="fw-bolder text-body-emphasis" style="font-size: 0.85rem;" x-text="'Rs ' + Number(item.total_amount || 0).toFixed(2)"></div>
+                                                                    </div>
+                                                                </div>
+                                                            </template>
+                                                            <template x-if="!order.items || order.items.length === 0">
+                                                                <div class="list-group-item text-center text-muted py-3 small">
+                                                                    No order items found.
+                                                                </div>
+                                                            </template>
+                                                        </div>
                                                     </div>
-                                                    <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
+                                                    <div class="d-flex justify-content-end gap-2 p-3 bg-body-tertiary border-top">
                                                         @can('orders.edit')
                                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'shipped', 'dispatched'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-pencil-square me-1"></i> Edit Order
@@ -1229,11 +1352,12 @@
                                                         @endcan
                                                     </div>
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </template>
-                            </table>
+                            </div>
                         </div>
                     </template>
                     <template x-if="!historyOrders || !historyOrders.length">
@@ -1468,8 +1592,8 @@
                             <div class="space-y-3">
                                 <template x-for="offer in sortedActiveOffers" :key="offer.id">
                                     <div class="card border-2 rounded-4 transition-all hover-shadow" 
-                                         :class="['bogo', 'free_product'].includes(offer.type) ? 'border-info border-opacity-25 bg-info bg-opacity-10' : (appliedOfferId === offer.id ? 'border-success bg-success bg-opacity-10' : (orderOfferDiscount(offer) > 0 ? 'border-secondary border-opacity-10 bg-body-tertiary cursor-pointer' : 'border-secondary border-opacity-10 bg-body-secondary opacity-75'))" 
-                                         @click="if(['order_discount', 'category_discount'].includes(offer.type) && orderOfferDiscount(offer) > 0) appliedOfferId = (appliedOfferId === offer.id) ? 'none' : offer.id">
+                                         :class="['bogo', 'free_product'].includes(offer.type) ? 'border-info border-opacity-25 bg-info bg-opacity-10' : ((bestOrderOffer && bestOrderOffer.id === offer.id) ? 'border-success bg-success bg-opacity-10' : (orderOfferDiscount(offer) > 0 ? 'border-secondary border-opacity-10 bg-body-tertiary cursor-pointer' : 'border-secondary border-opacity-10 bg-body-secondary opacity-75'))" 
+                                         @click="if(['order_discount', 'category_discount'].includes(offer.type) && orderOfferDiscount(offer) > 0) appliedOfferId = ((bestOrderOffer && bestOrderOffer.id === offer.id) ? 'none' : offer.id)">
                                         <div class="card-body p-3 d-flex align-items-center justify-content-between gap-3">
                                             <div class="d-flex align-items-center gap-3">
                                                 <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center d-flex flex-column justify-content-center align-items-center" style="min-width: 90px; height: 90px;">
@@ -1532,12 +1656,12 @@
                                                 {{-- Order Discount Actions --}}
                                                 <template x-if="['order_discount', 'category_discount'].includes(offer.type)">
                                                     <div>
-                                                        <template x-if="appliedOfferId === offer.id">
+                                                        <template x-if="(bestOrderOffer && bestOrderOffer.id === offer.id)">
                                                             <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm mx-auto" style="width: 28px; height: 28px;">
                                                                 <i class="bi bi-check fs-5"></i>
                                                             </div>
                                                         </template>
-                                                        <template x-if="appliedOfferId !== offer.id">
+                                                        <template x-if="!(bestOrderOffer && bestOrderOffer.id === offer.id)">
                                                             <button class="btn btn-sm rounded-pill px-3 fw-medium" 
                                                                     :class="orderOfferDiscount(offer) === 0 ? 'btn-light text-muted border' : 'btn-outline-secondary'" 
                                                                     :disabled="orderOfferDiscount(offer) === 0">
@@ -2130,22 +2254,65 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 }
             });
         },
+        
+        getAppliedItemOffers(order) {
+            let names = [];
+            if (!order || !order.items || !this.activeOffers) return names;
+            order.items.forEach(item => {
+                if (Number(item.discount_amount || 0) > 0) {
+                    let match = this.activeOffers.find(o => o.type === 'bogo' && (
+                        (o.applicable_products && (o.applicable_products.includes(item.product_id) || o.applicable_products.includes(String(item.product_id)))) ||
+                        (o.applicable_categories && (o.applicable_categories.includes(item.product?.category_id) || o.applicable_categories.includes(String(item.product?.category_id))))
+                    ));
+                    if (match && !names.includes(match.name)) names.push(match.name);
+                }
+                if (Number(item.unit_price || 0) === 0 || Number(item.total_amount || 0) === 0) {
+                    let match = this.activeOffers.find(o => o.type === 'free_product' && Number(o.product_id) === Number(item.product_id));
+                    if (match && !names.includes(match.name)) names.push(match.name);
+                }
+            });
+            return names;
+        },
+
+        getSingleItemOffer(item) {
+            if (!this.activeOffers) return null;
+            if (Number(item.discount_amount || 0) > 0) {
+                let match = this.activeOffers.find(o => o.type === 'bogo' && (
+                    (o.applicable_products && (o.applicable_products.includes(item.product_id) || o.applicable_products.includes(String(item.product_id)))) ||
+                    (o.applicable_categories && (o.applicable_categories.includes(item.product?.category_id) || o.applicable_categories.includes(String(item.product?.category_id))))
+                ));
+                if (match) return match.name;
+            }
+            if (Number(item.unit_price || 0) === 0 || Number(item.total_amount || 0) === 0) {
+                let match = this.activeOffers.find(o => o.type === 'free_product' && Number(o.product_id) === Number(item.product_id));
+                if (match) return match.name;
+            }
+            return null;
+        },
 
         getBogoMatch(productId) {
             const bogos = this.activeOffers
                 .filter(o => o.type === 'bogo')
                 .sort((a,b)=>(b.priority - a.priority) || (a.id - b.id));
             
+            const p = this.products.find(x => String(x.id) === String(productId)) || this.cart.find(x => String(x.id) === String(productId));
+            const cid = p ? String(p.category_id) : null;
             return bogos.find(o => {
                 let apps = o.applicable_products;
                 if (typeof apps === 'string') {
                     try { apps = JSON.parse(apps); } catch(e) { apps = null; }
                 }
-                if (apps && apps.length > 0) {
-                    return apps.includes(productId) || apps.includes(String(productId));
+                let cats = o.applicable_categories;
+                if (typeof cats === 'string') {
+                    try { cats = JSON.parse(cats); } catch(e) { cats = null; }
                 }
-                // If applicable_products is null or empty, it applies to ALL products
-                return true;
+                
+                if ((!apps || apps.length === 0) && (!cats || cats.length === 0)) return true;
+                
+                if (apps && apps.length > 0 && (apps.includes(productId) || apps.includes(String(productId)))) return true;
+                if (cats && cats.length > 0 && cid && (cats.includes(cid) || cats.includes(String(cid)))) return true;
+                
+                return false;
             });
         },
 
@@ -2155,15 +2322,49 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 if (o.type === 'bogo') {
                     let apps = o.applicable_products;
                     if (typeof apps === 'string') { try { apps = JSON.parse(apps); } catch(e) { apps = null; } }
-                    if (!apps || apps.length === 0 || apps.includes(p.id) || apps.includes(String(p.id))) {
-                        promos.push({text: 'BOGO', icon: 'bi-gift-fill', class: 'bg-info bg-opacity-10 text-info border-info'});
+                    let cats = o.applicable_categories;
+                    if (typeof cats === 'string') { try { cats = JSON.parse(cats); } catch(e) { cats = null; } }
+                    
+                    let match = false;
+                    if ((!apps || apps.length === 0) && (!cats || cats.length === 0)) match = true;
+                    if (apps && apps.length > 0 && (apps.includes(p.id) || apps.includes(String(p.id)))) match = true;
+                    if (cats && cats.length > 0 && (cats.includes(p.category_id) || cats.includes(String(p.category_id)))) match = true;
+                    
+                    if (match) {
+                        promos.push({
+                            title: o.name, 
+                            icon: 'bi-gift-fill', 
+                            color: 'info', 
+                            tooltip: `Buy ${o.buy_qty} Get ${o.get_qty} Free.<br>Min Spend: ₹${o.min_spend || 0}`
+                        });
                     }
                 }
-                if (o.type === 'free_product' && String(o.product_id) === String(p.id)) promos.push({text: 'Free Gift', icon: 'bi-gift', class: 'bg-success bg-opacity-10 text-success border-success'});
-                if (o.type === 'category_discount' && o.applicable_categories && o.applicable_categories.includes(String(p.category_id))) promos.push({text: (o.discount_type === 'percentage' ? parseFloat(o.value) + '%' : 'Rs ' + parseFloat(o.value)) + ' OFF', icon: 'bi-tags', class: 'bg-primary bg-opacity-10 text-primary border-primary'});
+                if (o.type === 'free_product' && String(o.product_id) === String(p.id)) {
+                    promos.push({
+                        title: o.name, 
+                        icon: 'bi-gift', 
+                        color: 'success', 
+                        tooltip: `Get ${o.get_qty} Free.<br>Min Spend: ₹${o.min_spend || 0}`
+                    });
+                }
+                if (o.type === 'category_discount' && o.applicable_categories && o.applicable_categories.includes(String(p.category_id))) {
+                    promos.push({
+                        title: o.name, 
+                        icon: 'bi-tags', 
+                        color: 'primary', 
+                        tooltip: `Category Discount: ${o.discount_type === 'percentage' ? o.value+'%' : '₹'+o.value} OFF.<br>Min Spend: ₹${o.min_spend || 0}`
+                    });
+                }
             });
             this.activeCoupons.forEach(c => {
-                if (c.type === 'free_product' && String(c.product_id) === String(p.id)) promos.push({text: 'Coupon Gift', icon: 'bi-ticket-perforated', class: 'bg-warning bg-opacity-10 text-warning-emphasis border-warning'});
+                if (c.type === 'free_product' && String(c.product_id) === String(p.id)) {
+                    promos.push({
+                        title: `Coupon: ${c.code}`, 
+                        icon: 'bi-ticket-perforated', 
+                        color: 'warning', 
+                        tooltip: `Free Gift with Coupon.<br>Min Spend: ₹${c.min_spend || 0}`
+                    });
+                }
             });
             return promos;
         },
@@ -2206,7 +2407,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             
             this.productModalLoading = true;
             try {
-                const res = await fetch(`/products/${p.id}`, { headers: {'Accept':'application/json'} });
+                const res = await fetch(`/api/products/${p.id}`, { headers: {'Accept':'application/json'} });
                 const json = await res.json();
                 if (json && json.data) {
                     this.selectedProductForModal = { ...p, ...json.data };
@@ -2389,11 +2590,27 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 fpOffers.forEach(o => {
                     if (this.subtotal >= (parseFloat(o.min_spend)||0)) {
                         const apps = typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : o.applicable_products;
-                        let hasTrigger = true;
-                        if (apps && apps.length > 0) {
-                            hasTrigger = this.cart.some(item => !item.is_gift && (apps.includes(item.id) || apps.includes(String(item.id))));
-                        }
-                        if (hasTrigger) {
+                        const cats = typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : o.applicable_categories;
+                        
+                        let triggerQty = 0;
+                        if ((apps && apps.length > 0) || (cats && cats.length > 0)) {
+                            this.cart.forEach(item => {
+                                if (item.is_gift) return;
+                                if (apps && apps.length > 0 && (apps.includes(item.id) || apps.includes(String(item.id)))) {
+                                    triggerQty += parseInt(item.quantity) || 0;
+                                } else if (cats && cats.length > 0 && (cats.includes(item.category_id) || cats.includes(String(item.category_id)))) {
+                                    triggerQty += parseInt(item.quantity) || 0;
+                                }
+                            });
+                            
+                            if (triggerQty > 0) {
+                                const buyQty = parseInt(o.buy_qty) || 1;
+                                const cycles = Math.floor(triggerQty / buyQty);
+                                if (cycles > 0) {
+                                    expectedGifts.push({ product_id: o.product_id, qty: cycles * (parseInt(o.get_qty) || 1), source: 'offer_' + o.id });
+                                }
+                            }
+                        } else {
                             expectedGifts.push({ product_id: o.product_id, qty: parseInt(o.get_qty)||1, source: 'offer_' + o.id });
                         }
                     }
@@ -2427,12 +2644,36 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         },
         async fetchProductDetails(id) {
             try {
-                const res = await fetch(`/products/${id}`, { headers: {'Accept':'application/json'} });
+                const res = await fetch(`/api/products/${id}`, { headers: {'Accept':'application/json'} });
                 const json = await res.json();
                 return json.data;
             } catch(e) { return null; }
         },
         isInCart(id) { return this.cart.some(i => i.id === id); },
+
+        calculateAutoBogoQty(id, newQty, delta) {
+            const match = this.getBogoMatch(id);
+            if (!match) return newQty;
+            
+            const buyQty = parseInt(match.buy_qty)||1;
+            const getQty = parseInt(match.get_qty)||1;
+            const cycle = buyQty + getQty;
+            
+            if (delta > 0) {
+                let completeCycles = Math.floor(newQty / cycle);
+                let remainder = newQty % cycle;
+                if (remainder >= buyQty) {
+                    return (completeCycles * cycle) + buyQty + getQty;
+                }
+            } else if (delta < 0) {
+                let completeCycles = Math.floor(newQty / cycle);
+                let remainder = newQty % cycle;
+                if (remainder >= buyQty) {
+                    return (completeCycles * cycle) + buyQty - 1;
+                }
+            }
+            return newQty;
+        },
 
         addToCart(p) {
             let qtyToAdd = parseInt(p._qty)||1;
@@ -2440,11 +2681,11 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             if (qtyToAdd <= 0) return;
 
             const existing = this.cart.findIndex(i => i.id === p.id && !i.is_gift);
-            const match = this.getBogoMatch(p.id);
-
+            
             let newQty;
             if (existing >= 0) {
                 newQty = this.cart[existing].quantity + qtyToAdd;
+                newQty = this.calculateAutoBogoQty(p.id, newQty, qtyToAdd);
                 const whStock = this.getWarehouseStock(p);
                 if (whStock !== null && whStock !== undefined && newQty > whStock) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+whStock+')'}}));
@@ -2453,6 +2694,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 this.cart[existing].quantity = newQty;
             } else {
                 newQty = qtyToAdd;
+                newQty = this.calculateAutoBogoQty(p.id, newQty, qtyToAdd);
                 const whStock = this.getWarehouseStock(p);
                 if (whStock !== null && whStock !== undefined && newQty > whStock) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+whStock+')'}}));
@@ -2472,6 +2714,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             if (newQty <= 0) {
                 this.cart.splice(idx,1);
             } else {
+                newQty = this.calculateAutoBogoQty(item.id, newQty, delta);
                 if (item.available !== null && item.available !== undefined && newQty > item.available) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+item.available+')'}}));
                     return;
@@ -2506,13 +2749,77 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             if(qty<cycle) return 0;
             const free = Math.floor(qty/cycle)*getQty;
             const eff = qty>0 ? this.lineTotal(item)/qty : 0;
-            return Math.min(eff*free, this.lineTotal(item));
+            let d = Math.min(eff*free, this.lineTotal(item));
+            if ((parseFloat(match.max_discount)||0) > 0) d = Math.min(d, parseFloat(match.max_discount));
+            return d;
+        },
+        get orderEligibleSubtotal() {
+            const o = this.bestOrderOffer;
+            if (!o) return 0;
+            if (o.type === 'category_discount' && o.applicable_categories && o.applicable_categories.length > 0) {
+                const cats = typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : o.applicable_categories;
+                return this.cart.reduce((t, item) => {
+                    if (!item.is_gift && (cats.includes(item.category_id) || cats.includes(String(item.category_id)))) {
+                        return t + Math.max(0, this.lineTotal(item) - this.itemBogoDiscount(item));
+                    }
+                    return t;
+                }, 0);
+            }
+            return this.subtotal - this.bogoDiscount;
+        },
+        get couponEligibleSubtotal() {
+            const c = this.couponApplied ? this.appliedCouponObj : null;
+            if (!c || c.type === 'free_shipping' || c.type === 'free_product') return 0;
+            return this.cart.reduce((t, item) => {
+                if (item.is_gift) return t;
+                const apps = typeof c.applicable_products === 'string' ? JSON.parse(c.applicable_products) : c.applicable_products;
+                const excs = typeof c.excluded_products === 'string' ? JSON.parse(c.excluded_products) : c.excluded_products;
+                const appCats = typeof c.applicable_categories === 'string' ? JSON.parse(c.applicable_categories) : c.applicable_categories;
+                if (apps && apps.length > 0 && !apps.includes(item.id) && !apps.includes(String(item.id))) return t;
+                if (excs && excs.length > 0 && (excs.includes(item.id) || excs.includes(String(item.id)))) return t;
+                if (appCats && appCats.length > 0 && !appCats.includes(item.category_id) && !appCats.includes(String(item.category_id))) return t;
+                return t + Math.max(0, this.lineTotal(item) - this.itemBogoDiscount(item));
+            }, 0);
+        },
+        itemTaxableAmount(i) {
+            const postBogo = Math.max(0, this.lineTotal(i) - this.itemBogoDiscount(i));
+            let taxableAmount = postBogo;
+            if (taxableAmount > 0) {
+                const o = this.bestOrderOffer;
+                const orderEligibleSubtotal = this.orderEligibleSubtotal;
+                if (o && orderEligibleSubtotal > 0) {
+                    let isEligible = true;
+                    if (o.type === 'category_discount' && o.applicable_categories && o.applicable_categories.length > 0) {
+                        const cats = typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : o.applicable_categories;
+                        if (!cats.includes(i.category_id) && !cats.includes(String(i.category_id))) isEligible = false;
+                    }
+                    if (isEligible) {
+                        taxableAmount -= (this.orderOfferDiscountAmount * (postBogo / orderEligibleSubtotal));
+                    }
+                }
+                const c = this.couponApplied ? this.appliedCouponObj : null;
+                const couponEligibleSubtotal = this.couponEligibleSubtotal;
+                if (c && couponEligibleSubtotal > 0 && !i.is_gift) {
+                    let isEligible = true;
+                    const apps = typeof c.applicable_products === 'string' ? JSON.parse(c.applicable_products) : c.applicable_products;
+                    const excs = typeof c.excluded_products === 'string' ? JSON.parse(c.excluded_products) : c.excluded_products;
+                    const appCats = typeof c.applicable_categories === 'string' ? JSON.parse(c.applicable_categories) : c.applicable_categories;
+                    if (apps && apps.length > 0 && !apps.includes(i.id) && !apps.includes(String(i.id))) isEligible = false;
+                    if (excs && excs.length > 0 && (excs.includes(i.id) || excs.includes(String(i.id)))) isEligible = false;
+                    if (appCats && appCats.length > 0 && !appCats.includes(i.category_id) && !appCats.includes(String(i.category_id))) isEligible = false;
+                    if (isEligible) {
+                        taxableAmount -= (this.couponDiscount * (postBogo / couponEligibleSubtotal));
+                    }
+                }
+                taxableAmount = Math.max(0, taxableAmount);
+            }
+            return taxableAmount;
+        },
+        itemTaxAmount(i) {
+            return this.itemTaxableAmount(i) * ((parseFloat(i.taxRate)||0)/100);
         },
         get taxAmount() { 
-            return this.cart.reduce((t,i) => {
-                const taxableAmount = Math.max(0, this.lineTotal(i) - this.itemBogoDiscount(i));
-                return t + taxableAmount * ((parseFloat(i.taxRate)||0)/100);
-            }, 0); 
+            return this.cart.reduce((t,i) => t + this.itemTaxAmount(i), 0); 
         },
         get bogoDiscount() {
             return this.cart.reduce((t,item) => t + this.itemBogoDiscount(item), 0);
@@ -2554,13 +2861,13 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             if (!o || !['order_discount', 'category_discount'].includes(o.type)) return 0;
             if ((parseFloat(o.min_spend)||0) > this.subtotal) return 0;
             
-            let eligibleSubtotal = this.subtotal;
+            let eligibleSubtotal = this.subtotal - this.bogoDiscount;
             if (o.type === 'category_discount' && o.applicable_categories && o.applicable_categories.length > 0) {
                 const cats = typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : o.applicable_categories;
                 eligibleSubtotal = this.cart.reduce((t, item) => {
                     if (item.is_gift) return t;
                     if (cats.includes(item.category_id) || cats.includes(String(item.category_id))) {
-                        return t + this.lineTotal(item);
+                        return t + Math.max(0, this.lineTotal(item) - this.itemBogoDiscount(item));
                     }
                     return t;
                 }, 0);
@@ -2576,7 +2883,20 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             if (this.appliedOfferId && this.appliedOfferId !== 'none') {
                 return this.availableOrderOffers.find(o => o.id === this.appliedOfferId) || null;
             }
-            return null;
+            if (this.appliedOfferId === 'none') {
+                return null;
+            }
+            
+            let best = null;
+            let maxVal = 0;
+            this.availableOrderOffers.forEach(o => {
+                let d = this.orderOfferDiscount(o);
+                if (d > maxVal) {
+                    maxVal = d;
+                    best = o;
+                }
+            });
+            return best;
         },
         get orderOfferDiscountAmount() {
             const best = this.bestOrderOffer;
@@ -2597,7 +2917,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 if (apps && apps.length > 0 && !apps.includes(item.id) && !apps.includes(String(item.id))) return t;
                 if (excs && excs.length > 0 && (excs.includes(item.id) || excs.includes(String(item.id)))) return t;
                 if (appCats && appCats.length > 0 && !appCats.includes(item.category_id) && !appCats.includes(String(item.category_id))) return t;
-                return t + this.lineTotal(item);
+                return t + Math.max(0, this.lineTotal(item) - this.itemBogoDiscount(item));
             }, 0);
 
             if (eligibleSubtotal <= 0) return 0;
@@ -2676,10 +2996,19 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
 
         buildCartPayload() {
             return this.cart.map(item => {
-                const base = (parseFloat(item.price)||0) * (parseInt(item.quantity)||0);
+                const base = item.quantity * (parseFloat(item.price)||0);
                 const disc = this.lineTotal(item) < base ? base - this.lineTotal(item) : 0;
                 const tax = this.lineTotal(item) * ((parseFloat(item.taxRate)||0)/100);
-                return { product_id: item.id, quantity: item.quantity, unit_price: item.price, discount_amount: parseFloat(disc.toFixed(2)), tax_amount: parseFloat(tax.toFixed(2)), total_amount: parseFloat(this.lineTotal(item).toFixed(2)) };
+                return { 
+                    product_id: item.id, 
+                    quantity: item.quantity, 
+                    unit_price: item.price, 
+                    discount_amount: parseFloat(disc.toFixed(2)), 
+                    tax_amount: parseFloat(tax.toFixed(2)), 
+                    total_amount: parseFloat(this.lineTotal(item).toFixed(2)),
+                    is_gift: item.is_gift ? 1 : 0,
+                    gift_source: item.gift_source || null
+                };
             });
         },
 
@@ -2704,7 +3033,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     is_draft: this.isDraft ? 1 : 0,
                     future_order_date: this.isDraft ? this.futureOrderDate : null,
                     coupon_code: this.couponApplied ? this.couponCode : null,
-                    applied_offer_id: (this.appliedOfferId && this.appliedOfferId !== 'none') ? this.appliedOfferId : null,
+                    applied_offer_id: this.bestOrderOffer ? this.bestOrderOffer.id : null,
                     applied_bogo_ids: this.appliedBogoIds,
                     total_amount: parseFloat(this.subtotal.toFixed(2)),
                     tax_amount: parseFloat(this.taxAmount.toFixed(2)),

@@ -11,6 +11,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\TaxRate;
 use App\Modules\Catalog\Models\UnitOfMeasure;
 use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Inventory\Models\Supplier;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -129,6 +130,7 @@ class ProductSeeder extends Seeder
             $uom = UnitOfMeasure::where('slug', $item['uom_slug'])->first() ?? UnitOfMeasure::first();
             $hsn = HsnCode::where('code', $item['hsn_code'])->first() ?? HsnCode::first();
             $tax = TaxRate::where('rate', $item['tax_rate'])->first() ?? TaxRate::first();
+            $supplier = Supplier::inRandomOrder()->first();
             
             $imagePath = null;
             if (isset($item['image_source'])) {
@@ -156,6 +158,7 @@ class ProductSeeder extends Seeder
                     'hsn_code_id' => $hsn?->id,
                     'uom_id' => $uom?->id,
                     'default_warehouse_id' => $warehouse?->id,
+                    'supplier_id' => $supplier?->id,
                     'purchase_price' => $item['purchase_price'],
                     'mrp' => $item['mrp'],
                     'selling_price' => $item['selling_price'],

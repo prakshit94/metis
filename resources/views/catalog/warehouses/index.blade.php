@@ -155,7 +155,7 @@
             <!-- Table -->
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0 text-nowrap">
-                    <thead class="table-light">
+                    <thead>
                         <tr>
                             <th style="width:44px" class="ps-3">
                                 <input type="checkbox" class="user-select-checkbox"

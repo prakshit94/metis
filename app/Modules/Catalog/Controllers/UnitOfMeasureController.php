@@ -58,29 +58,8 @@ class UnitOfMeasureController extends Controller implements HasMiddleware
             'status' => 'required|in:active,inactive',
         ]);
 
-        // Handling specific fields for different models
-        if ('UnitOfMeasure' === 'Brand' || 'UnitOfMeasure' === 'Category' || 'UnitOfMeasure' === 'UnitOfMeasure') {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
-
-        if ('UnitOfMeasure' === 'HsnCode') {
-            $validated = $request->validate([
-                'code' => 'required|string|max:255',
-                'description' => 'required|string|max:255',
-            ]);
-        }
-
-        if ('UnitOfMeasure' === 'TaxRate') {
-            $validated['rate'] = $request->input('rate', 0);
-        }
-
-        if ('UnitOfMeasure' === 'UnitOfMeasure') {
-            $validated['short_name'] = $request->input('short_name', substr($validated['name'], 0, 3));
-        }
-
-        if ('UnitOfMeasure' === 'Warehouse') {
-            $validated['code'] = $request->input('code', strtoupper(substr($validated['name'], 0, 3)));
-        }
+        $validated['slug'] = Str::slug($validated['name']);
+        $validated['short_name'] = $request->input('short_name', substr($validated['name'], 0, 3));
 
         $model = UnitOfMeasure::create($validated);
 
@@ -108,30 +87,10 @@ class UnitOfMeasureController extends Controller implements HasMiddleware
             'status' => 'sometimes|required|in:active,inactive',
         ]);
 
-        if ('UnitOfMeasure' === 'Brand' || 'UnitOfMeasure' === 'Category' || 'UnitOfMeasure' === 'UnitOfMeasure') {
-            if (isset($validated['name'])) {
-                $validated['slug'] = Str::slug($validated['name']);
-            }
+        if (isset($validated['name'])) {
+            $validated['slug'] = Str::slug($validated['name']);
         }
-
-        if ('UnitOfMeasure' === 'HsnCode') {
-            $validated = $request->validate([
-                'code' => 'sometimes|required|string|max:255',
-                'description' => 'sometimes|required|string|max:255',
-            ]);
-        }
-
-        if ('UnitOfMeasure' === 'TaxRate') {
-            $validated['rate'] = $request->input('rate', $model->rate);
-        }
-
-        if ('UnitOfMeasure' === 'UnitOfMeasure') {
-            $validated['short_name'] = $request->input('short_name', $model->short_name);
-        }
-
-        if ('UnitOfMeasure' === 'Warehouse') {
-            $validated['code'] = $request->input('code', $model->code);
-        }
+        $validated['short_name'] = $request->input('short_name', $model->short_name);
 
         $model->update($validated);
 

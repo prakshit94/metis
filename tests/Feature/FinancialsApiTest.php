@@ -112,16 +112,27 @@ class FinancialsApiTest extends TestCase
 
     public function test_can_bulk_update_invoice_status()
     {
+        // Controller prevents manually setting to paid/unpaid
         $response = $this->actingAs($this->user)
             ->postJson('/api/invoices/bulk-status', [
                 'ids' => [$this->invoice->id],
                 'status' => 'paid',
             ]);
 
-        $response->assertStatus(200)
+        $response->assertStatus(422)
+            ->assertJson(['success' => false]);
+
+        // Cancelling an unpaid invoice should work
+        $response2 = $this->actingAs($this->user)
+            ->postJson('/api/invoices/bulk-status', [
+                'ids' => [$this->invoice->id],
+                'status' => 'cancelled',
+            ]);
+
+        $response2->assertStatus(200)
             ->assertJson(['success' => true]);
 
-        $this->assertEquals('paid', $this->invoice->refresh()->status);
+        $this->assertEquals('cancelled', $this->invoice->refresh()->status);
     }
 
     public function test_can_fetch_payments_list_with_search_and_stats()

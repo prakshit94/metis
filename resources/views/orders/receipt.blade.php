@@ -14,7 +14,7 @@
                         <div class="col-md-6">
                             <div class="d-flex align-items-center gap-3 mb-3">
                                 <div class="bg-primary text-white p-3 rounded-3 d-flex align-items-center justify-center" style="width: 50px; height: 50px;">
-                                    <i class="bi bi-package fs-3"></i>
+                                    <i class="bi bi-box fs-3"></i>
                                 </div>
                                 <h2 class="h4 mb-0 fw-bold tracking-tight text-uppercase">KRUSHIFY AGRO</h2>
                             </div>

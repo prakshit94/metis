@@ -88,6 +88,8 @@ document.addEventListener('alpine:init', () => {
     editingProductId: null,
     previewProduct: null,
     importing: false,
+    importMode: 'overwrite',
+    importErrors: [],
     options: {
       categories: [],
       brands: [],
@@ -168,7 +170,7 @@ document.addEventListener('alpine:init', () => {
         if (message === 'unknown status' || !message) {
           message = 'A server error occurred (Status: ' + response.status + ').';
         }
-        if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
+        if (response.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
     throw new Error(message);
       }
 
@@ -596,10 +598,12 @@ document.addEventListener('alpine:init', () => {
       }
 
       this.importing = true;
+      this.importErrors = [];
 
       try {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('import_mode', this.importMode);
 
         const response = await this.apiRequest(`${this.apiBase}/import`, {
           method: 'POST',
@@ -612,9 +616,15 @@ document.addEventListener('alpine:init', () => {
         this.filterProducts();
         this.calculateStats();
         this.selectedProducts = [];
-        fileInput.value = '';
-        getModal('#importModal')?.hide();
-        this.showNotification(resData.message || 'Products imported successfully.', 'success');
+        
+        if (resData.errors && resData.errors.length > 0) {
+          this.importErrors = resData.errors;
+          this.showNotification(`Imported ${resData.imported || 0} products, but encountered errors.`, 'warning');
+        } else {
+          fileInput.value = '';
+          getModal('#importModal')?.hide();
+          this.showNotification(resData.message || 'Products imported successfully.', 'success');
+        }
       } catch (error) {
         this.showNotification(error.message || 'Failed to import products.', 'danger');
       } finally {

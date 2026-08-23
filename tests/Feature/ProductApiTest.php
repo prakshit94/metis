@@ -84,9 +84,9 @@ class ProductApiTest extends TestCase
     public function test_store_creates_product(): void
     {
         $category = Category::create(['name' => 'Test Cat', 'slug' => 'test-cat-store']);
-        $uom = \App\Modules\Catalog\Models\UnitOfMeasure::create(['name' => 'Kg', 'code' => 'kg', 'slug' => 'kg']);
-        $taxRate = \App\Modules\Catalog\Models\TaxRate::create(['name' => 'GST 18%', 'rate' => 18]);
-        $hsnCode = \App\Modules\Catalog\Models\HsnCode::create(['code' => 'HSN1234']);
+        $uom = \App\Modules\Catalog\Models\UnitOfMeasure::firstOrCreate(['code' => 'kg'], ['name' => 'Kg', 'slug' => 'kg']);
+        $taxRate = \App\Modules\Catalog\Models\TaxRate::firstOrCreate(['rate' => 18], ['name' => 'GST 18%']);
+        $hsnCode = \App\Modules\Catalog\Models\HsnCode::firstOrCreate(['code' => 'HSN1234']);
 
         $response = $this->postJson('/api/products', [
             'name' => 'New Awesome Product',
@@ -115,9 +115,9 @@ class ProductApiTest extends TestCase
     public function test_update_modifies_product(): void
     {
         $category = Category::create(['name' => 'Test Cat', 'slug' => 'test-cat-update']);
-        $uom = \App\Modules\Catalog\Models\UnitOfMeasure::create(['name' => 'Kg2', 'code' => 'kg2', 'slug' => 'kg2']);
-        $taxRate = \App\Modules\Catalog\Models\TaxRate::create(['name' => 'GST 12%', 'rate' => 12]);
-        $hsnCode = \App\Modules\Catalog\Models\HsnCode::create(['code' => 'HSN5678']);
+        $uom = \App\Modules\Catalog\Models\UnitOfMeasure::firstOrCreate(['code' => 'kg2'], ['name' => 'Kg2', 'slug' => 'kg2']);
+        $taxRate = \App\Modules\Catalog\Models\TaxRate::firstOrCreate(['rate' => 12], ['name' => 'GST 12%']);
+        $hsnCode = \App\Modules\Catalog\Models\HsnCode::firstOrCreate(['code' => 'HSN5678']);
 
         $product = Product::create([
             'category_id' => $category->id,

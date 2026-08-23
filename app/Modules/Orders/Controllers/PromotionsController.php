@@ -89,7 +89,7 @@ class PromotionsController extends Controller implements HasMiddleware
         $data = $request->validate([
             'code' => 'required|string|max:50|unique:coupons,code',
             'type' => 'required|in:percentage,fixed,free_shipping,free_product',
-            'value' => 'required_if:type,percentage,fixed|numeric|min:0',
+            'value' => 'required_if:type,percentage,fixed|nullable|numeric|min:0',
             'min_spend' => 'nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
             'applicable_categories' => 'nullable|array',
@@ -134,7 +134,7 @@ class PromotionsController extends Controller implements HasMiddleware
         $data = $request->validate([
             'code' => 'sometimes|required|string|max:50|unique:coupons,code,'.$coupon->id,
             'type' => 'sometimes|required|in:percentage,fixed,free_shipping,free_product',
-            'value' => 'sometimes|numeric|min:0',
+            'value' => 'sometimes|nullable|numeric|min:0',
             'min_spend' => 'nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
             'applicable_categories' => 'nullable|array',

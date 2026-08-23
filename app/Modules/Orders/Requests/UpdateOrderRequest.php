@@ -37,6 +37,8 @@ class UpdateOrderRequest extends FormRequest
             'items.*.discount_amount' => 'nullable|numeric|min:0',
             'items.*.tax_amount' => 'nullable|numeric|min:0',
             'items.*.total_amount' => 'nullable|numeric|min:0',
+            'items.*.is_gift' => 'nullable|boolean',
+            'items.*.gift_source' => 'nullable|string',
             'is_draft' => 'nullable|boolean',
             'future_order_date' => 'nullable|date',
             'coupon_code' => 'nullable|string',

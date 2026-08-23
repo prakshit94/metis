@@ -66541,6 +66541,1691 @@
           }
         }
       ]
+    },
+    {
+      "name": "Missing Endpoints",
+      "item": [
+        {
+          "name": "api.audit-logs.index",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/audit-logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "audit-logs"
+              ]
+            },
+            "description": "App\\Http\\Controllers\\AuditLogController@index"
+          },
+          "response": []
+        },
+        {
+          "name": "api.audit-logs.clear",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/audit-logs/clear",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "audit-logs",
+                "clear"
+              ]
+            },
+            "description": "App\\Http\\Controllers\\AuditLogController@clearAll"
+          },
+          "response": []
+        },
+        {
+          "name": "api.audit-logs.destroy",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/audit-logs/destroy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "audit-logs",
+                "destroy"
+              ]
+            },
+            "description": "App\\Http\\Controllers\\AuditLogController@destroy"
+          },
+          "response": []
+        },
+        {
+          "name": "attendances.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendances/{attendance}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendances",
+                ":attendance"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\AttendanceController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "attributes.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attributes/{attribute}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attributes",
+                ":attribute"
+              ]
+            },
+            "description": "App\\Modules\\Catalog\\Controllers\\ProductAttributeController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "brands.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/brands/{brand}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "brands",
+                ":brand"
+              ]
+            },
+            "description": "App\\Modules\\Catalog\\Controllers\\BrandController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api/call-logs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/call-logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "call-logs"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\CallTaggingController@storeCallLog"
+          },
+          "response": []
+        },
+        {
+          "name": "api/call-tags",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/call-tags",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "call-tags"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\CallTaggingController@getTags"
+          },
+          "response": []
+        },
+        {
+          "name": "api.call-tags.index",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/call-tags-admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "call-tags-admin"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\CallTagAdminController@index"
+          },
+          "response": []
+        },
+        {
+          "name": "api/call-tags-admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/call-tags-admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "call-tags-admin"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\CallTagAdminController@store"
+          },
+          "response": []
+        },
+        {
+          "name": "api/call-tags-admin/bulk-action",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/call-tags-admin/bulk-action",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "call-tags-admin",
+                "bulk-action"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\CallTagAdminController@bulkAction"
+          },
+          "response": []
+        },
+        {
+          "name": "api/call-tags-admin/{callTag}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/call-tags-admin/{callTag}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "call-tags-admin",
+                ":callTag"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\CallTagAdminController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api/call-tags-admin/{callTag}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/call-tags-admin/{callTag}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "call-tags-admin",
+                ":callTag"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\CallTagAdminController@destroy"
+          },
+          "response": []
+        },
+        {
+          "name": "api/call-tags/{tag}/form",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/call-tags/{tag}/form",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "call-tags",
+                ":tag",
+                "form"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\CallTaggingController@getFormFields"
+          },
+          "response": []
+        },
+        {
+          "name": "categories.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{category}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories",
+                ":category"
+              ]
+            },
+            "description": "App\\Modules\\Catalog\\Controllers\\CategoryController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api.coupons.validate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/coupons/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "coupons",
+                "validate"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\CouponController@validateApi"
+          },
+          "response": []
+        },
+        {
+          "name": "api.customers.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/{customer}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                ":customer"
+              ]
+            },
+            "description": "App\\Modules\\Customers\\Controllers\\CustomerController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api.customers.addresses.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/{customer}/addresses/{address}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                ":customer",
+                "addresses",
+                ":address"
+              ]
+            },
+            "description": "App\\Modules\\Customers\\Controllers\\CustomerAddressController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "holidays.show",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/holidays/{holiday}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "holidays",
+                ":holiday"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\HolidayController@show"
+          },
+          "response": []
+        },
+        {
+          "name": "holidays.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/holidays/{holiday}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "holidays",
+                ":holiday"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\HolidayController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api/hr-settings/{type}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/hr-settings/{type}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "hr-settings",
+                ":type"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\HrSettingController@list"
+          },
+          "response": []
+        },
+        {
+          "name": "api/hr-settings/{type}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/hr-settings/{type}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "hr-settings",
+                ":type"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\HrSettingController@store"
+          },
+          "response": []
+        },
+        {
+          "name": "api/hr-settings/{type}/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/hr-settings/{type}/{id}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "hr-settings",
+                ":type",
+                ":id"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\HrSettingController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api/hr-settings/{type}/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/hr-settings/{type}/{id}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "hr-settings",
+                ":type",
+                ":id"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\HrSettingController@destroy"
+          },
+          "response": []
+        },
+        {
+          "name": "api/hr-settings/{type}/{id}/toggle",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/hr-settings/{type}/{id}/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "hr-settings",
+                ":type",
+                ":id",
+                "toggle"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\HrSettingController@toggleActive"
+          },
+          "response": []
+        },
+        {
+          "name": "hsn-codes.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/hsn-codes/{hsn_code}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "hsn-codes",
+                ":hsn_code"
+              ]
+            },
+            "description": "App\\Modules\\Catalog\\Controllers\\HsnCodeController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api.inventory.adjustments.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/adjustments/{adjustment}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventory",
+                "adjustments",
+                ":adjustment"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\InventoryAdjustmentController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api.inventory.transfers.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/transfers/{transfer}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventory",
+                "transfers",
+                ":transfer"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\StockTransferController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api.invoices.pdf",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/{invoice}/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "invoices",
+                ":invoice",
+                "pdf"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\InvoiceController@downloadPdf"
+          },
+          "response": []
+        },
+        {
+          "name": "leave-balances.show",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/leave-balances/{leave_balance}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "leave-balances",
+                ":leave_balance"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\LeaveBalanceController@show"
+          },
+          "response": []
+        },
+        {
+          "name": "leave-balances.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/leave-balances/{leave_balance}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "leave-balances",
+                ":leave_balance"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\LeaveBalanceController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api.orders.export",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "export"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\OrderController@bulkExport"
+          },
+          "response": []
+        },
+        {
+          "name": "api/org-chart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/org-chart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "org-chart"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\OrgChartController@index"
+          },
+          "response": []
+        },
+        {
+          "name": "api.payments.store",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\PaymentController@store"
+          },
+          "response": []
+        },
+        {
+          "name": "api.permissions.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/permissions/{permission}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "permissions",
+                ":permission"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\PermissionController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.goods-receipts.index",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/goods-receipts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "goods-receipts"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\GoodsReceiptController@index"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.goods-receipts.bulk",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/goods-receipts/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "goods-receipts",
+                "bulk"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\GoodsReceiptController@bulkAction"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.goods-receipts.restore",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/goods-receipts/{id}/restore",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "goods-receipts",
+                ":id",
+                "restore"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\GoodsReceiptController@restore"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.goods-receipts.destroy",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/goods-receipts/{receipt}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "goods-receipts",
+                ":receipt"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\GoodsReceiptController@destroy"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.goods-receipts.pdf",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/goods-receipts/{receipt}/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "goods-receipts",
+                ":receipt",
+                "pdf"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\GoodsReceiptController@downloadPdf"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.purchase-orders.index",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/purchase-orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "purchase-orders"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\PurchaseOrderController@index"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.purchase-orders.store",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/purchase-orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "purchase-orders"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\PurchaseOrderController@store"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.purchase-orders.bulk",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/purchase-orders/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "purchase-orders",
+                "bulk"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\PurchaseOrderController@bulkAction"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.purchase-orders.restore",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/purchase-orders/{id}/restore",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "purchase-orders",
+                ":id",
+                "restore"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\PurchaseOrderController@restore"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.purchase-orders.destroy",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/purchase-orders/{order}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "purchase-orders",
+                ":order"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\PurchaseOrderController@destroy"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.purchase-orders.approve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/purchase-orders/{order}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "purchase-orders",
+                ":order",
+                "approve"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\PurchaseOrderController@approve"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.purchase-orders.pdf",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/purchase-orders/{order}/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "purchase-orders",
+                ":order",
+                "pdf"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\PurchaseOrderController@downloadPdf"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.purchase-orders.receive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/purchase-orders/{order}/receive",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "purchase-orders",
+                ":order",
+                "receive"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\GoodsReceiptController@store"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.purchase-orders.reject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/purchase-orders/{order}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "purchase-orders",
+                ":order",
+                "reject"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\PurchaseOrderController@reject"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.suppliers.index",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/suppliers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "suppliers"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\SupplierController@index"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.suppliers.store",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/suppliers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "suppliers"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\SupplierController@store"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.suppliers.bulk",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/suppliers/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "suppliers",
+                "bulk"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\SupplierController@bulkAction"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.suppliers.show",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/suppliers/{supplier}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "suppliers",
+                ":supplier"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\SupplierController@show"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.suppliers.update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/suppliers/{supplier}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "suppliers",
+                ":supplier"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\SupplierController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.suppliers.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/suppliers/{supplier}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "suppliers",
+                ":supplier"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\SupplierController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api.procurement.suppliers.destroy",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/procurement/suppliers/{supplier}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "procurement",
+                "suppliers",
+                ":supplier"
+              ]
+            },
+            "description": "App\\Modules\\Inventory\\Controllers\\SupplierController@destroy"
+          },
+          "response": []
+        },
+        {
+          "name": "api.products.export",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "export"
+              ]
+            },
+            "description": "App\\Modules\\Catalog\\Controllers\\ProductController@export"
+          },
+          "response": []
+        },
+        {
+          "name": "api.refunds.show",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/refunds/{refund}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "refunds",
+                ":refund"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\RefundController@show"
+          },
+          "response": []
+        },
+        {
+          "name": "api.returns.process",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/returns/{orderReturn}/process",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "returns",
+                ":orderReturn",
+                "process"
+              ]
+            },
+            "description": "App\\Modules\\Orders\\Controllers\\OrderReturnController@process"
+          },
+          "response": []
+        },
+        {
+          "name": "api.roles.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/roles/{role}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "roles",
+                ":role"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\RoleController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "tax-rates.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tax-rates/{tax_rate}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tax-rates",
+                ":tax_rate"
+              ]
+            },
+            "description": "App\\Modules\\Catalog\\Controllers\\TaxRateController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "uom.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/uom/{uom}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "uom",
+                ":uom"
+              ]
+            },
+            "description": "App\\Modules\\Catalog\\Controllers\\UnitOfMeasureController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api.users.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{user}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                ":user"
+              ]
+            },
+            "description": "App\\Modules\\Users\\Controllers\\UserController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "api.villages.export",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/villages/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "villages",
+                "export"
+              ]
+            },
+            "description": "App\\Modules\\Core\\Controllers\\VillageController@export"
+          },
+          "response": []
+        },
+        {
+          "name": "api.villages.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/villages/{village}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "villages",
+                ":village"
+              ]
+            },
+            "description": "App\\Modules\\Core\\Controllers\\VillageController@update"
+          },
+          "response": []
+        },
+        {
+          "name": "warehouses.update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/warehouses/{warehouse}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "warehouses",
+                ":warehouse"
+              ]
+            },
+            "description": "App\\Modules\\Catalog\\Controllers\\WarehouseController@update"
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "event": [],

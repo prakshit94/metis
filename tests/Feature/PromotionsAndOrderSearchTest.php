@@ -178,6 +178,8 @@ class PromotionsAndOrderSearchTest extends TestCase
 
     public function test_offers_usage_tracking(): void
     {
+        Offer::query()->delete();
+
         $party = \App\Modules\Customers\Models\Party::create([
             'firstname' => 'Usage',
             'lastname' => 'Customer',
@@ -226,6 +228,8 @@ class PromotionsAndOrderSearchTest extends TestCase
             'discount_type' => 'fixed',
             'value' => 0.0,
             'is_active' => true,
+            'buy_qty' => 1,
+            'get_qty' => 1,
         ]);
 
         $this->assertEquals(0, $orderOffer->fresh()->used_count);

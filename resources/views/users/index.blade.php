@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="user-management" x-data="userTable">
-    <div x-data="{ showAnalytics: localStorage.getItem('users_show_analytics') !== 'false' }" x-init="$watch('showAnalytics', val => localStorage.setItem('users_show_analytics', val))">
+    <div x-data="{ showAnalytics: localStorage.getItem('users_show_analytics') === 'true' }" x-init="$watch('showAnalytics', val => localStorage.setItem('users_show_analytics', val))">
 <!-- Page Header -->
                     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
                         <div>

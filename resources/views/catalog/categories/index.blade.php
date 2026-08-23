@@ -127,7 +127,7 @@
             <!-- Table -->
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-                    <thead class="table-light">
+                    <thead>
                         <tr>
                             <th style="width: 40px;" class="ps-4">
                                 <input type="checkbox" 
@@ -168,12 +168,10 @@
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
                                         <template x-if="item.image">
-                                            <img :src="`/storage/${item.image}`" class="rounded object-cover border" style="width: 32px; height: 32px;">
+                                            <img :src="`/storage/${item.image}`" class="rounded object-cover border" style="width: 32px; height: 32px;" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                         </template>
                                         <template x-if="!item.image">
-                                            <div class="rounded bg-light text-secondary border d-flex align-items-center justify-center" style="width: 32px; height: 32px;">
-                                                <i class="bi bi-folder"></i>
-                                            </div>
+                                            <img src="/assets/images/product-placeholder.svg" class="rounded object-cover border" style="width: 32px; height: 32px;" alt="No image">
                                         </template>
                                         <div class="fw-semibold text-dark" x-text="item.name"></div>
                                     </div>
@@ -315,7 +313,10 @@
                                                     </div>
                                                 </template>
                                                 <template x-if="!imagePreview && !form.image">
-                                                    <i class="bi bi-cloud-arrow-up fs-2 text-muted"></i>
+                                                    <div class="position-relative d-inline-block">
+                                                        <img src="/assets/images/product-placeholder.svg" alt="Preview Placeholder" class="rounded border shadow-sm opacity-50" style="width: 80px; height: 80px; object-fit: cover;">
+                                                        <i class="bi bi-cloud-arrow-up fs-4 text-muted position-absolute top-50 start-50 translate-middle"></i>
+                                                    </div>
                                                 </template>
                                             </div>
                                             <input type="file" class="form-control form-control-sm" id="categoryImageInput" accept="image/*" @change="onFileChange($event)">

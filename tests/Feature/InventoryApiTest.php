@@ -134,13 +134,15 @@ class InventoryApiTest extends TestCase
             'transfer_no' => 'TR-1002',
             'from_warehouse_id' => $this->warehouse1->id,
             'to_warehouse_id' => $this->warehouse2->id,
-            'status' => 'sent',
-            'sent_at' => now(),
+            'status' => 'draft',
         ]);
         $transfer->items()->create([
             'product_id' => $this->product->id,
             'quantity' => 20,
         ]);
+
+        // Actually send it via API to deduct from main stock
+        $this->postJson("/api/inventory/transfers/{$transfer->id}/send");
 
         $response = $this->postJson("/api/inventory/transfers/{$transfer->id}/receive");
 
@@ -169,13 +171,14 @@ class InventoryApiTest extends TestCase
             'transfer_no' => 'TR-1003',
             'from_warehouse_id' => $this->warehouse1->id,
             'to_warehouse_id' => $this->warehouse2->id,
-            'status' => 'sent',
-            'sent_at' => now(),
+            'status' => 'draft',
         ]);
         $transfer->items()->create([
             'product_id' => $this->product->id,
             'quantity' => 20,
         ]);
+        
+        $this->postJson("/api/inventory/transfers/{$transfer->id}/send");
 
         $response = $this->postJson("/api/inventory/transfers/{$transfer->id}/cancel");
 

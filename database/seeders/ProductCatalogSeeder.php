@@ -11,6 +11,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\TaxRate;
 use App\Modules\Catalog\Models\UnitOfMeasure;
 use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Inventory\Models\Supplier;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -97,6 +98,7 @@ class ProductCatalogSeeder extends Seeder
             $taxRate = TaxRate::where('rate', $example['tax'])->first() ?? $taxRates->first();
             $hsn = $hsnCodes[$index % $hsnCodes->count()];
             $warehouse = $warehouses[0];
+            $supplier = Supplier::inRandomOrder()->first();
 
             $product = Product::firstOrCreate(
                 ['sku' => $example['sku']],
@@ -109,6 +111,7 @@ class ProductCatalogSeeder extends Seeder
                     'hsn_code_id' => $hsn?->id,
                     'uom_id' => $uom?->id,
                     'default_warehouse_id' => $warehouse?->id,
+                    'supplier_id' => $supplier?->id,
                     'purchase_price' => $example['purchase_price'],
                     'mrp' => $example['mrp'],
                     'selling_price' => $example['price'],

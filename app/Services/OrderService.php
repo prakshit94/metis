@@ -42,7 +42,7 @@ class OrderService
         return min($discountValue * $qty, $itemBase);
     }
 
-    private function calculateBogoDiscount(float $lineTotal, float $qty, int $buyQty, int $getQty): float
+    private function calculateBogoDiscount(float $lineTotal, float $qty, int $buyQty, int $getQty, float $maxDiscount = 0.0): float
     {
         $cycle = max(1, $buyQty + $getQty);
         if ($qty < $cycle || $lineTotal <= 0) {
@@ -52,24 +52,30 @@ class OrderService
         $freeUnits = floor($qty / $cycle) * $getQty;
         $effectiveUnit = $qty > 0 ? ($lineTotal / $qty) : 0.0;
 
-        return min($effectiveUnit * $freeUnits, $lineTotal);
+        $discount = min($effectiveUnit * $freeUnits, $lineTotal);
+        
+        if ($maxDiscount > 0) {
+            $discount = min($discount, $maxDiscount);
+        }
+
+        return $discount;
     }
 
-    private function calculateOfferDiscount(float $subtotal, Offer $offer): float
+    private function calculateOfferDiscount(float $eligibleSubtotal, float $totalSubtotal, Offer $offer): float
     {
-        if ($subtotal <= 0 || (float) $offer->min_spend > $subtotal) {
+        if ($eligibleSubtotal <= 0 || (float) $offer->min_spend > $totalSubtotal) {
             return 0.0;
         }
 
         $discount = $offer->discount_type === 'percentage'
-            ? $subtotal * ((float) $offer->value / 100)
+            ? $eligibleSubtotal * ((float) $offer->value / 100)
             : (float) $offer->value;
 
         if ((float) $offer->max_discount > 0) {
             $discount = min($discount, (float) $offer->max_discount);
         }
 
-        return min($discount, $subtotal);
+        return min($discount, $eligibleSubtotal);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -214,13 +220,25 @@ class OrderService
     {
         $cart = [];
         if (!empty($data['cart'])) {
-            $cart = json_decode($data['cart'], true) ?: [];
+            $decodedCart = json_decode($data['cart'], true) ?: [];
+            foreach ($decodedCart as $item) {
+                if (!empty($item['id']) && isset($item['quantity'])) {
+                    $cart[] = [
+                        'id' => $item['id'],
+                        'quantity' => $item['quantity'],
+                        'is_gift' => !empty($item['is_gift']),
+                        'gift_source' => $item['gift_source'] ?? null,
+                    ];
+                }
+            }
         } elseif (!empty($data['items']) && is_array($data['items'])) {
             foreach ($data['items'] as $item) {
                 if (!empty($item['product_id']) && isset($item['quantity'])) {
                     $cart[] = [
                         'id' => $item['product_id'],
                         'quantity' => $item['quantity'],
+                        'is_gift' => !empty($item['is_gift']),
+                        'gift_source' => $item['gift_source'] ?? null,
                     ];
                 }
             }
@@ -241,6 +259,23 @@ class OrderService
             ->get()
             ->keyBy('id');
 
+        // Calculate regular subtotal (excluding gifts) for min_spend triggers
+        $regularSubtotal = 0.0;
+        foreach ($cart as $item) {
+            if (empty($item['id']) || !isset($item['quantity']) || (float)$item['quantity'] <= 0 || !empty($item['is_gift'])) {
+                continue;
+            }
+            $product = $products->get($item['id']);
+            if (!$product) continue;
+            $qty = (float) $item['quantity'];
+            $unitPrice = $isPurchase ? (float) $product->purchase_price : (float) $product->selling_price;
+            $itemBase = $unitPrice * $qty;
+            $discountValue = (float) ($product->default_discount ?? 0);
+            $discountType = $product->default_discount_type ?? 'percent';
+            $itemDisc = $this->calculateLineDiscount($unitPrice, $qty, $discountValue, $discountType);
+            $regularSubtotal += ($itemBase - $itemDisc);
+        }
+
         $activeOffers = Offer::active()
             ->where(function ($query) use ($productIds) {
                 $query->whereNull('product_id')
@@ -251,7 +286,85 @@ class OrderService
             ->get();
 
         $orderOffers = $activeOffers->whereIn('type', ['order_discount', 'category_discount'])->values();
-        $bogoOffers = $activeOffers->where('type', 'bogo')->groupBy('product_id');
+        $bogoOffers = $activeOffers->where('type', 'bogo')->values();
+        $freeProductOffers = $activeOffers->where('type', 'free_product')->whereNotNull('product_id');
+
+        $expectedGifts = [];
+        foreach ($freeProductOffers as $o) {
+            if ($regularSubtotal >= (float)$o->min_spend) {
+                $apps = is_string($o->applicable_products) ? json_decode($o->applicable_products, true) : $o->applicable_products;
+                $cats = is_string($o->applicable_categories) ? json_decode($o->applicable_categories, true) : $o->applicable_categories;
+                
+                if (!empty($apps) || !empty($cats)) {
+                    $triggerQty = 0;
+                    foreach ($cart as $item) {
+                        if (empty($item['is_gift'])) {
+                            if (!empty($apps) && (in_array($item['id'], $apps) || in_array((string)$item['id'], $apps))) {
+                                $triggerQty += (int)($item['quantity'] ?? 0);
+                            } elseif (!empty($cats)) {
+                                $cid = $products->get($item['id'])?->category_id;
+                                if ($cid && (in_array($cid, $cats) || in_array((string)$cid, $cats))) {
+                                    $triggerQty += (int)($item['quantity'] ?? 0);
+                                }
+                            }
+                        }
+                    }
+                    if ($triggerQty > 0) {
+                        $buyQty = (int) $o->buy_qty ?: 1;
+                        $cycles = floor($triggerQty / $buyQty);
+                        if ($cycles > 0) {
+                            $expectedGifts[] = [
+                                'product_id' => (int) $o->product_id,
+                                'qty' => (int) ($cycles * ((int)$o->get_qty ?: 1)),
+                                'source' => 'offer_' . $o->id
+                            ];
+                        }
+                    }
+                } else {
+                    $expectedGifts[] = [
+                        'product_id' => (int) $o->product_id,
+                        'qty' => (int)$o->get_qty ?: 1,
+                        'source' => 'offer_' . $o->id
+                    ];
+                }
+            }
+        }
+
+        // Validate coupon code
+        $coupon = null;
+        $couponCode = null;
+        if (!empty($data['coupon_code'])) {
+            $code = strtoupper(trim($data['coupon_code']));
+            $coupon = Coupon::where('code', $code)->lockForUpdate()->first();
+
+            if (!$coupon) {
+                throw ValidationException::withMessages(['coupon_code' => 'Invalid promo code.']);
+            }
+            if (!$coupon->is_active) {
+                throw ValidationException::withMessages(['coupon_code' => 'This promo code is inactive.']);
+            }
+            if ($coupon->expiry_date && $coupon->expiry_date < now()->startOfDay()) {
+                throw ValidationException::withMessages(['coupon_code' => 'This promo code has expired.']);
+            }
+            
+            $alreadyUsedThisCoupon = $lastCouponCode !== null && strcasecmp($lastCouponCode, $code) === 0;
+            $currentUsedCount = (int) $coupon->used_count;
+            if ($coupon->usage_limit && $currentUsedCount >= $coupon->usage_limit && !$alreadyUsedThisCoupon) {
+                throw ValidationException::withMessages(['coupon_code' => 'This promo code usage limit has been reached.']);
+            }
+            if ($coupon->min_spend > 0 && $regularSubtotal < $coupon->min_spend) {
+                throw ValidationException::withMessages(['coupon_code' => 'Minimum spend of ₹'.number_format($coupon->min_spend, 2).' required.']);
+            }
+            
+            if ($coupon->type === 'free_product' && $coupon->free_product_id) {
+                $expectedGifts[] = [
+                    'product_id' => (int) $coupon->free_product_id,
+                    'qty' => (int)$coupon->free_qty ?: 1,
+                    'source' => 'coupon_' . $coupon->code
+                ];
+            }
+            $couponCode = $coupon->code;
+        }
 
         $items = [];
         $subtotal = 0.0;
@@ -286,46 +399,79 @@ class OrderService
             $discountType = $product->default_discount_type ?? 'percent';
             $itemDisc = $this->calculateLineDiscount($unitPrice, $qty, $discountValue, $discountType);
 
-            $itemTotal = $itemBase - $itemDisc;
+            // Handle free product gifts
+            if (!empty($item['is_gift'])) {
+                $validGift = false;
+                foreach ($expectedGifts as $eg) {
+                    if ($eg['product_id'] == $product->id && $eg['source'] === ($item['gift_source'] ?? null)) {
+                        $validGift = true;
+                        break;
+                    }
+                }
+                if ($validGift) {
+                    $itemDisc = $itemBase; // 100% discount
+                } else {
+                    $itemDisc = 0.0; // Unvalidated gift, charge full price
+                }
+            }
 
-            // Recalculate tax
+            $itemTotal = max(0.0, $itemBase - $itemDisc);
+
+            // Tax is calculated later to account for proportionally distributed discounts
             $taxRateVal = (float) ($product->taxRate?->rate ?? 0);
-            $itemTax = $itemTotal * ($taxRateVal / 100);
 
             $subtotal += $itemTotal;
             $totalItemDiscount += $itemDisc;
-            $taxAmount += $itemTax;
 
             $items[] = [
                 'product_id' => $product->id,
+                'category_id' => $product->category_id,
+                'is_gift' => !empty($item['is_gift']),
                 'quantity' => $qty,
                 'unit_price' => $unitPrice,
                 'tax_rate' => $taxRateVal,
                 'discount_amount' => $itemDisc,
-                'tax_amount' => $itemTax,
+                'tax_amount' => 0.0,
+                'bogo_discount' => 0.0,
                 'total_amount' => $itemTotal,
             ];
         }
 
         $appliedBogoIds = [];
         // Calculate BOGO on second pass to respect minimum spend
-        foreach ($items as $item) {
-            $productBogoOffer = $bogoOffers->get($item['product_id'])?->first()
-                             ?? $bogoOffers->get('')?->first();
+        foreach ($items as &$item) {
+            $productBogoOffer = $bogoOffers->first(function ($o) use ($item) {
+                $apps = is_string($o->applicable_products) ? json_decode($o->applicable_products, true) : $o->applicable_products;
+                $cats = is_string($o->applicable_categories) ? json_decode($o->applicable_categories, true) : $o->applicable_categories;
+                
+                if (empty($apps) && empty($cats)) return true;
+                
+                if (!empty($apps) && (in_array($item['product_id'], $apps) || in_array((string)$item['product_id'], $apps))) return true;
+                
+                if (!empty($cats)) {
+                    $cid = $item['category_id'];
+                    if ($cid && (in_array($cid, $cats) || in_array((string)$cid, $cats))) return true;
+                }
+                
+                return false;
+            });
 
             if ($productBogoOffer && $subtotal >= ((float) $productBogoOffer->min_spend ?? 0)) {
                 $disc = $this->calculateBogoDiscount(
                     $item['total_amount'],
                     $item['quantity'],
                     (int) $productBogoOffer->buy_qty,
-                    (int) $productBogoOffer->get_qty
+                    (int) $productBogoOffer->get_qty,
+                    (float) $productBogoOffer->max_discount
                 );
                 if ($disc > 0) {
                     $bogoDiscount += $disc;
+                    $item['bogo_discount'] = $disc;
                     $appliedBogoIds[] = $productBogoOffer->id;
                 }
             }
         }
+        unset($item);
         $appliedBogoIds = array_unique($appliedBogoIds);
 
         if (empty($items)) {
@@ -334,50 +480,16 @@ class OrderService
             ]);
         }
 
-        // Validate coupon code
+        // Apply remaining coupon discount
         $couponDiscount = 0.0;
-        $couponCode = null;
-        if (! empty($data['coupon_code'])) {
-            $code = strtoupper(trim($data['coupon_code']));
-            $coupon = Coupon::where('code', $code)
-                ->lockForUpdate()
-                ->first();
-
-            if (! $coupon) {
-                throw ValidationException::withMessages([
-                    'coupon_code' => 'Invalid promo code.',
-                ]);
-            }
-
-            if (! $coupon->is_active) {
-                throw ValidationException::withMessages([
-                    'coupon_code' => 'This promo code is inactive.',
-                ]);
-            }
-
-            if ($coupon->expiry_date && $coupon->expiry_date < now()->startOfDay()) {
-                throw ValidationException::withMessages([
-                    'coupon_code' => 'This promo code has expired.',
-                ]);
-            }
-
-            $alreadyUsedThisCoupon = $lastCouponCode !== null
-                && strcasecmp($lastCouponCode, $code) === 0;
-
-            $currentUsedCount = (int) $coupon->used_count;
-            if ($coupon->usage_limit && $currentUsedCount >= $coupon->usage_limit && ! $alreadyUsedThisCoupon) {
-                throw ValidationException::withMessages([
-                    'coupon_code' => 'This promo code usage limit has been reached.',
-                ]);
-            }
-
-            if ($coupon->min_spend > 0 && $subtotal < $coupon->min_spend) {
-                throw ValidationException::withMessages([
-                    'coupon_code' => 'Minimum spend of ₹'.number_format($coupon->min_spend, 2).' required.',
-                ]);
-            }
-
-            $eligibleSubtotal = $subtotal;
+        $couponEligibleSubtotal = 0.0;
+        $apps = [];
+        $excs = [];
+        $appCats = [];
+        $excCats = [];
+        
+        if ($coupon) {
+            $eligibleSubtotal = max(0, $subtotal - $bogoDiscount);
             $apps = is_string($coupon->applicable_products) ? json_decode($coupon->applicable_products, true) : $coupon->applicable_products;
             $excs = is_string($coupon->excluded_products) ? json_decode($coupon->excluded_products, true) : $coupon->excluded_products;
             $appCats = is_string($coupon->applicable_categories) ? json_decode($coupon->applicable_categories, true) : $coupon->applicable_categories;
@@ -386,61 +498,64 @@ class OrderService
             if (!empty($apps) || !empty($excs) || !empty($appCats) || !empty($excCats)) {
                 $eligibleSubtotal = 0.0;
                 foreach ($items as $item) {
+                    if ($item['is_gift']) continue;
                     $pid = $item['product_id'];
-                    $product = $products->get($pid);
-                    $cid = $product?->category_id;
+                    $cid = $item['category_id'];
                     
                     if (!empty($apps) && !in_array($pid, $apps) && !in_array((string)$pid, $apps)) continue;
                     if (!empty($excs) && (in_array($pid, $excs) || in_array((string)$pid, $excs))) continue;
                     if (!empty($appCats) && (!in_array($cid, $appCats) && !in_array((string)$cid, $appCats))) continue;
                     if (!empty($excCats) && (in_array($cid, $excCats) || in_array((string)$cid, $excCats))) continue;
                     
-                    $eligibleSubtotal += $item['total_amount'];
+                    $eligibleSubtotal += max(0, $item['total_amount'] - $item['bogo_discount']);
                 }
             }
 
+            $couponEligibleSubtotal = $eligibleSubtotal;
             if ($eligibleSubtotal > 0) {
                 if ($coupon->type === 'percentage') {
                     $couponDiscount = $eligibleSubtotal * ($coupon->value / 100);
                     if ($coupon->max_discount > 0 && $couponDiscount > $coupon->max_discount) {
                         $couponDiscount = (float) $coupon->max_discount;
                     }
-                } else {
+                } elseif ($coupon->type === 'fixed') {
                     $couponDiscount = (float) $coupon->value;
                 }
                 $couponDiscount = min($couponDiscount, $eligibleSubtotal);
             }
-
-            $couponCode = $coupon->code;
         }
 
         $appliedOfferId = ! empty($data['applied_offer_id']) ? (int) $data['applied_offer_id'] : null;
         $bestOrderOffer = null;
         $orderDiscount = 0.0;
+        $orderEligibleSubtotal = 0.0;
 
         if ($appliedOfferId) {
             $bestOrderOffer = $orderOffers->firstWhere('id', $appliedOfferId);
             if ($bestOrderOffer) {
-                $eligibleSubtotal = $subtotal;
+                $eligibleSubtotal = max(0, $subtotal - $bogoDiscount);
                 if ($bestOrderOffer->type === 'category_discount' && !empty($bestOrderOffer->applicable_categories)) {
                     $cats = is_string($bestOrderOffer->applicable_categories) ? json_decode($bestOrderOffer->applicable_categories, true) : $bestOrderOffer->applicable_categories;
                     $eligibleSubtotal = 0.0;
                     foreach ($items as $item) {
-                        $product = $products->get($item['product_id']);
-                        $cid = $product?->category_id;
+                        if ($item['is_gift']) continue;
+                        $cid = $item['category_id'];
                         if (in_array($cid, $cats) || in_array((string)$cid, $cats)) {
-                            $eligibleSubtotal += $item['total_amount'];
+                            $eligibleSubtotal += max(0, $item['total_amount'] - $item['bogo_discount']);
                         }
                     }
                 } elseif ($bestOrderOffer->product_id) {
                     $eligibleSubtotal = 0.0;
                     foreach ($items as $item) {
+                        if ($item['is_gift']) continue;
                         if ($item['product_id'] == $bestOrderOffer->product_id) {
-                            $eligibleSubtotal += $item['total_amount'];
+                            $eligibleSubtotal += max(0, $item['total_amount'] - $item['bogo_discount']);
                         }
                     }
                 }
-                $discount = $this->calculateOfferDiscount($eligibleSubtotal, $bestOrderOffer);
+                
+                $orderEligibleSubtotal = $eligibleSubtotal;
+                $discount = $this->calculateOfferDiscount($eligibleSubtotal, $subtotal, $bestOrderOffer);
                 if ($discount > 0) {
                     $orderDiscount = $discount;
                 } else {
@@ -448,6 +563,55 @@ class OrderService
                 }
             }
         }
+
+        // Final pass: distribute discounts and compute correct GST
+        $taxAmount = 0.0;
+        foreach ($items as &$item) {
+            $postBogo = max(0.0, $item['total_amount'] - $item['bogo_discount']);
+            $taxableAmount = $postBogo;
+            
+            if ($taxableAmount > 0) {
+                // Deduct proportional order discount
+                if ($bestOrderOffer && $orderEligibleSubtotal > 0) {
+                    $isEligible = true;
+                    if ($bestOrderOffer->type === 'category_discount' && !empty($bestOrderOffer->applicable_categories)) {
+                        $cats = is_string($bestOrderOffer->applicable_categories) ? json_decode($bestOrderOffer->applicable_categories, true) : $bestOrderOffer->applicable_categories;
+                        $cid = $item['category_id'];
+                        if (!in_array($cid, $cats) && !in_array((string)$cid, $cats)) $isEligible = false;
+                    } elseif ($bestOrderOffer->product_id) {
+                        if ($item['product_id'] != $bestOrderOffer->product_id) $isEligible = false;
+                    }
+                    if ($isEligible && !$item['is_gift']) {
+                        $taxableAmount -= ($orderDiscount * ($postBogo / $orderEligibleSubtotal));
+                    }
+                }
+                
+                // Deduct proportional coupon discount
+                if ($coupon && $couponEligibleSubtotal > 0 && !$item['is_gift']) {
+                    $isEligible = true;
+                    $pid = $item['product_id'];
+                    $cid = $item['category_id'];
+                    if (!empty($apps) && !in_array($pid, $apps) && !in_array((string)$pid, $apps)) $isEligible = false;
+                    if (!empty($excs) && (in_array($pid, $excs) || in_array((string)$pid, $excs))) $isEligible = false;
+                    if (!empty($appCats) && (!in_array($cid, $appCats) && !in_array((string)$cid, $appCats))) $isEligible = false;
+                    if (!empty($excCats) && (in_array($cid, $excCats) || in_array((string)$cid, $excCats))) $isEligible = false;
+                    
+                    if ($isEligible) {
+                        $taxableAmount -= ($couponDiscount * ($postBogo / $couponEligibleSubtotal));
+                    }
+                }
+                
+                $taxableAmount = max(0.0, $taxableAmount);
+            }
+            
+            $itemTax = $taxableAmount * (($item['tax_rate'] ?? 0) / 100);
+            $item['tax_amount'] = $itemTax;
+            $taxAmount += $itemTax;
+            
+            // Clean up temporary variables
+            unset($item['category_id'], $item['is_gift'], $item['bogo_discount']);
+        }
+        unset($item);
 
         $totalDiscount = $bogoDiscount + $orderDiscount + $couponDiscount;
 

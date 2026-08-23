@@ -174,7 +174,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/{order}', [\App\Modules\Orders\Controllers\OrderController::class, 'show'])->name('show');
         Route::patch('/{order}', [\App\Modules\Orders\Controllers\OrderController::class, 'update'])->name('update');
         Route::delete('/{order}', [\App\Modules\Orders\Controllers\OrderController::class, 'destroy'])->name('destroy');
+        // Bulk Actions & Helpers
+        Route::post('/bulk-status', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkStatus'])->name('bulk-status');
+        Route::post('/bulk-generate-invoices', [\App\Modules\Orders\Controllers\OrderController::class, 'generateBulkInvoices'])->name('bulk-generate-invoices');
+        Route::get('/bulk-print', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkPrint'])->name('bulk-print');
+        Route::get('/export', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkExport'])->name('export');
+        Route::post('/export-selected', [\App\Modules\Orders\Controllers\OrderController::class, 'exportSelected'])->name('export-selected');
+        Route::post('/import', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkImport'])->name('import');
     });
+
+    Route::get('/products-search-api', [\App\Modules\Catalog\Controllers\ProductController::class, 'searchApi'])->name('api.products.search.api');
+    Route::post('/coupons/validate', [\App\Modules\Orders\Controllers\CouponController::class, 'validateApi'])->name('api.coupons.validate');
 
     Route::prefix('credit-notes')->name('api.credit-notes.')->group(function (): void {
         Route::get('/', [\App\Modules\Orders\Controllers\CreditNoteController::class, 'index'])->name('index');
@@ -235,6 +245,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/offers/{offer}', [\App\Modules\Orders\Controllers\PromotionsController::class, 'offersDestroy'])->name('offers.destroy');
         Route::patch('/offers/{offer}/toggle', [\App\Modules\Orders\Controllers\PromotionsController::class, 'offersToggle'])->name('offers.toggle');
         Route::post('/offers/bulk-action', [\App\Modules\Orders\Controllers\PromotionsController::class, 'offersBulk'])->name('offers.bulk');
+        
+        // Referral Programs
+        Route::get('/referral-programs', [\App\Http\Controllers\ReferralProgramController::class, 'index'])->name('referrals.programs.index');
+        Route::post('/referral-programs', [\App\Http\Controllers\ReferralProgramController::class, 'store'])->name('referrals.programs.store');
+        Route::post('/referral-programs/bulk-action', [\App\Http\Controllers\ReferralProgramController::class, 'bulk'])->name('referrals.programs.bulk');
+        Route::put('/referral-programs/{id}', [\App\Http\Controllers\ReferralProgramController::class, 'update'])->name('referrals.programs.update');
+        Route::patch('/referral-programs/{id}/toggle', [\App\Http\Controllers\ReferralProgramController::class, 'toggle'])->name('referrals.programs.toggle');
+        Route::delete('/referral-programs/{id}', [\App\Http\Controllers\ReferralProgramController::class, 'destroy'])->name('referrals.programs.destroy');
     });
 
         
@@ -350,5 +368,43 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('/services/{service}/toggle', [\App\Modules\Core\Controllers\ShippingController::class, 'toggleService'])->name('services.toggle');
             Route::delete('/services/{service}', [\App\Modules\Core\Controllers\ShippingController::class, 'destroyService'])->name('services.delete');
         });
+
+        // ── Procurement API Routes ─────────────────────────────────────────────
+        Route::prefix('procurement')->name('api.procurement.')->group(function (): void {
+            Route::get('/purchase-orders', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+            Route::post('/purchase-orders', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+            Route::post('/purchase-orders/bulk', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'bulkAction'])->name('purchase-orders.bulk');
+            Route::get('/purchase-orders/{order}/pdf', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'downloadPdf'])->name('purchase-orders.pdf');
+            Route::delete('/purchase-orders/{order}', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'destroy'])->name('purchase-orders.destroy');
+            Route::post('/purchase-orders/{id}/restore', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'restore'])->name('purchase-orders.restore');
+            Route::post('/purchase-orders/{order}/approve', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'approve'])->name('purchase-orders.approve');
+            Route::post('/purchase-orders/{order}/reject', [\App\Modules\Inventory\Controllers\PurchaseOrderController::class, 'reject'])->name('purchase-orders.reject');
+            Route::post('/purchase-orders/{order}/receive', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'store'])->name('purchase-orders.receive');
+            
+            Route::get('/goods-receipts', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'index'])->name('goods-receipts.index');
+            Route::get('/goods-receipts/{receipt}/pdf', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'downloadPdf'])->name('goods-receipts.pdf');
+            Route::post('/goods-receipts/bulk', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'bulkAction'])->name('goods-receipts.bulk');
+            Route::delete('/goods-receipts/{receipt}', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'destroy'])->name('goods-receipts.destroy');
+            Route::post('/goods-receipts/{id}/restore', [\App\Modules\Inventory\Controllers\GoodsReceiptController::class, 'restore'])->name('goods-receipts.restore');
+            
+            Route::post('/suppliers/bulk', [\App\Modules\Inventory\Controllers\SupplierController::class, 'bulkAction'])->name('suppliers.bulk');
+            Route::apiResource('/suppliers', \App\Modules\Inventory\Controllers\SupplierController::class);
+        });
+
+        // ── Call Tagging ────────────────────────────────────────────────────────
+        Route::get('/call-tags', [\App\Modules\Orders\Controllers\CallTaggingController::class, 'getTags']);
+        Route::get('/call-tags/{tag}/form', [\App\Modules\Orders\Controllers\CallTaggingController::class, 'getFormFields']);
+        Route::post('/call-logs', [\App\Modules\Orders\Controllers\CallTaggingController::class, 'storeCallLog']);
+        
+        Route::get('/call-tags-admin', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'index'])->name('api.call-tags.index');
+        Route::post('/call-tags-admin', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'store']);
+        Route::put('/call-tags-admin/{callTag}', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'update']);
+        Route::delete('/call-tags-admin/{callTag}', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'destroy']);
+        Route::post('/call-tags-admin/bulk-action', [\App\Modules\Orders\Controllers\CallTagAdminController::class, 'bulkAction']);
+
+        // ── System Audit Logs ───────────────────────────────────────────────────
+        Route::get('/admin/audit-logs', [\App\Http\Controllers\AuditLogController::class, 'index'])->name('api.audit-logs.index');
+        Route::delete('/admin/audit-logs/clear', [\App\Http\Controllers\AuditLogController::class, 'clearAll'])->name('api.audit-logs.clear');
+        Route::delete('/admin/audit-logs/destroy', [\App\Http\Controllers\AuditLogController::class, 'destroy'])->name('api.audit-logs.destroy');
 
 });

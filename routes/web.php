@@ -231,3 +231,4 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::delete('/admin/audit-logs/destroy', [\App\Http\Controllers\AuditLogController::class, 'destroy'])->name('admin.audit-logs.destroy')->middleware('role:Super Admin');
 
 });
+require __DIR__.'/test_bug.php';

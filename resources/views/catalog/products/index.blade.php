@@ -208,7 +208,7 @@
                                 <!-- Table -->
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">
-                                        <thead class="table-light">
+                                        <thead>
                                             <tr>
                                                 <th style="width: 40px;">
                                                     <input type="checkbox" 
@@ -216,14 +216,10 @@
                                                            @change="$event.isTrusted && toggleAll($event.target.checked)"
                                                            :checked="selectedProducts.length === filteredProducts.length && filteredProducts.length > 0">
                                                 </th>
-                                                <th>Product</th>
-                                                <th @click="sortBy('category')" class="sortable">Category</th>
-                                                <th @click="sortBy('price')" class="sortable">Price</th>
-                                                <th @click="sortBy('stock')" class="sortable">Stock</th>
-                                                <th>Status</th>
-                                                <th>Tracking</th>
-                                                <th @click="sortBy('created')" class="sortable">Created</th>
-                                                <th style="width: 120px;">Actions</th>
+                                                <th>Product Details</th>
+                                                <th @click="sortBy('price')" class="sortable">Pricing & Inventory</th>
+                                                <th>Status & Tracking</th>
+                                                <th style="width: 80px;" class="text-end pe-4">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -246,20 +242,29 @@
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
+                                                            <div x-show="product.grade" 
+                                                                 class="badge border shadow-sm rounded-2 d-flex flex-column align-items-center justify-content-center me-2 flex-shrink-0" 
+                                                                 style="width: 28px; height: 34px; font-size: 11px; padding: 2px;"
+                                                                 :class="{'bg-success-subtle text-success-emphasis border-success': product.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(product.grade)}"
+                                                                 :title="'Grade ' + product.grade"
+                                                                 x-cloak>
+                                                                <i class="bi bi-star-fill text-warning" style="font-size: 10px; line-height: 1; margin-bottom: 2px;"></i>
+                                                                <span x-text="product.grade" style="line-height: 1; font-weight: 800;"></span>
+                                                            </div>
                                                             <img :src="product.image" 
                                                                  class="product-image me-3" 
                                                                  :alt="product.name">
                                                             <div>
-                                                                <div class="fw-medium" x-text="product.name"></div>
-                                                                <small class="text-muted" x-text="'SKU: ' + product.sku"></small>
+                                                                <a href="#" class="fw-bold text-decoration-none text-body-emphasis mb-1 d-block" @click.prevent="viewProduct(product)" x-text="product.name"></a>
+                                                                <div class="d-flex align-items-center gap-2">
+                                                                    <small class="text-muted" style="font-size: 11px;" x-text="'SKU: ' + product.sku"></small>
+                                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px; padding: 0.25em 0.5em;" x-text="product.category"></span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <span class="badge bg-secondary-subtle text-secondary-emphasis" x-text="product.category"></span>
-                                                    </td>
-                                                    <td x-text="'Rs ' + Number(product.price).toFixed(2)"></td>
-                                                    <td>
+                                                        <div class="fw-bold text-primary mb-1" x-text="'Rs ' + Number(product.price).toFixed(2)"></div>
                                                         <span class="badge stock-badge" 
                                                               :class="{
                                                                   'in-stock': product.stock > (product.min_stock_level || 10),
@@ -269,24 +274,24 @@
                                                               x-text="parseFloat(product.stock) + ' units'"></span>
                                                     </td>
                                                     <td>
-                                                        <span class="badge" 
-                                                              :class="{
-                                                                  'bg-success': ['published', 'active'].includes(product.status),
-                                                                  'bg-secondary': product.status === 'draft',
-                                                                  'bg-warning': ['pending', 'out_of_stock'].includes(product.status)
-                                                              }"
-                                                              x-text="product.status"></span>
-                                                    </td>
-                                                    <td>
-                                                        <div class="d-flex flex-wrap gap-1">
-                                                            <span class="badge bg-purple bg-opacity-10 text-purple border border-purple border-opacity-25" x-show="product.batch_tracking" title="Batch Tracking">Batch</span>
-                                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" x-show="product.expiry_tracking" title="Expiry Tracking">Expiry</span>
-                                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" x-show="product.allow_overselling" title="Allow Overselling">Oversell</span>
-                                                            <span class="text-muted small" x-show="!product.batch_tracking && !product.expiry_tracking && !product.allow_overselling">-</span>
+                                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                                            <span class="badge" 
+                                                                  :class="{
+                                                                      'bg-success': ['published', 'active'].includes(product.status),
+                                                                      'bg-secondary': product.status === 'draft',
+                                                                      'bg-warning': ['pending', 'out_of_stock'].includes(product.status)
+                                                                  }"
+                                                                  x-text="product.status"></span>
+                                                            <small class="text-muted" style="font-size: 10px;" x-text="product.created"></small>
+                                                        </div>
+                                                        <div class="d-flex flex-wrap gap-1 mt-1">
+                                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="product.batch_tracking" title="Batch Tracking"><i class="bi bi-layers me-1"></i>Batch</span>
+                                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size:9px;" x-show="product.expiry_tracking" title="Expiry Tracking"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
+                                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:9px;" x-show="product.allow_overselling" title="Allow Overselling"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span>
+                                                            <span class="text-muted small" style="font-size:10px;" x-show="!product.batch_tracking && !product.expiry_tracking && !product.allow_overselling">-</span>
                                                         </div>
                                                     </td>
-                                                    <td x-text="product.created"></td>
-                                                    <td>
+                                                    <td class="text-end pe-4">
                                                         <div class="dropdown">
                                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
                                                                     type="button" 
@@ -299,9 +304,7 @@
                                                                     <i class="bi bi-pencil me-2"></i>Edit
                                                                 </a></li>
                                                                 @endcan
-                                                                <li><a class="dropdown-item" href="#" @click.prevent="viewProduct(product)">
-                                                                    <i class="bi bi-eye me-2"></i>View Details
-                                                                </a></li>
+
                                                                 @can('product-create')
                                                                 <li><a class="dropdown-item" href="#" @click.prevent="duplicateProduct(product)">
                                                                     <i class="bi bi-copy me-2"></i>Duplicate
@@ -360,42 +363,23 @@
                 <div class="modal-body pt-3">
                     <form @submit.prevent="saveProduct()">
                         <div class="row g-4">
-                            <!-- Left Column (General Info, Pricing, Descriptions) -->
+                            <!-- Left Column -->
                             <div class="col-lg-8">
-                                <!-- Card 1: General Info -->
+                                <!-- Card 1: Basic Information -->
                                 <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                                                 <i class="bi bi-info-circle-fill"></i>
                                             </div>
-                                            <h6 class="card-title mb-0 fw-bold">General Information</h6>
+                                            <h6 class="card-title mb-0 fw-bold">Basic Information</h6>
                                         </div>
                                         <div class="row g-3">
                                             <div class="col-12">
                                                 <label class="form-label fw-medium text-muted small">Product Name <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control" x-model="form.name" required placeholder="e.g. Wireless Noise Cancelling Headphones">
                                             </div>
-                                            <div class="col-md-8">
-                                                <label class="form-label fw-medium text-muted small">SKU <span class="text-danger">*</span></label>
-                                                <div class="input-group">
-                                                    <input type="text" class="form-control" x-model="form.sku" :disabled="!form.is_sku_enabled" :required="form.is_sku_enabled" placeholder="SKU Code">
-                                                    <div class="input-group-text bg-body-secondary border-start-0">
-                                                        <div class="form-check form-switch m-0">
-                                                            <input class="form-check-input" type="checkbox" role="switch" x-model="form.is_sku_enabled" id="skuEnabledToggle">
-                                                            <label class="form-check-label small fw-medium ms-1" for="skuEnabledToggle">Enabled</label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label fw-medium text-muted small">Barcode / UPC</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text bg-body-secondary"><i class="bi bi-upc-scan"></i></span>
-                                                    <input type="text" class="form-control" x-model="form.barcode" placeholder="Scan or enter barcode">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
+                                            <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Category <span class="text-danger">*</span></label>
                                                 <select x-select class="form-select" x-model="form.category_id" required>
                                                     <option value="">Select Category</option>
@@ -409,7 +393,7 @@
                                                     </template>
                                                 </select>
                                             </div>
-                                            <div class="col-md-4">
+                                            <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Brand</label>
                                                 <select x-select class="form-select" x-model="form.brand_id">
                                                     <option value="">No Brand</option>
@@ -418,20 +402,19 @@
                                                     </template>
                                                 </select>
                                             </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label fw-medium text-muted small">Supplier</label>
-                                                <select x-select class="form-select" x-model="form.supplier_id">
-                                                    <option value="">Select Supplier</option>
-                                                    <template x-for="supplier in options.suppliers" :key="supplier.id">
-                                                        <option :value="String(supplier.id)" x-text="supplier.company_name ? supplier.company_name : (supplier.firstname + ' ' + (supplier.lastname || ''))"></option>
-                                                    </template>
-                                                </select>
+                                            <div class="col-12">
+                                                <label class="form-label fw-medium text-muted small">Product Description</label>
+                                                <textarea class="form-control" x-model="form.description" rows="3" placeholder="Enter detailed product description..."></textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-medium text-muted small">Application Instructions</label>
+                                                <textarea class="form-control" x-model="form.application_instructions" rows="2" placeholder="Enter instructions for use/application..."></textarea>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Card 2: Pricing & Discount -->
+                                <!-- Card 2: Pricing & Taxation -->
                                 <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center mb-3">
@@ -466,17 +449,6 @@
                                                 </small>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Default Discount</label>
-                                                <input type="number" class="form-control" x-model="form.default_discount" step="0.01" min="0" placeholder="0.00">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Discount Type</label>
-                                                <select x-select class="form-select" x-model="form.default_discount_type">
-                                                    <option value="percent">Percent (%)</option>
-                                                    <option value="flat">Flat (₹)</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
                                                 <label class="form-label fw-medium text-muted small">Tax Rate <span class="text-danger">*</span></label>
                                                 <select x-select class="form-select" x-model="form.tax_rate_id" required>
                                                     <option value="">No Tax</option>
@@ -494,34 +466,86 @@
                                                     </template>
                                                 </select>
                                             </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Default Discount</label>
+                                                <input type="number" class="form-control" x-model="form.default_discount" step="0.01" min="0" placeholder="0.00">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Discount Type</label>
+                                                <select x-select class="form-select" x-model="form.default_discount_type">
+                                                    <option value="percent">Percent (%)</option>
+                                                    <option value="flat">Flat (₹)</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Card 3: Descriptions -->
+                                <!-- Card 3: Inventory & Logistics -->
                                 <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-text-left"></i>
+                                            <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-box-seam"></i>
                                             </div>
-                                            <h6 class="card-title mb-0 fw-bold">Detailed Descriptions</h6>
+                                            <h6 class="card-title mb-0 fw-bold">Inventory & Logistics</h6>
                                         </div>
                                         <div class="row g-3">
-                                            <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">Product Description</label>
-                                                <textarea class="form-control" x-model="form.description" rows="3" placeholder="Enter detailed product description..."></textarea>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Default Warehouse</label>
+                                                <select x-select class="form-select" x-model="form.default_warehouse_id">
+                                                    <option value="">No Default</option>
+                                                    <template x-for="warehouse in options.warehouses" :key="warehouse.id">
+                                                        <option :value="String(warehouse.id)" x-text="warehouse.name"></option>
+                                                    </template>
+                                                </select>
                                             </div>
-                                            <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">Application Instructions</label>
-                                                <textarea class="form-control" x-model="form.application_instructions" rows="3" placeholder="Enter instructions for use/application..."></textarea>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Supplier</label>
+                                                <select x-select class="form-select" x-model="form.supplier_id">
+                                                    <option value="">Select Supplier</option>
+                                                    <template x-for="supplier in options.suppliers" :key="supplier.id">
+                                                        <option :value="String(supplier.id)" x-text="supplier.company_name ? supplier.company_name : (supplier.firstname + ' ' + (supplier.lastname || ''))"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-medium text-muted small">Stock Quantity <span class="text-danger">*</span></label>
+                                                <input type="number" class="form-control" x-model="form.stock" min="0" :required="!editingProductId" :disabled="!!editingProductId" placeholder="0">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-medium text-muted small">Min Stock Level</label>
+                                                <input type="number" class="form-control" x-model="form.min_stock_level" min="0" placeholder="0">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-medium text-muted small">Grade</label>
+                                                <select x-select class="form-select" x-model="form.grade">
+                                                    <option value="">No Grade</option>
+                                                    <option value="A">A</option>
+                                                    <option value="B">B</option>
+                                                    <option value="C">C</option>
+                                                    <option value="D">D</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Unit (UOM) <span class="text-danger">*</span></label>
+                                                <select x-select class="form-select" x-model="form.uom_id" required>
+                                                    <option value="">Select Unit</option>
+                                                    <template x-for="uom in options.uoms" :key="uom.id">
+                                                        <option :value="String(uom.id)" x-text="uom.name + (uom.short_name ? ' (' + uom.short_name + ')' : '')"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-medium text-muted small">Weight / Volume <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" x-model="form.weight" required placeholder="e.g. 1kg, 500ml">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Right Column (Media, Inventory, Toggles, Attributes) -->
+                            <!-- Right Column -->
                             <div class="col-lg-4">
                                 <!-- Card 4: Status & Media -->
                                 <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
@@ -561,55 +585,34 @@
                                     </div>
                                 </div>
 
-                                <!-- Card 5: Inventory & Logistics -->
+                                <!-- Card 5: Identifiers -->
                                 <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-box-seam"></i>
+                                            <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-upc-scan"></i>
                                             </div>
-                                            <h6 class="card-title mb-0 fw-bold">Inventory & Logistics</h6>
+                                            <h6 class="card-title mb-0 fw-bold">Identifiers</h6>
                                         </div>
                                         <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Stock Quantity <span class="text-danger">*</span></label>
-                                                <input type="number" class="form-control" x-model="form.stock" min="0" :required="!editingProductId" :disabled="!!editingProductId" placeholder="0">
+                                            <div class="col-12">
+                                                <label class="form-label fw-medium text-muted small">SKU <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" x-model="form.sku" :disabled="!form.is_sku_enabled" :required="form.is_sku_enabled" placeholder="SKU Code">
+                                                    <div class="input-group-text bg-body-secondary border-start-0">
+                                                        <div class="form-check form-switch m-0">
+                                                            <input class="form-check-input" type="checkbox" role="switch" x-model="form.is_sku_enabled" id="skuEnabledToggle">
+                                                            <label class="form-check-label small fw-medium ms-1" for="skuEnabledToggle">Enabled</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Min Stock Level</label>
-                                                <input type="number" class="form-control" x-model="form.min_stock_level" min="0" placeholder="0">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Unit (UOM) <span class="text-danger">*</span></label>
-                                                <select x-select class="form-select" x-model="form.uom_id" required>
-                                                    <option value="">Select Unit</option>
-                                                    <template x-for="uom in options.uoms" :key="uom.id">
-                                                        <option :value="String(uom.id)" x-text="uom.name + (uom.short_name ? ' (' + uom.short_name + ')' : '')"></option>
-                                                    </template>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Warehouse</label>
-                                                <select x-select class="form-select" x-model="form.default_warehouse_id">
-                                                    <option value="">No Default</option>
-                                                    <template x-for="warehouse in options.warehouses" :key="warehouse.id">
-                                                        <option :value="String(warehouse.id)" x-text="warehouse.name"></option>
-                                                    </template>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Weight / Volume <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" x-model="form.weight" required placeholder="e.g. 1kg, 500ml">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Grade</label>
-                                                <select x-select class="form-select" x-model="form.grade">
-                                                    <option value="">No Grade</option>
-                                                    <option value="A">A</option>
-                                                    <option value="B">B</option>
-                                                    <option value="C">C</option>
-                                                    <option value="D">D</option>
-                                                </select>
+                                            <div class="col-12">
+                                                <label class="form-label fw-medium text-muted small">Barcode / UPC</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-body-secondary"><i class="bi bi-upc-scan"></i></span>
+                                                    <input type="text" class="form-control" x-model="form.barcode" placeholder="Scan or enter barcode">
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -619,7 +622,7 @@
                                 <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-purple bg-opacity-10 text-purple rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                                                 <i class="bi bi-sliders"></i>
                                             </div>
                                             <h6 class="card-title mb-0 fw-bold">Tracking Settings</h6>
@@ -661,7 +664,7 @@
                                 <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-teal bg-opacity-10 text-teal rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                                                 <i class="bi bi-tags"></i>
                                             </div>
                                             <h6 class="card-title mb-0 fw-bold">Product Attributes</h6>
@@ -705,7 +708,9 @@
                 <div class="d-flex flex-wrap gap-2 align-items-center">
                     <h5 class="modal-title fw-bold mb-0" x-text="product ? product.name : ''"></h5>
                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" x-text="product ? product.sku : ''"></span>
-                    <span class="badge" :class="product && ['published', 'active'].includes(product.status) ? 'bg-success' : 'bg-warning-subtle text-warning-emphasis'" x-text="product ? product.status : ''"></span>
+                    <span class="badge text-uppercase" :class="product && ['published', 'active'].includes(product.status) ? 'bg-success' : 'bg-warning-subtle text-warning-emphasis'" x-text="product ? product.status : ''"></span>
+                    <span class="badge text-uppercase" :class="product && product.is_active ? 'bg-primary' : 'bg-danger'" x-show="product" x-text="product && product.is_active ? 'ACTIVE' : 'INACTIVE'"></span>
+                    <span x-show="product && product.grade" class="badge border shadow-sm" :class="{'bg-success-subtle text-success-emphasis border-success': product?.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product?.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product?.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(product?.grade)}"><i class="bi bi-star-fill me-1 text-warning"></i>Grade <span x-text="product ? product.grade : ''"></span></span>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -715,7 +720,7 @@
                 <div class="row g-0" style="min-height: 100%;">
                     <!-- Left: Image & Meta (fixed panel) -->
                     <div class="col-md-4 bg-body-tertiary border-end p-3" style="position: sticky; top: 0; height: fit-content; align-self: flex-start;">
-                        <div class="card border border-secondary border-opacity-25 mb-3 rounded-4 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
+                        <div class="card border-0 shadow-sm mb-3 rounded-4 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
                             <img :src="product ? (product.image || '/assets/images/product-placeholder.svg') : ''" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                             <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm" x-show="product && product.default_discount > 0" x-text="product ? product.default_discount + (product.default_discount_type === 'percent' ? '%' : '') + ' OFF' : ''"></span>
                         </div>
@@ -723,7 +728,9 @@
                             <div class="d-flex flex-wrap gap-2 mb-3">
                                 <span x-show="product && (product.category_label || product.category)" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-2 px-3"><i class="bi bi-tag-fill me-1"></i><span x-text="product ? (product.category_label || product.category) : ''"></span></span>
                                 <span x-show="product && product.brand" class="badge bg-secondary-subtle text-secondary-emphasis border py-2 px-3"><i class="bi bi-award-fill me-1"></i><span x-text="product ? product.brand : ''"></span></span>
+                                @if(auth()->user()?->hasRole('Super Admin'))
                                 <span x-show="product && product.supplier" class="badge bg-info-subtle text-info-emphasis border border-info border-opacity-25 py-2 px-3"><i class="bi bi-truck me-1"></i><span x-text="product ? product.supplier : ''"></span></span>
+                                @endif
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-sm table-borderless small mb-0 text-muted">
@@ -731,8 +738,8 @@
                                         <tr x-show="product && product.barcode"><th class="ps-0" style="width:100px;">Barcode</th><td x-text="product ? product.barcode : ''"></td></tr>
                                         <tr x-show="product && product.weight"><th class="ps-0">Weight</th><td x-text="product ? product.weight : ''"></td></tr>
                                         <tr x-show="product && product.uom"><th class="ps-0">UOM</th><td x-text="product ? product.uom : ''"></td></tr>
-                                        <tr x-show="product && product.grade"><th class="ps-0">Grade</th><td x-text="product ? product.grade : ''"></td></tr>
                                         <tr x-show="product && product.warehouse"><th class="ps-0">Warehouse</th><td x-text="product ? product.warehouse : ''"></td></tr>
+                                        <tr x-show="product && product.slug"><th class="ps-0">URL Slug</th><td x-text="product ? product.slug : ''"></td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -743,18 +750,19 @@
                     <div class="col-md-8 p-3">
 
                         <!-- Pricing Card -->
-                        <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                        <div class="card mb-3 border-0 shadow-sm bg-body-tertiary">
                             <div class="card-body p-3">
                                 <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
                                     <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
                                     <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Pricing Breakdown</h6>
                                 </div>
                                 <div class="row g-2 mb-2">
-                                    <div class="col-4 border-end border-secondary border-opacity-25">
+                                    <div class="@if(auth()->user()?->hasRole('Super Admin')) col-4 border-end @else col-12 @endif border-secondary border-opacity-25">
                                         <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Selling Price</label>
                                         <div class="fw-black text-primary" style="font-size:18px;" x-text="product ? 'Rs ' + parseFloat(product.selling_price || product.price || 0).toFixed(2) : ''"></div>
                                         <div class="text-muted text-decoration-line-through" style="font-size:10px;" x-show="product && product.mrp > (product.selling_price || product.price)" x-text="product ? 'MRP Rs ' + parseFloat(product.mrp||0).toFixed(2) : ''"></div>
                                     </div>
+                                    @if(auth()->user()?->hasRole('Super Admin'))
                                     <div class="col-4 border-end border-secondary border-opacity-25 ps-3">
                                         <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Purchase Price</label>
                                         <div class="fw-bold text-body-emphasis" style="font-size:14px;" x-text="product ? 'Rs ' + parseFloat(product.purchase_price||0).toFixed(2) : ''"></div>
@@ -763,6 +771,7 @@
                                         <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Profit Margin</label>
                                         <div class="fw-bold text-success" style="font-size:14px;" x-text="product && (product.selling_price || product.price) > 0 && product.purchase_price > 0 ? ((((product.selling_price || product.price) - product.purchase_price) / product.purchase_price) * 100).toFixed(1) + '%' : 'N/A'"></div>
                                     </div>
+                                    @endif
                                 </div>
                                 <div class="row g-2 pt-2 border-top border-secondary border-opacity-25">
                                     <div class="col-6 border-end border-secondary border-opacity-25">
@@ -780,7 +789,7 @@
                         <!-- Inventory & Specs Row -->
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <div class="card h-100 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card h-100 border-0 shadow-sm bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-box-seam-fill" style="font-size:12px;"></i></div>
@@ -798,17 +807,19 @@
                                             <div class="col-4 border-start border-end border-secondary border-opacity-25"><div class="fw-semibold text-warning" style="font-size:13px;" x-text="product ? ((product.reserved_qty || 0) + (product.pending_qty || 0)) : 0"></div><div class="text-muted" style="font-size:9px;">Reserved</div></div>
                                             <div class="col-4"><div class="fw-semibold text-danger" style="font-size:13px;" x-text="product ? (product.min_stock_level || 0) : 0"></div><div class="text-muted" style="font-size:9px;">Min Level</div></div>
                                         </div>
-                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Tracking</label>
+                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Tracking & Config</label>
                                         <div class="list-group list-group-flush border border-secondary border-opacity-25 rounded-3">
-                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-box me-1"></i>Batch</span><span class="badge" style="font-size:9px;" :class="product && product.batch_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.batch_tracking ? 'ON' : 'OFF'"></span></div>
-                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-calendar-x me-1"></i>Expiry</span><span class="badge" style="font-size:9px;" :class="product && product.expiry_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.expiry_tracking ? 'ON' : 'OFF'"></span></div>
-                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span><span class="badge" style="font-size:9px;" :class="product && product.allow_overselling ? 'bg-success' : 'bg-secondary'" x-text="product && product.allow_overselling ? 'ON' + (product.overselling_qty ? ' (Limit ' + product.overselling_qty + ')' : '') : 'OFF'"></span></div>
+                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-box-seam me-1"></i>Manage Stock</span><span class="badge" style="font-size:9px;" :class="product && product.manage_stock ? 'bg-success' : 'bg-secondary'" x-text="product && product.manage_stock ? 'YES' : 'NO'"></span></div>
+                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-layers me-1"></i>Batch Tracking</span><span class="badge" style="font-size:9px;" :class="product && product.batch_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.batch_tracking ? 'ON' : 'OFF'"></span></div>
+                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-calendar-x me-1"></i>Expiry Tracking</span><span class="badge" style="font-size:9px;" :class="product && product.expiry_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.expiry_tracking ? 'ON' : 'OFF'"></span></div>
+                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-arrow-down-up me-1"></i>Overselling</span><span class="badge" style="font-size:9px;" :class="product && product.allow_overselling ? 'bg-success' : 'bg-secondary'" x-text="product && product.allow_overselling ? 'ON' + (product && product.overselling_qty > 0 ? ' (Limit ' + product.overselling_qty + ')' : '') : 'OFF'"></span></div>
+                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-upc-scan me-1"></i>SKU Enabled</span><span class="badge" style="font-size:9px;" :class="product && product.is_sku_enabled ? 'bg-success' : 'bg-secondary'" x-text="product && product.is_sku_enabled ? 'YES' : 'NO'"></span></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="card h-100 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card h-100 border-0 shadow-sm bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-info bg-opacity-10 text-info rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-list-stars" style="font-size:12px;"></i></div>
@@ -834,7 +845,7 @@
                         </div>
 
                         <!-- Details & Usage -->
-                        <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                        <div class="card mb-3 border-0 shadow-sm bg-body-tertiary">
                             <div class="card-body p-3">
                                 <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
                                     <div class="bg-secondary bg-opacity-10 text-secondary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-file-text-fill" style="font-size:12px;"></i></div>
@@ -855,6 +866,78 @@
                             </div>
                         </div>
 
+                        <!-- Extended Related Details -->
+                        <div class="row g-3">
+                            <!-- Supplier & Brand Details -->
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm bg-body-tertiary">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-building" style="font-size:12px;"></i></div>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Supplier & Brand Details</h6>
+                                        </div>
+                                        @if(auth()->user()?->hasRole('Super Admin'))
+                                        <div class="mb-3" x-show="product && product.supplier_data">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Supplier Info</label>
+                                            <table class="table table-sm table-borderless small mb-0 text-muted" style="font-size: 11px;">
+                                                <tbody>
+                                                    <tr x-show="product?.supplier_data?.company_name"><th class="ps-0" style="width:90px;">Company</th><td x-text="product.supplier_data.company_name"></td></tr>
+                                                    <tr x-show="product?.supplier_data?.email"><th class="ps-0">Email</th><td x-text="product.supplier_data.email"></td></tr>
+                                                    <tr x-show="product?.supplier_data?.phone"><th class="ps-0">Phone</th><td x-text="product.supplier_data.phone"></td></tr>
+                                                    <tr x-show="product?.supplier_data?.gst_no"><th class="ps-0">GST No</th><td x-text="product.supplier_data.gst_no"></td></tr>
+                                                    <tr x-show="product?.supplier_data?.city"><th class="ps-0">Location</th><td x-text="(product.supplier_data.city || '') + (product.supplier_data.state ? ', ' + product.supplier_data.state : '')"></td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        @endif
+                                        <div x-show="product && product.brand_data">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block @if(auth()->user()?->hasRole('Super Admin')) border-top pt-2 @endif" style="font-size:9px;">Brand Info</label>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <img x-show="product?.brand_data?.logo" :src="product.brand_data.logo" style="width:32px;height:32px;object-fit:cover;" class="rounded-circle border">
+                                                <div>
+                                                    <div class="fw-semibold text-body" style="font-size:12px;" x-text="product.brand_data.name"></div>
+                                                    <div class="text-muted" style="font-size:10px;">Status: <span class="text-uppercase" x-text="product.brand_data.status"></span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Category & Warehouse Details -->
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm bg-body-tertiary">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
+                                            <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-geo-alt" style="font-size:12px;"></i></div>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Hierarchy & Logistics</h6>
+                                        </div>
+                                        <div class="mb-3" x-show="product && product.category_data">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Category Hierarchy</label>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-folder2-open text-muted"></i>
+                                                <div style="font-size:12px;">
+                                                    <span x-show="product.category_data.parent" x-text="product.category_data.parent?.name + ' > '"></span>
+                                                    <span class="fw-semibold text-body" x-text="product.category_data.name"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div x-show="product && product.warehouse_data">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block border-top pt-2" style="font-size:9px;">Default Warehouse Info</label>
+                                            <table class="table table-sm table-borderless small mb-0 text-muted" style="font-size: 11px;">
+                                                <tbody>
+                                                    <tr x-show="product?.warehouse_data?.name"><th class="ps-0" style="width:90px;">Name</th><td class="fw-semibold text-body" x-text="product.warehouse_data.name"></td></tr>
+                                                    <tr x-show="product?.warehouse_data?.code"><th class="ps-0">Code</th><td x-text="product.warehouse_data.code"></td></tr>
+                                                    <tr x-show="product?.warehouse_data?.phone"><th class="ps-0">Phone</th><td x-text="product.warehouse_data.phone"></td></tr>
+                                                    <tr x-show="product?.warehouse_data?.city"><th class="ps-0">Location</th><td x-text="(product.warehouse_data.city || '') + (product.warehouse_data.state ? ', ' + product.warehouse_data.state : '')"></td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                     <!-- end col-md-8 -->
                 </div>
@@ -864,7 +947,7 @@
 
             <!-- Footer -->
             <div class="modal-footer bg-body-tertiary border-top p-3 d-flex justify-content-end align-items-center">
-                <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-secondary fw-medium" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -883,10 +966,30 @@
                         <input id="productImportFile" type="file" class="form-control" accept=".csv">
                         <div class="form-text">Upload a CSV file with columns: name, sku, category_id or category, brand_id, uom_id, tax_rate_id, hsn_code_id, purchase_price, mrp, selling_price, stock, status</div>
                     </div>
-                    <div class="alert alert-info">
+                    <div class="mb-3">
+                        <label class="form-label d-block">Import Mode</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="importMode" id="modeOverwrite" value="overwrite" x-model="table.importMode">
+                            <label class="form-check-label" for="modeOverwrite">Overwrite Stock</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="importMode" id="modeIncrement" value="increment" x-model="table.importMode">
+                            <label class="form-check-label" for="modeIncrement">Increment Stock</label>
+                        </div>
+                        <div class="form-text">Choose whether to replace existing stock quantities or add to them.</div>
+                    </div>
+                    <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle me-2"></i>
                         <strong>CSV Format:</strong> name, sku, category_id/category, purchase_price, mrp, selling_price, stock, status<br>
                         <small>Example: iPhone 14, IPHONE14-128, 1, 650, 799.99, 50, published</small>
+                    </div>
+                    <div class="alert alert-danger" x-show="table.importErrors.length > 0">
+                        <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Import Errors</div>
+                        <ul class="mb-0 small ps-3">
+                            <template x-for="(error, index) in table.importErrors" :key="index">
+                                <li x-text="error"></li>
+                            </template>
+                        </ul>
                     </div>
                 </div>
                 <div class="modal-footer">

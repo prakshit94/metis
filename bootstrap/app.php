@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
         ]);
 
+        if (env('APP_ENV') === 'testing' || (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'testing')) {
+            $middleware->validateCsrfTokens(except: ['*']);
+        }
+
         // Alias Spatie's middleware for convenient use in route definitions
         $middleware->alias([
             'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
