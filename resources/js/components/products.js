@@ -80,6 +80,83 @@ function formatDate(value) {
   return value ? new Date(value).toLocaleDateString() : 'N/A';
 }
 
+
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const id = 'toast-' + Date.now();
+  const iconMap = {
+    success: 'bi-check-circle-fill',
+    danger: 'bi-x-circle-fill',
+    warning: 'bi-exclamation-triangle-fill',
+    info: 'bi-info-circle-fill',
+  };
+
+  const el = document.createElement('div');
+  el.id = id;
+  el.className = `toast align-items-center text-bg-${type} border-0 show mb-2`;
+  el.setAttribute('role', 'alert');
+  el.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="bi ${iconMap[type] ?? 'bi-info-circle-fill'} me-2"></i><span></span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>`;
+  el.querySelector('.toast-body span').textContent = message;
+
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+async function apiFetch(url, options = {}) {
+  const { headers, ...otherOptions } = options;
+  const fetchHeaders = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'X-CSRF-TOKEN': getCsrfToken(),
+    ...(headers || {}),
+  };
+
+  if (otherOptions.body instanceof FormData) {
+    delete fetchHeaders['Content-Type'];
+  }
+
+  const res = await fetch(url, {
+    headers: fetchHeaders,
+    ...otherOptions,
+  });
+
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : {};
+
+  if (!res.ok) {
+    const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
+    const message = validation || data?.message || data?.error || 'Request failed';
+    if (res.status === 403 || (typeof message === 'string' && (message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")))) { window.location.href = "/"; return; }
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it' }) {
+  const result = await Swal.fire({
+    title,
+    text,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText,
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#dc3545',
+    reverseButtons: true,
+    focusCancel: true,
+  });
+
+  return result.isConfirmed;
+}
+
 document.addEventListener('alpine:init', () => {
   Alpine.data('productTable', () => ({
     products: [],
@@ -111,6 +188,7 @@ document.addEventListener('alpine:init', () => {
     apiBase: '/api/products',
     charts: {},
     _resizeHandler: null,
+    _themeObserver: null,
     chartsInitialized: false,
 
     // Statistics
@@ -137,50 +215,30 @@ document.addEventListener('alpine:init', () => {
         this.initResizeHandler();
       }, 500);
 
+      this._themeObserver = new MutationObserver(() => {
+        this.$nextTick(() => {
+          this.clearExistingCharts();
+          this.initCharts();
+        });
+      });
+      this._themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-bs-theme'],
+      });
+
       const onHide = () => this.destroy();
       window.addEventListener('pagehide', onHide, { once: true });
     },
 
-    async apiRequest(url, options = {}) {
-      const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
-      const { headers, ...otherOptions } = options;
-      const response = await fetch(url, {
-        headers: {
-          'X-CSRF-TOKEN': getCsrfToken(),
-          'X-Requested-With': 'XMLHttpRequest',
-          'Accept': 'application/json',
-          ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
-          ...(headers || {}),
-        },
-        ...otherOptions,
-      });
-
-      if (!response.ok) {
-        let message = 'Request failed.';
-        if (response.status === 419) {
-          message = 'Your session has expired. Please refresh the page and try again.';
-        } else {
-          try {
-            const payload = await response.json();
-            message = payload.message || payload.error || message;
-          } catch (error) {
-            message = response.statusText || message;
-          }
-        }
-        if (message === 'unknown status' || !message) {
-          message = 'A server error occurred (Status: ' + response.status + ').';
-        }
-        if (response.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
-    throw new Error(message);
-      }
-
-      return response;
-    },
 
     destroy() {
       if (this._resizeHandler) {
         window.removeEventListener('resize', this._resizeHandler);
         this._resizeHandler = null;
+      }
+      if (this._themeObserver) {
+        this._themeObserver.disconnect();
+        this._themeObserver = null;
       }
       this.clearExistingCharts();
     },
@@ -223,8 +281,7 @@ document.addEventListener('alpine:init', () => {
       this.isLoading = true;
 
       try {
-        const response = await this.apiRequest(this.apiBase);
-        const payload = await response.json();
+        const payload = await apiFetch(this.apiBase);
         this.products = Array.isArray(payload.data) ? payload.data : [];
 
         if (payload.stats) {
@@ -246,7 +303,7 @@ document.addEventListener('alpine:init', () => {
       } catch (error) {
         console.error('Failed to load products from API:', error);
         this.loadSampleData();
-        this.showNotification('Loaded fallback product samples.', 'warning');
+        showToast('Loaded fallback product samples.', 'warning');
       } finally {
         this.isLoading = false;
       }
@@ -477,7 +534,7 @@ document.addEventListener('alpine:init', () => {
       }
 
       if (action === 'disable_sku') {
-        this.apiRequest(`${this.apiBase}/bulk-disable-sku`, {
+        apiFetch(`${this.apiBase}/bulk-disable-sku`, {
           method: 'POST',
           body: JSON.stringify({ ids: this.selectedProducts }),
         })
@@ -486,14 +543,14 @@ document.addEventListener('alpine:init', () => {
             this.filterProducts();
             this.calculateStats();
             this.selectedProducts = [];
-            this.showNotification('SKUs disabled successfully!', 'success');
+            showToast('SKUs disabled successfully!', 'success');
           })
-          .catch((error) => this.showNotification(error.message || 'Failed to disable SKUs.', 'danger'));
+          .catch((error) => showToast(error.message || 'Failed to disable SKUs.', 'danger'));
         return;
       }
 
       const status = action === 'publish' ? 'published' : 'draft';
-      this.apiRequest(`${this.apiBase}/bulk-status`, {
+      apiFetch(`${this.apiBase}/bulk-status`, {
         method: 'POST',
         body: JSON.stringify({
           ids: this.selectedProducts,
@@ -505,40 +562,28 @@ document.addEventListener('alpine:init', () => {
           this.filterProducts();
           this.calculateStats();
           this.selectedProducts = [];
-          this.showNotification('Products updated successfully!', 'success');
+          showToast('Products updated successfully!', 'success');
         })
-        .catch((error) => this.showNotification(error.message || 'Failed to update products.', 'danger'));
+        .catch((error) => showToast(error.message || 'Failed to update products.', 'danger'));
     },
 
-    deleteProductsByIds(productIds) {
+    async deleteProductsByIds(productIds) {
       const ids = [...new Set(productIds)];
       if (ids.length === 0) return;
 
-      if (typeof Swal !== 'undefined') {
-        Swal.fire({
-          title: 'Are you sure?',
-          text: `You are about to delete ${ids.length} product(s). This action can be undone from trash.`,
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#dc3545',
-          cancelButtonColor: '#6c757d',
-          confirmButtonText: 'Yes, delete!',
-          cancelButtonText: 'Cancel'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            this.executeDelete(ids);
-          }
-        });
-      } else {
-        const confirmed = window.confirm(`Are you sure you want to delete ${ids.length} product(s)?`);
-        if (confirmed) {
-          this.executeDelete(ids);
-        }
+      const confirmed = await confirmDelete({
+        title: 'Are you sure?',
+        text: `You are about to delete ${ids.length} product(s). This action can be undone from trash.`,
+        confirmButtonText: 'Yes, delete!',
+      });
+      
+      if (confirmed) {
+        this.executeDelete(ids);
       }
     },
 
     executeDelete(ids) {
-      this.apiRequest(`${this.apiBase}/bulk-delete`, {
+      apiFetch(`${this.apiBase}/bulk-delete`, {
         method: 'POST',
         body: JSON.stringify({ ids }),
       })
@@ -547,22 +592,22 @@ document.addEventListener('alpine:init', () => {
           this.filterProducts();
           this.calculateStats();
           this.selectedProducts = this.selectedProducts.filter(id => !ids.includes(id));
-          this.showNotification('Products deleted successfully!', 'success');
+          showToast('Products deleted successfully!', 'success');
         })
-        .catch((error) => this.showNotification(error.message || 'Failed to delete products.', 'danger'));
+        .catch((error) => showToast(error.message || 'Failed to delete products.', 'danger'));
     },
 
     duplicateProduct(product) {
-      this.apiRequest(`${this.apiBase}/${product.id}/duplicate`, {
+      apiFetch(`${this.apiBase}/${product.id}/duplicate`, {
         method: 'POST',
       })
         .then(async () => {
           await this.loadProductsFromApi();
           this.filterProducts();
           this.calculateStats();
-          this.showNotification('Product duplicated successfully!', 'success');
+          showToast('Product duplicated successfully!', 'success');
         })
-        .catch((error) => this.showNotification(error.message || 'Failed to duplicate product.', 'danger'));
+        .catch((error) => showToast(error.message || 'Failed to duplicate product.', 'danger'));
     },
 
     deleteProduct(product) {
@@ -586,14 +631,14 @@ document.addEventListener('alpine:init', () => {
 
       downloadBlob('products.csv', csvContent, 'text/csv;charset=utf-8');
       
-      this.showNotification('Products exported successfully!', 'success');
+      showToast('Products exported successfully!', 'success');
     },
 
     async importProducts() {
       const fileInput = document.getElementById('productImportFile');
       const file = fileInput?.files?.[0];
       if (!file) {
-        this.showNotification('Choose a CSV file to import first.', 'warning');
+        showToast('Choose a CSV file to import first.', 'warning');
         return;
       }
 
@@ -605,12 +650,10 @@ document.addEventListener('alpine:init', () => {
         formData.append('file', file);
         formData.append('import_mode', this.importMode);
 
-        const response = await this.apiRequest(`${this.apiBase}/import`, {
+        const resData = await apiFetch(`${this.apiBase}/import`, {
           method: 'POST',
           body: formData,
-          headers: {},
         });
-        const resData = await response.json();
 
         await this.loadProductsFromApi();
         this.filterProducts();
@@ -619,35 +662,19 @@ document.addEventListener('alpine:init', () => {
         
         if (resData.errors && resData.errors.length > 0) {
           this.importErrors = resData.errors;
-          this.showNotification(`Imported ${resData.imported || 0} products, but encountered errors.`, 'warning');
+          showToast(`Imported ${resData.imported || 0} products, but encountered errors.`, 'warning');
         } else {
           fileInput.value = '';
           getModal('#importModal')?.hide();
-          this.showNotification(resData.message || 'Products imported successfully.', 'success');
+          showToast(resData.message || 'Products imported successfully.', 'success');
         }
       } catch (error) {
-        this.showNotification(error.message || 'Failed to import products.', 'danger');
+        showToast(error.message || 'Failed to import products.', 'danger');
       } finally {
         this.importing = false;
       }
     },
 
-    showNotification(message, type = 'info') {
-      // Integration with SweetAlert2 or browser notification
-      if (typeof Swal !== 'undefined') {
-        const icon = type === 'danger' ? 'error' : type;
-        Swal.fire({
-          title: message,
-          icon,
-          toast: true,
-          position: 'top-end',
-          showConfirmButton: false,
-          timer: 3000
-        });
-      } else {
-        alert(message);
-      }
-    },
 
     initCharts() {
       // Prevent multiple chart initializations
@@ -960,7 +987,7 @@ document.addEventListener('alpine:init', () => {
           this.form.stock === '' || !this.form.status || 
           !this.form.tax_rate_id || !this.form.hsn_code_id || 
           !this.form.uom_id || !this.form.weight) {
-        table.showNotification('Please fill in all required fields (Name, SKU, Category, Purchase Price, Selling Price, Stock, Status, Tax Rate, HSN Code, UOM, Weight/Volume).', 'warning');
+        showToast('Please fill in all required fields (Name, SKU, Category, Purchase Price, Selling Price, Stock, Status, Tax Rate, HSN Code, UOM, Weight/Volume).', 'warning');
         return;
       }
 
@@ -1008,7 +1035,7 @@ document.addEventListener('alpine:init', () => {
 
       if (this.form.imageFile instanceof File) {
         if (this.form.imageFile.size > 5 * 1024 * 1024) {
-          table.showNotification('Selected image is too large. Maximum size allowed is 5MB.', 'warning');
+          showToast('Selected image is too large. Maximum size allowed is 5MB.', 'warning');
           return;
         }
         formData.append('image', this.form.imageFile);
@@ -1017,19 +1044,19 @@ document.addEventListener('alpine:init', () => {
       try {
         if (this.editingProductId !== null) {
           formData.append('_method', 'PATCH');
-          await table.apiRequest(`${table.apiBase}/${this.editingProductId}`, {
+          await apiFetch(`${table.apiBase}/${this.editingProductId}`, {
             method: 'POST',
             body: formData,
             headers: {},
           });
-          table.showNotification(`Updated ${String(this.form.name).trim()} successfully.`, 'success');
+          showToast(`Updated ${String(this.form.name).trim()} successfully.`, 'success');
         } else {
-          await table.apiRequest(table.apiBase, {
+          await apiFetch(table.apiBase, {
             method: 'POST',
             body: formData,
             headers: {},
           });
-          table.showNotification(`Created ${String(this.form.name).trim()} successfully.`, 'success');
+          showToast(`Created ${String(this.form.name).trim()} successfully.`, 'success');
         }
 
         await table.loadProductsFromApi();
@@ -1038,7 +1065,7 @@ document.addEventListener('alpine:init', () => {
         this.resetForm();
         getModal('#productModal')?.hide();
       } catch (error) {
-        table.showNotification(error.message || 'Failed to save product.', 'danger');
+        showToast(error.message || 'Failed to save product.', 'danger');
       }
     }
   }));
