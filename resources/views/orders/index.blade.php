@@ -66,7 +66,7 @@
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
-                    <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
+                    <div class="stats-icon text-bg-primary-subtle text-primary-emphasis me-3">
                         <i class="bi bi-bag-check"></i>
                     </div>
                     <div>
@@ -83,7 +83,7 @@
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
-                    <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
+                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis me-3">
                         <i class="bi bi-clock"></i>
                     </div>
                     <div>
@@ -101,7 +101,7 @@
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
-                    <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
+                    <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis me-3">
                         <i class="bi bi-gear"></i>
                     </div>
                     <div>
@@ -119,7 +119,7 @@
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
-                    <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
+                    <div class="stats-icon text-bg-info-subtle text-info-emphasis me-3">
                         <i class="bi bi-truck"></i>
                     </div>
                     <div>
@@ -137,7 +137,7 @@
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
-                    <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
+                    <div class="stats-icon text-bg-success-subtle text-success-emphasis me-3">
                         <i class="bi bi-currency-rupee"></i>
                     </div>
                     <div>
@@ -228,7 +228,7 @@
                             <div class="col-lg-3 col-md-12 border-end border-secondary-subtle pe-lg-4 mb-4 mb-lg-0 pb-4 pb-lg-0">
                                 <h3 class="h5 fw-bold mb-3 text-body-emphasis" x-text="wh.name"></h3>
                                 <div class="d-flex align-items-center gap-3 mb-4">
-                                    <div class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle py-2 px-3 fs-6 rounded-pill" x-text="`${wh.total} Orders`"></div>
+                                    <div class="badge text-bg-primary-subtle text-primary-emphasis-subtle py-2 px-3 fs-6 rounded-pill" x-text="`${wh.total} Orders`"></div>
                                 </div>
                                 <div class="p-3 bg-light bg-opacity-50 rounded-4 border border-secondary-subtle mb-3 shadow-sm">
                                     <span class="d-block text-muted small fw-medium mb-1 text-uppercase tracking-wider">Total Value</span>
@@ -376,7 +376,7 @@
                             <template x-if="statusFilter.length > 0">
                                 <div class="d-flex flex-wrap align-items-center gap-1 w-100" style="padding-right: 15px;">
                                     <template x-for="status in statusFilter.slice(0, 1)" :key="status">
-                                        <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                                        <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
                                             <span x-text="status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')" style="font-size: 11px;"></span>
                                             <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('status', status)" style="font-size: 13px;"></i>
                                         </div>
@@ -500,7 +500,7 @@
                     </label>
                     <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showStateDropdown = true; $refs.stateSearch.focus()">
                         <template x-for="state in stateFilter" :key="state">
-                            <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                            <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
                                 <span x-text="state" style="font-size: 11px;"></span>
                                 <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('state', state)" style="font-size: 13px;"></i>
                             </div>
@@ -530,7 +530,7 @@
                     </label>
                     <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showDistrictDropdown = true; $refs.districtSearch.focus()">
                         <template x-for="district in districtFilter" :key="district">
-                            <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                            <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
                                 <span x-text="district" style="font-size: 11px;"></span>
                                 <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('district', district)" style="font-size: 13px;"></i>
                             </div>
@@ -560,7 +560,7 @@
                     </label>
                     <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showTalukaDropdown = true; $refs.talukaSearch.focus()">
                         <template x-for="taluka in talukaFilter" :key="taluka">
-                            <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                            <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
                                 <span x-text="taluka" style="font-size: 11px;"></span>
                                 <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('taluka', taluka)" style="font-size: 13px;"></i>
                             </div>
@@ -590,7 +590,7 @@
                     </label>
                     <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showVillageDropdown = true; $refs.villageSearch.focus()">
                         <template x-for="village in villageFilter" :key="village">
-                            <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                            <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
                                 <span x-text="village" style="font-size: 11px;"></span>
                                 <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('village', village)" style="font-size: 13px;"></i>
                             </div>
@@ -632,7 +632,7 @@
                     <span class="fw-medium text-primary">
                         <strong x-text="selectedOrders.length"></strong> order(s) selected
                     </span>
-                    <span class="badge bg-primary bg-opacity-25 text-primary small d-none d-md-inline"
+                    <span class="badge text-bg-primary-subtle text-primary-emphasis small d-none d-md-inline"
                           x-text="'Next: ' + [
                             bulkAvailableActions.canConfirm ? 'Confirm' : null,
                             bulkAvailableActions.canProcess ? 'Process' : null,
@@ -794,7 +794,7 @@
                                 <div class="d-flex align-items-center flex-wrap gap-1 mt-1">
                                     <small class="text-muted" x-text="'ID: ' + order.id"></small>
                                     <template x-if="order.warehouse">
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle ms-1" style="font-size: 0.65rem;" title="Fulfillment Warehouse">
+                                        <span class="badge text-bg-secondary-subtle text-secondary-emphasis-subtle ms-1" style="font-size: 0.65rem;" title="Fulfillment Warehouse">
                                             <i class="bi bi-building me-1"></i><span x-text="order.warehouse.name"></span>
                                         </span>
                                     </template>
@@ -1035,7 +1035,7 @@
                                             <i class="bi bi-calendar3"></i> <span x-text="selectedOrder.orderDate ? new Date(selectedOrder.orderDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'"></span>
                                         </p>
                                         <template x-if="selectedOrder.warehouse">
-                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle" title="Fulfillment Warehouse">
+                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis-subtle" title="Fulfillment Warehouse">
                                                 <i class="bi bi-building me-1"></i><span x-text="selectedOrder.warehouse.name"></span>
                                             </span>
                                         </template>
@@ -1063,7 +1063,7 @@
                                     <div class="col-sm-4">
                                         <div class="card h-100 border-0 shadow-sm rounded-4">
                                             <div class="card-body p-3 d-flex align-items-center gap-3">
-                                                <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3"><i class="bi bi-credit-card fs-5"></i></div>
+                                                <div class="text-bg-primary-subtle text-primary-emphasis p-2 rounded-3"><i class="bi bi-credit-card fs-5"></i></div>
                                                 <div>
                                                     <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Payment</p>
                                                     <p class="fw-bold mb-0 text-body-emphasis" x-text="selectedOrder.paymentMethod || 'N/A'"></p>
@@ -1074,7 +1074,7 @@
                                     <div class="col-sm-4">
                                         <div class="card h-100 border-0 shadow-sm rounded-4">
                                             <div class="card-body p-3 d-flex align-items-center gap-3">
-                                                <div class="bg-success bg-opacity-10 text-success p-2 rounded-3"><i class="bi bi-tag fs-5"></i></div>
+                                                <div class="text-bg-success-subtle text-success-emphasis p-2 rounded-3"><i class="bi bi-tag fs-5"></i></div>
                                                 <div>
                                                     <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Order Type</p>
                                                     <p class="fw-bold mb-0 text-body-emphasis text-capitalize" x-text="selectedOrder.type || 'Sale'"></p>
@@ -1085,7 +1085,7 @@
                                     <div class="col-sm-4">
                                         <div class="card h-100 border-0 shadow-sm rounded-4">
                                             <div class="card-body p-3 d-flex align-items-center gap-3">
-                                                <div class="bg-info bg-opacity-10 text-info p-2 rounded-3"><i class="bi bi-person-badge fs-5"></i></div>
+                                                <div class="text-bg-info-subtle text-info-emphasis p-2 rounded-3"><i class="bi bi-person-badge fs-5"></i></div>
                                                 <div>
                                                     <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Created By</p>
                                                     <p class="fw-bold mb-0 text-body-emphasis" x-text="selectedOrder.createdBy.name"></p>
@@ -1149,7 +1149,7 @@
                                         <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                                             <i class="bi bi-box-seam text-primary fs-5"></i> Order Items
                                         </h6>
-                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3" x-text="`${selectedOrder.itemCount} Items`"></span>
+                                        <span class="badge text-bg-primary-subtle text-primary-emphasis rounded-pill px-3" x-text="`${selectedOrder.itemCount} Items`"></span>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-borderless table-hover align-middle mb-0 text-nowrap">
@@ -1352,7 +1352,7 @@
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <span class="badge bg-secondary bg-opacity-10 text-body-emphasis rounded-pill fw-medium px-2 py-1"><i class="bi bi-telephone-fill me-1"></i> <span x-text="selectedOrder.warehouse ? selectedOrder.warehouse.phone : 'N/A'"></span></span>
                                                 <template x-if="selectedOrder.warehouse && selectedOrder.warehouse.gstin && selectedOrder.warehouse.gstin !== 'N/A'">
-                                                    <span class="badge bg-info bg-opacity-10 text-info rounded-pill fw-medium px-2 py-1"><i class="bi bi-receipt me-1"></i> <span x-text="selectedOrder.warehouse.gstin"></span></span>
+                                                    <span class="badge text-bg-info-subtle text-info-emphasis rounded-pill fw-medium px-2 py-1"><i class="bi bi-receipt me-1"></i> <span x-text="selectedOrder.warehouse.gstin"></span></span>
                                                 </template>
                                             </div>
                                         </div>
@@ -1371,7 +1371,7 @@
                                                     <p class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.65rem;">Tracking Number</p>
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <p class="fw-bold text-body-emphasis font-monospace mb-0 fs-6" x-text="selectedOrder.shipment.trackingNo"></p>
-                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill" x-text="selectedOrder.shipment.carrier"></span>
+                                                        <span class="badge text-bg-info-subtle text-info-emphasis border-opacity-25 rounded-pill" x-text="selectedOrder.shipment.carrier"></span>
                                                     </div>
                                                 </div>
                                             </template>
@@ -1386,7 +1386,7 @@
                                                                 <p class="small text-muted mb-0" x-show="selectedOrder.assignedService.code" x-text="`Code: ${selectedOrder.assignedService.code}`"></p>
                                                                 <p class="small text-secondary mb-0 mt-1" x-show="selectedOrder.assignedService.description" x-text="selectedOrder.assignedService.description"></p>
                                                             </div>
-                                                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill" x-text="`Priority ${selectedOrder.assignedService.priority}`"></span>
+                                                            <span class="badge text-bg-primary-subtle text-primary-emphasis rounded-pill" x-text="`Priority ${selectedOrder.assignedService.priority}`"></span>
                                                         </div>
                                                         <div class="mt-2 pt-2 border-top" x-show="selectedOrder.assignedService.providers.length">
                                                             <p class="small text-muted mb-1">Mapped service providers</p>
@@ -1620,11 +1620,11 @@
                                     <td class="font-monospace fw-bold" x-text="row.order_no"></td>
                                     <td class="text-truncate" style="max-width: 150px;" x-text="row.customer"></td>
                                     <td>
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary" x-text="row.current_status"></span>
+                                        <span class="badge text-bg-secondary-subtle text-secondary-emphasis" x-text="row.current_status"></span>
                                         <template x-if="row.is_valid">
                                             <span>
                                                 <i class="bi bi-arrow-right mx-1 text-muted"></i>
-                                                <span class="badge bg-primary bg-opacity-10 text-primary" x-text="row.upcoming_status"></span>
+                                                <span class="badge text-bg-primary-subtle text-primary-emphasis" x-text="row.upcoming_status"></span>
                                             </span>
                                         </template>
                                     </td>
@@ -1969,7 +1969,7 @@
                         <!-- Header -->
                         <div class="modal-header border-bottom-0 pb-0 position-relative">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="bg-primary bg-opacity-10 text-primary rounded p-3 d-flex align-items-center justify-content-center">
+                                <div class="text-bg-primary-subtle text-primary-emphasis rounded p-3 d-flex align-items-center justify-content-center">
                                     <i class="bi bi-box-seam fs-4"></i>
                                 </div>
                                 <div>
@@ -2015,7 +2015,7 @@
                                                         <div>
                                                             <h6 class="mb-1 text-body-emphasis" style="font-size: 0.9rem;" x-text="item.name"></h6>
                                                             <div class="d-flex align-items-center gap-2">
-                                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle font-monospace" style="font-size: 0.65rem;" x-text="item.sku"></span>
+                                                                <span class="badge text-bg-secondary-subtle text-secondary-emphasis-subtle font-monospace" style="font-size: 0.65rem;" x-text="item.sku"></span>
                                                                 <template x-if="item.isOutOfStock">
                                                                     <span class="badge bg-danger text-white ms-1" style="font-size: 0.65rem;" x-text="`Out of Stock (Have: ${item.availableStock})`"></span>
                                                                 </template>

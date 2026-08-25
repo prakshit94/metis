@@ -161,8 +161,8 @@
                                             <h5 class="mb-1 fw-bold" x-text="customerDisplayName"></h5>
                                             <div class="small text-muted d-flex align-items-center gap-2">
                                                 <span x-text="customerDetails.party_code"></span>
-                                                <span class="badge bg-success bg-opacity-10 text-success border border-success" x-text="customerDetails.status || 'Active'"></span>
-                                                <span class="badge bg-info bg-opacity-10 text-info border border-info" x-show="customerDetails.kyc_completed">KYC Verified</span>
+                                                <span class="badge text-bg-success-subtle text-success-emphasis" x-text="customerDetails.status || 'Active'"></span>
+                                                <span class="badge text-bg-info-subtle text-info-emphasis" x-show="customerDetails.kyc_completed">KYC Verified</span>
                                             </div>
                                         </div>
                                     </div>
@@ -217,11 +217,11 @@
                                     </div>
                                 </div>
                                 <div class="d-flex flex-column align-items-end gap-2">
-                                    <div x-show="customerDetails.created_at" class="badge bg-primary bg-opacity-10 text-primary border border-primary fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
+                                    <div x-show="customerDetails.created_at" class="badge text-bg-primary-subtle text-primary-emphasis fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
                                         <i class="bi bi-clock-history me-1"></i> Since: <span x-text="new Date(customerDetails.created_at).toLocaleDateString()"></span> 
                                         (<span x-text="customerDetails.created_at ? Math.max(0, Math.floor((new Date() - new Date(customerDetails.created_at)) / 86400000)) : 0"></span> days)
                                     </div>
-                                    <div x-show="customerDetails.updated_at" class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
+                                    <div x-show="customerDetails.updated_at" class="badge text-bg-secondary-subtle text-secondary-emphasis fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
                                         <i class="bi bi-activity me-1"></i> Active: <span x-text="customerDetails.updated_at ? Math.max(0, Math.floor((new Date() - new Date(customerDetails.updated_at)) / 86400000)) : 0"></span> days ago
                                     </div>
                                 </div>
@@ -275,7 +275,7 @@
                                             <div class="mb-2" x-show="customerDetails.crops && customerDetails.crops.length > 0">
                                                 <span class="text-muted d-block small mb-1">Crops</span>
                                                 <div class="d-flex gap-1 flex-wrap">
-                                                    <template x-for="crop in (customerDetails.crops || [])"><span class="badge bg-success bg-opacity-25 text-success-emphasis border border-success border-opacity-50" x-text="crop"></span></template>
+                                                    <template x-for="crop in (customerDetails.crops || [])"><span class="badge text-bg-success-subtle text-success-emphasis-emphasis border border-success border-opacity-50" x-text="crop"></span></template>
                                                 </div>
                                             </div>
                                             <div class="mb-2" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
@@ -287,7 +287,7 @@
                                             <div class="mb-2" x-show="customerDetails.tags && customerDetails.tags.length > 0">
                                                 <span class="text-muted d-block small mb-1">Tags</span>
                                                 <div class="d-flex gap-1 flex-wrap">
-                                                    <template x-for="tag in (customerDetails.tags || [])"><span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis" x-text="tag"></span></template>
+                                                    <template x-for="tag in (customerDetails.tags || [])"><span class="badge text-bg-secondary-subtle text-secondary-emphasis-emphasis" x-text="tag"></span></template>
                                                 </div>
                                             </div>
                                         </div>
@@ -572,7 +572,7 @@
                                             </div>
                                             <div class="d-flex flex-wrap gap-1 mb-3" x-show="getProductPromotions(p).length > 0">
                                                 <div class="position-relative" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
-                                                    <span class="badge border bg-primary bg-opacity-10 text-primary border-primary" style="font-size: 10px; cursor: pointer;">
+                                                    <span class="badge border text-bg-primary-subtle text-primary-emphasis border-primary" style="font-size: 10px; cursor: pointer;">
                                                         <i class="bi bi-tags me-1"></i> View Offers (<span x-text="getProductPromotions(p).length"></span>)
                                                     </span>
                                                     <div x-show="showTooltip" x-transition.opacity class="position-absolute" style="bottom: 100%; z-index: 9999; left: 0; margin-bottom: 8px; width: 280px; cursor: default;" x-cloak>
@@ -643,9 +643,9 @@
                                                     <div style="min-width: 0;">
                                                         <div class="fw-bold text-body text-truncate mb-1 cursor-pointer text-primary-hover" :title="p.name" x-text="p.name" @click="openProductModal(p)"></div>
                                                         <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
-                                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" x-text="p.sku"></span>
+                                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis" x-text="p.sku"></span>
                                                             <span x-show="p.barcode" class="badge bg-body-secondary text-muted border"><i class="bi bi-upc-scan me-1"></i><span x-text="p.barcode"></span></span>
-                                                            <span x-show="p.grade" class="badge bg-info bg-opacity-10 text-info border border-info" x-text="p.grade"></span>
+                                                            <span x-show="p.grade" class="badge text-bg-info-subtle text-info-emphasis" x-text="p.grade"></span>
                                                         </div>
                                                         <div class="small text-muted" style="font-size: 11px;">
                                                             <span x-show="p.category_id">Cat ID: <span class="fw-medium text-body" x-text="p.category_id"></span></span>
@@ -664,7 +664,7 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap gap-1 mt-1" x-show="getProductPromotions(p).length > 0">
                                                     <div class="position-relative" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
-                                                        <span class="badge border bg-primary bg-opacity-10 text-primary border-primary" style="font-size: 10px; cursor: pointer;">
+                                                        <span class="badge border text-bg-primary-subtle text-primary-emphasis border-primary" style="font-size: 10px; cursor: pointer;">
                                                             <i class="bi bi-tags me-1"></i> View Offers (<span x-text="getProductPromotions(p).length"></span>)
                                                         </span>
                                                         <div x-show="showTooltip" x-transition.opacity class="position-absolute" style="bottom: 100%; z-index: 9999; left: 0; margin-bottom: 8px; width: 280px; cursor: default;" x-cloak>
@@ -722,8 +722,8 @@
                                                 </div>
                                                 <div class="small text-muted mb-1" style="font-size: 11px;" x-show="p.min_stock_level > 0">Min Lvl: <span class="fw-medium" x-text="p.min_stock_level"></span></div>
                                                 <div class="d-flex flex-wrap gap-1 mt-1">
-                                                    <span x-show="p.batch_tracking" class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 9px;"><i class="bi bi-box me-1"></i>Batch</span>
-                                                    <span x-show="p.expiry_tracking" class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 9px;"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
+                                                    <span x-show="p.batch_tracking" class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;"><i class="bi bi-box me-1"></i>Batch</span>
+                                                    <span x-show="p.expiry_tracking" class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
                                                 </div>
                                             </td>
                                             <td>
@@ -764,7 +764,7 @@
             {{-- Shopping Cart header --}}
             <div class="row align-items-center gy-3 mb-4 mt-2" x-show="false">
                 <div class="col-sm">
-                    <h4 class="mb-0 fw-black text-body d-flex align-items-center gap-2"><div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-cart3"></i></div> Shopping Cart (<span x-text="cart.length" class="text-primary"></span>)</h4>
+                    <h4 class="mb-0 fw-black text-body d-flex align-items-center gap-2"><div class="text-bg-primary-subtle text-primary-emphasis rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-cart3"></i></div> Shopping Cart (<span x-text="cart.length" class="text-primary"></span>)</h4>
                 </div>
                 <div class="col-sm-auto" x-show="cart.length > 0">
                     <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 shadow-sm hover-shadow" @click="cart = []">
@@ -801,7 +801,7 @@
                                         <div class="d-flex align-items-center gap-2 mb-1">
                                             <h6 class="fw-bold text-truncate mb-0" x-text="item.name"></h6>
                                             <template x-if="item.is_gift">
-                                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.6rem; line-height: 1;"><i class="bi bi-gift-fill me-1"></i>Free</span>
+                                                <span class="badge text-bg-success-subtle text-success-emphasis border-opacity-25 px-2 py-1" style="font-size: 0.6rem; line-height: 1;"><i class="bi bi-gift-fill me-1"></i>Free</span>
                                             </template>
                                         </div>
                                         <div class="font-monospace text-muted" style="font-size: 11px;" x-text="item.sku"></div>
@@ -882,7 +882,7 @@
                                                 <div class="d-flex align-items-center gap-2 mb-1">
                                                     <h6 class="fw-bold text-truncate mb-0" x-text="item.name"></h6>
                                                     <template x-if="item.is_gift">
-                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.6rem; line-height: 1;"><i class="bi bi-gift-fill me-1"></i>Free</span>
+                                                        <span class="badge text-bg-success-subtle text-success-emphasis border-opacity-25 px-2 py-1" style="font-size: 0.6rem; line-height: 1;"><i class="bi bi-gift-fill me-1"></i>Free</span>
                                                     </template>
                                                 </div>
                                                 <div class="font-monospace text-muted text-truncate" style="font-size: 11px;" x-text="item.sku"></div>
@@ -937,7 +937,7 @@
                         <div class="mb-4">
                             <button type="button" class="btn btn-outline-primary w-100 border p-3 d-flex align-items-center justify-content-between shadow-sm bg-body-tertiary" data-bs-toggle="modal" data-bs-target="#promotionsModal">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 40px; height: 40px;">
+                                    <div class="text-bg-primary-subtle text-primary-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 40px; height: 40px;">
                                         <i class="bi bi-tag-fill fs-5"></i>
                                     </div>
                                     <div class="text-start">
@@ -956,7 +956,7 @@
                             <template x-if="bestOrderOffer">
                                 <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-success bg-opacity-25 text-success-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                                        <div class="text-bg-success-subtle text-success-emphasis-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
                                             <i class="bi bi-check-lg fs-5"></i>
                                         </div>
                                         <div>
@@ -974,7 +974,7 @@
                             <template x-if="couponApplied">
                                 <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-success bg-opacity-25 text-success-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                                        <div class="text-bg-success-subtle text-success-emphasis-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
                                             <i class="bi bi-check-lg fs-5"></i>
                                         </div>
                                         <div>
@@ -1002,7 +1002,7 @@
                             <template x-if="bogoDiscount > 0">
                                 <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-25 shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-info bg-opacity-25 text-info-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                                        <div class="text-bg-info-subtle text-info-emphasis-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
                                             <i class="bi bi-lightning-charge-fill fs-5"></i>
                                         </div>
                                         <div>
@@ -1148,7 +1148,7 @@
                         </button>
                         
                         <template x-if="formErrors.length">
-                            <div class="alert alert-danger mt-3 mb-0 p-3 shadow-sm small border-0 bg-danger bg-opacity-10 text-danger-emphasis">
+                            <div class="alert alert-danger mt-3 mb-0 p-3 shadow-sm small border-0 text-bg-danger-subtle text-danger-emphasis-emphasis">
                                 <div class="d-flex align-items-center gap-2 mb-2 fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> Please fix the following errors:</div>
                                 <ul class="mb-0 ps-3">
                                     <template x-for="e in formErrors" :key="e"><li x-text="e"></li></template>
@@ -1277,11 +1277,11 @@
                                                                 </div>
                                                                 
                                                                 <div class="d-flex flex-wrap gap-1 mb-2">
-                                                                    <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-show="order.applied_offer?.name" x-text="'Offer: ' + order.applied_offer?.name"></div>
+                                                                    <div class="badge text-bg-primary-subtle text-primary-emphasis border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-show="order.applied_offer?.name" x-text="'Offer: ' + order.applied_offer?.name"></div>
                                                                     <template x-for="offerName in getAppliedItemOffers(order)" :key="offerName">
-                                                                        <div class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-text="'Item Offer: ' + offerName"></div>
+                                                                        <div class="badge text-bg-info-subtle text-info-emphasis border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-text="'Item Offer: ' + offerName"></div>
                                                                     </template>
-                                                                    <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-show="order.coupon_code" x-text="'Coupon: ' + order.coupon_code"></div>
+                                                                    <div class="badge text-bg-success-subtle text-success-emphasis border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-show="order.coupon_code" x-text="'Coupon: ' + order.coupon_code"></div>
                                                                 </div>
                                                                 
                                                                 <div class="pt-2 border-top border-primary border-opacity-25 d-flex justify-content-between align-items-center mt-auto">
@@ -1320,7 +1320,7 @@
                                                                     </div>
                                                                     <div class="col-12 col-md-2 text-md-center mb-1 mb-md-0">
                                                                         <span class="d-inline-block d-md-none text-muted small me-2 fw-medium">Qty:</span>
-                                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill fw-bold" style="font-size: 0.7rem;" x-text="item.quantity + 'x'"></span>
+                                                                        <span class="badge text-bg-secondary-subtle text-secondary-emphasis border-opacity-25 px-2 py-1 rounded-pill fw-bold" style="font-size: 0.7rem;" x-text="item.quantity + 'x'"></span>
                                                                     </div>
                                                                     <div class="col-12 col-md-2 text-md-end mb-1 mb-md-0">
                                                                         <span class="d-inline-block d-md-none text-muted small me-2 fw-medium">Price:</span>
@@ -1561,7 +1561,7 @@
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="modal-header bg-body-tertiary border-bottom-0 p-4">
                     <h5 class="modal-title fw-bold text-body-emphasis d-flex align-items-center gap-2">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <div class="text-bg-primary-subtle text-primary-emphasis rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                             <i class="bi bi-tag-fill fs-6"></i>
                         </div>
                         Promotions & Offers
@@ -1602,13 +1602,13 @@
                                                     <template x-if="['bogo', 'free_product'].includes(offer.type)">
                                                         <div>
                                                             <i class="bi bi-gift-fill text-info fs-3 d-block mb-1"></i>
-                                                            <span class="badge bg-info bg-opacity-10 text-info w-100" x-text="offer.type === 'bogo' ? 'BOGO' : 'GIFT'"></span>
+                                                            <span class="badge text-bg-info-subtle text-info-emphasis w-100" x-text="offer.type === 'bogo' ? 'BOGO' : 'GIFT'"></span>
                                                         </div>
                                                     </template>
                                                     <template x-if="['order_discount', 'category_discount'].includes(offer.type)">
                                                         <div>
                                                             <h5 class="fw-black text-body-emphasis mb-1" x-text="offer.discount_type === 'percentage' ? parseFloat(offer.value) + '%' : '₹ ' + parseFloat(offer.value)"></h5>
-                                                            <span class="badge bg-primary bg-opacity-10 text-primary w-100">OFF</span>
+                                                            <span class="badge text-bg-primary-subtle text-primary-emphasis w-100">OFF</span>
                                                         </div>
                                                     </template>
                                                 </div>
@@ -1616,7 +1616,7 @@
                                                 <div class="ps-2">
                                                     <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                                                         <h6 class="fw-bold mb-0" :class="(appliedOfferId === offer.id || ['bogo', 'free_product'].includes(offer.type)) ? 'text-body-emphasis' : 'text-body'" x-text="offer.name"></h6>
-                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis rounded-pill px-2 py-0.5 small" style="font-size: 0.7rem;" x-text="'Priority: ' + offer.priority"></span>
+                                                        <span class="badge text-bg-secondary-subtle text-secondary-emphasis-emphasis rounded-pill px-2 py-0.5 small" style="font-size: 0.7rem;" x-text="'Priority: ' + offer.priority"></span>
                                                     </div>
                                                     
                                                     {{-- Common Rules --}}
@@ -1652,7 +1652,7 @@
                                             <div class="flex-shrink-0">
                                                 {{-- Auto Applied Badge --}}
                                                 <template x-if="['bogo', 'free_product'].includes(offer.type)">
-                                                    <span class="badge bg-info bg-opacity-25 text-info-emphasis rounded-pill px-3 py-2 fw-medium">Active</span>
+                                                    <span class="badge text-bg-info-subtle text-info-emphasis-emphasis rounded-pill px-3 py-2 fw-medium">Active</span>
                                                 </template>
                                                 
                                                 {{-- Order Discount Actions --}}
@@ -1708,7 +1708,7 @@
                                             <div class="d-flex align-items-center gap-3">
                                                 <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center d-flex flex-column justify-content-center align-items-center" style="min-width: 90px; height: 90px;">
                                                     <h5 class="fw-black text-body-emphasis mb-1" x-text="c.type === 'percentage' ? parseFloat(c.value) + '%' : '₹ ' + parseFloat(c.value)"></h5>
-                                                    <span class="badge bg-primary bg-opacity-10 text-primary w-100">OFF</span>
+                                                    <span class="badge text-bg-primary-subtle text-primary-emphasis w-100">OFF</span>
                                                 </div>
                                                 <div class="ps-2">
                                                     <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
@@ -1752,7 +1752,7 @@
                 <div class="modal-header bg-body-tertiary border-bottom py-3 px-4">
                     <div class="d-flex flex-wrap gap-2 align-items-center">
                         <h5 class="modal-title fw-bold mb-0" id="productDetailsModalLabel" x-text="selectedProductForModal ? selectedProductForModal.name : ''"></h5>
-                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" x-text="selectedProductForModal ? selectedProductForModal.sku : ''"></span>
+                        <span class="badge text-bg-secondary-subtle text-secondary-emphasis" x-text="selectedProductForModal ? selectedProductForModal.sku : ''"></span>
                         <span class="badge" :class="selectedProductForModal && selectedProductForModal.status === 'published' ? 'bg-success' : 'bg-warning text-dark'" x-text="selectedProductForModal ? selectedProductForModal.status : ''"></span>
                         <span class="spinner-border spinner-border-sm text-primary ms-2" role="status" x-show="productModalLoading"></span>
                     </div>
@@ -1770,8 +1770,8 @@
                             </div>
                             <div x-show="selectedProductForModal">
                                 <div class="d-flex flex-wrap gap-2 mb-3">
-                                    <span x-show="selectedProductForModal && selectedProductForModal.category" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-2 px-3"><i class="bi bi-tag-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.category : ''"></span></span>
-                                    <span x-show="selectedProductForModal && selectedProductForModal.brand" class="badge bg-dark bg-opacity-10 text-dark border py-2 px-3"><i class="bi bi-award-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.brand : ''"></span></span>
+                                    <span x-show="selectedProductForModal && selectedProductForModal.category" class="badge text-bg-primary-subtle text-primary-emphasis border-opacity-25 py-2 px-3"><i class="bi bi-tag-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.category : ''"></span></span>
+                                    <span x-show="selectedProductForModal && selectedProductForModal.brand" class="badge text-bg-dark-subtle text-dark-emphasis border py-2 px-3"><i class="bi bi-award-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.brand : ''"></span></span>
                                 </div>
                                 <div class="table-responsive">
                                     <table class="table table-sm table-borderless small mb-0 text-muted">
@@ -1794,7 +1794,7 @@
                             <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
-                                        <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
+                                        <div class="text-bg-primary-subtle text-primary-emphasis rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
                                         <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Pricing Breakdown</h6>
                                     </div>
                                     <div class="row g-2 mb-2">
@@ -1858,7 +1858,7 @@
                                     <div class="card h-100 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
-                                                <div class="bg-info bg-opacity-10 text-info rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-list-stars" style="font-size:12px;"></i></div>
+                                                <div class="text-bg-info-subtle text-info-emphasis rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-list-stars" style="font-size:12px;"></i></div>
                                                 <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Technical Specs</h6>
                                             </div>
                                             <div x-show="productModalLoading" class="text-center p-3 text-muted"><div class="spinner-border spinner-border-sm mb-1" role="status"></div><div style="font-size:10px;">Loading...</div></div>
@@ -1885,7 +1885,7 @@
                             <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
-                                        <div class="bg-secondary bg-opacity-10 text-secondary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-file-text-fill" style="font-size:12px;"></i></div>
+                                        <div class="text-bg-secondary-subtle text-secondary-emphasis rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-file-text-fill" style="font-size:12px;"></i></div>
                                         <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Details & Usage</h6>
                                     </div>
                                     <div x-show="productModalLoading" class="text-center p-3 text-muted"><div class="spinner-border spinner-border-sm" role="status"></div></div>
@@ -1915,7 +1915,7 @@
                                         <template x-for="offer in productModalOffers" :key="'pmo-'+offer.id">
                                             <div class="col-md-6">
                                                 <div class="d-flex align-items-center gap-2 p-2 rounded-3 border border-primary border-opacity-10 bg-body">
-                                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:28px;height:28px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
+                                                    <div class="text-bg-primary-subtle text-primary-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:28px;height:28px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
                                                     <div class="min-w-0">
                                                         <div class="fw-bold text-body-emphasis text-truncate" style="font-size:11px;" x-text="offer.name"></div>
                                                         <div class="text-muted text-truncate" style="font-size:9px;" x-text="offer.type === 'percentage' ? offer.value + '% off' : 'Flat ₹ ' + offer.value + ' off'"></div>
@@ -3190,7 +3190,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 text-center pt-0">
-                <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
+                <div class="text-bg-danger-subtle text-danger-emphasis rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
                     <i class="bi bi-shield-lock-fill fs-1"></i>
                 </div>
                 <h5 class="fw-bold mb-2 text-danger">Action Blocked</h5>
