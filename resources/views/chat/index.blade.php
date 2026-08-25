@@ -71,12 +71,7 @@
                             <template x-for="user in searchResults.users" :key="user.id">
                                 <button type="button" @click="startDirect(user.id)" class="btn btn-light text-start w-100 d-flex align-items-center gap-2 mb-1 p-2 border-0">
                                     <div class="position-relative flex-shrink-0">
-                                        <template x-if="user.photo">
-                                            <img :src="formatAttachmentUrl(user.photo)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
-                                        </template>
-                                        <template x-if="!user.photo">
-                                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 36px; height: 36px; font-size: 12px;" x-text="initials(user.name)"></div>
-                                        </template>
+                                        <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
                                         <span class="position-absolute bottom-0 end-0 rounded-circle border border-white" style="width: 10px; height: 10px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
                                     </div>
                                     <div class="min-w-0 flex-grow-1">
@@ -109,14 +104,7 @@
                             style="border-bottom: 1px solid var(--bs-border-color) !important; transition: background 0.15s;"
                             :class="activeConversation?.id === conversation.id ? 'bg-primary bg-opacity-10' : 'bg-transparent'">
                             <div class="position-relative flex-shrink-0">
-                                <template x-if="conversationPhoto(conversation)">
-                                    <img :src="formatAttachmentUrl(conversationPhoto(conversation))" class="rounded-circle object-fit-cover shadow-sm border border-2 border-white" style="width: 42px; height: 42px; background: var(--bs-light);">
-                                </template>
-                                <template x-if="!conversationPhoto(conversation)">
-                                    <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold border border-2 border-white"
-                                         style="width:42px;height:42px;font-size:14px;background:var(--bs-primary);"
-                                         x-text="conversationInitials(conversation)"></div>
-                                </template>
+                                <img :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-white" style="width: 42px; height: 42px; ">
                                 <span x-show="isOnline(conversation)"
                                       class="position-absolute bottom-0 end-0 rounded-circle border-2 border-white bg-success"
                                       style="width:11px;height:11px;"></span>
@@ -156,12 +144,7 @@
                                 <button type="button" class="btn btn-light d-lg-none p-2 rounded-circle" @click="activeConversation = null; replyTo = null; errorMessage = ''">
                                     <i class="bi bi-arrow-left"></i>
                                 </button>
-                                <template x-if="conversationPhoto(activeConversation)">
-                                    <img :src="formatAttachmentUrl(conversationPhoto(activeConversation))" class="rounded-circle object-fit-cover shadow-sm border border-2 border-white" style="width: 42px; height: 42px; background: var(--bs-light);">
-                                </template>
-                                <template x-if="!conversationPhoto(activeConversation)">
-                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 42px; height: 42px; font-size: 14px;" x-text="conversationInitials(activeConversation)"></div>
-                                </template>
+                                <img :src="getConversationPhotoUrl(activeConversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-white" style="width: 42px; height: 42px; ">
                                 <div class="min-w-0">
                                     <div class="d-flex align-items-center gap-2">
                                         <h6 class="mb-0 fw-bold text-truncate flex-grow-1" x-text="conversationTitle(activeConversation)"></h6>
@@ -383,14 +366,7 @@
                                 onmouseout="this.style.backgroundColor='transparent'"
                                 :disabled="startingUserId === user.id">
                             <div class="position-relative flex-shrink-0 mt-1">
-                                <template x-if="user.photo">
-                                    <img :src="formatAttachmentUrl(user.photo)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px; background: var(--bs-light);">
-                                </template>
-                                <template x-if="!user.photo">
-                                    <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" 
-                                         style="width:36px;height:36px;font-size:12px;background:var(--bs-secondary);" 
-                                         x-text="initials(user.name)"></div>
-                                </template>
+                                <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px; ">
                                 <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-white" style="width: 12px; height: 12px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
                             </div>
                             <div class="min-w-0 flex-grow-1">
@@ -490,12 +466,7 @@
                                            :for="'newUserCheck_' + user.id" 
                                            style="cursor: pointer;">
                                         
-                                        <template x-if="user.photo">
-                                            <img :src="formatAttachmentUrl(user.photo)" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 28px; height: 28px;">
-                                        </template>
-                                        <template x-if="!user.photo">
-                                            <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 28px; height: 28px; font-size: 11px;" x-text="initials(user.name)"></span>
-                                        </template>
+                                        <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 28px; height: 28px;">
                                         
                                         <div class="min-w-0 flex-grow-1 text-truncate">
                                             <div class="d-flex align-items-center gap-2 mb-1">
@@ -613,12 +584,7 @@
                                              onmouseover="this.style.backgroundColor='var(--bs-secondary-bg)'" 
                                              onmouseout="this.style.backgroundColor='transparent'">
                                             <div class="d-flex align-items-center gap-2">
-                                                <template x-if="user.photo">
-                                                    <img :src="formatAttachmentUrl(user.photo)" class="rounded-circle object-fit-cover shadow-sm" style="width: 28px; height: 28px;">
-                                                </template>
-                                                <template x-if="!user.photo">
-                                                    <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center fw-bold" style="width: 28px; height: 28px; font-size: 11px;" x-text="initials(user.name)"></span>
-                                                </template>
+                                                <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 28px; height: 28px;">
                                                 <div class="min-w-0 flex-grow-1 text-truncate" style="max-width: 140px;">
                                                     <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                                         <span class="small fw-semibold text-truncate flex-grow-1" x-text="user.name"></span>
@@ -643,12 +609,7 @@
                                          onmouseout="this.style.backgroundColor='transparent'">
                                         <div class="d-flex align-items-center gap-3">
                                             <div class="position-relative">
-                                                <template x-if="member.user?.photo">
-                                                    <img :src="formatAttachmentUrl(member.user.photo)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
-                                                </template>
-                                                <template x-if="!member.user?.photo">
-                                                    <span class="rounded-circle bg-primary bg-opacity-75 text-white d-inline-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 36px; height: 36px; font-size: 13px;" x-text="initials(member.user?.name)"></span>
-                                                </template>
+                                                <img :src="getUserPhotoUrl(member.user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
                                                 <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-white" style="width: 12px; height: 12px;" :class="member.user?.is_online ? 'bg-success' : 'bg-secondary'"></span>
                                             </div>
                                             <div class="min-w-0 flex-grow-1 text-truncate">
@@ -1244,8 +1205,24 @@
                     } catch(e) {}
                     return path;
                 }
-                if (path.startsWith('/storage/')) return path;
+                if (path.startsWith('/storage/') || path.startsWith('/assets/')) return path;
                 return `/storage/${path}`;
+            },
+            
+            getUserPhotoUrl(user) {
+                if (!user) return '/assets/images/default_avatar.jpeg';
+                const photo = user.photo || user.avatar;
+                if (!photo) return '/assets/images/default_avatar.jpeg';
+                return this.formatAttachmentUrl(photo);
+            },
+            
+            getConversationPhotoUrl(conv) {
+                if (!conv) return '/assets/images/default_avatar.jpeg';
+                if (conv.type === 'group') {
+                    return conv.image_path ? this.formatAttachmentUrl(conv.image_path) : '/assets/images/default_avatar.jpeg';
+                }
+                const other = conv.active_members?.find(m => Number(m.user_id) !== Number(this.currentUserId));
+                return this.getUserPhotoUrl(other?.user);
             },
             
             isImageAttachment(file) {

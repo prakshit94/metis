@@ -282,50 +282,8 @@ class ChatService
 
     public function listUsersWithPresence(User $viewer, ?string $term = null, bool $includeSelf = false): SupportCollection
     {
-        $lastSessionActivity = DB::table('sessions')
-            ->selectRaw('max(last_activity)')
-            ->whereColumn('sessions.user_id', 'users.id');
-
-        $lastSessionUserAgent = DB::table('sessions')
-            ->select('user_agent')
-            ->whereColumn('sessions.user_id', 'users.id')
-            ->orderByDesc('last_activity')
-            ->limit(1);
-
-        $lastTokenActivity = DB::table('personal_access_tokens')
-            ->selectRaw('max(COALESCE(last_used_at, created_at))')
-            ->where('tokenable_type', User::class)
-            ->whereColumn('tokenable_id', 'users.id');
-
-        $presenceStatus = DB::table('chat_presence')
-            ->select('status')
-            ->whereColumn('chat_presence.user_id', 'users.id')
-            ->limit(1);
-
-        $presenceLastSeen = DB::table('chat_presence')
-            ->select('last_seen_at')
-            ->whereColumn('chat_presence.user_id', 'users.id')
-            ->limit(1);
-
-        $todayOrdersCount = DB::table('orders')
-            ->selectRaw('count(*)')
-            ->whereColumn('orders.created_by', 'users.id')
-            ->whereDate('created_at', now()->toDateString());
-
-        $todayRevenue = DB::table('orders')
-            ->selectRaw('sum(total_amount)')
-            ->whereColumn('orders.created_by', 'users.id')
-            ->whereDate('created_at', now()->toDateString());
-
         $users = User::query()
             ->select('id', 'name', 'first_name', 'last_name', 'email', 'employee_id', 'photo', 'is_active as status', 'village_name', 'district', 'state')
-            ->selectSub($lastSessionActivity, 'last_session_activity')
-            ->selectSub($lastSessionUserAgent, 'last_session_user_agent')
-            ->selectSub($lastTokenActivity, 'last_token_activity')
-            ->selectSub($presenceStatus, 'presence_status')
-            ->selectSub($presenceLastSeen, 'presence_last_seen_at')
-            ->selectSub($todayOrdersCount, 'today_orders')
-            ->selectSub($todayRevenue, 'today_revenue')
             ->where('is_active', 1)
             ->when(! $includeSelf, fn ($query) => $query->where('id', '!=', $viewer->id))
             ->when($term, fn ($query) => $query->where(function ($nested) use ($term) {
@@ -339,27 +297,71 @@ class ChatService
             ->limit(250)
             ->get();
 
-        return $users->map(function (User $user) {
-            $lastSessionAt = $user->last_session_activity
-                ? now()->setTimestamp((int) $user->last_session_activity)
+        $userIds = $users->pluck('id');
+
+        if ($userIds->isEmpty()) {
+            return collect();
+        }
+
+        $presences = DB::table('chat_presence')
+            ->select('user_id', 'status', 'last_seen_at')
+            ->whereIn('user_id', $userIds)
+            ->get()
+            ->keyBy('user_id');
+
+        $todayOrders = DB::table('orders')
+            ->selectRaw('created_by, count(*) as today_orders, sum(total_amount) as today_revenue')
+            ->whereIn('created_by', $userIds)
+            ->whereDate('created_at', now()->toDateString())
+            ->groupBy('created_by')
+            ->get()
+            ->keyBy('created_by');
+
+        $tokens = DB::table('personal_access_tokens')
+            ->selectRaw('tokenable_id, max(COALESCE(last_used_at, created_at)) as last_token_activity')
+            ->where('tokenable_type', User::class)
+            ->whereIn('tokenable_id', $userIds)
+            ->groupBy('tokenable_id')
+            ->get()
+            ->keyBy('tokenable_id');
+
+        $sessions = DB::table('sessions')
+            ->select('user_id', 'last_activity', 'user_agent')
+            ->whereIn('user_id', $userIds)
+            ->orderByDesc('last_activity')
+            ->get()
+            ->unique('user_id')
+            ->keyBy('user_id');
+
+        return $users->map(function (User $user) use ($presences, $todayOrders, $tokens, $sessions) {
+            $session = $sessions->get($user->id);
+            $token = $tokens->get($user->id);
+            $presence = $presences->get($user->id);
+            $order = $todayOrders->get($user->id);
+
+            $lastSessionAt = $session
+                ? now()->setTimestamp((int) $session->last_activity)
                 : null;
-            $lastTokenAt = $user->last_token_activity
-                ? Carbon::parse($user->last_token_activity)
+            $lastTokenAt = $token && $token->last_token_activity
+                ? Carbon::parse($token->last_token_activity)
                 : null;
-            $presenceLastSeenAt = $user->presence_last_seen_at
-                ? Carbon::parse($user->presence_last_seen_at)
+            $presenceLastSeenAt = $presence && $presence->last_seen_at
+                ? Carbon::parse($presence->last_seen_at)
                 : null;
+            $presenceStatus = $presence->status ?? null;
+
             $lastSeenAt = collect([$lastSessionAt, $lastTokenAt, $presenceLastSeenAt])
                 ->filter()
                 ->sortDesc()
                 ->first();
+
             $isOnline = $lastSessionAt?->greaterThanOrEqualTo(now()->subMinutes(self::ONLINE_WINDOW_MINUTES)) === true
                 || $lastTokenAt?->greaterThanOrEqualTo(now()->subMinutes(self::ONLINE_WINDOW_MINUTES)) === true
-                || ($user->presence_status === 'online' && $presenceLastSeenAt?->greaterThanOrEqualTo(now()->subMinutes(self::ONLINE_WINDOW_MINUTES)) === true);
+                || ($presenceStatus === 'online' && $presenceLastSeenAt?->greaterThanOrEqualTo(now()->subMinutes(self::ONLINE_WINDOW_MINUTES)) === true);
 
             $location = collect([$user->village_name, $user->district, $user->state])->filter()->implode(', ');
 
-            $activeDevice = $this->deviceFromUserAgent($user->last_session_user_agent);
+            $activeDevice = $this->deviceFromUserAgent($session->user_agent ?? null);
             if ($lastTokenAt && (!$lastSessionAt || $lastTokenAt->greaterThan($lastSessionAt))) {
                 $activeDevice = 'mobile';
             }
@@ -376,8 +378,8 @@ class ChatService
                 'last_seen_at' => $lastSeenAt?->toIso8601String(),
                 'last_seen_label' => $isOnline ? 'Active now' : ($lastSeenAt ? 'Last seen '.$lastSeenAt->diffForHumans() : 'Not seen yet'),
                 'active_device' => $activeDevice,
-                'today_orders' => (int) $user->today_orders,
-                'today_revenue' => (float) $user->today_revenue,
+                'today_orders' => (int) ($order->today_orders ?? 0),
+                'today_revenue' => (float) ($order->today_revenue ?? 0),
             ];
         })->sortBy([
             ['is_online', 'desc'],

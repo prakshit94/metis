@@ -229,6 +229,4 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/admin/audit-logs', [\App\Http\Controllers\AuditLogController::class, 'index'])->name('admin.audit-logs.index')->middleware('role:Super Admin');
     Route::delete('/admin/audit-logs/clear', [\App\Http\Controllers\AuditLogController::class, 'clearAll'])->name('admin.audit-logs.clear')->middleware('role:Super Admin');
     Route::delete('/admin/audit-logs/destroy', [\App\Http\Controllers\AuditLogController::class, 'destroy'])->name('admin.audit-logs.destroy')->middleware('role:Super Admin');
-
 });
-require __DIR__.'/test_bug.php';
