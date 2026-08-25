@@ -1165,9 +1165,9 @@
         <div class="card-header bg-body-tertiary border-bottom-0 p-3 p-lg-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'history' ? 'btn-primary border-primary' : 'bg-body text-body-secondary'" @click="bottomTab = 'history'; expandedOrderId = null">Order history</button>
-                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'future' ? 'btn-primary border-primary' : 'bg-body text-body-secondary'" @click="bottomTab = 'future'; expandedOrderId = null">Future Orders</button>
-                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold border" :class="bottomTab === 'tags' ? 'btn-primary border-primary' : 'bg-body text-body-secondary'" @click="bottomTab = 'tags'; expandedOrderId = null">Tagging</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold" :class="bottomTab === 'history' ? 'btn-primary' : 'btn-outline-secondary'" @click="bottomTab = 'history'; expandedOrderId = null">Order History</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold" :class="bottomTab === 'future' ? 'btn-primary' : 'btn-outline-secondary'" @click="bottomTab = 'future'; expandedOrderId = null">Future Orders</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold" :class="bottomTab === 'tags' ? 'btn-primary' : 'btn-outline-secondary'" @click="bottomTab = 'tags'; expandedOrderId = null">Tagging</button>
                 </div>
                 <div class="text-lg-end">
                     <h5 class="mb-1 fw-bold text-body-emphasis"><i class="bi bi-layers me-2 text-primary"></i>Order Center</h5>
