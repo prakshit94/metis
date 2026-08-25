@@ -41,7 +41,7 @@
     
     orderType: 'sale',
     orderDate: '{{ date('Y-m-d') }}',
-    isDraft: false,
+    orderStatus: 'pending',
     futureOrderDate: '',
     useWalletBalance: false,
     placing: false,
@@ -573,7 +573,7 @@
         if (!this.selectedShippingAddressId) { this.formErrors.push('Please select a shipping address.'); return; }
         if (!this.sameAsBilling && !this.selectedBillingAddressId) { this.formErrors.push('Please select a billing address.'); return; }
         if (this.cart.length === 0) { this.formErrors.push('Cart is empty.'); return; }
-        if (this.isDraft && !this.futureOrderDate) { this.formErrors.push('Please set future order date.'); return; }
+        if (this.orderStatus === 'future_order' && !this.futureOrderDate) { this.formErrors.push('Please set future order date.'); return; }
 
         this.placing = true;
         try {
@@ -585,8 +585,8 @@
                 billing_address_id: this.sameAsBilling ? (this.selectedShippingAddressId || null) : (this.selectedBillingAddressId || null),
                 order_date: this.orderDate,
                 items: this.buildCartPayload(),
-                is_draft: this.isDraft ? 1 : 0,
-                future_order_date: this.isDraft ? this.futureOrderDate : null,
+                status: this.orderStatus,
+                future_order_date: this.orderStatus === 'future_order' ? this.futureOrderDate : null,
                 coupon_code: this.couponApplied ? this.couponCode : null,
                 applied_offer_id: (this.appliedOrderOfferId && this.appliedOrderOfferId !== 'none') ? this.appliedOrderOfferId : null,
                 applied_bogo_ids: this.appliedBogoIds,

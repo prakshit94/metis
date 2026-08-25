@@ -113,7 +113,6 @@ class OrderLifecycleTest extends TestCase
             'order_date' => now(),
             'total_amount' => 150.00 * $qty,
             'net_amount' => 150.00 * $qty,
-            'is_draft' => false,
         ]);
 
         OrderItem::create([
@@ -420,9 +419,8 @@ class OrderLifecycleTest extends TestCase
         $order = Order::create([
             'order_no' => 'ORD-' . strtoupper(Str::random(8)),
             'type' => 'sale',
-            'status' => 'pending',
+            'status' => 'future_order',
             'order_date' => now(),
-            'is_draft' => true,
             'future_order_date' => now()->addDays(7)->toDateString(),
         ]);
 

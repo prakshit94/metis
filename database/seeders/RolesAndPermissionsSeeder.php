@@ -356,6 +356,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Order Views
         'orders.view.future_order',
         'orders.view.pending',
+        'orders.view.pending_confirmation',
         'orders.view.confirmed',
         'orders.view.processing',
         'orders.view.ready_to_ship',
@@ -516,6 +517,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'goodsreceipt-view',
             'orders.view.future_order',
             'orders.view.pending',
+            'orders.view.pending_confirmation',
             'orders.view.confirmed',
             'orders.view.processing',
             'orders.view.ready_to_ship',

@@ -575,7 +575,7 @@ class InventoryService
         DB::transaction(function () use ($order) {
             $order = Order::with('items')->lockForUpdate()->findOrFail($order->id);
 
-            if ($order->status !== 'pending' || $order->is_draft) {
+            if (! in_array($order->status, ['pending', 'pending_confirmation'])) {
                 throw ValidationException::withMessages([
                     'status' => 'Only active pending orders can be confirmed. Future orders must become pending first.',
                 ]);

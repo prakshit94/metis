@@ -113,6 +113,8 @@ document.addEventListener('alpine:init', () => {
       future_order_amount: 0,
       pending: 0,
       pending_amount: 0,
+      pending_confirmation: 0,
+      pending_confirmation_amount: 0,
       confirmed: 0,
       confirmed_amount: 0,
       processing: 0,
@@ -143,7 +145,7 @@ document.addEventListener('alpine:init', () => {
     carriersList: [],
     warehousesList: [],
     allowedFilterStatuses: [],
-    allFilterStatuses: ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'return_requested', 'returned', 'cancelled'],
+    allFilterStatuses: ['future_order', 'pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'return_requested', 'returned', 'cancelled'],
 
     // Modal data state
     selectedOrder: null,
@@ -407,6 +409,8 @@ document.addEventListener('alpine:init', () => {
               future_order_amount: data.stats.future_order_amount,
               pending: data.stats.pending,
               pending_amount: data.stats.pending_amount,
+              pending_confirmation: data.stats.pending_confirmation,
+              pending_confirmation_amount: data.stats.pending_confirmation_amount,
               confirmed: data.stats.confirmed,
               confirmed_amount: data.stats.confirmed_amount,
               processing: data.stats.processing,
@@ -425,6 +429,7 @@ document.addEventListener('alpine:init', () => {
             this.statusStats = [
               { name: 'Future', count: this.stats.future_order, percentage: this.stats.total ? Math.round((this.stats.future_order / this.stats.total) * 100) : 0, color: '#a855f7' },
               { name: 'Pending', count: this.stats.pending, percentage: this.stats.total ? Math.round((this.stats.pending / this.stats.total) * 100) : 0, color: '#f97316' },
+              { name: 'Pending Confirmation', count: this.stats.pending_confirmation, percentage: this.stats.total ? Math.round((this.stats.pending_confirmation / this.stats.total) * 100) : 0, color: '#f97316' },
               { name: 'Confirmed', count: this.stats.confirmed, percentage: this.stats.total ? Math.round((this.stats.confirmed / this.stats.total) * 100) : 0, color: '#0ea5e9' },
               { name: 'Processing', count: this.stats.processing, percentage: this.stats.total ? Math.round((this.stats.processing / this.stats.total) * 100) : 0, color: '#3b82f6' },
               { name: 'Ready to Ship', count: this.stats.ready_to_ship, percentage: this.stats.total ? Math.round((this.stats.ready_to_ship / this.stats.total) * 100) : 0, color: '#6366f1' },
@@ -705,7 +710,7 @@ document.addEventListener('alpine:init', () => {
         paymentMethod: formattedPaymentMethod,
         couponCode: o.coupon_code || '',
         appliedOfferName: o.applied_offer ? o.applied_offer.name : '',
-        isDraft: Boolean(o.is_draft),
+        isDraft: o.status === 'future_order',
         futureOrderDate: o.future_order_date || null,
         createdBy: {
           name: o.creator ? (o.creator.name || '').trim() : 'N/A',
@@ -739,6 +744,7 @@ document.addEventListener('alpine:init', () => {
       const colors = {
         future_order: '#a855f7',
         pending: '#f97316',
+        pending_confirmation: '#f97316',
         confirmed: '#0ea5e9',
         processing: '#3b82f6',
         ready_to_ship: '#6366f1',
@@ -835,11 +841,11 @@ document.addEventListener('alpine:init', () => {
       const statuses = new Set(selectedOrderObjs.map(o => o.status));
 
       // Cancellable statuses
-      const cancellableStatuses = ['pending', 'confirmed', 'processing', 'ready_to_ship'];
+      const cancellableStatuses = ['pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'];
 
       return {
         // Pending → Confirmed
-        canConfirm: statuses.has('pending'),
+        canConfirm: statuses.has('pending') || statuses.has('pending_confirmation'),
         // Confirmed → Processing
         canProcess: statuses.has('confirmed'),
         // Processing → Ready to Ship

@@ -57,9 +57,7 @@ class PageController extends Controller
         // 1. Top Metrics
         $totalCustomers = (clone $customerQuery)->count();
         $totalRevenue = (clone $orderQuery)->whereNotIn('status', ['cancelled'])
-            ->where(function ($q) {
-                $q->where('is_draft', 0)->orWhere('status', '!=', 'pending');
-            })
+            ->whereNotIn('status', ['future_order'])
             ->whereDoesntHave('orderReturns', function ($q) {
                 $q->where('status', 'completed');
             })->sum('net_amount');
@@ -93,9 +91,7 @@ class PageController extends Controller
         for ($i = 11; $i >= 0; $i--) {
             $month = Carbon::now()->subMonths($i);
             $revenue = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned'])
-                ->where(function ($q) {
-                    $q->where('is_draft', 0)->orWhere('status', '!=', 'pending');
-                })
+                ->whereNotIn('status', ['future_order'])
                 ->whereYear('order_date', $month->year)
                 ->whereMonth('order_date', $month->month)
                 ->sum('net_amount');
@@ -113,9 +109,7 @@ class PageController extends Controller
         for ($i = 29; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
             $revenue = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned'])
-                ->where(function ($q) {
-                    $q->where('is_draft', 0)->orWhere('status', '!=', 'pending');
-                })
+                ->whereNotIn('status', ['future_order'])
                 ->whereDate('order_date', $date->toDateString())
                 ->sum('net_amount');
             $profit = $revenue * 0.2;
@@ -183,9 +177,7 @@ class PageController extends Controller
         })
             ->select(DB::raw('COALESCE(shipping_district, shipping_city, shipping_state) as location_name'), DB::raw('SUM(net_amount) as total_sales'))
             ->whereNotIn('status', ['cancelled', 'returned'])
-            ->where(function ($q) {
-                $q->where('is_draft', 0)->orWhere('status', '!=', 'pending');
-            })
+            ->whereNotIn('status', ['future_order'])
             ->groupBy('location_name')
             ->orderByDesc('total_sales')
             ->limit(10)
@@ -200,9 +192,7 @@ class PageController extends Controller
 
         // Recent Orders
         $recentOrdersRaw = (clone $orderQuery)->with(['party', 'items.product'])
-            ->where(function ($q) {
-                $q->where('is_draft', 0)->orWhere('status', '!=', 'pending');
-            })
+            ->whereNotIn('status', ['future_order'])
             ->latest('order_date')
             ->take(5)
             ->get();
@@ -236,8 +226,7 @@ class PageController extends Controller
 
         // Future Orders
         $futureOrdersRaw = (clone $orderQuery)->with(['party', 'items.product'])
-            ->where('is_draft', 1)
-            ->where('status', 'pending')
+            ->where('status', 'future_order')
             ->orderBy('future_order_date', 'asc')
             ->take(5)
             ->get();

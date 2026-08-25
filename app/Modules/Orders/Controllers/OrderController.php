@@ -105,20 +105,13 @@ class OrderController extends Controller implements HasMiddleware
                 $first = true;
 
                 if ($hasFutureOrder) {
-                    $q->where(function ($sub) {
-                        $sub->where('status', 'pending')->where('is_draft', true);
-                    });
+                    $q->where('status', 'future_order');
                     $first = false;
                 }
 
                 if ($hasPending) {
                     $method = $first ? 'where' : 'orWhere';
-                    $q->$method(function ($sub) {
-                        $sub->where('status', 'pending')
-                            ->where(function ($s2) {
-                                $s2->where('is_draft', false)->orWhereNull('is_draft');
-                            });
-                    });
+                    $q->$method('status', 'pending');
                     $first = false;
                 }
 
@@ -202,10 +195,12 @@ class OrderController extends Controller implements HasMiddleware
             return $statsQuery->select([
                 DB::raw('COUNT(*) as total'),
                 DB::raw('SUM(orders.net_amount) as total_amount'),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending' AND orders.is_draft = 1 THEN 1 ELSE 0 END) as future_order"),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending' AND orders.is_draft = 1 THEN orders.net_amount ELSE 0 END) as future_order_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN 1 ELSE 0 END) as pending"),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN orders.net_amount ELSE 0 END) as pending_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN 1 ELSE 0 END) as future_order"),
+                DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN orders.net_amount ELSE 0 END) as future_order_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN 1 ELSE 0 END) as pending"),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN orders.net_amount ELSE 0 END) as pending_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN 1 ELSE 0 END) as pending_confirmation"),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN orders.net_amount ELSE 0 END) as pending_confirmation_amount"),
                 DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN 1 ELSE 0 END) as confirmed"),
                 DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN orders.net_amount ELSE 0 END) as confirmed_amount"),
                 DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN 1 ELSE 0 END) as processing"),
@@ -232,6 +227,8 @@ class OrderController extends Controller implements HasMiddleware
             'future_order_amount' => (float) ($counts->future_order_amount ?? 0),
             'pending' => (int) ($counts->pending ?? 0),
             'pending_amount' => (float) ($counts->pending_amount ?? 0),
+            'pending_confirmation' => (int) ($counts->pending_confirmation ?? 0),
+            'pending_confirmation_amount' => (float) ($counts->pending_confirmation_amount ?? 0),
             'confirmed' => (int) ($counts->confirmed ?? 0),
             'confirmed_amount' => (float) ($counts->confirmed_amount ?? 0),
             'processing' => (int) ($counts->processing ?? 0),
@@ -260,8 +257,12 @@ class OrderController extends Controller implements HasMiddleware
                     'warehouse_id',
                     DB::raw('COUNT(orders.id) as total'),
                     DB::raw('SUM(orders.net_amount) as total_amount'),
-                    DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN 1 ELSE 0 END) as pending"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'pending' AND (orders.is_draft = 0 OR orders.is_draft IS NULL) THEN orders.net_amount ELSE 0 END) as pending_amount"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN 1 ELSE 0 END) as future_order"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN orders.net_amount ELSE 0 END) as future_order_amount"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN 1 ELSE 0 END) as pending"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN orders.net_amount ELSE 0 END) as pending_amount"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN 1 ELSE 0 END) as pending_confirmation"),
+                    DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN orders.net_amount ELSE 0 END) as pending_confirmation_amount"),
                     DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN 1 ELSE 0 END) as confirmed"),
                     DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN orders.net_amount ELSE 0 END) as confirmed_amount"),
                     DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN 1 ELSE 0 END) as processing"),
@@ -292,6 +293,8 @@ class OrderController extends Controller implements HasMiddleware
                     'total_amount' => (float) $item->total_amount,
                     'pending' => (int) $item->pending,
                     'pending_amount' => (float) $item->pending_amount,
+                    'pending_confirmation' => (int) $item->pending_confirmation,
+                    'pending_confirmation_amount' => (float) $item->pending_confirmation_amount,
                     'confirmed' => (int) $item->confirmed,
                     'confirmed_amount' => (float) $item->confirmed_amount,
                     'processing' => (int) $item->processing,
@@ -659,7 +662,7 @@ class OrderController extends Controller implements HasMiddleware
     public function confirm(string $id, Request $request, InventoryService $inventoryService)
     {
         $order = Order::findOrFail($id);
-        if ($order->status !== 'pending') {
+        if (! in_array($order->status, ['pending', 'pending_confirmation'])) {
             return response()->json(['error' => 'Only pending orders can be confirmed or scheduled.'], 400);
         }
 
@@ -668,14 +671,18 @@ class OrderController extends Controller implements HasMiddleware
                 'scheduled_date' => 'required|date',
             ]);
 
+            $order->status = 'pending_confirmation';
             $order->scheduled_confirmation_date = $request->input('scheduled_date');
             $order->increment('confirmation_attempts');
             $order->save();
 
             $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
+            $scheduledDateText = 'Scheduled Date: ' . \Carbon\Carbon::parse($request->input('scheduled_date'))->format('d M Y, h:i A') . '. ';
+            $notes = $request->filled('notes') ? $request->input('notes') : 'Scheduled for future confirmation.';
+            
             $order->statusLogs()->create([
-                'status' => 'pending (scheduled)',
-                'notes' => $reasonText.($request->input('notes') ?? 'Scheduled for future confirmation.'),
+                'status' => 'pending_confirmation',
+                'notes' => $reasonText . $scheduledDateText . $notes,
                 'changed_by' => auth()->id(),
             ]);
 
@@ -715,6 +722,11 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no']);
+            $order->statusLogs()->create([
+                'status' => 'ready_to_ship',
+                'notes' => 'Order marked as ready to ship. Carrier: ' . $validated['carrier_name'] . ', Tracking: ' . $validated['tracking_no'],
+                'changed_by' => auth()->id(),
+            ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
@@ -738,6 +750,11 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $inventoryService->dispatchOrder($order);
+            $order->statusLogs()->create([
+                'status' => 'dispatched',
+                'notes' => 'Order dispatched.',
+                'changed_by' => auth()->id(),
+            ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
@@ -756,6 +773,11 @@ class OrderController extends Controller implements HasMiddleware
 
         try {
             $orderService->updateStatus($order, 'processing');
+            $order->statusLogs()->create([
+                'status' => 'processing',
+                'notes' => 'Order moved to processing.',
+                'changed_by' => auth()->id(),
+            ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
@@ -786,9 +808,12 @@ class OrderController extends Controller implements HasMiddleware
             }
 
             $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
+            $scheduledDateText = 'Scheduled Date: ' . \Carbon\Carbon::parse($request->input('scheduled_date'))->format('d M Y, h:i A') . '. ';
+            $notes = $request->filled('notes') ? $request->input('notes') : 'Scheduled for future delivery attempt.';
+            
             $order->statusLogs()->create([
                 'status' => 'delivery_rescheduled',
-                'notes' => $reasonText.($request->input('notes') ?? 'Scheduled for future delivery attempt.'),
+                'notes' => $reasonText . $scheduledDateText . $notes,
                 'changed_by' => auth()->id(),
             ]);
 
@@ -899,8 +924,13 @@ class OrderController extends Controller implements HasMiddleware
             foreach ($orders as $order) {
                 try {
                     if ($targetStatus === 'confirmed') {
-                        if ($order->status === 'pending') {
+                        if (in_array($order->status, ['pending', 'pending_confirmation'])) {
                             $inventoryService->confirmOrder($order);
+                            $order->statusLogs()->create([
+                                'status' => 'confirmed',
+                                'notes' => 'Bulk status updated to confirmed.',
+                                'changed_by' => auth()->id(),
+                            ]);
                             $count++;
                         } else {
                             $skipped++;
@@ -908,6 +938,11 @@ class OrderController extends Controller implements HasMiddleware
                     } elseif ($targetStatus === 'processing') {
                         if ($order->status === 'confirmed') {
                             $orderService->updateStatus($order, 'processing');
+                            $order->statusLogs()->create([
+                                'status' => 'processing',
+                                'notes' => 'Bulk status updated to processing.',
+                                'changed_by' => auth()->id(),
+                            ]);
                             $count++;
                         } else {
                             $skipped++;
@@ -915,6 +950,11 @@ class OrderController extends Controller implements HasMiddleware
                     } elseif ($targetStatus === 'ready_to_ship') {
                         if ($order->status === 'processing') {
                             $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no']);
+                            $order->statusLogs()->create([
+                                'status' => 'ready_to_ship',
+                                'notes' => 'Bulk status updated to ready to ship. Carrier: ' . $validated['carrier_name'] . ', Tracking: ' . $validated['tracking_no'],
+                                'changed_by' => auth()->id(),
+                            ]);
                             $count++;
                         } else {
                             $skipped++;
@@ -922,6 +962,11 @@ class OrderController extends Controller implements HasMiddleware
                     } elseif ($targetStatus === 'dispatched') {
                         if ($order->status === 'ready_to_ship') {
                             $inventoryService->dispatchOrder($order);
+                            $order->statusLogs()->create([
+                                'status' => 'dispatched',
+                                'notes' => 'Bulk status updated to dispatched.',
+                                'changed_by' => auth()->id(),
+                            ]);
                             $count++;
                         } else {
                             $skipped++;
@@ -930,13 +975,23 @@ class OrderController extends Controller implements HasMiddleware
                         if (in_array($order->status, ['dispatched', 'shipped'], true)) {
                             $inventoryService->deliverOrder($order);
                             $this->applyCashback($order);
+                            $order->statusLogs()->create([
+                                'status' => 'delivered',
+                                'notes' => 'Bulk status updated to delivered.',
+                                'changed_by' => auth()->id(),
+                            ]);
                             $count++;
                         } else {
                             $skipped++;
                         }
                     } elseif ($targetStatus === 'cancelled') {
-                        if (in_array($order->status, ['pending', 'confirmed', 'processing', 'ready_to_ship'], true)) {
+                        if (in_array($order->status, ['pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'], true)) {
                             $inventoryService->cancelOrder($order);
+                            $order->statusLogs()->create([
+                                'status' => 'cancelled',
+                                'notes' => 'Bulk status updated to cancelled.',
+                                'changed_by' => auth()->id(),
+                            ]);
                             $count++;
                         } else {
                             $skipped++;
@@ -1382,7 +1437,7 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view-all-data')) {
-            return ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'return_requested', 'returned', 'cancelled'];
+            return ['future_order', 'pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'return_requested', 'returned', 'cancelled'];
         }
 
         $statuses = [];
@@ -1392,6 +1447,7 @@ class OrderController extends Controller implements HasMiddleware
         }
         if ($user->can('orders.view.pending')) {
             $statuses[] = 'pending';
+            $statuses[] = 'pending_confirmation';
         }
         if ($user->can('orders.view.confirmed')) {
             $statuses[] = 'confirmed';
@@ -1418,7 +1474,7 @@ class OrderController extends Controller implements HasMiddleware
             $statuses[] = 'cancelled';
         }
 
-        $orderedStatuses = ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'];
+        $orderedStatuses = ['future_order', 'pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'return_requested', 'returned', 'cancelled'];
 
         if ($user->can('view_all_order') && empty($statuses)) {
             return $orderedStatuses;

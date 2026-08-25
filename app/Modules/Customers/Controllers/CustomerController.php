@@ -546,8 +546,8 @@ class CustomerController extends Controller implements HasMiddleware
                     'nullable',
                     Rule::exists('party_addresses', 'id')->where('party_id', $customer->id),
                 ],
-                'is_draft' => 'nullable|boolean',
-                'future_order_date' => 'required_if:is_draft,1|nullable|date_format:Y-m-d',
+                'status' => 'nullable|string|in:pending,future_order',
+                'future_order_date' => 'required_if:status,future_order|nullable|date_format:Y-m-d',
             ]);
 
             // Map Customer to Party

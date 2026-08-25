@@ -830,7 +830,7 @@
                                 <span class="badge small" 
                                       :style="`background-color: ${getStatusColor(order.status)}; color: #fff`"
                                       x-text="order.statusLabel"></span>
-                                <template x-if="order.status === 'pending' && order.scheduledConfirmDate">
+                                <template x-if="order.status === 'pending_confirmation' && order.scheduledConfirmDate">
                                     <div class="mt-1" style="font-size: 0.7rem;">
                                         <div class="text-primary fw-semibold" title="Scheduled Confirmation Date">
                                             <i class="bi bi-calendar-event me-1"></i>
@@ -899,7 +899,7 @@
                                         </template>
                                         
                                         <!-- Context Actions -->
-                                        <template x-if="order.status === 'pending'">
+                                        <template x-if="order.status === 'pending' || order.status === 'pending_confirmation'">
                                             @can('orders.confirm')
                                             <li><a class="dropdown-item" href="#" @click.prevent="confirmOrder(order)">
                                                 <i class="bi bi-check-circle me-2"></i>Confirm Order
@@ -941,7 +941,7 @@
                                             </a></li>
                                             @endcan
                                         </template>
-                                        <template x-if="['pending', 'confirmed', 'processing', 'ready_to_ship'].includes(order.status)">
+                                        <template x-if="['pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'].includes(order.status)">
                                             @can('orders.cancel')
                                             <li><a class="dropdown-item text-danger" href="#" @click.prevent="cancelOrder(order)">
                                                 <i class="bi bi-x-circle me-2"></i>Cancel Order
@@ -1284,7 +1284,7 @@
                                             <button class="btn btn-sm btn-light flex-grow-1 shadow-sm fw-semibold border-secondary border-opacity-25" @click="editOrder(selectedOrder)">
                                                 <i class="bi bi-pencil-square me-1"></i>Edit
                                             </button>
-                                            <template x-if="selectedOrder.status === 'pending'">
+                                            <template x-if="['pending', 'pending_confirmation'].includes(selectedOrder.status)">
                                                 @can('orders.confirm')
                                                 <button class="btn btn-sm btn-primary flex-grow-1 shadow-sm fw-semibold" @click="confirmOrder(selectedOrder)">
                                                     <i class="bi bi-check-circle me-1"></i>Confirm
@@ -1326,7 +1326,7 @@
                                                 </button>
                                                 @endcan
                                             </template>
-                                            <template x-if="['pending', 'confirmed', 'processing', 'ready_to_ship'].includes(selectedOrder.status)">
+                                            <template x-if="['pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'].includes(selectedOrder.status)">
                                                 @can('orders.cancel')
                                                 <button class="btn btn-sm btn-outline-danger flex-grow-1 shadow-sm fw-semibold" @click="cancelOrder(selectedOrder)">
                                                     <i class="bi bi-x-circle me-1"></i>Cancel

@@ -1087,15 +1087,15 @@
                         </div>
 
                         {{-- Schedule Order Toggle (Merged) --}}
-                        <div class="mb-4 bg-body-tertiary rounded-4 p-3 border shadow-sm transition-all" :class="isDraft ? 'border-warning' : ''">
-                            <div class="form-check form-switch d-flex align-items-center justify-content-between gap-3 p-0 m-0 cursor-pointer" @click="isDraft = !isDraft">
+                        <div class="mb-4 bg-body-tertiary rounded-4 p-3 border shadow-sm transition-all" :class="orderStatus === 'future_order' ? 'border-warning' : ''">
+                            <div class="form-check form-switch d-flex align-items-center justify-content-between gap-3 p-0 m-0 cursor-pointer" @click="orderStatus = (orderStatus === 'future_order' ? 'pending' : 'future_order')">
                                 <div>
                                     <label class="form-check-label fw-bold mb-0 text-body-emphasis" for="futureOrderSwitch">Schedule Future Order</label>
                                     <div class="small text-muted mt-1" style="font-size: 11px;">Save as a draft for later.</div>
                                 </div>
-                                <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" id="futureOrderSwitch" x-model="isDraft" @click.stop>
+                                <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" id="futureOrderSwitch" :checked="orderStatus === 'future_order'" @change="orderStatus = $event.target.checked ? 'future_order' : 'pending'" @click.stop>
                             </div>
-                            <div x-show="isDraft" x-cloak class="mt-3 pt-3 border-top">
+                            <div x-show="orderStatus === 'future_order'" x-cloak class="mt-3 pt-3 border-top">
                                 <label class="form-label fw-semibold small text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Delivery Date</label>
                                 <input type="date" class="form-control form-control-sm border-warning bg-warning bg-opacity-10 fw-bold" :min="new Date().toISOString().split('T')[0]" x-model="futureOrderDate" required>
                             </div>
@@ -1144,7 +1144,7 @@
                             class="btn btn-primary w-100 py-3 fw-bold text-uppercase shadow-sm position-relative overflow-hidden" style="letter-spacing: 1px;">
                             <span x-show="placing" class="spinner-border spinner-border-sm me-2"></span>
                             <i x-show="!placing" class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
-                            <span x-text="editingOrderId ? 'Update Order' : (isDraft ? 'Save Future Order' : 'Complete Order')" class="align-middle"></span>
+                            <span x-text="editingOrderId ? 'Update Order' : (orderStatus === 'future_order' ? 'Save Future Order' : 'Complete Order')" class="align-middle"></span>
                         </button>
                         
                         <template x-if="formErrors.length">
@@ -1213,7 +1213,7 @@
                                         
                                         <div class="col-12 col-lg-3 mb-3 mb-lg-0">
                                             <span class="badge rounded-pill px-3 py-1.5" :class="getStatusBadgeClass(order.status_label || order.lifecycle_status || order.status || 'Pending')" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
-                                            <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis px-2 py-1 ms-1" x-show="order.is_draft">Future</span>
+                                            <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis px-2 py-1 ms-1" x-show="order.status === 'future_order'">Future</span>
                                         </div>
                                         
                                         <div class="col-12 col-lg-3 text-lg-end pe-lg-4 d-flex align-items-center justify-content-between justify-content-lg-end">
@@ -2058,7 +2058,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         isCartSidebarOpen: false, useWalletBalance: false,
         partyId: new URLSearchParams(window.location.search).get('customer_id') || '', defaultWarehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', warehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale', shippingFee: 0,
         orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
-        isDraft: false, futureOrderDate: '',
+        orderStatus: 'pending', futureOrderDate: '',
         editingOrderId: null,
         editingOrderNo: null,
         addresses: [],
@@ -2432,7 +2432,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             this.billingAddressId = order.billing_address_id || order.shipping_address_id || '';
             this.sameAsShipping = !order.billing_address_id || String(order.billing_address_id) === String(order.shipping_address_id);
             this.orderDate = order.order_date ? String(order.order_date).replace('T', ' ').substring(0, 19) : this.orderDate;
-            this.isDraft = Boolean(order.is_draft);
+            this.orderStatus = order.status;
             this.futureOrderDate = order.future_order_date ? String(order.future_order_date).substring(0, 10) : '';
             this.couponCode = order.coupon_code || '';
             this.appliedOfferId = order.applied_offer_id || null;
@@ -2510,11 +2510,11 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         },
 
         get futureOrders() {
-            return (this.recentOrders || []).filter(order => Boolean(order.is_draft) || order.lifecycle_status === 'future_order' || order.status_label === 'Future Order');
+            return (this.recentOrders || []).filter(order => order.lifecycle_status === 'future_order' || order.status_label === 'Future Order' || order.status === 'future_order');
         },
 
         get historyOrders() {
-            return (this.recentOrders || []).filter(order => !(Boolean(order.is_draft) || order.lifecycle_status === 'future_order' || order.status_label === 'Future Order'));
+            return (this.recentOrders || []).filter(order => !(order.lifecycle_status === 'future_order' || order.status_label === 'Future Order' || order.status === 'future_order'));
         },
 
         get customerTags() {
@@ -3023,7 +3023,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             if (!this.shippingAddressId) { this.formErrors.push('Please select a shipping address.'); return false; }
             if (!this.sameAsShipping && !this.billingAddressId) { this.formErrors.push('Please select a billing address.'); return false; }
             if (this.cart.length === 0) { this.formErrors.push('Cart is empty.'); return false; }
-            if (this.isDraft && !this.futureOrderDate) { this.formErrors.push('Please set future order date.'); return false; }
+            if (this.orderStatus === 'future_order' && !this.futureOrderDate) { this.formErrors.push('Please set future order date.'); return false; }
 
             try {
                 const payload = {
@@ -3034,8 +3034,8 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     billing_address_id: this.sameAsShipping ? (this.shippingAddressId || null) : (this.billingAddressId || null),
                     order_date: this.orderDate,
                     items: this.buildCartPayload(),
-                    is_draft: this.isDraft ? 1 : 0,
-                    future_order_date: this.isDraft ? this.futureOrderDate : null,
+                    status: this.orderStatus,
+                    future_order_date: this.orderStatus === 'future_order' ? this.futureOrderDate : null,
                     coupon_code: this.couponApplied ? this.couponCode : null,
                     applied_offer_id: this.bestOrderOffer ? this.bestOrderOffer.id : null,
                     applied_bogo_ids: this.appliedBogoIds,
@@ -3162,7 +3162,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             if (['delivered', 'completed', 'return received'].includes(s)) return 'text-bg-success-subtle text-success-emphasis border border-success-subtle';
             if (['cancelled', 'returned', 'rejected', 'rto'].includes(s)) return 'text-bg-danger-subtle text-danger-emphasis border border-danger-subtle';
             if (['shipped', 'dispatched', 'ready', 'processing', 'confirmed', 'approved'].includes(s)) return 'text-bg-primary-subtle text-primary-emphasis border border-primary-subtle';
-            if (['pending'].includes(s)) return 'text-bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+            if (['pending', 'pending_confirmation'].includes(s)) return 'text-bg-warning-subtle text-warning-emphasis border border-warning-subtle';
             return 'text-bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle';
         }
     };

@@ -121,8 +121,7 @@ class OrderService
                 'coupon_code' => $data['coupon_code'] ?? null,
                 'applied_offer_id' => $data['applied_offer_id'] ?? null,
                 'net_amount' => $data['net_amount'] ?? 0,
-                'status' => 'pending',
-                'is_draft' => $data['is_draft'] ?? false,
+                'status' => $data['status'] ?? 'pending',
                 'future_order_date' => $data['future_order_date'] ?? null,
                 'created_by' => auth()->id(),
                 'updated_by' => auth()->id(),
@@ -195,6 +194,22 @@ class OrderService
                     ]);
                 }
             }
+
+            $initialNotes = 'Order placed successfully.';
+            $logStatus = $order->status;
+            if ($logStatus === 'future_order') {
+                if ($order->future_order_date) {
+                    $initialNotes = 'Future order scheduled for: ' . \Carbon\Carbon::parse($order->future_order_date)->format('d M Y, h:i A') . '.';
+                } else {
+                    $initialNotes = 'Order saved as future order.';
+                }
+            }
+
+            $order->statusLogs()->create([
+                'status' => $logStatus,
+                'notes' => $initialNotes,
+                'changed_by' => auth()->id() ?? $order->created_by,
+            ]);
 
             // Dispatch Notification (fail-safe: never break core flow)
             try {
@@ -666,7 +681,7 @@ class OrderService
                 'applied_offer_id' => $calc['applied_offer_id'],
                 'net_amount' => $calc['grand_total'],
                 'items' => $calc['items'],
-                'is_draft' => $data['is_draft'] ?? false,
+                'status' => $data['status'] ?? 'pending',
                 'future_order_date' => $data['future_order_date'] ?? null,
                 'applied_bogo_ids' => $calc['applied_bogo_ids'],
             ], $this->mapAddressFields($shippingAddr, 'shipping'), $this->mapAddressFields($billingAddr, 'billing'));
@@ -695,9 +710,9 @@ class OrderService
             // Reload with lock
             $order = Order::with('items')->lockForUpdate()->findOrFail($order->id);
 
-            if (! in_array($order->status, ['pending', 'confirmed'], true)) {
+            if (! in_array($order->status, ['pending', 'future_order', 'pending_confirmation', 'confirmed'], true)) {
                 throw ValidationException::withMessages([
-                    'status' => 'Only pending or confirmed orders can be updated.',
+                    'status' => 'Only pending, future order, pending confirmation, or confirmed orders can be updated.',
                 ]);
             }
 
@@ -719,6 +734,9 @@ class OrderService
                 }
             }
 
+            $oldStatus = $order->status;
+            $newStatus = $data['status'] ?? $oldStatus;
+
             $orderPayload = array_merge([
                 'warehouse_id' => $data['warehouse_id'] ?? $order->warehouse_id,
                 'total_amount' => $calc['subtotal'],
@@ -727,8 +745,8 @@ class OrderService
                 'coupon_code' => $calc['coupon_code'],
                 'applied_offer_id' => $calc['applied_offer_id'],
                 'net_amount' => $calc['grand_total'],
-                'is_draft' => isset($data['is_draft']) ? (bool) $data['is_draft'] : $order->is_draft,
-                'future_order_date' => array_key_exists('future_order_date', $data) ? $data['future_order_date'] : $order->future_order_date,
+                'status' => $newStatus,
+                'future_order_date' => $newStatus === 'future_order' ? (array_key_exists('future_order_date', $data) ? $data['future_order_date'] : $order->future_order_date) : null,
                 'updated_by' => auth()->id(),
             ], $this->mapAddressFields($shippingAddr, 'shipping'), $this->mapAddressFields($billingAddr, 'billing'));
 
@@ -759,6 +777,21 @@ class OrderService
                 if ($newCouponCode) {
                     Coupon::where('code', $newCouponCode)->increment('used_count');
                 }
+            }
+
+            if ($oldStatus !== $newStatus) {
+                $notes = 'Status changed from ' . ucfirst(str_replace('_', ' ', $oldStatus)) . ' to ' . ucfirst(str_replace('_', ' ', $newStatus)) . '.';
+                if ($newStatus === 'future_order' && $order->future_order_date) {
+                    $notes = 'Order scheduled for future: ' . \Carbon\Carbon::parse($order->future_order_date)->format('d M Y, h:i A') . '.';
+                } elseif ($newStatus === 'pending' && $oldStatus === 'future_order') {
+                    $notes = 'Future order moved to active pending.';
+                }
+
+                $order->statusLogs()->create([
+                    'status' => $newStatus,
+                    'notes' => $notes,
+                    'changed_by' => auth()->id(),
+                ]);
             }
 
             if (($calc['applied_offer_id'] ?? null) !== $lastOfferId) {

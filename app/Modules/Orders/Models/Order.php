@@ -60,7 +60,9 @@ class Order extends Model implements Auditable
 
     /** Canonical order lifecycle (warehouse → customer). */
     public const LIFECYCLE_STATUSES = [
+        'future_order',
         'pending',
+        'pending_confirmation',
         'confirmed',
         'processing',
         'ready_to_ship',
@@ -83,9 +85,6 @@ class Order extends Model implements Auditable
     /** Map legacy DB value and normalize for UI / stepper logic. */
     public function lifecycleStatus(): string
     {
-        if ($this->is_draft && $this->status === 'pending') {
-            return 'future_order';
-        }
 
         $latestReturn = $this->relationLoaded('orderReturns')
             ? $this->orderReturns->sortByDesc('id')->first()
@@ -138,7 +137,7 @@ class Order extends Model implements Auditable
         'billing_address_id', 'billing_address_line_1', 'billing_address_line_2',
         'billing_village_id', 'billing_village_name', 'billing_post_office', 'billing_taluka',
         'billing_district', 'billing_city', 'billing_state', 'billing_pincode',
-        'is_draft', 'future_order_date', 'scheduled_confirmation_date', 'confirmation_attempts', 'created_by', 'updated_by',
+        'future_order_date', 'scheduled_confirmation_date', 'confirmation_attempts', 'created_by', 'updated_by',
         'wallet_amount_used', 'cashback_earned',
     ];
 

@@ -40,7 +40,7 @@ class StoreOrderRequest extends FormRequest
             'items.*.total_amount' => 'nullable|numeric|min:0',
             'items.*.is_gift' => 'nullable|boolean',
             'items.*.gift_source' => 'nullable|string',
-            'is_draft' => 'nullable|boolean',
+            'status' => 'nullable|string|in:pending,future_order',
             'future_order_date' => 'nullable|date',
             'coupon_code' => 'nullable|string',
             'applied_offer_id' => 'nullable|integer|exists:offers,id',
