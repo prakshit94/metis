@@ -604,9 +604,10 @@
                                             </div>
                                             <div class="row g-2">
                                                 <div class="col-8">
-                                                    <div class="form-floating">
-                                                        <input type="number" class="form-control form-control-sm text-center fw-bold" style="height: 42px; min-height: 42px;" x-model.number="p._qty" min="1" :max="getWarehouseStock(p) || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
-                                                        <label class="text-muted" style="padding-top: 0.5rem; padding-bottom: 0.5rem; font-size: 0.75rem;">Qty</label>
+                                                    <div class="input-group shadow-sm h-100" style="min-height: 42px;">
+                                                        <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-dash"></i></button>
+                                                        <input type="number" class="form-control text-center fw-bold px-1 no-spinners" x-model.number="p._qty" min="1" :max="getWarehouseStock(p) || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
+                                                        <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty < (getWarehouseStock(p) || 9999)) p._qty++" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-plus"></i></button>
                                                     </div>
                                                 </div>
                                                 <div class="col-4">
