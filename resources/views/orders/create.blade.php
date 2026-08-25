@@ -1386,10 +1386,13 @@
                                         <th scope="col" class="text-nowrap text-end pe-4 py-2 border-bottom-0">Total</th>
                                     </tr>
                                 </thead>
-                                <template x-for="order in futureOrders" :key="'future-' + order.id">
+                                <template x-for="(order, index) in futureOrders" :key="'future-' + order.id">
                                     <tbody class="border-top-0 border-bottom">
                                         <tr @click="toggleOrderDetails(order.id)" class="transition-all" style="cursor: pointer;">
-                                            <td class="text-nowrap ps-4 py-2 fw-bold text-body-emphasis" x-text="order.order_no || order.order_number || ('Order #' + order.id)"></td>
+                                            <td class="text-nowrap ps-4 py-2 fw-bold text-body-emphasis">
+                                                <span class="text-secondary opacity-75 me-1" x-text="(index + 1) + '.'"></span>
+                                                <span x-text="order.order_no || order.order_number || ('Order #' + order.id)"></span>
+                                            </td>
                                             <td class="text-nowrap py-2">
                                                 <div class="fw-medium text-body-emphasis" x-text="order.future_order_date ? new Date(order.future_order_date).toLocaleDateString() : 'No future date'"></div>
                                                 <div class="small text-muted" x-show="order.future_order_date" x-text="new Date(order.future_order_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></div>
@@ -1501,11 +1504,16 @@
                                         </tr>
                                     </thead>
                                     <tbody class="border-top-0">
-                                        <template x-for="log in customerDetails.call_logs" :key="'log-' + log.id">
+                                        <template x-for="(log, index) in customerDetails.call_logs" :key="'log-' + log.id">
                                             <tr>
                                                 <td class="text-nowrap ps-4 text-muted py-2">
-                                                    <div x-text="new Date(log.created_at).toLocaleString(undefined, {month:'short', day:'numeric', year:'numeric'})"></div>
-                                                    <div class="small" x-text="new Date(log.created_at).toLocaleString(undefined, {hour:'2-digit', minute:'2-digit'})"></div>
+                                                    <div class="d-flex align-items-start gap-2">
+                                                        <span class="text-secondary opacity-75 fw-bold" x-text="(index + 1) + '.'"></span>
+                                                        <div>
+                                                            <div class="text-body-emphasis" x-text="new Date(log.created_at).toLocaleString(undefined, {month:'short', day:'numeric', year:'numeric'})"></div>
+                                                            <div class="small" x-text="new Date(log.created_at).toLocaleString(undefined, {hour:'2-digit', minute:'2-digit'})"></div>
+                                                        </div>
+                                                    </div>
                                                 </td>
                                                 <td class="text-nowrap fw-medium py-2">
                                                     <i class="bi bi-person text-muted me-1"></i>
