@@ -24,14 +24,21 @@ class InventoryAdjustmentSeeder extends Seeder
         }
 
         for ($i = 1; $i <= 5; $i++) {
+            $referenceNo = 'ADJ-' . date('Ym') . '-' . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
+
+            // Skip if already seeded (prevents duplicate key on re-seed)
+            if (DB::table('inventory_adjustments')->where('reference_no', $referenceNo)->exists()) {
+                continue;
+            }
+
             $adjId = DB::table('inventory_adjustments')->insertGetId([
-                'reference_no' => 'ADJ-' . date('Ym') . '-' . str_pad((string)$i, 4, '0', STR_PAD_LEFT),
+                'reference_no' => $referenceNo,
                 'warehouse_id' => $faker->randomElement($warehouses),
-                'adjusted_by' => $users[0],
-                'reason' => $faker->randomElement(['Stock take variance', 'Damaged goods', 'Found stock']),
-                'status' => 'approved',
-                'created_at' => Carbon::now()->subDays(rand(1, 10)),
-                'updated_at' => now(),
+                'adjusted_by'  => $users[0],
+                'reason'       => $faker->randomElement(['Stock take variance', 'Damaged goods', 'Found stock']),
+                'status'       => 'approved',
+                'created_at'   => Carbon::now()->subDays(rand(1, 10)),
+                'updated_at'   => now(),
             ]);
 
             $items = [];
