@@ -30,11 +30,10 @@ class TaxRateSeeder extends Seeder
 
         foreach ($taxRates as $tax) {
             TaxRate::firstOrCreate(['name' => $tax['name']], [
-                'name'        => $tax['name'],
-                'rate'        => $tax['rate'],
-                'description' => $tax['description'] ?? null,
-                'status'      => 'active',
-                'is_active'   => true,
+                'name'      => $tax['name'],
+                'rate'      => $tax['rate'],
+                'status'    => 'active',
+                'is_active' => true,
             ]);
         }
     }
