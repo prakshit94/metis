@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             UnitOfMeasureSeeder::class,
             TaxRateSeeder::class,
             HsnCodeSeeder::class,
+            AttributeSeeder::class,
             WarehouseSeeder::class,
             ProductSeeder::class,
             StockSeeder::class,
