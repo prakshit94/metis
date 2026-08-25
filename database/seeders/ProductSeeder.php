@@ -425,7 +425,7 @@ class ProductSeeder extends Seeder
                     'min_stock_level'          => 5,
                     'manage_stock'             => true,
                     'is_sku_enabled'           => true,
-                    'status'                   => 'published',
+                    'status'                   => 'active',
                     'is_active'                => true,
                     'description'              => $item['description'],
                     'image_path'               => $imagePath,
