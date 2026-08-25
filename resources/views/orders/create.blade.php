@@ -1429,7 +1429,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="bg-white rounded-3 border overflow-hidden shadow-sm">
+                                                    <div class="bg-body rounded-3 border overflow-hidden shadow-sm">
                                                         <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
                                                             <thead class="table-light">
                                                                 <tr class="text-muted">
