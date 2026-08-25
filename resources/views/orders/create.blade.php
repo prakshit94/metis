@@ -1526,9 +1526,9 @@
                                                     </div>
                                                     <div class="d-flex flex-wrap gap-2 mt-1" x-show="log.metas && log.metas.length > 0">
                                                         <template x-for="meta in log.metas" :key="meta.id">
-                                                            <span class="badge bg-light text-secondary border fw-normal py-1 px-2">
+                                                            <span class="badge bg-body-secondary text-body-secondary border fw-normal py-1 px-2">
                                                                 <span x-text="meta.key.replace(/_/g, ' ')" class="text-capitalize opacity-75"></span>: 
-                                                                <span class="fw-medium text-dark" x-text="(function(v) {
+                                                                <span class="fw-medium text-body-emphasis" x-text="(function(v) {
                                                                     try {
                                                                         let p = typeof v === 'string' ? JSON.parse(v) : v;
                                                                         return Array.isArray(p) ? p.join(', ') : p;
@@ -1545,7 +1545,7 @@
                             </div>
                         </template>
                         <template x-if="!customerDetails || !customerDetails.call_logs || customerDetails.call_logs.length === 0">
-                            <div class="alert alert-light border-0 mb-0 p-5 text-center text-muted">
+                            <div class="alert alert-secondary border-0 mb-0 p-5 text-center text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                 No call history available for this customer.
                             </div>
