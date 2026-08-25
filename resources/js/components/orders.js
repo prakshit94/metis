@@ -240,7 +240,7 @@ document.addEventListener('alpine:init', () => {
 
     toggleAllFilter(type) {
         if (type === 'status') {
-            let list = this.allFilterStatuses || [];
+            let list = this.allowedFilterStatuses || [];
             if (this.statusFilter.length === list.length) this.statusFilter = [];
             else this.statusFilter = [...list];
         } else if (type === 'state') {
@@ -272,6 +272,29 @@ document.addEventListener('alpine:init', () => {
     init() {
       this.statusFilter = [...(this.allowedFilterStatuses || [])];
       this.loadOrders();
+      
+      this.$watch('visibleWarehouseStat', value => {
+        let whId = '';
+        if (value) {
+          const wh = Object.values(this.warehousesList || {}).find(w => w.name === value);
+          if (wh) whId = wh.id;
+        }
+        if (this.warehouseFilter !== whId) {
+          this.warehouseFilter = whId;
+          this.filterOrders();
+        }
+      });
+      
+      this.$watch('warehouseFilter', value => {
+        let whName = '';
+        if (value) {
+          const wh = Object.values(this.warehousesList || {}).find(w => w.id == value);
+          if (wh) whName = wh.name;
+        }
+        if (this.visibleWarehouseStat !== whName) {
+          this.visibleWarehouseStat = whName;
+        }
+      });
       
       const params = new URLSearchParams(window.location.search);
       if (params.has('success')) {
@@ -654,7 +677,7 @@ document.addEventListener('alpine:init', () => {
           const isFlat = ['flat', 'fixed', 'amount'].includes(type.toLowerCase());
           const displayVal = Number.isFinite(val) ? val : 0;
           const formattedVal = displayVal % 1 === 0 ? displayVal.toFixed(0) : displayVal.toFixed(2);
-          const badgeLabel = displayVal > 0 ? (isFlat ? `Rs ${formattedVal} off` : `${formattedVal}% off`) : '';
+          const badgeLabel = displayVal > 0 ? (isFlat ? `₹ ${formattedVal} off` : `${formattedVal}% off`) : '';
 
           return {
             product_id: item.product_id || (item.product ? item.product.id : null),
@@ -1588,13 +1611,13 @@ document.addEventListener('alpine:init', () => {
             title: { text: 'Orders' }
           }, {
             opposite: true,
-            title: { text: 'Revenue (Rs.)' }
+            title: { text: 'Revenue (₹)' }
           }],
           tooltip: {
             y: [{
               formatter: (val) => val + " orders"
             }, {
-              formatter: (val) => "Rs. " + val
+              formatter: (val) => "₹ " + val
             }]
           }
         };

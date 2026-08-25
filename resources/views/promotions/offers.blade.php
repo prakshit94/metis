@@ -186,12 +186,12 @@
                                             <span>Buy <span class="text-success" x-text="o.buy_qty"></span> Get <span class="text-success" x-text="o.get_qty"></span> Free Item</span>
                                         </template>
                                         <template x-if="o.type === 'order_discount' || o.type === 'category_discount'">
-                                            <span x-text="o.discount_type === 'percentage' ? parseFloat(o.value).toFixed(2) + '%' : 'Rs ' + parseFloat(o.value).toFixed(2)"></span>
+                                            <span x-text="o.discount_type === 'percentage' ? parseFloat(o.value).toFixed(2) + '%' : '₹ ' + parseFloat(o.value).toFixed(2)"></span>
                                         </template>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="fw-semibold text-secondary" x-text="o.min_spend > 0 ? 'Rs ' + parseFloat(o.min_spend).toFixed(2) : 'No Min Spend'"></span>
+                                    <span class="fw-semibold text-secondary" x-text="o.min_spend > 0 ? '₹ ' + parseFloat(o.min_spend).toFixed(2) : 'No Min Spend'"></span>
                                 </td>
                                 <td>
                                     <template x-if="o.applicable_products && (typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products).length > 0 : o.applicable_products.length > 0)">
@@ -375,13 +375,13 @@
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Discount Type *</label>
                                             <select x-select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.discount_type" style="font-size: 14px;">
                                                 <option value="percentage">Percentage (%)</option>
-                                                <option value="fixed">Flat Amount (Rs )</option>
+                                                <option value="fixed">Flat Amount (₹ )</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6" x-show="form.type === 'order_discount' || form.type === 'category_discount'">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Value *</label>
                                             <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
-                                                <span class="input-group-text border-0 bg-transparent text-muted fw-bold" x-text="form.discount_type === 'percentage' ? '%' : 'Rs '"></span>
+                                                <span class="input-group-text border-0 bg-transparent text-muted fw-bold" x-text="form.discount_type === 'percentage' ? '%' : '₹ '"></span>
                                                 <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" x-model="form.value" min="0" step="0.01" style="font-size: 14px;">
                                             </div>
                                         </div>
@@ -606,14 +606,14 @@ function offersModule() {
             else if (o.type === 'free_product') return `Free Product Offer (Buy ${o.buy_qty} Get ${o.get_qty})`;
 
             if (o.discount_type === 'percentage') desc += parseFloat(o.value) + '% Discount';
-            else desc += 'Rs ' + parseFloat(o.value) + ' Discount';
+            else desc += '₹ ' + parseFloat(o.value) + ' Discount';
 
             if (o.cashback_percent > 0 && o.cashback_fixed > 0) {
-                desc += ` AND additionally grants ${parseFloat(o.cashback_percent)}% + Rs ${parseFloat(o.cashback_fixed)} Cashback simultaneously!`;
+                desc += ` AND additionally grants ${parseFloat(o.cashback_percent)}% + ₹ ${parseFloat(o.cashback_fixed)} Cashback simultaneously!`;
             } else if (o.cashback_percent > 0) {
                 desc += ` AND additionally grants ${parseFloat(o.cashback_percent)}% Cashback simultaneously!`;
             } else if (o.cashback_fixed > 0) {
-                desc += ` AND additionally grants a Rs ${parseFloat(o.cashback_fixed)} flat Cashback simultaneously!`;
+                desc += ` AND additionally grants a ₹ ${parseFloat(o.cashback_fixed)} flat Cashback simultaneously!`;
             }
             return desc;
         },

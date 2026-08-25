@@ -29,12 +29,6 @@ class MessageController extends Controller
             'type' => ['nullable', 'in:text,image,video,file,document,voice,link,emoji'],
             'content' => ['nullable', 'string', 'max:10000'],
             'parent_id' => ['nullable', 'integer', Rule::exists('chat_messages', 'id')->where('conversation_id', $conversation->id)],
-            'forwarded_from_id' => ['nullable', 'integer', 'exists:chat_messages,id'],
-            'attachments' => ['nullable', 'array'],
-            'attachments.*.name' => ['nullable', 'string', 'max:255'],
-            'attachments.*.path' => ['nullable', 'string', 'max:1000'],
-            'attachments.*.mime' => ['nullable', 'string', 'max:120'],
-            'attachments.*.size' => ['nullable', 'integer', 'max:'.(config('chat.uploads.max_size_kb') * 1024)],
             'files' => ['nullable', 'array', 'max:10'],
             'files.*' => ['file', 'max:'.config('chat.uploads.max_size_kb'), 'mimes:'.implode(',', config('chat.uploads.allowed_mimes'))],
             'client_id' => ['nullable', 'string', 'max:120'],
@@ -59,7 +53,7 @@ class MessageController extends Controller
             }
         }
 
-        $data['attachments'] = array_values(array_filter(array_merge($data['attachments'] ?? [], $uploadedAttachments)));
+        $data['attachments'] = array_values(array_filter($uploadedAttachments));
         if (! empty($uploadedAttachments) && empty($data['type'])) {
             $data['type'] = collect($uploadedAttachments)->every(fn ($attachment) => str_starts_with((string) $attachment['mime'], 'image/'))
                 ? 'image'

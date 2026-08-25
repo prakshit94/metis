@@ -95,7 +95,7 @@
                             Pincode: {{ optional($order->shippingAddress ?? $order->billingAddress)->pincode ?? '-' }}
                         </div>
                         <div class="col right big">
-                            COD Amount: Rs. {{ number_format($order->net_amount, 0) }}
+                            COD Amount: ₹ {{ number_format($order->net_amount, 0) }}
                         </div>
                     </div>
                 </div>

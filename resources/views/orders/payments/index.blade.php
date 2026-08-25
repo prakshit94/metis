@@ -163,7 +163,7 @@
                                 <i class="bi bi-arrow-down" x-show="sortField === 'payment_method' && sortDirection === 'desc'"></i>
                             </th>
                             <th scope="col" role="button" @click="sortBy('amount')" class="sortable">
-                                <i class="bi bi-currency-dollar me-1 text-secondary"></i>Amount
+                                <i class="bi bi-currency-rupee me-1 text-secondary"></i>Amount
                                 <i class="bi bi-arrow-up" x-show="sortField === 'amount' && sortDirection === 'asc'"></i>
                                 <i class="bi bi-arrow-down" x-show="sortField === 'amount' && sortDirection === 'desc'"></i>
                             </th>

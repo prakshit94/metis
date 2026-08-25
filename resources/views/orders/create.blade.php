@@ -302,9 +302,9 @@
                                                 <i class="bi bi-wallet2 text-warning-emphasis fs-5 me-2"></i>
                                                 <h6 class="fw-bold text-warning-emphasis mb-0" style="text-transform: uppercase; font-size: 11px;">Financial & Stats</h6>
                                             </div>
-                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Credit Limit</span><span class="fw-bold text-body-emphasis">Rs <span x-text="Number(customerDetails.credit_limit || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
-                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Outstanding Bal</span><span class="fw-bold fs-6" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">Rs <span x-text="Number(customerDetails.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
-                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Cashback Wallet</span><span class="fw-bold fs-6 text-success">Rs <span x-text="Number(customerDetails.wallet_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Credit Limit</span><span class="fw-bold text-body-emphasis">₹ <span x-text="Number(customerDetails.credit_limit || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Outstanding Bal</span><span class="fw-bold fs-6" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">₹ <span x-text="Number(customerDetails.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Cashback Wallet</span><span class="fw-bold fs-6 text-success">₹ <span x-text="Number(customerDetails.wallet_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
                                             
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <div><span class="text-muted d-block small mb-1">Cr. Days</span><span class="fw-medium text-body-emphasis" x-text="(customerDetails.credit_days || '0') + ' Days'"></span></div>
@@ -315,7 +315,7 @@
                                                 <div><span class="text-muted d-block small mb-1">Total Orders</span><span class="fw-bold text-primary fs-6" x-text="Math.max(customerDetails.orders_count || 0, (customerDetails.orders || []).length)"></span></div>
                                                 <div class="text-end" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
                                                     <span class="text-muted d-block small mb-1">Total Revenue</span>
-                                                    <span class="fw-bold text-primary fs-6">Rs <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status !== 'cancelled').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span>
+                                                    <span class="fw-bold text-primary fs-6">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status !== 'cancelled').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-0 mt-2" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
@@ -323,8 +323,8 @@
                                                 <div class="text-end"><span class="text-muted d-block small mb-1">Returned</span><span class="fw-medium text-danger"><span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').length"></span> <span style="font-size: 10px;" x-text="'(' + (Math.round(((customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').length / ((customerDetails.orders || []).length || 1)) * 100) || 0) + '%)'"></span></span></div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-0 mt-2" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
-                                                <div><span class="text-muted d-block small mb-1">Rev. Delivered</span><span class="fw-bold text-success" style="font-size: 11px;">Rs <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span></div>
-                                                <div class="text-end"><span class="text-muted d-block small mb-1">Rev. Returned</span><span class="fw-bold text-danger" style="font-size: 11px;">Rs <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span></div>
+                                                <div><span class="text-muted d-block small mb-1">Rev. Delivered</span><span class="fw-bold text-success" style="font-size: 11px;">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span></div>
+                                                <div class="text-end"><span class="text-muted d-block small mb-1">Rev. Returned</span><span class="fw-bold text-danger" style="font-size: 11px;">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span></div>
                                             </div>
                                             <div class="mb-0 mt-2 pt-2 border-top border-warning border-opacity-25" x-show="customerDetails.last_purchase_at" x-cloak>
                                                 <div class="text-end"><span class="text-muted d-block small mb-1">Last Order</span><span class="fw-medium text-body-emphasis" style="font-size: 11px;" x-text="new Date(customerDetails.last_purchase_at).toLocaleDateString()"></span></div>
@@ -552,7 +552,7 @@
                         <div class="row g-3" x-show="viewMode === 'grid'">
                             <template x-for="p in products" :key="p.id">
                                 <div class="col-sm-6 col-md-4">
-                                    <div class="card h-100 border shadow-sm transition-all" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getWarehouseStock(p) <= 0}">
+                                    <div class="card h-100 border shadow-sm transition-all" x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="isHovered ? 'position: relative; z-index: 1050;' : ''" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getWarehouseStock(p) <= 0}">
                                         <div class="card-body p-3">
                                             <div class="d-flex gap-3 mb-3">
                                                 <div class="position-relative cursor-pointer" @click="openProductModal(p)">
@@ -567,7 +567,7 @@
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-1 bg-body-tertiary rounded">
-                                                <span class="fw-bold text-primary fs-5" x-text="'Rs ' + parseFloat(p.selling_price).toFixed(2)"></span>
+                                                <span class="fw-bold text-primary fs-5" x-text="'₹ ' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></span>
                                                 <span class="badge" :class="getWarehouseStock(p) > 10 ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p))"></span>
                                             </div>
                                             <div class="d-flex flex-wrap gap-1 mb-3" x-show="getProductPromotions(p).length > 0">
@@ -575,7 +575,7 @@
                                                     <span class="badge border bg-primary bg-opacity-10 text-primary border-primary" style="font-size: 10px; cursor: pointer;">
                                                         <i class="bi bi-tags me-1"></i> View Offers (<span x-text="getProductPromotions(p).length"></span>)
                                                     </span>
-                                                    <div x-show="showTooltip" x-transition.opacity class="position-absolute z-3" style="bottom: 100%; left: 0; margin-bottom: 8px; width: 280px; cursor: default;" x-cloak>
+                                                    <div x-show="showTooltip" x-transition.opacity class="position-absolute" style="bottom: 100%; z-index: 9999; left: 0; margin-bottom: 8px; width: 280px; cursor: default;" x-cloak>
                                                         <div class="card border border-secondary-subtle shadow-lg rounded-3 overflow-hidden">
                                                             <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
                                                                 <span class="fw-bold text-body" style="font-size: 12px;"><i class="bi bi-tags-fill me-1 text-primary"></i> Applicable Offers</span>
@@ -623,7 +623,7 @@
                         </div>
                         
                         {{-- Table View --}}
-                        <div class="table-responsive border rounded bg-body shadow-sm" x-show="viewMode === 'table'">
+                        <div class="table-responsive border rounded overflow-visible bg-body shadow-sm" x-show="viewMode === 'table'">
                             <table class="table table-hover table-striped align-middle mb-0" style="font-size: 13px;">
                                 <thead class="border-bottom">
                                     <tr class="text-muted">
@@ -654,16 +654,20 @@
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div class="fw-bold text-primary fs-6 mb-1" x-text="'Rs ' + parseFloat(p.selling_price).toFixed(2)"></div>
-                                                <div class="small text-muted text-decoration-line-through mb-1" x-show="p.mrp > p.selling_price" x-text="'MRP Rs ' + parseFloat(p.mrp).toFixed(2)"></div>
-                                                <div class="badge bg-success" x-show="p.default_discount > 0"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
+                                            <td x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="isHovered ? 'position: relative; z-index: 1050;' : ''">
+                                                <div class="d-flex justify-content-between align-items-start mt-2">
+                                                    <div>
+                                                        <div class="fw-bold text-primary fs-6 mb-1" x-text="'₹ ' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></div>
+                                                        <div class="small text-muted text-decoration-line-through mb-1" x-show="p.mrp > (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100))" x-text="'MRP ₹ ' + parseFloat(p.mrp).toFixed(2)"></div>
+                                                    </div>
+                                                    <div class="badge bg-success" x-show="p.default_discount > 0"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
+                                                </div>
                                                 <div class="d-flex flex-wrap gap-1 mt-1" x-show="getProductPromotions(p).length > 0">
                                                     <div class="position-relative" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
                                                         <span class="badge border bg-primary bg-opacity-10 text-primary border-primary" style="font-size: 10px; cursor: pointer;">
                                                             <i class="bi bi-tags me-1"></i> View Offers (<span x-text="getProductPromotions(p).length"></span>)
                                                         </span>
-                                                        <div x-show="showTooltip" x-transition.opacity class="position-absolute z-3" style="bottom: 100%; left: 0; margin-bottom: 8px; width: 280px; cursor: default;" x-cloak>
+                                                        <div x-show="showTooltip" x-transition.opacity class="position-absolute" style="bottom: 100%; z-index: 9999; left: 0; margin-bottom: 8px; width: 280px; cursor: default;" x-cloak>
                                                             <div class="card border border-secondary-subtle shadow-lg rounded-3 overflow-hidden">
                                                                 <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
                                                                     <span class="fw-bold text-body" style="font-size: 12px;"><i class="bi bi-tags-fill me-1 text-primary"></i> Applicable Offers</span>
@@ -809,12 +813,12 @@
                                     </template>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between mt-2">
-                                    <span class="text-muted fw-medium" style="font-size: 12px;" x-text="'Rs ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
-                                    <span class="fw-bold text-success fs-6" x-text="'Rs ' + Number(lineTotal(item)).toFixed(2)"></span>
+                                    <span class="text-muted fw-medium" style="font-size: 12px;" x-text="'₹ ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
+                                    <span class="fw-bold text-success fs-6" x-text="'₹ ' + Number(lineTotal(item)).toFixed(2)"></span>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between mt-1" x-show="item.taxRate > 0">
                                     <span class="text-muted" style="font-size: 11px;" x-text="'+ GST ' + item.taxRate + '%'"></span>
-                                    <span class="text-muted" style="font-size: 11px;" x-text="'Rs ' + Number(lineTotal(item) * (item.taxRate / 100)).toFixed(2)"></span>
+                                    <span class="text-muted" style="font-size: 11px;" x-text="'₹ ' + Number(lineTotal(item) * (item.taxRate / 100)).toFixed(2)"></span>
                                 </div>
                             </div>
                         </div>
@@ -836,7 +840,7 @@
                                 <template x-if="item.discountValue > 0">
                                         <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-flex align-items-center gap-1 px-2 py-1 rounded-3">
                                             <i class="bi bi-tag-fill"></i>
-                                            <span class="fw-bold" style="font-size: 11px;" x-text="(['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? 'Rs ' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? ' off' : '% off')"></span>
+                                            <span class="fw-bold" style="font-size: 11px;" x-text="(['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? '₹ ' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? ' off' : '% off')"></span>
                                         </div>
                                 </template>
                             </div>
@@ -890,12 +894,12 @@
                                             </template>
                                         </div>
                                         <div class="d-flex align-items-center justify-content-between mt-2">
-                                            <span class="text-muted fw-medium" style="font-size: 12px;" x-text="'Rs ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
-                                            <span class="fw-bold text-success fs-6" x-text="'Rs ' + Number(lineTotal(item)).toFixed(2)"></span>
+                                            <span class="text-muted fw-medium" style="font-size: 12px;" x-text="'₹ ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
+                                            <span class="fw-bold text-success fs-6" x-text="'₹ ' + Number(lineTotal(item)).toFixed(2)"></span>
                                         </div>
                                         <div class="d-flex align-items-center justify-content-between mt-1" x-show="item.taxRate > 0">
                                             <span class="text-muted" style="font-size: 11px;" x-text="'+ GST ' + item.taxRate + '%'"></span>
-                                            <span class="text-muted" style="font-size: 11px;" x-text="'Rs ' + Number(itemTaxAmount(item)).toFixed(2)"></span>
+                                            <span class="text-muted" style="font-size: 11px;" x-text="'₹ ' + Number(itemTaxAmount(item)).toFixed(2)"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -917,7 +921,7 @@
                                         <template x-if="item.discountValue > 0">
                                             <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-flex align-items-center gap-1 px-2 py-1 rounded-3">
                                                 <i class="bi bi-tag-fill"></i>
-                                                <span class="fw-bold" style="font-size: 11px;" x-text="(['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? 'Rs ' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? ' off' : '% off')"></span>
+                                                <span class="fw-bold" style="font-size: 11px;" x-text="(['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? '₹ ' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (['flat', 'amount', 'fixed'].includes((item.discountType || '').toLowerCase()) ? ' off' : '% off')"></span>
                                             </div>
                                         </template>
                                     </div>
@@ -957,7 +961,7 @@
                                         </div>
                                         <div>
                                             <p class="mb-0 fw-bold text-success-emphasis fs-6" x-text="bestOrderOffer.name"></p>
-                                            <p class="mb-0 fw-semibold text-success opacity-75 small" x-text="'Saving Rs ' + Number(orderOfferDiscountAmount).toFixed(2)"></p>
+                                            <p class="mb-0 fw-semibold text-success opacity-75 small" x-text="'Saving ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></p>
                                         </div>
                                     </div>
                                     <button type="button" @click.prevent="appliedOfferId = 'none'" class="btn btn-sm btn-light text-muted hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
@@ -983,7 +987,7 @@
                                                     <span>Free Gift Applied</span>
                                                 </template>
                                                 <template x-if="appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product'">
-                                                    <span x-text="'Saving Rs ' + Number(couponDiscount).toFixed(2)"></span>
+                                                    <span x-text="'Saving ₹ ' + Number(couponDiscount).toFixed(2)"></span>
                                                 </template>
                                             </p>
                                         </div>
@@ -1006,7 +1010,7 @@
                                             <p class="mb-0 text-info opacity-75 small" x-text="appliedBogoOfferNames"></p>
                                         </div>
                                     </div>
-                                    <span class="fw-bold text-info-emphasis fs-6" x-text="'- Rs ' + Number(bogoDiscount).toFixed(2)"></span>
+                                    <span class="fw-bold text-info-emphasis fs-6" x-text="'- ₹ ' + Number(bogoDiscount).toFixed(2)"></span>
                                 </div>
                             </template>
 
@@ -1018,7 +1022,7 @@
                         <div class="space-y-2 mb-4">
                             <div class="d-flex justify-content-between fw-medium text-muted" style="font-size: 13px;">
                                 <span>Subtotal</span>
-                                <span class="text-body fw-bold" x-text="'Rs ' + Number(subtotal).toFixed(2)"></span>
+                                <span class="text-body fw-bold" x-text="'₹ ' + Number(subtotal).toFixed(2)"></span>
                             </div>
                             
                             <div class="d-flex justify-content-between fw-medium" :class="bogoDiscount > 0 ? 'text-success' : 'text-muted'" style="font-size: 13px;">
@@ -1026,7 +1030,7 @@
                                     <span>BOGO Savings</span>
                                     <span class="text-muted d-block" style="font-size: 10px;" x-text="appliedBogoOfferNames"></span>
                                 </div>
-                                <span class="fw-bold align-top" x-text="'- Rs ' + Number(bogoDiscount).toFixed(2)"></span>
+                                <span class="fw-bold align-top" x-text="'- ₹ ' + Number(bogoDiscount).toFixed(2)"></span>
                             </div>
 
                             <div class="d-flex justify-content-between fw-medium" :class="orderOfferDiscountAmount > 0 ? 'text-success' : 'text-muted'" style="font-size: 13px;">
@@ -1034,7 +1038,7 @@
                                     <span>Order Discount</span>
                                     <span class="text-muted d-block" style="font-size: 10px;" x-text="bestOrderOffer ? bestOrderOffer.name : 'No active offer'"></span>
                                 </div>
-                                <span class="fw-bold align-top" x-text="'- Rs ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
+                                <span class="fw-bold align-top" x-text="'- ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
                             </div>
 
                             <div class="d-flex justify-content-between fw-medium" :class="appliedCouponObj !== null ? 'text-success' : 'text-muted'" style="font-size: 13px;">
@@ -1043,19 +1047,19 @@
                                     <span class="text-muted d-block" style="font-size: 10px;" x-text="appliedCouponObj ? '(Code: ' + couponCode + ')' : 'No coupon applied'"></span>
                                 </div>
                                 <span class="fw-bold align-top" x-show="appliedCouponObj && (appliedCouponObj.type === 'free_shipping' || appliedCouponObj.type === 'free_product')" x-text="appliedCouponObj.type === 'free_shipping' ? 'Free Shipping' : 'Free Gift'"></span>
-                                <span class="fw-bold align-top" x-show="!appliedCouponObj || (appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product')" x-text="'- Rs ' + Number(couponDiscount).toFixed(2)"></span>
+                                <span class="fw-bold align-top" x-show="!appliedCouponObj || (appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product')" x-text="'- ₹ ' + Number(couponDiscount).toFixed(2)"></span>
                             </div>
 
                             <div class="d-flex justify-content-between fw-medium text-muted" style="font-size: 13px;">
                                 <span>GST</span>
-                                <span class="text-body" x-text="'Rs ' + Number(taxAmount).toFixed(2)"></span>
+                                <span class="text-body" x-text="'₹ ' + Number(taxAmount).toFixed(2)"></span>
                             </div>
 
                             <hr class="border-secondary opacity-10 my-3">
 
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="fw-bold text-uppercase tracking-widest text-body" style="font-size: 14px;">Grand Total</span>
-                                <span class="fw-black text-primary fs-3" x-text="'Rs ' + Number(grandTotal).toFixed(2)"></span>
+                                <span class="fw-black text-primary fs-3" x-text="'₹ ' + Number(grandTotal).toFixed(2)"></span>
                             </div>
 
                             <template x-if="customerDetails && Number(customerDetails.wallet_balance) > 0">
@@ -1064,7 +1068,7 @@
                                         <div>
                                             <label class="form-check-label fw-bold mb-0 text-body-emphasis" style="cursor: pointer;">Redeem Cashback Wallet</label>
                                             <div class="small text-muted mt-1" style="font-size: 11px;">
-                                                Available Balance: <span class="text-success" x-text="'Rs ' + Number(customerDetails.wallet_balance).toFixed(2)"></span> 
+                                                Available Balance: <span class="text-success" x-text="'₹ ' + Number(customerDetails.wallet_balance).toFixed(2)"></span> 
                                             </div>
                                         </div>
                                         <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" x-model="useWalletBalance" @click.stop>
@@ -1072,10 +1076,10 @@
                                     <div x-show="useWalletBalance" x-cloak class="mt-3 pt-3 border-top">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <span class="fw-bold text-uppercase tracking-widest text-primary" style="font-size: 14px;">Net Payable</span>
-                                            <span class="fw-black text-primary fs-4" x-text="'Rs ' + Math.max(0, Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
+                                            <span class="fw-black text-primary fs-4" x-text="'₹ ' + Math.max(0, Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
                                         </div>
                                         <div class="small text-muted mt-1" x-show="(Number(grandTotal) - Number(customerDetails.wallet_balance)) < 0">
-                                            * Remaining wallet: Rs <span x-text="Math.abs(Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
+                                            * Remaining wallet: ₹ <span x-text="Math.abs(Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -1215,7 +1219,7 @@
                                         <div class="col-12 col-lg-3 text-lg-end pe-lg-4 d-flex align-items-center justify-content-between justify-content-lg-end">
                                             <span class="d-inline-block d-lg-none text-muted small me-2 fw-medium">Total:</span>
                                             <div class="d-flex align-items-center">
-                                                <div class="fw-bolder fs-6 text-body-emphasis" x-text="'Rs ' + Number(order.net_amount || 0).toFixed(2)"></div>
+                                                <div class="fw-bolder fs-6 text-body-emphasis" x-text="'₹ ' + Number(order.net_amount || 0).toFixed(2)"></div>
                                                 <i class="bi ms-3 text-muted transition-all" :class="expandedOrderId === order.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
                                             </div>
                                         </div>
@@ -1262,15 +1266,15 @@
                                                             <div class="col-lg-5 p-3 bg-primary bg-opacity-10 d-flex flex-column justify-content-center">
                                                                 <div class="d-flex justify-content-between align-items-center mb-1 small">
                                                                     <span class="text-body-secondary fw-medium" style="font-size: 0.75rem;">Subtotal</span>
-                                                                    <span class="text-body-emphasis fw-semibold" style="font-size: 0.75rem;" x-text="'Rs ' + Number(order.total_amount || 0).toFixed(2)"></span>
+                                                                    <span class="text-body-emphasis fw-semibold" style="font-size: 0.75rem;" x-text="'₹ ' + Number(order.total_amount || 0).toFixed(2)"></span>
                                                                 </div>
                                                                 <div class="d-flex justify-content-between align-items-center mb-1 small" x-show="Number(order.tax_amount || 0) > 0">
                                                                     <span class="text-body-secondary fw-medium" style="font-size: 0.75rem;">GST</span>
-                                                                    <span class="text-body-emphasis fw-semibold" style="font-size: 0.75rem;" x-text="'+Rs ' + Number(order.tax_amount || 0).toFixed(2)"></span>
+                                                                    <span class="text-body-emphasis fw-semibold" style="font-size: 0.75rem;" x-text="'+₹ ' + Number(order.tax_amount || 0).toFixed(2)"></span>
                                                                 </div>
                                                                 <div class="d-flex justify-content-between align-items-center mb-2 small" x-show="Number(order.discount_amount || 0) > 0">
                                                                     <span class="text-success fw-medium" style="font-size: 0.75rem;">Total Discount</span>
-                                                                    <span class="text-success fw-bold" style="font-size: 0.75rem;" x-text="'-Rs ' + Number(order.discount_amount || 0).toFixed(2)"></span>
+                                                                    <span class="text-success fw-bold" style="font-size: 0.75rem;" x-text="'-₹ ' + Number(order.discount_amount || 0).toFixed(2)"></span>
                                                                 </div>
                                                                 
                                                                 <div class="d-flex flex-wrap gap-1 mb-2">
@@ -1283,7 +1287,7 @@
                                                                 
                                                                 <div class="pt-2 border-top border-primary border-opacity-25 d-flex justify-content-between align-items-center mt-auto">
                                                                     <span class="fw-bold text-primary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Net Total</span>
-                                                                    <span class="fw-bolder fs-6 text-primary" x-text="'Rs ' + Number(order.net_amount || 0).toFixed(2)"></span>
+                                                                    <span class="fw-bolder fs-6 text-primary" x-text="'₹ ' + Number(order.net_amount || 0).toFixed(2)"></span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1307,7 +1311,7 @@
                                                                         <div class="small text-muted d-flex flex-wrap align-items-center gap-2 mt-0" style="font-size: 0.7rem;">
                                                                             <span><i class="bi bi-upc-scan opacity-75"></i> <span x-text="item.product?.sku || item.sku || 'N/A'"></span></span>
                                                                             <span class="border-start ps-2" x-show="Number(item.tax_amount || 0) > 0">
-                                                                                GST: <span class="fw-medium text-body-secondary" x-text="'Rs ' + Number(item.tax_amount || 0).toFixed(2)"></span> 
+                                                                                GST: <span class="fw-medium text-body-secondary" x-text="'₹ ' + Number(item.tax_amount || 0).toFixed(2)"></span> 
                                                                                 <span x-text="'(' + (item.tax_rate || 0) + '%)'"></span>
                                                                             </span>
                                                                         </div>
@@ -1321,14 +1325,14 @@
                                                                     </div>
                                                                     <div class="col-12 col-md-2 text-md-end mb-1 mb-md-0">
                                                                         <span class="d-inline-block d-md-none text-muted small me-2 fw-medium">Price:</span>
-                                                                        <div class="fw-medium text-body-secondary" style="font-size: 0.75rem;" x-text="'Rs ' + Number(item.unit_price || 0).toFixed(2)"></div>
+                                                                        <div class="fw-medium text-body-secondary" style="font-size: 0.75rem;" x-text="'₹ ' + Number(item.unit_price || 0).toFixed(2)"></div>
                                                                         <div x-show="Number(item.discount_amount || 0) > 0" class="text-success fw-bold d-flex align-items-center justify-content-md-end mt-0" style="font-size: 0.65rem;">
-                                                                            <i class="bi bi-tag-fill me-1 opacity-75"></i>-<span x-text="'Rs ' + Number(item.discount_amount || 0).toFixed(2)"></span>
+                                                                            <i class="bi bi-tag-fill me-1 opacity-75"></i>-<span x-text="'₹ ' + Number(item.discount_amount || 0).toFixed(2)"></span>
                                                                         </div>
                                                                     </div>
                                                                     <div class="col-12 col-md-3 text-md-end pe-md-2 mt-1 mt-md-0 pt-1 pt-md-0 border-top border-md-0">
                                                                         <span class="d-inline-block d-md-none text-muted small me-2 fw-medium">Total:</span>
-                                                                        <div class="fw-bolder text-body-emphasis" style="font-size: 0.85rem;" x-text="'Rs ' + Number(item.total_amount || 0).toFixed(2)"></div>
+                                                                        <div class="fw-bolder text-body-emphasis" style="font-size: 0.85rem;" x-text="'₹ ' + Number(item.total_amount || 0).toFixed(2)"></div>
                                                                     </div>
                                                                 </div>
                                                             </template>
@@ -1401,7 +1405,7 @@
                                                 <span class="mx-1">•</span>
                                                 <span x-text="(order.items ? order.items.length : 0) + ' items'"></span>
                                             </td>
-                                            <td class="text-end pe-4 py-2 fw-bold text-body-emphasis" x-text="'Rs ' + Number(order.net_amount || 0).toFixed(2)"></td>
+                                            <td class="text-end pe-4 py-2 fw-bold text-body-emphasis" x-text="'₹ ' + Number(order.net_amount || 0).toFixed(2)"></td>
                                         </tr>
                                         <tr x-show="expandedOrderId === order.id" x-cloak>
                                             <td colspan="5" class="p-0 border-0 bg-body-tertiary">
@@ -1444,8 +1448,8 @@
                                                                         <td class="fw-semibold text-body-emphasis ps-3 py-2" x-text="item.product?.name || item.product_name || 'Product'"></td>
                                                                         <td class="text-muted py-2" x-text="item.product?.sku || item.sku || 'N/A'"></td>
                                                                         <td class="text-center fw-semibold py-2" x-text="item.quantity"></td>
-                                                                        <td class="text-end text-muted py-2" x-text="'Rs ' + Number(item.unit_price || 0).toFixed(2)"></td>
-                                                                        <td class="text-end fw-bold text-body-emphasis pe-3 py-2" x-text="'Rs ' + Number(item.total_amount || 0).toFixed(2)"></td>
+                                                                        <td class="text-end text-muted py-2" x-text="'₹ ' + Number(item.unit_price || 0).toFixed(2)"></td>
+                                                                        <td class="text-end fw-bold text-body-emphasis pe-3 py-2" x-text="'₹ ' + Number(item.total_amount || 0).toFixed(2)"></td>
                                                                     </tr>
                                                                 </template>
                                                                 <template x-if="!order.items || order.items.length === 0">
@@ -1605,7 +1609,7 @@
                                                     </template>
                                                     <template x-if="['order_discount', 'category_discount'].includes(offer.type)">
                                                         <div>
-                                                            <h5 class="fw-black text-body-emphasis mb-1" x-text="offer.discount_type === 'percentage' ? parseFloat(offer.value) + '%' : 'Rs ' + parseFloat(offer.value)"></h5>
+                                                            <h5 class="fw-black text-body-emphasis mb-1" x-text="offer.discount_type === 'percentage' ? parseFloat(offer.value) + '%' : '₹ ' + parseFloat(offer.value)"></h5>
                                                             <span class="badge bg-primary bg-opacity-10 text-primary w-100">OFF</span>
                                                         </div>
                                                     </template>
@@ -1626,9 +1630,9 @@
                                                             <p class="mb-1 small text-muted" x-text="'Free Gift: ' + offer.product_name"></p>
                                                         </div>
                                                         <div x-show="['order_discount', 'category_discount'].includes(offer.type)">
-                                                            <p class="mb-1 small text-muted" x-show="offer.max_discount > 0" x-text="'Max Discount: Rs ' + Number(offer.max_discount).toFixed(2)"></p>
+                                                            <p class="mb-1 small text-muted" x-show="offer.max_discount > 0" x-text="'Max Discount: ₹ ' + Number(offer.max_discount).toFixed(2)"></p>
                                                         </div>
-                                                        <p class="mb-1 small text-muted" x-show="offer.min_spend > 0" x-text="'Min. Spend: Rs ' + Number(offer.min_spend).toFixed(2)"></p>
+                                                        <p class="mb-1 small text-muted" x-show="offer.min_spend > 0" x-text="'Min. Spend: ₹ ' + Number(offer.min_spend).toFixed(2)"></p>
                                                         <p class="mb-0 small text-muted" x-show="offer.ends_at" x-text="'Valid till ' + new Date(offer.ends_at).toLocaleDateString()"></p>
                                                     </div>
 
@@ -1638,10 +1642,10 @@
                                                     </div>
                                                     <div x-show="['order_discount', 'category_discount'].includes(offer.type)">
                                                         <div x-show="orderOfferDiscount(offer) > 0">
-                                                            <p class="mb-0 small fw-medium">You save: <span class="text-success" x-text="'Rs ' + Number(orderOfferDiscount(offer)).toFixed(2)"></span></p>
+                                                            <p class="mb-0 small fw-medium">You save: <span class="text-success" x-text="'₹ ' + Number(orderOfferDiscount(offer)).toFixed(2)"></span></p>
                                                         </div>
                                                         <div x-show="orderOfferDiscount(offer) === 0">
-                                                            <p class="mb-0 small text-danger"><i class="bi bi-info-circle me-1"></i>Add <span x-text="'Rs ' + Number(offer.min_spend).toFixed(2)"></span> to cart to unlock</p>
+                                                            <p class="mb-0 small text-danger"><i class="bi bi-info-circle me-1"></i>Add <span x-text="'₹ ' + Number(offer.min_spend).toFixed(2)"></span> to cart to unlock</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1705,7 +1709,7 @@
                                         <div class="card-body p-3 d-flex align-items-center justify-content-between gap-3">
                                             <div class="d-flex align-items-center gap-3">
                                                 <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center d-flex flex-column justify-content-center align-items-center" style="min-width: 90px; height: 90px;">
-                                                    <h5 class="fw-black text-body-emphasis mb-1" x-text="c.type === 'percentage' ? parseFloat(c.value) + '%' : 'Rs ' + parseFloat(c.value)"></h5>
+                                                    <h5 class="fw-black text-body-emphasis mb-1" x-text="c.type === 'percentage' ? parseFloat(c.value) + '%' : '₹ ' + parseFloat(c.value)"></h5>
                                                     <span class="badge bg-primary bg-opacity-10 text-primary w-100">OFF</span>
                                                 </div>
                                                 <div class="ps-2">
@@ -1713,8 +1717,8 @@
                                                         <code class="fw-black text-body-emphasis fs-6 d-block" x-text="c.code"></code>
                                                     </div>
                                                     <div class="pe-3 ps-2 border-start border-2 border-secondary border-opacity-25">
-                                                        <p class="mb-1 small text-muted" x-show="c.min_spend > 0" x-text="'Min. Spend: Rs ' + Number(c.min_spend).toFixed(2)"></p>
-                                                        <p class="mb-1 small text-muted" x-show="c.max_discount > 0" x-text="'Max Discount: Rs ' + Number(c.max_discount).toFixed(2)"></p>
+                                                        <p class="mb-1 small text-muted" x-show="c.min_spend > 0" x-text="'Min. Spend: ₹ ' + Number(c.min_spend).toFixed(2)"></p>
+                                                        <p class="mb-1 small text-muted" x-show="c.max_discount > 0" x-text="'Max Discount: ₹ ' + Number(c.max_discount).toFixed(2)"></p>
                                                         <p class="mb-1 small text-muted" x-show="c.usage_limit > 0" x-text="'Remaining Uses: ' + Math.max(0, c.usage_limit - c.used_count)"></p>
                                                         <p class="mb-0 small text-muted" x-show="c.expiry_date" x-text="'Valid till ' + new Date(c.expiry_date).toLocaleDateString()"></p>
                                                     </div>
@@ -1797,13 +1801,13 @@
                                     </div>
                                     <div class="row g-2 mb-2">
                                         <div class="col-4 border-end border-secondary border-opacity-25">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Selling Price</label>
-                                            <div class="fw-black text-primary" style="font-size:18px;" x-text="selectedProductForModal ? 'Rs ' + parseFloat(selectedProductForModal.selling_price||0).toFixed(2) : ''"></div>
-                                            <div class="text-muted text-decoration-line-through" style="font-size:10px;" x-show="selectedProductForModal && selectedProductForModal.mrp > selectedProductForModal.selling_price" x-text="selectedProductForModal ? 'MRP Rs ' + parseFloat(selectedProductForModal.mrp||0).toFixed(2) : ''"></div>
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Selling Price (Inc. GST)</label>
+                                            <div class="fw-black text-primary" style="font-size:18px;" x-text="selectedProductForModal ? '₹ ' + (parseFloat(selectedProductForModal.selling_price||0) * (1 + (parseFloat(selectedProductForModal.tax_rate)||0)/100)).toFixed(2) : ''"></div>
+                                            <div class="text-muted text-decoration-line-through" style="font-size:10px;" x-show="selectedProductForModal && selectedProductForModal.mrp > (parseFloat(selectedProductForModal.selling_price||0) * (1 + (parseFloat(selectedProductForModal.tax_rate)||0)/100))" x-text="selectedProductForModal ? 'MRP ₹ ' + parseFloat(selectedProductForModal.mrp||0).toFixed(2) : ''"></div>
                                         </div>
                                         <div class="col-4 border-end border-secondary border-opacity-25 ps-3">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Purchase Price</label>
-                                            <div class="fw-bold text-body-emphasis" style="font-size:14px;" x-text="selectedProductForModal ? 'Rs ' + parseFloat(selectedProductForModal.purchase_price||0).toFixed(2) : ''"></div>
+                                            <div class="fw-bold text-body-emphasis" style="font-size:14px;" x-text="selectedProductForModal ? '₹ ' + parseFloat(selectedProductForModal.purchase_price||0).toFixed(2) : ''"></div>
                                         </div>
                                         <div class="col-4 ps-3">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Profit Margin</label>
@@ -1916,7 +1920,7 @@
                                                     <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:28px;height:28px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
                                                     <div class="min-w-0">
                                                         <div class="fw-bold text-body-emphasis text-truncate" style="font-size:11px;" x-text="offer.name"></div>
-                                                        <div class="text-muted text-truncate" style="font-size:9px;" x-text="offer.type === 'percentage' ? offer.value + '% off' : 'Flat Rs ' + offer.value + ' off'"></div>
+                                                        <div class="text-muted text-truncate" style="font-size:9px;" x-text="offer.type === 'percentage' ? offer.value + '% off' : 'Flat ₹ ' + offer.value + ' off'"></div>
                                                     </div>
                                                 </div>
                                             </div>

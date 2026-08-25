@@ -69,6 +69,11 @@ class Conversation extends Model implements Auditable
         return $this->hasMany(Message::class)->latest();
     }
 
+    public function latestMessage(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Message::class)->latestOfMany();
+    }
+
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
         return $query->whereHas('members', fn (Builder $member) => $member

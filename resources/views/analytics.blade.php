@@ -44,7 +44,7 @@
                                                 </small>
                                             </div>
                                             <div class="stats-icon bg-success bg-opacity-10 text-success">
-                                                <i class="bi bi-currency-dollar"></i>
+                                                <i class="bi bi-currency-rupee"></i>
                                             </div>
                                         </div>
                                     </div>

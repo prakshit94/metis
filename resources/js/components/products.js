@@ -467,6 +467,16 @@ document.addEventListener('alpine:init', () => {
         weight: product.weight ?? '',
         purchase_price: String(product.purchase_price ?? ''),
         mrp: String(product.mrp ?? ''),
+        selling_price_inc_gst: (() => {
+          let basePrice = parseFloat(product.selling_price ?? product.price ?? 0);
+          let rateId = String(product.tax_rate_id ?? '');
+          let rate = 0;
+          if (rateId && Alpine.store('productTable')?.options?.taxRates) {
+            let taxObj = Alpine.store('productTable').options.taxRates.find(r => String(r.id) === rateId);
+            if (taxObj) rate = parseFloat(taxObj.rate) || 0;
+          }
+          return String((basePrice + (basePrice * rate / 100)).toFixed(2));
+        })(),
         selling_price: String(product.selling_price ?? product.price ?? ''),
         stock: String(product.stock_quantity ?? product.stock ?? ''),
         min_stock_level: String(product.min_stock_level ?? 0),
@@ -865,13 +875,13 @@ document.addEventListener('alpine:init', () => {
         statusList: [],
       };
     },
-    get finalSellingPriceWithTax() {
-      let price = parseFloat(this.form.selling_price) || 0;
-      if (!this.form.tax_rate_id) return price;
+    get baseSellingPriceExcludingTax() {
+      let priceIncGst = parseFloat(this.form.selling_price_inc_gst) || 0;
+      if (!this.form.tax_rate_id) return priceIncGst;
       let taxRate = this.options.taxRates.find(r => String(r.id) === String(this.form.tax_rate_id));
-      if (!taxRate) return price;
+      if (!taxRate) return priceIncGst;
       let rate = parseFloat(taxRate.rate) || 0;
-      return price + (price * rate / 100);
+      return priceIncGst / (1 + (rate / 100));
     },
     form: {
       name: '',
@@ -887,6 +897,7 @@ document.addEventListener('alpine:init', () => {
       weight: '',
       purchase_price: '',
       mrp: '',
+      selling_price_inc_gst: '',
       selling_price: '',
       stock: '',
       min_stock_level: 0,
@@ -923,6 +934,7 @@ document.addEventListener('alpine:init', () => {
         weight: '',
         purchase_price: '',
         mrp: '',
+        selling_price_inc_gst: '',
         selling_price: '',
         stock: '',
         min_stock_level: 0,
@@ -983,7 +995,7 @@ document.addEventListener('alpine:init', () => {
       }
 
       if (!this.form.name || !this.form.sku || !this.form.category_id ||
-          this.form.selling_price === '' || this.form.purchase_price === '' ||
+          this.form.selling_price_inc_gst === '' || this.form.purchase_price === '' ||
           this.form.stock === '' || !this.form.status || 
           !this.form.tax_rate_id || !this.form.hsn_code_id || 
           !this.form.uom_id || !this.form.weight) {
@@ -1007,7 +1019,7 @@ document.addEventListener('alpine:init', () => {
       if (this.form.mrp !== '' && this.form.mrp !== null && this.form.mrp !== undefined) {
         formData.append('mrp', String(Number(this.form.mrp)));
       }
-      formData.append('selling_price', String(Number(this.form.selling_price || 0)));
+      formData.append('selling_price', String(Number(this.baseSellingPriceExcludingTax.toFixed(2))));
       if (!this.editingProductId) {
         formData.append('stock', String(Number(this.form.stock || 0)));
       }

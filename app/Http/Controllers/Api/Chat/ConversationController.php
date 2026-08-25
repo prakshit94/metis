@@ -26,7 +26,9 @@ class ConversationController extends Controller
             'user_id' => ['required_if:type,direct', 'integer', Rule::exists('users', 'id')->where('is_active', 1)->whereNull('deleted_at')],
             'name' => ['required_if:type,group', 'string', 'max:150'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'image_path' => ['nullable', 'string', 'max:1000'],
             'privacy' => ['nullable', 'in:public,private'],
+            'settings' => ['nullable', 'array'],
             'member_ids' => ['nullable', 'array'],
             'member_ids.*' => ['integer', Rule::exists('users', 'id')->where('is_active', 1)->whereNull('deleted_at')],
         ]);

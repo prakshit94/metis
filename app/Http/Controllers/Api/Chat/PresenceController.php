@@ -6,6 +6,7 @@ use App\Models\Chat\Presence;
 use App\Modules\Core\Controllers\Controller;
 use App\Services\Chat\ChatService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PresenceController extends Controller
 {
@@ -28,7 +29,7 @@ class PresenceController extends Controller
 
         $data = $request->validate([
             'status' => ['nullable', 'in:online,offline,away,busy'],
-            'typing_conversation_id' => ['nullable', 'integer', 'exists:chat_conversations,id'],
+            'typing_conversation_id' => ['nullable', 'integer', Rule::exists('chat_members', 'conversation_id')->where('user_id', $request->user()->id)->where('status', 'active')],
             'metadata' => ['nullable', 'array'],
         ]);
 

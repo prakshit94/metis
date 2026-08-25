@@ -156,7 +156,7 @@ br {
                {{ ucfirst($invoice->order->payment_method ?? 'Cash') }}<br>
                @if(strtolower($invoice->order->payment_method ?? '') === 'cod')
                <strong>To Collect:</strong>
-               Rs. {{ number_format($invoice->net_amount, 2) }}<br>
+               ₹ {{ number_format($invoice->net_amount, 2) }}<br>
                @endif
                <br>
                @if($invoice->order?->warehouse?->reference_no)

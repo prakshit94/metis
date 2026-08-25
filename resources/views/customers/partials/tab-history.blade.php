@@ -52,7 +52,7 @@
                         <div class="d-flex align-items-center gap-4">
                             <div class="text-end">
                                 <p class="mb-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Order Total</p>
-                                <p class="mb-0 fw-black text-dark fs-5">Rs {{ number_format($order->net_amount, 2) }}</p>
+                                <p class="mb-0 fw-black text-dark fs-5">₹ {{ number_format($order->net_amount, 2) }}</p>
                             </div>
                             <div class="bg-light text-secondary rounded-circle d-flex align-items-center justify-content-center transition-all" style="width: 32px; height: 32px;" :class="expandedOrder === {{ $order->id }} ? 'bg-secondary text-white' : ''">
                                 <i class="bi bi-chevron-down transition-transform" :class="expandedOrder === {{ $order->id }} ? 'rotate-180' : ''"></i>
@@ -102,13 +102,13 @@
                                                             <p class="mb-0 text-muted font-monospace" style="font-size: 10px;">{{ $item->product?->sku ?? 'N/A' }}</p>
                                                         </td>
                                                         <td class="px-4 py-3 text-end text-muted fw-semibold">
-                                                            Rs {{ number_format($item->unit_price ?? 0, 2) }}
+                                                            ₹ {{ number_format($item->unit_price ?? 0, 2) }}
                                                         </td>
                                                         <td class="px-4 py-3 text-center">
                                                             <span class="badge bg-light text-dark border">{{ $item->quantity ?? 1 }}</span>
                                                         </td>
                                                         <td class="px-4 py-3 text-end fw-bold text-dark fs-6">
-                                                            Rs {{ number_format((($item->unit_price ?? 0) * ($item->quantity ?? 1)) - ($item->discount_amount ?? 0), 2) }}
+                                                            ₹ {{ number_format((($item->unit_price ?? 0) * ($item->quantity ?? 1)) - ($item->discount_amount ?? 0), 2) }}
                                                         </td>
                                                     </tr>
                                                 @endforeach

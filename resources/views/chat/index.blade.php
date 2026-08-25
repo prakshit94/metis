@@ -426,7 +426,7 @@
                                         <i class="bi bi-box-seam me-1"></i> <span x-text="user.today_orders || 0"></span> Orders
                                     </span>
                                     <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 9px;">
-                                        <i class="bi bi-currency-dollar me-1"></i> <span x-text="'Rs. ' + (user.today_revenue || 0).toLocaleString()"></span>
+                                        <i class="bi bi-currency-rupee me-1"></i> <span x-text="'₹ ' + (user.today_revenue || 0).toLocaleString()"></span>
                                     </span>
                                 </div>
                             </div>
@@ -1328,7 +1328,7 @@
 
             lastMessageObj(conv) {
                 if (!conv) return null;
-                return conv.last_message || (Array.isArray(conv.messages) ? conv.messages[0] : null);
+                return conv.last_message || (Array.isArray(conv.messages) ? conv.messages[0] : null) || conv.latest_message;
             },
 
             lastPreview(conv) {

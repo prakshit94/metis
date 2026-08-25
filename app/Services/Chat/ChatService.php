@@ -28,7 +28,7 @@ class ChatService
             ->visibleTo($user)
             ->with([
                 'activeMembers.user:id,name,first_name,last_name,email,photo',
-                'messages' => fn ($query) => $query->with('sender:id,name')->limit(1),
+                'latestMessage.sender:id,name',
             ])
             ->withCount([
                 'messages as unread_count' => fn ($query) => $query

@@ -93,11 +93,11 @@
                                     <div class="card-body p-3 p-lg-4">
                                         <div class="d-flex align-items-center">
                                             <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
-                                                <i class="bi bi-currency-dollar"></i>
+                                                <i class="bi bi-currency-rupee"></i>
                                             </div>
                                             <div>
                                                 <p class="h6 mb-0 text-muted">Total Value</p>
-                                                <div class="h3 mb-0" aria-live="polite"><span x-text="`Rs ${stats.totalValue.toLocaleString()}`"></span></div>
+                                                <div class="h3 mb-0" aria-live="polite"><span x-text="`₹ ${stats.totalValue.toLocaleString()}`"></span></div>
                                                 <small class="text-info">
                                                     <i class="bi bi-info-circle"></i> Inventory value
                                                 </small>
@@ -264,7 +264,7 @@
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <div class="fw-bold text-primary mb-1" x-text="'Rs ' + Number(product.price).toFixed(2)"></div>
+                                                        <div class="fw-bold text-primary mb-1" x-text="'₹ ' + (Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100))).toFixed(2)"></div>
                                                         <span class="badge stock-badge" 
                                                               :class="{
                                                                   'in-stock': product.stock > (product.min_stock_level || 10),
@@ -419,7 +419,7 @@
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-currency-dollar"></i>
+                                                <i class="bi bi-currency-rupee"></i>
                                             </div>
                                             <h6 class="card-title mb-0 fw-bold">Pricing & Taxation</h6>
                                         </div>
@@ -439,13 +439,13 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label fw-medium text-muted small">Selling Price <span class="text-danger">*</span></label>
+                                                <label class="form-label fw-medium text-muted small">Selling Price (Inc. GST) <span class="text-danger">*</span></label>
                                                 <div class="input-group mb-1">
                                                     <span class="input-group-text bg-body-secondary">₹</span>
-                                                    <input type="number" class="form-control" x-model="form.selling_price" step="0.01" min="0" required placeholder="0.00">
+                                                    <input type="number" class="form-control" x-model="form.selling_price_inc_gst" step="0.01" min="0" required placeholder="0.00">
                                                 </div>
-                                                <small class="text-success fw-medium" x-show="form.selling_price && form.tax_rate_id" x-cloak>
-                                                    Inc. GST: ₹<span x-text="finalSellingPriceWithTax.toFixed(2)"></span>
+                                                <small class="text-muted fw-medium" x-show="form.selling_price_inc_gst && form.tax_rate_id" x-cloak>
+                                                    Base Price (Excl. GST): ₹<span x-text="baseSellingPriceExcludingTax.toFixed(2)"></span>
                                                 </small>
                                             </div>
                                             <div class="col-md-6">
@@ -758,14 +758,14 @@
                                 </div>
                                 <div class="row g-2 mb-2">
                                     <div class="@if(auth()->user()?->hasRole('Super Admin')) col-4 border-end @else col-12 @endif border-secondary border-opacity-25">
-                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Selling Price</label>
-                                        <div class="fw-black text-primary" style="font-size:18px;" x-text="product ? 'Rs ' + parseFloat(product.selling_price || product.price || 0).toFixed(2) : ''"></div>
-                                        <div class="text-muted text-decoration-line-through" style="font-size:10px;" x-show="product && product.mrp > (product.selling_price || product.price)" x-text="product ? 'MRP Rs ' + parseFloat(product.mrp||0).toFixed(2) : ''"></div>
+                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Selling Price (Inc. GST)</label>
+                                        <div class="fw-black text-primary" style="font-size:18px;" x-text="product ? '₹ ' + (parseFloat(product.selling_price || product.price || 0) * (1 + (parseFloat(product.tax_rate || 0) / 100))).toFixed(2) : ''"></div>
+                                        <div class="text-muted text-decoration-line-through" style="font-size:10px;" x-show="product && product.mrp > ((product.selling_price || product.price) * (1 + (product.tax_rate || 0) / 100))" x-text="product ? 'MRP ₹ ' + parseFloat(product.mrp||0).toFixed(2) : ''"></div>
                                     </div>
                                     @if(auth()->user()?->hasRole('Super Admin'))
                                     <div class="col-4 border-end border-secondary border-opacity-25 ps-3">
                                         <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Purchase Price</label>
-                                        <div class="fw-bold text-body-emphasis" style="font-size:14px;" x-text="product ? 'Rs ' + parseFloat(product.purchase_price||0).toFixed(2) : ''"></div>
+                                        <div class="fw-bold text-body-emphasis" style="font-size:14px;" x-text="product ? '₹ ' + parseFloat(product.purchase_price||0).toFixed(2) : ''"></div>
                                     </div>
                                     <div class="col-4 ps-3">
                                         <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Profit Margin</label>

@@ -173,7 +173,7 @@
                                             <span x-text="c.value + '%'"></span>
                                         </template>
                                         <template x-if="c.type === 'fixed'">
-                                            <span x-text="'Rs ' + parseFloat(c.value).toFixed(2)"></span>
+                                            <span x-text="'₹ ' + parseFloat(c.value).toFixed(2)"></span>
                                         </template>
                                         <template x-if="c.type === 'free_shipping'">
                                             <span class="text-success"><i class="bi bi-truck me-1"></i>Free</span>
@@ -184,7 +184,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="fw-semibold text-secondary" x-text="c.min_spend > 0 ? 'Rs ' + parseFloat(c.min_spend).toFixed(2) : 'No Min Spend'"></span>
+                                    <span class="fw-semibold text-secondary" x-text="c.min_spend > 0 ? '₹ ' + parseFloat(c.min_spend).toFixed(2) : 'No Min Spend'"></span>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-1">
@@ -316,7 +316,7 @@
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Type *</label>
                                             <select x-select class="form-select form-select-sm fw-semibold" x-model="form.type">
                                                 <option value="percentage">Percentage (%)</option>
-                                                <option value="fixed">Flat Amount (Rs )</option>
+                                                <option value="fixed">Flat Amount (₹ )</option>
                                                 <option value="free_shipping">Free Shipping</option>
                                                 <option value="free_product">Free Product</option>
                                             </select>
@@ -339,7 +339,7 @@
                                         <div class="col-md-4" x-show="form.type === 'percentage' || form.type === 'fixed'">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Value *</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text" x-text="form.type === 'percentage' ? '%' : 'Rs '"></span>
+                                                <span class="input-group-text" x-text="form.type === 'percentage' ? '%' : '₹ '"></span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.value" min="0" step="0.01">
                                             </div>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Numeric value of the discount.</small>
@@ -357,7 +357,7 @@
                                         <div class="col-md-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Min Spend</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text">Rs </span>
+                                                <span class="input-group-text">₹ </span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.min_spend" min="0" step="0.01" placeholder="0">
                                             </div>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Minimum purchase requirement to unlock coupon.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-primary">Use Case:</strong> Encourage customers to add more items to their cart to reach the threshold (increases Average Order Value).</div>
@@ -365,10 +365,10 @@
                                         <div class="col-md-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Max Discount</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text">Rs </span>
+                                                <span class="input-group-text">₹ </span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.max_discount" min="0" step="0.01" placeholder="Unlimited">
                                             </div>
-                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Maximum cap. Leave empty/0 for unlimited.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-primary">Use Case:</strong> Crucial when using Percentage discounts to protect your margins on very large bulk orders (e.g. 50% off up to Rs 1000).</div>
+                                            <small class="text-muted d-block mt-1" style="font-size: 10px;">Maximum cap. Leave empty/0 for unlimited.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-primary">Use Case:</strong> Crucial when using Percentage discounts to protect your margins on very large bulk orders (e.g. 50% off up to ₹ 1000).</div>
                                         </div>
                                         <div class="col-12 mt-3 pt-3 border-top">
                                             <div class="row g-3">
@@ -383,7 +383,7 @@
                                                 <div class="col-md-6">
                                                     <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Cashback Fixed Amount</label>
                                                     <div class="input-group input-group-sm">
-                                                        <span class="input-group-text">Rs </span>
+                                                        <span class="input-group-text">₹ </span>
                                                         <input type="number" class="form-control fw-semibold" x-model="form.cashback_fixed" min="0" step="0.01">
                                                     </div>
                                                     <small class="text-muted d-block mt-1" style="font-size: 10px;">Fixed amount to credit to wallet on delivery.</small>
@@ -469,16 +469,16 @@ function couponsModule() {
         generateDescription(c) {
             let desc = '';
             if (c.type === 'percentage') desc += parseFloat(c.value) + '% Discount Coupon';
-            else if (c.type === 'fixed') desc += 'Rs ' + parseFloat(c.value) + ' Discount Coupon';
+            else if (c.type === 'fixed') desc += '₹ ' + parseFloat(c.value) + ' Discount Coupon';
             else if (c.type === 'free_shipping') desc += 'Free Shipping Coupon';
             else if (c.type === 'free_product') desc += 'Free Product Coupon';
 
             if (c.cashback_percent > 0 && c.cashback_fixed > 0) {
-                desc += ` AND additionally grants ${parseFloat(c.cashback_percent)}% + Rs ${parseFloat(c.cashback_fixed)} Cashback simultaneously!`;
+                desc += ` AND additionally grants ${parseFloat(c.cashback_percent)}% + ₹ ${parseFloat(c.cashback_fixed)} Cashback simultaneously!`;
             } else if (c.cashback_percent > 0) {
                 desc += ` AND additionally grants ${parseFloat(c.cashback_percent)}% Cashback simultaneously!`;
             } else if (c.cashback_fixed > 0) {
-                desc += ` AND additionally grants a Rs ${parseFloat(c.cashback_fixed)} flat Cashback simultaneously!`;
+                desc += ` AND additionally grants a ₹ ${parseFloat(c.cashback_fixed)} flat Cashback simultaneously!`;
             }
             return desc;
         },

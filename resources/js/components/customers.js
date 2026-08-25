@@ -224,7 +224,7 @@ document.addEventListener('alpine:init', () => {
         isDeleted: !!c.deleted_at,
         cropsList,
         irrigationList,
-        formattedOutstanding: 'Rs ' + Number(c.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        formattedOutstanding: '₹ ' + Number(c.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         joinDate: c.created_at ? new Date(c.created_at).toLocaleDateString() : '—',
       };
     },
@@ -616,7 +616,7 @@ document.addEventListener('alpine:init', () => {
         isDeleted: !!c.deleted_at,
         cropsList,
         irrigationList,
-        formattedOutstanding: 'Rs ' + Number(c.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        formattedOutstanding: '₹ ' + Number(c.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       };
     },
 

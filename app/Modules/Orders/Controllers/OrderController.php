@@ -628,7 +628,7 @@ class OrderController extends Controller implements HasMiddleware
 
     public function show(string $id)
     {
-        $order = Order::with([
+        $query = Order::with([
             'party',
             'warehouse',
             'invoice.payments',
@@ -640,7 +640,12 @@ class OrderController extends Controller implements HasMiddleware
             'shippingAddress.village.services.providers:id,name,phone',
             'billingAddress.village.services',
             'appliedOffer',
-        ])->findOrFail($id);
+        ]);
+        
+        $user = auth()->user();
+        $this->applyOrderActionPermissionScope($query, $user);
+        
+        $order = $query->findOrFail($id);
 
         if (request()->wantsJson() || request()->ajax()) {
             return response()->json([
@@ -1361,6 +1366,8 @@ class OrderController extends Controller implements HasMiddleware
                     $q->where('created_by', $user->id)
                       ->orWhereIn('status', $allowedStatuses);
                 });
+            } else {
+                $query->where('created_by', $user->id);
             }
             return;
         }
@@ -1409,30 +1416,6 @@ class OrderController extends Controller implements HasMiddleware
         }
         if ($user->can('orders.view.cancelled')) {
             $statuses[] = 'cancelled';
-        }
-
-        if ($user->can('orders.confirm')) {
-            $statuses[] = 'pending';
-        }
-
-        if ($user->can('orders.processing')) {
-            $statuses[] = 'confirmed';
-        }
-
-        if ($user->can('orders.ship')) {
-            array_push($statuses, 'confirmed', 'processing');
-        }
-
-        if ($user->can('orders.dispatch')) {
-            $statuses[] = 'ready_to_ship';
-        }
-
-        if ($user->can('orders.deliver')) {
-            $statuses[] = 'dispatched';
-        }
-
-        if ($user->can('orders.return')) {
-            array_push($statuses, 'dispatched', 'delivered', 'returned');
         }
 
         $orderedStatuses = ['future_order', 'pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'];

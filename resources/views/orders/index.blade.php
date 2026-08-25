@@ -78,6 +78,7 @@
             </div>
         </div>
     </div>
+    @can('orders.view.pending')
     <div class="col">
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
@@ -94,6 +95,8 @@
             </div>
         </div>
     </div>
+    @endcan
+    @can('orders.view.processing')
     <div class="col">
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
@@ -110,6 +113,8 @@
             </div>
         </div>
     </div>
+    @endcan
+    @can('orders.view.dispatched')
     <div class="col">
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
@@ -126,12 +131,14 @@
             </div>
         </div>
     </div>
+    @endcan
+    @can('orders.view.delivered')
     <div class="col">
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
-                        <i class="bi bi-currency-dollar"></i>
+                        <i class="bi bi-currency-rupee"></i>
                     </div>
                     <div>
                         <p class="h6 mb-0 text-muted">Delivered</p>
@@ -142,6 +149,7 @@
             </div>
         </div>
     </div>
+    @endcan
 </div>
 
 <!-- Charts Row -->
@@ -193,7 +201,7 @@
 </div> <!-- End showAnalytics Wrapper -->
 
 <!-- Warehouse Operations Overview -->
-<div class="mb-5 mb-lg-5 mb-xl-6" x-show="showWarehouseStats && warehouseStats && warehouseStats.length > 0" x-transition x-cloak>
+<div class="mb-5 mb-lg-5 mb-xl-6" x-show="showWarehouseStats" x-transition x-cloak>
     <div class="d-flex align-items-center mb-3 gap-3">
         <h2 class="h5 mb-0 fw-bold d-flex align-items-center text-nowrap">
             <i class="bi bi-buildings text-primary me-2 fs-4"></i>Warehouse Operations Overview
@@ -201,7 +209,7 @@
         <div class="flex-grow-1 border-bottom border-secondary-subtle"></div>
         <select x-select class="form-select form-select-sm w-auto" x-model="visibleWarehouseStat" aria-label="Toggle Warehouse Visibility">
             <option value="">All Warehouses</option>
-            <template x-for="wh in warehouseStats" :key="wh.name">
+            <template x-for="wh in warehousesList" :key="wh.id">
                 <option :value="wh.name" x-text="wh.name"></option>
             </template>
         </select>
@@ -224,7 +232,7 @@
                                 </div>
                                 <div class="p-3 bg-light bg-opacity-50 rounded-4 border border-secondary-subtle mb-3 shadow-sm">
                                     <span class="d-block text-muted small fw-medium mb-1 text-uppercase tracking-wider">Total Value</span>
-                                    <span class="fs-4 fw-bold text-success" x-text="`Rs. ${formatCurrency(wh.total_amount)}`"></span>
+                                    <span class="fs-4 fw-bold text-success" x-text="`₹ ${formatCurrency(wh.total_amount)}`"></span>
                                 </div>
                                 
                                 <div class="px-1">
@@ -244,73 +252,91 @@
                                     <p class="text-muted small fw-bold text-uppercase tracking-wide mb-0" style="font-size: 0.75rem; letter-spacing: 0.5px;">Fulfillment Pipeline</p>
                                     
                                     <!-- Exceptions / Returns Badge -->
+                                    @can('orders.view.return_requested')
                                     <div class="badge bg-danger bg-opacity-10 border border-danger border-opacity-25 text-danger-emphasis py-1 px-3 rounded-pill d-flex align-items-center gap-2" x-show="wh.return_requested > 0" x-transition>
                                         <i class="bi bi-exclamation-triangle-fill"></i>
-                                        <span x-text="`${wh.return_requested} Return(s) Req (Rs. ${formatCurrency(wh.return_requested_amount)})`"></span>
+                                        <span x-text="`${wh.return_requested} Return(s) Req (₹ ${formatCurrency(wh.return_requested_amount)})`"></span>
                                     </div>
+                                    @endcan
                                 </div>
 
                                 <!-- Horizontal Pipeline -->
                                 <div class="d-flex align-items-stretch flex-nowrap overflow-x-auto pb-2 gap-2" style="scrollbar-width: thin;">
                                     
                                     <!-- Pending -->
+                                    @can('orders.view.pending')
                                     <div class="flex-fill p-3 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
                                         <span class="small text-warning-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Pending</span>
                                         <span class="fw-bold fs-4 text-warning-emphasis lh-1 mb-1" x-text="wh.pending"></span>
-                                        <small class="text-warning-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.pending_amount)}`"></small>
+                                        <small class="text-warning-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.pending_amount)}`"></small>
                                         <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-warning opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
                                     </div>
+                                    @endcan
 
                                     <!-- Confirmed -->
+                                    @can('orders.view.confirmed')
                                     <div class="flex-fill p-3 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
                                         <span class="small text-info-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Confirmed</span>
                                         <span class="fw-bold fs-4 text-info-emphasis lh-1 mb-1" x-text="wh.confirmed"></span>
-                                        <small class="text-info-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.confirmed_amount)}`"></small>
+                                        <small class="text-info-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.confirmed_amount)}`"></small>
                                         <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-info opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
                                     </div>
+                                    @endcan
 
                                     <!-- Processing -->
+                                    @can('orders.view.processing')
                                     <div class="flex-fill p-3 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
                                         <span class="small text-primary-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Processing</span>
                                         <span class="fw-bold fs-4 text-primary-emphasis lh-1 mb-1" x-text="wh.processing"></span>
-                                        <small class="text-primary-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.processing_amount)}`"></small>
+                                        <small class="text-primary-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.processing_amount)}`"></small>
                                         <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-primary opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
                                     </div>
+                                    @endcan
 
                                     <!-- Ready -->
+                                    @can('orders.view.ready_to_ship')
                                     <div class="flex-fill p-3 rounded-4 bg-warning-subtle bg-opacity-50 border border-warning border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
                                         <span class="small text-warning-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Ready</span>
                                         <span class="fw-bold fs-4 text-warning-emphasis lh-1 mb-1" x-text="wh.ready_to_ship"></span>
-                                        <small class="text-warning-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.ready_to_ship_amount)}`"></small>
+                                        <small class="text-warning-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.ready_to_ship_amount)}`"></small>
                                         <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-warning opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
                                     </div>
+                                    @endcan
 
                                     <!-- Dispatched -->
+                                    @can('orders.view.dispatched')
                                     <div class="flex-fill p-3 rounded-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
                                         <span class="small text-secondary-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Dispatched</span>
                                         <span class="fw-bold fs-4 text-secondary-emphasis lh-1 mb-1" x-text="wh.dispatched"></span>
-                                        <small class="text-secondary-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.dispatched_amount)}`"></small>
+                                        <small class="text-secondary-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.dispatched_amount)}`"></small>
                                         <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-secondary opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
                                     </div>
+                                    @endcan
 
                                     <!-- Delivered -->
+                                    @can('orders.view.delivered')
                                     <div class="flex-fill p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 d-flex flex-column text-center transition-hover" style="min-width: 130px;">
                                         <span class="small text-success-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Delivered</span>
                                         <span class="fw-bold fs-4 text-success-emphasis lh-1 mb-1" x-text="wh.delivered"></span>
-                                        <small class="text-success-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`Rs. ${formatCurrency(wh.delivered_amount)}`"></small>
+                                        <small class="text-success-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.delivered_amount)}`"></small>
                                     </div>
+                                    @endcan
                                 </div>
                                 
                                 <!-- Non-Lifecycle Statuses -->
                                 <div class="d-flex gap-3 mt-3">
+                                    @can('orders.view.returned')
                                     <div class="d-flex align-items-center gap-2" x-show="wh.returned > 0">
                                         <div class="bg-secondary rounded-circle" style="width: 8px; height: 8px;"></div>
                                         <span class="small text-secondary-emphasis fw-medium">Returned: <span x-text="wh.returned"></span></span>
                                     </div>
+                                    @endcan
+                                    @can('orders.view.cancelled')
                                     <div class="d-flex align-items-center gap-2" x-show="wh.cancelled > 0">
                                         <div class="bg-dark rounded-circle" style="width: 8px; height: 8px;"></div>
                                         <span class="small text-dark-emphasis fw-medium">Cancelled: <span x-text="wh.cancelled"></span></span>
                                     </div>
+                                    @endcan
                                 </div>
                             </div>
                         </div>
@@ -364,10 +390,10 @@
                         </div>
                         <div x-show="showStatusDropdown" class="position-absolute bg-body border rounded shadow-lg mt-1" style="max-height: 250px; overflow-y: auto; z-index: 1050; min-width: 180px; right: 0;">
                             <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('status')">
-                                <input type="checkbox" :checked="statusFilter.length > 0 && statusFilter.length === allFilterStatuses.length" class="me-2" style="cursor: pointer;">
+                                <input type="checkbox" :checked="statusFilter.length > 0 && statusFilter.length === allowedFilterStatuses.length" class="me-2" style="cursor: pointer;">
                                 <span style="font-size: 12px; font-weight: bold;">Select All</span>
                             </div>
-                            <template x-for="status in allFilterStatuses" :key="status">
+                            <template x-for="status in allowedFilterStatuses" :key="status">
                                 <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('status', status)">
                                     <input type="checkbox" :checked="statusFilter.includes(status)" class="me-2" style="cursor: pointer;">
                                     <span style="font-size: 12px;" x-text="status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')"></span>
@@ -651,7 +677,7 @@
                     @endcan
 
                     {{-- Separator before non-lifecycle actions --}}
-                    <div class="vr" x-show="bulkAvailableActions.canCancel || true"></div>
+                    <div class="vr" x-show="bulkAvailableActions.canCancel"></div>
 
                     @can('orders.export')
                     <button class="btn btn-sm btn-outline-info" 
@@ -799,7 +825,7 @@
                                     <small class="text-muted d-block text-truncate mt-1" style="max-width: 200px;" x-text="order.items.length > 0 ? order.items[0].name + (order.itemCount > 1 ? ' +' + (order.itemCount - 1) + ' more' : '') : '—'"></small>
                                 </div>
                             </td>
-                            <td class="fw-medium small" x-text="`Rs. ${order.total}`"></td>
+                            <td class="fw-medium small" x-text="`₹ ${order.total}`"></td>
                             <td>
                                 <span class="badge small" 
                                       :style="`background-color: ${getStatusColor(order.status)}; color: #fff`"
@@ -1155,13 +1181,13 @@
                                                             </div>
                                                         </td>
                                                         <td class="text-end py-3">
-                                                            <span class="text-body-emphasis fw-medium" x-text="`Rs. ${parseFloat(item.price || 0).toFixed(2)}`"></span>
+                                                            <span class="text-body-emphasis fw-medium" x-text="`₹ ${parseFloat(item.price || 0).toFixed(2)}`"></span>
                                                         </td>
                                                         <td class="text-center py-3">
                                                             <span class="badge bg-secondary bg-opacity-10 text-body-emphasis px-2 py-1 rounded-3" x-text="item.quantity || 0"></span>
                                                         </td>
                                                         <td class="text-end py-3 small">
-                                                            <div class="text-success fw-medium mb-1" x-show="parseFloat(item.discount || 0) > 0" x-text="`-Rs. ${parseFloat(item.discount || 0).toFixed(2)}`"></div>
+                                                            <div class="text-success fw-medium mb-1" x-show="parseFloat(item.discount || 0) > 0" x-text="`-₹ ${parseFloat(item.discount || 0).toFixed(2)}`"></div>
                                                             <template x-if="parseFloat(item.discount || 0) > 0 && item.discountBadgeLabel">
                                                                 <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-inline-flex align-items-center gap-1 px-2 py-1 rounded-3 mt-1">
                                                                     <i class="bi bi-tag-fill"></i>
@@ -1171,11 +1197,11 @@
                                                             <div class="text-muted" x-show="!item.discount || parseFloat(item.discount) == 0">—</div>
                                                         </td>
                                                         <td class="text-end py-3 small">
-                                                            <div class="text-muted fw-medium" x-text="`+Rs. ${parseFloat(item.tax || 0).toFixed(2)}`"></div>
+                                                            <div class="text-muted fw-medium" x-text="`+₹ ${parseFloat(item.tax || 0).toFixed(2)}`"></div>
                                                             <div class="text-muted opacity-75" style="font-size: 0.7rem;" x-show="parseFloat(item.taxRate || 0) > 0" x-text="`(${parseFloat(item.taxRate).toFixed(0)}%)`"></div>
                                                         </td>
                                                         <td class="text-end pe-4 py-3">
-                                                            <span class="fw-bold text-primary" x-text="`Rs. ${((parseFloat(item.price || 0) * parseFloat(item.quantity || 0)) - parseFloat(item.discount || 0) + parseFloat(item.tax || 0)).toFixed(2)}`"></span>
+                                                            <span class="fw-bold text-primary" x-text="`₹ ${((parseFloat(item.price || 0) * parseFloat(item.quantity || 0)) - parseFloat(item.discount || 0) + parseFloat(item.tax || 0)).toFixed(2)}`"></span>
                                                         </td>
                                                     </tr>
                                                 </template>
@@ -1191,7 +1217,7 @@
                                             <div class="col-md-6 col-lg-5">
                                                 <div class="d-flex justify-content-between mb-2">
                                                     <span class="text-muted fw-medium">Subtotal</span>
-                                                    <span class="text-body-emphasis fw-bold" x-text="`Rs. ${formatCurrency(selectedOrder.subtotal)}`"></span>
+                                                    <span class="text-body-emphasis fw-bold" x-text="`₹ ${formatCurrency(selectedOrder.subtotal)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between mb-2">
                                                     <div>
@@ -1199,15 +1225,15 @@
                                                         <span x-show="selectedOrder.couponCode" class="badge bg-success ms-2 rounded-pill" x-text="selectedOrder.couponCode"></span>
                                                         <span x-show="selectedOrder.appliedOfferName" class="text-muted d-block" style="font-size: 10px;" x-text="selectedOrder.appliedOfferName"></span>
                                                     </div>
-                                                    <span class="text-success fw-bold" x-text="`-Rs. ${formatCurrency(selectedOrder.discountTotal)}`"></span>
+                                                    <span class="text-success fw-bold" x-text="`-₹ ${formatCurrency(selectedOrder.discountTotal)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between mb-3 border-bottom pb-3">
                                                     <span class="text-muted fw-medium">Tax</span>
-                                                    <span class="text-body-emphasis fw-bold" x-text="`Rs. ${formatCurrency(selectedOrder.taxTotal)}`"></span>
+                                                    <span class="text-body-emphasis fw-bold" x-text="`₹ ${formatCurrency(selectedOrder.taxTotal)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <span class="text-body-emphasis fw-bolder fs-5">Grand Total</span>
-                                                    <span class="text-primary fw-bolder fs-4" x-text="`Rs. ${formatCurrency(selectedOrder.total)}`"></span>
+                                                    <span class="text-primary fw-bolder fs-4" x-text="`₹ ${formatCurrency(selectedOrder.total)}`"></span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1414,11 +1440,11 @@
                                                 <hr class="my-2">
                                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                                     <span class="small text-muted">Paid:</span>
-                                                    <span class="text-success fw-bold" x-text="`Rs. ${selectedOrder.invoice.paid.toFixed(2)}`"></span>
+                                                    <span class="text-success fw-bold" x-text="`₹ ${selectedOrder.invoice.paid.toFixed(2)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <span class="small text-muted">Due:</span>
-                                                    <span class="text-danger fw-bold" x-text="`Rs. ${selectedOrder.invoice.due.toFixed(2)}`"></span>
+                                                    <span class="text-danger fw-bold" x-text="`₹ ${selectedOrder.invoice.due.toFixed(2)}`"></span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1438,7 +1464,7 @@
                                                         <div class="position-absolute bg-success rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
                                                         <div class="d-flex justify-content-between align-items-start">
                                                             <div>
-                                                                <p class="fw-bold text-body-emphasis mb-0 small" x-text="`Rs. ${payment.amount}`"></p>
+                                                                <p class="fw-bold text-body-emphasis mb-0 small" x-text="`₹ ${payment.amount}`"></p>
                                                                 <p class="text-muted mb-0" style="font-size: 0.75rem;" x-text="formatDateTime(payment.date)"></p>
                                                                 <p class="text-secondary small mt-1 lh-sm mb-0">
                                                                     <span x-text="payment.method"></span>
@@ -1476,7 +1502,7 @@
                                                                 <p class="fw-bold text-body-emphasis mb-0 small" x-text="ret.return_no || 'Return'"></p>
                                                                 <p class="text-muted mb-0" style="font-size: 0.75rem;" x-text="formatDateTime(ret.created_at)"></p>
                                                                 <p class="text-secondary small mt-1 lh-sm mb-0">Reason: <span x-text="ret.reason || 'N/A'"></span></p>
-                                                                <p class="text-danger small fw-medium mt-1 mb-0" x-show="ret.refund_amount > 0">Refund: Rs. <span x-text="ret.refund_amount"></span></p>
+                                                                <p class="text-danger small fw-medium mt-1 mb-0" x-show="ret.refund_amount > 0">Refund: ₹ <span x-text="ret.refund_amount"></span></p>
                                                             </div>
                                                             <span class="badge bg-danger" x-text="ret.status"></span>
                                                         </div>
@@ -1998,8 +2024,8 @@
                                                     </div>
                                                 </td>
                                                 <td class="text-center fw-medium" x-text="item.quantity"></td>
-                                                <td class="text-end text-muted" x-text="`Rs. ${formatCurrency(item.price)}`"></td>
-                                                <td class="text-end fw-medium text-body-emphasis" x-text="`Rs. ${formatCurrency(item.net)}`"></td>
+                                                <td class="text-end text-muted" x-text="`₹ ${formatCurrency(item.price)}`"></td>
+                                                <td class="text-end fw-medium text-body-emphasis" x-text="`₹ ${formatCurrency(item.net)}`"></td>
                                             </tr>
                                         </template>
                                     </tbody>
