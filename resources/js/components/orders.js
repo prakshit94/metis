@@ -740,22 +740,22 @@ document.addEventListener('alpine:init', () => {
       return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
     },
 
-    getStatusColor(status) {
-      const colors = {
-        future_order: '#a855f7',
-        pending: '#f97316',
-        pending_confirmation: '#f97316',
-        confirmed: '#0ea5e9',
-        processing: '#3b82f6',
-        ready_to_ship: '#6366f1',
-        dispatched: '#14b8a6',
-        shipped: '#14b8a6',
-        delivered: '#10b981',
-        cancelled: '#ef4444',
-        return_requested: '#f59e0b',
-        returned: '#64748b'
+    getStatusTheme(status) {
+      const themes = {
+        future_order: 'info',
+        pending: 'warning',
+        pending_confirmation: 'warning',
+        confirmed: 'primary',
+        processing: 'primary',
+        ready_to_ship: 'primary',
+        dispatched: 'primary',
+        shipped: 'primary',
+        delivered: 'success',
+        cancelled: 'danger',
+        return_requested: 'warning',
+        returned: 'secondary'
       };
-      return colors[status] || '#6c757d';
+      return themes[status] || 'secondary';
     },
 
     filterOrders() {

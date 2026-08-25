@@ -828,7 +828,7 @@
                             <td class="fw-medium small" x-text="`₹ ${order.total}`"></td>
                             <td>
                                 <span class="badge small" 
-                                      :style="`background-color: ${getStatusColor(order.status)}; color: #fff`"
+                                      :class="`text-bg-${getStatusTheme(order.status)}`"
                                       x-text="order.statusLabel"></span>
                                 <template x-if="order.status === 'pending_confirmation' && order.scheduledConfirmDate">
                                     <div class="mt-1" style="font-size: 0.7rem;">
@@ -1044,7 +1044,7 @@
                             </div>
                             <div class="d-flex align-items-center gap-3">
                                 <span class="badge rounded-pill px-4 py-2 fs-6 shadow-sm" 
-                                      :style="`background-color: ${getStatusColor(selectedOrder.status)}15; color: ${getStatusColor(selectedOrder.status)}; border: 1px solid ${getStatusColor(selectedOrder.status)}40;`">
+                                      :class="`text-bg-${getStatusTheme(selectedOrder.status)}-subtle text-${getStatusTheme(selectedOrder.status)}-emphasis border border-${getStatusTheme(selectedOrder.status)}-subtle`">
                                     <i class="bi bi-circle-fill me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
                                     <span x-text="selectedOrder.statusLabel"></span>
                                 </span>

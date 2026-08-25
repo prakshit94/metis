@@ -1212,7 +1212,7 @@
                                         </div>
                                         
                                         <div class="col-12 col-lg-3 mb-3 mb-lg-0">
-                                            <span class="badge rounded-pill px-3 py-1.5" :style="`background-color: ${getStatusColor(order.lifecycle_status || order.status)}15; color: ${getStatusColor(order.lifecycle_status || order.status)}; border: 1px solid ${getStatusColor(order.lifecycle_status || order.status)}40;`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                            <span class="badge rounded-pill px-3 py-1.5" :class="`text-bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
                                         </div>
                                         
                                         <div class="col-12 col-lg-3 text-lg-end pe-lg-4 d-flex align-items-center justify-content-between justify-content-lg-end">
@@ -1396,7 +1396,7 @@
                                                 <div class="small text-muted mt-1" x-show="order.creator" x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
                                             </td>
                                             <td class="py-2">
-                                                <span class="badge rounded-pill px-2" :style="`background-color: ${getStatusColor(order.lifecycle_status || order.status)}15; color: ${getStatusColor(order.lifecycle_status || order.status)}; border: 1px solid ${getStatusColor(order.lifecycle_status || order.status)}40;`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                                <span class="badge rounded-pill px-2" :class="`text-bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
                                             </td>
                                             <td class="py-2 text-muted">
                                                 <span x-text="order.warehouse?.name ? order.warehouse.name : 'N/A'"></span>
@@ -3154,23 +3154,23 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             }
         },
 
-        getStatusColor(status) {
-            if (!status) return '#6c757d';
-            const colors = {
-                future_order: '#a855f7',
-                pending: '#f97316',
-                pending_confirmation: '#f97316',
-                confirmed: '#0ea5e9',
-                processing: '#3b82f6',
-                ready_to_ship: '#6366f1',
-                dispatched: '#14b8a6',
-                shipped: '#14b8a6',
-                delivered: '#10b981',
-                cancelled: '#ef4444',
-                return_requested: '#f59e0b',
-                returned: '#64748b'
+        getStatusTheme(status) {
+            if (!status) return 'secondary';
+            const themes = {
+                future_order: 'info',
+                pending: 'warning',
+                pending_confirmation: 'warning',
+                confirmed: 'primary',
+                processing: 'primary',
+                ready_to_ship: 'primary',
+                dispatched: 'primary',
+                shipped: 'primary',
+                delivered: 'success',
+                cancelled: 'danger',
+                return_requested: 'warning',
+                returned: 'secondary'
             };
-            return colors[status.toLowerCase()] || '#6c757d';
+            return themes[status.toLowerCase()] || 'secondary';
         }
     };
 }
