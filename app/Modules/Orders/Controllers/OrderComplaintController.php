@@ -18,11 +18,12 @@ class OrderComplaintController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:complaints.view', only: ['index', 'stats']),
-            new Middleware('permission:complaints.create', only: ['store']),
-            new Middleware('permission:complaints.edit', only: ['update']),
-            new Middleware('permission:complaints.delete', only: ['destroy']),
-            new Middleware('permission:complaints.edit', only: ['bulkAction']),
+            new Middleware('permission:complaints.view',             only: ['index', 'stats']),
+            new Middleware('permission:complaints.create',           only: ['store']),
+            new Middleware('permission:complaints.edit',             only: ['update', 'bulkAction']),
+            new Middleware('permission:complaints.delete',           only: ['destroy']),
+            new Middleware('permission:complaints.restore',          only: ['restore']),
+            new Middleware('permission:complaints.permanent-delete', only: ['forceDelete']),
         ];
     }
     public function index(Request $request)
@@ -153,11 +154,31 @@ class OrderComplaintController extends Controller implements HasMiddleware
     public function destroy(Request $request, OrderComplaint $complaint): JsonResponse
     {
 
-
         $complaint->delete();
 
         return response()->json([
             'message' => 'Complaint deleted successfully.',
+        ]);
+    }
+
+    public function restore(int $id): JsonResponse
+    {
+        $complaint = OrderComplaint::withTrashed()->findOrFail($id);
+        $complaint->restore();
+
+        return response()->json([
+            'message' => 'Complaint restored successfully.',
+            'data'    => $complaint->load(['order', 'customer', 'assignee', 'creator']),
+        ]);
+    }
+
+    public function forceDelete(int $id): JsonResponse
+    {
+        $complaint = OrderComplaint::withTrashed()->findOrFail($id);
+        $complaint->forceDelete();
+
+        return response()->json([
+            'message' => 'Complaint permanently deleted.',
         ]);
     }
 
@@ -183,8 +204,8 @@ class OrderComplaintController extends Controller implements HasMiddleware
 
         $validated = $request->validate([
             'action' => ['required', 'string', 'in:delete,resolve,close'],
-            'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => ['integer', 'exists:order_complaints,id'],
+            'ids'    => ['required', 'array', 'min:1'],
+            'ids.*'  => ['integer', 'exists:order_complaints,id'],
         ]);
 
         $ids = $validated['ids'];

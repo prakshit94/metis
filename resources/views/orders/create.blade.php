@@ -1376,6 +1376,12 @@
                                                         </div>
                                                     </div>
                                                     <div class="d-flex justify-content-end gap-2 p-3 bg-body-tertiary border-top">
+                                                        @can('complaints.create')
+                                                        <a :href="`{{ route('complaints.index') }}?order_no=${encodeURIComponent(order.order_no || order.order_number || '')}&customer_id=${order.party_id || ''}`"
+                                                           class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
+                                                            <i class="bi bi-headset me-1"></i> Raise Complaint
+                                                        </a>
+                                                        @endcan
                                                         @can('orders.edit')
                                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'shipped', 'dispatched'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-pencil-square me-1"></i> Edit Order
@@ -1495,6 +1501,12 @@
                                                         </table>
                                                     </div>
                                                     <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
+                                                        @can('complaints.create')
+                                                        <a :href="`{{ route('complaints.index') }}?order_no=${encodeURIComponent(order.order_no || order.order_number || '')}&customer_id=${order.party_id || ''}`"
+                                                           class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
+                                                            <i class="bi bi-headset me-1"></i> Raise Complaint
+                                                        </a>
+                                                        @endcan
                                                         @can('orders.edit')
                                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'shipped', 'dispatched'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-pencil-square me-1"></i> Edit Order

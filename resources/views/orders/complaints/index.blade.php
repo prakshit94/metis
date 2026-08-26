@@ -181,7 +181,7 @@
                                 <td><span class="small" x-text="cmp.customer?.name || 'N/A'"></span></td>
                                 <td><span class="badge bg-secondary bg-opacity-25 text-body small text-capitalize" x-text="(cmp.category||'').replace(/_/g,' ')"></span></td>
                                 <td>
-                                    <span class="badge small" :class="getPriorityClass(cmp.priority)" x-text="cmp.priority.toUpperCase()"></span>
+                                    <span class="badge small" :class="getPriorityClass(cmp.priority)" x-text="(cmp.priority || 'low').toUpperCase()"></span>
                                 </td>
                                 <td>
                                     <span class="badge small text-white px-2 py-1"
@@ -237,7 +237,7 @@
 
     {{-- Create/Edit Complaint Modal --}}
     <div class="modal fade" id="complaintModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
                 <form @submit.prevent="saveComplaint">
                     <div class="modal-header">
@@ -261,7 +261,7 @@
                                     <select class="form-select" @change="selectOrder($event.target.value)">
                                         <option value="" disabled selected>Select an order...</option>
                                         <template x-for="order in fetchedOrders" :key="order.id">
-                                            <option :value="order.id" x-text="`${order.order_no} - ₹${order.total_amount} (${new Date(order.created_at).toLocaleDateString()})`"></option>
+                                        <option :value="order.id" x-text="`${order.order_no} — ₹${parseFloat(order.net_amount || order.total_amount || 0).toFixed(2)} (${new Date(order.created_at).toLocaleDateString('en-IN')})`"></option>
                                         </template>
                                     </select>
                                 </div>
@@ -275,7 +275,7 @@
                                         <span class="fw-bold text-primary"><i class="bi bi-receipt me-1"></i>Selected Order Preview</span>
                                         <button type="button" class="btn-close btn-sm" @click="selectedOrderDetails = null; form.order_no = ''; form.customer_id = '';" title="Clear Selection"></button>
                                     </div>
-                                    <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                                    <div class="card-body p-0">
                                         <!-- DETAILS FROM ORDERS INDEX -->
                                         <template x-if="selectedOrderDetails">
                                         <div class="p-4 bg-body-tertiary">
@@ -565,8 +565,8 @@
                     this.currentPage = res.data.meta.current_page;
                     this.totalPages = res.data.meta.last_page;
                     this.totalComplaints = res.data.meta.total;
-                    
-                    this.updateStats();
+                    // Stats are fetched separately via fetchStats() for global accuracy
+                    this.stats.total = this.totalComplaints;
                 } catch (e) {
                     console.error('Failed to fetch complaints', e);
                     window.Swal.fire('Error', 'Failed to load complaints', 'error');
@@ -816,6 +816,11 @@
                 this.isEditing = true;
                 this.form = { ...cmp };
                 this.form.order_no = cmp.order?.order_no || '';
+                // Always clear order-lookup state when opening edit mode
+                this.searchQueryOrder = '';
+                this.fetchedOrders = [];
+                this.selectedOrderDetails = null;
+                this.searchOrderError = '';
                 this.modalInstance.show();
             },
             
