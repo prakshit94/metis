@@ -311,6 +311,462 @@ class PageController extends Controller
         return view('analytics');
     }
 
+    /**
+     * Analytics Data API — powers the /analytics dashboard via AJAX.
+     * All queries are read-only. No core business logic is modified.
+     */
+    public function analyticsData(Request $request)
+    {
+        $period  = $request->input('period', 'today');
+        $fromRaw = $request->input('from');
+        $toRaw   = $request->input('to');
+        
+        $limit = (int) $request->input('limit', 10);
+        if (!in_array($limit, [5, 10, 15, 20])) {
+            $limit = 10;
+        }
+
+        // ── Build date range ─────────────────────────────────────────────────
+        [$start, $end] = $this->analyticsDateRange($period, $fromRaw, $toRaw);
+
+        $startStr = $start->toDateTimeString();
+        $endStr   = $end->toDateTimeString();
+
+        try {
+            // ── KPI: Sales (sale orders, non-cancelled) ───────────────────────
+            $totalSales = DB::table('orders')
+                ->where('type', 'sale')
+                ->whereNotIn('status', ['cancelled'])
+                ->whereBetween('order_date', [$startStr, $endStr])
+                ->whereNull('deleted_at')
+                ->sum('net_amount');
+
+            $totalSalesCount = DB::table('orders')
+                ->where('type', 'sale')
+                ->whereNotIn('status', ['cancelled'])
+                ->whereBetween('order_date', [$startStr, $endStr])
+                ->whereNull('deleted_at')
+                ->count();
+
+            // ── KPI: Purchase (purchase_orders) ───────────────────────────────
+            $totalPurchase = DB::table('purchase_orders')
+                ->whereNotIn('status', ['rejected'])
+                ->whereBetween('created_at', [$startStr, $endStr])
+                ->whereNull('deleted_at')
+                ->sum('net_amount');
+
+            $totalPurchaseCount = DB::table('purchase_orders')
+                ->whereNotIn('status', ['rejected'])
+                ->whereBetween('created_at', [$startStr, $endStr])
+                ->whereNull('deleted_at')
+                ->count();
+
+            // ── KPI: Inward Payments (payments on sale orders) ────────────────
+            $inwardPayments = DB::table('payments')
+                ->join('orders', 'payments.order_id', '=', 'orders.id')
+                ->where('orders.type', 'sale')
+                ->where('payments.status', 'completed')
+                ->whereBetween('payments.payment_date', [$startStr, $endStr])
+                ->whereNull('payments.deleted_at')
+                ->sum('payments.amount');
+
+            // ── KPI: Outward Payments (payments on purchase orders via invoices)─
+            // Payments that link to orders of type=purchase
+            $outwardPayments = DB::table('payments')
+                ->join('orders', 'payments.order_id', '=', 'orders.id')
+                ->where('orders.type', 'purchase')
+                ->where('payments.status', 'completed')
+                ->whereBetween('payments.payment_date', [$startStr, $endStr])
+                ->whereNull('payments.deleted_at')
+                ->sum('payments.amount');
+
+            // ── KPI: Sales Outstanding (unpaid/partial invoices on sale orders) ─
+            $salesOutstanding = DB::table('invoices')
+                ->join('orders', 'invoices.order_id', '=', 'orders.id')
+                ->where('orders.type', 'sale')
+                ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
+                ->whereNull('invoices.deleted_at')
+                ->sum('invoices.net_amount');
+
+            $salesOutstandingCount = DB::table('invoices')
+                ->join('orders', 'invoices.order_id', '=', 'orders.id')
+                ->where('orders.type', 'sale')
+                ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
+                ->whereNull('invoices.deleted_at')
+                ->count();
+
+            // ── KPI: Purchase Outstanding ─────────────────────────────────────
+            $purchaseOutstanding = DB::table('parties')
+                ->where('type', 'supplier')
+                ->where('is_active', true)
+                ->sum('outstanding_balance');
+
+            // ── KPI: New Customers (created in period) ────────────────────────
+            $newCustomers = DB::table('parties')
+                ->where('type', 'customer')
+                ->whereBetween('created_at', [$startStr, $endStr])
+                ->whereNull('deleted_at')
+                ->count();
+
+            // ── KPI: Existing / Repeat Customers (orders_count > 1) ───────────
+            $existingCustomers = DB::table('parties')
+                ->where('type', 'customer')
+                ->where('orders_count', '>', 1)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // ── Chart: Sales vs Purchase Trend (daily) ────────────────────────
+            $salesTrend = DB::table('orders')
+                ->select(DB::raw('DATE(order_date) as day'), DB::raw('SUM(net_amount) as total'))
+                ->where('type', 'sale')
+                ->whereNotIn('status', ['cancelled'])
+                ->whereBetween('order_date', [$startStr, $endStr])
+                ->whereNull('deleted_at')
+                ->groupBy('day')
+                ->orderBy('day')
+                ->get();
+
+            $purchaseTrend = DB::table('purchase_orders')
+                ->select(DB::raw('DATE(created_at) as day'), DB::raw('SUM(net_amount) as total'))
+                ->whereNotIn('status', ['rejected'])
+                ->whereBetween('created_at', [$startStr, $endStr])
+                ->whereNull('deleted_at')
+                ->groupBy('day')
+                ->orderBy('day')
+                ->get();
+
+            // ── Customer: New vs Existing donut ───────────────────────────────
+            // new = created in period, existing = had order before period
+            $totalCustomersInPeriod = DB::table('parties')
+                ->where('type', 'customer')
+                ->whereNull('deleted_at')
+                ->count();
+
+            // ── Sales State-Wise ──────────────────────────────────────────────
+            $stateWiseSales = DB::table('orders')
+                ->select('shipping_state', DB::raw('SUM(net_amount) as total'), DB::raw('COUNT(id) as order_count'))
+                ->where('type', 'sale')
+                ->whereNotIn('status', ['cancelled'])
+                ->whereBetween('order_date', [$startStr, $endStr])
+                ->whereNotNull('shipping_state')
+                ->whereNull('deleted_at')
+                ->groupBy('shipping_state')
+                ->orderByDesc('total')
+                ->limit(10)
+                ->get();
+
+            // ── Top Customers ─────────────────────────────────────────────────
+            $topCustomers = DB::table('parties')
+                ->join('orders', function ($j) use ($startStr, $endStr) {
+                    $j->on('orders.party_id', '=', 'parties.id')
+                      ->where('orders.type', 'sale')
+                      ->whereNotIn('orders.status', ['cancelled'])
+                      ->whereBetween('orders.order_date', [$startStr, $endStr])
+                      ->whereNull('orders.deleted_at');
+                })
+                ->where('parties.type', 'customer')
+                ->whereNull('parties.deleted_at')
+                ->select(
+                    'parties.id',
+                    DB::raw("CONCAT(COALESCE(parties.firstname,''), ' ', COALESCE(parties.lastname,'')) as name"),
+                    'parties.phone',
+                    'parties.outstanding_balance',
+                    DB::raw('COUNT(orders.id) as order_count'),
+                    DB::raw('SUM(orders.net_amount) as lifetime_value')
+                )
+                ->groupBy('parties.id', 'parties.firstname', 'parties.lastname', 'parties.phone', 'parties.outstanding_balance')
+                ->orderByDesc('lifetime_value')
+                ->limit($limit)
+                ->get();
+
+            // ── Inventory: In / Low / Zero Stock ─────────────────────────────
+            $inStock = DB::table('stocks')
+                ->join('products', 'stocks.product_id', '=', 'products.id')
+                ->whereNull('stocks.deleted_at')
+                ->where('stocks.quantity', '>', DB::raw('products.min_stock_level'))
+                ->where('stocks.quantity', '>', 0)
+                ->count();
+
+            $lowStock = DB::table('stocks')
+                ->join('products', 'stocks.product_id', '=', 'products.id')
+                ->whereNull('stocks.deleted_at')
+                ->where('stocks.quantity', '>', 0)
+                ->whereColumn('stocks.quantity', '<=', 'products.min_stock_level')
+                ->count();
+
+            $zeroStock = DB::table('stocks')
+                ->whereNull('deleted_at')
+                ->where('quantity', '<=', 0)
+                ->count();
+
+            // ── Best Selling Products ─────────────────────────────────────────
+            $bestSelling = DB::table('order_items')
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->join('products', 'order_items.product_id', '=', 'products.id')
+                ->where('orders.type', 'sale')
+                ->whereNotIn('orders.status', ['cancelled'])
+                ->whereBetween('orders.order_date', [$startStr, $endStr])
+                ->whereNull('orders.deleted_at')
+                ->select(
+                    'products.id',
+                    'products.name',
+                    'products.sku',
+                    DB::raw('SUM(order_items.quantity) as total_qty'),
+                    DB::raw('SUM(order_items.total_amount) as total_revenue')
+                )
+                ->groupBy('products.id', 'products.name', 'products.sku')
+                ->orderByDesc('total_qty')
+                ->limit($limit)
+                ->get();
+
+            // ── Least Selling Products ────────────────────────────────────────
+            $leastSelling = DB::table('order_items')
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->join('products', 'order_items.product_id', '=', 'products.id')
+                ->where('orders.type', 'sale')
+                ->whereNotIn('orders.status', ['cancelled'])
+                ->whereBetween('orders.order_date', [$startStr, $endStr])
+                ->whereNull('orders.deleted_at')
+                ->select(
+                    'products.id',
+                    'products.name',
+                    'products.sku',
+                    DB::raw('SUM(order_items.quantity) as total_qty'),
+                    DB::raw('SUM(order_items.total_amount) as total_revenue')
+                )
+                ->groupBy('products.id', 'products.name', 'products.sku')
+                ->orderBy('total_qty')
+                ->limit($limit)
+                ->get();
+
+            // ── Low Stock Products ────────────────────────────────────────────
+            $lowStockProducts = DB::table('stocks')
+                ->join('products', 'stocks.product_id', '=', 'products.id')
+                ->whereNull('stocks.deleted_at')
+                ->where('stocks.quantity', '>', 0)
+                ->whereColumn('stocks.quantity', '<=', 'products.min_stock_level')
+                ->select(
+                    'products.id',
+                    'products.name',
+                    'products.sku',
+                    'products.min_stock_level',
+                    'stocks.quantity'
+                )
+                ->orderBy('stocks.quantity')
+                ->limit($limit)
+                ->get();
+
+            // ── Top Vendors / Suppliers ───────────────────────────────────────
+            $topVendors = DB::table('purchase_orders')
+                ->join('suppliers', 'purchase_orders.supplier_id', '=', 'suppliers.id')
+                ->whereNotIn('purchase_orders.status', ['rejected'])
+                ->whereBetween('purchase_orders.created_at', [$startStr, $endStr])
+                ->whereNull('purchase_orders.deleted_at')
+                ->select(
+                    'suppliers.id',
+                    DB::raw("COALESCE(suppliers.company_name, CONCAT(COALESCE(suppliers.firstname,''), ' ', COALESCE(suppliers.lastname,''))) as name"),
+                    DB::raw('COUNT(purchase_orders.id) as po_count'),
+                    DB::raw('SUM(purchase_orders.net_amount) as total_value')
+                )
+                ->groupBy('suppliers.id', 'suppliers.company_name', 'suppliers.firstname', 'suppliers.lastname')
+                ->orderByDesc('total_value')
+                ->limit($limit)
+                ->get();
+
+            // ── Purchase Invoice Due (POs pending/approved not yet received) ───
+            $purchaseDue = DB::table('purchase_orders')
+                ->join('suppliers', 'purchase_orders.supplier_id', '=', 'suppliers.id')
+                ->whereIn('purchase_orders.status', ['pending', 'approved'])
+                ->whereNull('purchase_orders.deleted_at')
+                ->select(
+                    'purchase_orders.id',
+                    'purchase_orders.po_number',
+                    DB::raw("COALESCE(suppliers.company_name, CONCAT(COALESCE(suppliers.firstname,''), ' ', COALESCE(suppliers.lastname,''))) as supplier_name"),
+                    'purchase_orders.net_amount',
+                    'purchase_orders.status',
+                    'purchase_orders.expected_delivery_date',
+                    'purchase_orders.created_at'
+                )
+                ->orderBy('purchase_orders.expected_delivery_date')
+                ->limit($limit)
+                ->get();
+
+            // ── Sales Invoice Due (unpaid/partially paid invoices) ─────────────
+            $salesInvoiceDue = DB::table('invoices')
+                ->join('orders', 'invoices.order_id', '=', 'orders.id')
+                ->leftJoin('parties', 'orders.party_id', '=', 'parties.id')
+                ->where('orders.type', 'sale')
+                ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
+                ->whereNull('invoices.deleted_at')
+                ->select(
+                    'invoices.id',
+                    'invoices.invoice_no',
+                    'invoices.net_amount',
+                    'invoices.status',
+                    'invoices.due_date',
+                    'orders.order_no',
+                    DB::raw("CONCAT(COALESCE(parties.firstname,''), ' ', COALESCE(parties.lastname,'')) as customer_name"),
+                    'parties.phone'
+                )
+                ->orderBy('invoices.due_date')
+                ->limit($limit)
+                ->get();
+
+            // ── Login Activity ────────────────────────────────────────────────
+            $loginsToday = DB::table('login_histories')
+                ->whereDate('attempted_at', Carbon::today())
+                ->count();
+
+            $loginsInPeriod = DB::table('login_histories')
+                ->whereBetween('attempted_at', [$startStr, $endStr])
+                ->count();
+
+            $activeUsers = DB::table('users')
+                ->where('is_active', true)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // ── Inward / Outward Payment totals summary ───────────────────────
+            $inwardTotal  = DB::table('payments')
+                ->join('orders', 'payments.order_id', '=', 'orders.id')
+                ->where('orders.type', 'sale')
+                ->whereBetween('payments.payment_date', [$startStr, $endStr])
+                ->whereNull('payments.deleted_at')
+                ->selectRaw('SUM(CASE WHEN payments.status = "completed" THEN payments.amount ELSE 0 END) as completed,
+                             SUM(CASE WHEN payments.status = "pending" THEN payments.amount ELSE 0 END) as pending,
+                             COUNT(*) as count')
+                ->first();
+
+            $outwardTotal = DB::table('payments')
+                ->join('orders', 'payments.order_id', '=', 'orders.id')
+                ->where('orders.type', 'purchase')
+                ->whereBetween('payments.payment_date', [$startStr, $endStr])
+                ->whereNull('payments.deleted_at')
+                ->selectRaw('SUM(CASE WHEN payments.status = "completed" THEN payments.amount ELSE 0 END) as completed,
+                             SUM(CASE WHEN payments.status = "pending" THEN payments.amount ELSE 0 END) as pending,
+                             COUNT(*) as count')
+                ->first();
+
+            return response()->json([
+                'period'   => $period,
+                'dateFrom' => $start->toDateString(),
+                'dateTo'   => $end->toDateString(),
+                'kpis' => [
+                    'totalSales'          => round((float) $totalSales, 2),
+                    'totalSalesCount'     => (int) $totalSalesCount,
+                    'totalPurchase'       => round((float) $totalPurchase, 2),
+                    'totalPurchaseCount'  => (int) $totalPurchaseCount,
+                    'inwardPayments'      => round((float) $inwardPayments, 2),
+                    'outwardPayments'     => round((float) $outwardPayments, 2),
+                    'salesOutstanding'    => round((float) $salesOutstanding, 2),
+                    'salesOutstandingCount' => (int) $salesOutstandingCount,
+                    'purchaseOutstanding' => round((float) $purchaseOutstanding, 2),
+                    'newCustomers'        => (int) $newCustomers,
+                    'existingCustomers'   => (int) $existingCustomers,
+                    'totalCustomers'      => (int) $totalCustomersInPeriod,
+                    'inStock'             => (int) $inStock,
+                    'lowStock'            => (int) $lowStock,
+                    'zeroStock'           => (int) $zeroStock,
+                    'loginsToday'         => (int) $loginsToday,
+                    'loginsInPeriod'      => (int) $loginsInPeriod,
+                    'activeUsers'         => (int) $activeUsers,
+                ],
+                'charts' => [
+                    'salesTrend'    => $salesTrend,
+                    'purchaseTrend' => $purchaseTrend,
+                    'stateWiseSales' => $stateWiseSales,
+                ],
+                'tables' => [
+                    'topCustomers'     => $topCustomers,
+                    'bestSelling'      => $bestSelling,
+                    'leastSelling'     => $leastSelling,
+                    'lowStockProducts' => $lowStockProducts,
+                    'topVendors'       => $topVendors,
+                    'purchaseDue'      => $purchaseDue,
+                    'salesInvoiceDue'  => $salesInvoiceDue,
+                ],
+                'payments' => [
+                    'inward'  => $inwardTotal,
+                    'outward' => $outwardTotal,
+                ],
+            ]);
+
+        } catch (\Throwable $e) {
+            // Gracefully return empty structure if tables are missing/empty
+            return response()->json([
+                'period'   => $period,
+                'dateFrom' => $start->toDateString(),
+                'dateTo'   => $end->toDateString(),
+                'error'    => 'Data not available: ' . $e->getMessage(),
+                'kpis'     => (object)[
+                    'totalSales' => 0,
+                    'totalSalesCount' => 0,
+                    'totalPurchase' => 0,
+                    'totalPurchaseCount' => 0,
+                    'inwardPayments' => 0,
+                    'outwardPayments' => 0,
+                    'salesOutstanding' => 0,
+                    'salesOutstandingCount' => 0,
+                    'purchaseOutstanding' => 0,
+                    'newCustomers' => 0,
+                    'existingCustomers' => 0,
+                    'totalCustomers' => 0,
+                    'inStock' => 0,
+                    'lowStock' => 0,
+                    'zeroStock' => 0,
+                    'loginsToday' => 0,
+                    'loginsInPeriod' => 0,
+                    'activeUsers' => 0,
+                ],
+                'charts'   => (object)[
+                    'salesTrend' => [],
+                    'purchaseTrend' => [],
+                    'stateWiseSales' => [],
+                ],
+                'tables'   => (object)[
+                    'topCustomers' => [],
+                    'bestSelling' => [],
+                    'leastSelling' => [],
+                    'lowStockProducts' => [],
+                    'topVendors' => [],
+                    'purchaseDue' => [],
+                    'salesInvoiceDue' => [],
+                ],
+                'payments' => (object)[
+                    'inward' => null,
+                    'outward' => null,
+                ],
+            ]);
+        }
+    }
+
+    /**
+     * Resolve start/end Carbon instances from period or custom from/to.
+     */
+    private function analyticsDateRange(string $period, ?string $from, ?string $to): array
+    {
+        if ($period === 'custom' && $from && $to) {
+            return [
+                Carbon::parse($from)->startOfDay(),
+                Carbon::parse($to)->endOfDay(),
+            ];
+        }
+
+        $now = Carbon::now();
+        return match ($period) {
+            'today'          => [$now->copy()->startOfDay(),            $now->copy()->endOfDay()],
+            'yesterday'      => [$now->copy()->subDay()->startOfDay(),  $now->copy()->subDay()->endOfDay()],
+            'last7'          => [$now->copy()->subDays(6)->startOfDay(),$now->copy()->endOfDay()],
+            'last30'         => [$now->copy()->subDays(29)->startOfDay(),$now->copy()->endOfDay()],
+            'last_month'     => [$now->copy()->subMonthNoOverflow()->startOfMonth(), $now->copy()->subMonthNoOverflow()->endOfMonth()],
+            'last3m'         => [$now->copy()->subMonths(3)->startOfDay(), $now->copy()->endOfDay()],
+            'last6m'         => [$now->copy()->subMonths(6)->startOfDay(), $now->copy()->endOfDay()],
+            'current_month'  => [$now->copy()->startOfMonth(),           $now->copy()->endOfMonth()],
+            'current_year'   => [$now->copy()->startOfYear(),            $now->copy()->endOfYear()],
+            default          => [$now->copy()->startOfDay(),             $now->copy()->endOfDay()],
+        };
+    }
+
     public function users()
     {
         return view('users.index');

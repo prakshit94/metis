@@ -25,6 +25,7 @@ Route::middleware('auth')->group(function (): void {
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/', [PageController::class, 'dashboard'])->name('dashboard');
     Route::get('/analytics', [PageController::class, 'analytics'])->name('analytics');
+    Route::get('/analytics/data', [PageController::class, 'analyticsData'])->name('analytics.data');
     Route::get('/users', [PageController::class, 'users'])->name('users');
     Route::get('/roles-permissions', [PageController::class, 'rolesPermissions'])->name('roles-permissions');
     
