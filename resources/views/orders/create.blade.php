@@ -562,7 +562,16 @@
                                 <div class="col-sm-6 col-md-4">
                                     <div class="card h-100 border shadow-sm transition-all" x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="isHovered ? 'position: relative; z-index: 1050;' : ''" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getWarehouseStock(p) <= 0}">
                                         <div class="card-body p-3">
-                                            <div class="d-flex gap-3 mb-3">
+                                            <div class="d-flex gap-2 mb-3">
+                                                <div x-show="p.grade" 
+                                                     class="badge border shadow-sm rounded-2 d-flex flex-column align-items-center justify-content-center flex-shrink-0" 
+                                                     style="width: 28px; height: 34px; font-size: 11px; padding: 2px;"
+                                                     :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(p.grade)}"
+                                                     :title="'Grade ' + p.grade"
+                                                     x-cloak>
+                                                    <i class="bi bi-star-fill text-warning" style="font-size: 10px; line-height: 1; margin-bottom: 2px;"></i>
+                                                    <span x-text="p.grade" style="line-height: 1; font-weight: 800;"></span>
+                                                </div>
                                                 <div class="position-relative cursor-pointer" @click="openProductModal(p)">
                                                     <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded border bg-body" style="width:60px;height:60px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                                     <div x-show="isInCart(p.id)" class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 20px; height: 20px; font-size: 10px;">
@@ -578,7 +587,6 @@
                                                     <div class="d-flex align-items-center gap-1 mt-1">
                                                         <span class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;" x-text="p.sku"></span>
                                                         <span x-show="p.weight" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;" x-text="p.weight"></span>
-                                                        <span x-show="p.grade" class="badge text-bg-info-subtle text-info-emphasis" style="font-size: 9px;" x-text="'Grade ' + p.grade"></span>
                                                     </div>
                                                     <div class="text-body-tertiary text-truncate mt-1" style="font-size: 10px;" x-show="p.description" :title="p.description" x-text="p.description"></div>
                                                 </div>
@@ -651,7 +659,16 @@
                                     <template x-for="p in products" :key="'tbl-'+p.id">
                                         <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getWarehouseStock(p) <= 0}">
                                             <td>
-                                                <div class="d-flex gap-3">
+                                                <div class="d-flex gap-2">
+                                                    <div x-show="p.grade" 
+                                                         class="badge border shadow-sm rounded-2 d-flex flex-column align-items-center justify-content-center mt-1 flex-shrink-0" 
+                                                         style="width: 28px; height: 34px; font-size: 11px; padding: 2px;"
+                                                         :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(p.grade)}"
+                                                         :title="'Grade ' + p.grade"
+                                                         x-cloak>
+                                                        <i class="bi bi-star-fill text-warning" style="font-size: 10px; line-height: 1; margin-bottom: 2px;"></i>
+                                                        <span x-text="p.grade" style="line-height: 1; font-weight: 800;"></span>
+                                                    </div>
                                                     <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded border bg-body shadow-sm cursor-pointer" style="width:50px;height:50px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'" @click="openProductModal(p)">
                                                     <div style="min-width: 0;">
                                                         <div class="fw-bold text-body text-truncate mb-1 cursor-pointer text-primary-hover" :title="p.name" x-text="p.name" @click="openProductModal(p)"></div>
@@ -662,7 +679,6 @@
                                                         <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
                                                             <span class="badge text-bg-secondary-subtle text-secondary-emphasis" x-text="p.sku"></span>
                                                             <span x-show="p.weight" class="badge bg-body-secondary border text-body-secondary" x-text="p.weight"></span>
-                                                            <span x-show="p.grade" class="badge text-bg-info-subtle text-info-emphasis" x-text="'Grade ' + p.grade"></span>
                                                         </div>
                                                         <div class="text-body-tertiary text-truncate mt-1" style="font-size: 10px; max-width: 250px;" x-show="p.description" :title="p.description" x-text="p.description"></div>
                                                     </div>

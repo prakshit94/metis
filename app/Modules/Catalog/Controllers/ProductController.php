@@ -210,7 +210,7 @@ class ProductController extends Controller
     public function searchApi(Request $request): JsonResponse
     {
         $query = Product::query()
-            ->with(['category', 'brand', 'taxRate', 'stocks.warehouse'])
+            ->with(['category', 'brand', 'taxRate', 'uom', 'stocks.warehouse'])
             ->withSum('stocks as stocks_sum_quantity', 'quantity')
             ->withSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
             ->withSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
@@ -288,6 +288,12 @@ class ProductController extends Controller
                 'is_sku_enabled' => (bool) $p->is_sku_enabled,
                 'default_discount' => (float) ($p->default_discount ?? 0),
                 'default_discount_type' => $p->default_discount_type ?? 'percent',
+                'grade' => $p->grade,
+                'uom' => $p->uom?->name,
+                'uom_id' => $p->uom_id,
+                'batch_tracking' => (bool) $p->batch_tracking,
+                'expiry_tracking' => (bool) $p->expiry_tracking,
+                'manage_stock' => (bool) $p->manage_stock,
             ];
         });
 
