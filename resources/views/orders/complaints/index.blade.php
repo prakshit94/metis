@@ -660,19 +660,20 @@
                 this.selectedOrderDetails = null;
 
                 try {
-                    const res = await axios.get(`/api/orders?search=${encodeURIComponent(this.searchQueryOrder)}`);
-                    let orders = res.data.data;
-                    
+                    const res = await axios.get(`/api/orders?search=${encodeURIComponent(this.searchQueryOrder)}&limit=50`);
+                    // OrderController@index returns { orders: { data: [...] }, stats: {...} }
+                    const orders = res.data.orders?.data ?? res.data.data ?? [];
+
                     if (!orders || orders.length === 0) {
                         this.searchOrderError = 'No orders found matching this query.';
                     } else if (orders.length === 1) {
-                        this.selectOrder(orders[0].id);
+                        await this.selectOrder(orders[0].id);
                     } else {
                         this.fetchedOrders = orders;
                     }
                 } catch (e) {
-                    this.searchOrderError = 'Failed to search for orders.';
-                    console.error(e);
+                    this.searchOrderError = 'Failed to search for orders. Please try again.';
+                    console.error('searchOrders error:', e);
                 }
                 this.isSearchingOrders = false;
             },
@@ -699,7 +700,16 @@
                 const formatAddress = (o, type) => {
                     const addr = type === 'shipping' ? o.shipping_address : o.billing_address;
                     if (!addr) return null;
-                    const parts = [addr.address_line_1, addr.address_line_2, addr.city, addr.state, addr.pincode].filter(Boolean);
+                    const parts = [
+                        addr.address_line_1,
+                        addr.address_line_2,
+                        addr.village_name,
+                        addr.taluka,
+                        addr.district,
+                        addr.city,
+                        addr.state,
+                        addr.pincode
+                    ].filter(Boolean);
                     return { formatted: parts.join(', ') || 'N/A' };
                 };
                 const invoice = o.invoice || null;
