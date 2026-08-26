@@ -892,7 +892,7 @@
                             <h5 class="mb-0 fw-bold"><i class="bi bi-cart3 me-2 text-primary"></i>Shopping Cart (<span x-text="cart.length" class="text-primary"></span>)</h5>
                             <p class="mb-0 small text-body-secondary">Pinned summary for the order you’re building.</p>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger" @click="cart = []">
+                        <button type="button" class="btn btn-sm btn-outline-danger" x-show="cart.length > 0" @click="cart = []">
                             <i class="bi bi-trash3 me-1"></i> Clear
                         </button>
                     </div>
@@ -937,13 +937,17 @@
                                     </div>
                                 </div>
                                 <div class="px-3 pb-3 d-flex flex-wrap align-items-center gap-3">
-                                    <div class="input-group input-group-sm shadow-sm flex-nowrap" style="max-width: 110px;">
+                                    <div class="d-flex align-items-center bg-body-secondary border rounded-3 p-1 flex-shrink-0">
                                         <template x-if="!item.is_gift">
-                                            <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click.prevent="updateQty(idx,-1)"><i class="bi bi-dash"></i></button>
+                                            <button type="button" @click.prevent="updateQty(idx,-1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
                                         </template>
-                                        <div class="form-control text-center fw-bold px-1 d-flex align-items-center justify-content-center bg-body flex-grow-1" style="min-width: 0;" x-text="item.quantity"></div>
+                                        <span class="fw-bold text-center" style="width: 32px; font-size: 13px;" x-text="item.quantity"></span>
                                         <template x-if="!item.is_gift">
-                                            <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click.prevent="updateQty(idx,1)"><i class="bi bi-plus"></i></button>
+                                            <button type="button" @click.prevent="updateQty(idx,1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
                                         </template>
                                     </div>
                                     <div class="flex-grow-1 d-flex justify-content-end align-items-center gap-2" style="min-width: 0;">

@@ -736,7 +736,10 @@ class ProductController extends Controller
                 ])->values(),
             'statusList' => [
                 ['value' => 'active', 'label' => 'Active'],
+                ['value' => 'published', 'label' => 'Published'],
+                ['value' => 'pending', 'label' => 'Pending'],
                 ['value' => 'draft', 'label' => 'Draft'],
+                ['value' => 'out_of_stock', 'label' => 'Out of Stock'],
             ],
         ];
     }
