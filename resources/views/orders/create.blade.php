@@ -21,7 +21,7 @@
                     <span class="ms-2 text-primary">#<span x-text="originalOrder.order_no"></span></span>
                 </template>
             </h1>
-            <div class="text-muted mb-0 d-flex align-items-center flex-wrap gap-2 mt-2">
+            <div class="text-body-secondary mb-0 d-flex align-items-center flex-wrap gap-2 mt-2">
                 <span x-show="!editingOrderId && !isConfirmMode" x-cloak>Manage customer profile, add products to cart, and process order checkout.</span>
                 <template x-if="editingOrderId && originalOrder">
                     <div class="d-flex align-items-center flex-wrap gap-3" x-cloak>
@@ -82,12 +82,12 @@
                                     </div>
                                     <div class="small ms-4 ps-1 text-body">
                                         <div class="mb-1"><strong class="text-body-emphasis">Date:</strong> <span class="fw-medium text-body" x-text="new Date(originalOrder.scheduled_confirmation_date).toLocaleString('en-IN', { day: '2-digit', month: 'short', year:'numeric', hour: '2-digit', minute:'2-digit', hour12: true })"></span></div>
-                                        <div><strong class="text-body-emphasis">Previous Attempts:</strong> <span class="badge bg-warning text-dark ms-1" x-text="originalOrder.confirmation_attempts || 0"></span></div>
+                                        <div><strong class="text-body-emphasis">Previous Attempts:</strong> <span class="badge bg-warning text-body-emphasis ms-1" x-text="originalOrder.confirmation_attempts || 0"></span></div>
                                     </div>
                                 </div>
                             </template>
                             <template x-if="!originalOrder.scheduled_confirmation_date">
-                                <div class="text-muted small fst-italic">No future confirmation scheduled.</div>
+                                <div class="text-body-secondary small fst-italic">No future confirmation scheduled.</div>
                             </template>
                         </div>
                         
@@ -104,7 +104,7 @@
                                                 <div class="d-flex justify-content-between align-items-start">
                                                     <div>
                                                         <p class="fw-bold text-body-emphasis mb-0 small text-capitalize" x-text="log.status.replace(/_/g, ' ')"></p>
-                                                        <p class="text-muted mb-0" style="font-size: 0.75rem;">
+                                                        <p class="text-body-secondary mb-0" style="font-size: 0.75rem;">
                                                             <span x-text="new Date(log.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year:'numeric', hour: '2-digit', minute:'2-digit', hour12: true })"></span>
                                                             <template x-if="log.user">
                                                                 <span> &bull; by <span x-text="log.user.name"></span></span>
@@ -119,7 +119,7 @@
                                 </div>
                             </template>
                             <template x-if="!originalOrder.status_logs || originalOrder.status_logs.length === 0">
-                                <div class="text-muted small fst-italic">No status history available.</div>
+                                <div class="text-body-secondary small fst-italic">No status history available.</div>
                             </template>
                         </div>
                     </div>
@@ -139,7 +139,7 @@
                         @endcan
                         <div class="form-check form-switch cursor-pointer ms-2 mb-0 d-flex align-items-center" title="Toggle Workspace">
                             <input class="form-check-input mt-0 me-2 shadow-sm" type="checkbox" role="switch" id="workspaceToggleBtn" x-model="showCustomerWorkspace" style="cursor: pointer;">
-                            <label class="form-check-label fw-bold text-muted text-uppercase mb-0" for="workspaceToggleBtn" style="cursor: pointer; font-size: 10px; letter-spacing: 0.5px;" x-text="showCustomerWorkspace ? 'Hide Profile' : 'View Profile'"></label>
+                            <label class="form-check-label fw-bold text-body-secondary text-uppercase mb-0" for="workspaceToggleBtn" style="cursor: pointer; font-size: 10px; letter-spacing: 0.5px;" x-text="showCustomerWorkspace ? 'Hide Profile' : 'View Profile'"></label>
                         </div>
                     </div>
                 </div>
@@ -159,7 +159,7 @@
                                         </div>
                                         <div>
                                             <h5 class="mb-1 fw-bold" x-text="customerDisplayName"></h5>
-                                            <div class="small text-muted d-flex align-items-center gap-2">
+                                            <div class="small text-body-secondary d-flex align-items-center gap-2">
                                                 <span x-text="customerDetails.party_code"></span>
                                                 <span class="badge text-bg-success-subtle text-success-emphasis" x-text="customerDetails.status || 'Active'"></span>
                                                 <span class="badge text-bg-info-subtle text-info-emphasis" x-show="customerDetails.kyc_completed">KYC Verified</span>
@@ -171,7 +171,7 @@
                                     <div class="d-flex gap-3 align-items-start border-start ps-3 ms-1 border-secondary border-opacity-25" x-show="customerDetails.referral_code || customerDetails?.referrer || customerDetails?.total_farmers_referred > 0" x-cloak>
                                         <!-- Referral Code -->
                                         <div x-show="customerDetails.referral_code" style="min-width: 110px;">
-                                            <span class="text-muted d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referral Code</span>
+                                            <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referral Code</span>
                                             <div class="d-flex align-items-center gap-2 mt-1">
                                                 <span class="fw-bold text-primary font-monospace bg-primary bg-opacity-10 px-2 py-1 rounded" style="letter-spacing: 1px; font-size: 11px;" x-text="customerDetails.referral_code"></span>
                                             </div>
@@ -179,16 +179,16 @@
                                         
                                         <!-- Referrer Details -->
                                         <div x-show="customerDetails?.referrer" class="border-start ps-3 border-secondary border-opacity-25" style="min-width: 140px;">
-                                            <span class="text-muted d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referred By</span>
+                                            <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referred By</span>
                                             <div class="d-flex flex-column mt-1">
                                                 <span class="fw-bold text-body-emphasis lh-1" style="font-size: 11px;" x-text="(customerDetails?.referrer?.firstname || '') + ' ' + (customerDetails?.referrer?.lastname || '')"></span>
-                                                <span class="text-muted mt-1 lh-1" style="font-size: 10px;"><i class="bi bi-telephone text-primary opacity-75 me-1" style="font-size: 9px;"></i><span x-text="customerDetails?.referrer?.phone"></span></span>
+                                                <span class="text-body-secondary mt-1 lh-1" style="font-size: 10px;"><i class="bi bi-telephone text-primary opacity-75 me-1" style="font-size: 9px;"></i><span x-text="customerDetails?.referrer?.phone"></span></span>
                                             </div>
                                         </div>
 
                                         <!-- Downline Stats -->
                                         <div x-data="{ showReferralsList: false }" x-show="customerDetails?.total_farmers_referred > 0" class="border-start ps-3 border-secondary border-opacity-25 position-relative" style="min-width: 130px;">
-                                            <span class="text-muted d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referred Network</span>
+                                            <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referred Network</span>
                                             <button type="button" @click="showReferralsList = !showReferralsList" class="btn btn-sm btn-outline-success border-0 text-start p-0 d-flex align-items-center gap-1 mt-1">
                                                 <span class="fw-bold" style="font-size: 11px;"><i class="bi bi-people me-1"></i><span x-text="customerDetails?.total_farmers_referred || 0"></span> Farmers</span>
                                                 <i class="bi" :class="showReferralsList ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 10px;"></i>
@@ -202,10 +202,10 @@
                                                             <span class="text-success-emphasis fw-bold text-truncate" style="font-size: 10px; max-width: 65%;">
                                                                 <span class="text-success opacity-75 me-1" x-text="(index + 1) + '.'"></span><span x-text="(ref.firstname || '') + ' ' + (ref.lastname || '')"></span>
                                                             </span>
-                                                            <span class="text-muted" style="font-size: 10px;"><i class="bi bi-telephone text-success opacity-50 me-1" style="font-size: 8px;"></i><span x-text="ref.phone"></span></span>
+                                                            <span class="text-body-secondary" style="font-size: 10px;"><i class="bi bi-telephone text-success opacity-50 me-1" style="font-size: 8px;"></i><span x-text="ref.phone"></span></span>
                                                         </div>
                                                         <div class="mt-1" style="padding-left: 12px;" x-show="ref.addresses && ref.addresses.length > 0 && ref.addresses[0].village">
-                                                            <span class="text-muted d-flex align-items-center gap-1 text-truncate" style="font-size: 9px; max-width: 100%;">
+                                                            <span class="text-body-secondary d-flex align-items-center gap-1 text-truncate" style="font-size: 9px; max-width: 100%;">
                                                                 <i class="bi bi-geo-alt-fill text-success opacity-50" style="font-size: 8px;"></i>
                                                                 <span x-text="[ref.addresses[0]?.village?.village_name, ref.addresses[0]?.village?.taluka_name, ref.addresses[0]?.village?.district_name].filter(Boolean).join(', ')"></span>
                                                             </span>
@@ -236,10 +236,10 @@
                                                 <i class="bi bi-person-lines-fill text-primary fs-5 me-2"></i>
                                                 <h6 class="fw-bold text-primary mb-0" style="text-transform: uppercase; font-size: 11px;">Contact</h6>
                                             </div>
-                                            <div class="mb-2" x-show="customerDetails.phone"><span class="text-muted d-block small mb-1">Primary Phone</span><span class="fw-bold text-body-emphasis"><i class="bi bi-telephone text-primary me-1"></i><span x-text="customerDetails.phone"></span></span></div>
-                                            <div class="mb-2" x-show="customerDetails.alternatemobile"><span class="text-muted d-block small mb-1">Alt Phone</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.alternatemobile"></span></div>
-                                            <div class="mb-2" x-show="customerDetails.email"><span class="text-muted d-block small mb-1">Email Address</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block w-100" :title="customerDetails.email"><i class="bi bi-envelope text-primary me-1"></i><span x-text="customerDetails.email"></span></span></div>
-                                            <div class="mb-2" x-show="customerDetails.relative_name"><span class="text-muted d-block small mb-1">Relative</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.relative_name + ' (' + customerDetails.relative_phone + ')'"></span></div>
+                                            <div class="mb-2" x-show="customerDetails.phone"><span class="text-body-secondary d-block small mb-1">Primary Phone</span><span class="fw-bold text-body-emphasis"><i class="bi bi-telephone text-primary me-1"></i><span x-text="customerDetails.phone"></span></span></div>
+                                            <div class="mb-2" x-show="customerDetails.alternatemobile"><span class="text-body-secondary d-block small mb-1">Alt Phone</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.alternatemobile"></span></div>
+                                            <div class="mb-2" x-show="customerDetails.email"><span class="text-body-secondary d-block small mb-1">Email Address</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block w-100" :title="customerDetails.email"><i class="bi bi-envelope text-primary me-1"></i><span x-text="customerDetails.email"></span></span></div>
+                                            <div class="mb-2" x-show="customerDetails.relative_name"><span class="text-body-secondary d-block small mb-1">Relative</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.relative_name + ' (' + customerDetails.relative_phone + ')'"></span></div>
 
                                         </div>
                                     </div>
@@ -253,12 +253,12 @@
                                                 <i class="bi bi-building text-info fs-5 me-2"></i>
                                                 <h6 class="fw-bold text-info mb-0" style="text-transform: uppercase; font-size: 11px;">Business & Identity</h6>
                                             </div>
-                                            <div class="mb-2" x-show="customerDetails.company_name"><span class="text-muted d-block small mb-1">Company</span><span class="fw-bold text-body-emphasis" x-text="customerDetails.company_name"></span></div>
-                                            <div class="mb-2" x-show="customerDetails.category"><span class="text-muted d-block small mb-1">Category</span><span class="fw-medium text-body-emphasis text-capitalize"><span class="badge bg-info text-dark bg-opacity-25" x-text="customerDetails.category"></span></span></div>
-                                            <div class="mb-2" x-show="customerDetails.gst_no"><span class="text-muted d-block small mb-1">GST Number</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" x-text="customerDetails.gst_no"></span></div>
-                                            <div class="mb-2" x-show="customerDetails.pan_no"><span class="text-muted d-block small mb-1">PAN Number</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" x-text="customerDetails.pan_no"></span></div>
-                                            <div class="mb-2" x-show="customerDetails.aadhaar_last4"><span class="text-muted d-block small mb-1">Aadhaar (Last 4)</span><span class="fw-medium text-body-emphasis font-monospace" x-text="'xxxx-xxxx-' + customerDetails.aadhaar_last4"></span></div>
-                                            <div class="text-center mt-3" x-show="!customerDetails.company_name && !customerDetails.gst_no && !customerDetails.pan_no && !customerDetails.category && !customerDetails.aadhaar_last4"><span class="text-muted fst-italic">No business details</span></div>
+                                            <div class="mb-2" x-show="customerDetails.company_name"><span class="text-body-secondary d-block small mb-1">Company</span><span class="fw-bold text-body-emphasis" x-text="customerDetails.company_name"></span></div>
+                                            <div class="mb-2" x-show="customerDetails.category"><span class="text-body-secondary d-block small mb-1">Category</span><span class="fw-medium text-body-emphasis text-capitalize"><span class="badge bg-info text-body-emphasis bg-opacity-25" x-text="customerDetails.category"></span></span></div>
+                                            <div class="mb-2" x-show="customerDetails.gst_no"><span class="text-body-secondary d-block small mb-1">GST Number</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" x-text="customerDetails.gst_no"></span></div>
+                                            <div class="mb-2" x-show="customerDetails.pan_no"><span class="text-body-secondary d-block small mb-1">PAN Number</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" x-text="customerDetails.pan_no"></span></div>
+                                            <div class="mb-2" x-show="customerDetails.aadhaar_last4"><span class="text-body-secondary d-block small mb-1">Aadhaar (Last 4)</span><span class="fw-medium text-body-emphasis font-monospace" x-text="'xxxx-xxxx-' + customerDetails.aadhaar_last4"></span></div>
+                                            <div class="text-center mt-3" x-show="!customerDetails.company_name && !customerDetails.gst_no && !customerDetails.pan_no && !customerDetails.category && !customerDetails.aadhaar_last4"><span class="text-body-secondary fst-italic">No business details</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -271,21 +271,21 @@
                                                 <i class="bi bi-tree text-success fs-5 me-2"></i>
                                                 <h6 class="fw-bold text-success mb-0" style="text-transform: uppercase; font-size: 11px;">Agriculture</h6>
                                             </div>
-                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Land Area</span><span class="fw-bold text-body-emphasis"><span x-text="customerDetails.land_area || '0'"></span> <span x-text="customerDetails.land_unit || ''"></span></span></div>
+                                            <div class="mb-2"><span class="text-body-secondary d-block small mb-1">Land Area</span><span class="fw-bold text-body-emphasis"><span x-text="customerDetails.land_area || '0'"></span> <span x-text="customerDetails.land_unit || ''"></span></span></div>
                                             <div class="mb-2" x-show="customerDetails.crops && customerDetails.crops.length > 0">
-                                                <span class="text-muted d-block small mb-1">Crops</span>
+                                                <span class="text-body-secondary d-block small mb-1">Crops</span>
                                                 <div class="d-flex gap-1 flex-wrap">
                                                     <template x-for="crop in (customerDetails.crops || [])"><span class="badge text-bg-success-subtle text-success-emphasis-emphasis border border-success border-opacity-50" x-text="crop"></span></template>
                                                 </div>
                                             </div>
                                             <div class="mb-2" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
-                                                <span class="text-muted d-block small mb-1">Irrigation</span>
+                                                <span class="text-body-secondary d-block small mb-1">Irrigation</span>
                                                 <div class="d-flex gap-1 flex-wrap">
                                                     <template x-for="type in (customerDetails.irrigation_type || [])"><span class="badge bg-success text-white" x-text="type"></span></template>
                                                 </div>
                                             </div>
                                             <div class="mb-2" x-show="customerDetails.tags && customerDetails.tags.length > 0">
-                                                <span class="text-muted d-block small mb-1">Tags</span>
+                                                <span class="text-body-secondary d-block small mb-1">Tags</span>
                                                 <div class="d-flex gap-1 flex-wrap">
                                                     <template x-for="tag in (customerDetails.tags || [])"><span class="badge text-bg-secondary-subtle text-secondary-emphasis-emphasis" x-text="tag"></span></template>
                                                 </div>
@@ -302,32 +302,32 @@
                                                 <i class="bi bi-wallet2 text-warning-emphasis fs-5 me-2"></i>
                                                 <h6 class="fw-bold text-warning-emphasis mb-0" style="text-transform: uppercase; font-size: 11px;">Financial & Stats</h6>
                                             </div>
-                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Credit Limit</span><span class="fw-bold text-body-emphasis">₹ <span x-text="Number(customerDetails.credit_limit || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
-                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Outstanding Bal</span><span class="fw-bold fs-6" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">₹ <span x-text="Number(customerDetails.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
-                                            <div class="mb-2"><span class="text-muted d-block small mb-1">Cashback Wallet</span><span class="fw-bold fs-6 text-success">₹ <span x-text="Number(customerDetails.wallet_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="mb-2"><span class="text-body-secondary d-block small mb-1">Credit Limit</span><span class="fw-bold text-body-emphasis">₹ <span x-text="Number(customerDetails.credit_limit || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="mb-2"><span class="text-body-secondary d-block small mb-1">Outstanding Bal</span><span class="fw-bold fs-6" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">₹ <span x-text="Number(customerDetails.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="mb-2"><span class="text-body-secondary d-block small mb-1">Cashback Wallet</span><span class="fw-bold fs-6 text-success">₹ <span x-text="Number(customerDetails.wallet_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
                                             
                                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <div><span class="text-muted d-block small mb-1">Cr. Days</span><span class="fw-medium text-body-emphasis" x-text="(customerDetails.credit_days || '0') + ' Days'"></span></div>
-                                                <div class="text-end" x-show="customerDetails.credit_valid_till"><span class="text-muted d-block small mb-1">Valid Till</span><span class="fw-medium text-body-emphasis" x-text="new Date(customerDetails.credit_valid_till).toLocaleDateString()"></span></div>
+                                                <div><span class="text-body-secondary d-block small mb-1">Cr. Days</span><span class="fw-medium text-body-emphasis" x-text="(customerDetails.credit_days || '0') + ' Days'"></span></div>
+                                                <div class="text-end" x-show="customerDetails.credit_valid_till"><span class="text-body-secondary d-block small mb-1">Valid Till</span><span class="fw-medium text-body-emphasis" x-text="new Date(customerDetails.credit_valid_till).toLocaleDateString()"></span></div>
                                             </div>
                                             
                                             <div class="d-flex justify-content-between align-items-center mb-0 mt-3 pt-2 border-top border-warning border-opacity-25">
-                                                <div><span class="text-muted d-block small mb-1">Total Orders</span><span class="fw-bold text-primary fs-6" x-text="Math.max(customerDetails.orders_count || 0, (customerDetails.orders || []).length)"></span></div>
+                                                <div><span class="text-body-secondary d-block small mb-1">Total Orders</span><span class="fw-bold text-primary fs-6" x-text="Math.max(customerDetails.orders_count || 0, (customerDetails.orders || []).length)"></span></div>
                                                 <div class="text-end" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
-                                                    <span class="text-muted d-block small mb-1">Total Revenue</span>
+                                                    <span class="text-body-secondary d-block small mb-1">Total Revenue</span>
                                                     <span class="fw-bold text-primary fs-6">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status !== 'cancelled').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-0 mt-2" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
-                                                <div><span class="text-muted d-block small mb-1">Delivered</span><span class="fw-medium text-success"><span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').length"></span> <span style="font-size: 10px;" x-text="'(' + (Math.round(((customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').length / ((customerDetails.orders || []).length || 1)) * 100) || 0) + '%)'"></span></span></div>
-                                                <div class="text-end"><span class="text-muted d-block small mb-1">Returned</span><span class="fw-medium text-danger"><span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').length"></span> <span style="font-size: 10px;" x-text="'(' + (Math.round(((customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').length / ((customerDetails.orders || []).length || 1)) * 100) || 0) + '%)'"></span></span></div>
+                                                <div><span class="text-body-secondary d-block small mb-1">Delivered</span><span class="fw-medium text-success"><span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').length"></span> <span style="font-size: 10px;" x-text="'(' + (Math.round(((customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').length / ((customerDetails.orders || []).length || 1)) * 100) || 0) + '%)'"></span></span></div>
+                                                <div class="text-end"><span class="text-body-secondary d-block small mb-1">Returned</span><span class="fw-medium text-danger"><span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').length"></span> <span style="font-size: 10px;" x-text="'(' + (Math.round(((customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').length / ((customerDetails.orders || []).length || 1)) * 100) || 0) + '%)'"></span></span></div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-0 mt-2" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
-                                                <div><span class="text-muted d-block small mb-1">Rev. Delivered</span><span class="fw-bold text-success" style="font-size: 11px;">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span></div>
-                                                <div class="text-end"><span class="text-muted d-block small mb-1">Rev. Returned</span><span class="fw-bold text-danger" style="font-size: 11px;">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span></div>
+                                                <div><span class="text-body-secondary d-block small mb-1">Rev. Delivered</span><span class="fw-bold text-success" style="font-size: 11px;">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span></div>
+                                                <div class="text-end"><span class="text-body-secondary d-block small mb-1">Rev. Returned</span><span class="fw-bold text-danger" style="font-size: 11px;">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span></div>
                                             </div>
                                             <div class="mb-0 mt-2 pt-2 border-top border-warning border-opacity-25" x-show="customerDetails.last_purchase_at" x-cloak>
-                                                <div class="text-end"><span class="text-muted d-block small mb-1">Last Order</span><span class="fw-medium text-body-emphasis" style="font-size: 11px;" x-text="new Date(customerDetails.last_purchase_at).toLocaleDateString()"></span></div>
+                                                <div class="text-end"><span class="text-body-secondary d-block small mb-1">Last Order</span><span class="fw-medium text-body-emphasis" style="font-size: 11px;" x-text="new Date(customerDetails.last_purchase_at).toLocaleDateString()"></span></div>
                                             </div>
                                         </div>
                                     </div>
@@ -338,7 +338,7 @@
                                 <div class="col-12 mt-2 pt-2 border-top" x-show="customerDetails.internal_notes || customerDetails.is_blacklisted">                                    <div class="d-flex flex-wrap gap-3 align-items-center">
                                         <div x-show="customerDetails.is_blacklisted"><span class="badge bg-danger"><i class="bi bi-slash-circle me-1"></i>Blacklisted</span></div>
                                         <div x-show="customerDetails.internal_notes">
-                                            <span class="text-muted me-1 fw-bold" style="font-size: 11px; text-transform: uppercase;">Notes:</span>
+                                            <span class="text-body-secondary me-1 fw-bold" style="font-size: 11px; text-transform: uppercase;">Notes:</span>
                                             <span class="fw-medium text-danger" x-text="customerDetails.internal_notes"></span>
                                         </div>
                                     </div>
@@ -375,21 +375,21 @@
                                                         @endcan
                                                     </div>
                                                     <p class="mb-1 small fw-bold" x-text="addr.address_line_1"></p>
-                                                    <p class="mb-1 small text-muted" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
-                                                    <p class="mb-1 small text-muted" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
-                                                    <p class="mb-0 small text-muted fw-medium">
+                                                    <p class="mb-1 small text-body-secondary" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
+                                                    <p class="mb-1 small text-body-secondary" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
+                                                    <p class="mb-0 small text-body-secondary fw-medium">
                                                         <span x-show="addr.city" x-text="addr.city + ', '"></span>
                                                         <span x-show="addr.state" x-text="addr.state"></span>
                                                         <span x-show="addr.pincode" x-text="'- ' + addr.pincode"></span>
                                                     </p>
                                                     <div class="mt-3 pt-2 border-top">
-                                                        <div class="small text-muted fw-semibold text-uppercase mb-1" style="font-size: 10px; letter-spacing: .5px;">Available services</div>
+                                                        <div class="small text-body-secondary fw-semibold text-uppercase mb-1" style="font-size: 10px; letter-spacing: .5px;">Available services</div>
                                                         <div class="d-flex flex-wrap gap-1" x-show="availableServices(addr).length">
                                                             <template x-for="(service, index) in availableServices(addr)" :key="service.id">
                                                                 <span class="badge text-bg-success" x-text="`${Number(service.pivot?.priority) > 0 ? Number(service.pivot.priority) : index + 1}. ${service.name}`"></span>
                                                             </template>
                                                         </div>
-                                                        <span class="small text-muted" x-show="!availableServices(addr).length">No service available for this address</span>
+                                                        <span class="small text-body-secondary" x-show="!availableServices(addr).length">No service available for this address</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -400,11 +400,11 @@
                                 <div class="col-12">
                                     <div class="alert alert-light border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0 p-4 shadow-sm bg-body-tertiary">
                                         <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-4" style="width: 50px; height: 50px;">
-                                            <i class="bi bi-info-circle text-muted fs-4"></i>
+                                            <i class="bi bi-info-circle text-body-secondary fs-4"></i>
                                         </div>
                                         <div>
                                             <p class="mb-1 fw-bold fs-6 text-body">No addresses found.</p>
-                                            <p class="mb-0 small text-muted">Please add a shipping address to continue with your order.</p>
+                                            <p class="mb-0 small text-body-secondary">Please add a shipping address to continue with your order.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -414,7 +414,7 @@
                         {{-- Same as Shipping Toggle --}}
                         <div class="mt-4 form-check cursor-pointer d-flex align-items-center gap-2">
                             <input class="form-check-input mt-0" type="checkbox" id="sameAsShippingToggle" x-model="sameAsShipping" style="cursor: pointer;">
-                            <label class="form-check-label small fw-bold text-muted text-uppercase mt-1" for="sameAsShippingToggle" style="cursor: pointer; font-size: 11px; letter-spacing: 1px;">Billing address same as Shipping address</label>
+                            <label class="form-check-label small fw-bold text-body-secondary text-uppercase mt-1" for="sameAsShippingToggle" style="cursor: pointer; font-size: 11px; letter-spacing: 1px;">Billing address same as Shipping address</label>
                         </div>
 
                         {{-- Billing Address Section --}}
@@ -441,21 +441,21 @@
                                                         @endcan
                                                     </div>
                                                     <p class="mb-1 small fw-bold" x-text="addr.address_line_1"></p>
-                                                    <p class="mb-1 small text-muted" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
-                                                    <p class="mb-1 small text-muted" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
-                                                    <p class="mb-0 small text-muted fw-medium">
+                                                    <p class="mb-1 small text-body-secondary" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
+                                                    <p class="mb-1 small text-body-secondary" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
+                                                    <p class="mb-0 small text-body-secondary fw-medium">
                                                         <span x-show="addr.city" x-text="addr.city + ', '"></span>
                                                         <span x-show="addr.state" x-text="addr.state"></span>
                                                         <span x-show="addr.pincode" x-text="'- ' + addr.pincode"></span>
                                                     </p>
                                                     <div class="mt-3 pt-2 border-top">
-                                                        <div class="small text-muted fw-semibold text-uppercase mb-1" style="font-size: 10px; letter-spacing: .5px;">Available services</div>
+                                                        <div class="small text-body-secondary fw-semibold text-uppercase mb-1" style="font-size: 10px; letter-spacing: .5px;">Available services</div>
                                                         <div class="d-flex flex-wrap gap-1" x-show="availableServices(addr).length">
                                                             <template x-for="service in availableServices(addr)" :key="service.id">
                                                                 <span class="badge text-bg-success" x-text="service.name"></span>
                                                             </template>
                                                         </div>
-                                                        <span class="small text-muted" x-show="!availableServices(addr).length">No service available for this address</span>
+                                                        <span class="small text-body-secondary" x-show="!availableServices(addr).length">No service available for this address</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -466,11 +466,11 @@
                                     <div class="col-12">
                                         <div class="alert alert-light border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0 p-4 shadow-sm bg-body-tertiary">
                                             <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-4" style="width: 50px; height: 50px;">
-                                                <i class="bi bi-info-circle text-muted fs-4"></i>
+                                                <i class="bi bi-info-circle text-body-secondary fs-4"></i>
                                             </div>
                                             <div>
                                                 <p class="mb-1 fw-bold fs-6 text-body">No addresses found.</p>
-                                                <p class="mb-0 small text-muted">Please add a billing address to continue with your order.</p>
+                                                <p class="mb-0 small text-body-secondary">Please add a billing address to continue with your order.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -483,7 +483,7 @@
                         <div class="card-body p-3 p-lg-4">
                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                                 <div>
-                                    <div class="small fw-bold text-muted text-uppercase mb-1" style="font-size: 11px; letter-spacing: 1px;">Warehouse</div>
+                                    <div class="small fw-bold text-body-secondary text-uppercase mb-1" style="font-size: 11px; letter-spacing: 1px;">Warehouse</div>
                                     <h6 class="mb-0 fw-bold">Select fulfillment warehouse</h6>
                                 </div>
                                 <select x-select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId" @change="searchProducts(true)">
@@ -512,7 +512,7 @@
                             </div>
                             <div class="position-relative" style="max-width:240px; width:100%;">
                                 <input type="search" class="form-control pe-5" placeholder="Search SKU, name..." x-model="productQuery" @input.debounce.350ms="searchProducts(true)">
-                                <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
+                                <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-body-secondary"></i>
                             </div>
                             <select x-select class="form-select" style="max-width:180px" x-model="warehouseId" @change="searchProducts(true)">
                                 <option value="">Select Warehouse</option>
@@ -534,6 +534,14 @@
                                 @endforeach
                                 @endforeach
                             </select>
+                            <select class="form-select" style="max-width:110px" x-model="perPage" @change="searchProducts(true)" title="Items per page">
+                                <option value="5">5 / page</option>
+                                <option value="10">10 / page</option>
+                                <option value="15">15 / page</option>
+                                <option value="20">20 / page</option>
+                                <option value="25">25 / page</option>
+                                <option value="30">30 / page</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -544,7 +552,7 @@
                     </template>
                     {{-- Empty --}}
                     <template x-if="!searching && products.length === 0">
-                        <div class="text-center py-5 text-muted"><i class="bi bi-box-seam fs-1 d-block mb-2"></i>No products found</div>
+                        <div class="text-center py-5 text-body-secondary"><i class="bi bi-box-seam fs-1 d-block mb-2"></i>No products found</div>
                     </template>
                     {{-- Product Grid / Table --}}
                     <div class="p-3" x-show="!searching && products.length > 0">
@@ -562,8 +570,17 @@
                                                     </div>
                                                 </div>
                                                 <div class="flex-grow-1" style="min-width: 0;">
-                                                    <div class="fw-bold text-truncate text-body cursor-pointer text-primary-hover" :title="p.name" x-text="p.name" @click="openProductModal(p)"></div>
-                                                    <div class="text-muted text-truncate font-monospace mt-1" style="font-size:11px;" x-text="p.sku"></div>
+                                                    <div class="fw-bold text-truncate text-body cursor-pointer text-primary-hover mb-1" :title="p.name" x-text="p.name" @click="openProductModal(p)"></div>
+                                                    <div class="small text-body-secondary text-truncate mb-1" style="font-size: 10px;">
+                                                        <span x-show="p.category && p.category.name" class="me-2"><i class="bi bi-tag-fill me-1 text-primary opacity-50"></i><span x-text="p.category.name"></span></span>
+                                                        <span x-show="p.brand && p.brand.name"><i class="bi bi-award-fill me-1 text-warning opacity-75"></i><span x-text="p.brand.name"></span></span>
+                                                    </div>
+                                                    <div class="d-flex align-items-center gap-1 mt-1">
+                                                        <span class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;" x-text="p.sku"></span>
+                                                        <span x-show="p.weight" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;" x-text="p.weight"></span>
+                                                        <span x-show="p.grade" class="badge text-bg-info-subtle text-info-emphasis" style="font-size: 9px;" x-text="'Grade ' + p.grade"></span>
+                                                    </div>
+                                                    <div class="text-body-tertiary text-truncate mt-1" style="font-size: 10px;" x-show="p.description" :title="p.description" x-text="p.description"></div>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-1 bg-body-tertiary rounded">
@@ -602,20 +619,16 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="row g-2">
-                                                <div class="col-8">
-                                                    <div class="input-group shadow-sm h-100" style="min-height: 42px;">
-                                                        <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-dash"></i></button>
-                                                        <input type="number" class="form-control text-center fw-bold px-1 no-spinners" x-model.number="p._qty" min="1" :max="getWarehouseStock(p) || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
-                                                        <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty < (getWarehouseStock(p) || 9999)) p._qty++" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-plus"></i></button>
-                                                    </div>
+                                            <div class="d-flex flex-column gap-2 mt-auto">
+                                                <div class="input-group shadow-sm flex-nowrap" style="min-height: 38px;">
+                                                    <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-dash"></i></button>
+                                                    <input type="number" class="form-control text-center fw-bold px-1 no-spinners flex-grow-1" x-model.number="p._qty" min="1" :max="getWarehouseStock(p) || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0" style="min-width: 0;">
+                                                    <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty < (getWarehouseStock(p) || 9999)) p._qty++" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-plus"></i></button>
                                                 </div>
-                                                <div class="col-4">
-                                                    <button class="btn btn-sm w-100 h-100 d-flex align-items-center justify-content-center gap-1" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
-                                                        <i class="bi fs-5" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
-                                                        <span x-text="!p.is_sku_enabled ? 'Disabled' : (getWarehouseStock(p) <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 13px;" class="fw-bold"></span>
-                                                    </button>
-                                                </div>
+                                                <button class="btn btn-sm w-100 shadow-sm d-flex align-items-center justify-content-center gap-2 transition-all fw-bold text-nowrap" style="min-height: 38px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
+                                                    <i class="bi fs-5" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
+                                                    <span x-text="!p.is_sku_enabled ? 'Disabled' : (getWarehouseStock(p) <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 13px;"></span>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -627,12 +640,11 @@
                         <div class="table-responsive border rounded overflow-visible bg-body shadow-sm" x-show="viewMode === 'table'">
                             <table class="table table-hover table-striped align-middle mb-0" style="font-size: 13px;">
                                 <thead class="border-bottom">
-                                    <tr class="text-muted">
+                                    <tr class="text-body-secondary">
                                         <th style="min-width: 250px;">Product Details</th>
                                         <th style="min-width: 150px;">Pricing & Offers</th>
                                         <th style="min-width: 150px;">Inventory</th>
-                                        <th class="text-center" style="width: 140px;">Order Qty</th>
-                                        <th class="text-center" style="width: 80px;">Action</th>
+                                        <th class="text-center" style="min-width: 130px; width: 130px;">Order Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -643,15 +655,16 @@
                                                     <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded border bg-body shadow-sm cursor-pointer" style="width:50px;height:50px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'" @click="openProductModal(p)">
                                                     <div style="min-width: 0;">
                                                         <div class="fw-bold text-body text-truncate mb-1 cursor-pointer text-primary-hover" :title="p.name" x-text="p.name" @click="openProductModal(p)"></div>
+                                                        <div class="small text-body-secondary mb-1" style="font-size: 11px;">
+                                                            <span x-show="p.category && p.category.name" class="me-2"><i class="bi bi-tag-fill me-1 text-primary opacity-50"></i><span x-text="p.category.name"></span></span>
+                                                            <span x-show="p.brand && p.brand.name"><i class="bi bi-award-fill me-1 text-warning opacity-75"></i><span x-text="p.brand.name"></span></span>
+                                                        </div>
                                                         <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
                                                             <span class="badge text-bg-secondary-subtle text-secondary-emphasis" x-text="p.sku"></span>
-                                                            <span x-show="p.barcode" class="badge bg-body-secondary text-muted border"><i class="bi bi-upc-scan me-1"></i><span x-text="p.barcode"></span></span>
-                                                            <span x-show="p.grade" class="badge text-bg-info-subtle text-info-emphasis" x-text="p.grade"></span>
+                                                            <span x-show="p.weight" class="badge bg-body-secondary border text-body-secondary" x-text="p.weight"></span>
+                                                            <span x-show="p.grade" class="badge text-bg-info-subtle text-info-emphasis" x-text="'Grade ' + p.grade"></span>
                                                         </div>
-                                                        <div class="small text-muted" style="font-size: 11px;">
-                                                            <span x-show="p.category_id">Cat ID: <span class="fw-medium text-body" x-text="p.category_id"></span></span>
-                                                            <span x-show="p.brand_id" class="ms-2">Brand ID: <span class="fw-medium text-body" x-text="p.brand_id"></span></span>
-                                                        </div>
+                                                        <div class="text-body-tertiary text-truncate mt-1" style="font-size: 10px; max-width: 250px;" x-show="p.description" :title="p.description" x-text="p.description"></div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -659,7 +672,7 @@
                                                 <div class="d-flex justify-content-between align-items-start mt-2">
                                                     <div>
                                                         <div class="fw-bold text-primary fs-6 mb-1" x-text="'₹ ' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></div>
-                                                        <div class="small text-muted text-decoration-line-through mb-1" x-show="p.mrp > (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100))" x-text="'MRP ₹ ' + parseFloat(p.mrp).toFixed(2)"></div>
+                                                        <div class="small text-body-secondary text-decoration-line-through mb-1" x-show="p.mrp > (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100))" x-text="'MRP ₹ ' + parseFloat(p.mrp).toFixed(2)"></div>
                                                     </div>
                                                     <div class="badge bg-success" x-show="p.default_discount > 0"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
                                                 </div>
@@ -700,15 +713,14 @@
                                                 <div class="d-flex flex-column gap-1 mb-1">
                                                     <template x-if="!p.warehouse_stocks || p.warehouse_stocks.length === 0">
                                                         <div>
-                                                            <span class="badge" :class="getWarehouseStock(p) > (p.min_stock_level || 10) ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-dark' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p)) + ' ' + (p.uom_id || 'Units')"></span>
+                                                            <span class="badge" :class="getWarehouseStock(p) > (p.min_stock_level || 10) ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-body-emphasis' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p)) + ' ' + (p.uom_id || 'Units')"></span>
                                                         </div>
                                                     </template>
                                                     <template x-if="p.warehouse_stocks && p.warehouse_stocks.length > 0">
                                                         <div class="d-flex flex-wrap gap-1">
                                                             <template x-if="p.warehouse_stocks.some(w => String(w.warehouse_id) === String(warehouseId))">
                                                                 <template x-for="(ws, index) in p.warehouse_stocks.filter(w => String(w.warehouse_id) === String(warehouseId))" :key="index">
-                                                                    <span class="badge bg-secondary bg-opacity-10 border text-dark" style="font-size: 0.65rem;">
-                                                                        <span class="text-muted me-1" x-text="ws.warehouse_name + ':'"></span>
+                                                                    <span class="badge bg-secondary bg-opacity-10 border text-body-emphasis" style="font-size: 0.65rem;">
                                                                         <span class="fw-bold" :class="ws.available > 0 ? 'text-success' : 'text-danger'" x-text="parseFloat(ws.available)"></span>
                                                                     </span>
                                                                 </template>
@@ -721,24 +733,28 @@
                                                         </div>
                                                     </template>
                                                 </div>
-                                                <div class="small text-muted mb-1" style="font-size: 11px;" x-show="p.min_stock_level > 0">Min Lvl: <span class="fw-medium" x-text="p.min_stock_level"></span></div>
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <div class="small text-body-secondary" style="font-size: 11px;" x-show="p.min_stock_level > 0">Min Lvl: <span class="fw-medium" x-text="p.min_stock_level"></span></div>
+                                                    <span x-show="p.allow_overselling" class="badge text-bg-warning-subtle text-warning-emphasis" style="font-size: 9px;" title="Overselling Allowed"><i class="bi bi-infinity"></i> Oversell</span>
+                                                </div>
                                                 <div class="d-flex flex-wrap gap-1 mt-1">
                                                     <span x-show="p.batch_tracking" class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;"><i class="bi bi-box me-1"></i>Batch</span>
                                                     <span x-show="p.expiry_tracking" class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
+                                                    <span x-show="!p.manage_stock" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;"><i class="bi bi-slash-circle me-1"></i>No Stock Mgmt</span>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div class="input-group input-group-sm shadow-sm flex-nowrap mx-auto" style="width: 110px;">
-                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-dash"></i></button>
-                                                    <input type="number" class="form-control text-center fw-bold px-1 no-spinners" x-model.number="p._qty" min="1" :max="getWarehouseStock(p) || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
-                                                    <button class="btn btn-outline-secondary px-2" type="button" @click="if(p._qty < (getWarehouseStock(p) || 9999)) p._qty++" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-plus"></i></button>
+                                            <td class="text-center align-middle">
+                                                <div class="d-flex flex-column gap-2 mx-auto" style="max-width: 130px;">
+                                                    <div class="input-group input-group-sm shadow-sm flex-nowrap" style="min-height: 32px;">
+                                                        <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-dash"></i></button>
+                                                        <input type="number" class="form-control text-center fw-bold px-1 no-spinners flex-grow-1" x-model.number="p._qty" min="1" :max="getWarehouseStock(p) || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0" style="min-width: 0;">
+                                                        <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty < (getWarehouseStock(p) || 9999)) p._qty++" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-plus"></i></button>
+                                                    </div>
+                                                    <button class="btn btn-sm shadow-sm w-100 transition-all fw-bold text-nowrap d-flex align-items-center justify-content-center gap-1" style="min-height: 32px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
+                                                        <i class="bi" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i> 
+                                                        <span x-text="!p.is_sku_enabled ? 'Disabled' : (getWarehouseStock(p) <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 11px;"></span>
+                                                    </button>
                                                 </div>
-                                            </td>
-                                            <td class="text-center">
-                                                <button class="btn btn-sm shadow-sm w-100 transition-all fw-bold text-nowrap" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
-                                                    <i class="bi" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i> 
-                                                    <span x-text="!p.is_sku_enabled ? 'Disabled' : (getWarehouseStock(p) <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))"></span>
-                                                </button>
                                             </td>
                                         </tr>
                                     </template>
@@ -748,7 +764,7 @@
                     </div>
                     {{-- Pagination --}}
                     <div class="d-flex justify-content-between align-items-center px-3 pb-3 border-top pt-3" x-show="productTotal > 0">
-                        <small class="text-muted"><span x-text="productFrom"></span>–<span x-text="productTo"></span> of <span x-text="productTotal"></span></small>
+                        <small class="text-body-secondary"><span x-text="productFrom"></span>–<span x-text="productTo"></span> of <span x-text="productTotal"></span></small>
                         <div class="d-flex align-items-center gap-2">
                             <button type="button" class="btn btn-primary btn-sm" x-show="cart.length > 0 && !isCartSidebarOpen" @click="isCartSidebarOpen = true" x-cloak>
                                 <i class="bi bi-cart-check"></i> View Cart & Checkout (<span x-text="cart.length"></span>)
@@ -781,10 +797,10 @@
                     <div class="card border-0 shadow-sm rounded-4">
                         <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-5 opacity-50">
                             <div class="bg-body-secondary rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
-                                <i class="bi bi-bag fs-1 text-muted"></i>
+                                <i class="bi bi-bag fs-1 text-body-secondary"></i>
                             </div>
                             <h5 class="fw-bold text-uppercase tracking-widest mb-2">Cart is empty</h5>
-                            <p class="small text-muted mb-3">Browse products and click <strong>Add</strong> to begin.</p>
+                            <p class="small text-body-secondary mb-3">Browse products and click <strong>Add</strong> to begin.</p>
                         </div>
                     </div>
                 </template>
@@ -805,21 +821,21 @@
                                                 <span class="badge text-bg-success-subtle text-success-emphasis border-opacity-25 px-2 py-1" style="font-size: 0.6rem; line-height: 1;"><i class="bi bi-gift-fill me-1"></i>Free</span>
                                             </template>
                                         </div>
-                                        <div class="font-monospace text-muted" style="font-size: 11px;" x-text="item.sku"></div>
+                                        <div class="font-monospace text-body-secondary" style="font-size: 11px;" x-text="item.sku"></div>
                                     </div>
                                     <template x-if="!item.is_gift">
-                                        <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-muted hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
+                                        <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-body-secondary hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
                                             <i class="bi bi-trash3"></i>
                                         </button>
                                     </template>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between mt-2">
-                                    <span class="text-muted fw-medium" style="font-size: 12px;" x-text="'₹ ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
+                                    <span class="text-body-secondary fw-medium" style="font-size: 12px;" x-text="'₹ ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
                                     <span class="fw-bold text-success fs-6" x-text="'₹ ' + Number(lineTotal(item)).toFixed(2)"></span>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between mt-1" x-show="item.taxRate > 0">
-                                    <span class="text-muted" style="font-size: 11px;" x-text="'+ GST ' + item.taxRate + '%'"></span>
-                                    <span class="text-muted" style="font-size: 11px;" x-text="'₹ ' + Number(lineTotal(item) * (item.taxRate / 100)).toFixed(2)"></span>
+                                    <span class="text-body-secondary" style="font-size: 11px;" x-text="'+ GST ' + item.taxRate + '%'"></span>
+                                    <span class="text-body-secondary" style="font-size: 11px;" x-text="'₹ ' + Number(lineTotal(item) * (item.taxRate / 100)).toFixed(2)"></span>
                                 </div>
                             </div>
                         </div>
@@ -858,7 +874,7 @@
                     <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="mb-0 fw-bold"><i class="bi bi-cart3 me-2 text-primary"></i>Shopping Cart (<span x-text="cart.length" class="text-primary"></span>)</h5>
-                            <p class="mb-0 small text-muted">Pinned summary for the order you’re building.</p>
+                            <p class="mb-0 small text-body-secondary">Pinned summary for the order you’re building.</p>
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-danger" @click="cart = []">
                             <i class="bi bi-trash3 me-1"></i> Clear
@@ -866,7 +882,7 @@
                     </div>
                     <div class="card-body p-3 p-lg-4">
                         <template x-if="cart.length === 0">
-                            <div class="text-center py-4 text-muted">
+                            <div class="text-center py-4 text-body-secondary">
                                 <i class="bi bi-bag fs-1 d-block mb-2"></i>
                                 Cart is empty
                             </div>
@@ -886,36 +902,32 @@
                                                         <span class="badge text-bg-success-subtle text-success-emphasis border-opacity-25 px-2 py-1" style="font-size: 0.6rem; line-height: 1;"><i class="bi bi-gift-fill me-1"></i>Free</span>
                                                     </template>
                                                 </div>
-                                                <div class="font-monospace text-muted text-truncate" style="font-size: 11px;" x-text="item.sku"></div>
+                                                <div class="font-monospace text-body-secondary text-truncate" style="font-size: 11px;" x-text="item.sku"></div>
                                             </div>
                                             <template x-if="!item.is_gift">
-                                                <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-muted hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
+                                                <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-body-secondary hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
                                                     <i class="bi bi-trash3"></i>
                                                 </button>
                                             </template>
                                         </div>
                                         <div class="d-flex align-items-center justify-content-between mt-2">
-                                            <span class="text-muted fw-medium" style="font-size: 12px;" x-text="'₹ ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
+                                            <span class="text-body-secondary fw-medium" style="font-size: 12px;" x-text="'₹ ' + Number(item.price).toFixed(2) + ' × ' + item.quantity"></span>
                                             <span class="fw-bold text-success fs-6" x-text="'₹ ' + Number(lineTotal(item)).toFixed(2)"></span>
                                         </div>
                                         <div class="d-flex align-items-center justify-content-between mt-1" x-show="item.taxRate > 0">
-                                            <span class="text-muted" style="font-size: 11px;" x-text="'+ GST ' + item.taxRate + '%'"></span>
-                                            <span class="text-muted" style="font-size: 11px;" x-text="'₹ ' + Number(itemTaxAmount(item)).toFixed(2)"></span>
+                                            <span class="text-body-secondary" style="font-size: 11px;" x-text="'+ GST ' + item.taxRate + '%'"></span>
+                                            <span class="text-body-secondary" style="font-size: 11px;" x-text="'₹ ' + Number(itemTaxAmount(item)).toFixed(2)"></span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="px-3 pb-3 d-flex flex-wrap align-items-center gap-3">
-                                    <div class="d-flex align-items-center bg-body-secondary border rounded-3 p-1 flex-shrink-0">
+                                    <div class="input-group input-group-sm shadow-sm flex-nowrap" style="max-width: 110px;">
                                         <template x-if="!item.is_gift">
-                                            <button type="button" @click.prevent="updateQty(idx,-1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
-                                                <i class="bi bi-dash"></i>
-                                            </button>
+                                            <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click.prevent="updateQty(idx,-1)"><i class="bi bi-dash"></i></button>
                                         </template>
-                                        <span class="fw-bold text-center" style="width: 32px; font-size: 13px;" x-text="item.quantity"></span>
+                                        <div class="form-control text-center fw-bold px-1 d-flex align-items-center justify-content-center bg-body flex-grow-1" style="min-width: 0;" x-text="item.quantity"></div>
                                         <template x-if="!item.is_gift">
-                                            <button type="button" @click.prevent="updateQty(idx,1)" class="btn btn-sm btn-link text-body text-decoration-none fw-bold p-0 d-flex align-items-center justify-content-center hover-bg-body rounded" style="width: 28px; height: 28px;">
-                                                <i class="bi bi-plus"></i>
-                                            </button>
+                                            <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click.prevent="updateQty(idx,1)"><i class="bi bi-plus"></i></button>
                                         </template>
                                     </div>
                                     <div class="flex-grow-1 d-flex justify-content-end align-items-center gap-2" style="min-width: 0;">
@@ -943,10 +955,10 @@
                                     </div>
                                     <div class="text-start">
                                         <p class="mb-0 fw-bold fs-6">View Promos & Offers</p>
-                                        <p class="mb-0 text-muted small" x-text="(activeOffers.length + activeCoupons.length) + ' available'"></p>
+                                        <p class="mb-0 text-body-secondary small" x-text="(activeOffers.length + activeCoupons.length) + ' available'"></p>
                                     </div>
                                 </div>
-                                <i class="bi bi-chevron-right text-muted"></i>
+                                <i class="bi bi-chevron-right text-body-secondary"></i>
                             </button>
                         </div>
 
@@ -965,7 +977,7 @@
                                             <p class="mb-0 fw-semibold text-success opacity-75 small" x-text="'Saving ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></p>
                                         </div>
                                     </div>
-                                    <button type="button" @click.prevent="appliedOfferId = 'none'" class="btn btn-sm btn-light text-muted hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
+                                    <button type="button" @click.prevent="appliedOfferId = 'none'" class="btn btn-sm btn-light text-body-secondary hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
                                 </div>
@@ -993,7 +1005,7 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <button type="button" @click.prevent="removeCoupon()" class="btn btn-sm btn-light text-muted hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
+                                    <button type="button" @click.prevent="removeCoupon()" class="btn btn-sm btn-light text-body-secondary hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
                                 </div>
@@ -1021,37 +1033,37 @@
 
                         {{-- Order Summary Calculations --}}
                         <div class="space-y-2 mb-4">
-                            <div class="d-flex justify-content-between fw-medium text-muted" style="font-size: 13px;">
+                            <div class="d-flex justify-content-between fw-medium text-body-secondary" style="font-size: 13px;">
                                 <span>Subtotal</span>
                                 <span class="text-body fw-bold" x-text="'₹ ' + Number(subtotal).toFixed(2)"></span>
                             </div>
                             
-                            <div class="d-flex justify-content-between fw-medium" :class="bogoDiscount > 0 ? 'text-success' : 'text-muted'" style="font-size: 13px;">
+                            <div class="d-flex justify-content-between fw-medium" :class="bogoDiscount > 0 ? 'text-success' : 'text-body-secondary'" style="font-size: 13px;">
                                 <div>
                                     <span>BOGO Savings</span>
-                                    <span class="text-muted d-block" style="font-size: 10px;" x-text="appliedBogoOfferNames"></span>
+                                    <span class="text-body-secondary d-block" style="font-size: 10px;" x-text="appliedBogoOfferNames"></span>
                                 </div>
                                 <span class="fw-bold align-top" x-text="'- ₹ ' + Number(bogoDiscount).toFixed(2)"></span>
                             </div>
 
-                            <div class="d-flex justify-content-between fw-medium" :class="orderOfferDiscountAmount > 0 ? 'text-success' : 'text-muted'" style="font-size: 13px;">
+                            <div class="d-flex justify-content-between fw-medium" :class="orderOfferDiscountAmount > 0 ? 'text-success' : 'text-body-secondary'" style="font-size: 13px;">
                                 <div>
                                     <span>Order Discount</span>
-                                    <span class="text-muted d-block" style="font-size: 10px;" x-text="bestOrderOffer ? bestOrderOffer.name : 'No active offer'"></span>
+                                    <span class="text-body-secondary d-block" style="font-size: 10px;" x-text="bestOrderOffer ? bestOrderOffer.name : 'No active offer'"></span>
                                 </div>
                                 <span class="fw-bold align-top" x-text="'- ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
                             </div>
 
-                            <div class="d-flex justify-content-between fw-medium" :class="appliedCouponObj !== null ? 'text-success' : 'text-muted'" style="font-size: 13px;">
+                            <div class="d-flex justify-content-between fw-medium" :class="appliedCouponObj !== null ? 'text-success' : 'text-body-secondary'" style="font-size: 13px;">
                                 <div>
                                     <span>Coupon Savings</span>
-                                    <span class="text-muted d-block" style="font-size: 10px;" x-text="appliedCouponObj ? '(Code: ' + couponCode + ')' : 'No coupon applied'"></span>
+                                    <span class="text-body-secondary d-block" style="font-size: 10px;" x-text="appliedCouponObj ? '(Code: ' + couponCode + ')' : 'No coupon applied'"></span>
                                 </div>
                                 <span class="fw-bold align-top" x-show="appliedCouponObj && (appliedCouponObj.type === 'free_shipping' || appliedCouponObj.type === 'free_product')" x-text="appliedCouponObj.type === 'free_shipping' ? 'Free Shipping' : 'Free Gift'"></span>
                                 <span class="fw-bold align-top" x-show="!appliedCouponObj || (appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product')" x-text="'- ₹ ' + Number(couponDiscount).toFixed(2)"></span>
                             </div>
 
-                            <div class="d-flex justify-content-between fw-medium text-muted" style="font-size: 13px;">
+                            <div class="d-flex justify-content-between fw-medium text-body-secondary" style="font-size: 13px;">
                                 <span>GST</span>
                                 <span class="text-body" x-text="'₹ ' + Number(taxAmount).toFixed(2)"></span>
                             </div>
@@ -1068,7 +1080,7 @@
                                     <div class="form-check form-switch d-flex align-items-center justify-content-between gap-3 p-0 m-0 cursor-pointer" @click="useWalletBalance = !useWalletBalance">
                                         <div>
                                             <label class="form-check-label fw-bold mb-0 text-body-emphasis" style="cursor: pointer;">Redeem Cashback Wallet</label>
-                                            <div class="small text-muted mt-1" style="font-size: 11px;">
+                                            <div class="small text-body-secondary mt-1" style="font-size: 11px;">
                                                 Available Balance: <span class="text-success" x-text="'₹ ' + Number(customerDetails.wallet_balance).toFixed(2)"></span> 
                                             </div>
                                         </div>
@@ -1079,7 +1091,7 @@
                                             <span class="fw-bold text-uppercase tracking-widest text-primary" style="font-size: 14px;">Net Payable</span>
                                             <span class="fw-black text-primary fs-4" x-text="'₹ ' + Math.max(0, Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
                                         </div>
-                                        <div class="small text-muted mt-1" x-show="(Number(grandTotal) - Number(customerDetails.wallet_balance)) < 0">
+                                        <div class="small text-body-secondary mt-1" x-show="(Number(grandTotal) - Number(customerDetails.wallet_balance)) < 0">
                                             * Remaining wallet: ₹ <span x-text="Math.abs(Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
                                         </div>
                                     </div>
@@ -1092,12 +1104,12 @@
                             <div class="form-check form-switch d-flex align-items-center justify-content-between gap-3 p-0 m-0 cursor-pointer" @click="orderStatus = (orderStatus === 'future_order' ? 'pending' : 'future_order')">
                                 <div>
                                     <label class="form-check-label fw-bold mb-0 text-body-emphasis" for="futureOrderSwitch">Schedule Future Order</label>
-                                    <div class="small text-muted mt-1" style="font-size: 11px;">Save as a draft for later.</div>
+                                    <div class="small text-body-secondary mt-1" style="font-size: 11px;">Save as a draft for later.</div>
                                 </div>
                                 <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" id="futureOrderSwitch" :checked="orderStatus === 'future_order'" @change="orderStatus = $event.target.checked ? 'future_order' : 'pending'" @click.stop>
                             </div>
                             <div x-show="orderStatus === 'future_order'" x-cloak class="mt-3 pt-3 border-top">
-                                <label class="form-label fw-semibold small text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Delivery Date</label>
+                                <label class="form-label fw-semibold small text-body-secondary text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Delivery Date</label>
                                 <input type="date" class="form-control form-control-sm border-warning bg-warning bg-opacity-10 fw-bold" :min="new Date().toISOString().split('T')[0]" x-model="futureOrderDate" required>
                             </div>
                         </div>
@@ -1116,7 +1128,7 @@
                             </div>
                             
                             <div x-show="confirmAction === 'schedule'" x-cloak x-transition class="mb-3">
-                                <label class="form-label fw-semibold small text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Reason for Reschedule <span class="text-danger">*</span></label>
+                                <label class="form-label fw-semibold small text-body-secondary text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Reason for Reschedule <span class="text-danger">*</span></label>
                                 <select x-select class="form-select form-select-sm mb-2" x-model="scheduleReason">
                                     <option value="" disabled selected>Select a reason...</option>
                                     <template x-for="reason in rescheduleReasons" :key="reason.id">
@@ -1124,12 +1136,12 @@
                                     </template>
                                 </select>
                                 
-                                <label class="form-label fw-semibold small text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Scheduled Date <span class="text-danger">*</span></label>
+                                <label class="form-label fw-semibold small text-body-secondary text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Scheduled Date <span class="text-danger">*</span></label>
                                 <input type="datetime-local" class="form-control form-control-sm" x-model="scheduledConfirmDate" :min="new Date().toISOString().slice(0,16)">
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label fw-semibold small text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Internal Notes (Optional)</label>
+                                <label class="form-label fw-semibold small text-body-secondary text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Internal Notes (Optional)</label>
                                 <textarea class="form-control form-control-sm" rows="2" x-model="confirmNotes" placeholder="Any additional notes..."></textarea>
                             </div>
                             
@@ -1172,7 +1184,7 @@
                 </div>
                 <div class="text-lg-end">
                     <h5 class="mb-1 fw-bold text-body-emphasis"><i class="bi bi-layers me-2 text-primary"></i>Order Center</h5>
-                    <p class="mb-0 small text-muted">Tap an order to expand its details.</p>
+                    <p class="mb-0 small text-body-secondary">Tap an order to expand its details.</p>
                 </div>
             </div>
         </div>
@@ -1181,7 +1193,7 @@
                 <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden">
                     <template x-if="historyOrders && historyOrders.length > 0">
                         <div class="list-group list-group-flush border-top" style="max-height: 500px; overflow-y: auto;">
-                            <div class="list-group-item bg-body-tertiary d-none d-lg-flex text-muted small fw-bold text-uppercase py-3 sticky-top" style="z-index: 1; letter-spacing: 0.5px; font-size: 0.75rem;">
+                            <div class="list-group-item bg-body-tertiary d-none d-lg-flex text-body-secondary small fw-bold text-uppercase py-3 sticky-top" style="z-index: 1; letter-spacing: 0.5px; font-size: 0.75rem;">
                                 <div class="col-3 ps-4">Order Details</div>
                                 <div class="col-3">Logistics & Items</div>
                                 <div class="col-3">Status</div>
@@ -1196,7 +1208,7 @@
                                                 <span class="text-secondary opacity-75 me-1" x-text="(index + 1) + '.'"></span>
                                                 <span x-text="order.order_no || order.order_number || ('Order #' + order.id)"></span>
                                             </div>
-                                            <div class="small text-muted d-flex flex-wrap align-items-center gap-1">
+                                            <div class="small text-body-secondary d-flex flex-wrap align-items-center gap-1">
                                                 <i class="bi bi-calendar-event opacity-75"></i> <span x-text="order.order_date ? new Date(order.order_date).toLocaleDateString() : 'No date'"></span>
                                                 <span x-show="order.order_date" class="mx-1">•</span>
                                                 <span x-show="order.order_date" x-text="new Date(order.order_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
@@ -1209,7 +1221,7 @@
                                                 <span class="mx-1">•</span>
                                                 <span x-text="order.warehouse?.name || 'N/A'"></span>
                                             </div>
-                                            <div class="small text-muted" x-show="order.creator"><i class="bi bi-person me-1 opacity-75"></i><span x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></span></div>
+                                            <div class="small text-body-secondary" x-show="order.creator"><i class="bi bi-person me-1 opacity-75"></i><span x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></span></div>
                                         </div>
                                         
                                         <div class="col-12 col-lg-3 mb-3 mb-lg-0">
@@ -1217,10 +1229,10 @@
                                         </div>
                                         
                                         <div class="col-12 col-lg-3 text-lg-end pe-lg-4 d-flex align-items-center justify-content-between justify-content-lg-end">
-                                            <span class="d-inline-block d-lg-none text-muted small me-2 fw-medium">Total:</span>
+                                            <span class="d-inline-block d-lg-none text-body-secondary small me-2 fw-medium">Total:</span>
                                             <div class="d-flex align-items-center">
                                                 <div class="fw-bolder fs-6 text-body-emphasis" x-text="'₹ ' + Number(order.net_amount || 0).toFixed(2)"></div>
-                                                <i class="bi ms-3 text-muted transition-all" :class="expandedOrderId === order.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                                                <i class="bi ms-3 text-body-secondary transition-all" :class="expandedOrderId === order.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
                                             </div>
                                         </div>
                                     </div>
@@ -1234,7 +1246,7 @@
                                                                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start mb-3 pb-3 border-bottom border-secondary border-opacity-10">
                                                                     <div>
                                                                         <div class="fw-bold text-body-emphasis small text-uppercase mb-1" style="letter-spacing: 0.5px;"><i class="bi bi-clock me-1 opacity-75"></i>Order Placed</div>
-                                                                        <div class="small text-muted" style="font-size: 0.75rem;" x-text="order.order_date ? new Date(order.order_date).toLocaleString() : 'No date'"></div>
+                                                                        <div class="small text-body-secondary" style="font-size: 0.75rem;" x-text="order.order_date ? new Date(order.order_date).toLocaleString() : 'No date'"></div>
                                                                     </div>
                                                                     <div class="mt-2 mt-md-0 text-md-end" x-show="order.creator">
                                                                         <div class="fw-bold text-body-emphasis small text-uppercase mb-1" style="letter-spacing: 0.5px;"><i class="bi bi-person me-1 opacity-75"></i>Created By</div>
@@ -1245,19 +1257,19 @@
                                                                 <div class="row g-3 mt-auto">
                                                                     <div class="col-md-6" :class="{'border-end-md border-secondary border-opacity-10': order.billing_address_line_1 && (order.billing_address_line_1 !== order.shipping_address_line_1)}">
                                                                         <div class="d-flex align-items-center mb-1">
-                                                                            <i class="bi bi-truck text-muted me-2 opacity-75"></i>
+                                                                            <i class="bi bi-truck text-body-secondary me-2 opacity-75"></i>
                                                                             <div class="fw-bold text-body-emphasis" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Shipping Address</div>
                                                                         </div>
-                                                                        <div class="small text-muted lh-sm" style="font-size: 0.75rem;" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name, order.shipping_post_office, order.shipping_taluka, order.shipping_city, order.shipping_district, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') : 'Not available'">
+                                                                        <div class="small text-body-secondary lh-sm" style="font-size: 0.75rem;" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name, order.shipping_post_office, order.shipping_taluka, order.shipping_city, order.shipping_district, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') : 'Not available'">
                                                                         </div>
                                                                     </div>
                                                                     
                                                                     <div class="col-md-6" x-show="order.billing_address_line_1 && (order.billing_address_line_1 !== order.shipping_address_line_1)">
                                                                         <div class="d-flex align-items-center mb-1">
-                                                                            <i class="bi bi-receipt text-muted me-2 opacity-75"></i>
+                                                                            <i class="bi bi-receipt text-body-secondary me-2 opacity-75"></i>
                                                                             <div class="fw-bold text-body-emphasis" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Billing Address</div>
                                                                         </div>
-                                                                        <div class="small text-muted lh-sm" style="font-size: 0.75rem;" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name, order.billing_post_office, order.billing_taluka, order.billing_city, order.billing_district, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') : 'Not available'">
+                                                                        <div class="small text-body-secondary lh-sm" style="font-size: 0.75rem;" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name, order.billing_post_office, order.billing_taluka, order.billing_city, order.billing_district, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') : 'Not available'">
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -1294,7 +1306,7 @@
                                                     </div>
                                                     <div class="border-top border-primary border-opacity-10 bg-body">
                                                         <div class="list-group list-group-flush">
-                                                            <div class="list-group-item bg-body-tertiary d-none d-md-flex align-items-center text-muted fw-bold text-uppercase py-1" style="letter-spacing: 0.5px; font-size: 0.65rem;">
+                                                            <div class="list-group-item bg-body-tertiary d-none d-md-flex align-items-center text-body-secondary fw-bold text-uppercase py-1" style="letter-spacing: 0.5px; font-size: 0.65rem;">
                                                                 <div class="col-5 ps-2">Item Details</div>
                                                                 <div class="col-2 text-center">Qty</div>
                                                                 <div class="col-2 text-end">Price</div>
@@ -1308,7 +1320,7 @@
                                                                             <span x-text="item.product?.name || item.product_name || 'Product'"></span>
                                                                             <span x-show="Number(item.unit_price || 0) === 0 || Number(item.total_amount || 0) === 0" class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success ms-1 px-1 py-0 rounded-pill" style="font-size: 0.55rem;">Free Gift</span>
                                                                         </div>
-                                                                        <div class="small text-muted d-flex flex-wrap align-items-center gap-2 mt-0" style="font-size: 0.7rem;">
+                                                                        <div class="small text-body-secondary d-flex flex-wrap align-items-center gap-2 mt-0" style="font-size: 0.7rem;">
                                                                             <span><i class="bi bi-upc-scan opacity-75"></i> <span x-text="item.product?.sku || item.sku || 'N/A'"></span></span>
                                                                             <span class="border-start ps-2" x-show="Number(item.tax_amount || 0) > 0">
                                                                                 GST: <span class="fw-medium text-body-secondary" x-text="'₹ ' + Number(item.tax_amount || 0).toFixed(2)"></span> 
@@ -1320,24 +1332,24 @@
                                                                         </div>
                                                                     </div>
                                                                     <div class="col-12 col-md-2 text-md-center mb-1 mb-md-0">
-                                                                        <span class="d-inline-block d-md-none text-muted small me-2 fw-medium">Qty:</span>
+                                                                        <span class="d-inline-block d-md-none text-body-secondary small me-2 fw-medium">Qty:</span>
                                                                         <span class="badge text-bg-secondary-subtle text-secondary-emphasis border-opacity-25 px-2 py-1 rounded-pill fw-bold" style="font-size: 0.7rem;" x-text="item.quantity + 'x'"></span>
                                                                     </div>
                                                                     <div class="col-12 col-md-2 text-md-end mb-1 mb-md-0">
-                                                                        <span class="d-inline-block d-md-none text-muted small me-2 fw-medium">Price:</span>
+                                                                        <span class="d-inline-block d-md-none text-body-secondary small me-2 fw-medium">Price:</span>
                                                                         <div class="fw-medium text-body-secondary" style="font-size: 0.75rem;" x-text="'₹ ' + Number(item.unit_price || 0).toFixed(2)"></div>
                                                                         <div x-show="Number(item.discount_amount || 0) > 0" class="text-success fw-bold d-flex align-items-center justify-content-md-end mt-0" style="font-size: 0.65rem;">
                                                                             <i class="bi bi-tag-fill me-1 opacity-75"></i>-<span x-text="'₹ ' + Number(item.discount_amount || 0).toFixed(2)"></span>
                                                                         </div>
                                                                     </div>
                                                                     <div class="col-12 col-md-3 text-md-end pe-md-2 mt-1 mt-md-0 pt-1 pt-md-0 border-top border-md-0">
-                                                                        <span class="d-inline-block d-md-none text-muted small me-2 fw-medium">Total:</span>
+                                                                        <span class="d-inline-block d-md-none text-body-secondary small me-2 fw-medium">Total:</span>
                                                                         <div class="fw-bolder text-body-emphasis" style="font-size: 0.85rem;" x-text="'₹ ' + Number(item.total_amount || 0).toFixed(2)"></div>
                                                                     </div>
                                                                 </div>
                                                             </template>
                                                             <template x-if="!order.items || order.items.length === 0">
-                                                                <div class="list-group-item text-center text-muted py-3 small">
+                                                                <div class="list-group-item text-center text-body-secondary py-3 small">
                                                                     No order items found.
                                                                 </div>
                                                             </template>
@@ -1365,7 +1377,7 @@
                         </div>
                     </template>
                     <template x-if="!historyOrders || !historyOrders.length">
-                        <div class="alert alert-secondary border-0 mb-0 p-5 text-center text-muted">
+                        <div class="alert alert-secondary border-0 mb-0 p-5 text-center text-body-secondary">
                             <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                             No order history available.
                         </div>
@@ -1396,13 +1408,13 @@
                                             </td>
                                             <td class="text-nowrap py-2">
                                                 <div class="fw-medium text-body-emphasis" x-text="order.future_order_date ? new Date(order.future_order_date).toLocaleDateString() : 'No future date'"></div>
-                                                <div class="small text-muted" x-show="order.future_order_date" x-text="new Date(order.future_order_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></div>
-                                                <div class="small text-muted mt-1" x-show="order.creator" x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
+                                                <div class="small text-body-secondary" x-show="order.future_order_date" x-text="new Date(order.future_order_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></div>
+                                                <div class="small text-body-secondary mt-1" x-show="order.creator" x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
                                             </td>
                                             <td class="py-2">
                                                 <span class="badge rounded-pill px-2" :class="`text-bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
                                             </td>
-                                            <td class="py-2 text-muted">
+                                            <td class="py-2 text-body-secondary">
                                                 <span x-text="order.warehouse?.name ? order.warehouse.name : 'N/A'"></span>
                                                 <span class="mx-1">•</span>
                                                 <span x-text="(order.items ? order.items.length : 0) + ' items'"></span>
@@ -1416,27 +1428,27 @@
                                                         <div class="col-lg-4">
                                                             <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
                                                                 <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Order Info</div>
-                                                                <div class="small text-muted mb-1"><i class="bi bi-clock me-1"></i> <span x-text="order.order_date ? new Date(order.order_date).toLocaleString() : 'No date'"></span></div>
+                                                                <div class="small text-body-secondary mb-1"><i class="bi bi-clock me-1"></i> <span x-text="order.order_date ? new Date(order.order_date).toLocaleString() : 'No date'"></span></div>
                                                                 <div class="small text-primary fw-medium" x-show="order.creator"><i class="bi bi-person me-1"></i> <span x-text="'Created by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></span></div>
                                                             </div>
                                                         </div>
                                                         <div class="col-lg-4">
                                                             <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
                                                                 <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Shipping</div>
-                                                                <div class="small text-muted" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name, order.shipping_post_office, order.shipping_taluka, order.shipping_city, order.shipping_district, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') : 'Not available'"></div>
+                                                                <div class="small text-body-secondary" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name, order.shipping_post_office, order.shipping_taluka, order.shipping_city, order.shipping_district, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') : 'Not available'"></div>
                                                             </div>
                                                         </div>
                                                         <div class="col-lg-4">
                                                             <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
                                                                 <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Billing</div>
-                                                                <div class="small text-muted" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name, order.billing_post_office, order.billing_taluka, order.billing_city, order.billing_district, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') : 'Same as shipping'"></div>
+                                                                <div class="small text-body-secondary" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name, order.billing_post_office, order.billing_taluka, order.billing_city, order.billing_district, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') : 'Same as shipping'"></div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="bg-body rounded-3 border overflow-hidden shadow-sm">
                                                         <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
                                                             <thead class="table-light">
-                                                                <tr class="text-muted">
+                                                                <tr class="text-body-secondary">
                                                                     <th class="ps-3 py-2 fw-medium">Item</th>
                                                                     <th class="py-2 fw-medium">SKU</th>
                                                                     <th class="text-center py-2 fw-medium">Qty</th>
@@ -1448,15 +1460,15 @@
                                                                 <template x-for="item in (order.items || [])" :key="'future-item-' + order.id + '-' + item.id">
                                                                     <tr>
                                                                         <td class="fw-semibold text-body-emphasis ps-3 py-2" x-text="item.product?.name || item.product_name || 'Product'"></td>
-                                                                        <td class="text-muted py-2" x-text="item.product?.sku || item.sku || 'N/A'"></td>
+                                                                        <td class="text-body-secondary py-2" x-text="item.product?.sku || item.sku || 'N/A'"></td>
                                                                         <td class="text-center fw-semibold py-2" x-text="item.quantity"></td>
-                                                                        <td class="text-end text-muted py-2" x-text="'₹ ' + Number(item.unit_price || 0).toFixed(2)"></td>
+                                                                        <td class="text-end text-body-secondary py-2" x-text="'₹ ' + Number(item.unit_price || 0).toFixed(2)"></td>
                                                                         <td class="text-end fw-bold text-body-emphasis pe-3 py-2" x-text="'₹ ' + Number(item.total_amount || 0).toFixed(2)"></td>
                                                                     </tr>
                                                                 </template>
                                                                 <template x-if="!order.items || order.items.length === 0">
                                                                     <tr>
-                                                                        <td colspan="5" class="text-center text-muted py-3">No order items found.</td>
+                                                                        <td colspan="5" class="text-center text-body-secondary py-3">No order items found.</td>
                                                                     </tr>
                                                                 </template>
                                                             </tbody>
@@ -1483,7 +1495,7 @@
                         </div>
                     </template>
                     <template x-if="!futureOrders || !futureOrders.length">
-                        <div class="alert alert-secondary border-0 mb-0 p-5 text-center text-muted">
+                        <div class="alert alert-secondary border-0 mb-0 p-5 text-center text-body-secondary">
                             <i class="bi bi-calendar-x fs-2 d-block mb-2 opacity-50"></i>
                             No future orders scheduled.
                         </div>
@@ -1507,7 +1519,7 @@
                                     <tbody class="border-top-0">
                                         <template x-for="(log, index) in customerDetails.call_logs" :key="'log-' + log.id">
                                             <tr>
-                                                <td class="text-nowrap ps-4 text-muted py-2">
+                                                <td class="text-nowrap ps-4 text-body-secondary py-2">
                                                     <div class="d-flex align-items-start gap-2">
                                                         <span class="text-secondary opacity-75 fw-bold" x-text="(index + 1) + '.'"></span>
                                                         <div>
@@ -1517,21 +1529,21 @@
                                                     </div>
                                                 </td>
                                                 <td class="text-nowrap fw-medium py-2">
-                                                    <i class="bi bi-person text-muted me-1"></i>
+                                                    <i class="bi bi-person text-body-secondary me-1"></i>
                                                     <span x-text="(log.agent && log.agent.name) ? log.agent.name : 'Unknown'"></span>
                                                 </td>
                                                 <td class="py-2">
                                                     <div class="d-flex align-items-center flex-wrap gap-1">
                                                         <span class="badge text-bg-primary-subtle text-primary-emphasis px-2" x-text="(log.tag_l1 && log.tag_l1.name) ? log.tag_l1.name : 'N/A'"></span>
-                                                        <i class="bi bi-caret-right-fill text-muted" style="font-size: 8px;" x-show="log.tag_l2"></i>
+                                                        <i class="bi bi-caret-right-fill text-body-secondary" style="font-size: 8px;" x-show="log.tag_l2"></i>
                                                         <span class="badge text-bg-info-subtle text-info-emphasis px-2" x-show="log.tag_l2" x-text="log.tag_l2 ? log.tag_l2.name : ''"></span>
-                                                        <i class="bi bi-caret-right-fill text-muted" style="font-size: 8px;" x-show="log.tag_l3"></i>
+                                                        <i class="bi bi-caret-right-fill text-body-secondary" style="font-size: 8px;" x-show="log.tag_l3"></i>
                                                         <span class="badge text-bg-success-subtle text-success-emphasis px-2" x-show="log.tag_l3" x-text="log.tag_l3 ? log.tag_l3.name : ''"></span>
                                                     </div>
                                                 </td>
                                                 <td class="py-2">
                                                     <div class="text-truncate text-body-secondary fst-italic mb-1" style="max-width: 350px;" :title="log.notes" x-show="log.notes">
-                                                        <i class="bi bi-chat-text text-muted me-1"></i> <span x-text="log.notes"></span>
+                                                        <i class="bi bi-chat-text text-body-secondary me-1"></i> <span x-text="log.notes"></span>
                                                     </div>
                                                     <div class="d-flex flex-wrap gap-2 mt-1" x-show="log.metas && log.metas.length > 0">
                                                         <template x-for="meta in log.metas" :key="meta.id">
@@ -1554,7 +1566,7 @@
                             </div>
                         </template>
                         <template x-if="!customerDetails || !customerDetails.call_logs || customerDetails.call_logs.length === 0">
-                            <div class="alert alert-secondary border-0 mb-0 p-5 text-center text-muted">
+                            <div class="alert alert-secondary border-0 mb-0 p-5 text-center text-body-secondary">
                                 <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                 No call history available for this customer.
                             </div>
@@ -1595,7 +1607,7 @@
                         {{-- Offers Tab --}}
                         <div class="tab-pane fade show active" id="tab-offers" role="tabpanel">
                             <template x-if="activeOffers.length === 0">
-                                <div class="text-center py-4 text-muted">
+                                <div class="text-center py-4 text-body-secondary">
                                     <i class="bi bi-gift fs-1 mb-2 d-block opacity-50"></i>
                                     <p class="mb-0 fw-medium">No offers available for your current cart.</p>
                                 </div>
@@ -1631,16 +1643,16 @@
                                                     {{-- Common Rules --}}
                                                     <div class="mb-2 pe-3 ps-2 border-start border-2 border-secondary border-opacity-25">
                                                         <div x-show="offer.type === 'bogo'">
-                                                            <p class="mb-1 small text-muted" x-text="'Buy ' + offer.buy_qty + ' Get ' + offer.get_qty + ' Free on ' + offer.product_name"></p>
+                                                            <p class="mb-1 small text-body-secondary" x-text="'Buy ' + offer.buy_qty + ' Get ' + offer.get_qty + ' Free on ' + offer.product_name"></p>
                                                         </div>
                                                         <div x-show="offer.type === 'free_product'">
-                                                            <p class="mb-1 small text-muted" x-text="'Free Gift: ' + offer.product_name"></p>
+                                                            <p class="mb-1 small text-body-secondary" x-text="'Free Gift: ' + offer.product_name"></p>
                                                         </div>
                                                         <div x-show="['order_discount', 'category_discount'].includes(offer.type)">
-                                                            <p class="mb-1 small text-muted" x-show="offer.max_discount > 0" x-text="'Max Discount: ₹ ' + Number(offer.max_discount).toFixed(2)"></p>
+                                                            <p class="mb-1 small text-body-secondary" x-show="offer.max_discount > 0" x-text="'Max Discount: ₹ ' + Number(offer.max_discount).toFixed(2)"></p>
                                                         </div>
-                                                        <p class="mb-1 small text-muted" x-show="offer.min_spend > 0" x-text="'Min. Spend: ₹ ' + Number(offer.min_spend).toFixed(2)"></p>
-                                                        <p class="mb-0 small text-muted" x-show="offer.ends_at" x-text="'Valid till ' + new Date(offer.ends_at).toLocaleDateString()"></p>
+                                                        <p class="mb-1 small text-body-secondary" x-show="offer.min_spend > 0" x-text="'Min. Spend: ₹ ' + Number(offer.min_spend).toFixed(2)"></p>
+                                                        <p class="mb-0 small text-body-secondary" x-show="offer.ends_at" x-text="'Valid till ' + new Date(offer.ends_at).toLocaleDateString()"></p>
                                                     </div>
 
                                                     {{-- Savings/Unlock Status --}}
@@ -1674,7 +1686,7 @@
                                                         </template>
                                                         <template x-if="!(bestOrderOffer && bestOrderOffer.id === offer.id)">
                                                             <button class="btn btn-sm rounded-pill px-3 fw-medium" 
-                                                                    :class="orderOfferDiscount(offer) === 0 ? 'btn-light text-muted border' : 'btn-outline-secondary'" 
+                                                                    :class="orderOfferDiscount(offer) === 0 ? 'btn-light text-body-secondary border' : 'btn-outline-secondary'" 
                                                                     :disabled="orderOfferDiscount(offer) === 0">
                                                                 Apply
                                                             </button>
@@ -1693,7 +1705,7 @@
                             
                             {{-- Manual Entry --}}
                             <div class="d-flex align-items-center gap-2 mb-4 p-3 bg-body-secondary rounded-4 border">
-                                <i class="bi bi-ticket-perforated text-muted fs-5 ms-1"></i>
+                                <i class="bi bi-ticket-perforated text-body-secondary fs-5 ms-1"></i>
                                 <input type="text" x-model="couponInputTemp" @keydown.enter.prevent="applyCoupon(couponInputTemp)" placeholder="Enter promo code..." class="form-control border-0 bg-transparent shadow-none font-monospace text-uppercase fw-bold">
                                 <button type="button" @click.prevent="applyCoupon(couponInputTemp)" class="btn btn-primary rounded-pill fw-bold text-uppercase tracking-widest px-4 flex-shrink-0 shadow-sm">
                                     Apply
@@ -1702,10 +1714,10 @@
 
                             <hr class="border-secondary opacity-10 mb-4">
 
-                            <h6 class="fw-bold text-muted text-uppercase tracking-widest small mb-3">Available Coupons</h6>
+                            <h6 class="fw-bold text-body-secondary text-uppercase tracking-widest small mb-3">Available Coupons</h6>
                             
                             <template x-if="activeCoupons.length === 0">
-                                <div class="text-center py-4 text-muted">
+                                <div class="text-center py-4 text-body-secondary">
                                     <p class="mb-0 fw-medium">No coupons currently available.</p>
                                 </div>
                             </template>
@@ -1724,10 +1736,10 @@
                                                         <code class="fw-black text-body-emphasis fs-6 d-block" x-text="c.code"></code>
                                                     </div>
                                                     <div class="pe-3 ps-2 border-start border-2 border-secondary border-opacity-25">
-                                                        <p class="mb-1 small text-muted" x-show="c.min_spend > 0" x-text="'Min. Spend: ₹ ' + Number(c.min_spend).toFixed(2)"></p>
-                                                        <p class="mb-1 small text-muted" x-show="c.max_discount > 0" x-text="'Max Discount: ₹ ' + Number(c.max_discount).toFixed(2)"></p>
-                                                        <p class="mb-1 small text-muted" x-show="c.usage_limit > 0" x-text="'Remaining Uses: ' + Math.max(0, c.usage_limit - c.used_count)"></p>
-                                                        <p class="mb-0 small text-muted" x-show="c.expiry_date" x-text="'Valid till ' + new Date(c.expiry_date).toLocaleDateString()"></p>
+                                                        <p class="mb-1 small text-body-secondary" x-show="c.min_spend > 0" x-text="'Min. Spend: ₹ ' + Number(c.min_spend).toFixed(2)"></p>
+                                                        <p class="mb-1 small text-body-secondary" x-show="c.max_discount > 0" x-text="'Max Discount: ₹ ' + Number(c.max_discount).toFixed(2)"></p>
+                                                        <p class="mb-1 small text-body-secondary" x-show="c.usage_limit > 0" x-text="'Remaining Uses: ' + Math.max(0, c.usage_limit - c.used_count)"></p>
+                                                        <p class="mb-0 small text-body-secondary" x-show="c.expiry_date" x-text="'Valid till ' + new Date(c.expiry_date).toLocaleDateString()"></p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1762,7 +1774,7 @@
                     <div class="d-flex flex-wrap gap-2 align-items-center">
                         <h5 class="modal-title fw-bold mb-0" id="productDetailsModalLabel" x-text="selectedProductForModal ? selectedProductForModal.name : ''"></h5>
                         <span class="badge text-bg-secondary-subtle text-secondary-emphasis" x-text="selectedProductForModal ? selectedProductForModal.sku : ''"></span>
-                        <span class="badge" :class="selectedProductForModal && selectedProductForModal.status === 'published' ? 'bg-success' : 'bg-warning text-dark'" x-text="selectedProductForModal ? selectedProductForModal.status : ''"></span>
+                        <span class="badge" :class="selectedProductForModal && selectedProductForModal.status === 'published' ? 'bg-success' : 'bg-warning text-body-emphasis'" x-text="selectedProductForModal ? selectedProductForModal.status : ''"></span>
                         <span class="spinner-border spinner-border-sm text-primary ms-2" role="status" x-show="productModalLoading"></span>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1780,16 +1792,14 @@
                             <div x-show="selectedProductForModal">
                                 <div class="d-flex flex-wrap gap-2 mb-3">
                                     <span x-show="selectedProductForModal && selectedProductForModal.category" class="badge text-bg-primary-subtle text-primary-emphasis border-opacity-25 py-2 px-3"><i class="bi bi-tag-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.category : ''"></span></span>
-                                    <span x-show="selectedProductForModal && selectedProductForModal.brand" class="badge text-bg-dark-subtle text-dark-emphasis border py-2 px-3"><i class="bi bi-award-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.brand : ''"></span></span>
+                                    <span x-show="selectedProductForModal && selectedProductForModal.brand" class="badge text-bg-dark-subtle text-body-emphasis-emphasis border py-2 px-3"><i class="bi bi-award-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.brand : ''"></span></span>
                                 </div>
                                 <div class="table-responsive">
-                                    <table class="table table-sm table-borderless small mb-0 text-muted">
+                                    <table class="table table-sm table-borderless small mb-0 text-body-secondary">
                                         <tbody>
-                                            <tr x-show="selectedProductForModal && selectedProductForModal.barcode"><th class="ps-0" style="width:100px;">Barcode</th><td x-text="selectedProductForModal ? selectedProductForModal.barcode : ''"></td></tr>
-                                            <tr x-show="selectedProductForModal && selectedProductForModal.weight"><th class="ps-0">Weight</th><td x-text="selectedProductForModal ? selectedProductForModal.weight : ''"></td></tr>
+                                            <tr x-show="selectedProductForModal && selectedProductForModal.weight"><th class="ps-0" style="width:100px;">Weight</th><td x-text="selectedProductForModal ? selectedProductForModal.weight : ''"></td></tr>
                                             <tr x-show="selectedProductForModal && selectedProductForModal.uom"><th class="ps-0">UOM</th><td x-text="selectedProductForModal ? selectedProductForModal.uom : ''"></td></tr>
                                             <tr x-show="selectedProductForModal && selectedProductForModal.grade"><th class="ps-0">Grade</th><td x-text="selectedProductForModal ? selectedProductForModal.grade : ''"></td></tr>
-                                            <tr x-show="selectedProductForModal && selectedProductForModal.warehouse"><th class="ps-0">Warehouse</th><td x-text="selectedProductForModal ? selectedProductForModal.warehouse : ''"></td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -1808,26 +1818,26 @@
                                     </div>
                                     <div class="row g-2 mb-2">
                                         <div class="col-4 border-end border-secondary border-opacity-25">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Selling Price (Inc. GST)</label>
+                                            <label class="form-label mb-1 fw-bold text-body-secondary text-uppercase d-block" style="font-size:9px;">Selling Price (Inc. GST)</label>
                                             <div class="fw-black text-primary" style="font-size:18px;" x-text="selectedProductForModal ? '₹ ' + (parseFloat(selectedProductForModal.selling_price||0) * (1 + (parseFloat(selectedProductForModal.tax_rate)||0)/100)).toFixed(2) : ''"></div>
-                                            <div class="text-muted text-decoration-line-through" style="font-size:10px;" x-show="selectedProductForModal && selectedProductForModal.mrp > (parseFloat(selectedProductForModal.selling_price||0) * (1 + (parseFloat(selectedProductForModal.tax_rate)||0)/100))" x-text="selectedProductForModal ? 'MRP ₹ ' + parseFloat(selectedProductForModal.mrp||0).toFixed(2) : ''"></div>
+                                            <div class="text-body-secondary text-decoration-line-through" style="font-size:10px;" x-show="selectedProductForModal && selectedProductForModal.mrp > (parseFloat(selectedProductForModal.selling_price||0) * (1 + (parseFloat(selectedProductForModal.tax_rate)||0)/100))" x-text="selectedProductForModal ? 'MRP ₹ ' + parseFloat(selectedProductForModal.mrp||0).toFixed(2) : ''"></div>
                                         </div>
                                         <div class="col-4 border-end border-secondary border-opacity-25 ps-3">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Purchase Price</label>
+                                            <label class="form-label mb-1 fw-bold text-body-secondary text-uppercase d-block" style="font-size:9px;">Purchase Price</label>
                                             <div class="fw-bold text-body-emphasis" style="font-size:14px;" x-text="selectedProductForModal ? '₹ ' + parseFloat(selectedProductForModal.purchase_price||0).toFixed(2) : ''"></div>
                                         </div>
                                         <div class="col-4 ps-3">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Profit Margin</label>
+                                            <label class="form-label mb-1 fw-bold text-body-secondary text-uppercase d-block" style="font-size:9px;">Profit Margin</label>
                                             <div class="fw-bold text-success" style="font-size:14px;" x-text="selectedProductForModal && selectedProductForModal.selling_price > 0 && selectedProductForModal.purchase_price > 0 ? (((selectedProductForModal.selling_price - selectedProductForModal.purchase_price) / selectedProductForModal.purchase_price) * 100).toFixed(1) + '%' : 'N/A'"></div>
                                         </div>
                                     </div>
                                     <div class="row g-2 pt-2 border-top border-secondary border-opacity-25">
                                         <div class="col-6 border-end border-secondary border-opacity-25">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Taxes</label>
+                                            <label class="form-label mb-1 fw-bold text-body-secondary text-uppercase d-block" style="font-size:9px;">Taxes</label>
                                             <div class="fw-bold text-body-emphasis" style="font-size:13px;" x-text="selectedProductForModal && selectedProductForModal.tax_rate > 0 ? (selectedProductForModal.tax_rate + '%') : 'No Tax'"></div>
                                         </div>
                                         <div class="col-6 ps-3">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">HSN / SAC Code</label>
+                                            <label class="form-label mb-1 fw-bold text-body-secondary text-uppercase d-block" style="font-size:9px;">HSN / SAC Code</label>
                                             <div class="fw-bold text-body-emphasis" style="font-size:13px;" x-text="selectedProductForModal ? (selectedProductForModal.hsn_code || 'Not Set') : ''"></div>
                                         </div>
                                     </div>
@@ -1840,25 +1850,25 @@
                                     <div class="card h-100 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
-                                                <div class="bg-warning bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;color:#ffc107;"><i class="bi bi-box-seam-fill" style="font-size:12px;"></i></div>
+                                                <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-box-seam-fill" style="font-size:12px;"></i></div>
                                                 <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Inventory</h6>
                                             </div>
                                             <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary border-opacity-25">
                                                 <div>
                                                     <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="selectedProductForModal ? (parseFloat(selectedProductForModal.available_stock) + ' ' + (selectedProductForModal.uom || 'Units')) : ''"></div>
-                                                    <div class="text-muted" style="font-size:10px;">Available to Order</div>
+                                                    <div class="text-body-secondary" style="font-size:10px;">Available to Order</div>
                                                 </div>
-                                                <span class="badge" style="font-size:10px;" :class="selectedProductForModal && selectedProductForModal.available_stock > (selectedProductForModal.min_stock_level || 10) ? 'bg-success' : (selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'bg-warning text-dark' : 'bg-danger')" x-text="selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'In Stock' : 'Out of Stock'"></span>
+                                                <span class="badge" style="font-size:10px;" :class="selectedProductForModal && selectedProductForModal.available_stock > (selectedProductForModal.min_stock_level || 10) ? 'bg-success' : (selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'bg-warning text-body-emphasis' : 'bg-danger')" x-text="selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'In Stock' : 'Out of Stock'"></span>
                                             </div>
                                             <div class="row text-center g-1 mb-2">
-                                                <div class="col-4"><div class="fw-semibold" style="font-size:13px;" x-text="selectedProductForModal ? (selectedProductForModal.physical_available || selectedProductForModal.stock) : 0"></div><div class="text-muted" style="font-size:9px;">Physical</div></div>
-                                                <div class="col-4 border-start border-end border-secondary border-opacity-25"><div class="fw-semibold text-warning" style="font-size:13px;" x-text="selectedProductForModal ? ((selectedProductForModal.reserved_qty || 0) + (selectedProductForModal.pending_qty || 0)) : 0"></div><div class="text-muted" style="font-size:9px;">Reserved</div></div>
-                                                <div class="col-4"><div class="fw-semibold text-danger" style="font-size:13px;" x-text="selectedProductForModal ? selectedProductForModal.min_stock_level : 0"></div><div class="text-muted" style="font-size:9px;">Min Level</div></div>
+                                                <div class="col-4"><div class="fw-semibold" style="font-size:13px;" x-text="selectedProductForModal ? (selectedProductForModal.physical_available || selectedProductForModal.stock) : 0"></div><div class="text-body-secondary" style="font-size:9px;">Physical</div></div>
+                                                <div class="col-4 border-start border-end border-secondary border-opacity-25"><div class="fw-semibold text-warning" style="font-size:13px;" x-text="selectedProductForModal ? ((selectedProductForModal.reserved_qty || 0) + (selectedProductForModal.pending_qty || 0)) : 0"></div><div class="text-body-secondary" style="font-size:9px;">Reserved</div></div>
+                                                <div class="col-4"><div class="fw-semibold text-danger" style="font-size:13px;" x-text="selectedProductForModal ? selectedProductForModal.min_stock_level : 0"></div><div class="text-body-secondary" style="font-size:9px;">Min Level</div></div>
                                             </div>
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Tracking</label>
+                                            <label class="form-label mb-1 fw-bold text-body-secondary text-uppercase d-block" style="font-size:9px;">Tracking</label>
                                             <div class="list-group list-group-flush border border-secondary border-opacity-25 rounded-3">
-                                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-box me-1"></i>Batch</span><span class="badge" style="font-size:9px;" :class="selectedProductForModal && selectedProductForModal.batch_tracking ? 'bg-success' : 'bg-secondary'" x-text="selectedProductForModal && selectedProductForModal.batch_tracking ? 'ON' : 'OFF'"></span></div>
-                                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-calendar-x me-1"></i>Expiry</span><span class="badge" style="font-size:9px;" :class="selectedProductForModal && selectedProductForModal.expiry_tracking ? 'bg-success' : 'bg-secondary'" x-text="selectedProductForModal && selectedProductForModal.expiry_tracking ? 'ON' : 'OFF'"></span></div>
+                                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-body-secondary" style="font-size:10px;"><i class="bi bi-box me-1"></i>Batch</span><span class="badge" style="font-size:9px;" :class="selectedProductForModal && selectedProductForModal.batch_tracking ? 'bg-success' : 'bg-secondary'" x-text="selectedProductForModal && selectedProductForModal.batch_tracking ? 'ON' : 'OFF'"></span></div>
+                                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-body-secondary" style="font-size:10px;"><i class="bi bi-calendar-x me-1"></i>Expiry</span><span class="badge" style="font-size:9px;" :class="selectedProductForModal && selectedProductForModal.expiry_tracking ? 'bg-success' : 'bg-secondary'" x-text="selectedProductForModal && selectedProductForModal.expiry_tracking ? 'ON' : 'OFF'"></span></div>
                                             </div>
                                         </div>
                                     </div>
@@ -1870,19 +1880,19 @@
                                                 <div class="text-bg-info-subtle text-info-emphasis rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-list-stars" style="font-size:12px;"></i></div>
                                                 <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Technical Specs</h6>
                                             </div>
-                                            <div x-show="productModalLoading" class="text-center p-3 text-muted"><div class="spinner-border spinner-border-sm mb-1" role="status"></div><div style="font-size:10px;">Loading...</div></div>
+                                            <div x-show="productModalLoading" class="text-center p-3 text-body-secondary"><div class="spinner-border spinner-border-sm mb-1" role="status"></div><div style="font-size:10px;">Loading...</div></div>
                                             <div x-show="!productModalLoading">
                                                 <template x-if="selectedProductForModal && selectedProductForModal.attributes && selectedProductForModal.attributes.length > 0">
                                                     <table class="table table-sm table-hover mb-0" style="font-size:11px;">
                                                         <tbody>
                                                             <template x-for="attr in selectedProductForModal.attributes" :key="attr.id">
-                                                                <tr><th class="ps-2 text-muted w-50 border-0" x-text="attr.attribute"></th><td class="pe-2 fw-semibold text-end border-0"><div class="d-flex align-items-center justify-content-end gap-1"><span x-show="attr.color_code" class="rounded-circle border" :style="'width:8px;height:8px;background-color:'+attr.color_code"></span><span x-text="attr.value"></span></div></td></tr>
+                                                                <tr><th class="ps-2 text-body-secondary w-50 border-0" x-text="attr.attribute"></th><td class="pe-2 fw-semibold text-end border-0"><div class="d-flex align-items-center justify-content-end gap-1"><span x-show="attr.color_code" class="rounded-circle border" :style="'width:8px;height:8px;background-color:'+attr.color_code"></span><span x-text="attr.value"></span></div></td></tr>
                                                             </template>
                                                         </tbody>
                                                     </table>
                                                 </template>
                                                 <template x-if="!selectedProductForModal || !selectedProductForModal.attributes || selectedProductForModal.attributes.length === 0">
-                                                    <div class="text-center text-muted py-3" style="font-size:10px;">No specifications recorded.</div>
+                                                    <div class="text-center text-body-secondary py-3" style="font-size:10px;">No specifications recorded.</div>
                                                 </template>
                                             </div>
                                         </div>
@@ -1897,24 +1907,24 @@
                                         <div class="text-bg-secondary-subtle text-secondary-emphasis rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-file-text-fill" style="font-size:12px;"></i></div>
                                         <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Details & Usage</h6>
                                     </div>
-                                    <div x-show="productModalLoading" class="text-center p-3 text-muted"><div class="spinner-border spinner-border-sm" role="status"></div></div>
+                                    <div x-show="productModalLoading" class="text-center p-3 text-body-secondary"><div class="spinner-border spinner-border-sm" role="status"></div></div>
                                     <div x-show="!productModalLoading" class="row g-3">
                                         <div class="col-md-6 border-end border-secondary border-opacity-25">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Product Description</label>
+                                            <label class="form-label mb-1 fw-bold text-body-secondary text-uppercase d-block" style="font-size:9px;">Product Description</label>
                                             <div style="font-size:11px;" x-show="selectedProductForModal && selectedProductForModal.description" x-html="selectedProductForModal ? selectedProductForModal.description : ''"></div>
-                                            <div style="font-size:11px;" x-show="!selectedProductForModal || !selectedProductForModal.description" class="text-muted fst-italic">No description available.</div>
+                                            <div style="font-size:11px;" x-show="!selectedProductForModal || !selectedProductForModal.description" class="text-body-secondary fst-italic">No description available.</div>
                                         </div>
                                         <div class="col-md-6 ps-3">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Application / Dosage</label>
+                                            <label class="form-label mb-1 fw-bold text-body-secondary text-uppercase d-block" style="font-size:9px;">Application / Dosage</label>
                                             <div style="font-size:11px;" x-show="selectedProductForModal && selectedProductForModal.application_instructions" x-html="selectedProductForModal ? selectedProductForModal.application_instructions : ''"></div>
-                                            <div style="font-size:11px;" x-show="!selectedProductForModal || !selectedProductForModal.application_instructions" class="text-muted fst-italic">No instructions available.</div>
+                                            <div style="font-size:11px;" x-show="!selectedProductForModal || !selectedProductForModal.application_instructions" class="text-body-secondary fst-italic">No instructions available.</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Promotions -->
-                            <div x-show="productModalOffers && productModalOffers.length > 0" class="card mb-3 border border-primary border-opacity-25 shadow-sm rounded-4" style="background-color:var(--bs-primary-bg-subtle);">
+                            <div x-show="productModalOffers && productModalOffers.length > 0" class="card mb-3 border border-primary border-opacity-25 shadow-sm rounded-4 bg-primary-subtle">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-primary border-opacity-25">
                                         <div class="bg-primary text-white rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-stars" style="font-size:12px;"></i></div>
@@ -1927,7 +1937,7 @@
                                                     <div class="text-bg-primary-subtle text-primary-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:28px;height:28px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
                                                     <div class="min-w-0">
                                                         <div class="fw-bold text-body-emphasis text-truncate" style="font-size:11px;" x-text="offer.name"></div>
-                                                        <div class="text-muted text-truncate" style="font-size:9px;" x-text="offer.type === 'percentage' ? offer.value + '% off' : 'Flat ₹ ' + offer.value + ' off'"></div>
+                                                        <div class="text-body-secondary text-truncate" style="font-size:9px;" x-text="offer.type === 'percentage' ? offer.value + '% off' : 'Flat ₹ ' + offer.value + ' off'"></div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1945,7 +1955,7 @@
 
                 <!-- Footer -->
                 <div class="modal-footer bg-body-tertiary border-top p-3 d-flex justify-content-between align-items-center">
-                    <div class="text-muted small">
+                    <div class="text-body-secondary small">
                         <span x-show="selectedProductForModal && isInCart(selectedProductForModal.id)" class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Currently in cart</span>
                     </div>
                     <div>
@@ -2070,7 +2080,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         editingOrderNo: null,
         addresses: [],
         recentOrders: [],
-        products: [], productQuery: '', stockFilter: 'available', categoryFilter: '',
+        products: [], productQuery: '', stockFilter: 'available', categoryFilter: '', perPage: 10,
         searching: false, productPage: 1, productLastPage: 1, productTotal: 0, productFrom: 0, productTo: 0,
         cart: [], couponCode: '', couponApplied: false, appliedCouponObj: null, appliedOfferId: null,
         placing: false, formErrors: [],
@@ -2115,13 +2125,25 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             });
 
             // Push initial state to trap back button
-            window.history.pushState(null, null, window.location.href);
+            const trapBack = () => {
+                if (window.history.state !== 'trap') {
+                    window.history.pushState('trap', null, '');
+                }
+            };
+            trapBack();
+            
+            // Re-arm the trap on first user interaction to bypass modern browser anti-hijack policies after a refresh
+            document.addEventListener('click', trapBack, { once: true });
+            document.addEventListener('keydown', trapBack, { once: true });
+
             window.addEventListener('popstate', (e) => {
                 if (this.customerDetails && !this.isCallLoggedOrClosed) {
-                    window.history.pushState(null, null, window.location.href);
-                    const blockedModal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('actionBlockedModal'));
-                    blockedModal.show();
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'danger', message: 'You must Log a Call before leaving this profile.' }}));
+                    if (e.state !== 'trap') {
+                        window.history.pushState('trap', null, '');
+                        const blockedModal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('actionBlockedModal'));
+                        blockedModal.show();
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'danger', message: 'You must Log a Call before leaving this profile.' }}));
+                    }
                 }
             });
 
@@ -2583,7 +2605,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             if (reset) this.productPage = 1;
             this.searching = true;
             try {
-                const p = new URLSearchParams({ q: this.productQuery, stock: this.stockFilter, category: this.categoryFilter, perPage: 12, page: this.productPage });
+                const p = new URLSearchParams({ q: this.productQuery, stock: this.stockFilter, category: this.categoryFilter, perPage: this.perPage, page: this.productPage });
                 const res = await fetch(`/products-search-api?${p}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                 const json = await res.json();
                 this.products = (json.data || []).map(p => ({...p, _qty: 1, _disc: parseFloat(p.default_discount)||0}));
@@ -3203,7 +3225,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     <i class="bi bi-shield-lock-fill fs-1"></i>
                 </div>
                 <h5 class="fw-bold mb-2 text-danger">Action Blocked</h5>
-                <p class="text-muted mb-0 small">You must <strong>Log a Call</strong> or explicitly <strong>Close the Profile</strong> before leaving this page.</p>
+                <p class="text-body-secondary mb-0 small">You must <strong>Log a Call</strong> or explicitly <strong>Close the Profile</strong> before leaving this page.</p>
             </div>
             <div class="modal-footer border-top-0 justify-content-center pb-4 pt-0">
                 <button type="button" class="btn btn-danger px-4 shadow-sm rounded-pill" data-bs-dismiss="modal">I Understand</button>
