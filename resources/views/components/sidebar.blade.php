@@ -88,19 +88,19 @@
                 @endcanany
 
                 {{-- Order Management Dropdown --}}
-                @canany(['orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view'])
+                @canany(['orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view', 'complaints.view'])
                 <li class="nav-item">
-                    <a class="nav-link {{ in_array($current, ['orders', 'invoices.index', 'payments.index', 'returns.index', 'refunds.index', 'credit-notes.index']) ? 'active' : 'collapsed' }}"
+                    <a class="nav-link {{ in_array($current, ['orders', 'invoices.index', 'payments.index', 'returns.index', 'refunds.index', 'credit-notes.index', 'complaints.index']) ? 'active' : 'collapsed' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#orderManagementSubmenu"
-                       aria-expanded="{{ in_array($current, ['orders', 'invoices.index', 'payments.index', 'returns.index', 'refunds.index', 'credit-notes.index']) ? 'true' : 'false' }}"
+                       aria-expanded="{{ in_array($current, ['orders', 'invoices.index', 'payments.index', 'returns.index', 'refunds.index', 'credit-notes.index', 'complaints.index']) ? 'true' : 'false' }}"
                        aria-controls="orderManagementSubmenu">
                         <i class="bi bi-cart-check-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">Order Management</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ in_array($current, ['orders', 'invoices.index', 'payments.index', 'returns.index', 'refunds.index', 'credit-notes.index']) ? 'show' : '' }}" id="orderManagementSubmenu">
+                    <div class="collapse {{ in_array($current, ['orders', 'invoices.index', 'payments.index', 'returns.index', 'refunds.index', 'credit-notes.index', 'complaints.index']) ? 'show' : '' }}" id="orderManagementSubmenu">
                         <ul class="nav nav-submenu">
                             @can('orders.view')
                             <li class="nav-item">
@@ -131,6 +131,14 @@
                                 <a class="nav-link {{ $current === 'returns.index' ? 'active' : '' }}" href="{{ route('returns.index') }}">
                                     <i class="bi bi-arrow-return-left"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Returns</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('complaints.view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'complaints.index' ? 'active' : '' }}" href="{{ route('complaints.index') }}">
+                                    <i class="bi bi-headset"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Complaints</span>
                                 </a>
                             </li>
                             @endcan

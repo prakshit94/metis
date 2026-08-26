@@ -106,6 +106,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     // Order Returns
     Route::get('returns', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'index'])->name('returns.index');
     Route::post('orders/{order}/returns', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'store'])->name('orders.returns.store');
+
+    // Order Complaints
+    Route::get('complaints', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'index'])->name('complaints.index');
+
     Route::get('returns/{return}', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'show'])->name('returns.show');
     Route::post('returns/{return}/qc', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'processQc'])->name('returns.qc');
     Route::post('returns/{return}/finance', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'processFinancials'])->name('returns.finance');

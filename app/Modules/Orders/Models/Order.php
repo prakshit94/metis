@@ -227,6 +227,11 @@ class Order extends Model implements Auditable
         return $this->hasMany(OrderStatusLog::class);
     }
 
+    public function complaints(): HasMany
+    {
+        return $this->hasMany(OrderComplaint::class);
+    }
+
     public function refunds(): HasMany
     {
         return $this->hasMany(Refund::class);

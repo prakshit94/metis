@@ -183,6 +183,15 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/import', [\App\Modules\Orders\Controllers\OrderController::class, 'bulkImport'])->name('import');
     });
 
+    Route::prefix('complaints')->name('api.complaints.')->group(function (): void {
+        Route::get('/stats', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'stats'])->name('stats');
+        Route::get('/', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'index'])->name('index');
+        Route::post('/', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'store'])->name('store');
+        Route::put('/{complaint}', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'update'])->name('update');
+        Route::delete('/{complaint}', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'destroy'])->name('destroy');
+        Route::post('/bulk-action', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'bulkAction'])->name('bulk-action');
+    });
+
     Route::get('/products-search-api', [\App\Modules\Catalog\Controllers\ProductController::class, 'searchApi'])->name('api.products.search.api');
     Route::post('/coupons/validate', [\App\Modules\Orders\Controllers\CouponController::class, 'validateApi'])->name('api.coupons.validate');
 

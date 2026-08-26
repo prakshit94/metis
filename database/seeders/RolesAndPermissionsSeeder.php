@@ -351,6 +351,14 @@ class RolesAndPermissionsSeeder extends Seeder
         'credit-notes.restore',
         'credit-notes.permanent-delete',
 
+        // Complaints
+        'complaints.view',
+        'complaints.create',
+        'complaints.edit',
+        'complaints.delete',
+        'complaints.restore',
+        'complaints.permanent-delete',
+
         // ── Additional Order Specifics ──
 
         // Order Views
@@ -509,6 +517,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'refunds.view',
             'returns.view',
             'credit-notes.view',
+            'complaints.view',
             'supplier-view',
             'supplier-create',
             'supplier-edit',
@@ -647,6 +656,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'credit-notes.view',
             'credit-notes.create',
             'credit-notes.edit',
+            'complaints.view',
+            'complaints.create',
+            'complaints.edit',
             'orders.generate_invoice',
             'orders.invoice_pdf',
             'orders.receipt',
@@ -667,6 +679,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'analytics-view',
             'reports-view',
             'orders.view',
+            'complaints.view',
             'view_all_order',
             'orders.filter_status',
             'orders.filter_date',
@@ -698,6 +711,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'orders.create',
             'orders.edit',
             'orders.cancel',
+            'complaints.view',
+            'complaints.create',
+            'complaints.edit',
             'chat-view',
             'chat-create',
             'chat-edit',
