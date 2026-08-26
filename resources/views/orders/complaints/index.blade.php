@@ -489,9 +489,11 @@
             isEditing: false,
             modalInstance: null,
             form: {
-                id: null, order_no: '', customer_id: '', category: 'other', priority: 'medium', subject: '', description: '', status: 'open', resolution_notes: ''
+                id: null, order_no: '', customer_id: '', category: 'other',
+                priority: 'medium', subject: '', description: '',
+                status: 'open', resolution_notes: ''
             },
-            
+
             // --- Order Lookup Variables ---
             searchQueryOrder: '',
             fetchedOrders: [],
@@ -499,15 +501,34 @@
             searchOrderError: '',
             selectedOrderDetails: null,
 
+            // ── Helpers ────────────────────────────────────────────────────────
+            csrf() {
+                return document.querySelector('meta[name="csrf-token"]')?.content || '';
+            },
+            async api(url, options = {}) {
+                const method = (options.method || 'GET').toUpperCase();
+                const headers = {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrf(),
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(options.headers || {}),
+                };
+                const res = await fetch(url, { ...options, method, headers });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
+                    throw Object.assign(new Error(err.message || `HTTP ${res.status}`), { status: res.status, data: err });
+                }
+                return res.json();
+            },
+
+            // ── Computed ───────────────────────────────────────────────────────
             get allSelected() {
                 return this.complaints.length > 0 && this.selectedComplaints.length === this.complaints.length;
             },
             get visiblePages() {
-                const delta = 2;
-                const range = [];
-                for (let i = Math.max(2, this.currentPage - delta); i <= Math.min(this.totalPages - 1, this.currentPage + delta); i++) {
-                    range.push(i);
-                }
+                const delta = 2, range = [];
+                for (let i = Math.max(2, this.currentPage - delta); i <= Math.min(this.totalPages - 1, this.currentPage + delta); i++) range.push(i);
                 if (this.currentPage - delta > 2) range.unshift('...');
                 if (this.currentPage + delta < this.totalPages - 1) range.push('...');
                 range.unshift(1);
@@ -515,16 +536,16 @@
                 return range;
             },
 
+            // ── Lifecycle ──────────────────────────────────────────────────────
             init() {
                 this.modalInstance = new bootstrap.Modal(document.getElementById('complaintModal'));
                 this.fetchComplaints();
                 this.fetchStats();
 
-                // Auto-open modal if arriving from Order History tab with URL params
+                // Auto-open modal from URL params (e.g. from "Raise Complaint" button)
                 const urlParams = new URLSearchParams(window.location.search);
                 const orderNo = urlParams.get('order_no');
                 const customerId = urlParams.get('customer_id');
-                const subject = urlParams.get('subject');
                 if (orderNo) {
                     this.$nextTick(() => {
                         this.isEditing = false;
@@ -534,20 +555,19 @@
                             customer_id: customerId || '',
                             category: urlParams.get('category') || 'other',
                             priority: urlParams.get('priority') || 'medium',
-                            subject: subject || '',
+                            subject: urlParams.get('subject') || '',
                             description: '',
                             status: 'open',
                             resolution_notes: ''
                         };
-                        // Pre-fill the search box so agent sees what order is linked
                         this.searchQueryOrder = orderNo;
                         this.modalInstance.show();
-                        // Clean up URL without reloading
                         window.history.replaceState({}, '', window.location.pathname);
                     });
                 }
             },
 
+            // ── Complaints API ─────────────────────────────────────────────────
             async fetchComplaints() {
                 this.isLoading = true;
                 try {
@@ -556,115 +576,69 @@
                         sort_by: this.sortField,
                         sort_direction: this.sortDirection
                     });
-                    if (this.searchQuery) params.append('search', this.searchQuery);
-                    if (this.statusFilter) params.append('status', this.statusFilter);
+                    if (this.searchQuery)   params.append('search',   this.searchQuery);
+                    if (this.statusFilter)  params.append('status',   this.statusFilter);
                     if (this.priorityFilter) params.append('priority', this.priorityFilter);
 
-                    const res = await axios.get(`/api/complaints?${params.toString()}`);
-                    this.complaints = res.data.data;
-                    this.currentPage = res.data.meta.current_page;
-                    this.totalPages = res.data.meta.last_page;
-                    this.totalComplaints = res.data.meta.total;
-                    // Stats are fetched separately via fetchStats() for global accuracy
-                    this.stats.total = this.totalComplaints;
+                    const data = await this.api(`/api/complaints?${params.toString()}`);
+                    this.complaints      = data.data;
+                    this.currentPage     = data.meta.current_page;
+                    this.totalPages      = data.meta.last_page;
+                    this.totalComplaints = data.meta.total;
+                    this.stats.total     = this.totalComplaints;
                 } catch (e) {
-                    console.error('Failed to fetch complaints', e);
+                    console.error('fetchComplaints error:', e);
                     window.Swal.fire('Error', 'Failed to load complaints', 'error');
                 }
                 this.isLoading = false;
             },
 
-            updateStats() {
-                // Total is accurate from API meta (all records, not just current page)
-                this.stats.total = this.totalComplaints;
-                // For open/in_progress/resolved, count from current page as an approximation;
-                // a proper solution would be a dedicated stats endpoint
-                this.stats.open = this.complaints.filter(c => c.status === 'open').length;
-                this.stats.in_progress = this.complaints.filter(c => c.status === 'in_progress').length;
-                this.stats.resolved = this.complaints.filter(c => c.status === 'resolved').length;
-            },
-
             async fetchStats() {
                 try {
-                    const res = await axios.get('/api/complaints/stats');
-                    this.stats.total       = res.data.total;
-                    this.stats.open        = res.data.open;
-                    this.stats.in_progress = res.data.in_progress;
-                    this.stats.resolved    = res.data.resolved;
+                    const data = await this.api('/api/complaints/stats');
+                    this.stats.total       = data.total;
+                    this.stats.open        = data.open;
+                    this.stats.in_progress = data.in_progress;
+                    this.stats.resolved    = data.resolved;
                 } catch (e) {
-                    console.warn('Could not load complaint stats', e);
+                    console.warn('fetchStats error:', e);
                 }
             },
 
-            filterComplaints() {
-                this.currentPage = 1;
-                this.fetchComplaints();
-            },
+            filterComplaints() { this.currentPage = 1; this.fetchComplaints(); },
             clearFilters() {
-                this.searchQuery = '';
-                this.statusFilter = '';
-                this.priorityFilter = '';
+                this.searchQuery = ''; this.statusFilter = ''; this.priorityFilter = '';
                 this.filterComplaints();
             },
             sortBy(field) {
                 if (this.sortField === field) {
                     this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
                 } else {
-                    this.sortField = field;
-                    this.sortDirection = 'desc';
+                    this.sortField = field; this.sortDirection = 'desc';
                 }
                 this.fetchComplaints();
             },
             goToPage(page) {
-                if (page >= 1 && page <= this.totalPages) {
-                    this.currentPage = page;
-                    this.fetchComplaints();
-                }
+                if (page >= 1 && page <= this.totalPages) { this.currentPage = page; this.fetchComplaints(); }
             },
             toggleAll(checked) {
                 this.selectedComplaints = checked ? this.complaints.map(c => String(c.id)) : [];
             },
 
-            formatDate(str) {
-                if (!str) return '—';
-                return new Date(str).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            },
-            getStatusColor(status) {
-                const map = {
-                    open: '#f59e0b',
-                    in_progress: '#0ea5e9',
-                    resolved: '#10b981',
-                    closed: '#6b7280'
-                };
-                return map[status] || '#6b7280';
-            },
-            getStatusLabel(status) {
-                return (status || '').replace(/_/g, ' ').toUpperCase();
-            },
-            getPriorityClass(priority) {
-                const map = {
-                    low: 'bg-secondary bg-opacity-25 text-body',
-                    medium: 'bg-info bg-opacity-25 text-info',
-                    high: 'bg-warning bg-opacity-25 text-warning',
-                    urgent: 'bg-danger bg-opacity-25 text-danger'
-                };
-                return map[priority] || map.low;
-            },
-
-            // --- Order Lookup Methods ---
+            // ── Order Lookup ───────────────────────────────────────────────────
             async searchOrders() {
-                if (!this.searchQueryOrder) return;
+                if (!this.searchQueryOrder.trim()) return;
                 this.isSearchingOrders = true;
-                this.searchOrderError = '';
-                this.fetchedOrders = [];
+                this.searchOrderError  = '';
+                this.fetchedOrders     = [];
                 this.selectedOrderDetails = null;
 
                 try {
-                    const res = await axios.get(`/api/orders?search=${encodeURIComponent(this.searchQueryOrder)}&limit=50`);
                     // OrderController@index returns { orders: { data: [...] }, stats: {...} }
-                    const orders = res.data.orders?.data ?? res.data.data ?? [];
+                    const data   = await this.api(`/api/orders?search=${encodeURIComponent(this.searchQueryOrder.trim())}&limit=50`);
+                    const orders = data.orders?.data ?? data.data ?? [];
 
-                    if (!orders || orders.length === 0) {
+                    if (!orders.length) {
                         this.searchOrderError = 'No orders found matching this query.';
                     } else if (orders.length === 1) {
                         await this.selectOrder(orders[0].id);
@@ -672,55 +646,48 @@
                         this.fetchedOrders = orders;
                     }
                 } catch (e) {
-                    this.searchOrderError = 'Failed to search for orders. Please try again.';
+                    this.searchOrderError = e.status === 403
+                        ? 'Permission denied — you cannot search orders.'
+                        : 'Failed to search orders. Please try again.';
                     console.error('searchOrders error:', e);
                 }
                 this.isSearchingOrders = false;
             },
+
             async selectOrder(orderId) {
                 if (!orderId) return;
                 this.isSearchingOrders = true;
                 try {
-                    const res = await axios.get(`/api/orders/${orderId}`);
-                    // API returns { order: rawData }, unwrap and map to Alpine format
-                    const raw = res.data.order || res.data;
+                    // OrderController@show returns { order: rawData }
+                    const data = await this.api(`/api/orders/${orderId}`);
+                    const raw  = data.order || data;
                     this.selectedOrderDetails = this.mapRawOrder(raw);
-                    this.form.order_no = this.selectedOrderDetails.orderNumber;
+                    this.form.order_no    = this.selectedOrderDetails.orderNumber;
                     this.form.customer_id = raw.party_id || '';
-                    this.fetchedOrders = [];
+                    this.fetchedOrders    = [];
                 } catch (e) {
                     this.searchOrderError = 'Failed to fetch order details.';
-                    console.error(e);
+                    console.error('selectOrder error:', e);
                 }
                 this.isSearchingOrders = false;
             },
+
             mapRawOrder(o) {
                 if (!o) return null;
-                const formatMoney = v => parseFloat(v ?? 0) || 0;
-                const formatAddress = (o, type) => {
+                const fmt = v => parseFloat(v ?? 0) || 0;
+                const fmtAddr = (o, type) => {
                     const addr = type === 'shipping' ? o.shipping_address : o.billing_address;
                     if (!addr) return null;
-                    const parts = [
-                        addr.address_line_1,
-                        addr.address_line_2,
-                        addr.village_name,
-                        addr.taluka,
-                        addr.district,
-                        addr.city,
-                        addr.state,
-                        addr.pincode
-                    ].filter(Boolean);
+                    const parts = [addr.address_line_1, addr.address_line_2, addr.village_name, addr.taluka, addr.district, addr.city, addr.state, addr.pincode].filter(Boolean);
                     return { formatted: parts.join(', ') || 'N/A' };
                 };
-                const invoice = o.invoice || null;
-                const invoicePayments = (invoice && invoice.payments) ? invoice.payments : [];
-                const paidAmount = invoicePayments.filter(p => p.status === 'completed').reduce((s, p) => s + formatMoney(p.amount), 0);
-                const netAmount = formatMoney(invoice?.total_amount);
-                const allPayments = o.payments || invoicePayments;
-                const latestPaymentWithMethod = allPayments.slice().reverse().find(p => p.payment_method);
-                const formattedPaymentMethod = latestPaymentWithMethod
-                    ? latestPaymentWithMethod.payment_method.toUpperCase().replace(/_/g, ' ')
-                    : (invoice ? 'PENDING PAYMENT' : 'NOT RECORDED');
+                const invoice  = o.invoice || null;
+                const invPmts  = invoice?.payments ?? [];
+                const paid     = invPmts.filter(p => p.status === 'completed').reduce((s, p) => s + fmt(p.amount), 0);
+                const netInv   = fmt(invoice?.total_amount);
+                const allPmts  = o.payments || invPmts;
+                const lastPmt  = allPmts.slice().reverse().find(p => p.payment_method);
+                const pmtLabel = lastPmt ? lastPmt.payment_method.toUpperCase().replace(/_/g, ' ') : (invoice ? 'PENDING PAYMENT' : 'NOT RECORDED');
 
                 return {
                     id: o.id,
@@ -732,123 +699,101 @@
                     customer: {
                         id: o.party_id || null,
                         name: o.party ? `${o.party.firstname || ''} ${o.party.lastname || ''}`.trim() : 'N/A',
-                        email: o.party ? (o.party.email || 'N/A') : 'N/A',
-                        avatar: (o.party && o.party.avatar) ? o.party.avatar : '/assets/images/default_avatar.jpeg',
-                        phone: o.party ? (o.party.phone || 'N/A') : 'N/A',
-                        secondaryPhone: o.party ? (o.party.secondary_phone || '') : '',
-                        relativeName: o.party ? (o.party.relative_name || '') : '',
-                        relativePhone: o.party ? (o.party.relative_phone || '') : '',
-                        company: o.party ? (o.party.company_name || '') : '',
-                        pan: o.party ? (o.party.pan_number || '') : '',
-                        gstin: o.party ? (o.party.gstin || '') : ''
+                        email: o.party?.email || 'N/A',
+                        avatar: o.party?.avatar || '/assets/images/default_avatar.jpeg',
+                        phone: o.party?.phone || 'N/A',
+                        company: o.party?.company_name || '',
                     },
                     warehouse: o.warehouse ? {
-                        name: o.warehouse.name || o.warehouse.company_name || 'N/A',
-                        phone: o.warehouse.phone || 'N/A',
-                        gstin: o.warehouse.gstin || 'N/A',
-                        address: [o.warehouse.address_line_1, o.warehouse.address_line_2, o.warehouse.city, o.warehouse.state, o.warehouse.pincode].filter(Boolean).join(', ') || 'N/A'
+                        name: o.warehouse.name || 'N/A',
+                        address: [o.warehouse.address_line_1, o.warehouse.city, o.warehouse.state].filter(Boolean).join(', ') || 'N/A'
                     } : null,
-                    shippingAddress: formatAddress(o, 'shipping'),
-                    billingAddress: formatAddress(o, 'billing'),
-                    invoice: invoice ? {
-                        number: invoice.invoice_no || 'N/A',
-                        date: invoice.invoice_date || null,
-                        status: invoice.status || 'N/A',
-                        total: netAmount,
-                        paid: paidAmount,
-                        due: Math.max(0, netAmount - paidAmount)
-                    } : null,
+                    shippingAddress: fmtAddr(o, 'shipping'),
+                    billingAddress:  fmtAddr(o, 'billing'),
+                    invoice: invoice ? { number: invoice.invoice_no || 'N/A', date: invoice.invoice_date || null, status: invoice.status || 'N/A', total: netInv, paid, due: Math.max(0, netInv - paid) } : null,
                     items: (o.items || []).map(item => ({
-                        name: item.product ? item.product.name : 'Unknown Product',
-                        sku: item.product ? (item.product.sku || '') : '',
-                        image: (item.product && item.product.image_path) ? `/storage/${item.product.image_path}` : null,
+                        name:  item.product?.name || 'Unknown Product',
+                        sku:   item.product?.sku  || '',
+                        image: item.product?.image_path ? `/storage/${item.product.image_path}` : null,
                         quantity: item.quantity,
-                        price: item.unit_price,
-                        discount: formatMoney(item.discount_amount),
-                        discountBadgeLabel: formatMoney(item.discount_amount) > 0 ? `-₹${formatMoney(item.discount_amount).toFixed(2)}` : '',
-                        tax: item.tax_amount || 0,
-                        taxRate: item.tax_rate || 0,
-                        net: item.total_amount || 0
+                        price:    fmt(item.unit_price),
+                        discount: fmt(item.discount_amount),
+                        discountBadgeLabel: fmt(item.discount_amount) > 0 ? `-₹${fmt(item.discount_amount).toFixed(2)}` : '',
+                        tax: fmt(item.tax_amount), taxRate: item.tax_rate || 0, net: fmt(item.total_amount)
                     })),
-                    itemCount: o.items_count || (o.items ? o.items.length : 0),
-                    total: formatMoney(o.net_amount),
-                    subtotal: (o.items || []).reduce((sum, item) => sum + (formatMoney(item.unit_price) * formatMoney(item.quantity)), 0),
-                    taxTotal: formatMoney(o.tax_amount),
-                    discountTotal: Math.max(0, (o.items || []).reduce((sum, item) => sum + (formatMoney(item.unit_price) * formatMoney(item.quantity)), 0) + formatMoney(o.tax_amount) - formatMoney(o.net_amount)),
-                    paymentMethod: formattedPaymentMethod,
-                    couponCode: o.coupon_code || '',
+                    itemCount: o.items_count || o.items?.length || 0,
+                    total:         fmt(o.net_amount),
+                    subtotal:      (o.items || []).reduce((s, i) => s + fmt(i.unit_price) * fmt(i.quantity), 0),
+                    taxTotal:      fmt(o.tax_amount),
+                    discountTotal: fmt(o.discount_amount),
+                    paymentMethod: pmtLabel,
+                    couponCode:    o.coupon_code || '',
                     payments: (o.payments || []).map(p => ({
-                        id: p.id,
-                        amount: formatMoney(p.amount),
-                        method: p.payment_method || 'N/A',
-                        status: p.status || 'N/A',
-                        statusLabel: p.status || 'N/A',
-                        date: p.payment_date || null,
-                        transactionId: p.transaction_id || 'N/A'
+                        id: p.id, amount: fmt(p.amount), method: p.payment_method || 'N/A',
+                        status: p.status || 'N/A', date: p.payment_date || null, transactionId: p.transaction_id || 'N/A'
                     })),
                     original: o
                 };
             },
+
+            // ── Formatters ─────────────────────────────────────────────────────
+            formatDate(str) {
+                if (!str) return '—';
+                return new Date(str).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            },
             formatCurrency(val) {
-                if (!val) return '0.00';
-                return parseFloat(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                return parseFloat(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             },
             formatDateTime(dateStr) {
                 if (!dateStr) return 'N/A';
                 return new Date(dateStr).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
             },
+            getStatusColor(status) {
+                return { open: '#f59e0b', in_progress: '#0ea5e9', resolved: '#10b981', closed: '#6b7280' }[status] || '#6b7280';
+            },
+            getStatusLabel(status) { return (status || '').replace(/_/g, ' ').toUpperCase(); },
+            getPriorityClass(priority) {
+                return {
+                    low:    'bg-secondary bg-opacity-25 text-body',
+                    medium: 'bg-info bg-opacity-25 text-info',
+                    high:   'bg-warning bg-opacity-25 text-warning',
+                    urgent: 'bg-danger bg-opacity-25 text-danger'
+                }[priority] || 'bg-secondary bg-opacity-25 text-body';
+            },
             getStatusTheme(status) {
-                const themes = {
-                    pending: 'warning',
-                    pending_confirmation: 'info',
-                    confirmed: 'primary',
-                    processing: 'secondary',
-                    ready_to_ship: 'dark',
-                    dispatched: 'info',
-                    shipped: 'info',
-                    delivered: 'success',
-                    cancelled: 'danger',
-                    returned: 'danger'
-                };
-                return themes[status] || 'secondary';
+                return { pending:'warning', pending_confirmation:'info', confirmed:'primary', processing:'secondary', ready_to_ship:'dark', dispatched:'info', shipped:'info', delivered:'success', cancelled:'danger', returned:'danger' }[status] || 'secondary';
             },
 
+            // ── Modal ──────────────────────────────────────────────────────────
             openCreateModal() {
                 this.isEditing = false;
-                this.form = { order_no: '', customer_id: '', category: 'other', priority: 'medium', subject: '', description: '', status: 'open', resolution_notes: '' };
-                this.searchQueryOrder = '';
-                this.fetchedOrders = [];
-                this.selectedOrderDetails = null;
-                this.searchOrderError = '';
+                this.form = { id: null, order_no: '', customer_id: '', category: 'other', priority: 'medium', subject: '', description: '', status: 'open', resolution_notes: '' };
+                this.searchQueryOrder = ''; this.fetchedOrders = []; this.selectedOrderDetails = null; this.searchOrderError = '';
                 this.modalInstance.show();
             },
             viewComplaint(cmp) {
                 this.isEditing = true;
                 this.form = { ...cmp };
                 this.form.order_no = cmp.order?.order_no || '';
-                // Always clear order-lookup state when opening edit mode
-                this.searchQueryOrder = '';
-                this.fetchedOrders = [];
-                this.selectedOrderDetails = null;
-                this.searchOrderError = '';
+                this.searchQueryOrder = ''; this.fetchedOrders = []; this.selectedOrderDetails = null; this.searchOrderError = '';
                 this.modalInstance.show();
             },
-            
+
             async saveComplaint() {
                 this.isSubmitting = true;
                 try {
                     if (this.isEditing) {
-                        await axios.put(`/api/complaints/${this.form.id}`, this.form);
+                        await this.api(`/api/complaints/${this.form.id}`, { method: 'PUT', body: JSON.stringify(this.form) });
                         window.Swal.fire('Updated', 'Complaint updated successfully.', 'success');
                     } else {
-                        await axios.post('/api/complaints', this.form);
+                        await this.api('/api/complaints', { method: 'POST', body: JSON.stringify(this.form) });
                         window.Swal.fire('Created', 'Complaint logged successfully.', 'success');
                     }
                     this.modalInstance.hide();
                     this.fetchComplaints();
                     this.fetchStats();
                 } catch (e) {
-                    const msg = e.response?.data?.message || 'Failed to save complaint.';
+                    const msg = e.data?.message || e.data?.errors ? Object.values(e.data.errors || {}).flat().join(' ') : 'Failed to save complaint.';
                     window.Swal.fire('Error', msg, 'error');
                 }
                 this.isSubmitting = false;
@@ -856,28 +801,24 @@
 
             async bulkAction(action) {
                 if (!this.selectedComplaints.length) return;
-                
                 const confirmed = await window.Swal.fire({
                     title: 'Are you sure?',
                     text: `You are about to ${action} ${this.selectedComplaints.length} complaint(s).`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, proceed!'
+                    icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, proceed!'
                 });
                 if (!confirmed.isConfirmed) return;
-
                 this.isSubmitting = true;
                 try {
-                    await axios.post('/api/complaints/bulk-action', {
-                        action: action,
-                        ids: this.selectedComplaints
+                    await this.api('/api/complaints/bulk-action', {
+                        method: 'POST',
+                        body: JSON.stringify({ action, ids: this.selectedComplaints })
                     });
                     window.Swal.fire('Success', 'Bulk action completed.', 'success');
                     this.selectedComplaints = [];
                     this.fetchComplaints();
                     this.fetchStats();
                 } catch (e) {
-                    window.Swal.fire('Error', 'Bulk action failed.', 'error');
+                    window.Swal.fire('Error', e.data?.message || 'Bulk action failed.', 'error');
                 }
                 this.isSubmitting = false;
             }
@@ -885,3 +826,4 @@
     });
 </script>
 @endpush
+
