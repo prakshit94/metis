@@ -31,7 +31,7 @@ class OrderComplaintController extends Controller implements HasMiddleware
     {
         if ($request->wantsJson() || $request->ajax() || $request->is('api/*')) {
             try {
-                $query = OrderComplaint::with(['order', 'customer', 'assignee', 'creator', 'statusLogs.user', 'replies.user']);
+                $query = OrderComplaint::with(['order', 'customer', 'assignee', 'creator', 'statusLogs.user', 'replies.user', 'audits.user']);
 
             // Visibility Logic
             if (!auth()->user()->hasPermissionTo('complaints.view-all')) {

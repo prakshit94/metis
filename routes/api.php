@@ -188,6 +188,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'index'])->name('index');
         Route::post('/', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'store'])->name('store');
         Route::put('/{complaint}', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'update'])->name('update');
+        Route::post('/{complaint}/reply', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'reply'])->name('reply');
         Route::delete('/{complaint}', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/restore', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'restore'])->name('restore');
         Route::delete('/{id}/force-delete', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'forceDelete'])->name('force-delete');
