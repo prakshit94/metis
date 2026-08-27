@@ -512,6 +512,10 @@ class OrderController extends Controller implements HasMiddleware
                 'referredOrders as total_referred_orders_placed',
                 'referredOrders as total_referred_orders_delivered' => function ($q) {
                     $q->where('orders.status', 'delivered');
+                },
+                'complaints as total_complaints',
+                'complaints as active_complaints' => function ($q) {
+                    $q->whereNotIn('status', ['resolved', 'closed']);
                 }
             ])->find(request()->integer('customer_id'));
             
@@ -565,6 +569,10 @@ class OrderController extends Controller implements HasMiddleware
                     'referredOrders as total_referred_orders_placed',
                     'referredOrders as total_referred_orders_delivered' => function ($q) {
                         $q->where('orders.status', 'delivered');
+                    },
+                    'complaints as total_complaints',
+                    'complaints as active_complaints' => function ($q) {
+                        $q->whereNotIn('status', ['resolved', 'closed']);
                     }
                 ])->find($initialOrder->party_id);
             }
@@ -609,6 +617,13 @@ class OrderController extends Controller implements HasMiddleware
     {
         $order->load(['party', 'warehouse', 'items.product', 'shippingAddress', 'billingAddress', 'appliedOffer']);
         
+        $order->party->loadCount([
+            'complaints as total_complaints',
+            'complaints as active_complaints' => function ($q) {
+                $q->whereNotIn('status', ['resolved', 'closed']);
+            }
+        ]);
+
         $warehouses = Warehouse::orderBy('name')->get();
         $parties = Party::orderBy('firstname')->get();
         $categories = Category::where('is_active', true)->orderBy('name')->get();

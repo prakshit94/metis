@@ -242,6 +242,10 @@ class CustomerController extends Controller implements HasMiddleware
                 'referredOrders as total_referred_orders_placed',
                 'referredOrders as total_referred_orders_delivered' => function ($q) {
                     $q->where('orders.status', 'delivered');
+                },
+                'complaints as total_complaints',
+                'complaints as active_complaints' => function ($q) {
+                    $q->whereNotIn('status', ['resolved', 'closed']);
                 }
             ])
             ->with([

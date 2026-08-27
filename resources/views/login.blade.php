@@ -5,7 +5,14 @@
 @section('page', 'login')
 
 @section('content')
-<div class="auth-page position-relative min-vh-100 d-flex align-items-center justify-content-center py-5" id="main-content" style="background-image: url('{{ asset('assets/images/background.png') }}'); background-size: cover; background-position: center; background-attachment: fixed;">
+@php
+    $loginBg = \App\Models\SystemSetting::where('key', 'login_background_image')->value('value');
+    if ($loginBg) {
+        $loginBg = parse_url($loginBg, PHP_URL_PATH) ?: $loginBg;
+    }
+    $bgImage = $loginBg ? $loginBg : asset('assets/images/background.png');
+@endphp
+<div class="auth-page position-relative min-vh-100 d-flex align-items-center justify-content-center py-5" id="main-content" style="background: url('{{ $bgImage }}') center center / cover no-repeat fixed !important;">
     
     <!-- Overlay for better contrast with the background image -->
     <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.35);"></div>

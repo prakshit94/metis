@@ -139,6 +139,11 @@ class Customer extends Model implements Auditable
         return $this->hasMany(self::class, 'id')->whereRaw('0=1'); // empty relation fallback
     }
 
+    public function complaints(): HasMany
+    {
+        return $this->hasMany(\App\Modules\Orders\Models\OrderComplaint::class, 'customer_id');
+    }
+
     public function referredOrders(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
     {
         return $this->hasManyThrough(Order::class, self::class, 'referred_by', 'party_id');

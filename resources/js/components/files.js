@@ -5,8 +5,9 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('filesComponent', () => ({
     // UI State
     sidebarVisible: false,
-    viewMode: 'grid',
+    viewMode: 'list',
     sortBy: 'name',
+    searchQuery: '',
     selectedFiles: [],
     showUploadZone: false,
     
@@ -25,8 +26,8 @@ document.addEventListener('alpine:init', () => {
     quickAccess: [],
     allFiles: [],
 
-    init() {
-      this.loadSampleData();
+    async init() {
+      await this.loadFiles();
       this.sortFiles();
       
       // Show upload zone if folder is empty
@@ -42,234 +43,44 @@ document.addEventListener('alpine:init', () => {
       return (this.storageTotal - this.storageUsed).toFixed(1);
     },
 
-    loadSampleData() {
-      this.folders = [
-        {
-          id: 1,
-          name: 'Documents',
-          fileCount: 23,
-          icon: 'bi-folder-fill'
-        },
-        {
-          id: 2,
-          name: 'Images',
-          fileCount: 156,
-          icon: 'bi-folder-fill'
-        },
-        {
-          id: 3,
-          name: 'Projects',
-          fileCount: 12,
-          icon: 'bi-folder-fill'
-        },
-        {
-          id: 4,
-          name: 'Shared',
-          fileCount: 8,
-          icon: 'bi-folder-fill'
-        },
-        {
-          id: 5,
-          name: 'Archive',
-          fileCount: 45,
-          icon: 'bi-folder-fill'
-        }
-      ];
+    async loadFiles() {
+      try {
+        const response = await fetch('/api/files');
+        const files = await response.json();
+        
+        this.allFiles = files.map(file => ({ ...file, folder: 'Uploads' }));
+        this.currentFiles = [...this.allFiles];
+        
+        this.folders = [
+          { id: 1, name: 'Uploads', fileCount: this.allFiles.length, icon: 'bi-folder-fill' }
+        ];
 
-      this.allFiles = [
-        {
-          id: 1,
-          name: 'Project Proposal.pdf',
-          type: 'document',
-          typeLabel: 'PDF',
-          icon: 'bi-file-earmark-pdf',
-          size: '2.4 MB',
-          modifiedDate: '2 hours ago',
-          folder: 'Documents'
-        },
-        {
-          id: 2,
-          name: 'Budget Spreadsheet.xlsx',
-          type: 'spreadsheet',
-          typeLabel: 'Excel',
-          icon: 'bi-file-earmark-spreadsheet',
-          size: '856 KB',
-          modifiedDate: '1 day ago',
-          folder: 'Documents'
-        },
-        {
-          id: 3,
-          name: 'Team Photo.jpg',
-          type: 'image',
-          typeLabel: 'Image',
-          icon: 'bi-file-earmark-image',
-          size: '4.2 MB',
-          modifiedDate: '3 days ago',
-          folder: 'Images'
-        },
-        {
-          id: 4,
-          name: 'Marketing Presentation.pptx',
-          type: 'presentation',
-          typeLabel: 'PowerPoint',
-          icon: 'bi-file-earmark-ppt',
-          size: '12.8 MB',
-          modifiedDate: '1 week ago',
-          folder: 'Documents'
-        },
-        {
-          id: 5,
-          name: 'Demo Video.mp4',
-          type: 'video',
-          typeLabel: 'Video',
-          icon: 'bi-file-earmark-play',
-          size: '145 MB',
-          modifiedDate: '2 weeks ago',
-          folder: 'Projects'
-        },
-        {
-          id: 6,
-          name: 'Audio Recording.mp3',
-          type: 'audio',
-          typeLabel: 'Audio',
-          icon: 'bi-file-earmark-music',
-          size: '8.5 MB',
-          modifiedDate: '3 weeks ago',
-          folder: 'Projects'
-        },
-        {
-          id: 7,
-          name: 'Archive.zip',
-          type: 'archive',
-          typeLabel: 'Archive',
-          icon: 'bi-file-earmark-zip',
-          size: '25.6 MB',
-          modifiedDate: '1 month ago',
-          folder: 'Archive'
-        },
-        {
-          id: 8,
-          name: 'Logo Design.ai',
-          type: 'image',
-          typeLabel: 'Illustrator',
-          icon: 'bi-file-earmark-image',
-          size: '3.2 MB',
-          modifiedDate: '2 days ago',
-          folder: 'Images'
-        },
-        {
-          id: 9,
-          name: 'Meeting Notes.docx',
-          type: 'document',
-          typeLabel: 'Word',
-          icon: 'bi-file-earmark-word',
-          size: '124 KB',
-          modifiedDate: '5 hours ago',
-          folder: 'Documents'
-        },
-        {
-          id: 10,
-          name: 'Client Contract.pdf',
-          type: 'document',
-          typeLabel: 'PDF',
-          icon: 'bi-file-earmark-pdf',
-          size: '1.8 MB',
-          modifiedDate: '1 week ago',
-          folder: 'Shared'
-        },
-        {
-          id: 11,
-          name: 'Screenshot.png',
-          type: 'image',
-          typeLabel: 'Image',
-          icon: 'bi-file-earmark-image',
-          size: '956 KB',
-          modifiedDate: '6 hours ago',
-          folder: 'Images'
-        },
-        {
-          id: 12,
-          name: 'Database Backup.sql',
-          type: 'document',
-          typeLabel: 'SQL',
-          icon: 'bi-file-earmark-code',
-          size: '89 MB',
-          modifiedDate: '3 days ago',
-          folder: 'Archive'
-        },
-        {
-          id: 13,
-          name: 'Product Catalog.pdf',
-          type: 'document',
-          typeLabel: 'PDF',
-          icon: 'bi-file-earmark-pdf',
-          size: '5.7 MB',
-          modifiedDate: '4 days ago',
-          folder: 'Shared'
-        },
-        {
-          id: 14,
-          name: 'Website Mockup.psd',
-          type: 'image',
-          typeLabel: 'Photoshop',
-          icon: 'bi-file-earmark-image',
-          size: '67 MB',
-          modifiedDate: '1 week ago',
-          folder: 'Projects'
-        },
-        {
-          id: 15,
-          name: 'Financial Report.xlsx',
-          type: 'spreadsheet',
-          typeLabel: 'Excel',
-          icon: 'bi-file-earmark-spreadsheet',
-          size: '2.1 MB',
-          modifiedDate: '2 weeks ago',
-          folder: 'Documents'
-        }
-      ];
+        this.recentFiles = [...this.allFiles].sort((a, b) => new Date(b.modifiedDate) - new Date(a.modifiedDate)).slice(0, 5);
+        
+        this.quickAccess = [
+          { name: 'Recent', icon: 'bi-clock-history', count: this.recentFiles.length, type: 'recent' },
+          { name: 'Images', icon: 'bi-image', count: this.allFiles.filter(f => f.type === 'image').length, type: 'images' },
+          { name: 'Documents', icon: 'bi-file-earmark-text', count: this.allFiles.filter(f => f.type === 'document').length, type: 'documents' }
+        ];
 
-      // Initialize current files (show all files by default)
-      this.currentFiles = [...this.allFiles];
+        this.sortFiles();
+      } catch (error) {
+        console.error('Error loading files:', error);
+        this.showNotification('Failed to load files', 'error');
+      }
+    },
 
-      // Recent files (last 5 files)
-      this.recentFiles = this.allFiles
-        .sort((a, b) => this.getModifiedTimestamp(a.modifiedDate) - this.getModifiedTimestamp(b.modifiedDate))
-        .reverse()
-        .slice(0, 5);
-
-      this.quickAccess = [
-        {
-          name: 'Recent',
-          icon: 'bi-clock-history',
-          count: this.recentFiles.length,
-          type: 'recent'
-        },
-        {
-          name: 'Images',
-          icon: 'bi-image',
-          count: this.allFiles.filter(f => f.type === 'image').length,
-          type: 'images'
-        },
-        {
-          name: 'Documents',
-          icon: 'bi-file-earmark-text',
-          count: this.allFiles.filter(f => f.type === 'document').length,
-          type: 'documents'
-        },
-        {
-          name: 'Shared',
-          icon: 'bi-people',
-          count: this.allFiles.filter(f => f.folder === 'Shared').length,
-          type: 'shared'
-        },
-        {
-          name: 'Trash',
-          icon: 'bi-trash',
-          count: 0,
-          type: 'trash'
-        }
-      ];
+    filterFiles() {
+      if (!this.searchQuery) {
+        this.currentFiles = [...this.allFiles];
+      } else {
+        const query = this.searchQuery.toLowerCase();
+        this.currentFiles = this.allFiles.filter(file => 
+          file.name.toLowerCase().includes(query) || 
+          file.type.toLowerCase().includes(query)
+        );
+      }
+      this.sortFiles();
     },
 
     getModifiedTimestamp(modifiedStr) {
@@ -460,6 +271,7 @@ document.addEventListener('alpine:init', () => {
           title: `Opening ${file.name}`,
           html: `
             <div class="text-start">
+              ${file.type === 'image' ? `<div class="mb-4 text-center"><img src="${file.url}" alt="Preview" class="img-fluid rounded shadow-sm border border-secondary border-opacity-25" style="max-height: 250px; object-fit: contain;"></div>` : ''}
               <p><strong>📁 File:</strong> ${file.name}</p>
               <p><strong>📏 Size:</strong> ${file.size}</p>
               <p><strong>📅 Modified:</strong> ${file.modifiedDate}</p>
@@ -471,7 +283,15 @@ document.addEventListener('alpine:init', () => {
           showCancelButton: true,
           confirmButtonText: 'Open',
           cancelButtonText: 'Close',
-          confirmButtonColor: 'var(--bs-primary)'
+          customClass: {
+            confirmButton: 'btn btn-primary me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+            title: 'text-body-emphasis fs-4 fw-bold mt-2',
+            htmlContainer: 'text-body'
+          },
+          buttonsStyling: false,
+          background: 'transparent'
         }).then((result) => {
           if (result.isConfirmed) {
             this.showNotification(`Opening ${file.name} in default application...`, 'success');
@@ -483,11 +303,12 @@ document.addEventListener('alpine:init', () => {
     },
 
     downloadFile(file) {
-      this.showNotification(`📥 Downloading ${file.name}...`, 'success');
-      // Simulate download progress
-      setTimeout(() => {
-        this.showNotification(`✅ ${file.name} downloaded successfully!`, 'success');
-      }, 2000);
+      const a = document.createElement('a');
+      a.href = file.url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     },
 
     downloadSelected() {
@@ -504,13 +325,19 @@ document.addEventListener('alpine:init', () => {
           showCancelButton: true,
           confirmButtonText: 'Download ZIP',
           cancelButtonText: 'Cancel',
-          confirmButtonColor: 'var(--bs-primary)'
+          customClass: {
+            confirmButton: 'btn btn-primary me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+            title: 'text-body-emphasis fs-4 fw-bold mt-2',
+            htmlContainer: 'text-body-secondary'
+          },
+          buttonsStyling: false,
+          background: 'transparent'
         }).then((result) => {
           if (result.isConfirmed) {
-            this.showNotification(`📦 Creating ZIP archive with ${this.selectedFiles.length} files...`, 'success');
-            setTimeout(() => {
-              this.showNotification(`✅ ZIP archive downloaded successfully!`, 'success');
-            }, 3000);
+            this.showNotification(`📦 Creating ZIP archive with ${this.selectedFiles.length} files...`, 'info');
+            this.performZipDownload();
           }
         });
       } else {
@@ -526,11 +353,11 @@ document.addEventListener('alpine:init', () => {
             <div class="text-start">
               <div class="mb-3">
                 <label class="form-label">Share with:</label>
-                <input type="email" class="form-control" placeholder="Enter email address..." id="shareEmail">
+                <input type="email" class="form-control bg-body text-body border-secondary border-opacity-25" placeholder="Enter email address..." id="shareEmail">
               </div>
               <div class="mb-3">
                 <label class="form-label">Permissions:</label>
-                <select class="form-select" id="sharePermissions">
+                <select class="form-select bg-body text-body border-secondary border-opacity-25" id="sharePermissions">
                   <option value="view">View only</option>
                   <option value="edit">Can edit</option>
                   <option value="download">Can download</option>
@@ -539,7 +366,7 @@ document.addEventListener('alpine:init', () => {
               <div class="mb-3">
                 <label class="form-label">Share link:</label>
                 <div class="input-group">
-                  <input type="text" class="form-control" value="https://files.app/share/${file.id}" readonly>
+                  <input type="text" class="form-control bg-body text-body border-secondary border-opacity-25" value="https://files.app/share/${file.id}" readonly>
                   <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText('https://files.app/share/${file.id}')">Copy</button>
                 </div>
               </div>
@@ -548,7 +375,15 @@ document.addEventListener('alpine:init', () => {
           showCancelButton: true,
           confirmButtonText: 'Send Invite',
           cancelButtonText: 'Close',
-          confirmButtonColor: 'var(--bs-primary)'
+          customClass: {
+            confirmButton: 'btn btn-primary me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+            title: 'text-body-emphasis fs-4 fw-bold mt-2',
+            htmlContainer: 'text-body'
+          },
+          buttonsStyling: false,
+          background: 'transparent'
         });
       } else {
         this.showNotification('Share dialog would open here', 'info');
@@ -565,7 +400,16 @@ document.addEventListener('alpine:init', () => {
           showCancelButton: true,
           confirmButtonText: 'Rename',
           cancelButtonText: 'Cancel',
-          confirmButtonColor: 'var(--bs-primary)',
+          customClass: {
+            confirmButton: 'btn btn-primary me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+            title: 'text-body-emphasis fs-4 fw-bold mt-2',
+            input: 'form-control bg-body text-body border-secondary border-opacity-25',
+            htmlContainer: 'text-body-secondary'
+          },
+          buttonsStyling: false,
+          background: 'transparent',
           inputValidator: (value) => {
             if (!value || value.trim() === '') {
               return 'Please enter a valid file name';
@@ -577,16 +421,73 @@ document.addEventListener('alpine:init', () => {
         }).then((result) => {
           if (result.isConfirmed && result.value) {
             const oldName = file.name;
-            file.name = result.value.trim();
-            this.showNotification(`📝 "${oldName}" renamed to "${file.name}"`, 'success');
+            const newName = result.value.trim();
+            this.performFileRename(file, oldName, newName);
           }
         });
       } else {
         const newName = prompt('Enter new file name:', file.name);
         if (newName && newName !== file.name) {
-          file.name = newName;
-          this.showNotification('File renamed successfully', 'success');
+          this.performFileRename(file, file.name, newName);
         }
+      }
+    },
+
+    async performZipDownload() {
+      try {
+        const filesToDownload = this.currentFiles.filter(f => this.selectedFiles.includes(f.id)).map(f => f.id);
+        
+        const response = await fetch('/api/files/download-zip', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            },
+            body: JSON.stringify({ ids: filesToDownload })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'download_' + new Date().getTime() + '.zip';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            this.showNotification(`✅ ZIP archive downloaded successfully!`, 'success');
+            this.selectedFiles = [];
+        } else {
+            this.showNotification('Failed to create ZIP', 'error');
+        }
+      } catch (error) {
+        console.error('Download failed', error);
+        this.showNotification('Download failed', 'error');
+      }
+    },
+
+    async performFileRename(file, oldName, newName) {
+      try {
+        const response = await fetch('/api/files/rename', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            },
+            body: JSON.stringify({ id: file.id, newName })
+        });
+        
+        if (response.ok) {
+            this.showNotification(`📝 "${oldName}" renamed to "${newName}"`, 'success');
+            this.loadFiles();
+        } else {
+            const error = await response.json();
+            this.showNotification(error.error || 'Failed to rename file', 'error');
+        }
+      } catch (error) {
+        console.error('Rename failed', error);
+        this.showNotification('Rename failed', 'error');
       }
     },
 
@@ -599,8 +500,15 @@ document.addEventListener('alpine:init', () => {
           showCancelButton: true,
           confirmButtonText: 'Delete',
           cancelButtonText: 'Cancel',
-          confirmButtonColor: 'var(--bs-danger)',
-          cancelButtonColor: 'var(--bs-secondary)'
+          customClass: {
+            confirmButton: 'btn btn-danger me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+            title: 'text-body-emphasis fs-4 fw-bold mt-2',
+            htmlContainer: 'text-body-secondary'
+          },
+          buttonsStyling: false,
+          background: 'transparent'
         }).then((result) => {
           if (result.isConfirmed) {
             this.performFileDelete(file);
@@ -615,18 +523,40 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    performFileDelete(file) {
-      const index = this.currentFiles.findIndex(f => f.id === file.id);
-      if (index > -1) {
-        this.currentFiles.splice(index, 1);
+    async performFileDelete(file) {
+      try {
+        await fetch('/api/files', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            },
+            body: JSON.stringify({ id: file.id })
+        });
+        this.selectedFiles = this.selectedFiles.filter(id => id !== file.id);
+        this.loadFiles();
+      } catch (error) {
+        console.error('Delete failed', error);
+        this.showNotification('Delete failed', 'error');
       }
-      
-      const allIndex = this.allFiles.findIndex(f => f.id === file.id);
-      if (allIndex > -1) {
-        this.allFiles.splice(allIndex, 1);
-      }
-      
-      this.selectedFiles = this.selectedFiles.filter(id => id !== file.id);
+    },
+
+    async setLoginBackground(file) {
+        try {
+            await fetch('/api/files/login-background', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                },
+                body: JSON.stringify({ url: file.url })
+            });
+            this.showNotification('Login background updated', 'success');
+            this.loadFiles();
+        } catch (error) {
+            console.error('Failed to set login background', error);
+            this.showNotification('Failed to update background', 'error');
+        }
     },
 
     deleteSelected() {
@@ -643,13 +573,20 @@ document.addEventListener('alpine:init', () => {
           showCancelButton: true,
           confirmButtonText: 'Delete All',
           cancelButtonText: 'Cancel',
-          confirmButtonColor: 'var(--bs-danger)',
-          cancelButtonColor: 'var(--bs-secondary)'
-        }).then((result) => {
+          customClass: {
+            confirmButton: 'btn btn-danger me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+            title: 'text-body-emphasis fs-4 fw-bold mt-2',
+            htmlContainer: 'text-body-secondary'
+          },
+          buttonsStyling: false,
+          background: 'transparent'
+        }).then(async (result) => {
           if (result.isConfirmed) {
             const deletedCount = this.selectedFiles.length;
-            this.currentFiles = this.currentFiles.filter(f => !this.selectedFiles.includes(f.id));
-            this.allFiles = this.allFiles.filter(f => !this.selectedFiles.includes(f.id));
+            const filesToDelete = this.currentFiles.filter(f => this.selectedFiles.includes(f.id));
+            await Promise.all(filesToDelete.map(f => this.performFileDelete(f)));
             this.selectedFiles = [];
             this.showNotification(`🗑️ ${deletedCount} files moved to trash`, 'success');
           }
@@ -673,7 +610,7 @@ document.addEventListener('alpine:init', () => {
             <div class="text-start">
               <div class="mb-3">
                 <label class="form-label">Select files to upload:</label>
-                <input type="file" class="form-control" multiple accept="*/*" id="fileUpload">
+                <input type="file" class="form-control bg-body text-body border-secondary border-opacity-25" multiple accept="*/*" id="fileUpload">
               </div>
               <div class="mb-3">
                 <div class="form-check">
@@ -692,7 +629,15 @@ document.addEventListener('alpine:init', () => {
           showCancelButton: true,
           confirmButtonText: 'Upload',
           cancelButtonText: 'Cancel',
-          confirmButtonColor: 'var(--bs-primary)',
+          customClass: {
+            confirmButton: 'btn btn-primary me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+            title: 'text-body-emphasis fs-4 fw-bold mt-2',
+            htmlContainer: 'text-body'
+          },
+          buttonsStyling: false,
+          background: 'transparent',
           preConfirm: () => {
             const fileInput = document.getElementById('fileUpload');
             if (fileInput.files.length === 0) {
@@ -703,10 +648,34 @@ document.addEventListener('alpine:init', () => {
           }
         }).then((result) => {
           if (result.isConfirmed) {
-            this.showNotification(`☁️ Uploading ${result.value.length} files...`, 'success');
-            setTimeout(() => {
-              this.showNotification(`✅ ${result.value.length} files uploaded successfully!`, 'success');
-            }, 2500);
+            const files = result.value;
+            this.showNotification(`☁️ Uploading ${files.length} files...`, 'info');
+            
+            Promise.all(files.map(file => {
+                const formData = new FormData();
+                formData.append('file', file);
+                return fetch('/api/files/upload', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                }).then(async response => {
+                    if (!response.ok) {
+                        const err = await response.json().catch(() => ({ message: 'Upload failed' }));
+                        throw new Error(err.message || 'Upload failed');
+                    }
+                    return response.json();
+                });
+            })).then(() => {
+                this.showNotification(`✅ ${files.length} files uploaded successfully!`, 'success');
+                this.loadFiles();
+            }).catch(error => {
+                console.error('Upload failed', error);
+                this.showNotification(error.message || 'Upload failed', 'error');
+            });
           }
         });
       } else {
@@ -723,7 +692,16 @@ document.addEventListener('alpine:init', () => {
           showCancelButton: true,
           confirmButtonText: 'Create',
           cancelButtonText: 'Cancel',
-          confirmButtonColor: 'var(--bs-primary)',
+          customClass: {
+            confirmButton: 'btn btn-primary me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+            title: 'text-body-emphasis fs-4 fw-bold mt-2',
+            input: 'form-control bg-body text-body border-secondary border-opacity-25',
+            htmlContainer: 'text-body-secondary'
+          },
+          buttonsStyling: false,
+          background: 'transparent',
           inputValidator: (value) => {
             if (!value || value.trim() === '') {
               return 'Please enter a folder name';
@@ -777,7 +755,12 @@ document.addEventListener('alpine:init', () => {
           toast: true,
           position: 'top-end',
           showConfirmButton: false,
-          timer: 3000
+          timer: 3000,
+          background: 'transparent',
+          customClass: {
+            popup: 'colored-toast bg-body text-body shadow-lg rounded-3 border-0',
+            title: 'text-body-emphasis'
+          }
         });
       } else {
         alert(message);

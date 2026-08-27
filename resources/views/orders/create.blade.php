@@ -215,7 +215,25 @@
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    <!-- Complaints Stats in Header -->
+                                    <div class="d-flex gap-3 align-items-start border-start ps-3 border-secondary border-opacity-25" x-show="customerDetails.total_complaints > 0" x-cloak>
+                                        <div style="min-width: 110px;">
+                                            <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Complaints</span>
+                                            <div class="d-flex align-items-center gap-1 mt-1">
+                                                <span class="badge text-bg-warning-subtle border border-warning text-warning-emphasis shadow-sm" style="font-size: 10px;">
+                                                    <i class="bi bi-exclamation-circle me-1"></i> Total: <span x-text="customerDetails.total_complaints"></span>
+                                                </span>
+                                                <template x-if="customerDetails.active_complaints > 0">
+                                                    <span class="badge bg-danger shadow-sm" style="font-size: 10px;">
+                                                        <i class="bi bi-activity me-1"></i> Active: <span x-text="customerDetails.active_complaints"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+                                
                                 <div class="d-flex flex-column align-items-end gap-2">
                                     <div x-show="customerDetails.created_at" class="badge text-bg-primary-subtle text-primary-emphasis fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
                                         <i class="bi bi-clock-history me-1"></i> Since: <span x-text="new Date(customerDetails.created_at).toLocaleDateString()"></span> 
@@ -232,15 +250,14 @@
                                 <div class="col-md-6 col-lg-3">
                                     <div class="card h-100 border-0 bg-primary bg-opacity-10 shadow-sm rounded-4">
                                         <div class="card-body p-3">
-                                            <div class="d-flex align-items-center mb-3 border-bottom border-primary border-opacity-25 pb-2">
-                                                <i class="bi bi-person-lines-fill text-primary fs-5 me-2"></i>
+                                            <div class="d-flex align-items-center mb-2 border-bottom border-primary border-opacity-25 pb-1">
+                                                <i class="bi bi-person-lines-fill text-primary me-2"></i>
                                                 <h6 class="fw-bold text-primary mb-0" style="text-transform: uppercase; font-size: 11px;">Contact</h6>
                                             </div>
-                                            <div class="mb-2" x-show="customerDetails.phone"><span class="text-body-secondary d-block small mb-1">Primary Phone</span><span class="fw-bold text-body-emphasis"><i class="bi bi-telephone text-primary me-1"></i><span x-text="customerDetails.phone"></span></span></div>
-                                            <div class="mb-2" x-show="customerDetails.alternatemobile"><span class="text-body-secondary d-block small mb-1">Alt Phone</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.alternatemobile"></span></div>
-                                            <div class="mb-2" x-show="customerDetails.email"><span class="text-body-secondary d-block small mb-1">Email Address</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block w-100" :title="customerDetails.email"><i class="bi bi-envelope text-primary me-1"></i><span x-text="customerDetails.email"></span></span></div>
-                                            <div class="mb-2" x-show="customerDetails.relative_name"><span class="text-body-secondary d-block small mb-1">Relative</span><span class="fw-medium text-body-emphasis" x-text="customerDetails.relative_name + ' (' + customerDetails.relative_phone + ')'"></span></div>
-
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.phone"><span class="text-body-secondary small">Phone</span><span class="fw-bold text-body-emphasis" style="font-size: 11px;"><i class="bi bi-telephone text-primary me-1" style="font-size: 9px;"></i><span x-text="customerDetails.phone"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.alternatemobile"><span class="text-body-secondary small">Alt Phone</span><span class="fw-medium text-body-emphasis" style="font-size: 11px;" x-text="customerDetails.alternatemobile"></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.email"><span class="text-body-secondary small">Email</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block text-end" style="max-width: 130px; font-size: 11px;" :title="customerDetails.email"><span x-text="customerDetails.email"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.relative_name"><span class="text-body-secondary small">Relative</span><span class="fw-medium text-body-emphasis text-end" style="font-size: 11px;" x-text="customerDetails.relative_name + ' (' + customerDetails.relative_phone + ')'"></span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -249,16 +266,16 @@
                                 <div class="col-md-6 col-lg-3" x-show="customerDetails.category === 'business'" x-cloak>
                                     <div class="card h-100 border-0 bg-info bg-opacity-10 shadow-sm rounded-4">
                                         <div class="card-body p-3">
-                                            <div class="d-flex align-items-center mb-3 border-bottom border-info border-opacity-25 pb-2">
-                                                <i class="bi bi-building text-info fs-5 me-2"></i>
+                                            <div class="d-flex align-items-center mb-2 border-bottom border-info border-opacity-25 pb-1">
+                                                <i class="bi bi-building text-info me-2"></i>
                                                 <h6 class="fw-bold text-info mb-0" style="text-transform: uppercase; font-size: 11px;">Business & Identity</h6>
                                             </div>
-                                            <div class="mb-2" x-show="customerDetails.company_name"><span class="text-body-secondary d-block small mb-1">Company</span><span class="fw-bold text-body-emphasis" x-text="customerDetails.company_name"></span></div>
-                                            <div class="mb-2" x-show="customerDetails.category"><span class="text-body-secondary d-block small mb-1">Category</span><span class="fw-medium text-body-emphasis text-capitalize"><span class="badge bg-info text-body-emphasis bg-opacity-25" x-text="customerDetails.category"></span></span></div>
-                                            <div class="mb-2" x-show="customerDetails.gst_no"><span class="text-body-secondary d-block small mb-1">GST Number</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" x-text="customerDetails.gst_no"></span></div>
-                                            <div class="mb-2" x-show="customerDetails.pan_no"><span class="text-body-secondary d-block small mb-1">PAN Number</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" x-text="customerDetails.pan_no"></span></div>
-                                            <div class="mb-2" x-show="customerDetails.aadhaar_last4"><span class="text-body-secondary d-block small mb-1">Aadhaar (Last 4)</span><span class="fw-medium text-body-emphasis font-monospace" x-text="'xxxx-xxxx-' + customerDetails.aadhaar_last4"></span></div>
-                                            <div class="text-center mt-3" x-show="!customerDetails.company_name && !customerDetails.gst_no && !customerDetails.pan_no && !customerDetails.category && !customerDetails.aadhaar_last4"><span class="text-body-secondary fst-italic">No business details</span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.company_name"><span class="text-body-secondary small">Company</span><span class="fw-bold text-body-emphasis text-truncate ms-2" style="font-size: 11px;" x-text="customerDetails.company_name"></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.category"><span class="text-body-secondary small">Category</span><span class="fw-medium text-body-emphasis text-capitalize"><span class="badge bg-info text-body-emphasis bg-opacity-25" style="font-size: 9px;" x-text="customerDetails.category"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.gst_no"><span class="text-body-secondary small">GST No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" style="font-size: 11px;" x-text="customerDetails.gst_no"></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.pan_no"><span class="text-body-secondary small">PAN No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" style="font-size: 11px;" x-text="customerDetails.pan_no"></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.aadhaar_last4"><span class="text-body-secondary small">Aadhaar</span><span class="fw-medium text-body-emphasis font-monospace" style="font-size: 11px;" x-text="'**' + customerDetails.aadhaar_last4"></span></div>
+                                            <div class="text-center mt-2" x-show="!customerDetails.company_name && !customerDetails.gst_no && !customerDetails.pan_no && !customerDetails.category && !customerDetails.aadhaar_last4"><span class="text-body-secondary fst-italic small" style="font-size: 10px;">No business details</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -267,27 +284,27 @@
                                 <div class="col-md-6 col-lg-3">
                                     <div class="card h-100 border-0 bg-success bg-opacity-10 shadow-sm rounded-4">
                                         <div class="card-body p-3">
-                                            <div class="d-flex align-items-center mb-3 border-bottom border-success border-opacity-25 pb-2">
-                                                <i class="bi bi-tree text-success fs-5 me-2"></i>
+                                            <div class="d-flex align-items-center mb-2 border-bottom border-success border-opacity-25 pb-1">
+                                                <i class="bi bi-tree text-success me-2"></i>
                                                 <h6 class="fw-bold text-success mb-0" style="text-transform: uppercase; font-size: 11px;">Agriculture</h6>
                                             </div>
-                                            <div class="mb-2"><span class="text-body-secondary d-block small mb-1">Land Area</span><span class="fw-bold text-body-emphasis"><span x-text="customerDetails.land_area || '0'"></span> <span x-text="customerDetails.land_unit || ''"></span></span></div>
-                                            <div class="mb-2" x-show="customerDetails.crops && customerDetails.crops.length > 0">
-                                                <span class="text-body-secondary d-block small mb-1">Crops</span>
-                                                <div class="d-flex gap-1 flex-wrap">
-                                                    <template x-for="crop in (customerDetails.crops || [])"><span class="badge text-bg-success-subtle text-success-emphasis-emphasis border border-success border-opacity-50" x-text="crop"></span></template>
+                                            <div class="d-flex justify-content-between align-items-center mb-1"><span class="text-body-secondary small">Land Area</span><span class="fw-bold text-body-emphasis" style="font-size: 11px;"><span x-text="customerDetails.land_area || '0'"></span> <span x-text="customerDetails.land_unit || ''"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-start mb-1" x-show="customerDetails.crops && customerDetails.crops.length > 0">
+                                                <span class="text-body-secondary small text-nowrap me-2 mt-1">Crops</span>
+                                                <div class="d-flex gap-1 flex-wrap justify-content-end mt-1">
+                                                    <template x-for="crop in (customerDetails.crops || [])"><span class="badge text-bg-success-subtle text-success-emphasis border border-success border-opacity-50" style="font-size: 9px;" x-text="crop"></span></template>
                                                 </div>
                                             </div>
-                                            <div class="mb-2" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
-                                                <span class="text-body-secondary d-block small mb-1">Irrigation</span>
-                                                <div class="d-flex gap-1 flex-wrap">
-                                                    <template x-for="type in (customerDetails.irrigation_type || [])"><span class="badge bg-success text-white" x-text="type"></span></template>
+                                            <div class="d-flex justify-content-between align-items-start mb-1" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
+                                                <span class="text-body-secondary small text-nowrap me-2 mt-1">Irrigation</span>
+                                                <div class="d-flex gap-1 flex-wrap justify-content-end mt-1">
+                                                    <template x-for="type in (customerDetails.irrigation_type || [])"><span class="badge bg-success text-white" style="font-size: 9px;" x-text="type"></span></template>
                                                 </div>
                                             </div>
-                                            <div class="mb-2" x-show="customerDetails.tags && customerDetails.tags.length > 0">
-                                                <span class="text-body-secondary d-block small mb-1">Tags</span>
-                                                <div class="d-flex gap-1 flex-wrap">
-                                                    <template x-for="tag in (customerDetails.tags || [])"><span class="badge text-bg-secondary-subtle text-secondary-emphasis-emphasis" x-text="tag"></span></template>
+                                            <div class="d-flex justify-content-between align-items-start mb-1" x-show="customerDetails.tags && customerDetails.tags.length > 0">
+                                                <span class="text-body-secondary small text-nowrap me-2 mt-1">Tags</span>
+                                                <div class="d-flex gap-1 flex-wrap justify-content-end mt-1">
+                                                    <template x-for="tag in (customerDetails.tags || [])"><span class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;" x-text="tag"></span></template>
                                                 </div>
                                             </div>
                                         </div>
@@ -298,44 +315,49 @@
                                 <div class="col-md-6 col-lg-3">
                                     <div class="card h-100 border-0 bg-warning bg-opacity-10 shadow-sm rounded-4">
                                         <div class="card-body p-3">
-                                            <div class="d-flex align-items-center mb-3 border-bottom border-warning border-opacity-25 pb-2">
-                                                <i class="bi bi-wallet2 text-warning-emphasis fs-5 me-2"></i>
-                                                <h6 class="fw-bold text-warning-emphasis mb-0" style="text-transform: uppercase; font-size: 11px;">Financial & Stats</h6>
+                                            <div class="d-flex align-items-center mb-2 border-bottom border-warning border-opacity-25 pb-1">
+                                                <i class="bi bi-wallet2 text-warning-emphasis me-2"></i>
+                                                <h6 class="fw-bold text-warning-emphasis mb-0" style="text-transform: uppercase; font-size: 11px;">Financial</h6>
                                             </div>
-                                            <div class="mb-2"><span class="text-body-secondary d-block small mb-1">Credit Limit</span><span class="fw-bold text-body-emphasis">₹ <span x-text="Number(customerDetails.credit_limit || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
-                                            <div class="mb-2"><span class="text-body-secondary d-block small mb-1">Outstanding Bal</span><span class="fw-bold fs-6" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">₹ <span x-text="Number(customerDetails.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
-                                            <div class="mb-2"><span class="text-body-secondary d-block small mb-1">Cashback Wallet</span><span class="fw-bold fs-6 text-success">₹ <span x-text="Number(customerDetails.wallet_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1"><span class="text-body-secondary small">Limit</span><span class="fw-bold text-body-emphasis" style="font-size: 11px;">₹ <span x-text="Number(customerDetails.credit_limit || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1"><span class="text-body-secondary small">Outstanding</span><span class="fw-bold" style="font-size: 11px;" :class="Number(customerDetails.outstanding_balance) > 0 ? 'text-danger' : 'text-success'">₹ <span x-text="Number(customerDetails.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1"><span class="text-body-secondary small">Wallet</span><span class="fw-bold text-success" style="font-size: 11px;">₹ <span x-text="Number(customerDetails.wallet_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
                                             
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <div><span class="text-body-secondary d-block small mb-1">Cr. Days</span><span class="fw-medium text-body-emphasis" x-text="(customerDetails.credit_days || '0') + ' Days'"></span></div>
-                                                <div class="text-end" x-show="customerDetails.credit_valid_till"><span class="text-body-secondary d-block small mb-1">Valid Till</span><span class="fw-medium text-body-emphasis" x-text="new Date(customerDetails.credit_valid_till).toLocaleDateString()"></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="text-body-secondary small">Cr. Days</span><span class="fw-medium text-body-emphasis" style="font-size: 11px;" x-text="(customerDetails.credit_days || '0') + ' Days'"></span>
                                             </div>
                                             
-                                            <div class="d-flex justify-content-between align-items-center mb-0 mt-3 pt-2 border-top border-warning border-opacity-25">
-                                                <div><span class="text-body-secondary d-block small mb-1">Total Orders</span><span class="fw-bold text-primary fs-6" x-text="Math.max(customerDetails.orders_count || 0, (customerDetails.orders || []).length)"></span></div>
-                                                <div class="text-end" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
-                                                    <span class="text-body-secondary d-block small mb-1">Total Revenue</span>
-                                                    <span class="fw-bold text-primary fs-6">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status !== 'cancelled').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span>
-                                                </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1 pt-1 border-top border-warning border-opacity-25">
+                                                <span class="text-body-secondary small">Total Orders</span><span class="fw-bold text-primary" style="font-size: 11px;" x-text="Math.max(customerDetails.orders_count || 0, (customerDetails.orders || []).length)"></span>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-0 mt-2" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
-                                                <div><span class="text-body-secondary d-block small mb-1">Delivered</span><span class="fw-medium text-success"><span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').length"></span> <span style="font-size: 10px;" x-text="'(' + (Math.round(((customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').length / ((customerDetails.orders || []).length || 1)) * 100) || 0) + '%)'"></span></span></div>
-                                                <div class="text-end"><span class="text-body-secondary d-block small mb-1">Returned</span><span class="fw-medium text-danger"><span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').length"></span> <span style="font-size: 10px;" x-text="'(' + (Math.round(((customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').length / ((customerDetails.orders || []).length || 1)) * 100) || 0) + '%)'"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
+                                                <span class="text-body-secondary small">Total Revenue</span>
+                                                <span class="fw-bold text-primary" style="font-size: 11px;">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status !== 'cancelled').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-0 mt-2" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
-                                                <div><span class="text-body-secondary d-block small mb-1">Rev. Delivered</span><span class="fw-bold text-success" style="font-size: 11px;">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span></div>
-                                                <div class="text-end"><span class="text-body-secondary d-block small mb-1">Rev. Returned</span><span class="fw-bold text-danger" style="font-size: 11px;">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
+                                                <span class="text-body-secondary small">Delivered / Rev</span>
+                                                <span class="fw-medium text-success" style="font-size: 10px;">
+                                                    <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').length"></span> | ₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'delivered').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                                                </span>
                                             </div>
-                                            <div class="mb-0 mt-2 pt-2 border-top border-warning border-opacity-25" x-show="customerDetails.last_purchase_at" x-cloak>
-                                                <div class="text-end"><span class="text-body-secondary d-block small mb-1">Last Order</span><span class="fw-medium text-body-emphasis" style="font-size: 11px;" x-text="new Date(customerDetails.last_purchase_at).toLocaleDateString()"></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
+                                                <span class="text-body-secondary small">Returned / Rev</span>
+                                                <span class="fw-medium text-danger" style="font-size: 10px;">
+                                                    <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').length"></span> | ₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status === 'returned').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                                                </span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1 mt-1 pt-1 border-top border-warning border-opacity-25" x-show="customerDetails.orders?.length > 0 || (customerDetails.last_purchase_at && customerDetails.last_purchase_at !== '0000-00-00 00:00:00')" x-cloak>
+                                                <span class="text-body-secondary small">Last Order</span>
+                                                <span class="fw-medium text-body-emphasis" style="font-size: 11px;" x-text="customerDetails.orders?.length > 0 ? new Date(customerDetails.orders[0].created_at).toLocaleDateString() : (new Date(customerDetails.last_purchase_at).getFullYear() > 2000 ? new Date(customerDetails.last_purchase_at).toLocaleDateString() : 'N/A')"></span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
 
-                                <!-- Notes & Status -->
-                                <div class="col-12 mt-2 pt-2 border-top" x-show="customerDetails.internal_notes || customerDetails.is_blacklisted">                                    <div class="d-flex flex-wrap gap-3 align-items-center">
+                                <!-- Notes, Status & Complaints -->
+                                <div class="col-12 mt-2 pt-2 border-top" x-show="customerDetails.internal_notes || customerDetails.is_blacklisted">
+                                    <div class="d-flex flex-wrap gap-3 align-items-center">
                                         <div x-show="customerDetails.is_blacklisted"><span class="badge bg-danger"><i class="bi bi-slash-circle me-1"></i>Blacklisted</span></div>
                                         <div x-show="customerDetails.internal_notes">
                                             <span class="text-body-secondary me-1 fw-bold" style="font-size: 11px; text-transform: uppercase;">Notes:</span>

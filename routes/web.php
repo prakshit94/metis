@@ -155,7 +155,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/reports/export', [PageController::class, 'exportReports'])->name('reports.export');
     Route::get('/messages', [PageController::class, 'messages'])->name('messages');
     Route::get('/calendar', [PageController::class, 'calendar'])->name('calendar');
-    Route::get('/files', [PageController::class, 'files'])->name('files');
+    Route::get('/files', [PageController::class, 'files'])->name('files')->middleware('permission:settings-view');
+    Route::prefix('api/files')->middleware('permission:settings-view')->group(function () {
+        Route::get('/', [\App\Modules\Core\Controllers\FileManagerController::class, 'index']);
+        Route::post('/upload', [\App\Modules\Core\Controllers\FileManagerController::class, 'upload']);
+        Route::delete('/', [\App\Modules\Core\Controllers\FileManagerController::class, 'delete']);
+        Route::post('/rename', [\App\Modules\Core\Controllers\FileManagerController::class, 'rename']);
+        Route::post('/download-zip', [\App\Modules\Core\Controllers\FileManagerController::class, 'downloadZip']);
+        Route::post('/login-background', [\App\Modules\Core\Controllers\FileManagerController::class, 'setLoginBackground']);
+    });
     Route::get('/forms', [PageController::class, 'forms'])->name('forms');
     Route::get('/security', [PageController::class, 'security'])->name('security');
     Route::get('/help', [PageController::class, 'help'])->name('help');

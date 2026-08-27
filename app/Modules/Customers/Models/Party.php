@@ -94,6 +94,11 @@ class Party extends Model implements Auditable
         return $this->hasMany(Order::class, 'party_id');
     }
 
+    public function complaints(): HasMany
+    {
+        return $this->hasMany(\App\Modules\Orders\Models\OrderComplaint::class, 'customer_id');
+    }
+
     public function addresses(): HasMany
     {
         return $this->hasMany(PartyAddress::class, 'party_id');

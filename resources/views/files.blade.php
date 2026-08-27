@@ -4,270 +4,246 @@
 @section('page', 'files')
 
 @section('content')
-<div class="container-fluid p-4 p-lg-4">
-                    
-                    <!-- Files Container with Header -->
-                    <div class="files-page" x-data="filesComponent" x-init="init()">
-                        <!-- Page Header -->
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <h1 class="h3 mb-0">File Manager</h1>
-                                <p class="text-muted mb-0">Organize, share, and manage your files</p>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-outline-secondary d-lg-none" @click="toggleSidebar()">
-                                    <i class="bi bi-folder me-2"></i>Folders
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary" @click="createFolder()">
-                                    <i class="bi bi-folder-plus me-2"></i>New Folder
-                                </button>
-                                <button type="button" class="btn btn-primary" @click="uploadFile()">
-                                    <i class="bi bi-cloud-upload me-2"></i>Upload
-                                </button>
-                            </div>
-                        </div>
+<div class="files-management" x-data="filesComponent" x-init="init()">
+    {{-- Page Header --}}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 fw-bold"><i class="bi bi-folder-fill text-primary me-2"></i>File Manager</h1>
+            <p class="text-muted mb-0 small">Organize, share, and manage your files.</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" @click="uploadFile()">
+                <i class="bi bi-cloud-upload me-1"></i>Upload File
+            </button>
+        </div>
+    </div>
 
-                        <!-- Files Layout -->
-                        <div class="files-layout">
-                        <div class="row g-3 h-100">
-                            
-                            <!-- Files Sidebar -->
-                            <div class="col-lg-3 files-sidebar" :class="{ 'show': sidebarVisible }">
-                                
-                                <!-- Files Header -->
-                                <div class="sidebar-section">
-                                    <h5><i class="bi bi-folder2-open me-2"></i>My Files</h5>
-                                </div>
-                                
-                                <!-- Storage Info -->
-                                <div class="storage-info">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <h6 class="mb-0">Storage Used</h6>
-                                        <span class="small" x-text="`${storageUsed}GB of ${storageTotal}GB`"></span>
-                                    </div>
-                                    <div class="storage-bar">
-                                        <div class="storage-progress" :style="`width: ${storagePercentage}%`"></div>
-                                    </div>
-                                    <div class="mt-2">
-                                        <small x-text="`${storageRemaining}GB remaining`"></small>
-                                    </div>
-                                </div>
-
-                                <!-- Quick Access -->
-                                <div class="sidebar-section">
-                                    <h6 class="fw-bold mb-3">Quick Access</h6>
-                                    <div class="list-group list-group-flush">
-                                        <template x-for="item in quickAccess" :key="item.name">
-                                            <a href="#" class="list-group-item list-group-item-action border-0 px-0 py-2" @click="navigateToQuickAccess(item)">
-                                                <i :class="item.icon" class="me-2"></i>
-                                                <span x-text="item.name"></span>
-                                                <span class="badge bg-light text-dark ms-auto" x-text="item.count"></span>
-                                            </a>
-                                        </template>
-                                    </div>
-                                </div>
-
-                                <!-- Folders -->
-                                <div class="sidebar-section">
-                                    <h6 class="fw-bold mb-3">My Folders</h6>
-                                    <div class="folder-list">
-                                        <template x-for="folder in folders" :key="folder.id">
-                                            <div class="folder-item mb-2" @click="openFolder(folder)">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="bi bi-folder-fill text-primary me-2"></i>
-                                                    <div class="flex-grow-1">
-                                                        <div class="fw-medium" x-text="folder.name"></div>
-                                                        <small class="text-muted" x-text="`${folder.fileCount} files`"></small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
-
-                                <!-- Recent Files -->
-                                <div class="sidebar-section flex-grow-1">
-                                    <h6 class="fw-bold mb-3">Recent Files</h6>
-                                    <div class="recent-files">
-                                        <template x-for="file in recentFiles" :key="file.id">
-                                            <div class="recent-file-item" @click="openFile(file)">
-                                                <div :class="`file-icon ${file.type}`">
-                                                    <i :class="file.icon"></i>
-                                                </div>
-                                                <div class="flex-grow-1 min-width-0">
-                                                    <div class="fw-medium text-truncate" x-text="file.name"></div>
-                                                    <small class="text-muted" x-text="file.modifiedDate"></small>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Files Main Area -->
-                            <div class="col-lg-9 files-main">
-                                
-                                <!-- Files Main Header -->
-                                <div class="files-main-header">
-                                    <!-- Breadcrumb Navigation -->
-                                    <nav aria-label="breadcrumb" class="mb-3">
-                                        <ol class="breadcrumb mb-0">
-                                            <template x-for="(crumb, index) in breadcrumbs" :key="index">
-                                                <li class="breadcrumb-item" :class="{ 'active': index === breadcrumbs.length - 1 }">
-                                                    <a href="#" x-text="crumb.name" @click.prevent="navigateToBreadcrumb(index)" x-show="index < breadcrumbs.length - 1"></a>
-                                                    <span x-text="crumb.name" x-show="index === breadcrumbs.length - 1"></span>
-                                                </li>
-                                            </template>
-                                        </ol>
-                                    </nav>
-
-                                    <!-- Toolbar -->
-                                    <div class="d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="view-toggle">
-                                            <button class="view-btn" :class="{ 'active': viewMode === 'grid' }" @click="setViewMode('grid')">
-                                                <i class="bi bi-grid"></i>
-                                            </button>
-                                            <button class="view-btn" :class="{ 'active': viewMode === 'list' }" @click="setViewMode('list')">
-                                                <i class="bi bi-list-ul"></i>
-                                            </button>
-                                        </div>
-                                        <select x-select class="form-select form-select-sm" style="width: auto;" x-model="sortBy" @change="sortFiles()">
-                                            <option value="name">Sort by Name</option>
-                                            <option value="date">Sort by Date</option>
-                                            <option value="size">Sort by Size</option>
-                                            <option value="type">Sort by Type</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="d-flex gap-2">
-                                        <button class="btn btn-sm btn-outline-secondary" @click="refreshFiles()">
-                                            <i class="bi bi-arrow-clockwise"></i>
-                                        </button>
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                <i class="bi bi-three-dots"></i>
-                                            </button>
-                                            <ul class="dropdown-menu">
-                                                <li><a class="dropdown-item" href="#" @click="selectAll()">
-                                                    <i class="bi bi-check-all me-2"></i>Select All
-                                                </a></li>
-                                                <li><a class="dropdown-item" href="#" @click="downloadSelected()">
-                                                    <i class="bi bi-download me-2"></i>Download Selected
-                                                </a></li>
-                                                <li><a class="dropdown-item" href="#" @click="deleteSelected()">
-                                                    <i class="bi bi-trash me-2"></i>Delete Selected
-                                                </a></li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                                </div>
-
-                                <!-- Files Grid/List -->
-                                <div x-show="currentFiles.length === 0 && !showUploadZone" class="text-center py-5">
-                                    <i class="bi bi-folder2-open fs-1 text-muted mb-3"></i>
-                                    <h5 class="text-muted">This folder is empty</h5>
-                                    <p class="text-muted">Upload your first file or create a new folder</p>
-                                    <button class="btn btn-primary" @click="uploadFile()">
-                                        <i class="bi bi-cloud-upload me-2"></i>Upload Files
-                                    </button>
-                                </div>
-
-                                <!-- Upload Zone -->
-                                <div x-show="showUploadZone" class="upload-zone mb-4" @click="uploadFile()">
-                                    <i class="bi bi-cloud-upload fs-1 text-muted mb-3"></i>
-                                    <h5 class="text-muted">Drop files here to upload</h5>
-                                    <p class="text-muted">or click to browse files</p>
-                                </div>
-
-                                <!-- Grid View -->
-                                <div x-show="viewMode === 'grid' && currentFiles.length > 0" class="file-grid">
-                                    <template x-for="file in currentFiles" :key="file.id">
-                                        <div class="file-item" :class="{ 'selected': selectedFiles.includes(file.id) }" @click="selectFile(file)" @dblclick="openFile(file)">
-                                            <div :class="`file-icon ${file.type}`">
-                                                <i :class="file.icon"></i>
-                                            </div>
-                                            <div class="file-name fw-medium text-truncate" x-text="file.name"></div>
-                                            <div class="file-size" x-text="file.size"></div>
-                                            <div class="file-date" x-text="file.modifiedDate"></div>
-                                        </div>
-                                    </template>
-                                </div>
-
-                                <!-- List View -->
-                                <div x-show="viewMode === 'list' && currentFiles.length > 0" class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th style="width: 40px;">
-                                                    <input type="checkbox" class="form-check-input" @change="toggleSelectAll()">
-                                                </th>
-                                                <th>Name</th>
-                                                <th>Size</th>
-                                                <th>Modified</th>
-                                                <th>Type</th>
-                                                <th style="width: 100px;">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <template x-for="file in currentFiles" :key="file.id">
-                                                <tr :class="{ 'table-active': selectedFiles.includes(file.id) }">
-                                                    <td>
-                                                        <input type="checkbox" class="form-check-input" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)">
-                                                    </td>
-                                                    <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <div :class="`file-icon ${file.type}`" class="me-3">
-                                                                <i :class="file.icon"></i>
-                                                            </div>
-                                                            <span class="fw-medium" x-text="file.name"></span>
-                                                        </div>
-                                                    </td>
-                                                    <td x-text="file.size"></td>
-                                                    <td x-text="file.modifiedDate"></td>
-                                                    <td>
-                                                        <span class="badge" x-text="file.typeLabel"></span>
-                                                    </td>
-                                                    <td>
-                                                        <div class="dropdown">
-                                                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
-                                                                <i class="bi bi-three-dots"></i>
-                                                            </button>
-                                                            <ul class="dropdown-menu">
-                                                                <li><a class="dropdown-item" href="#" @click="downloadFile(file)">
-                                                                    <i class="bi bi-download me-2"></i>Download
-                                                                </a></li>
-                                                                <li><a class="dropdown-item" href="#" @click="shareFile(file)">
-                                                                    <i class="bi bi-share me-2"></i>Share
-                                                                </a></li>
-                                                                <li><a class="dropdown-item" href="#" @click="renameFile(file)">
-                                                                    <i class="bi bi-pencil me-2"></i>Rename
-                                                                </a></li>
-                                                                <li><hr class="dropdown-divider"></li>
-                                                                <li><a class="dropdown-item text-danger" href="#" @click="deleteFile(file)">
-                                                                    <i class="bi bi-trash me-2"></i>Delete
-                                                                </a></li>
-                                                            </ul>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                            </div>
-
-                        </div>
+    {{-- Stats Cards --}}
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stats-icon bg-primary bg-opacity-10 text-primary fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-folder2-open"></i></div>
+                        <div>
+                            <p class="mb-1 small text-muted">Total Files</p>
+                            <div class="h4 mb-0 fw-bold" x-text="allFiles.length || '0'"></div>
                         </div>
                     </div>
-
                 </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stats-icon bg-info bg-opacity-10 text-info fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-image"></i></div>
+                        <div>
+                            <p class="mb-1 small text-muted">Images</p>
+                            <div class="h4 mb-0 fw-bold text-info" x-text="allFiles.filter(f => f.type === 'image').length || '0'"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stats-icon bg-warning bg-opacity-10 text-warning fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-hdd-fill"></i></div>
+                        <div class="w-100">
+                            <p class="mb-1 small text-muted d-flex justify-content-between"><span>Storage Used</span><span x-text="`${storagePercentage.toFixed(0)}%`"></span></p>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-warning" :style="`width: ${storagePercentage}%`"></div>
+                            </div>
+                            <small class="text-muted mt-1 d-block" x-text="`${storageUsed}GB of ${storageTotal}GB`"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stats-icon bg-success bg-opacity-10 text-success fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-hdd-network-fill"></i></div>
+                        <div>
+                            <p class="mb-1 small text-muted">Storage Free</p>
+                            <div class="h4 mb-0 fw-bold text-success" x-text="`${storageRemaining} GB`"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Data Table Card --}}
+    <div class="card">
+        <div class="card-header">
+            <div class="row align-items-center g-2">
+                <div class="col"><h2 class="h5 card-title mb-0">Files Overview</h2></div>
+                <div class="col-auto">
+                    <div class="d-flex flex-wrap gap-2 justify-content-end align-items-center">
+                        <div class="position-relative">
+                            <input type="search" class="form-control form-control-sm pe-4" placeholder="Search files..." x-model="searchQuery" @input.debounce.400ms="filterFiles()" style="width:220px;">
+                            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted small"></i>
+                        </div>
+                        <select class="form-select form-select-sm" x-model="sortBy" @change="sortFiles()" style="width:140px;">
+                            <option value="name">Sort by Name</option>
+                            <option value="date">Sort by Date</option>
+                            <option value="size">Sort by Size</option>
+                            <option value="type">Sort by Type</option>
+                        </select>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn" :class="viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary'" @click="viewMode = 'grid'"><i class="bi bi-grid"></i></button>
+                            <button class="btn" :class="viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary'" @click="viewMode = 'list'"><i class="bi bi-list-ul"></i></button>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" @click="refreshFiles()" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            {{-- Bulk Actions Bar --}}
+            <div class="px-3 py-2 border-bottom bg-primary bg-opacity-10" x-show="selectedFiles.length > 0" x-transition x-cloak>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="fw-medium text-primary small">
+                        <i class="bi bi-check-circle-fill me-1"></i>
+                        <strong x-text="selectedFiles.length"></strong> file(s) selected
+                    </span>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-sm btn-primary" @click="downloadSelected()">
+                            <i class="bi bi-download me-1"></i>Download
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @click="deleteSelected()">
+                            <i class="bi bi-trash me-1"></i>Delete
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" @click="selectedFiles = []"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Empty/Upload State --}}
+            <div x-show="currentFiles.length === 0" class="text-center py-5">
+                <i class="bi bi-folder2-open fs-1 text-muted mb-3 d-block opacity-50"></i>
+                <h5 class="text-muted">No files found</h5>
+                <p class="small text-muted mt-1 mb-4">Upload your first file or adjust your search filters.</p>
+                <div class="border border-dashed rounded-3 p-4 mx-auto" style="max-width: 400px; cursor: pointer; background: var(--bs-secondary-bg);" @click="uploadFile()">
+                    <i class="bi bi-cloud-upload fs-3 text-primary mb-2 d-block"></i>
+                    <span class="fw-medium">Click to upload files</span>
+                </div>
+            </div>
+
+            {{-- List View --}}
+            <div class="table-responsive" style="overflow: visible;" x-show="viewMode === 'list' && currentFiles.length > 0" x-cloak>
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:40px;">
+                                <input type="checkbox" class="form-check-input border-secondary" @change="toggleSelectAll()" style="cursor:pointer;">
+                            </th>
+                            <th>Name</th>
+                            <th>Size</th>
+                            <th>Modified</th>
+                            <th>Type</th>
+                            <th style="width:100px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="file in currentFiles" :key="file.id">
+                            <tr :class="{ 'table-active': selectedFiles.includes(file.id) }">
+                                <td>
+                                    <input type="checkbox" class="form-check-input border-secondary" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)" style="cursor:pointer;">
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div :class="file.type !== 'image' ? `file-icon ${file.type} text-center me-3 rounded text-white` : 'me-3'" :style="file.type !== 'image' ? 'width:36px; height:36px; display:flex; align-items:center; justify-content:center; overflow:hidden;' : ''">
+                                            <img x-show="file.type === 'image'" :src="file.url" alt="Preview" class="border" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px;" x-on:error="$el.style.display='none'">
+                                            <i x-show="file.type !== 'image'" :class="file.icon" class="fs-5"></i>
+                                        </div>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-medium small" x-text="file.name"></span>
+                                            <span x-show="file.isLoginBackground" class="badge bg-primary-subtle text-primary-emphasis mt-1 border border-primary-subtle" style="width:fit-content; font-size:0.65rem;">Login Background</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="small text-muted font-monospace" x-text="file.size"></span></td>
+                                <td><span class="small text-muted" x-text="file.modifiedDate"></span></td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle small text-capitalize" x-text="file.typeLabel"></span>
+                                </td>
+                                <td>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <li><a class="dropdown-item" href="#" @click.prevent="downloadFile(file)">
+                                                <i class="bi bi-download me-2 text-primary"></i>Download
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="#" @click.prevent="shareFile(file)">
+                                                <i class="bi bi-share me-2 text-info"></i>Share
+                                            </a></li>
+                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setLoginBackground(file)">
+                                                <i class="bi bi-card-image me-2 text-success"></i>Set Login Background
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
+                                                <i class="bi bi-pencil me-2 text-warning"></i>Rename
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
+                                                <i class="bi bi-trash me-2"></i>Delete
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- Grid View --}}
+            <div class="p-4" x-show="viewMode === 'grid' && currentFiles.length > 0" x-cloak>
+                <div class="row g-3">
+                    <template x-for="file in currentFiles" :key="file.id">
+                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+                            <div class="card h-100 cursor-pointer border hover-shadow transition-all" 
+                                 :class="selectedFiles.includes(file.id) ? 'border-primary bg-primary bg-opacity-10' : 'border-secondary-subtle'"
+                                 @click="selectFile(file)" @dblclick="openFile(file)">
+                                <div class="card-body text-center p-3 position-relative">
+                                    <div class="position-absolute top-0 end-0 p-2">
+                                        <input type="checkbox" class="form-check-input border-secondary" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)" @click.stop style="cursor:pointer;">
+                                    </div>
+                                    <div :class="file.type !== 'image' ? `file-icon ${file.type} text-white rounded d-inline-flex align-items-center justify-content-center mb-2` : 'mb-2'" :style="file.type !== 'image' ? 'width:48px; height:48px; overflow:hidden;' : ''">
+                                        <img x-show="file.type === 'image'" :src="file.url" alt="Preview" class="border" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;" x-on:error="$el.style.display='none'">
+                                        <i x-show="file.type !== 'image'" :class="file.icon" class="fs-3"></i>
+                                    </div>
+                                    <h6 class="fw-semibold text-truncate small mb-1" x-text="file.name" :title="file.name"></h6>
+                                    <p class="text-muted small mb-0" style="font-size:0.7rem;" x-text="`${file.size} • ${file.modifiedDate}`"></p>
+                                    <span x-show="file.isLoginBackground" class="badge bg-primary-subtle text-primary-emphasis mt-2 border border-primary-subtle" style="font-size:0.6rem;">Login Background</span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-shadow:hover {
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    transform: translateY(-2px);
+}
+.transition-all {
+    transition: all .2s ease-in-out;
+}
+.border-dashed {
+    border-style: dashed !important;
+}
+</style>
 @endsection
-
-@push('scripts')
-<script type="module" src="./scripts/components/files.js"></script>
-
-<script type="module" src="./scripts/main.js"></script>
-@endpush
