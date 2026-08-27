@@ -1242,7 +1242,7 @@
                             </div>
                             
                             <!-- Right Column: Warehouse / Logistics / Timeline -->
-                            <div class="col-lg-4 p-4 p-lg-5 border-start bg-body" style="position: sticky; top: 0; height: fit-content; align-self: flex-start;">
+                            <div class="col-lg-4 p-4 p-lg-5 border-start bg-body" style="height: fit-content; align-self: flex-start;">
                                 
                                 <!-- Document Actions -->
                                 <div class="d-flex flex-wrap gap-2 mb-4 w-100">
@@ -1552,7 +1552,7 @@
 
 <!-- ═══════════════════════ Create Shipment Modal ═══════════════════════════ -->
 <div class="modal fade" id="createShipmentModal" aria-labelledby="createShipmentModalLabel">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold" id="createShipmentModalLabel">
@@ -1658,7 +1658,7 @@
 
 <!-- ═══════════════════════ Confirm Order Modal ═══════════════════════════ -->
 <div class="modal fade" id="confirmOrderModal" aria-labelledby="confirmOrderModalLabel">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold" id="confirmOrderModalLabel">
@@ -1685,7 +1685,7 @@
                         <h6 class="fw-bold mb-3 text-body-emphasis border-bottom pb-2">
                             <i class="bi bi-clock-history me-2"></i>Status History
                         </h6>
-                        <div class="position-relative ms-2 ps-3 border-start border-secondary border-opacity-25 border-2" style="max-height: 200px; overflow-y: auto;">
+                        <div class="position-relative ms-2 ps-3 border-start border-secondary border-opacity-25 border-2">
                             <template x-for="log in confirmModalOrder.original.status_logs" :key="log.id">
                                 <div class="position-relative mb-3">
                                     <div class="position-absolute bg-secondary rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
@@ -1758,7 +1758,7 @@
 
 <!-- ═══════════════════════ Deliver Order Modal ═══════════════════════════ -->
 <div class="modal fade" id="deliverOrderModal" aria-labelledby="deliverOrderModalLabel">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold" id="deliverOrderModalLabel">
@@ -1786,7 +1786,7 @@
                         <h6 class="fw-bold mb-3 text-body-emphasis border-bottom pb-2">
                             <i class="bi bi-clock-history me-2"></i>Status History
                         </h6>
-                        <div class="position-relative ms-2 ps-3 border-start border-secondary border-opacity-25 border-2" style="max-height: 200px; overflow-y: auto;">
+                        <div class="position-relative ms-2 ps-3 border-start border-secondary border-opacity-25 border-2">
                             <template x-for="log in deliverModalOrder.original.status_logs" :key="log.id">
                                 <div class="position-relative mb-3">
                                     <div class="position-absolute bg-secondary rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
@@ -1860,7 +1860,7 @@
 
 <!-- ═══════════════════════ Initiate Return Modal ═══════════════════════════ -->
 <div class="modal fade" id="initiateReturnModal" aria-labelledby="initiateReturnModalLabel">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold" id="initiateReturnModalLabel">
@@ -1918,7 +1918,7 @@
 </div>
 <!-- ═══════════════════════ Cancel Order Modal ═══════════════════════════ -->
 <div class="modal fade" id="cancelOrderModal" aria-labelledby="cancelOrderModalLabel">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold" id="cancelOrderModalLabel">
@@ -1962,7 +1962,7 @@
 
     <!-- Items Breakdown Modal -->
     <div class="modal fade" id="orderItemsModal" aria-labelledby="orderItemsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
                 <template x-if="selectedItemsOrder">
                     <div>

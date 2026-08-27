@@ -75,4 +75,14 @@ class OrderComplaint extends Model implements Auditable
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
+
+    public function statusLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(OrderComplaintStatusLog::class, 'order_complaint_id');
+    }
+
+    public function replies(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(OrderComplaintReply::class, 'order_complaint_id');
+    }
 }

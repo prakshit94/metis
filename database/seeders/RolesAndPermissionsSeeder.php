@@ -353,11 +353,13 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Complaints
         'complaints.view',
+        'complaints.view-all',
         'complaints.create',
         'complaints.edit',
         'complaints.delete',
         'complaints.restore',
         'complaints.permanent-delete',
+        'complaints.reply',
 
         // ── Additional Order Specifics ──
 
@@ -518,6 +520,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'returns.view',
             'credit-notes.view',
             'complaints.view',
+            'complaints.view-all',
             'supplier-view',
             'supplier-create',
             'supplier-edit',
@@ -680,6 +683,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'reports-view',
             'orders.view',
             'complaints.view',
+            'complaints.view-all',
             'view_all_order',
             'orders.filter_status',
             'orders.filter_date',

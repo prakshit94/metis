@@ -192,6 +192,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::patch('/{id}/restore', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'restore'])->name('restore');
         Route::delete('/{id}/force-delete', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'forceDelete'])->name('force-delete');
         Route::post('/bulk-action', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'bulkAction'])->name('bulk-action');
+        Route::get('/export', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'bulkExport'])->name('export');
+        Route::post('/export-selected', [\App\Modules\Orders\Controllers\OrderComplaintController::class, 'exportSelected'])->name('export-selected');
     });
 
     Route::get('/products-search-api', [\App\Modules\Catalog\Controllers\ProductController::class, 'searchApi'])->name('api.products.search.api');

@@ -643,6 +643,8 @@ class OrderController extends Controller implements HasMiddleware
             'shippingAddress.village.services.providers:id,name,phone',
             'billingAddress.village.services',
             'appliedOffer',
+            'statusLogs' => fn ($q) => $q->with('user')->latest(),
+            'orderReturns',
         ]);
         
         $user = auth()->user();

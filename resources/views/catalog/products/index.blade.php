@@ -715,11 +715,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <!-- Body: scrollable single column -->
-            <div class="modal-body p-0" style="overflow-y: auto;">
-                <div class="row g-0" style="min-height: 100%;">
-                    <!-- Left: Image & Meta (fixed panel) -->
-                    <div class="col-md-4 bg-body-tertiary border-end p-3" style="position: sticky; top: 0; height: fit-content; align-self: flex-start;">
+            <!-- Body: two-column scrollable layout -->
+            <div class="modal-body p-0">
+                <div class="pvm-layout">
+                    <!-- Left: Image & Meta (sticky panel) -->
+                    <div class="pvm-left bg-body-tertiary border-end p-3">
                         <div class="card border-0 shadow-sm mb-3 rounded-4 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
                             <img :src="product ? (product.image || '/assets/images/product-placeholder.svg') : ''" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                             <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm" x-show="product && product.default_discount > 0" x-text="product ? product.default_discount + (product.default_discount_type === 'percent' ? '%' : '') + ' OFF' : ''"></span>
@@ -746,8 +746,8 @@
                         </div>
                     </div>
 
-                    <!-- Right: All Data Cards (scrolls with modal-body) -->
-                    <div class="col-md-8 p-3">
+                    <!-- Right: All Data Cards (scrollable panel) -->
+                    <div class="pvm-right p-3">
 
                         <!-- Pricing Card -->
                         <div class="card mb-3 border-0 shadow-sm bg-body-tertiary">
@@ -939,9 +939,9 @@
                         </div>
 
                     </div>
-                    <!-- end col-md-8 -->
+                    <!-- end pvm-right -->
                 </div>
-                <!-- end row -->
+                <!-- end pvm-layout -->
             </div>
             <!-- end modal-body -->
 
@@ -1003,19 +1003,55 @@
         </div>
     </div>
     <style>
-        /* Product Details Modal — two-column layout */
-        #productViewModal .modal-body > .row {
+        /* ── Product View Modal — sticky left / scrollable right ── */
+        #productViewModal .modal-dialog {
+            max-height: calc(100vh - 3.5rem);
+        }
+        #productViewModal .modal-content {
+            max-height: calc(100vh - 3.5rem);
             display: flex;
-            flex-wrap: nowrap;
-            align-items: flex-start;
+            flex-direction: column;
         }
-        #productViewModal .modal-body > .row > .col-md-4 {
-            min-width: 300px;
+        #productViewModal .modal-body {
+            flex: 1 1 auto;
+            overflow: hidden !important; /* outer body never scrolls */
+            padding: 0 !important;
+        }
+        #productViewModal .pvm-layout {
+            display: flex;
+            flex-direction: row;
+            height: 100%;
+            min-height: 0;
+        }
+        #productViewModal .pvm-left {
+            width: 300px;
+            min-width: 280px;
             max-width: 300px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            /* max-height fills remaining modal height */
+            max-height: calc(100vh - 3.5rem - 57px - 60px); /* vh minus header minus footer */
         }
-        #productViewModal .modal-body > .row > .col-md-8 {
-            flex: 1;
+        #productViewModal .pvm-right {
+            flex: 1 1 0;
             min-width: 0;
+            overflow-y: auto;
+            max-height: calc(100vh - 3.5rem - 57px - 60px);
+        }
+        @media (max-width: 767.98px) {
+            #productViewModal .pvm-layout {
+                flex-direction: column;
+            }
+            #productViewModal .pvm-left,
+            #productViewModal .pvm-right {
+                width: 100%;
+                max-width: 100%;
+                max-height: none;
+                overflow-y: visible;
+            }
+            #productViewModal .modal-body {
+                overflow-y: auto !important;
+            }
         }
     </style>
 </div>
