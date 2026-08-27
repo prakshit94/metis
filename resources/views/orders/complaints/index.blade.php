@@ -630,6 +630,37 @@
                                         </div>
                                     </div>
 
+                                    <!-- Order Timeline -->
+                                    <template x-if="selectedOrderDetails.statusLogs && selectedOrderDetails.statusLogs.length > 0">
+                                        <div class="card border-0 shadow-sm rounded-4 mb-3">
+                                            <div class="card-header bg-body border-bottom py-2 px-3">
+                                                <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2" style="font-size:0.85rem;">
+                                                    <i class="bi bi-clock-history text-primary"></i> Order Timeline
+                                                </h6>
+                                            </div>
+                                            <div class="card-body p-3">
+                                                <div class="position-relative ms-2 ps-3 border-start border-2 border-secondary border-opacity-25" style="border-left-style: dashed !important;">
+                                                    <template x-for="(log, idx) in selectedOrderDetails.statusLogs" :key="idx">
+                                                        <div class="mb-3 position-relative">
+                                                            <div class="position-absolute bg-primary rounded-circle" style="width: 10px; height: 10px; left: -21px; top: 4px; border: 2px solid var(--bs-body-bg);"></div>
+                                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                <span class="badge rounded-pill fw-medium py-0" :class="`text-bg-${getStatusColor(log.status)}`" x-text="(log.status || 'UPDATE').replace(/_/g, ' ').toUpperCase()"></span>
+                                                                <span class="text-muted" style="font-size: 0.65rem;" x-text="formatDateTime(log.created_at)"></span>
+                                                            </div>
+                                                            <div class="d-flex align-items-center gap-1 mb-1">
+                                                                <i class="bi bi-person text-secondary" style="font-size: 0.7rem;"></i>
+                                                                <span class="text-body-emphasis fw-semibold" style="font-size: 0.7rem;" x-text="log.user"></span>
+                                                            </div>
+                                                            <template x-if="log.notes">
+                                                                <div class="text-muted fst-italic lh-sm bg-body-tertiary p-2 rounded-2" style="font-size:0.75rem;" x-text="log.notes"></div>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
                                     <!-- Returns Tracking -->
                                     <template x-if="selectedOrderDetails.original && (selectedOrderDetails.original.order_returns && selectedOrderDetails.original.order_returns.length > 0 || selectedOrderDetails.original.orderReturns && selectedOrderDetails.original.orderReturns.length > 0)">
                                         <div class="card border-0 shadow-sm rounded-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 p-3 mb-3">
@@ -969,6 +1000,12 @@
                     payments: (o.payments || []).map(p => ({
                         id: p.id, amount: fmt(p.amount), method: p.payment_method || 'N/A',
                         status: p.status || 'N/A', date: p.payment_date || null, transactionId: p.transaction_id || 'N/A'
+                    })),
+                    statusLogs: (o.status_logs || []).map(l => ({
+                        status: l.status,
+                        notes: l.notes,
+                        created_at: l.created_at,
+                        user: l.user ? (l.user.name || l.user.first_name) : 'System'
                     })),
                     original: o
                 };
