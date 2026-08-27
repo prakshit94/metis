@@ -4,6 +4,62 @@
 @section('page', 'catalog-products')
 
 @section('content')
+@php
+    $now = now();
+    $activeOffers = \App\Modules\Orders\Models\Offer::where('is_active', true)
+        ->where(function($q) use ($now) {
+            $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
+        })
+        ->where(function($q) use ($now) {
+            $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
+        })->get();
+    
+    $activeCoupons = \App\Modules\Orders\Models\Coupon::where('is_active', true)
+        ->where(function($q) use ($now) {
+            $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', $now);
+        })->get();
+        
+    $activeReferrals = \App\Models\ReferralProgram::where('is_active', true)
+        ->where(function($q) use ($now) {
+            $q->whereNull('start_date')->orWhere('start_date', '<=', $now);
+        })
+        ->where(function($q) use ($now) {
+            $q->whereNull('end_date')->orWhere('end_date', '>=', $now);
+        })->get();
+@endphp
+<script>
+    window.globalPromotions = {
+        offers: @js($activeOffers),
+        coupons: @js($activeCoupons),
+        referrals: @js($activeReferrals)
+    };
+    window.getApplicablePromotions = function(product) {
+        if (!product) return { offers: [], coupons: [], referrals: window.globalPromotions.referrals };
+        
+        let pId = String(product.id);
+        let cId = String(product.category_id);
+        
+        let filterFunc = (item) => {
+            if (item.excluded_products && item.excluded_products.map(String).includes(pId)) return false;
+            if (item.excluded_categories && item.excluded_categories.map(String).includes(cId)) return false;
+            
+            let hasProdInc = item.applicable_products && item.applicable_products.length > 0;
+            let hasCatInc = item.applicable_categories && item.applicable_categories.length > 0;
+            
+            if (!hasProdInc && !hasCatInc) return true;
+            if (hasProdInc && item.applicable_products.map(String).includes(pId)) return true;
+            if (hasCatInc && item.applicable_categories.map(String).includes(cId)) return true;
+            
+            return false;
+        };
+
+        return {
+            offers: window.globalPromotions.offers.filter(filterFunc),
+            coupons: window.globalPromotions.coupons.filter(filterFunc),
+            referrals: window.globalPromotions.referrals
+        };
+    };
+</script>
 <div class="product-management" x-data="productTable">
 <!-- Page Header -->
                     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5">
@@ -192,8 +248,15 @@
                                             <button class="btn btn-sm btn-outline-secondary bg-body" @click="bulkAction('unpublish')">
                                                 <i class="bi bi-eye-slash me-1"></i>Unpublish
                                             </button>
-                                            <button class="btn btn-sm btn-outline-secondary bg-body" @click="bulkAction('disable_sku')">
+                                            <button class="btn btn-sm btn-outline-secondary bg-body" 
+                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => p.is_sku_enabled)" 
+                                                    @click="bulkAction('disable_sku')">
                                                 <i class="bi bi-tags me-1"></i>Disable SKU
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary bg-body" 
+                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => !p.is_sku_enabled)" 
+                                                    @click="bulkAction('enable_sku')">
+                                                <i class="bi bi-tags-fill me-1"></i>Enable SKU
                                             </button>
                                             @endcan
                                             @can('product-delete')
@@ -256,15 +319,26 @@
                                                                  :alt="product.name">
                                                             <div>
                                                                 <a href="#" class="fw-bold text-decoration-none text-body-emphasis mb-1 d-block" @click.prevent="viewProduct(product)" x-text="product.name"></a>
-                                                                <div class="d-flex align-items-center gap-2">
+                                                                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                                                                     <small class="text-muted" style="font-size: 11px;" x-text="'SKU: ' + product.sku"></small>
                                                                     <span class="badge bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px; padding: 0.25em 0.5em;" x-text="product.category"></span>
+                                                                </div>
+                                                                <!-- Offers Button -->
+                                                                <div class="mt-2" x-data="{ promos: window.getApplicablePromotions(product) }" x-show="promos.offers.length > 0 || promos.coupons.length > 0 || promos.referrals.length > 0">
+                                                                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill d-flex align-items-center gap-1 bg-body" style="font-size: 10px; padding: 2px 8px;" data-bs-toggle="modal" data-bs-target="#offersModal" @click="$dispatch('set-promos', promos)">
+                                                                        <i class="bi bi-gift-fill"></i> View Offers (<span x-text="promos.offers.length + promos.coupons.length + promos.referrals.length"></span>)
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <div class="fw-bold text-primary mb-1" x-text="'₹ ' + (Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100))).toFixed(2)"></div>
+                                                        <div class="d-flex flex-column gap-1 mb-2">
+                                                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="product.mrp && Number(product.mrp) > (Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100)))" x-text="'MRP: ₹' + Number(product.mrp).toFixed(2)"></span>
+                                                                <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 13px;" x-text="'₹' + (Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100))).toFixed(2)"></span>
+                                                            </div>
+                                                        </div>
                                                         <span class="badge stock-badge" 
                                                               :class="{
                                                                   'in-stock': product.stock > (product.min_stock_level || 10),
@@ -285,10 +359,12 @@
                                                             <small class="text-muted" style="font-size: 10px;" x-text="product.created"></small>
                                                         </div>
                                                         <div class="d-flex flex-wrap gap-1 mt-1">
+                                                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style="font-size:9px;" x-show="product.is_sku_enabled" title="SKU Enabled"><i class="bi bi-upc-scan me-1"></i>SKU On</span>
+                                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="!product.is_sku_enabled" title="SKU Disabled"><i class="bi bi-upc-scan me-1"></i>SKU Off</span>
                                                             <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="product.batch_tracking" title="Batch Tracking"><i class="bi bi-layers me-1"></i>Batch</span>
                                                             <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size:9px;" x-show="product.expiry_tracking" title="Expiry Tracking"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
                                                             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:9px;" x-show="product.allow_overselling" title="Allow Overselling"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span>
-                                                            <span class="text-muted small" style="font-size:10px;" x-show="!product.batch_tracking && !product.expiry_tracking && !product.allow_overselling">-</span>
+                                                            <span class="text-muted small" style="font-size:10px;" x-show="!product.is_sku_enabled && !product.batch_tracking && !product.expiry_tracking && !product.allow_overselling">-</span>
                                                         </div>
                                                     </td>
                                                     <td class="text-end pe-4">
@@ -702,14 +778,18 @@
 
 <div class="modal fade" id="productViewModal" >
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content bg-body border-0 shadow-lg" x-data="{ get product() { return Alpine.store('productTable')?.previewProduct } }">
+        <div class="modal-content bg-body border-0 shadow-lg" x-data="{ 
+            get product() { return Alpine.store('productTable')?.previewProduct },
+            get applicablePromotions() {
+                return window.getApplicablePromotions(this.product);
+            }
+        }">
             <!-- Header -->
             <div class="modal-header bg-body-tertiary border-bottom py-3 px-4">
                 <div class="d-flex flex-wrap gap-2 align-items-center">
                     <h5 class="modal-title fw-bold mb-0" x-text="product ? product.name : ''"></h5>
                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" x-text="product ? product.sku : ''"></span>
                     <span class="badge text-uppercase" :class="product && ['published', 'active'].includes(product.status) ? 'bg-success' : 'bg-warning-subtle text-warning-emphasis'" x-text="product ? product.status : ''"></span>
-                    <span class="badge text-uppercase" :class="product && product.is_active ? 'bg-primary' : 'bg-danger'" x-show="product" x-text="product && product.is_active ? 'ACTIVE' : 'INACTIVE'"></span>
                     <span x-show="product && product.grade" class="badge border shadow-sm" :class="{'bg-success-subtle text-success-emphasis border-success': product?.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product?.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product?.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(product?.grade)}"><i class="bi bi-star-fill me-1 text-warning"></i>Grade <span x-text="product ? product.grade : ''"></span></span>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -759,8 +839,10 @@
                                 <div class="row g-2 mb-2">
                                     <div class="@if(auth()->user()?->hasRole('Super Admin')) col-4 border-end @else col-12 @endif border-secondary border-opacity-25">
                                         <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Selling Price (Inc. GST)</label>
-                                        <div class="fw-black text-primary" style="font-size:18px;" x-text="product ? '₹ ' + (parseFloat(product.selling_price || product.price || 0) * (1 + (parseFloat(product.tax_rate || 0) / 100))).toFixed(2) : ''"></div>
-                                        <div class="text-muted text-decoration-line-through" style="font-size:10px;" x-show="product && product.mrp > ((product.selling_price || product.price) * (1 + (product.tax_rate || 0) / 100))" x-text="product ? 'MRP ₹ ' + parseFloat(product.mrp||0).toFixed(2) : ''"></div>
+                                        <div class="d-flex align-items-center flex-wrap gap-2">
+                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="product && product.mrp > ((product.selling_price || product.price) * (1 + (product.tax_rate || 0) / 100))" x-text="product ? 'MRP: ₹' + parseFloat(product.mrp||0).toFixed(2) : ''"></span>
+                                            <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 16px;" x-text="product ? '₹ ' + (parseFloat(product.selling_price || product.price || 0) * (1 + (parseFloat(product.tax_rate || 0) / 100))).toFixed(2) : ''"></span>
+                                        </div>
                                     </div>
                                     @if(auth()->user()?->hasRole('Super Admin'))
                                     <div class="col-4 border-end border-secondary border-opacity-25 ps-3">
@@ -786,39 +868,10 @@
                             </div>
                         </div>
 
-                        <!-- Inventory & Specs Row -->
+                        <!-- Specs & Details Row -->
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <div class="card h-100 border-0 shadow-sm bg-body-tertiary">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
-                                            <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-box-seam-fill" style="font-size:12px;"></i></div>
-                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Inventory</h6>
-                                        </div>
-                                        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary border-opacity-25">
-                                            <div>
-                                                <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="product ? (parseFloat(product.available_stock !== undefined ? product.available_stock : product.stock) + ' ' + (product.uom || 'Units')) : ''"></div>
-                                                <div class="text-muted" style="font-size:10px;">Available to Order</div>
-                                            </div>
-                                            <span class="badge" style="font-size:10px;" :class="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > (product.min_stock_level || 10) ? 'bg-success' : (product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'bg-warning-subtle text-warning-emphasis' : 'bg-danger')" x-text="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'In Stock' : 'Out of Stock'"></span>
-                                        </div>
-                                        <div class="row text-center g-1 mb-2">
-                                            <div class="col-4"><div class="fw-semibold" style="font-size:13px;" x-text="product ? parseFloat(product.physical_available !== undefined ? product.physical_available : product.stock) : 0"></div><div class="text-muted" style="font-size:9px;">Physical</div></div>
-                                            <div class="col-4 border-start border-end border-secondary border-opacity-25"><div class="fw-semibold text-warning" style="font-size:13px;" x-text="product ? ((product.reserved_qty || 0) + (product.pending_qty || 0)) : 0"></div><div class="text-muted" style="font-size:9px;">Reserved</div></div>
-                                            <div class="col-4"><div class="fw-semibold text-danger" style="font-size:13px;" x-text="product ? (product.min_stock_level || 0) : 0"></div><div class="text-muted" style="font-size:9px;">Min Level</div></div>
-                                        </div>
-                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Tracking & Config</label>
-                                        <div class="list-group list-group-flush border border-secondary border-opacity-25 rounded-3">
-                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-box-seam me-1"></i>Manage Stock</span><span class="badge" style="font-size:9px;" :class="product && product.manage_stock ? 'bg-success' : 'bg-secondary'" x-text="product && product.manage_stock ? 'YES' : 'NO'"></span></div>
-                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-layers me-1"></i>Batch Tracking</span><span class="badge" style="font-size:9px;" :class="product && product.batch_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.batch_tracking ? 'ON' : 'OFF'"></span></div>
-                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-calendar-x me-1"></i>Expiry Tracking</span><span class="badge" style="font-size:9px;" :class="product && product.expiry_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.expiry_tracking ? 'ON' : 'OFF'"></span></div>
-                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-arrow-down-up me-1"></i>Overselling</span><span class="badge" style="font-size:9px;" :class="product && product.allow_overselling ? 'bg-success' : 'bg-secondary'" x-text="product && product.allow_overselling ? 'ON' + (product && product.overselling_qty > 0 ? ' (Limit ' + product.overselling_qty + ')' : '') : 'OFF'"></span></div>
-                                            <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-upc-scan me-1"></i>SKU Enabled</span><span class="badge" style="font-size:9px;" :class="product && product.is_sku_enabled ? 'bg-success' : 'bg-secondary'" x-text="product && product.is_sku_enabled ? 'YES' : 'NO'"></span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
+                                <!-- Technical Specs -->
                                 <div class="card h-100 border-0 shadow-sm bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
@@ -842,25 +895,123 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                <!-- Details & Usage -->
+                                <div class="card h-100 border-0 shadow-sm bg-body-tertiary">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
+                                            <div class="bg-secondary bg-opacity-10 text-secondary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-file-text-fill" style="font-size:12px;"></i></div>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Details & Usage</h6>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Product Description</label>
+                                            <div style="font-size:11px;" x-show="product && product.description" x-html="product ? product.description : ''"></div>
+                                            <div style="font-size:11px;" x-show="!product || !product.description" class="text-muted fst-italic">No description available.</div>
+                                        </div>
+                                        <div>
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Application / Dosage</label>
+                                            <div style="font-size:11px;" x-show="product && product.application_instructions" x-html="product ? product.application_instructions : ''"></div>
+                                            <div style="font-size:11px;" x-show="!product || !product.application_instructions" class="text-muted fst-italic">No instructions available.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Details & Usage -->
-                        <div class="card mb-3 border-0 shadow-sm bg-body-tertiary">
+                        <!-- Active Promotions Card -->
+                        <div class="card mb-3 border-0 shadow-sm bg-body-tertiary" x-show="applicablePromotions.offers.length > 0 || applicablePromotions.coupons.length > 0 || applicablePromotions.referrals.length > 0" x-cloak>
                             <div class="card-body p-3">
                                 <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
-                                    <div class="bg-secondary bg-opacity-10 text-secondary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-file-text-fill" style="font-size:12px;"></i></div>
-                                    <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Details & Usage</h6>
+                                    <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-stars" style="font-size:12px;"></i></div>
+                                    <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Active Promotions & Discounts</h6>
                                 </div>
-                                <div class="row g-3">
-                                    <div class="col-md-6 border-end border-secondary border-opacity-25">
-                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Product Description</label>
-                                        <div style="font-size:11px;" x-show="product && product.description" x-html="product ? product.description : ''"></div>
-                                        <div style="font-size:11px;" x-show="!product || !product.description" class="text-muted fst-italic">No description available.</div>
-                                    </div>
-                                    <div class="col-md-6 ps-3">
-                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Application / Dosage</label>
-                                        <div style="font-size:11px;" x-show="product && product.application_instructions" x-html="product ? product.application_instructions : ''"></div>
-                                        <div style="font-size:11px;" x-show="!product || !product.application_instructions" class="text-muted fst-italic">No instructions available.</div>
+                                
+                                <div class="d-flex flex-column gap-2">
+                                    <!-- Offers -->
+                                    <template x-for="offer in applicablePromotions.offers" :key="'offer-'+offer.id">
+                                        <div class="p-2 bg-success bg-opacity-10 border border-success border-opacity-25 rounded d-flex align-items-start gap-2">
+                                            <i class="bi bi-tag-fill text-success mt-1"></i>
+                                            <div>
+                                                <div class="fw-bold text-success" style="font-size:12px;" x-text="offer.name"></div>
+                                                <div class="text-muted" style="font-size:10px;">
+                                                    <span x-show="offer.type === 'bogo'" x-text="'Buy ' + offer.buy_qty + ' Get ' + offer.get_qty + ' Free'"></span>
+                                                    <span x-show="offer.type !== 'bogo' && offer.discount_type === 'percent'" x-text="offer.value + '% OFF'"></span>
+                                                    <span x-show="offer.type !== 'bogo' && offer.discount_type === 'fixed'" x-text="'₹' + offer.value + ' OFF'"></span>
+                                                    <span x-show="offer.min_spend > 0" x-text="' (Min spend: ₹' + offer.min_spend + ')'"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    
+                                    <!-- Coupons -->
+                                    <template x-for="coupon in applicablePromotions.coupons" :key="'coupon-'+coupon.id">
+                                        <div class="p-2 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded d-flex align-items-start gap-2">
+                                            <i class="bi bi-ticket-perforated-fill text-primary mt-1"></i>
+                                            <div>
+                                                <div class="fw-bold text-primary" style="font-size:12px;">
+                                                    <span x-text="coupon.code"></span>
+                                                    <span class="badge bg-primary ms-1" style="font-size:9px;" x-show="coupon.type === 'percent'" x-text="coupon.value + '%'"></span>
+                                                    <span class="badge bg-primary ms-1" style="font-size:9px;" x-show="coupon.type === 'fixed'" x-text="'₹' + coupon.value"></span>
+                                                </div>
+                                                <div class="text-muted" style="font-size:10px;">
+                                                    Use code at checkout to claim discount.
+                                                    <span x-show="coupon.min_spend > 0" x-text="'Min spend: ₹' + coupon.min_spend + '.'"></span>
+                                                    <span x-show="coupon.expiry_date" x-text="'Valid till ' + new Date(coupon.expiry_date).toLocaleDateString() + '.'"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    
+                                    <!-- Referrals -->
+                                    <template x-for="ref in applicablePromotions.referrals" :key="'ref-'+ref.id">
+                                        <div class="p-2 bg-info bg-opacity-10 border border-info border-opacity-25 rounded d-flex align-items-start gap-2">
+                                            <i class="bi bi-people-fill text-info mt-1"></i>
+                                            <div>
+                                                <div class="fw-bold text-info" style="font-size:12px;" x-text="ref.name"></div>
+                                                <div class="text-muted" style="font-size:10px;" x-text="ref.description || 'Earn rewards by referring friends.'"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inventory Row -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-12">
+                                <!-- Inventory & Config -->
+                                <div class="card border-0 shadow-sm bg-body-tertiary">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
+                                            <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-box-seam-fill" style="font-size:12px;"></i></div>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size:11px;letter-spacing:1px;">Inventory & Tracking Config</h6>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-6 border-end border-secondary border-opacity-25">
+                                                <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary border-opacity-25">
+                                                    <div>
+                                                        <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="product ? (parseFloat(product.available_stock !== undefined ? product.available_stock : product.stock) + ' ' + (product.uom || 'Units')) : ''"></div>
+                                                        <div class="text-muted" style="font-size:10px;">Available to Order</div>
+                                                    </div>
+                                                    <span class="badge" style="font-size:10px;" :class="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > (product.min_stock_level || 10) ? 'bg-success' : (product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'bg-warning-subtle text-warning-emphasis' : 'bg-danger')" x-text="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'In Stock' : 'Out of Stock'"></span>
+                                                </div>
+                                                <div class="row text-center g-1 mb-2">
+                                                    <div class="col-4"><div class="fw-semibold" style="font-size:13px;" x-text="product ? parseFloat(product.physical_available !== undefined ? product.physical_available : product.stock) : 0"></div><div class="text-muted" style="font-size:9px;">Physical</div></div>
+                                                    <div class="col-4 border-start border-end border-secondary border-opacity-25"><div class="fw-semibold text-warning" style="font-size:13px;" x-text="product ? ((product.reserved_qty || 0) + (product.pending_qty || 0)) : 0"></div><div class="text-muted" style="font-size:9px;">Reserved</div></div>
+                                                    <div class="col-4"><div class="fw-semibold text-danger" style="font-size:13px;" x-text="product ? (product.min_stock_level || 0) : 0"></div><div class="text-muted" style="font-size:9px;">Min Level</div></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Tracking & Config</label>
+                                                <div class="list-group list-group-flush border border-secondary border-opacity-25 rounded-3">
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-box-seam me-1"></i>Manage Stock</span><span class="badge" style="font-size:9px;" :class="product && product.manage_stock ? 'bg-success' : 'bg-secondary'" x-text="product && product.manage_stock ? 'YES' : 'NO'"></span></div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-layers me-1"></i>Batch Tracking</span><span class="badge" style="font-size:9px;" :class="product && product.batch_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.batch_tracking ? 'ON' : 'OFF'"></span></div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-calendar-x me-1"></i>Expiry Tracking</span><span class="badge" style="font-size:9px;" :class="product && product.expiry_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.expiry_tracking ? 'ON' : 'OFF'"></span></div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-arrow-down-up me-1"></i>Overselling</span><span class="badge" style="font-size:9px;" :class="product && product.allow_overselling ? 'bg-success' : 'bg-secondary'" x-text="product && product.allow_overselling ? 'ON' + (product && product.overselling_qty > 0 ? ' (Limit ' + product.overselling_qty + ')' : '') : 'OFF'"></span></div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-upc-scan me-1"></i>SKU Enabled</span><span class="badge" style="font-size:9px;" :class="product && product.is_sku_enabled ? 'bg-success' : 'bg-secondary'" x-text="product && product.is_sku_enabled ? 'YES' : 'NO'"></span></div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -948,6 +1099,73 @@
             <!-- Footer -->
             <div class="modal-footer bg-body-tertiary border-top p-3 d-flex justify-content-end align-items-center">
                 <button type="button" class="btn btn-outline-secondary fw-medium" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="offersModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" x-data="{ promos: {offers: [], coupons: [], referrals: []} }" @set-promos.window="promos = $event.detail">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-gift-fill text-primary me-2"></i>Available Promotions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3 pb-4">
+                <div class="d-flex flex-column gap-3">
+                    <!-- Offers -->
+                    <div x-show="promos.offers.length > 0">
+                        <h6 class="text-success fw-bold mb-2 border-bottom border-success border-opacity-25 pb-1"><i class="bi bi-tags-fill me-1"></i> Offers</h6>
+                        <div class="d-flex flex-column gap-2">
+                            <template x-for="offer in promos.offers" :key="'modal-offer-'+offer.id">
+                                <div class="bg-success bg-opacity-10 border border-success border-opacity-25 rounded p-2">
+                                    <div class="d-flex align-items-center gap-1 text-success fw-bold" style="font-size: 13px;">
+                                        <i class="bi bi-tag-fill"></i> <span x-text="offer.name"></span>
+                                    </div>
+                                    <div class="text-muted mt-1" style="font-size: 12px;">
+                                        <span x-show="offer.type === 'bogo'" x-text="'Buy ' + offer.buy_qty + ' Get ' + offer.get_qty + ' Free'"></span>
+                                        <span x-show="offer.type !== 'bogo' && offer.discount_type === 'percent'" x-text="offer.value + '% OFF'"></span>
+                                        <span x-show="offer.type !== 'bogo' && offer.discount_type === 'fixed'" x-text="'₹' + offer.value + ' OFF'"></span>
+                                        <span x-show="offer.min_spend > 0" x-text="' (Min Order: ₹' + offer.min_spend + ')'"></span>
+                                    </div>
+                                    <div class="text-muted mt-1 fst-italic" style="font-size: 11px;" x-show="offer.description" x-text="offer.description"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <!-- Coupons -->
+                    <div x-show="promos.coupons.length > 0">
+                        <h6 class="text-primary fw-bold mb-2 border-bottom border-primary border-opacity-25 pb-1"><i class="bi bi-ticket-perforated-fill me-1"></i> Coupons</h6>
+                        <div class="d-flex flex-column gap-2">
+                            <template x-for="coupon in promos.coupons" :key="'modal-coupon-'+coupon.id">
+                                <div class="bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded p-2">
+                                    <div class="d-flex align-items-center gap-1 text-primary fw-bold" style="font-size: 13px;">
+                                        <i class="bi bi-ticket-perforated-fill"></i> Code: <span x-text="coupon.code"></span>
+                                    </div>
+                                    <div class="text-muted mt-1" style="font-size: 12px;">
+                                        <span x-text="coupon.discount_type === 'percent' ? coupon.value + '% OFF' : '₹' + coupon.value + ' OFF'"></span>
+                                        <span x-show="coupon.min_spend > 0" x-text="' | Min Spend: ₹' + coupon.min_spend"></span>
+                                        <span x-show="coupon.expiry_date" x-text="' | Valid till: ' + new Date(coupon.expiry_date).toLocaleDateString()"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <!-- Referrals -->
+                    <div x-show="promos.referrals.length > 0">
+                        <h6 class="text-info fw-bold mb-2 border-bottom border-info border-opacity-25 pb-1"><i class="bi bi-people-fill me-1"></i> Referral Programs</h6>
+                        <div class="d-flex flex-column gap-2">
+                            <template x-for="ref in promos.referrals" :key="'modal-ref-'+ref.id">
+                                <div class="bg-info bg-opacity-10 border border-info border-opacity-25 rounded p-2">
+                                    <div class="d-flex align-items-center gap-1 text-info fw-bold" style="font-size: 13px;">
+                                        <i class="bi bi-people-fill"></i> <span x-text="ref.name"></span>
+                                    </div>
+                                    <div class="text-muted mt-1" style="font-size: 12px;" x-text="ref.description || 'Invite friends and earn rewards.'"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

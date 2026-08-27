@@ -35,7 +35,7 @@ class StockManagementController extends Controller implements HasMiddleware
         $this->authorize('product-view');
 
         $query = Stock::query()
-            ->with(['product:id,name,sku,status', 'warehouse:id,name,code'])
+            ->with(['product:id,name,sku,status,image_path', 'warehouse:id,name,code'])
             ->withSum('pendingOrderItems as pending_qty', 'quantity')
             ->withSum('deliveredOrderItems as raw_delivered_qty', 'quantity')
             ->withSum('returnedOrderItems as returned_qty', 'received_qty')
@@ -90,11 +90,27 @@ class StockManagementController extends Controller implements HasMiddleware
             return $stock;
         });
 
+        $statsBaseQuery = Stock::query()->whereHas('product')->whereHas('warehouse');
+
+        if ($search = $request->query('search')) {
+            $statsBaseQuery->where(function ($q) use ($search) {
+                $q->whereHas('product', fn ($p) => $p->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%"))
+                    ->orWhereHas('warehouse', fn ($w) => $w->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($warehouseId = $request->query('warehouse_id')) {
+            $statsBaseQuery->where('warehouse_id', $warehouseId);
+        }
+
         $stats = [
-            'total_products' => Stock::select('product_id')->distinct()->count(),
-            'total_warehouses' => Stock::select('warehouse_id')->distinct()->count(),
-            'low_stock_count' => Stock::whereRaw('quantity - reserved_qty <= (SELECT COALESCE(min_stock_level, 5) FROM products WHERE products.id = stocks.product_id) AND quantity > 0')->count(),
-            'out_of_stock' => Stock::where('quantity', 0)->count(),
+            'total_products' => (clone $statsBaseQuery)->distinct('product_id')->count('product_id'),
+            'total_warehouses' => (clone $statsBaseQuery)->distinct('warehouse_id')->count('warehouse_id'),
+            'total_units' => (clone $statsBaseQuery)->sum('quantity'),
+            'in_stock' => (clone $statsBaseQuery)->whereRaw('quantity - reserved_qty > (SELECT COALESCE(min_stock_level, 5) FROM products WHERE products.id = stocks.product_id)')->where('quantity', '>', 0)->count(),
+            'low_stock_count' => (clone $statsBaseQuery)->whereRaw('quantity - reserved_qty <= (SELECT COALESCE(min_stock_level, 5) FROM products WHERE products.id = stocks.product_id)')->where('quantity', '>', 0)->count(),
+            'out_of_stock' => (clone $statsBaseQuery)->where('quantity', '<=', 0)->count(),
         ];
 
         return response()->json([

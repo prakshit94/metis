@@ -6,7 +6,7 @@
 @section('content')
 <div x-data="{ 
     activeTab: new URLSearchParams(window.location.search).has('filter') ? 'dashboard' : (localStorage.getItem('dashboard_active_tab') || 'search'),
-    showAnalytics: localStorage.getItem('dashboard_show_analytics') !== 'false'
+    showAnalytics: localStorage.getItem('dashboard_show_analytics') === 'true'
 }" x-init="$watch('activeTab', val => localStorage.setItem('dashboard_active_tab', val)); $watch('showAnalytics', val => localStorage.setItem('dashboard_show_analytics', val))">
     <!-- Page Header Tabs -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">

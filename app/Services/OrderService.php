@@ -231,7 +231,7 @@ class OrderService
      * Recalculate order totals and validate coupon code.
      * Must be called inside a database transaction if a coupon is being updated.
      */
-    public function recalculateAndValidate(array $data, ?string $lastCouponCode = null): array
+    public function recalculateAndValidate(array $data, ?string $lastCouponCode = null, bool $isUpdate = false): array
     {
         $cart = [];
         if (!empty($data['cart'])) {
@@ -399,7 +399,7 @@ class OrderService
                 ]);
             }
 
-            if (!in_array($product->status, ['active', 'published']) || !$product->is_active) {
+            if (!$isUpdate && (!in_array($product->status, ['active', 'published']) || !$product->is_active)) {
                 throw ValidationException::withMessages([
                     'cart' => "Product '{$product->name}' is currently unavailable.",
                 ]);
@@ -719,7 +719,7 @@ class OrderService
             $lastCouponCode = $order->coupon_code;
             $lastOfferId = $order->applied_offer_id;
 
-            $calc = $this->recalculateAndValidate($data, $lastCouponCode);
+            $calc = $this->recalculateAndValidate($data, $lastCouponCode, true);
 
             // If already confirmed, release all reservations before recalculating
             if ($order->status === 'confirmed' && $order->type === 'sale' && $order->warehouse_id) {

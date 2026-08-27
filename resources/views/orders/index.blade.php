@@ -15,7 +15,7 @@
     allowedFilterStatuses = {{ json_encode($statusesList) }};
     init();
 ">
-    <div x-data="{ showAnalytics: localStorage.getItem('orders_show_analytics') !== 'false' }" x-init="$watch('showAnalytics', val => localStorage.setItem('orders_show_analytics', val))">
+    <div x-data="{ showAnalytics: localStorage.getItem('orders_show_analytics') === 'true' }" x-init="$watch('showAnalytics', val => localStorage.setItem('orders_show_analytics', val))">
 <!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
     <div>
@@ -24,9 +24,15 @@
     </div>
     <div class="d-flex align-items-center gap-2">
         <!-- Analytics Toggle -->
-        <div class="form-check form-switch m-0 me-2 pe-3 border-end cursor-pointer d-flex align-items-center gap-2">
+        <div class="form-check form-switch m-0 cursor-pointer d-flex align-items-center gap-2">
             <input class="form-check-input m-0" type="checkbox" role="switch" id="ordersAnalyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
             <label class="form-check-label small fw-bold text-muted mb-0 ms-1" for="ordersAnalyticsToggle" style="cursor: pointer; padding-top: 2px;">Analytics</label>
+        </div>
+        
+        <!-- Warehouse Ops Toggle -->
+        <div class="form-check form-switch m-0 me-2 pe-3 border-end cursor-pointer d-none d-md-flex align-items-center gap-2" x-show="warehouseStats && warehouseStats.length > 0" x-cloak>
+            <input class="form-check-input m-0" type="checkbox" role="switch" id="warehouseStatsToggleHeader" x-model="showWarehouseStats" style="cursor: pointer; width: 2.5em; height: 1.25em;">
+            <label class="form-check-label small fw-bold text-muted mb-0 ms-1 cursor-pointer user-select-none" for="warehouseStatsToggleHeader" style="padding-top: 2px;">Warehouse Ops</label>
         </div>
         @can('orders.export')
         <button type="button" class="btn btn-outline-secondary" @click="exportOrders()">
@@ -61,7 +67,7 @@
 </form>
 
 <!-- Order Stats Widgets -->
-<div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-6 g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
     <div class="col">
         <div class="card stats-card">
             <div class="card-body p-3 p-lg-4">
@@ -78,6 +84,42 @@
             </div>
         </div>
     </div>
+    @can('orders.view.future_order')
+    <div class="col">
+        <div class="card stats-card">
+            <div class="card-body p-3 p-lg-4">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon text-bg-info-subtle text-info-emphasis me-3">
+                        <i class="bi bi-calendar-event"></i>
+                    </div>
+                    <div>
+                        <p class="h6 mb-0 text-muted">Future Order</p>
+                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.future_order"></span></div>
+                        <small class="text-info" x-text="'Value: ' + formatCurrency(stats.future_order_amount)"></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endcan
+    @can('orders.view.pending_confirmation')
+    <div class="col">
+        <div class="card stats-card">
+            <div class="card-body p-3 p-lg-4">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis me-3">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div>
+                        <p class="h6 mb-0 text-muted" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Pending Confirmation">Pend. Confirm</p>
+                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.pending_confirmation"></span></div>
+                        <small class="text-warning" x-text="'Value: ' + formatCurrency(stats.pending_confirmation_amount)"></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endcan
     @can('orders.view.pending')
     <div class="col">
         <div class="card stats-card">
@@ -96,6 +138,24 @@
         </div>
     </div>
     @endcan
+    @can('orders.view.confirmed')
+    <div class="col">
+        <div class="card stats-card">
+            <div class="card-body p-3 p-lg-4">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon text-bg-info-subtle text-info-emphasis me-3">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div>
+                        <p class="h6 mb-0 text-muted">Confirmed</p>
+                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.confirmed"></span></div>
+                        <small class="text-info" x-text="'Value: ' + formatCurrency(stats.confirmed_amount)"></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endcan
     @can('orders.view.processing')
     <div class="col">
         <div class="card stats-card">
@@ -108,6 +168,24 @@
                         <p class="h6 mb-0 text-muted">Processing</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.processing"></span></div>
                         <small class="text-secondary" x-text="'Value: ' + formatCurrency(stats.processing_amount)"></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endcan
+    @can('orders.view.ready_to_ship')
+    <div class="col">
+        <div class="card stats-card">
+            <div class="card-body p-3 p-lg-4">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon text-bg-dark-subtle text-dark-emphasis me-3">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div>
+                        <p class="h6 mb-0 text-muted">Ready to Ship</p>
+                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.ready_to_ship"></span></div>
+                        <small class="text-dark" x-text="'Value: ' + formatCurrency(stats.ready_to_ship_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -144,6 +222,60 @@
                         <p class="h6 mb-0 text-muted">Delivered</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.delivered"></span></div>
                         <small class="text-success-emphasis" x-text="'Value: ' + formatCurrency(stats.delivered_amount)"></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endcan
+    @can('orders.view.cancelled')
+    <div class="col">
+        <div class="card stats-card">
+            <div class="card-body p-3 p-lg-4">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon text-bg-danger-subtle text-danger-emphasis me-3">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
+                    <div>
+                        <p class="h6 mb-0 text-muted">Cancelled</p>
+                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.cancelled"></span></div>
+                        <small class="text-danger" x-text="'Value: ' + formatCurrency(stats.cancelled_amount)"></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endcan
+    @can('orders.view.return_requested')
+    <div class="col">
+        <div class="card stats-card">
+            <div class="card-body p-3 p-lg-4">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis me-3">
+                        <i class="bi bi-arrow-return-left"></i>
+                    </div>
+                    <div>
+                        <p class="h6 mb-0 text-muted" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Return Requested">Return Req.</p>
+                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.return_requested"></span></div>
+                        <small class="text-warning" x-text="'Value: ' + formatCurrency(stats.return_requested_amount)"></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endcan
+    @can('orders.view.returned')
+    <div class="col">
+        <div class="card stats-card">
+            <div class="card-body p-3 p-lg-4">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis me-3">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </div>
+                    <div>
+                        <p class="h6 mb-0 text-muted">Returned</p>
+                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.returned"></span></div>
+                        <small class="text-secondary" x-text="'Value: ' + formatCurrency(stats.returned_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -414,11 +546,7 @@
                         <option value="prev_month">Previous Month</option>
                     </select>
 
-                    <!-- Warehouse Ops Toggle -->
-                    <div class="form-check form-switch m-0 ms-2 d-none d-md-flex align-items-center gap-2" x-show="warehouseStats && warehouseStats.length > 0">
-                        <input class="form-check-input m-0" type="checkbox" role="switch" id="warehouseStatsToggle" x-model="showWarehouseStats" style="cursor: pointer; width: 2.5em; height: 1.25em;">
-                        <label class="form-check-label text-muted small fw-bold mb-0 cursor-pointer user-select-none" for="warehouseStatsToggle">Warehouse Ops</label>
-                    </div>
+
 
                     <!-- Advanced Filters Trigger -->
                     <button class="btn btn-sm"
@@ -1044,7 +1172,7 @@
                             </div>
                             <div class="d-flex align-items-center gap-3">
                                 <span class="badge rounded-pill px-4 py-2 fs-6 shadow-sm" 
-                                      :class="`text-bg-${getStatusTheme(selectedOrder.status)}-subtle text-${getStatusTheme(selectedOrder.status)}-emphasis border border-${getStatusTheme(selectedOrder.status)}-subtle`">
+                                      :class="`bg-${getStatusTheme(selectedOrder.status)}-subtle text-${getStatusTheme(selectedOrder.status)}-emphasis border border-${getStatusTheme(selectedOrder.status)}-subtle`">
                                     <i class="bi bi-circle-fill me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
                                     <span x-text="selectedOrder.statusLabel"></span>
                                 </span>

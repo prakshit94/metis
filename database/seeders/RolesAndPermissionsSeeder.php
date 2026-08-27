@@ -586,6 +586,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'User'        => [
             'sidebar-view',
             'dashboard-view',
+            'product-view',
             'chat-view',
             'chat-create',
             'chat-edit',
@@ -594,6 +595,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'Verification' => [
             'sidebar-view',
             'dashboard-view',
+            'product-view',
             'customer-view',
             'view_all_customer',
             'customer-create',
@@ -681,6 +683,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'dashboard-view',
             'analytics-view',
             'reports-view',
+            'product-view',
             'orders.view',
             'complaints.view',
             'complaints.view-all',

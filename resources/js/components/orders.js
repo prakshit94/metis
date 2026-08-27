@@ -132,7 +132,7 @@ document.addEventListener('alpine:init', () => {
 
     statusStats: [],
     warehouseStats: [],
-    showWarehouseStats: true,
+    showWarehouseStats: false,
     visibleWarehouseStat: '',
     trendsData: [],
 
@@ -366,7 +366,12 @@ document.addEventListener('alpine:init', () => {
       
       if (this.dateFilter) {
         const today = new Date();
-        const formatDate = (date) => date.toISOString().split('T')[0];
+        const formatDate = (date) => {
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+          const d = String(date.getDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        };
         
         if (this.dateFilter === 'today') {
           activeFromDate = formatDate(today);
@@ -423,6 +428,10 @@ document.addEventListener('alpine:init', () => {
               delivered_amount: data.stats.delivered_amount,
               cancelled: data.stats.cancelled,
               cancelled_amount: data.stats.cancelled_amount,
+              returned: data.stats.returned,
+              returned_amount: data.stats.returned_amount,
+              return_requested: data.stats.return_requested,
+              return_requested_amount: data.stats.return_requested_amount,
               revenue: data.stats.total_amount
             };
 
@@ -435,7 +444,9 @@ document.addEventListener('alpine:init', () => {
               { name: 'Ready to Ship', count: this.stats.ready_to_ship, percentage: this.stats.total ? Math.round((this.stats.ready_to_ship / this.stats.total) * 100) : 0, color: '#6366f1' },
               { name: 'Dispatched', count: this.stats.dispatched, percentage: this.stats.total ? Math.round((this.stats.dispatched / this.stats.total) * 100) : 0, color: '#14b8a6' },
               { name: 'Delivered', count: this.stats.delivered, percentage: this.stats.total ? Math.round((this.stats.delivered / this.stats.total) * 100) : 0, color: '#10b981' },
-              { name: 'Cancelled', count: this.stats.cancelled, percentage: this.stats.total ? Math.round((this.stats.cancelled / this.stats.total) * 100) : 0, color: '#ef4444' }
+              { name: 'Cancelled', count: this.stats.cancelled, percentage: this.stats.total ? Math.round((this.stats.cancelled / this.stats.total) * 100) : 0, color: '#ef4444' },
+              { name: 'Return Requested', count: this.stats.return_requested, percentage: this.stats.total ? Math.round((this.stats.return_requested / this.stats.total) * 100) : 0, color: '#f59e0b' },
+              { name: 'Returned', count: this.stats.returned, percentage: this.stats.total ? Math.round((this.stats.returned / this.stats.total) * 100) : 0, color: '#6b7280' }
             ].filter(stat => stat.count > 0);
 
             if (data.trends) {
@@ -745,11 +756,11 @@ document.addEventListener('alpine:init', () => {
         future_order: 'info',
         pending: 'warning',
         pending_confirmation: 'warning',
-        confirmed: 'primary',
+        confirmed: 'info',
         processing: 'primary',
-        ready_to_ship: 'primary',
-        dispatched: 'primary',
-        shipped: 'primary',
+        ready_to_ship: 'dark',
+        dispatched: 'secondary',
+        shipped: 'secondary',
         delivered: 'success',
         cancelled: 'danger',
         return_requested: 'warning',

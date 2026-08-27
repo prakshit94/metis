@@ -81,9 +81,85 @@
                 @endcan
 
                 {{-- ── COMMERCE & SALES ─────────────────────────── --}}
-                @canany(['orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view', 'coupon-view', 'promotions-view'])
+                @canany(['product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view', 'orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view', 'complaints.view', 'coupon-view', 'promotions-view'])
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Commerce &amp; Sales</small>
+                </li>
+                @endcanany
+
+                {{-- Catalog Management Dropdown --}}
+                @canany(['product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view'])
+                <li class="nav-item">
+                    <a class="nav-link {{ in_array($current, ['catalog.products', 'catalog.categories', 'catalog.brands', 'catalog.attributes', 'catalog.uom', 'catalog.tax-rates', 'catalog.hsn-codes']) ? 'active' : 'collapsed' }}"
+                       href="#"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#catalogSubmenu"
+                       aria-expanded="{{ in_array($current, ['catalog.products', 'catalog.categories', 'catalog.brands', 'catalog.attributes', 'catalog.uom', 'catalog.tax-rates', 'catalog.hsn-codes']) ? 'true' : 'false' }}"
+                       aria-controls="catalogSubmenu">
+                        <i class="bi bi-shop-window"></i>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Catalog Management</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse {{ in_array($current, ['catalog.products', 'catalog.categories', 'catalog.brands', 'catalog.attributes', 'catalog.uom', 'catalog.tax-rates', 'catalog.hsn-codes']) ? 'show' : '' }}" id="catalogSubmenu">
+                        <ul class="nav nav-submenu">
+                            @can('product-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.products' ? 'active' : '' }}" href="{{ route('catalog.products') }}">
+                                    <i class="bi bi-box-seam-fill"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Products</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('category-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.categories' ? 'active' : '' }}" href="{{ route('catalog.categories') }}">
+                                    <i class="bi bi-diagram-3-fill"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Categories</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('brand-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.brands' ? 'active' : '' }}" href="{{ route('catalog.brands') }}">
+                                    <i class="bi bi-patch-check-fill"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Brands</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('productattribute-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.attributes' ? 'active' : '' }}" href="{{ route('catalog.attributes') }}">
+                                    <i class="bi bi-sliders2"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Attributes</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('unitofmeasure-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.uom' ? 'active' : '' }}" href="{{ route('catalog.uom') }}">
+                                    <i class="bi bi-rulers"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Units of Measure</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('taxrate-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.tax-rates' ? 'active' : '' }}" href="{{ route('catalog.tax-rates') }}">
+                                    <i class="bi bi-percent"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Tax Rates</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('hsncode-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'catalog.hsn-codes' ? 'active' : '' }}" href="{{ route('catalog.hsn-codes') }}">
+                                    <i class="bi bi-upc-scan"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">HSN Codes</span>
+                                </a>
+                            </li>
+                            @endcan
+                        </ul>
+                    </div>
                 </li>
                 @endcanany
 
@@ -208,7 +284,7 @@
                 @endcanany
 
                 {{-- ── SUPPLY CHAIN ─────────────────────────── --}}
-                @canany(['supplier-view', 'purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view', 'warehouse-dashboard-view', 'shipping-view', 'warehouse-view', 'product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view'])
+                @canany(['supplier-view', 'purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view', 'warehouse-dashboard-view', 'shipping-view', 'warehouse-view'])
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Supply Chain</small>
                 </li>
@@ -334,84 +410,8 @@
                 </li>
                 @endcanany
 
-                {{-- Catalog Management Dropdown --}}
-                @canany(['product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view'])
-                <li class="nav-item">
-                    <a class="nav-link {{ in_array($current, ['catalog.products', 'catalog.categories', 'catalog.brands', 'catalog.attributes', 'catalog.uom', 'catalog.tax-rates', 'catalog.hsn-codes']) ? 'active' : 'collapsed' }}"
-                       href="#"
-                       data-bs-toggle="collapse"
-                       data-bs-target="#catalogSubmenu"
-                       aria-expanded="{{ in_array($current, ['catalog.products', 'catalog.categories', 'catalog.brands', 'catalog.attributes', 'catalog.uom', 'catalog.tax-rates', 'catalog.hsn-codes']) ? 'true' : 'false' }}"
-                       aria-controls="catalogSubmenu">
-                        <i class="bi bi-shop-window"></i>
-                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Catalog Management</span>
-                        <i class="bi bi-chevron-down ms-auto"></i>
-                    </a>
-                    <div class="collapse {{ in_array($current, ['catalog.products', 'catalog.categories', 'catalog.brands', 'catalog.attributes', 'catalog.uom', 'catalog.tax-rates', 'catalog.hsn-codes']) ? 'show' : '' }}" id="catalogSubmenu">
-                        <ul class="nav nav-submenu">
-                            @can('product-view')
-                            <li class="nav-item">
-                                <a class="nav-link {{ $current === 'catalog.products' ? 'active' : '' }}" href="{{ route('catalog.products') }}">
-                                    <i class="bi bi-box-seam-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Products</span>
-                                </a>
-                            </li>
-                            @endcan
-                            @can('category-view')
-                            <li class="nav-item">
-                                <a class="nav-link {{ $current === 'catalog.categories' ? 'active' : '' }}" href="{{ route('catalog.categories') }}">
-                                    <i class="bi bi-diagram-3-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Categories</span>
-                                </a>
-                            </li>
-                            @endcan
-                            @can('brand-view')
-                            <li class="nav-item">
-                                <a class="nav-link {{ $current === 'catalog.brands' ? 'active' : '' }}" href="{{ route('catalog.brands') }}">
-                                    <i class="bi bi-patch-check-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Brands</span>
-                                </a>
-                            </li>
-                            @endcan
-                            @can('productattribute-view')
-                            <li class="nav-item">
-                                <a class="nav-link {{ $current === 'catalog.attributes' ? 'active' : '' }}" href="{{ route('catalog.attributes') }}">
-                                    <i class="bi bi-sliders2"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Attributes</span>
-                                </a>
-                            </li>
-                            @endcan
-                            @can('unitofmeasure-view')
-                            <li class="nav-item">
-                                <a class="nav-link {{ $current === 'catalog.uom' ? 'active' : '' }}" href="{{ route('catalog.uom') }}">
-                                    <i class="bi bi-rulers"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Units of Measure</span>
-                                </a>
-                            </li>
-                            @endcan
-                            @can('taxrate-view')
-                            <li class="nav-item">
-                                <a class="nav-link {{ $current === 'catalog.tax-rates' ? 'active' : '' }}" href="{{ route('catalog.tax-rates') }}">
-                                    <i class="bi bi-percent"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Tax Rates</span>
-                                </a>
-                            </li>
-                            @endcan
-                            @can('hsncode-view')
-                            <li class="nav-item">
-                                <a class="nav-link {{ $current === 'catalog.hsn-codes' ? 'active' : '' }}" href="{{ route('catalog.hsn-codes') }}">
-                                    <i class="bi bi-upc-scan"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">HSN Codes</span>
-                                </a>
-                            </li>
-                            @endcan
-                        </ul>
-                    </div>
-                </li>
-                @endcanany
-
                 {{-- ── ADMINISTRATION ─────────────────────────────── --}}
-                @canany(['user-view', 'role-view', 'village-view', 'orderreason-view', 'settings-view', 'audit-log-view'])
+                @canany(['user-view', 'role-view', 'department-view', 'attendance-view', 'leave-view', 'village-view', 'orderreason-view', 'settings-view', 'audit-log-view'])
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Administration</small>
                 </li>
@@ -512,7 +512,7 @@
                 @endcanany
 
                 {{-- System Settings Dropdown --}}
-                @canany(['village-view', 'orderreason-view', 'settings-view'])
+                @canany(['village-view', 'orderreason-view', 'settings-view', 'audit-log-view'])
                 <li class="nav-item">
                     <a class="nav-link {{ in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index', 'files']) ? 'active' : 'collapsed' }}"
                        href="#"

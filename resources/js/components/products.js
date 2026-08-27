@@ -559,6 +559,22 @@ document.addEventListener('alpine:init', () => {
         return;
       }
 
+      if (action === 'enable_sku') {
+        apiFetch(`${this.apiBase}/bulk-enable-sku`, {
+          method: 'POST',
+          body: JSON.stringify({ ids: this.selectedProducts }),
+        })
+          .then(async () => {
+            await this.loadProductsFromApi();
+            this.filterProducts();
+            this.calculateStats();
+            this.selectedProducts = [];
+            showToast('SKUs enabled successfully!', 'success');
+          })
+          .catch((error) => showToast(error.message || 'Failed to enable SKUs.', 'danger'));
+        return;
+      }
+
       const status = action === 'publish' ? 'published' : 'draft';
       apiFetch(`${this.apiBase}/bulk-status`, {
         method: 'POST',

@@ -28,7 +28,7 @@
 
     {{-- ── Stats Widgets ───────────────────────────────────────── --}}
     <div class="row g-4 g-lg-5 mb-5">
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-xl-2 col-lg-4 col-md-6">
             <div class="card stats-card cursor-pointer" @click="stockLevelFilter = ''; loadData()">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
@@ -46,7 +46,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-xl-2 col-lg-4 col-md-6">
             <div class="card stats-card">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
@@ -64,7 +64,43 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-xl-2 col-lg-4 col-md-6">
+            <div class="card stats-card">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
+                            <i class="bi bi-boxes"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted">Total Units</p>
+                            <div class="h3 mb-0" aria-live="polite"><span x-text="parseFloat(stats.total_units || 0).toFixed(0)"></span></div>
+                            <small class="text-secondary">
+                                <i class="bi bi-info-circle"></i> Sum of all quantity
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-md-6">
+            <div class="card stats-card cursor-pointer" @click="stockLevelFilter = 'in_stock'; loadData()">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted">In Stock</p>
+                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.in_stock ?? 0"></span></div>
+                            <small class="text-success">
+                                <i class="bi bi-check-circle"></i> Healthy stock levels
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-md-6">
             <div class="card stats-card cursor-pointer" @click="stockLevelFilter = 'low_stock'; loadData()">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
@@ -82,7 +118,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-xl-2 col-lg-4 col-md-6">
             <div class="card stats-card cursor-pointer" @click="stockLevelFilter = 'out_of_stock'; loadData()">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
@@ -118,7 +154,7 @@
                                        class="form-control form-control-sm"
                                        placeholder="Search product or SKU..."
                                        x-model="searchQuery"
-                                       @input="onSearch()"
+                                       @input.debounce.500ms="onSearch()"
                                        style="width: 220px;">
                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                             </div>
@@ -141,6 +177,16 @@
                                 <option value="in_stock">In Stock</option>
                                 <option value="low_stock">Low Stock</option>
                                 <option value="out_of_stock">Out of Stock</option>
+                            </select>
+                            {{-- Per Page Filter --}}
+                            <select class="form-select form-select-sm"
+                                    x-model="itemsPerPage"
+                                    @change="currentPage = 1; loadData()"
+                                    style="width: 110px;">
+                                <option value="10">10 / page</option>
+                                <option value="25">25 / page</option>
+                                <option value="50">50 / page</option>
+                                <option value="100">100 / page</option>
                             </select>
                         </div>
                     </div>
@@ -218,9 +264,16 @@
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width:38px;height:38px;">
-                                                <i class="bi bi-box-seam"></i>
-                                            </div>
+                                            <template x-if="item.product?.image_url">
+                                                <div class="rounded overflow-hidden d-flex align-items-center justify-content-center me-3 flex-shrink-0 border border-secondary-subtle bg-white" style="width:38px;height:38px;">
+                                                    <img :src="item.product.image_url" alt="" class="w-100 h-100 object-fit-contain">
+                                                </div>
+                                            </template>
+                                            <template x-if="!item.product?.image_url">
+                                                <div class="bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width:38px;height:38px;">
+                                                    <i class="bi bi-box-seam"></i>
+                                                </div>
+                                            </template>
                                             <div>
                                                 <div class="fw-medium" x-text="item.product?.name || '-'"></div>
                                                 <small class="text-muted font-monospace" x-text="item.product?.sku || ''"></small>

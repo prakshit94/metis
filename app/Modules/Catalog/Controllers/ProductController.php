@@ -177,6 +177,24 @@ class ProductController extends Controller
         ]);
     }
 
+    public function bulkEnableSku(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-edit'), 403);
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:products,id'],
+        ]);
+
+        Product::whereIn('id', $data['ids'])->update([
+            'is_sku_enabled' => true,
+        ]);
+
+        return response()->json([
+            'message' => 'SKUs enabled for selected products.',
+        ]);
+    }
+
     public function restore(Request $request, string $product): JsonResponse
     {
         abort_unless($request->user()?->can('product-restore'), 403);

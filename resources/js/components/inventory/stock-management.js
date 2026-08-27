@@ -129,6 +129,22 @@ export default () => ({
 
     get paginatedItems() { return this.items; },
 
+    onSearch() {
+        this.currentPage = 1;
+        this.loadData();
+    },
+
+    sortBy(field) {
+        if (this.sortField === field) {
+            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.sortField = field;
+            this.sortDirection = 'asc';
+        }
+        this.currentPage = 1;
+        this.loadData();
+    },
+
     get pageFrom() { return this.totalItems === 0 ? 0 : (this.currentPage - 1) * this.itemsPerPage + 1; },
     get pageTo() { return Math.min(this.currentPage * this.itemsPerPage, this.totalItems); },
 
