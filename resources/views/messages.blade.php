@@ -4,50 +4,60 @@
 @section('page', 'messages')
 
 @section('content')
-<div class="container-fluid p-4 p-lg-4">
-                    
-                    <!-- Page Header -->
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h1 class="h3 mb-0">Messages</h1>
-                            <p class="text-muted mb-0">Real-time communication center</p>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-outline-secondary d-lg-none" @click="toggleSidebar()">
-                                <i class="bi bi-list me-2"></i>Conversations
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" @click="markAllRead()">
-                                <i class="bi bi-check-all me-2"></i>Mark All Read
-                            </button>
-                            <button type="button" class="btn btn-primary" @click="newConversation()">
-                                <i class="bi bi-plus-lg me-2"></i>New Message
-                            </button>
-                        </div>
-                    </div>
+<div class="messages-page" x-data="messagesComponent" x-init="init()">
 
-                    <!-- Messages Container -->
-                    <div x-data="messagesComponent" x-init="init()" class="messages-page messages-container">
-                        <div class="messages-layout">
-                            
-                            <!-- Conversations Sidebar -->
-                            <div class="messages-sidebar" :class="{ 'mobile-show': sidebarVisible }">
-                                <!-- Sidebar Header -->
-                                <div class="messages-header">
-                                    <h5 class="header-title mb-0">Messages</h5>
-                                    <div class="d-flex gap-2 mt-3">
-                                        <div class="search-container flex-grow-1">
-                                            <input type="search" 
-                                                   class="form-control" 
-                                                   placeholder="Search conversations..."
-                                                   x-model="searchQuery"
-                                                   @input="filterConversations()">
-                                            <i class="bi bi-search search-icon"></i>
-                                        </div>
-                                        <button class="btn btn-primary btn-sm" @click="newConversation()" title="New Message">
-                                            <i class="bi bi-plus-lg"></i>
-                                        </button>
-                                    </div>
-                                </div>
+    {{-- Page Header --}}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 fw-bold"><i class="bi bi-chat-dots-fill text-primary me-2"></i>Messages</h1>
+            <p class="text-muted mb-0 small">Real-time communication center</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button type="button" class="btn btn-outline-secondary d-lg-none" @click="toggleSidebar()">
+                <i class="bi bi-list me-2"></i>Conversations
+            </button>
+            <button type="button" class="btn btn-outline-secondary" @click="markAllRead()">
+                <i class="bi bi-check-all me-2"></i>Mark All Read
+            </button>
+            <button type="button" class="btn btn-outline-primary" @click="createGroup()">
+                <i class="bi bi-people-fill me-2"></i>New Group
+            </button>
+            <button type="button" class="btn btn-primary" @click="newConversation()">
+                <i class="bi bi-plus-lg me-2"></i>New Message
+            </button>
+        </div>
+    </div>
+
+    {{-- Messages Container --}}
+    <div class="messages-container">
+        <div class="messages-layout">
+
+            {{-- Conversations Sidebar --}}
+            <div class="messages-sidebar" :class="{ 'mobile-show': sidebarVisible }">
+
+                {{-- Sidebar Header --}}
+                <div class="messages-header">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="header-title mb-0">Conversations</h5>
+                        <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill" x-text="conversations.length + ' chats'"></span>
+                    </div>
+                    <div class="search-container mb-3">
+                        <input type="search"
+                               class="form-control"
+                               placeholder="Search conversations..."
+                               x-model="searchQuery"
+                               @input="filterConversations()">
+                        <i class="bi bi-search search-icon"></i>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary btn-sm flex-fill" @click="newConversation()">
+                            <i class="bi bi-plus-lg me-1"></i>New Chat
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm flex-fill" @click="createGroup()">
+                            <i class="bi bi-people-fill me-1"></i>New Group
+                        </button>
+                    </div>
+                </div>
                                 
                                 <!-- Conversations List -->
                                 <div class="conversations-list">
@@ -246,9 +256,8 @@
                             </div>
 
                         </div>
-                    </div>
-
-                </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')

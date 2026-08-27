@@ -450,7 +450,84 @@ document.addEventListener('alpine:init', () => {
     },
 
     newConversation() {
-      this.showNotification('New conversation modal would open here', 'info');
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          title: 'New Message',
+          html: `
+            <div class="text-start">
+              <div class="mb-3">
+                <label class="form-label fw-medium">Send to</label>
+                <input type="text" id="newChatRecipient" class="form-control bg-body text-body border-secondary border-opacity-25" placeholder="Search name or number...">
+              </div>
+            </div>
+          `,
+          showCancelButton: true,
+          confirmButtonText: '<i class="bi bi-send me-1"></i>Start Chat',
+          cancelButtonText: 'Cancel',
+          customClass: {
+            confirmButton: 'btn btn-primary me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+            title: 'text-body-emphasis fs-4 fw-bold mt-2',
+            htmlContainer: 'text-body'
+          },
+          buttonsStyling: false,
+          background: 'transparent',
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.showNotification('Chat started!', 'success');
+          }
+        });
+      } else {
+        this.showNotification('New conversation modal would open here', 'info');
+      }
+    },
+
+    createGroup() {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          title: 'Create Group',
+          html: `
+            <div class="text-start">
+              <div class="mb-3">
+                <label class="form-label fw-medium">Group Name <span class="text-danger">*</span></label>
+                <input type="text" id="groupName" class="form-control bg-body text-body border-secondary border-opacity-25" placeholder="e.g. Sales Team, Project Alpha...">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-medium">Add Members</label>
+                <input type="text" id="groupMembers" class="form-control bg-body text-body border-secondary border-opacity-25" placeholder="Search and add people...">
+                <div class="form-text">You can add more members after creating the group.</div>
+              </div>
+            </div>
+          `,
+          showCancelButton: true,
+          confirmButtonText: '<i class="bi bi-people-fill me-1"></i>Create Group',
+          cancelButtonText: 'Cancel',
+          customClass: {
+            confirmButton: 'btn btn-primary me-2',
+            cancelButton: 'btn btn-secondary',
+            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+            title: 'text-body-emphasis fs-4 fw-bold mt-2',
+            htmlContainer: 'text-body'
+          },
+          buttonsStyling: false,
+          background: 'transparent',
+          preConfirm: () => {
+            const name = document.getElementById('groupName')?.value?.trim();
+            if (!name) {
+              Swal.showValidationMessage('Please enter a group name');
+              return false;
+            }
+            return { name };
+          }
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.showNotification(`Group "${result.value.name}" created!`, 'success');
+          }
+        });
+      } else {
+        this.showNotification('Create group modal would open here', 'info');
+      }
     },
 
     videoCall() {
@@ -517,7 +594,12 @@ document.addEventListener('alpine:init', () => {
           toast: true,
           position: 'top-end',
           showConfirmButton: false,
-          timer: 3000
+          timer: 3000,
+          background: 'transparent',
+          customClass: {
+            popup: 'colored-toast bg-body text-body shadow-lg rounded-3 border-0',
+            title: 'text-body-emphasis'
+          }
         });
       } else {
         alert(message);

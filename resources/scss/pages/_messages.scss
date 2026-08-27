@@ -6,7 +6,7 @@
   
   // Main messages container
   .messages-container {
-    height: calc(100vh - var(--header-height) - 2rem);
+    height: calc(100vh - var(--header-height) - 8rem);
     background: var(--messages-bg);
     border-radius: var(--border-radius-lg);
     overflow: hidden;
@@ -14,7 +14,7 @@
     border: 1px solid var(--messages-border);
 
     @include media-breakpoint-up(lg) {
-      height: calc(100vh - var(--header-height) - 1rem);
+      height: calc(100vh - var(--header-height) - 7.5rem);
     }
   }
 
@@ -859,26 +859,26 @@
 // CSS CUSTOM PROPERTIES
 // ==========================================================================
 
-:root {
-  --messages-bg: #{$body-bg};
-  --messages-sidebar-bg: #{$white};
-  --messages-border: #{$border-color};
-  --messages-text: #{$body-color};
-  --messages-text-muted: #{$text-muted};
-  --messages-chat-bg: #{$gray-50};
-  --messages-bubble-bg: #{$white};
-  --messages-input-bg: #{$white};
+:root, [data-bs-theme="light"] {
+  --messages-bg: var(--bs-body-bg);
+  --messages-sidebar-bg: var(--bs-body-bg);
+  --messages-border: var(--bs-border-color);
+  --messages-text: var(--bs-body-color);
+  --messages-text-muted: var(--bs-secondary-color);
+  --messages-chat-bg: var(--bs-secondary-bg);
+  --messages-bubble-bg: var(--bs-body-bg);
+  --messages-input-bg: var(--bs-body-bg);
 }
 
 [data-bs-theme="dark"] {
-  --messages-bg: #{$dark-bg};
-  --messages-sidebar-bg: #{$gray-800};
-  --messages-border: #{$dark-border-color};
-  --messages-text: #{$dark-color};
-  --messages-text-muted: #{$dark-text-muted};
-  --messages-chat-bg: #{$gray-900};
-  --messages-bubble-bg: #{$gray-800};
-  --messages-input-bg: #{$gray-800};
+  --messages-bg: var(--bs-body-bg);
+  --messages-sidebar-bg: var(--bs-body-bg);
+  --messages-border: var(--bs-border-color);
+  --messages-text: var(--bs-body-color);
+  --messages-text-muted: var(--bs-secondary-color);
+  --messages-chat-bg: var(--bs-secondary-bg);
+  --messages-bubble-bg: var(--bs-tertiary-bg);
+  --messages-input-bg: var(--bs-tertiary-bg);
 
   .conversation-item.active {
     .conversation-name,
@@ -897,7 +897,7 @@
 @include media-breakpoint-down(lg) {
   .messages-page {
     .messages-container {
-      height: calc(100vh - var(--header-height) - 1rem);
+      height: calc(100vh - var(--header-height) - 7rem);
     }
 
     .chat-header .chat-user-info {
