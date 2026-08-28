@@ -6,26 +6,32 @@
 @section('content')
 @php
     $now = now();
-    $activeOffers = \App\Modules\Orders\Models\Offer::where('is_active', true)
-        ->where(function($q) use ($now) {
-            $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
-        })
-        ->where(function($q) use ($now) {
-            $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
-        })->get();
+    $activeOffers = \Illuminate\Support\Facades\Cache::remember('active_offers_global', 3600, function () use ($now) {
+        return \App\Modules\Orders\Models\Offer::where('is_active', true)
+            ->where(function($q) use ($now) {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
+            })
+            ->where(function($q) use ($now) {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
+            })->get();
+    });
     
-    $activeCoupons = \App\Modules\Orders\Models\Coupon::where('is_active', true)
-        ->where(function($q) use ($now) {
-            $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', $now);
-        })->get();
+    $activeCoupons = \Illuminate\Support\Facades\Cache::remember('active_coupons_global', 3600, function () use ($now) {
+        return \App\Modules\Orders\Models\Coupon::where('is_active', true)
+            ->where(function($q) use ($now) {
+                $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', $now);
+            })->get();
+    });
         
-    $activeReferrals = \App\Models\ReferralProgram::where('is_active', true)
-        ->where(function($q) use ($now) {
-            $q->whereNull('start_date')->orWhere('start_date', '<=', $now);
-        })
-        ->where(function($q) use ($now) {
-            $q->whereNull('end_date')->orWhere('end_date', '>=', $now);
-        })->get();
+    $activeReferrals = \Illuminate\Support\Facades\Cache::remember('active_referrals_global', 3600, function () use ($now) {
+        return \App\Models\ReferralProgram::where('is_active', true)
+            ->where(function($q) use ($now) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', $now);
+            })
+            ->where(function($q) use ($now) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', $now);
+            })->get();
+    });
 @endphp
 <script>
     window.globalPromotions = {

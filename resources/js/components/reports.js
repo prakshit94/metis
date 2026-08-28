@@ -1,23 +1,22 @@
 import Alpine from 'alpinejs';
-import { createSearchComponent } from '../utils/search-component.js';
 
-document.addEventListener('alpine:init', () => {
+const registerComponent = () => {
   const getStartOfDay = () => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    return now.toISOString().slice(0, 16);
+    return now.toISOString().slice(0, 10);
   };
 
   const getEndOfDay = () => {
     const now = new Date();
     now.setHours(23, 59, 59, 999);
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    return now.toISOString().slice(0, 16);
+    return now.toISOString().slice(0, 10);
   };
 
   Alpine.data('reportsComponent', () => ({
-    // Filter settings
+    // Export settings
     reportType: 'sales_overview',
     dateFrom: getStartOfDay(),
     dateTo: getEndOfDay(),
@@ -28,26 +27,12 @@ document.addEventListener('alpine:init', () => {
       const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
     },
 
-    scheduleReport() {
-      this.showToast('Info', 'Report scheduling would open here', 'info');
-    },
-
-    exportData() {
-      this.showToast('Info', 'Exporting data...', 'info');
-    },
-
-    generateReport() {
-      this.showToast('Info', 'New report generation would start here', 'info');
-    },
-
     downloadAdvancedReport() {
       if (!this.dateFrom || !this.dateTo) {
          this.showToast('Error', 'Please select both Date From and Date To', 'danger');
          return;
       }
 
-      console.log('Downloading CSV Report:', this.reportType, 'From:', this.dateFrom, 'To:', this.dateTo);
-      
       const url = new URL(window.location.origin + '/reports/export');
       url.searchParams.append('type', this.reportType);
       url.searchParams.append('from', this.dateFrom);
@@ -95,4 +80,10 @@ document.addEventListener('alpine:init', () => {
       return container;
     }
   }));
-});
+};
+
+if (window.Alpine) {
+    registerComponent();
+} else {
+    document.addEventListener('alpine:init', registerComponent);
+}

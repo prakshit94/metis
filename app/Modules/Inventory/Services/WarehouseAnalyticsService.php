@@ -224,7 +224,10 @@ class WarehouseAnalyticsService
             $query->where('created_at', '>=', $dateStart);
         }
 
-        $orders = $query->get(['status', 'net_amount']);
+        $aggregates = $query->selectRaw('status, COUNT(*) as count, SUM(net_amount) as amount')
+            ->groupBy('status')
+            ->get();
+
         $pipeline = [
             'pending' => ['count' => 0, 'amount' => 0],
             'confirmed' => ['count' => 0, 'amount' => 0],
@@ -236,10 +239,10 @@ class WarehouseAnalyticsService
             'cancelled' => ['count' => 0, 'amount' => 0],
         ];
 
-        foreach ($orders as $order) {
-            if (isset($pipeline[$order->status])) {
-                $pipeline[$order->status]['count']++;
-                $pipeline[$order->status]['amount'] += (float) $order->net_amount;
+        foreach ($aggregates as $agg) {
+            if (isset($pipeline[$agg->status])) {
+                $pipeline[$agg->status]['count'] = (int) $agg->count;
+                $pipeline[$agg->status]['amount'] = (float) $agg->amount;
             }
         }
         

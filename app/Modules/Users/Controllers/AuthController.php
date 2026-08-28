@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -58,10 +60,14 @@ class AuthController extends Controller
         $email = $request->validated('email');
         $ip = $request->ip() ?? '0.0.0.0';
 
-        // ── 1. Check rate limit BEFORE attempting auth ──────────────────────
-        $recentFailures = LoginHistory::recentFailedFor($email, $ip, self::LOCKOUT_WINDOW_MIN)->count();
+        $emailKey = 'login_email:'.Str::lower($email);
+        $ipKey = 'login_ip:'.$ip;
 
-        if ($recentFailures >= self::MAX_ATTEMPTS) {
+        // ── 1. Check rate limit BEFORE attempting auth ──────────────────────
+        $tooManyAttempts = RateLimiter::tooManyAttempts($emailKey, self::MAX_ATTEMPTS) || 
+                           RateLimiter::tooManyAttempts($ipKey, self::MAX_ATTEMPTS);
+
+        if ($tooManyAttempts) {
             // Suspend any matching active user account
             $target = User::where('email', $email)->first();
             if ($target !== null) {
@@ -101,6 +107,9 @@ class AuthController extends Controller
         }
 
         if ($user === null || ! $isValid) {
+            RateLimiter::hit($emailKey, self::LOCKOUT_WINDOW_MIN * 60);
+            RateLimiter::hit($ipKey, self::LOCKOUT_WINDOW_MIN * 60);
+            
             // Fire the native Failed event so our listener captures it
             Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
 
@@ -109,16 +118,26 @@ class AuthController extends Controller
 
         // ── 3. Guard: suspended or inactive accounts ─────────────────────────
         if ($user->isSuspended()) {
+            RateLimiter::hit($emailKey, self::LOCKOUT_WINDOW_MIN * 60);
+            RateLimiter::hit($ipKey, self::LOCKOUT_WINDOW_MIN * 60);
+            
             Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
 
             return $this->genericFailure($request);
         }
 
         if (! $user->isActive()) {
+            RateLimiter::hit($emailKey, self::LOCKOUT_WINDOW_MIN * 60);
+            RateLimiter::hit($ipKey, self::LOCKOUT_WINDOW_MIN * 60);
+            
             Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
 
             return $this->genericFailure($request);
         }
+
+        // Clear rate limiter on successful authentication
+        RateLimiter::clear($emailKey);
+        RateLimiter::clear($ipKey);
 
         // ── 4. Issue credentials ─────────────────────────────────────────────
         if ($this->isMobileRequest($request)) {

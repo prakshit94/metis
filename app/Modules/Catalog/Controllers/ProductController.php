@@ -715,51 +715,53 @@ class ProductController extends Controller
 
     private function catalogOptions(): array
     {
-        return [
-            'categories' => Category::query()
-                ->whereNull('parent_id')
-                ->with('children')
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Category $category) => [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                    'children' => $category->children->map(fn (Category $child) => [
-                        'id' => $child->id,
-                        'name' => $child->name,
-                        'slug' => $child->slug,
+        return \Illuminate\Support\Facades\Cache::remember('catalog_options', 3600, function () {
+            return [
+                'categories' => Category::query()
+                    ->whereNull('parent_id')
+                    ->with('children')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(fn (Category $category) => [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'slug' => $category->slug,
+                        'children' => $category->children->map(fn (Category $child) => [
+                            'id' => $child->id,
+                            'name' => $child->name,
+                            'slug' => $child->slug,
+                        ])->values(),
                     ])->values(),
-                ])->values(),
-            'brands' => Brand::query()->orderBy('name')->get(['id', 'name'])->values(),
-            'suppliers' => \App\Modules\Inventory\Models\Supplier::query()->orderBy('company_name')->get(['id', 'company_name', 'firstname', 'lastname'])->values(),
-            'uoms' => UnitOfMeasure::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'short_name'])->values(),
-            'taxRates' => TaxRate::query()->where('status', 'active')->orderBy('rate')->get(['id', 'name', 'rate'])->values(),
-            'hsnCodes' => HsnCode::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'description'])->values(),
-            'warehouses' => Warehouse::query()->orderBy('name')->get(['id', 'name'])->values(),
-            'attributes' => ProductAttribute::query()
-                ->where('status', 'active')
-                ->with(['values' => fn ($query) => $query->where('status', 'active')->orderBy('value')])
-                ->orderBy('name')
-                ->get()
-                ->map(fn (ProductAttribute $attribute) => [
-                    'id' => $attribute->id,
-                    'name' => $attribute->name,
-                    'type' => $attribute->type,
-                    'values' => $attribute->values->map(fn (ProductAttributeValue $value) => [
-                        'id' => $value->id,
-                        'value' => $value->value,
-                        'color_code' => $value->color_code,
+                'brands' => Brand::query()->orderBy('name')->get(['id', 'name'])->values(),
+                'suppliers' => \App\Modules\Inventory\Models\Supplier::query()->orderBy('company_name')->get(['id', 'company_name', 'firstname', 'lastname'])->values(),
+                'uoms' => UnitOfMeasure::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'short_name'])->values(),
+                'taxRates' => TaxRate::query()->where('status', 'active')->orderBy('rate')->get(['id', 'name', 'rate'])->values(),
+                'hsnCodes' => HsnCode::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'description'])->values(),
+                'warehouses' => Warehouse::query()->orderBy('name')->get(['id', 'name'])->values(),
+                'attributes' => ProductAttribute::query()
+                    ->where('status', 'active')
+                    ->with(['values' => fn ($query) => $query->where('status', 'active')->orderBy('value')])
+                    ->orderBy('name')
+                    ->get()
+                    ->map(fn (ProductAttribute $attribute) => [
+                        'id' => $attribute->id,
+                        'name' => $attribute->name,
+                        'type' => $attribute->type,
+                        'values' => $attribute->values->map(fn (ProductAttributeValue $value) => [
+                            'id' => $value->id,
+                            'value' => $value->value,
+                            'color_code' => $value->color_code,
+                        ])->values(),
                     ])->values(),
-                ])->values(),
-            'statusList' => [
-                ['value' => 'active', 'label' => 'Active'],
-                ['value' => 'published', 'label' => 'Published'],
-                ['value' => 'pending', 'label' => 'Pending'],
-                ['value' => 'draft', 'label' => 'Draft'],
-                ['value' => 'out_of_stock', 'label' => 'Out of Stock'],
-            ],
-        ];
+                'statusList' => [
+                    ['value' => 'active', 'label' => 'Active'],
+                    ['value' => 'published', 'label' => 'Published'],
+                    ['value' => 'pending', 'label' => 'Pending'],
+                    ['value' => 'draft', 'label' => 'Draft'],
+                    ['value' => 'out_of_stock', 'label' => 'Out of Stock'],
+                ],
+            ];
+        });
     }
 
     private function syncAttributes(Product $product, ?array $attributeIds): void

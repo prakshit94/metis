@@ -40,7 +40,9 @@ class WarehouseDashboardController extends Controller
         $shrinkageValue = $this->analyticsService->getShrinkageValue($warehouseId, $dateRange);
         $lowStockAlerts = $this->analyticsService->getLowStockAlerts($warehouseId);
 
-        $warehouses = Warehouse::active()->get();
+        $warehouses = \Illuminate\Support\Facades\Cache::remember('active_warehouses_list', 3600, function () {
+            return Warehouse::active()->get();
+        });
 
         $pipeline = $this->analyticsService->getFulfillmentPipeline($warehouseId, $dateRange);
 
