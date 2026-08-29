@@ -404,6 +404,12 @@
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Shipping Services</span>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'shipping.settings' ? 'active' : '' }}" href="{{ route('shipping.settings') }}">
+                                    <i class="bi bi-sliders"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Shipping Settings</span>
+                                </a>
+                            </li>
                             @endcan
                         </ul>
                     </div>

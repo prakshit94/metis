@@ -60,6 +60,12 @@ class ServiceSeeder extends Seeder
                 'description' => 'Budget-friendly courier service for standard parcels. Wide network covering 17,500+ pin codes.',
                 'is_active'   => false,
             ],
+            [
+                'code'        => 'INDIA_POST',
+                'name'        => 'India Post',
+                'description' => 'Government-backed postal service for deep rural and remote deliveries. Integrated with physical dimensions.',
+                'is_active'   => true,
+            ],
         ];
 
         foreach ($services as $service) {

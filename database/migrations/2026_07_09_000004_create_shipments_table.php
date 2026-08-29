@@ -19,6 +19,12 @@ return new class extends Migration {
             $table->integer('delivery_attempts')->default(0);
             $table->timestamp('next_followup_date')->nullable();
             $table->string('reschedule_reason')->nullable();
+            $table->decimal('actual_weight_g', 8, 2)->nullable();
+            $table->decimal('length_cm', 8, 2)->nullable();
+            $table->decimal('width_cm', 8, 2)->nullable();
+            $table->decimal('height_cm', 8, 2)->nullable();
+            $table->decimal('shipping_cost', 10, 2)->nullable();
+            $table->json('provider_response')->nullable();
             $table->timestamps();
             $table->softDeletes()->index();
 

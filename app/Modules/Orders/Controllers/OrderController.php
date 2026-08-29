@@ -740,14 +740,14 @@ class OrderController extends Controller implements HasMiddleware
 
         $validated = $request->validate([
             'carrier_name' => 'required|string|max:255',
-            'tracking_no' => 'required|string|max:255',
+            'tracking_no' => 'required_unless:carrier_name,India Post|nullable|string|max:255',
         ]);
 
         try {
-            $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no']);
+            $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no'] ?? null);
             $order->statusLogs()->create([
                 'status' => 'ready_to_ship',
-                'notes' => 'Order marked as ready to ship. Carrier: ' . $validated['carrier_name'] . ', Tracking: ' . $validated['tracking_no'],
+                'notes' => 'Order marked as ready to ship. Carrier: ' . $validated['carrier_name'] . ', Tracking: ' . ($validated['tracking_no'] ?? 'Auto-generated'),
                 'changed_by' => auth()->id(),
             ]);
         } catch (ValidationException $e) {

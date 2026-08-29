@@ -24,12 +24,19 @@ class Shipment extends Model implements Auditable
         'delivery_attempts',
         'next_followup_date',
         'reschedule_reason',
+        'actual_weight_g',
+        'length_cm',
+        'width_cm',
+        'height_cm',
+        'shipping_cost',
+        'provider_response',
     ];
 
     protected $casts = [
         'shipped_at' => 'datetime',
         'delivered_at' => 'datetime',
         'next_followup_date' => 'datetime',
+        'provider_response' => 'array',
     ];
 
     public function order()

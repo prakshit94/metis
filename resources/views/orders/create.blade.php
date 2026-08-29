@@ -2234,7 +2234,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     this.billingAddressId = this.shippingAddressId;
                 }
             }
-            if (this.partyId) {
+            if (this.partyId && !this.customerDetails) {
                 await this.loadAddresses();
             }
 

@@ -565,7 +565,10 @@ class ProductController extends Controller
             'default_discount' => ['nullable', 'numeric', 'min:0'],
             'default_discount_type' => ['nullable', 'in:percent,flat'],
             'grade' => ['nullable', 'in:A,B,C,D'],
-            'is_sku_enabled' => ['nullable', 'boolean'],
+            'weight_g' => ['nullable', 'numeric', 'min:0'],
+            'length_cm' => ['nullable', 'numeric', 'min:0'],
+            'width_cm' => ['nullable', 'numeric', 'min:0'],
+            'height_cm' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $validated['attributes'] = $validated['attributes'] ?? null;
@@ -587,6 +590,10 @@ class ProductController extends Controller
         $product->hsn_code_id = $this->resolveId($data['hsn_code_id'] ?? null);
         $product->barcode = $this->nullableString($data['barcode'] ?? null);
         $product->weight = $this->nullableString($data['weight'] ?? null);
+        $product->weight_g = isset($data['weight_g']) ? (float) $data['weight_g'] : null;
+        $product->length_cm = isset($data['length_cm']) ? (float) $data['length_cm'] : null;
+        $product->width_cm = isset($data['width_cm']) ? (float) $data['width_cm'] : null;
+        $product->height_cm = isset($data['height_cm']) ? (float) $data['height_cm'] : null;
         $product->purchase_price = (float) $data['purchase_price'];
         $product->mrp = isset($data['mrp']) && $data['mrp'] !== '' ? (float) $data['mrp'] : (float) $data['selling_price'];
         $product->selling_price = (float) $data['selling_price'];
@@ -661,6 +668,10 @@ class ProductController extends Controller
             'warehouse_data' => $product->warehouse,
             'barcode' => $product->barcode,
             'weight' => $product->weight,
+            'weight_g' => $product->weight_g,
+            'length_cm' => $product->length_cm,
+            'width_cm' => $product->width_cm,
+            'height_cm' => $product->height_cm,
             'price' => (float) $product->selling_price,
             'selling_price' => (float) $product->selling_price,
             'purchase_price' => (float) $product->purchase_price,

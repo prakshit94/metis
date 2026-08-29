@@ -622,6 +622,27 @@
                                                 <label class="form-label fw-medium text-muted small">Weight / Volume <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control" x-model="form.weight" required placeholder="e.g. 1kg, 500ml">
                                             </div>
+                                            <div class="col-md-12 mt-3">
+                                                <h6 class="fw-bold mb-3 border-bottom pb-2" style="font-size: 13px;">Physical Dimensions (For Shipping)</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label fw-medium text-muted small">Weight (g)</label>
+                                                        <input type="number" step="0.01" class="form-control" x-model="form.weight_g" placeholder="e.g. 1000">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label fw-medium text-muted small">Length (cm)</label>
+                                                        <input type="number" step="0.01" class="form-control" x-model="form.length_cm" placeholder="e.g. 10">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label fw-medium text-muted small">Width (cm)</label>
+                                                        <input type="number" step="0.01" class="form-control" x-model="form.width_cm" placeholder="e.g. 10">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label fw-medium text-muted small">Height (cm)</label>
+                                                        <input type="number" step="0.01" class="form-control" x-model="form.height_cm" placeholder="e.g. 10">
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -823,6 +844,13 @@
                                     <tbody>
                                         <tr x-show="product && product.barcode"><th class="ps-0" style="width:100px;">Barcode</th><td x-text="product ? product.barcode : ''"></td></tr>
                                         <tr x-show="product && product.weight"><th class="ps-0">Weight</th><td x-text="product ? product.weight : ''"></td></tr>
+                                        <tr x-show="product && (product.weight_g || product.length_cm || product.width_cm || product.height_cm)">
+                                            <th class="ps-0">Dimensions</th>
+                                            <td style="font-size: 11px;">
+                                                <span x-show="product.weight_g" x-text="product.weight_g + 'g '"></span>
+                                                <span x-show="product.length_cm || product.width_cm || product.height_cm" x-text="(product.length_cm || 0) + 'x' + (product.width_cm || 0) + 'x' + (product.height_cm || 0) + 'cm'"></span>
+                                            </td>
+                                        </tr>
                                         <tr x-show="product && product.uom"><th class="ps-0">UOM</th><td x-text="product ? product.uom : ''"></td></tr>
                                         <tr x-show="product && product.warehouse"><th class="ps-0">Warehouse</th><td x-text="product ? product.warehouse : ''"></td></tr>
                                         <tr x-show="product && product.slug"><th class="ps-0">URL Slug</th><td x-text="product ? product.slug : ''"></td></tr>

@@ -151,6 +151,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/villages', [PageController::class, 'villages'])->name('villages');
     Route::get('/shipping/shipments', [PageController::class, 'shipments'])->name('shipping.shipments')->middleware('permission:shipping-view');
     Route::get('/shipping/services', [PageController::class, 'shippingServices'])->name('shipping.services')->middleware('permission:shipping-view');
+    Route::get('/shipping/settings', [\App\Modules\Core\Controllers\ShippingSettingsController::class, 'index'])->name('shipping.settings')->middleware('permission:shipping-view');
+
     Route::get('/reports', [PageController::class, 'reports'])->name('reports');
     Route::get('/reports/export', [PageController::class, 'exportReports'])->name('reports.export');
     Route::get('/messages', [PageController::class, 'messages'])->name('messages');

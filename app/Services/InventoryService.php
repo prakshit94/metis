@@ -1000,10 +1000,30 @@ class InventoryService
                     'order_id' => $order->id,
                 ]);
             }
+            $shipmentDataArr = [];
+            if ($carrierName === 'India Post' && empty($trackingNo)) {
+                $shippingManager = app(\App\Services\Shipping\ShippingManager::class);
+                try {
+                    $provider = $shippingManager->driver('india_post');
+                    $shipmentDataArr = $provider->createShipment($order);
+                    $trackingNo = $shipmentDataArr['tracking_number'];
+                } catch (\Exception $e) {
+                    throw ValidationException::withMessages([
+                        'tracking_no' => 'Failed to create shipment with India Post: ' . $e->getMessage()
+                    ]);
+                }
+            }
+
             $shipment->fill([
                 'carrier_name' => $carrierName,
                 'tracking_no' => $trackingNo,
                 'status' => 'pending',
+                'actual_weight_g' => $shipmentDataArr['actual_weight_g'] ?? null,
+                'length_cm' => $shipmentDataArr['length_cm'] ?? null,
+                'width_cm' => $shipmentDataArr['width_cm'] ?? null,
+                'height_cm' => $shipmentDataArr['height_cm'] ?? null,
+                'shipping_cost' => $shipmentDataArr['shipping_cost'] ?? null,
+                'provider_response' => $shipmentDataArr['provider_response'] ?? null,
             ]);
             $shipment->save();
         }, 3);

@@ -158,6 +158,20 @@ br {
                <strong>To Collect:</strong>
                ₹ {{ number_format($invoice->net_amount, 2) }}<br>
                @endif
+               @if($invoice->order?->shipments && $shipment = $invoice->order->shipments->first())
+               <br>
+               <strong>Tracking No:</strong> {{ $shipment->tracking_no ?? 'N/A' }}<br>
+               @if($shipment->tracking_no)
+               @php
+                  $generator = new \Picqer\Barcode\BarcodeGeneratorPNG();
+                  $barcodeBase64 = base64_encode($generator->getBarcode($shipment->tracking_no, $generator::TYPE_CODE_128));
+               @endphp
+               <img src="data:image/png;base64,{{ $barcodeBase64 }}" style="height: 25px; max-width: 100%; margin-top: 3px; margin-bottom: 3px;" alt="Barcode" /><br>
+               @endif
+               @if($shipment->actual_weight_g)
+               <strong>Weight:</strong> {{ $shipment->actual_weight_g }} g<br>
+               @endif
+               @endif
                <br>
                @if($invoice->order?->warehouse?->reference_no)
                <strong>Reference No:</strong> {{ $invoice->order->warehouse->reference_no }}<br>

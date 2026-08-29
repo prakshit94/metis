@@ -35,6 +35,7 @@ Route::post('/auth/login', [AuthController::class, 'login'])
 // ─── Authenticated (Sanctum token required) ───────────────────────────────────
 
 Route::middleware('auth:sanctum')->group(function (): void {
+    Route::post('/shipping/settings', [\App\Modules\Core\Controllers\ShippingSettingsController::class, 'store'])->name('api.shipping.settings.store')->middleware('permission:settings-edit|shipping-view');
 
     // ── Auth & Token Management ──────────────────────────────────────────────
     Route::prefix('auth')->name('api.auth.')->group(function (): void {

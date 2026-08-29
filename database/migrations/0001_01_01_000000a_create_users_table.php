@@ -28,6 +28,8 @@ return new class extends Migration
             $table->enum('gender', ['Male', 'Female', 'Other', 'Prefer not to say'])->nullable();
             $table->string('blood_group', 10)->nullable();
             $table->string('designation')->nullable();
+            $table->foreignId('designation_id')->nullable()->constrained('designations')->nullOnDelete();
+            $table->foreignId('employment_type_id')->nullable()->constrained('employment_types')->nullOnDelete();
             
             // Address details
             $table->string('address_line_1')->nullable();

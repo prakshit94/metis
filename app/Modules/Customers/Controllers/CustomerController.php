@@ -264,7 +264,8 @@ class CustomerController extends Controller implements HasMiddleware
                 },
                 'orders' => function ($q) {
                     $q->latest()->limit(10)->with([
-                        'items.product:id,name,sku,image_path',
+                        'items.product:id,name,sku,image_path,tax_rate_id',
+                        'items.product.taxRate',
                         'warehouse:id,name',
                         'shippingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
                         'billingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',

@@ -1698,14 +1698,20 @@
                         </template>
                     </select>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3" x-show="shipCarrierName !== 'India Post'">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <label class="form-label fw-semibold mb-0">Tracking Number <span class="text-danger">*</span></label>
                         <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" @click="shipTrackingNo = 'TRK-' + Math.random().toString(36).substring(2, 12).toUpperCase()">
                             <i class="bi bi-magic me-1"></i>Generate Demo ID
                         </button>
                     </div>
-                    <input type="text" class="form-control font-monospace" x-model="shipTrackingNo" placeholder="Enter tracking number (e.g. TRK-12345678)" required>
+                    <input type="text" class="form-control font-monospace" x-model="shipTrackingNo" placeholder="Enter tracking number (e.g. TRK-12345678)" :required="shipCarrierName !== 'India Post'">
+                </div>
+                <div class="mb-3" x-show="shipCarrierName === 'India Post'" style="display: none;">
+                    <div class="alert alert-info py-2 px-3 mb-0 d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                        <span class="small">Tracking ID and shipping cost will be automatically calculated and retrieved from the India Post API.</span>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">

@@ -10,7 +10,7 @@ return new class extends Migration {
             $table->id();
             $table->string('order_no')->unique();
             $table->enum('type', ['sale', 'purchase'])->index();
-            $table->unsignedBigInteger('party_id')->nullable();
+            $table->foreignId('party_id')->nullable()->constrained('parties')->nullOnDelete();
             $table->dateTime('order_date');
             $table->decimal('total_amount', 15, 2)->default(0);
             $table->decimal('tax_amount', 15, 2)->default(0);
@@ -20,8 +20,7 @@ return new class extends Migration {
             $table->decimal('net_amount', 15, 2)->default(0);
             $table->decimal('wallet_amount_used', 15, 2)->default(0);
             $table->decimal('cashback_earned', 15, 2)->default(0);
-            $table->enum('status', ['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'cancelled', 'returned', 'return_requested'])->default('pending')->index();
-            $table->boolean('is_draft')->default(false)->index();
+            $table->enum('status', ['future_order', 'pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'cancelled', 'returned', 'return_requested'])->default('pending')->index();
             $table->date('future_order_date')->nullable();
             $table->dateTime('scheduled_confirmation_date')->nullable();
             $table->integer('confirmation_attempts')->default(0);
@@ -29,6 +28,10 @@ return new class extends Migration {
             // Status tracking
             $table->dateTime('pending_at')->nullable();
             $table->foreignId('pending_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('pending_confirmation_at')->nullable();
+            $table->unsignedBigInteger('pending_confirmation_by')->nullable();
+            $table->timestamp('future_order_at')->nullable();
+            $table->unsignedBigInteger('future_order_by')->nullable();
             $table->dateTime('confirmed_at')->nullable();
             $table->foreignId('confirmed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->dateTime('processing_at')->nullable();
@@ -49,7 +52,7 @@ return new class extends Migration {
             $table->foreignId('return_requested_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('warehouse_id')->nullable()->constrained()->nullOnDelete();
 
-            $table->unsignedBigInteger('shipping_address_id')->nullable();
+            $table->foreignId('shipping_address_id')->nullable()->constrained('party_addresses')->nullOnDelete();
             $table->string('shipping_address_line_1')->nullable();
             $table->string('shipping_address_line_2')->nullable();
             $table->foreignId('shipping_village_id')->nullable()->constrained('villages')->nullOnDelete();
@@ -61,7 +64,7 @@ return new class extends Migration {
             $table->string('shipping_state')->nullable();
             $table->string('shipping_pincode')->nullable();
 
-            $table->unsignedBigInteger('billing_address_id')->nullable();
+            $table->foreignId('billing_address_id')->nullable()->constrained('party_addresses')->nullOnDelete();
             $table->string('billing_address_line_1')->nullable();
             $table->string('billing_address_line_2')->nullable();
             $table->foreignId('billing_village_id')->nullable()->constrained('villages')->nullOnDelete();

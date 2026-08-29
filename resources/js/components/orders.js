@@ -982,7 +982,7 @@ document.addEventListener('alpine:init', () => {
         showToast('Please select a Carrier name.', 'warning');
         return;
       }
-      if (!this.shipTrackingNo || !this.shipTrackingNo.trim()) {
+      if (this.shipCarrierName !== 'India Post' && (!this.shipTrackingNo || !this.shipTrackingNo.trim())) {
         showToast('Please enter a Tracking Number.', 'warning');
         return;
       }

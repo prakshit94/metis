@@ -465,6 +465,10 @@ document.addEventListener('alpine:init', () => {
         default_warehouse_id: String(product.warehouse_id ?? ''),
         barcode: product.barcode ?? '',
         weight: product.weight ?? '',
+        weight_g: product.weight_g ?? '',
+        length_cm: product.length_cm ?? '',
+        width_cm: product.width_cm ?? '',
+        height_cm: product.height_cm ?? '',
         purchase_price: String(product.purchase_price ?? ''),
         mrp: String(product.mrp ?? ''),
         selling_price_inc_gst: (() => {
@@ -911,6 +915,10 @@ document.addEventListener('alpine:init', () => {
       default_warehouse_id: '',
       barcode: '',
       weight: '',
+      weight_g: '',
+      length_cm: '',
+      width_cm: '',
+      height_cm: '',
       purchase_price: '',
       mrp: '',
       selling_price_inc_gst: '',
@@ -948,6 +956,10 @@ document.addEventListener('alpine:init', () => {
         default_warehouse_id: '',
         barcode: '',
         weight: '',
+        weight_g: '',
+        length_cm: '',
+        width_cm: '',
+        height_cm: '',
         purchase_price: '',
         mrp: '',
         selling_price_inc_gst: '',
@@ -1031,6 +1043,10 @@ document.addEventListener('alpine:init', () => {
       if (this.form.default_warehouse_id) formData.append('default_warehouse_id', String(this.form.default_warehouse_id));
       if (this.form.barcode) formData.append('barcode', String(this.form.barcode).trim());
       if (this.form.weight) formData.append('weight', String(this.form.weight).trim());
+      if (this.form.weight_g !== '' && this.form.weight_g !== null) formData.append('weight_g', String(this.form.weight_g).trim());
+      if (this.form.length_cm !== '' && this.form.length_cm !== null) formData.append('length_cm', String(this.form.length_cm).trim());
+      if (this.form.width_cm !== '' && this.form.width_cm !== null) formData.append('width_cm', String(this.form.width_cm).trim());
+      if (this.form.height_cm !== '' && this.form.height_cm !== null) formData.append('height_cm', String(this.form.height_cm).trim());
       formData.append('purchase_price', String(Number(this.form.purchase_price || 0)));
       if (this.form.mrp !== '' && this.form.mrp !== null && this.form.mrp !== undefined) {
         formData.append('mrp', String(Number(this.form.mrp)));

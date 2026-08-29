@@ -128,7 +128,32 @@
 
         @php
             $address = $order->shippingAddress ?? $order->billingAddress;
+            $shipment = $order->shipments()->latest()->first();
+            $barcodeBase64 = null;
+            if ($shipment && $shipment->tracking_no) {
+                $generator = new \Picqer\Barcode\BarcodeGeneratorPNG();
+                $barcodeBase64 = base64_encode($generator->getBarcode($shipment->tracking_no, $generator::TYPE_CODE_128));
+            }
         @endphp
+
+        @if($shipment && $shipment->tracking_no)
+        <div class="box center">
+            <div style="font-size: 14px; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px;">
+                Tracking No: {{ $shipment->tracking_no }}
+            </div>
+            @if($barcodeBase64)
+            <div>
+                <img src="data:image/png;base64,{{ $barcodeBase64 }}" style="height: 35px; max-width: 100%; margin-bottom: 5px;" alt="Barcode" />
+            </div>
+            @endif
+            <div class="muted">
+                <strong>Weight:</strong> {{ $shipment->actual_weight_g ?? '-' }} g | 
+                <strong>Dimensions:</strong> {{ $shipment->length_cm ?? '-' }}x{{ $shipment->width_cm ?? '-' }}x{{ $shipment->height_cm ?? '-' }} cm | 
+                <strong>Tariff:</strong> ₹{{ $shipment->shipping_cost ?? '-' }}
+            </div>
+        </div>
+        <div class="divider"></div>
+        @endif
 
         <div class="box">
             <div style="font-weight: bold; text-decoration: underline; margin-bottom: 4px;">To,</div>
