@@ -308,13 +308,7 @@
                                                       'low-stock':    parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > 0 && parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= (item.product?.min_stock_level ?? 5),
                                                       'out-of-stock': parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= 0
                                                   }"
-                                                  x-text="parseFloat(item.quantity || 0) + ' units'">
-                                            </span>
-                                            <span x-show="item.allow_overselling ?? item.product?.allow_overselling" 
-                                                  class="badge bg-danger-subtle text-danger border border-danger-subtle px-1" 
-                                                  style="font-size: 10px;"
-                                                  title="Overselling Limit" x-cloak>
-                                                +<span x-text="item.overselling_qty ?? (item.product?.overselling_qty || 0)"></span>
+                                                  x-text="parseFloat(item.quantity || 0)">
                                             </span>
                                         </div>
                                     </td>
@@ -327,12 +321,6 @@
                                                       'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 0
                                                   }"
                                                   x-text="parseFloat((parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)).toFixed(4))">
-                                            </span>
-                                            <span x-show="item.allow_overselling ?? item.product?.allow_overselling" 
-                                                  class="badge bg-danger-subtle text-danger border border-danger-subtle px-1" 
-                                                  style="font-size: 10px;"
-                                                  title="Overselling Limit" x-cloak>
-                                                +<span x-text="item.overselling_qty ?? (item.product?.overselling_qty || 0)"></span>
                                             </span>
                                         </div>
                                     </td>

@@ -400,7 +400,7 @@
                                                                     data-bs-toggle="dropdown" data-bs-boundary="window">
                                                                 <i class="bi bi-three-dots"></i>
                                                             </button>
-                                                            <ul class="dropdown-menu">
+                                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="z-index: 1050;">
                                                                 @can('product-edit')
                                                                 <li x-show="warehouseFilter !== ''"><a class="dropdown-item" href="#" @click.prevent="editProduct(product)">
                                                                     <i class="bi bi-pencil me-2"></i>Edit

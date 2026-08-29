@@ -672,129 +672,138 @@
                         </div>
                         
                         {{-- Table View --}}
-                        <div class="table-responsive border rounded overflow-visible bg-body shadow-sm" x-show="viewMode === 'table'">
-                            <table class="table table-hover table-striped align-middle mb-0" style="font-size: 13px;">
-                                <thead class="border-bottom">
-                                    <tr class="text-body-secondary">
-                                        <th style="min-width: 250px;">Product Details</th>
+                        <div class="table-responsive" x-show="viewMode === 'table'">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Product Details</th>
                                         <th style="min-width: 150px;">Pricing & Offers</th>
                                         <th style="min-width: 150px;">Inventory</th>
-                                        <th class="text-center" style="min-width: 130px; width: 130px;">Order Action</th>
+                                        <th style="width: 140px;" class="text-end pe-4">Order Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <template x-for="p in filteredProducts" :key="'tbl-'+p.id">
                                         <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getMaxAllowedStock(p) <= 0}">
-                                            <td>
-                                                <div class="d-flex gap-2">
-                                                    <div x-show="p.grade" 
-                                                         class="badge border shadow-sm rounded-2 d-flex flex-column align-items-center justify-content-center mt-1 flex-shrink-0" 
-                                                         style="width: 28px; height: 34px; font-size: 11px; padding: 2px;"
-                                                         :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(p.grade)}"
-                                                         :title="'Grade ' + p.grade"
-                                                         x-cloak>
-                                                        <i class="bi bi-star-fill text-warning" style="font-size: 10px; line-height: 1; margin-bottom: 2px;"></i>
-                                                        <span x-text="p.grade" style="line-height: 1; font-weight: 800;"></span>
+                                            <td class="align-middle">
+                                                <div class="d-flex align-items-start gap-3">
+                                                    <div class="position-relative flex-shrink-0 cursor-pointer" @click="openProductModal(p)">
+                                                        <img :src="p.image_url || '/assets/images/product-placeholder.svg'" 
+                                                             class="rounded border shadow-sm object-fit-cover bg-body" 
+                                                             style="width: 48px; height: 48px;" 
+                                                             :alt="p.name"
+                                                             x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                        <div x-show="p.grade" 
+                                                             class="position-absolute top-100 start-50 translate-middle badge border shadow-sm rounded-pill px-2 d-flex align-items-center" 
+                                                             style="font-size: 9px; padding-top: 2px; padding-bottom: 2px;"
+                                                             :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(p.grade)}"
+                                                             :title="'Grade ' + p.grade"
+                                                             x-cloak>
+                                                            <i class="bi bi-star-fill text-warning me-1" style="font-size: 8px;"></i><span x-text="p.grade" style="font-weight: 800;"></span>
+                                                        </div>
                                                     </div>
-                                                    <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded border bg-body shadow-sm cursor-pointer" style="width:50px;height:50px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'" @click="openProductModal(p)">
-                                                    <div style="min-width: 0;">
-                                                        <div class="fw-bold text-body text-truncate mb-1 cursor-pointer text-primary-hover" :title="p.name" x-text="p.name" @click="openProductModal(p)"></div>
-                                                        <div class="small text-body-secondary mb-1" style="font-size: 11px;">
+                                                    <div class="d-flex flex-column min-w-0 pt-1">
+                                                        <a href="#" class="fw-bold text-decoration-none text-body-emphasis text-truncate mb-1 cursor-pointer" style="max-width: 220px;" @click.prevent="openProductModal(p)" x-text="p.name"></a>
+                                                        <div class="small text-body-secondary text-truncate mb-1" style="font-size: 10px;">
                                                             <span x-show="p.category && p.category.name" class="me-2"><i class="bi bi-tag-fill me-1 text-primary opacity-50"></i><span x-text="p.category.name"></span></span>
                                                             <span x-show="p.brand && p.brand.name"><i class="bi bi-award-fill me-1 text-warning opacity-75"></i><span x-text="p.brand.name"></span></span>
                                                         </div>
-                                                        <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
-                                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis" x-text="p.sku"></span>
-                                                            <span x-show="p.weight" class="badge bg-body-secondary border text-body-secondary" x-text="p.weight"></span>
+                                                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                                            <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis border border-secondary border-opacity-25" style="font-size: 10px; padding: 0.25em 0.5em;" x-text="'SKU: ' + p.sku"></span>
+                                                            <span x-show="p.weight" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;" x-text="p.weight"></span>
+                                                            <span class="badge" 
+                                                                  :class="{
+                                                                      'bg-success': ['published', 'active'].includes(p.status),
+                                                                      'bg-secondary': p.status === 'draft',
+                                                                      'bg-warning': ['pending', 'out_of_stock'].includes(p.status)
+                                                                  }"
+                                                                  x-text="p.status"></span>
                                                         </div>
-                                                        <div class="text-body-tertiary text-truncate mt-1" style="font-size: 10px; max-width: 250px;" x-show="p.description" :title="p.description" x-text="p.description"></div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="isHovered ? 'position: relative; z-index: 1050;' : ''">
-                                                <div class="d-flex justify-content-between align-items-start mt-2">
-                                                    <div>
-                                                        <div class="fw-bold text-primary fs-6 mb-1" x-text="'₹ ' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></div>
-                                                        <div class="small text-body-secondary text-decoration-line-through mb-1" x-show="p.mrp > (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100))" x-text="'MRP ₹ ' + parseFloat(p.mrp).toFixed(2)"></div>
-                                                    </div>
-                                                    <div class="badge bg-success" x-show="p.default_discount > 0"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
-                                                </div>
-                                                <div class="d-flex flex-wrap gap-1 mt-1" x-show="getProductPromotions(p).length > 0">
-                                                    <div class="position-relative" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
-                                                        <span class="badge border text-bg-primary-subtle text-primary-emphasis border-primary" style="font-size: 10px; cursor: pointer;">
-                                                            <i class="bi bi-tags me-1"></i> View Offers (<span x-text="getProductPromotions(p).length"></span>)
-                                                        </span>
-                                                        <div x-show="showTooltip" x-transition.opacity class="position-absolute" style="bottom: 100%; z-index: 9999; left: 0; margin-bottom: 8px; width: 280px; cursor: default;" x-cloak>
-                                                            <div class="card border border-secondary-subtle shadow-lg rounded-3 overflow-hidden">
-                                                                <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
-                                                                    <span class="fw-bold text-body" style="font-size: 12px;"><i class="bi bi-tags-fill me-1 text-primary"></i> Applicable Offers</span>
-                                                                    <span class="badge bg-primary rounded-pill" x-text="getProductPromotions(p).length"></span>
-                                                                </div>
-                                                                <div class="card-body p-0" style="max-height: 220px; overflow-y: auto;">
-                                                                    <template x-for="(promo, index) in getProductPromotions(p)">
-                                                                        <div class="p-2 px-3 border-bottom border-secondary-subtle transition-all">
-                                                                            <div class="d-flex align-items-start gap-2">
-                                                                                <div class="rounded d-flex align-items-center justify-content-center flex-shrink-0 mt-1" :class="'bg-' + promo.color + ' bg-opacity-10 text-' + promo.color" style="width: 24px; height: 24px;">
-                                                                                    <i class="bi" :class="promo.icon"></i>
-                                                                                </div>
-                                                                                <div>
-                                                                                    <div class="fw-bold text-body mb-1" style="font-size: 12px; line-height: 1.3;" x-text="promo.title"></div>
-                                                                                    <div class="text-body-secondary" style="font-size: 11px; line-height: 1.4;" x-html="promo.tooltip"></div>
-                                                                                </div>
-                                                                            </div>
+                                                        <div x-show="getProductPromotions(p).length > 0">
+                                                            <div class="position-relative d-inline-block" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
+                                                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill py-0 px-2 d-inline-flex align-items-center gap-1 bg-body" style="font-size: 10px;">
+                                                                    <i class="bi bi-gift-fill"></i> <span x-text="getProductPromotions(p).length + ' Offers'"></span>
+                                                                </button>
+                                                                <div x-show="showTooltip" x-transition.opacity class="position-absolute" style="top: 100%; z-index: 9999; left: 0; margin-top: 8px; width: 280px; cursor: default;" x-cloak>
+                                                                    <div class="card border border-secondary-subtle shadow-lg rounded-3 overflow-hidden">
+                                                                        <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
+                                                                            <span class="fw-bold text-body" style="font-size: 12px;"><i class="bi bi-tags-fill me-1 text-primary"></i> Applicable Offers</span>
+                                                                            <span class="badge bg-primary rounded-pill" x-text="getProductPromotions(p).length"></span>
                                                                         </div>
-                                                                    </template>
+                                                                        <div class="card-body p-0" style="max-height: 220px; overflow-y: auto;">
+                                                                            <template x-for="(promo, index) in getProductPromotions(p)">
+                                                                                <div class="p-2 px-3 border-bottom border-secondary-subtle transition-all">
+                                                                                    <div class="d-flex align-items-start gap-2">
+                                                                                        <div class="rounded d-flex align-items-center justify-content-center flex-shrink-0 mt-1" :class="'bg-' + promo.color + ' bg-opacity-10 text-' + promo.color" style="width: 24px; height: 24px;">
+                                                                                            <i class="bi" :class="promo.icon"></i>
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <div class="fw-bold text-body mb-1" style="font-size: 12px; line-height: 1.3;" x-text="promo.title"></div>
+                                                                                            <div class="text-body-secondary" style="font-size: 11px; line-height: 1.4;" x-html="promo.tooltip"></div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </template>
+                                                                        </div>
+                                                                    </div>
+                                                                    <!-- Tooltip Arrow -->
+                                                                    <div class="position-absolute bg-body border-top border-start border-secondary-subtle" style="width: 12px; height: 12px; transform: rotate(45deg); top: -6px; left: 20px; z-index: -1;"></div>
                                                                 </div>
                                                             </div>
-                                                            <!-- Tooltip Arrow -->
-                                                            <div class="position-absolute bg-body border-bottom border-end border-secondary-subtle" style="width: 12px; height: 12px; transform: rotate(45deg); bottom: -6px; left: 20px; z-index: -1;"></div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div class="d-flex flex-column gap-1 mb-1">
-                                                    <template x-if="!p.warehouse_stocks || p.warehouse_stocks.length === 0">
-                                                        <div>
-                                                            <span class="badge" :class="getWarehouseStock(p) > (p.min_stock_level || 10) ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-body-emphasis' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p)) + ' ' + (p.uom_id || 'Units')"></span>
-                                                        </div>
-                                                    </template>
-                                                    <template x-if="p.warehouse_stocks && p.warehouse_stocks.length > 0">
-                                                        <div class="d-flex flex-wrap gap-1">
-                                                            <template x-if="p.warehouse_stocks.some(w => String(w.warehouse_id) === String(warehouseId))">
-                                                                <template x-for="(ws, index) in p.warehouse_stocks.filter(w => String(w.warehouse_id) === String(warehouseId))" :key="index">
-                                                                    <span class="badge bg-secondary bg-opacity-10 border text-body-emphasis" style="font-size: 0.65rem;">
-                                                                        <span class="fw-bold" :class="getWarehouseStock(p) > 0 ? 'text-success' : 'text-danger'" x-text="getWarehouseStock(p)"></span>
-                                                                    </span>
-                                                                </template>
-                                                            </template>
-                                                            <template x-if="!p.warehouse_stocks.some(w => String(w.warehouse_id) === String(warehouseId))">
-                                                                <span class="badge bg-danger bg-opacity-10 border border-danger text-danger" style="font-size: 0.65rem;">
-                                                                    <i class="bi bi-x-circle me-1"></i>Not in selected warehouse
-                                                                </span>
-                                                            </template>
-                                                        </div>
-                                                    </template>
-                                                </div>
-                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <div class="small text-body-secondary" style="font-size: 11px;" x-show="p.min_stock_level > 0">Min Lvl: <span class="fw-medium" x-text="p.min_stock_level"></span></div>
-                                                    <span x-show="p.allow_overselling" class="badge text-bg-warning-subtle text-warning-emphasis" style="font-size: 9px;" title="Overselling Allowed"><i class="bi bi-infinity"></i> <span x-text="'Oversell: ' + getOversellStock(p)"></span></span>
-                                                </div>
-                                                <div class="d-flex flex-wrap gap-1 mt-1">
-                                                    <span x-show="p.batch_tracking" class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;"><i class="bi bi-box me-1"></i>Batch</span>
-                                                    <span x-show="p.expiry_tracking" class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
-                                                    <span x-show="!p.manage_stock" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;"><i class="bi bi-slash-circle me-1"></i>No Stock Mgmt</span>
+                                            <td class="align-middle">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="p.mrp > (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100))" x-text="'₹' + parseFloat(p.mrp).toFixed(2)"></span>
+                                                        <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 13px;" x-text="'₹' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></span>
+                                                        <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 ms-1" x-show="p.default_discount > 0" style="font-size: 10px;"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td class="text-center align-middle">
-                                                <div class="d-flex flex-column gap-2 mx-auto" style="max-width: 130px;">
+                                            <td class="align-middle">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <div class="p-2 bg-body-tertiary rounded border shadow-sm w-100" style="min-width: 160px; max-width: 200px;">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1 border-bottom border-secondary border-opacity-10 pb-1">
+                                                            <span class="text-muted fw-medium" style="font-size: 9px; letter-spacing: 0.5px;">AVAILABLE FOR SELL</span>
+                                                            <span class="badge" 
+                                                                  :class="{
+                                                                      'bg-success bg-opacity-10 text-success border border-success border-opacity-25': (getWarehouseStock(p) + getOversellStock(p)) > (p.min_stock_level || 10),
+                                                                      'bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25': (getWarehouseStock(p) + getOversellStock(p)) > 0 && (getWarehouseStock(p) + getOversellStock(p)) <= (p.min_stock_level || 10),
+                                                                      'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25': (getWarehouseStock(p) + getOversellStock(p)) <= 0
+                                                                  }"
+                                                                  x-text="getWarehouseStock(p) + getOversellStock(p)"></span>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between align-items-center" style="font-size: 10px;">
+                                                            <template x-if="p.warehouse_stocks && p.warehouse_stocks.length > 0 && !p.warehouse_stocks.some(w => String(w.warehouse_id) === String(warehouseId))">
+                                                                <span class="text-danger"><i class="bi bi-x-circle me-1"></i>Not in warehouse</span>
+                                                            </template>
+                                                            <template x-if="!(p.warehouse_stocks && p.warehouse_stocks.length > 0 && !p.warehouse_stocks.some(w => String(w.warehouse_id) === String(warehouseId)))">
+                                                                <span class="text-muted">Physical: <span class="fw-bold text-body-emphasis" x-text="parseFloat(getWarehouseStock(p))"></span></span>
+                                                            </template>
+                                                            <span x-show="p.allow_overselling" class="text-warning fw-bold" title="Overselling Allowed" x-text="'+' + getOversellStock(p) + ' (OS)'"></span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-wrap gap-1" style="max-width: 180px;">
+                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style="font-size:9px;" x-show="p.is_sku_enabled" title="SKU Enabled"><i class="bi bi-upc-scan me-1"></i>SKU On</span>
+                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="!p.is_sku_enabled" title="SKU Disabled"><i class="bi bi-upc-scan me-1"></i>SKU Off</span>
+                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="p.batch_tracking" title="Batch Tracking"><i class="bi bi-layers me-1"></i>Batch</span>
+                                                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size:9px;" x-show="p.expiry_tracking" title="Expiry Tracking"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
+                                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:9px;" x-show="p.allow_overselling" title="Allow Overselling"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-end pe-4 align-middle">
+                                                <div class="d-flex flex-column gap-2 ms-auto" style="max-width: 130px;">
                                                     <div class="input-group input-group-sm shadow-sm flex-nowrap" style="min-height: 32px;">
                                                         <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!canAddToCart(p)"><i class="bi bi-dash"></i></button>
                                                         <input type="number" class="form-control text-center fw-bold px-1 no-spinners flex-grow-1" x-model.number="p._qty" min="1" :max="getMaxAllowedStock(p) || 9999" placeholder="Qty" :disabled="!canAddToCart(p)" style="min-width: 0;">
                                                         <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty < (getMaxAllowedStock(p) || 9999)) p._qty++" :disabled="!canAddToCart(p)"><i class="bi bi-plus"></i></button>
                                                     </div>
-                                                    <button class="btn btn-sm shadow-sm w-100 transition-all fw-bold text-nowrap d-flex align-items-center justify-content-center gap-1" style="min-height: 32px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!canAddToCart(p)">
-                                                        <i class="bi" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i> 
+                                                    <button class="btn btn-sm w-100 shadow-sm d-flex align-items-center justify-content-center gap-2 transition-all fw-bold text-nowrap" style="min-height: 32px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!canAddToCart(p)">
+                                                        <i class="bi" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
                                                         <span x-text="!p.is_sku_enabled ? 'Disabled' : (!canAddToCart(p) ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 11px;"></span>
                                                     </button>
                                                 </div>
