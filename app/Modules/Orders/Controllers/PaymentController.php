@@ -4,6 +4,7 @@ namespace App\Modules\Orders\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Payment;
+use App\Services\FinancialService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -68,10 +69,10 @@ class PaymentController extends Controller implements HasMiddleware
 
         if ($request->wantsJson() || $request->ajax()) {
             $stats = [
-                'total_volume'       => (float) $statsQuery()->whereNull('deleted_at')->sum('amount'),
-                'completed_amount'   => (float) $statsQuery()->where('status', 'completed')->whereNull('deleted_at')->sum('amount'),
-                'authorized_amount'  => (float) $statsQuery()->whereIn('status', ['authorized', 'pending'])->whereNull('deleted_at')->sum('amount'),
-                'failed_amount'      => (float) $statsQuery()->where('status', 'failed')->whereNull('deleted_at')->sum('amount'),
+                'total_volume' => (float) $statsQuery()->whereNull('deleted_at')->sum('amount'),
+                'completed_amount' => (float) $statsQuery()->where('status', 'completed')->whereNull('deleted_at')->sum('amount'),
+                'authorized_amount' => (float) $statsQuery()->whereIn('status', ['authorized', 'pending'])->whereNull('deleted_at')->sum('amount'),
+                'failed_amount' => (float) $statsQuery()->where('status', 'failed')->whereNull('deleted_at')->sum('amount'),
             ];
 
             return response()->json([
@@ -107,8 +108,8 @@ class PaymentController extends Controller implements HasMiddleware
     public function bulkStatus(Request $request)
     {
         $validated = $request->validate([
-            'ids'    => 'required|array',
-            'ids.*'  => 'exists:payments,id',
+            'ids' => 'required|array',
+            'ids.*' => 'exists:payments,id',
             'status' => 'required|in:pending,authorized,completed,failed,refunded',
         ]);
 
@@ -117,19 +118,21 @@ class PaymentController extends Controller implements HasMiddleware
             foreach ($payments as $payment) {
                 if ($payment->status === 'refunded' && $validated['status'] !== 'refunded') {
                     $errorResponse = response()->json([
-                        'success' => false, 
-                        'message' => "Payment #{$payment->payment_no} has already been refunded and cannot be modified."
+                        'success' => false,
+                        'message' => "Payment #{$payment->payment_no} has already been refunded and cannot be modified.",
                     ], 422);
+
                     return false; // Break transaction
                 }
                 if ($validated['status'] === 'refunded' && $payment->status !== 'completed') {
                     $errorResponse = response()->json([
-                        'success' => false, 
-                        'message' => "Payment #{$payment->payment_no} cannot be refunded because it is not completed."
+                        'success' => false,
+                        'message' => "Payment #{$payment->payment_no} cannot be refunded because it is not completed.",
                     ], 422);
+
                     return false; // Break transaction
                 }
-                
+
                 // Updating model instance ensures boot / saved events trigger accounting & invoice updates
                 $payment->update(['status' => $validated['status']]);
             }
@@ -148,7 +151,7 @@ class PaymentController extends Controller implements HasMiddleware
     public function update(Request $request, Payment $payment)
     {
         $validated = $request->validate([
-            'amount'         => 'required|numeric|min:0.01',
+            'amount' => 'required|numeric|min:0.01',
             'payment_method' => 'required|string',
             'transaction_id' => 'nullable|string',
             'status' => 'required|in:pending,authorized,completed,failed,refunded',
@@ -221,19 +224,19 @@ class PaymentController extends Controller implements HasMiddleware
         return Response::stream($callback, 200, $headers);
     }
 
-    public function destroy(Payment $payment, \App\Services\FinancialService $financialService)
+    public function destroy(Payment $payment, FinancialService $financialService)
     {
         try {
             $financialService->revertPayment($payment);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Payment reverted successfully.'
+                'message' => 'Payment reverted successfully.',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to revert payment: ' . $e->getMessage()
+                'message' => 'Failed to revert payment: '.$e->getMessage(),
             ], 500);
         }
     }

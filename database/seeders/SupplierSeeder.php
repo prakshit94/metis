@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
 use Illuminate\Support\Str;
 
 class SupplierSeeder extends Seeder
@@ -20,13 +20,13 @@ class SupplierSeeder extends Seeder
         for ($i = 0; $i < 15; $i++) {
             $suppliers[] = [
                 'uuid' => (string) Str::uuid(),
-                'party_code' => 'SUP-' . str_pad((string)($i + 1), 4, '0', STR_PAD_LEFT),
+                'party_code' => 'SUP-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
                 'firstname' => $faker->firstName,
                 'lastname' => $faker->lastName,
                 'email' => $faker->unique()->companyEmail,
-                'phone' => '9' . $faker->numerify('#########'),
+                'phone' => '9'.$faker->numerify('#########'),
                 'company_name' => $faker->company,
-                'gst_no' => '27' . strtoupper(Str::random(10)) . '1Z' . strtoupper(Str::random(1)),
+                'gst_no' => '27'.strtoupper(Str::random(10)).'1Z'.strtoupper(Str::random(1)),
                 'pan_no' => strtoupper(Str::random(10)),
                 'credit_limit' => $faker->randomElement([50000, 100000, 250000, 500000]),
                 'credit_days' => $faker->randomElement([15, 30, 45, 60]),

@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Modules\Orders\Models\Shipment;
 use App\Modules\Orders\Models\ShipmentTrackingEvent;
 use App\Services\Shipping\ShippingManager;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class PollIndiaPostTracking extends Command
@@ -37,6 +37,7 @@ class PollIndiaPostTracking extends Command
 
         if ($shipments->isEmpty()) {
             $this->info('No in-transit shipments to track.');
+
             return;
         }
 
@@ -53,19 +54,21 @@ class PollIndiaPostTracking extends Command
                 $events = $data['tracking_details'] ?? [];
 
                 $shipment = $shipments->firstWhere('tracking_no', $trackingNumber);
-                if (!$shipment) continue;
+                if (! $shipment) {
+                    continue;
+                }
 
                 // Record the latest event
-                if (!empty($events)) {
+                if (! empty($events)) {
                     $latestEvent = end($events);
                     $eventDesc = $latestEvent['event'] ?? 'Update';
-                    
+
                     // Simple deduplication logic
                     $exists = ShipmentTrackingEvent::where('shipment_id', $shipment->id)
                         ->where('description', $eventDesc)
                         ->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         ShipmentTrackingEvent::create([
                             'shipment_id' => $shipment->id,
                             'status' => 'in_transit',
@@ -90,8 +93,8 @@ class PollIndiaPostTracking extends Command
             $this->info('Tracking polling completed successfully.');
 
         } catch (\Exception $e) {
-            Log::error('India Post Polling Error: ' . $e->getMessage());
-            $this->error('Failed to poll tracking: ' . $e->getMessage());
+            Log::error('India Post Polling Error: '.$e->getMessage());
+            $this->error('Failed to poll tracking: '.$e->getMessage());
         }
     }
 }

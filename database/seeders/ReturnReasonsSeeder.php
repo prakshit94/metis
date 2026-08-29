@@ -17,7 +17,7 @@ class ReturnReasonsSeeder extends Seeder
             'Defective product',
             'Wrong item received',
             'No longer needed',
-            'Other'
+            'Other',
         ];
 
         foreach ($reasons as $reason) {

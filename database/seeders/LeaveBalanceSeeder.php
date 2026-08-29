@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Modules\Users\Models\User;
 use App\Modules\Users\Models\LeaveBalance;
+use App\Modules\Users\Models\User;
+use Illuminate\Database\Seeder;
 
 class LeaveBalanceSeeder extends Seeder
 {
@@ -31,12 +31,12 @@ class LeaveBalanceSeeder extends Seeder
                 LeaveBalance::firstOrCreate(
                     [
                         'user_id' => $user->id,
-                        'leave_type' => $balance['leave_type']
+                        'leave_type' => $balance['leave_type'],
                     ],
                     [
                         'total_leaves' => $balance['total_leaves'],
                         'used_leaves' => 0,
-                        'is_active' => $balance['is_active']
+                        'is_active' => $balance['is_active'],
                     ]
                 );
             }

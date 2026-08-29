@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Core\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
 use App\Modules\Catalog\Models\Service;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class VillageServiceMapping extends Model implements Auditable
 {
     use AuditableTrait;
+
     protected $table = 'village_service_mappings';
 
     protected $fillable = [

@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
 
 class WalletTransactionSeeder extends Seeder
 {
@@ -51,12 +51,12 @@ class WalletTransactionSeeder extends Seeder
                     'reference_type' => $type === 'debit' ? 'order' : 'deposit',
                     'reference_id' => $faker->optional()->numberBetween(1, 100),
                     'description' => $desc,
-                    'created_by' => !empty($users) ? $users[0] : null,
+                    'created_by' => ! empty($users) ? $users[0] : null,
                     'created_at' => now()->subDays(rand(1, 30)),
                     'updated_at' => now(),
                 ];
             }
-            
+
             // Note: In real app, we would also update the party's wallet_balance if that column exists
             // But since we just want test data in wallet_transactions table, this is fine
         }

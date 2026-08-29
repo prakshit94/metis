@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
-use Carbon\Carbon;
 
 class AttendanceSeeder extends Seeder
 {
@@ -16,7 +16,7 @@ class AttendanceSeeder extends Seeder
     {
         $faker = Faker::create();
         $users = DB::table('users')->pluck('id')->toArray();
-        
+
         if (empty($users)) {
             return;
         }
@@ -27,7 +27,7 @@ class AttendanceSeeder extends Seeder
         foreach ($users as $userId) {
             for ($i = 0; $i < 7; $i++) {
                 $date = $startDate->copy()->addDays($i);
-                
+
                 // Skip Sundays
                 if ($date->isSunday()) {
                     continue;

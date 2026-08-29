@@ -2,17 +2,17 @@
 
 namespace App\Modules\Orders\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
+use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
-
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class Refund extends Model implements Auditable
 {
     use AuditableTrait;
+
     protected $fillable = [
         'refund_no',
         'order_id',
@@ -57,6 +57,6 @@ class Refund extends Model implements Auditable
 
     public function processedBy(): BelongsTo
     {
-        return $this->belongsTo(\App\Modules\Users\Models\User::class, 'processed_by');
+        return $this->belongsTo(User::class, 'processed_by');
     }
 }

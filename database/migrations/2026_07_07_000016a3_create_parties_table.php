@@ -4,8 +4,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-    public function up(): void {
+return new class extends Migration
+{
+    public function up(): void
+    {
         Schema::create('parties', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->nullable()->unique();
@@ -95,13 +97,14 @@ return new class extends Migration {
             $table->index(['company_name']);
             $table->index(['phone', 'is_active']);
             $table->index(['email', 'is_active']);
-            
+
             // Fulltext index if using MySQL 5.7+ / MariaDB / PostGreSQL. We fallback safely or use simple fulltext.
             $table->fullText(['firstname', 'lastname', 'company_name', 'email', 'phone'], 'ft_party_search');
         });
     }
 
-    public function down(): void {
+    public function down(): void
+    {
         Schema::dropIfExists('parties');
     }
 };

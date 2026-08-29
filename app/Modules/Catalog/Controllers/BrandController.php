@@ -27,7 +27,6 @@ class BrandController extends Controller implements HasMiddleware
     public function index(Request $request): JsonResponse
     {
 
-
         $query = Brand::query();
 
         if ($search = $request->query('search')) {
@@ -52,7 +51,6 @@ class BrandController extends Controller implements HasMiddleware
     public function store(Request $request): JsonResponse
     {
 
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'status' => 'required|in:active,inactive',
@@ -71,13 +69,11 @@ class BrandController extends Controller implements HasMiddleware
     public function show(Brand $model): JsonResponse
     {
 
-
         return response()->json(['data' => $model]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-
 
         $model = Brand::findOrFail($id);
 

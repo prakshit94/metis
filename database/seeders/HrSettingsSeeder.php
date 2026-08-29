@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Modules\Users\Models\Department;
+use App\Modules\Users\Models\Designation;
+use App\Modules\Users\Models\EmploymentType;
 use Illuminate\Database\Seeder;
 
 class HrSettingsSeeder extends Seeder
@@ -19,11 +21,11 @@ class HrSettingsSeeder extends Seeder
             'Intern',
             'Freelance',
             'Temporary',
-            'Probation'
+            'Probation',
         ];
 
         foreach ($employmentTypes as $type) {
-            \App\Modules\Users\Models\EmploymentType::firstOrCreate(
+            EmploymentType::firstOrCreate(
                 ['name' => $type],
                 ['is_active' => true]
             );
@@ -60,11 +62,11 @@ class HrSettingsSeeder extends Seeder
             'Marketing Executive',
             'Customer Support Representative',
             'Accountant',
-            'Administrative Assistant'
+            'Administrative Assistant',
         ];
 
         foreach ($designations as $designation) {
-            \App\Modules\Users\Models\Designation::firstOrCreate(
+            Designation::firstOrCreate(
                 ['name' => $designation],
                 ['is_active' => true]
             );
@@ -100,24 +102,24 @@ class HrSettingsSeeder extends Seeder
         ];
 
         foreach ($departments as $deptData) {
-            $parent = \App\Modules\Users\Models\Department::firstOrCreate(
+            $parent = Department::firstOrCreate(
                 ['name' => $deptData['name']],
                 [
                     'code' => $deptData['code'],
                     'description' => $deptData['description'],
-                    'is_active' => true
+                    'is_active' => true,
                 ]
             );
 
             if (isset($deptData['children'])) {
                 foreach ($deptData['children'] as $childData) {
-                    \App\Modules\Users\Models\Department::firstOrCreate(
+                    Department::firstOrCreate(
                         ['name' => $childData['name']],
                         [
                             'code' => $childData['code'],
                             'description' => $childData['description'],
                             'parent_id' => $parent->id,
-                            'is_active' => true
+                            'is_active' => true,
                         ]
                     );
                 }

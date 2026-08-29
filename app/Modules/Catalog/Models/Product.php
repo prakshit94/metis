@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
 use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockReservation;
-use App\Modules\Inventory\Models\StockBatch;
+use App\Modules\Inventory\Models\Supplier;
 use App\Modules\Orders\Models\OrderItem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class Product extends Model implements Auditable
 {
@@ -24,6 +24,7 @@ class Product extends Model implements Auditable
     use SoftDeletes;
 
     protected $appends = ['image_url'];
+
     protected $fillable = [
         'name',
         'sku',
@@ -88,7 +89,7 @@ class Product extends Model implements Auditable
 
     public function supplier(): BelongsTo
     {
-        return $this->belongsTo(\App\Modules\Inventory\Models\Supplier::class, 'supplier_id');
+        return $this->belongsTo(Supplier::class, 'supplier_id');
     }
 
     public function taxRate(): BelongsTo
@@ -199,9 +200,10 @@ class Product extends Model implements Auditable
 
     public function getImageUrlAttribute(): ?string
     {
-        if (!array_key_exists('image_path', $this->getAttributes())) {
+        if (! array_key_exists('image_path', $this->getAttributes())) {
             return null;
         }
+
         return $this->image_path ? asset('storage/'.$this->image_path) : null;
     }
 }

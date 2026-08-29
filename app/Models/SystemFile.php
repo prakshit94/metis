@@ -11,6 +11,6 @@ class SystemFile extends Model
         'filename',
         'mime_type',
         'size',
-        'path'
+        'path',
     ];
 }

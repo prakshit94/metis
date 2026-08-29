@@ -9,14 +9,18 @@ use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Core\Models\Village;
 use App\Modules\Customers\Models\Party;
+use App\Modules\Customers\Models\WalletTransaction;
+use App\Modules\Inventory\Models\Stock;
+use App\Modules\Orders\Models\CancelReason;
 use App\Modules\Orders\Models\Coupon;
 use App\Modules\Orders\Models\DeliveryFailureReason;
-use App\Modules\Orders\Models\CancelReason;
 use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\Offer;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\RescheduleReason;
 use App\Modules\Orders\Models\ReturnReason;
+use App\Modules\Orders\Requests\StoreOrderRequest;
+use App\Modules\Orders\Requests\UpdateOrderRequest;
 use App\Services\InventoryService;
 use App\Services\InvoiceService;
 use App\Services\OrderService;
@@ -27,6 +31,7 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller implements HasMiddleware
@@ -193,6 +198,7 @@ class OrderController extends Controller implements HasMiddleware
         $cacheKey = 'order_stats_'.$statsVersion.'_'.auth()->id().'_'.md5(json_encode($request->all()));
         $counts = Cache::remember($cacheKey, 300, function () use ($statsQuery) {
             $statsQuery->setEagerLoads([]);
+
             return $statsQuery->select([
                 DB::raw('COUNT(*) as total'),
                 DB::raw('SUM(orders.net_amount) as total_amount'),
@@ -255,38 +261,38 @@ class OrderController extends Controller implements HasMiddleware
             // Remove with() eager loading to avoid issues with groupBy
             $warehouseStatsQuery->setEagerLoads([]);
             $stats = $warehouseStatsQuery->select([
-                    'warehouse_id',
-                    DB::raw('COUNT(orders.id) as total'),
-                    DB::raw('SUM(orders.net_amount) as total_amount'),
-                    DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN 1 ELSE 0 END) as future_order"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN orders.net_amount ELSE 0 END) as future_order_amount"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN 1 ELSE 0 END) as pending"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN orders.net_amount ELSE 0 END) as pending_amount"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN 1 ELSE 0 END) as pending_confirmation"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN orders.net_amount ELSE 0 END) as pending_confirmation_amount"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN 1 ELSE 0 END) as confirmed"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN orders.net_amount ELSE 0 END) as confirmed_amount"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN 1 ELSE 0 END) as processing"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN orders.net_amount ELSE 0 END) as processing_amount"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN 1 ELSE 0 END) as ready_to_ship"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN orders.net_amount ELSE 0 END) as ready_to_ship_amount"),
-                    DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN 1 ELSE 0 END) as dispatched"),
-                    DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN orders.net_amount ELSE 0 END) as dispatched_amount"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN 1 ELSE 0 END) as delivered"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN orders.net_amount ELSE 0 END) as delivered_amount"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN orders.net_amount ELSE 0 END) as cancelled_amount"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN 1 ELSE 0 END) as returned"),
-                    DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN orders.net_amount ELSE 0 END) as returned_amount"),
-                    DB::raw("SUM(CASE WHEN EXISTS(SELECT 1 FROM order_returns WHERE order_returns.order_id = orders.id AND order_returns.status NOT IN ('completed', 'rejected')) THEN 1 ELSE 0 END) as return_requested"),
-                    DB::raw("SUM(CASE WHEN EXISTS(SELECT 1 FROM order_returns WHERE order_returns.order_id = orders.id AND order_returns.status NOT IN ('completed', 'rejected')) THEN orders.net_amount ELSE 0 END) as return_requested_amount"),
-                ])
+                'warehouse_id',
+                DB::raw('COUNT(orders.id) as total'),
+                DB::raw('SUM(orders.net_amount) as total_amount'),
+                DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN 1 ELSE 0 END) as future_order"),
+                DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN orders.net_amount ELSE 0 END) as future_order_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN 1 ELSE 0 END) as pending"),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN orders.net_amount ELSE 0 END) as pending_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN 1 ELSE 0 END) as pending_confirmation"),
+                DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN orders.net_amount ELSE 0 END) as pending_confirmation_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN 1 ELSE 0 END) as confirmed"),
+                DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN orders.net_amount ELSE 0 END) as confirmed_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN 1 ELSE 0 END) as processing"),
+                DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN orders.net_amount ELSE 0 END) as processing_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN 1 ELSE 0 END) as ready_to_ship"),
+                DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN orders.net_amount ELSE 0 END) as ready_to_ship_amount"),
+                DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN 1 ELSE 0 END) as dispatched"),
+                DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN orders.net_amount ELSE 0 END) as dispatched_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN 1 ELSE 0 END) as delivered"),
+                DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN orders.net_amount ELSE 0 END) as delivered_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled"),
+                DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN orders.net_amount ELSE 0 END) as cancelled_amount"),
+                DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN 1 ELSE 0 END) as returned"),
+                DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN orders.net_amount ELSE 0 END) as returned_amount"),
+                DB::raw("SUM(CASE WHEN EXISTS(SELECT 1 FROM order_returns WHERE order_returns.order_id = orders.id AND order_returns.status NOT IN ('completed', 'rejected')) THEN 1 ELSE 0 END) as return_requested"),
+                DB::raw("SUM(CASE WHEN EXISTS(SELECT 1 FROM order_returns WHERE order_returns.order_id = orders.id AND order_returns.status NOT IN ('completed', 'rejected')) THEN orders.net_amount ELSE 0 END) as return_requested_amount"),
+            ])
                 ->groupBy('warehouse_id')
                 ->toBase()
                 ->get();
-                
+
             $warehouses = Warehouse::pluck('name', 'id')->toArray();
-            
+
             return $stats->map(function ($item) use ($warehouses) {
                 return [
                     'name' => $warehouses[$item->warehouse_id] ?? 'Unassigned',
@@ -337,15 +343,15 @@ class OrderController extends Controller implements HasMiddleware
             }
         }
 
-        if (!empty($productWarehousePairs)) {
+        if (! empty($productWarehousePairs)) {
             $productIds = array_unique(array_column($productWarehousePairs, 0));
             $warehouseIds = array_unique(array_column($productWarehousePairs, 1));
-            
-            $stocks = \App\Modules\Inventory\Models\Stock::whereIn('product_id', $productIds)
+
+            $stocks = Stock::whereIn('product_id', $productIds)
                 ->whereIn('warehouse_id', $warehouseIds)
                 ->get()
                 ->keyBy(function ($stock) {
-                    return $stock->product_id . '_' . $stock->warehouse_id;
+                    return $stock->product_id.'_'.$stock->warehouse_id;
                 });
 
             foreach ($orders as $order) {
@@ -353,7 +359,7 @@ class OrderController extends Controller implements HasMiddleware
                     $order->is_unfulfillable = false;
                     foreach ($order->items as $item) {
                         if ($order->warehouse_id) {
-                            $key = $item->product_id . '_' . $order->warehouse_id;
+                            $key = $item->product_id.'_'.$order->warehouse_id;
                             $stock = $stocks->get($key);
                             $available = $stock ? ($stock->quantity - $stock->reserved_qty) : 0;
                             if ($item->quantity > $available) {
@@ -409,10 +415,10 @@ class OrderController extends Controller implements HasMiddleware
             ->sort()
             ->values();
 
-        $returnReasons = Cache::remember('active_return_reasons', 3600, fn() => ReturnReason::where('is_active', true)->orderBy('id')->get());
-        $rescheduleReasons = Cache::remember('active_reschedule_reasons', 3600, fn() => RescheduleReason::where('is_active', true)->orderBy('id')->get());
-        $deliveryFailureReasons = Cache::remember('active_delivery_failure_reasons', 3600, fn() => DeliveryFailureReason::where('is_active', true)->orderBy('id')->get());
-        $cancelReasons = Cache::remember('active_cancel_reasons', 3600, fn() => CancelReason::where('is_active', true)->orderBy('id')->get());
+        $returnReasons = Cache::remember('active_return_reasons', 3600, fn () => ReturnReason::where('is_active', true)->orderBy('id')->get());
+        $rescheduleReasons = Cache::remember('active_reschedule_reasons', 3600, fn () => RescheduleReason::where('is_active', true)->orderBy('id')->get());
+        $deliveryFailureReasons = Cache::remember('active_delivery_failure_reasons', 3600, fn () => DeliveryFailureReason::where('is_active', true)->orderBy('id')->get());
+        $cancelReasons = Cache::remember('active_cancel_reasons', 3600, fn () => CancelReason::where('is_active', true)->orderBy('id')->get());
 
         // 7 Day Trends Data (Cached)
         $trendsData = Cache::remember('order_trends_7_days_'.auth()->id(), 300, function () {
@@ -435,10 +441,11 @@ class OrderController extends Controller implements HasMiddleware
                     'revenue' => $record ? (float) $record->revenue : 0,
                 ];
             }
+
             return $data;
         });
 
-        $warehousesList = Cache::remember('active_warehouses_list', 3600, fn() => Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name']));
+        $warehousesList = Cache::remember('active_warehouses_list', 3600, fn () => Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name']));
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -476,11 +483,11 @@ class OrderController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $warehouses = Cache::remember('all_warehouses', 3600, fn() => Warehouse::orderBy('name')->get());
+        $warehouses = Cache::remember('all_warehouses', 3600, fn () => Warehouse::orderBy('name')->get());
         $parties = Party::orderBy('firstname')->get();
-        $activeOffers = Cache::remember('active_offers_with_products', 3600, fn() => Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get());
-        $activeCoupons = Cache::remember('active_coupons', 3600, fn() => Coupon::where('is_active', true)->get());
-        $categories = Cache::remember('categories_with_children', 3600, fn() => Category::whereNull('parent_id')->with('children')->orderBy('name')->get());
+        $activeOffers = Cache::remember('active_offers_with_products', 3600, fn () => Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get());
+        $activeCoupons = Cache::remember('active_coupons', 3600, fn () => Coupon::where('is_active', true)->get());
+        $categories = Cache::remember('categories_with_children', 3600, fn () => Category::whereNull('parent_id')->with('children')->orderBy('name')->get());
         $initialCustomer = null;
         $initialOrder = null;
 
@@ -496,7 +503,7 @@ class OrderController extends Controller implements HasMiddleware
                         'referredOrders as total_referred_orders',
                         'referredOrders as delivered_referred_orders' => function ($query) {
                             $query->where('orders.status', 'delivered');
-                        }
+                        },
                     ]);
                 },
                 'callLogs' => function ($q) {
@@ -522,11 +529,11 @@ class OrderController extends Controller implements HasMiddleware
                 'complaints as total_complaints',
                 'complaints as active_complaints' => function ($q) {
                     $q->whereNotIn('status', ['resolved', 'closed']);
-                }
+                },
             ])->find(request()->integer('customer_id'));
-            
+
             if ($initialCustomer && empty($initialCustomer->referral_code)) {
-                $initialCustomer->referral_code = strtoupper(\Illuminate\Support\Str::random(8));
+                $initialCustomer->referral_code = strtoupper(Str::random(8));
                 $initialCustomer->saveQuietly();
             }
         }
@@ -556,7 +563,7 @@ class OrderController extends Controller implements HasMiddleware
                             'referredOrders as total_referred_orders',
                             'referredOrders as delivered_referred_orders' => function ($query) {
                                 $query->where('orders.status', 'delivered');
-                            }
+                            },
                         ]);
                     },
                     'orders' => function ($q) {
@@ -579,20 +586,20 @@ class OrderController extends Controller implements HasMiddleware
                     'complaints as total_complaints',
                     'complaints as active_complaints' => function ($q) {
                         $q->whereNotIn('status', ['resolved', 'closed']);
-                    }
+                    },
                 ])->find($initialOrder->party_id);
             }
         }
 
         $hideSidebar = true;
         $lockSearch = true;
-        $rescheduleReasons = Cache::remember('active_reschedule_reasons', 3600, fn() => RescheduleReason::where('is_active', true)->orderBy('id')->get());
-        $cancelReasons = Cache::remember('active_cancel_reasons', 3600, fn() => CancelReason::where('is_active', true)->orderBy('id')->get());
+        $rescheduleReasons = Cache::remember('active_reschedule_reasons', 3600, fn () => RescheduleReason::where('is_active', true)->orderBy('id')->get());
+        $cancelReasons = Cache::remember('active_cancel_reasons', 3600, fn () => CancelReason::where('is_active', true)->orderBy('id')->get());
 
         return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
     }
 
-    public function store(\App\Modules\Orders\Requests\StoreOrderRequest $request, OrderService $orderService)
+    public function store(StoreOrderRequest $request, OrderService $orderService)
     {
         $validated = $request->validated();
 
@@ -622,20 +629,20 @@ class OrderController extends Controller implements HasMiddleware
     public function edit(Order $order)
     {
         $order->load(['party', 'warehouse', 'items.product', 'shippingAddress', 'billingAddress', 'appliedOffer']);
-        
+
         $order->party->loadCount([
             'complaints as total_complaints',
             'complaints as active_complaints' => function ($q) {
                 $q->whereNotIn('status', ['resolved', 'closed']);
-            }
+            },
         ]);
 
-        $warehouses = Cache::remember('all_warehouses', 3600, fn() => Warehouse::orderBy('name')->get());
+        $warehouses = Cache::remember('all_warehouses', 3600, fn () => Warehouse::orderBy('name')->get());
         $parties = Party::orderBy('firstname')->get();
-        $categories = Cache::remember('categories_active', 3600, fn() => Category::where('is_active', true)->orderBy('name')->get());
+        $categories = Cache::remember('categories_active', 3600, fn () => Category::where('is_active', true)->orderBy('name')->get());
 
-        $activeOffers = Cache::remember('active_offers_priority', 3600, fn() => Offer::active()->orderByDesc('priority')->get());
-        $activeCoupons = Cache::remember('active_coupons_valid', 3600, fn() => Coupon::active()->where(function($q) {
+        $activeOffers = Cache::remember('active_offers_priority', 3600, fn () => Offer::active()->orderByDesc('priority')->get());
+        $activeCoupons = Cache::remember('active_coupons_valid', 3600, fn () => Coupon::active()->where(function ($q) {
             $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', now()->startOfDay());
         })->get());
 
@@ -644,8 +651,8 @@ class OrderController extends Controller implements HasMiddleware
 
         $hideSidebar = true;
         $lockSearch = true;
-        $rescheduleReasons = Cache::remember('active_reschedule_reasons', 3600, fn() => RescheduleReason::where('is_active', true)->orderBy('id')->get());
-        $cancelReasons = Cache::remember('active_cancel_reasons', 3600, fn() => CancelReason::where('is_active', true)->orderBy('id')->get());
+        $rescheduleReasons = Cache::remember('active_reschedule_reasons', 3600, fn () => RescheduleReason::where('is_active', true)->orderBy('id')->get());
+        $cancelReasons = Cache::remember('active_cancel_reasons', 3600, fn () => CancelReason::where('is_active', true)->orderBy('id')->get());
 
         return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
     }
@@ -667,10 +674,10 @@ class OrderController extends Controller implements HasMiddleware
             'statusLogs' => fn ($q) => $q->with('user')->latest(),
             'orderReturns',
         ]);
-        
+
         $user = auth()->user();
         $this->applyOrderActionPermissionScope($query, $user);
-        
+
         $order = $query->findOrFail($id);
 
         if (request()->wantsJson() || request()->ajax()) {
@@ -700,16 +707,17 @@ class OrderController extends Controller implements HasMiddleware
             $order->save();
 
             $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
-            $scheduledDateText = 'Scheduled Date: ' . \Carbon\Carbon::parse($request->input('scheduled_date'))->format('d M Y, h:i A') . '. ';
+            $scheduledDateText = 'Scheduled Date: '.Carbon::parse($request->input('scheduled_date'))->format('d M Y, h:i A').'. ';
             $notes = $request->filled('notes') ? $request->input('notes') : 'Scheduled for future confirmation.';
-            
+
             $order->statusLogs()->create([
                 'status' => 'pending_confirmation',
-                'notes' => $reasonText . $scheduledDateText . $notes,
+                'notes' => $reasonText.$scheduledDateText.$notes,
                 'changed_by' => auth()->id(),
             ]);
 
             session()->flash('success', 'Order scheduled for confirmation.');
+
             return response()->json(['success' => true, 'message' => 'Order scheduled for confirmation.']);
         }
 
@@ -728,6 +736,7 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         session()->flash('success', 'Order successfully confirmed!');
+
         return response()->json(['success' => true, 'message' => 'Order confirmed and stock reserved.']);
     }
 
@@ -747,7 +756,7 @@ class OrderController extends Controller implements HasMiddleware
             $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no'] ?? null);
             $order->statusLogs()->create([
                 'status' => 'ready_to_ship',
-                'notes' => 'Order marked as ready to ship. Carrier: ' . $validated['carrier_name'] . ', Tracking: ' . ($validated['tracking_no'] ?? 'Auto-generated'),
+                'notes' => 'Order marked as ready to ship. Carrier: '.$validated['carrier_name'].', Tracking: '.($validated['tracking_no'] ?? 'Auto-generated'),
                 'changed_by' => auth()->id(),
             ]);
         } catch (ValidationException $e) {
@@ -831,12 +840,12 @@ class OrderController extends Controller implements HasMiddleware
             }
 
             $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
-            $scheduledDateText = 'Scheduled Date: ' . \Carbon\Carbon::parse($request->input('scheduled_date'))->format('d M Y, h:i A') . '. ';
+            $scheduledDateText = 'Scheduled Date: '.Carbon::parse($request->input('scheduled_date'))->format('d M Y, h:i A').'. ';
             $notes = $request->filled('notes') ? $request->input('notes') : 'Scheduled for future delivery attempt.';
-            
+
             $order->statusLogs()->create([
                 'status' => 'delivery_rescheduled',
-                'notes' => $reasonText . $scheduledDateText . $notes,
+                'notes' => $reasonText.$scheduledDateText.$notes,
                 'changed_by' => auth()->id(),
             ]);
 
@@ -975,7 +984,7 @@ class OrderController extends Controller implements HasMiddleware
                             $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no']);
                             $order->statusLogs()->create([
                                 'status' => 'ready_to_ship',
-                                'notes' => 'Bulk status updated to ready to ship. Carrier: ' . $validated['carrier_name'] . ', Tracking: ' . $validated['tracking_no'],
+                                'notes' => 'Bulk status updated to ready to ship. Carrier: '.$validated['carrier_name'].', Tracking: '.$validated['tracking_no'],
                                 'changed_by' => auth()->id(),
                             ]);
                             $count++;
@@ -1163,7 +1172,7 @@ class OrderController extends Controller implements HasMiddleware
         }
     }
 
-    public function update(\App\Modules\Orders\Requests\UpdateOrderRequest $request, Order $order, OrderService $orderService)
+    public function update(UpdateOrderRequest $request, Order $order, OrderService $orderService)
     {
         $validated = $request->validated();
 
@@ -1439,14 +1448,15 @@ class OrderController extends Controller implements HasMiddleware
 
         if ($user->can('view_all_order')) {
             $allowedStatuses = $this->allowedOrderFilterStatuses($user);
-            if (!empty($allowedStatuses)) {
+            if (! empty($allowedStatuses)) {
                 $query->where(function ($q) use ($user, $allowedStatuses) {
                     $q->where('created_by', $user->id)
-                      ->orWhereIn('status', $allowedStatuses);
+                        ->orWhereIn('status', $allowedStatuses);
                 });
             } else {
                 $query->where('created_by', $user->id);
             }
+
             return;
         }
 
@@ -1508,14 +1518,14 @@ class OrderController extends Controller implements HasMiddleware
 
     private function applyCashback(Order $order): void
     {
-        if (!$order->party_id || $order->cashback_earned > 0) {
+        if (! $order->party_id || $order->cashback_earned > 0) {
             return; // Already earned or no customer
         }
 
         $cashbackEarned = 0;
-        
+
         if ($order->applied_offer_id) {
-            $offer = \App\Modules\Orders\Models\Offer::find($order->applied_offer_id);
+            $offer = Offer::find($order->applied_offer_id);
             if ($offer) {
                 if ($offer->cashback_percent && $offer->cashback_percent > 0) {
                     $cashbackEarned += ($order->net_amount * ($offer->cashback_percent / 100));
@@ -1527,7 +1537,7 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         if ($order->coupon_code) {
-            $coupon = \App\Modules\Orders\Models\Coupon::where('code', $order->coupon_code)->first();
+            $coupon = Coupon::where('code', $order->coupon_code)->first();
             if ($coupon) {
                 if ($coupon->cashback_percent && $coupon->cashback_percent > 0) {
                     $cashbackEarned += ($order->net_amount * ($coupon->cashback_percent / 100));
@@ -1542,18 +1552,18 @@ class OrderController extends Controller implements HasMiddleware
             $order->cashback_earned = $cashbackEarned;
             $order->saveQuietly();
 
-            $party = \App\Modules\Customers\Models\Party::find($order->party_id);
+            $party = Party::find($order->party_id);
             if ($party) {
                 $party->wallet_balance += $cashbackEarned;
                 $party->saveQuietly();
 
-                \App\Modules\Customers\Models\WalletTransaction::create([
+                WalletTransaction::create([
                     'party_id' => $party->id,
                     'amount' => $cashbackEarned,
                     'type' => 'credit',
                     'reference_type' => 'order',
                     'reference_id' => $order->id,
-                    'description' => 'Cashback earned for order #' . $order->order_no,
+                    'description' => 'Cashback earned for order #'.$order->order_no,
                     'created_by' => auth()->id() ?? $order->created_by,
                 ]);
             }

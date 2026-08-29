@@ -2,10 +2,11 @@
 
 namespace App\Modules\Core\Controllers;
 
+use App\Models\SystemFile;
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use App\Models\SystemSetting;
-use App\Models\SystemFile;
+use Illuminate\Support\Str;
 
 class FileManagerController extends Controller
 {
@@ -37,7 +38,7 @@ class FileManagerController extends Controller
                 'size' => $this->formatBytes($fileRecord->size),
                 'modifiedDate' => $fileRecord->created_at->format('M d, Y h:i A'),
                 'url' => $url,
-                'typeLabel' => ucfirst($typeCategory)
+                'typeLabel' => ucfirst($typeCategory),
             ];
         });
 
@@ -50,6 +51,7 @@ class FileManagerController extends Controller
                 if ($item['url'] === $loginBg->value || ($itemPath && $bgPath && $itemPath === $bgPath)) {
                     $item['isLoginBackground'] = true;
                 }
+
                 return $item;
             });
         }
@@ -60,14 +62,14 @@ class FileManagerController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|max:10240' // 10MB max
+            'file' => 'required|file|max:10240', // 10MB max
         ]);
 
         $file = $request->file('file');
-        
+
         // Ensure secure, unique physical filename on disk
         $originalName = $file->getClientOriginalName();
-        $filename = time() . '_' . \Illuminate\Support\Str::random(10) . '.' . $file->getClientOriginalExtension();
+        $filename = time().'_'.Str::random(10).'.'.$file->getClientOriginalExtension();
         $path = $file->storeAs('uploads', $filename, 'public');
 
         SystemFile::create([
@@ -75,19 +77,19 @@ class FileManagerController extends Controller
             'filename' => $filename,
             'mime_type' => $file->getClientMimeType(),
             'size' => $file->getSize(),
-            'path' => $path
+            'path' => $path,
         ]);
 
         return response()->json([
             'message' => 'File uploaded successfully',
-            'path' => Storage::disk('public')->url($path)
+            'path' => Storage::disk('public')->url($path),
         ]);
     }
 
     public function delete(Request $request)
     {
         $request->validate([
-            'id' => 'required'
+            'id' => 'required',
         ]);
 
         $id = $request->input('id');
@@ -96,14 +98,14 @@ class FileManagerController extends Controller
         if ($fileRecord) {
             if (Storage::disk('public')->exists($fileRecord->path)) {
                 Storage::disk('public')->delete($fileRecord->path);
-                
+
                 // If it was the login background, clear it
                 $url = Storage::disk('public')->url($fileRecord->path);
                 $pathOnly = parse_url($url, PHP_URL_PATH) ?: $url;
                 SystemSetting::where('key', 'login_background_image')
-                    ->where(function($query) use ($url, $pathOnly) {
+                    ->where(function ($query) use ($url, $pathOnly) {
                         $query->where('value', $url)
-                              ->orWhere('value', $pathOnly);
+                            ->orWhere('value', $pathOnly);
                     })->delete();
             }
             $fileRecord->delete();
@@ -126,7 +128,7 @@ class FileManagerController extends Controller
 
         $fileRecord = SystemFile::find($id);
 
-        if (!$fileRecord) {
+        if (! $fileRecord) {
             return response()->json(['error' => 'File not found'], 404);
         }
 
@@ -145,26 +147,26 @@ class FileManagerController extends Controller
     {
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'required'
+            'ids.*' => 'required',
         ]);
 
         $ids = $request->input('ids');
         $fileRecords = SystemFile::whereIn('id', $ids)->get();
         $disk = Storage::disk('public');
 
-        $zipName = 'download_' . time() . '.zip';
+        $zipName = 'download_'.time().'.zip';
         // Make sure uploads directory exists in case it doesn't
-        if (!$disk->exists('uploads')) {
+        if (! $disk->exists('uploads')) {
             $disk->makeDirectory('uploads');
         }
-        $zipPath = storage_path('app/public/uploads/' . $zipName);
+        $zipPath = storage_path('app/public/uploads/'.$zipName);
 
-        $zip = new \ZipArchive();
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === TRUE) {
+        $zip = new \ZipArchive;
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
             foreach ($fileRecords as $fileRecord) {
                 if ($disk->exists($fileRecord->path)) {
                     // Use original_name for the file inside the zip
-                    $zip->addFile(storage_path('app/public/' . $fileRecord->path), $fileRecord->original_name);
+                    $zip->addFile(storage_path('app/public/'.$fileRecord->path), $fileRecord->original_name);
                 }
             }
             $zip->close();
@@ -178,7 +180,7 @@ class FileManagerController extends Controller
     public function setLoginBackground(Request $request)
     {
         $request->validate([
-            'url' => 'required|string'
+            'url' => 'required|string',
         ]);
 
         $url = $request->input('url');
@@ -192,15 +194,16 @@ class FileManagerController extends Controller
         return response()->json(['message' => 'Login background updated successfully']);
     }
 
-    private function formatBytes($bytes, $precision = 2) { 
-        $units = array('B', 'KB', 'MB', 'GB', 'TB'); 
+    private function formatBytes($bytes, $precision = 2)
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
 
-        $bytes = max($bytes, 0); 
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024)); 
-        $pow = min($pow, count($units) - 1); 
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
 
-        $bytes /= (1 << (10 * $pow)); 
+        $bytes /= (1 << (10 * $pow));
 
-        return round($bytes, $precision) . ' ' . $units[$pow]; 
-    } 
+        return round($bytes, $precision).' '.$units[$pow];
+    }
 }

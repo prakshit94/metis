@@ -26,7 +26,6 @@ class HsnCodeController extends Controller implements HasMiddleware
     public function index(Request $request): JsonResponse
     {
 
-
         $query = HsnCode::query();
 
         // HSN table has 'code' and 'description' — no 'name' column
@@ -56,7 +55,6 @@ class HsnCodeController extends Controller implements HasMiddleware
     public function store(Request $request): JsonResponse
     {
 
-
         $validated = $request->validate([
             'code' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
@@ -75,13 +73,11 @@ class HsnCodeController extends Controller implements HasMiddleware
     public function show(HsnCode $hsnCode): JsonResponse
     {
 
-
         return response()->json(['data' => $hsnCode]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-
 
         $model = HsnCode::findOrFail($id);
 

@@ -66,9 +66,9 @@ class UserController extends Controller implements HasMiddleware
 
         $activeApiUserIds = DB::table('personal_access_tokens')
             ->where('tokenable_type', User::class)
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->where('last_used_at', '>=', now()->subMinutes(15))
-                  ->orWhere('created_at', '>=', now()->subMinutes(15));
+                    ->orWhere('created_at', '>=', now()->subMinutes(15));
             })
             ->pluck('tokenable_id')
             ->filter()
@@ -109,7 +109,7 @@ class UserController extends Controller implements HasMiddleware
         $userIds = $users->getCollection()->pluck('id')->toArray();
 
         $latestLoginHistories = [];
-        if (!empty($userIds)) {
+        if (! empty($userIds)) {
             $latestIds = DB::table('login_histories')
                 ->whereIn('user_id', $userIds)
                 ->where('status', 'success')

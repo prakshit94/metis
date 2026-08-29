@@ -6,14 +6,17 @@ namespace App\Modules\Inventory\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Inventory\Models\GoodsReceipt;
+use App\Modules\Inventory\Models\GoodsReceiptItem;
 use App\Modules\Inventory\Models\PurchaseOrder;
 use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockMovement;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 
 class GoodsReceiptController extends Controller implements HasMiddleware
 {
@@ -29,7 +32,7 @@ class GoodsReceiptController extends Controller implements HasMiddleware
     {
         if ($request->wantsJson()) {
             $query = GoodsReceipt::with(['purchaseOrder.supplier', 'warehouse', 'creator', 'items.product'])->latest();
-            
+
             if ($request->has('trashed')) {
                 if ($request->query('trashed') === 'only') {
                     $query->onlyTrashed();
@@ -37,14 +40,14 @@ class GoodsReceiptController extends Controller implements HasMiddleware
                     $query->withTrashed();
                 }
             }
-            
-            if ($request->has('search') && !empty($request->query('search'))) {
+
+            if ($request->has('search') && ! empty($request->query('search'))) {
                 $search = $request->query('search');
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('grn_number', 'like', "%{$search}%")
-                      ->orWhereHas('purchaseOrder', function($q2) use ($search) {
-                          $q2->where('po_number', 'like', "%{$search}%");
-                      });
+                        ->orWhereHas('purchaseOrder', function ($q2) use ($search) {
+                            $q2->where('po_number', 'like', "%{$search}%");
+                        });
                 });
             }
 
@@ -55,16 +58,17 @@ class GoodsReceiptController extends Controller implements HasMiddleware
             'total' => GoodsReceipt::count(),
             'this_month' => GoodsReceipt::whereMonth('received_date', date('m'))->whereYear('received_date', date('Y'))->count(),
             'pending' => 0, // Placeholder if you integrate putaway flow later
-            'discrepancies' => \App\Modules\Inventory\Models\GoodsReceiptItem::where('rejected_qty', '>', 0)->count(),
+            'discrepancies' => GoodsReceiptItem::where('rejected_qty', '>', 0)->count(),
         ];
 
-        $pendingPOs = \App\Modules\Inventory\Models\PurchaseOrder::with(['items.product', 'warehouse', 'supplier', 'creator'])
+        $pendingPOs = PurchaseOrder::with(['items.product', 'warehouse', 'supplier', 'creator'])
             ->whereIn('status', ['approved', 'partially_received'])
             ->orderBy('created_at', 'desc')
             ->get();
 
         return view('procurement.goods-receipts.index', compact('stats', 'pendingPOs'));
     }
+
     public function store(Request $request, $orderId): JsonResponse
     {
         $validated = $request->validate([
@@ -85,11 +89,11 @@ class GoodsReceiptController extends Controller implements HasMiddleware
 
             $po = PurchaseOrder::with(['items.product'])->findOrFail($orderId);
 
-            if (!in_array($po->status, ['approved', 'partially_received'])) {
+            if (! in_array($po->status, ['approved', 'partially_received'])) {
                 return response()->json(['message' => 'Purchase order cannot be received in its current status.'], 400);
             }
 
-            $grnNumber = 'GRN-' . date('Ymd') . '-' . strtoupper(\Str::random(4));
+            $grnNumber = 'GRN-'.date('Ymd').'-'.strtoupper(\Str::random(4));
 
             $grn = GoodsReceipt::create([
                 'grn_number' => $grnNumber,
@@ -105,7 +109,7 @@ class GoodsReceiptController extends Controller implements HasMiddleware
 
             foreach ($validated['items'] as $itemData) {
                 $poItem = $po->items->where('id', $itemData['purchase_order_item_id'])->first();
-                if (!$poItem) {
+                if (! $poItem) {
                     throw new \Exception("PO Item {$itemData['purchase_order_item_id']} not found in this Purchase Order.");
                 }
 
@@ -126,7 +130,7 @@ class GoodsReceiptController extends Controller implements HasMiddleware
                         'expiry_date' => $itemData['expiry_date'] ?? null,
                     ]);
 
-                    $poItem->received_qty = (float)$poItem->received_qty + $acceptedQty;
+                    $poItem->received_qty = (float) $poItem->received_qty + $acceptedQty;
                     $poItem->save();
 
                     if ($acceptedQty > 0) {
@@ -145,10 +149,10 @@ class GoodsReceiptController extends Controller implements HasMiddleware
                         );
 
                         $stock->increment('quantity', $acceptedQty);
-                        
+
                         // Handle Batch Tracking
-                        if ($poItem->product && $poItem->product->batch_tracking && !empty($itemData['batch_number'])) {
-                            $batch = \App\Modules\Inventory\Models\StockBatch::firstOrCreate(
+                        if ($poItem->product && $poItem->product->batch_tracking && ! empty($itemData['batch_number'])) {
+                            $batch = StockBatch::firstOrCreate(
                                 [
                                     'product_id' => $poItem->product_id,
                                     'warehouse_id' => $po->warehouse_id,
@@ -195,26 +199,29 @@ class GoodsReceiptController extends Controller implements HasMiddleware
 
             return response()->json([
                 'message' => 'Goods Receipt processed successfully.',
-                'data' => $grn
+                'data' => $grn,
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Failed to process GRN: ' . $e->getMessage()], 500);
+
+            return response()->json(['message' => 'Failed to process GRN: '.$e->getMessage()], 500);
         }
     }
 
     public function downloadPdf(GoodsReceipt $receipt)
     {
         $receipt->load(['purchaseOrder.supplier', 'warehouse', 'items.product.taxRate', 'creator']);
-        
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('procurement.goods-receipts.pdf', compact('receipt'));
-        return $pdf->download($receipt->grn_number . '.pdf');
+
+        $pdf = Pdf::loadView('procurement.goods-receipts.pdf', compact('receipt'));
+
+        return $pdf->download($receipt->grn_number.'.pdf');
     }
 
     public function destroy(GoodsReceipt $receipt): JsonResponse
     {
         $receipt->delete();
+
         return response()->json(['message' => 'Goods Receipt deleted successfully.']);
     }
 
@@ -222,6 +229,7 @@ class GoodsReceiptController extends Controller implements HasMiddleware
     {
         $receipt = GoodsReceipt::withTrashed()->findOrFail($id);
         $receipt->restore();
+
         return response()->json(['message' => 'Goods Receipt restored successfully.']);
     }
 
@@ -238,11 +246,13 @@ class GoodsReceiptController extends Controller implements HasMiddleware
 
         if ($action === 'delete') {
             GoodsReceipt::whereIn('id', $ids)->delete();
+
             return response()->json(['message' => 'Selected Goods Receipts deleted successfully.']);
         }
 
         if ($action === 'restore') {
             GoodsReceipt::withTrashed()->whereIn('id', $ids)->restore();
+
             return response()->json(['message' => 'Selected Goods Receipts restored successfully.']);
         }
 

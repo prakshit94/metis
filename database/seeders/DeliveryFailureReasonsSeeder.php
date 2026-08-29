@@ -18,7 +18,7 @@ class DeliveryFailureReasonsSeeder extends Seeder
             'Address issue/Incomplete',
             'Out of delivery area/Time limit',
             'Consignee refused to accept',
-            'Other'
+            'Other',
         ];
 
         foreach ($reasons as $reason) {

@@ -28,7 +28,6 @@ class CategoryController extends Controller implements HasMiddleware
     public function index(Request $request): JsonResponse
     {
 
-
         $query = Category::query()->with('parent')->withCount('products');
 
         if ($search = $request->query('search')) {
@@ -52,7 +51,6 @@ class CategoryController extends Controller implements HasMiddleware
 
     public function store(Request $request): JsonResponse
     {
-
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:categories,name',
@@ -89,13 +87,11 @@ class CategoryController extends Controller implements HasMiddleware
     public function show(Category $model): JsonResponse
     {
 
-
         return response()->json(['data' => $model->load('parent')->loadCount('products')]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-
 
         $model = Category::findOrFail($id);
 

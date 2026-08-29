@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Crop;
-use App\Models\IrrigationType;
 use App\Modules\Users\Models\Permission;
 use App\Modules\Users\Models\Role;
 use App\Modules\Users\Models\User;
@@ -49,13 +48,13 @@ class CustomerSettingsApiTest extends TestCase
     public function test_can_list_settings()
     {
         Crop::create(['name' => 'Test Wheat', 'is_active' => true]);
-        
+
         $response = $this->getJson('/customer-settings');
         $response->assertStatus(200);
 
         $response = $this->getJson('/api/customer-settings/crop');
         $response->assertStatus(200)
-                 ->assertJsonFragment(['name' => 'Test Wheat']);
+            ->assertJsonFragment(['name' => 'Test Wheat']);
     }
 
     public function test_can_create_setting()
@@ -66,7 +65,7 @@ class CustomerSettingsApiTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonFragment(['name' => 'Test Drip']);
+            ->assertJsonFragment(['name' => 'Test Drip']);
 
         $this->assertDatabaseHas('irrigation_types', ['name' => 'Test Drip']);
     }
@@ -81,8 +80,8 @@ class CustomerSettingsApiTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonFragment(['name' => 'Test Basmati Rice']);
-                 
+            ->assertJsonFragment(['name' => 'Test Basmati Rice']);
+
         $this->assertDatabaseHas('crops', [
             'id' => $crop->id,
             'name' => 'Test Basmati Rice',

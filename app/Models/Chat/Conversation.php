@@ -2,22 +2,21 @@
 
 namespace App\Models\Chat;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
 use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class Conversation extends Model implements Auditable
 {
     use AuditableTrait;
     use SoftDeletes;
-
 
     protected $table = 'chat_conversations';
 
@@ -69,7 +68,7 @@ class Conversation extends Model implements Auditable
         return $this->hasMany(Message::class)->latest();
     }
 
-    public function latestMessage(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function latestMessage(): HasOne
     {
         return $this->hasOne(Message::class)->latestOfMany();
     }

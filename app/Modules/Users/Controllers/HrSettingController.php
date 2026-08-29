@@ -26,6 +26,7 @@ class HrSettingController extends Controller
         }
 
         $items = $model::orderBy('id')->get();
+
         return response()->json(['data' => $items]);
     }
 

@@ -15,8 +15,10 @@ use App\Modules\Catalog\Models\UnitOfMeasure;
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\Supplier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -28,7 +30,7 @@ class ProductController extends Controller
         abort_unless($request->user()?->can('product-view'), 403);
 
         $products = Product::query()
-            ->with(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier'])
+            ->with($this->getEagerLoads())
             ->withSum('stocks as stocks_sum_quantity', 'quantity')
             ->withSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
             ->withSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
@@ -49,7 +51,7 @@ class ProductController extends Controller
     {
         abort_unless($request->user()?->can('product-view'), 403);
 
-        $product->load(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier']);
+        $product->load($this->getEagerLoads());
         $product->loadSum('stocks as stocks_sum_quantity', 'quantity');
         $product->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty');
         $product->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty');
@@ -71,11 +73,20 @@ class ProductController extends Controller
         $this->fillProduct($product, $data, $request);
         $product->save();
         $this->syncAttributes($product, $data['attributes'] ?? []);
-        $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0));
+
+        $extraData = [];
+        if ($request->has('warehouse_allow_overselling')) {
+            $extraData['allow_overselling'] = $request->input('warehouse_allow_overselling');
+        }
+        if ($request->has('warehouse_overselling_qty')) {
+            $extraData['overselling_qty'] = $request->input('warehouse_overselling_qty');
+        }
+
+        $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0), 'overwrite', $extraData);
 
         return response()->json([
             'message' => 'Product created successfully.',
-            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier'])
+            'data' => $this->transform($product->fresh($this->getEagerLoads())
                 ->loadSum('stocks as stocks_sum_quantity', 'quantity')
                 ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
                 ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
@@ -96,13 +107,20 @@ class ProductController extends Controller
         }
 
         // Only sync stock if stock value was explicitly submitted
-        if (array_key_exists('stock', $data) || array_key_exists('stock_quantity', $data)) {
-            $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0));
+        if (array_key_exists('stock', $data) || array_key_exists('stock_quantity', $data) || $request->has('warehouse_allow_overselling') || $request->has('warehouse_overselling_qty')) {
+            $extraData = [];
+            if ($request->has('warehouse_allow_overselling')) {
+                $extraData['allow_overselling'] = $request->input('warehouse_allow_overselling');
+            }
+            if ($request->has('warehouse_overselling_qty')) {
+                $extraData['overselling_qty'] = $request->input('warehouse_overselling_qty');
+            }
+            $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0), 'overwrite', $extraData);
         }
 
         return response()->json([
             'message' => 'Product updated successfully.',
-            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier'])
+            'data' => $this->transform($product->fresh($this->getEagerLoads())
                 ->loadSum('stocks as stocks_sum_quantity', 'quantity')
                 ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
                 ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
@@ -204,7 +222,7 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product restored successfully.',
-            'data' => $this->transform($product->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier'])
+            'data' => $this->transform($product->fresh($this->getEagerLoads())
                 ->loadSum('stocks as stocks_sum_quantity', 'quantity')
                 ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
                 ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
@@ -228,7 +246,7 @@ class ProductController extends Controller
     public function searchApi(Request $request): JsonResponse
     {
         $query = Product::query()
-            ->with(['category', 'brand', 'taxRate', 'uom', 'stocks.warehouse'])
+            ->with(['category', 'brand', 'taxRate', 'uom', 'stocks' => fn ($q) => $q->with('warehouse')->withSum('pendingOrderItems as pending_qty', 'quantity')])
             ->withSum('stocks as stocks_sum_quantity', 'quantity')
             ->withSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
             ->withSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
@@ -248,9 +266,9 @@ class ProductController extends Controller
 
         if ($request->filled('stock')) {
             if ($request->stock === 'available') {
-                $query->havingRaw('(COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0');
+                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 OR allow_overselling = 1)');
             } elseif ($request->stock === 'out_of_stock') {
-                $query->havingRaw('(COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= 0');
+                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= 0 AND (allow_overselling = 0 OR allow_overselling IS NULL))');
             }
         }
 
@@ -274,11 +292,15 @@ class ProductController extends Controller
 
             return [
                 'id' => $p->id,
-                'warehouse_stocks' => $p->stocks->map(fn($s) => [
+                'warehouse_stocks' => $p->stocks->map(fn ($s) => [
                     'warehouse_id' => $s->warehouse_id,
                     'warehouse_name' => $s->warehouse?->name ?? 'Unknown',
                     'quantity' => $s->quantity,
-                    'available' => max(0, $s->quantity - $s->reserved_qty)
+                    'reserved_qty' => (float) $s->reserved_qty,
+                    'pending_qty' => (float) ($s->pending_qty ?? 0),
+                    'available' => $s->quantity - $s->reserved_qty - (float) ($s->pending_qty ?? 0),
+                    'allow_overselling' => $s->allow_overselling !== null ? (bool) $s->allow_overselling : null,
+                    'overselling_qty' => $s->overselling_qty !== null ? (int) $s->overselling_qty : null,
                 ])->values()->toArray(),
                 'name' => $p->name,
                 'sku' => $p->sku,
@@ -347,7 +369,7 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product duplicated successfully.',
-            'data' => $this->transform($clone->fresh(['category.parent', 'brand', 'taxRate', 'hsnCode', 'uom', 'warehouse', 'attributeValues.attribute', 'supplier'])
+            'data' => $this->transform($clone->fresh($this->getEagerLoads())
                 ->loadSum('stocks as stocks_sum_quantity', 'quantity')
                 ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
                 ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
@@ -388,12 +410,14 @@ class ProductController extends Controller
 
             if (count($row) !== count($headers)) {
                 $errors[] = "Row {$rowNum}: Column count mismatch.";
+
                 continue;
             }
 
             $record = array_combine($headers, $row);
             if (! is_array($record)) {
                 $errors[] = "Row {$rowNum}: Invalid record format.";
+
                 continue;
             }
 
@@ -429,14 +453,17 @@ class ProductController extends Controller
 
             if ($payload['name'] === '') {
                 $errors[] = "Row {$rowNum}: Missing product name.";
+
                 continue;
             }
             if ($payload['sku'] === '') {
                 $errors[] = "Row {$rowNum}: Missing SKU for product '{$payload['name']}'.";
+
                 continue;
             }
             if (! $payload['category_id']) {
                 $errors[] = "Row {$rowNum}: Invalid or missing category for SKU '{$payload['sku']}'.";
+
                 continue;
             }
 
@@ -569,6 +596,8 @@ class ProductController extends Controller
             'length_cm' => ['nullable', 'numeric', 'min:0'],
             'width_cm' => ['nullable', 'numeric', 'min:0'],
             'height_cm' => ['nullable', 'numeric', 'min:0'],
+            'warehouse_allow_overselling' => ['nullable', 'boolean'],
+            'warehouse_overselling_qty' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $validated['attributes'] = $validated['attributes'] ?? null;
@@ -623,6 +652,21 @@ class ProductController extends Controller
         }
     }
 
+    private function getEagerLoads(): array
+    {
+        return [
+            'category.parent',
+            'brand',
+            'taxRate',
+            'hsnCode',
+            'uom',
+            'warehouse',
+            'attributeValues.attribute',
+            'supplier',
+            'stocks' => fn ($q) => $q->with('warehouse')->withSum('pendingOrderItems as pending_qty', 'quantity'),
+        ];
+    }
+
     private function transform(Product $product): array
     {
         $totalQty = (float) (array_key_exists('stocks_sum_quantity', $product->getAttributes()) ? $product->stocks_sum_quantity : $product->stock_quantity);
@@ -633,14 +677,39 @@ class ProductController extends Controller
         $rawAvailable = $totalQty - $reservedQty - $pendingQty;
         $netAvailable = max(0.0, $rawAvailable);
 
-        if ($product->allow_overselling) {
-            $maxAllowedQty = max(0.0, $rawAvailable + (float) ($product->overselling_qty ?: 999));
+        $maxAllowedQty = 0;
+        if ($product->stocks && $product->stocks->isNotEmpty()) {
+            foreach ($product->stocks as $s) {
+                $whRaw = (float) $s->quantity - (float) $s->reserved_qty - (float) ($s->pending_qty ?? 0);
+                $whAllowOversell = $s->allow_overselling !== null ? (bool) $s->allow_overselling : (bool) $product->allow_overselling;
+
+                if ($whAllowOversell) {
+                    $whLimit = $s->overselling_qty !== null ? (float) $s->overselling_qty : (float) ($product->overselling_qty ?: 999);
+                    $maxAllowedQty += max(0.0, $whRaw + $whLimit);
+                } else {
+                    $maxAllowedQty += max(0.0, $whRaw);
+                }
+            }
         } else {
-            $maxAllowedQty = $netAvailable;
+            if ($product->allow_overselling) {
+                $maxAllowedQty = max(0.0, $rawAvailable + (float) ($product->overselling_qty ?: 999));
+            } else {
+                $maxAllowedQty = $netAvailable;
+            }
         }
 
         return [
             'id' => $product->id,
+            'warehouse_stocks' => $product->stocks ? $product->stocks->map(fn ($s) => [
+                'warehouse_id' => $s->warehouse_id,
+                'warehouse_name' => $s->warehouse?->name ?? 'Unknown',
+                'quantity' => $s->quantity,
+                'reserved_qty' => (float) $s->reserved_qty,
+                'pending_qty' => (float) ($s->pending_qty ?? 0),
+                'available' => $s->quantity - $s->reserved_qty - (float) ($s->pending_qty ?? 0),
+                'allow_overselling' => $s->allow_overselling !== null ? (bool) $s->allow_overselling : null,
+                'overselling_qty' => $s->overselling_qty !== null ? (int) $s->overselling_qty : null,
+            ])->values()->toArray() : [],
             'name' => $product->name,
             'sku' => $product->sku,
             'category' => $product->category?->slug ?? '',
@@ -654,7 +723,7 @@ class ProductController extends Controller
             'uom' => $product->uom?->name,
             'uom_data' => $product->uom,
             'supplier_id' => $product->supplier_id,
-            'supplier' => trim($product->supplier?->company_name ?: ($product->supplier?->firstname . ' ' . $product->supplier?->lastname)),
+            'supplier' => trim($product->supplier?->company_name ?: ($product->supplier?->firstname.' '.$product->supplier?->lastname)),
             'supplier_data' => $product->supplier,
             'tax_rate_id' => $product->tax_rate_id,
             'tax_rate' => $product->taxRate?->rate,
@@ -726,7 +795,7 @@ class ProductController extends Controller
 
     private function catalogOptions(): array
     {
-        return \Illuminate\Support\Facades\Cache::remember('catalog_options', 3600, function () {
+        return Cache::remember('catalog_options', 3600, function () {
             return [
                 'categories' => Category::query()
                     ->whereNull('parent_id')
@@ -744,7 +813,7 @@ class ProductController extends Controller
                         ])->values(),
                     ])->values(),
                 'brands' => Brand::query()->orderBy('name')->get(['id', 'name'])->values(),
-                'suppliers' => \App\Modules\Inventory\Models\Supplier::query()->orderBy('company_name')->get(['id', 'company_name', 'firstname', 'lastname'])->values(),
+                'suppliers' => Supplier::query()->orderBy('company_name')->get(['id', 'company_name', 'firstname', 'lastname'])->values(),
                 'uoms' => UnitOfMeasure::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'short_name'])->values(),
                 'taxRates' => TaxRate::query()->where('status', 'active')->orderBy('rate')->get(['id', 'name', 'rate'])->values(),
                 'hsnCodes' => HsnCode::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'description'])->values(),
@@ -788,7 +857,7 @@ class ProductController extends Controller
      * Helper to insert or update the primary stock record when a product is saved.
      * This ensures the InventoryService logic doesn't fail when no stock is registered.
      */
-    private function syncStock(Product $product, int $qty, string $importMode = 'overwrite'): void
+    private function syncStock(Product $product, int $qty, string $importMode = 'overwrite', array $extraData = []): void
     {
         // Determine the warehouse to assign stock to
         $warehouseId = $product->default_warehouse_id;
@@ -808,14 +877,21 @@ class ProductController extends Controller
         }
 
         $stock = Stock::withTrashed()->firstOrNew([
-            'product_id' => $product->id, 
-            'warehouse_id' => $warehouseId
+            'product_id' => $product->id,
+            'warehouse_id' => $warehouseId,
         ]);
 
         if ($importMode === 'increment') {
             $stock->quantity = ($stock->quantity ?? 0) + $qty;
         } else {
             $stock->quantity = $qty;
+        }
+
+        if (array_key_exists('allow_overselling', $extraData)) {
+            $stock->allow_overselling = $extraData['allow_overselling'] !== null ? filter_var($extraData['allow_overselling'], FILTER_VALIDATE_BOOL) : null;
+        }
+        if (array_key_exists('overselling_qty', $extraData)) {
+            $stock->overselling_qty = $extraData['overselling_qty'] !== null ? (int) $extraData['overselling_qty'] : null;
         }
 
         $stock->reserved_qty = $stock->reserved_qty ?? 0;

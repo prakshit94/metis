@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Cache;
 
 class PromotionsController extends Controller implements HasMiddleware
 {
@@ -122,6 +123,8 @@ class PromotionsController extends Controller implements HasMiddleware
         $data['updated_by'] = auth()->id();
         $coupon = Coupon::create($data);
 
+        $this->clearCouponCaches();
+
         return response()->json(['message' => 'Coupon created.', 'data' => $coupon], 201);
     }
 
@@ -181,12 +184,15 @@ class PromotionsController extends Controller implements HasMiddleware
 
         $coupon->update($data);
 
+        $this->clearCouponCaches();
+
         return response()->json(['message' => 'Coupon updated.', 'data' => $coupon->fresh()]);
     }
 
     public function couponsDestroy(Coupon $coupon): JsonResponse
     {
         $coupon->delete();
+        $this->clearCouponCaches();
 
         return response()->json(['message' => 'Coupon deleted.']);
     }
@@ -197,6 +203,8 @@ class PromotionsController extends Controller implements HasMiddleware
             'is_active' => ! $coupon->is_active,
             'status' => $coupon->is_active ? 'inactive' : 'active',
         ]);
+
+        $this->clearCouponCaches();
 
         return response()->json(['message' => 'Coupon status toggled.', 'data' => $coupon->fresh()]);
     }
@@ -219,6 +227,8 @@ class PromotionsController extends Controller implements HasMiddleware
         } elseif ($action === 'deactivate') {
             Coupon::whereIn('id', $ids)->update(['is_active' => false, 'status' => 'inactive']);
         }
+
+        $this->clearCouponCaches();
 
         return response()->json(['message' => count($ids).' coupon(s) '.$action.'d successfully.']);
     }
@@ -280,18 +290,18 @@ class PromotionsController extends Controller implements HasMiddleware
         if (isset($data['applicable_categories'])) {
             $data['applicable_categories'] = json_encode($data['applicable_categories']);
         }
-        
+
         $data['value'] = isset($data['value']) && $data['value'] !== '' ? (float) $data['value'] : 0;
         $data['min_spend'] = isset($data['min_spend']) && $data['min_spend'] !== '' ? (float) $data['min_spend'] : 0;
         $data['max_discount'] = isset($data['max_discount']) && $data['max_discount'] !== '' ? (float) $data['max_discount'] : null;
         $data['cashback_percent'] = isset($data['cashback_percent']) && $data['cashback_percent'] !== '' ? (float) $data['cashback_percent'] : null;
         $data['cashback_fixed'] = isset($data['cashback_fixed']) && $data['cashback_fixed'] !== '' ? (float) $data['cashback_fixed'] : null;
-        
+
         $productIds = $request->input('product_ids', []);
-        
+
         $offerData = $data;
         $offerData['applicable_products'] = empty($productIds) ? null : json_encode($productIds);
-        
+
         if ($data['type'] !== 'free_product') {
             $offerData['product_id'] = null;
         }
@@ -299,8 +309,10 @@ class PromotionsController extends Controller implements HasMiddleware
         unset($offerData['product_ids']);
         $offerData['created_by'] = auth()->id();
         $offerData['updated_by'] = auth()->id();
-        
+
         $offer = Offer::create($offerData);
+
+        $this->clearOfferCaches();
 
         return response()->json(['message' => 'Offer created successfully.', 'data' => $offer->load('product')], 201);
     }
@@ -335,12 +347,12 @@ class PromotionsController extends Controller implements HasMiddleware
         if (array_key_exists('applicable_categories', $data)) {
             $data['applicable_categories'] = $data['applicable_categories'] ? json_encode($data['applicable_categories']) : null;
         }
-        
+
         if ($request->has('product_ids')) {
             $productIds = $request->input('product_ids', []);
             $data['applicable_products'] = empty($productIds) ? null : json_encode($productIds);
         }
-        
+
         if (isset($data['type']) && $data['type'] !== 'free_product') {
             $data['product_id'] = null;
         }
@@ -365,12 +377,15 @@ class PromotionsController extends Controller implements HasMiddleware
         unset($data['product_ids']);
         $offer->update($data);
 
+        $this->clearOfferCaches();
+
         return response()->json(['message' => 'Offer updated.', 'data' => $offer->fresh('product')]);
     }
 
     public function offersDestroy(Offer $offer): JsonResponse
     {
         $offer->delete();
+        $this->clearOfferCaches();
 
         return response()->json(['message' => 'Offer deleted.']);
     }
@@ -378,6 +393,8 @@ class PromotionsController extends Controller implements HasMiddleware
     public function offersToggle(Offer $offer): JsonResponse
     {
         $offer->update(['is_active' => ! $offer->is_active]);
+
+        $this->clearOfferCaches();
 
         return response()->json(['message' => 'Offer status toggled.', 'data' => $offer->fresh()]);
     }
@@ -401,6 +418,20 @@ class PromotionsController extends Controller implements HasMiddleware
             Offer::whereIn('id', $ids)->update(['is_active' => false]);
         }
 
+        $this->clearOfferCaches();
+
         return response()->json(['message' => count($ids).' offer(s) '.$action.'d successfully.']);
+    }
+
+    private function clearCouponCaches(): void
+    {
+        Cache::forget('active_coupons');
+        Cache::forget('active_coupons_valid');
+    }
+
+    private function clearOfferCaches(): void
+    {
+        Cache::forget('active_offers_with_products');
+        Cache::forget('active_offers_priority');
     }
 }

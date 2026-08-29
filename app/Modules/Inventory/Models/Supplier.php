@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Modules\Catalog\Models\Product;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -57,15 +58,16 @@ class Supplier extends Model
                 $model->uuid = (string) Str::uuid();
             }
             if (empty($model->party_code)) {
-                $model->party_code = 'SUP-' . strtoupper(Str::random(6));
+                $model->party_code = 'SUP-'.strtoupper(Str::random(6));
             }
         });
     }
 
     public function products()
     {
-        return $this->hasMany(\App\Modules\Catalog\Models\Product::class, 'supplier_id');
+        return $this->hasMany(Product::class, 'supplier_id');
     }
+
     public function purchaseOrders()
     {
         return $this->hasMany(PurchaseOrder::class, 'supplier_id');

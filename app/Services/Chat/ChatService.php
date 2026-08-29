@@ -362,7 +362,7 @@ class ChatService
             $location = collect([$user->village_name, $user->district, $user->state])->filter()->implode(', ');
 
             $activeDevice = $this->deviceFromUserAgent($session->user_agent ?? null);
-            if ($lastTokenAt && (!$lastSessionAt || $lastTokenAt->greaterThan($lastSessionAt))) {
+            if ($lastTokenAt && (! $lastSessionAt || $lastTokenAt->greaterThan($lastSessionAt))) {
                 $activeDevice = 'mobile';
             }
 

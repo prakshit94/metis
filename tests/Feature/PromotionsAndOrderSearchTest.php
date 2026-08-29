@@ -2,13 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Customers\Models\Party;
+use App\Modules\Customers\Models\PartyAddress;
 use App\Modules\Orders\Models\Coupon;
 use App\Modules\Orders\Models\Offer;
-use App\Modules\Catalog\Models\Product;
 use App\Modules\Users\Models\User;
-use App\Modules\Catalog\Models\Warehouse;
-use App\Modules\Catalog\Models\Category;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class PromotionsAndOrderSearchTest extends TestCase
@@ -22,17 +26,17 @@ class PromotionsAndOrderSearchTest extends TestCase
         parent::setUp();
 
         // Seed roles and permissions first
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
 
         // Fetch or create the Master Admin or create a new user with Super Admin role
         $this->admin = User::where('email', 'admin@example.com')->first() ?: User::create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
+            'password' => Hash::make('password'),
             'is_active' => true,
         ]);
 
-        if (!$this->admin->hasRole('Super Admin')) {
+        if (! $this->admin->hasRole('Super Admin')) {
             $this->admin->assignRole('Super Admin');
         }
     }
@@ -40,11 +44,11 @@ class PromotionsAndOrderSearchTest extends TestCase
     public function test_product_search_api_returns_paginated_active_products(): void
     {
         $uniq = uniqid();
-        $category = Category::create(['name' => 'Seeds ' . $uniq, 'slug' => 'seeds-' . $uniq]);
+        $category = Category::create(['name' => 'Seeds '.$uniq, 'slug' => 'seeds-'.$uniq]);
         $product = Product::create([
-            'name' => 'Premium Wheat Seeds ' . $uniq,
-            'slug' => 'premium-wheat-seeds-' . $uniq,
-            'sku' => 'WHEAT-PREM-' . $uniq,
+            'name' => 'Premium Wheat Seeds '.$uniq,
+            'slug' => 'premium-wheat-seeds-'.$uniq,
+            'sku' => 'WHEAT-PREM-'.$uniq,
             'category_id' => $category->id,
             'selling_price' => 500.0,
             'purchase_price' => 400.0,
@@ -56,7 +60,7 @@ class PromotionsAndOrderSearchTest extends TestCase
             ->getJson(route('products.search.api', ['q' => 'Wheat']));
 
         $response->assertStatus(200)
-            ->assertJsonFragment(['sku' => 'WHEAT-PREM-' . $uniq])
+            ->assertJsonFragment(['sku' => 'WHEAT-PREM-'.$uniq])
             ->assertJsonStructure([
                 'data',
                 'current_page',
@@ -67,7 +71,7 @@ class PromotionsAndOrderSearchTest extends TestCase
     public function test_coupon_validation_api(): void
     {
         $uniq = uniqid();
-        $code = 'SAVE' . $uniq;
+        $code = 'SAVE'.$uniq;
         $coupon = Coupon::create([
             'code' => $code,
             'type' => 'fixed',
@@ -103,7 +107,7 @@ class PromotionsAndOrderSearchTest extends TestCase
     public function test_coupons_crud_and_bulk_operations(): void
     {
         $uniq = uniqid();
-        $code = 'WELC' . $uniq;
+        $code = 'WELC'.$uniq;
         // Store Coupon
         $response = $this->actingAs($this->admin)
             ->postJson(route('api.promotions.coupons.store'), [
@@ -138,9 +142,9 @@ class PromotionsAndOrderSearchTest extends TestCase
     public function test_offers_filtering_by_status(): void
     {
         $uniq = uniqid();
-        
+
         $activeOffer = Offer::create([
-            'name' => 'Active Offer ' . $uniq,
+            'name' => 'Active Offer '.$uniq,
             'type' => 'order_discount',
             'discount_type' => 'percentage',
             'value' => 10.0,
@@ -148,7 +152,7 @@ class PromotionsAndOrderSearchTest extends TestCase
         ]);
 
         $inactiveOffer = Offer::create([
-            'name' => 'Inactive Offer ' . $uniq,
+            'name' => 'Inactive Offer '.$uniq,
             'type' => 'order_discount',
             'discount_type' => 'percentage',
             'value' => 15.0,
@@ -162,8 +166,8 @@ class PromotionsAndOrderSearchTest extends TestCase
         $response->assertStatus(200);
         $data = $response->json('data.data');
         $names = array_column($data, 'name');
-        $this->assertContains('Active Offer ' . $uniq, $names);
-        $this->assertNotContains('Inactive Offer ' . $uniq, $names);
+        $this->assertContains('Active Offer '.$uniq, $names);
+        $this->assertNotContains('Inactive Offer '.$uniq, $names);
 
         // Filter inactive
         $response = $this->actingAs($this->admin)
@@ -172,22 +176,22 @@ class PromotionsAndOrderSearchTest extends TestCase
         $response->assertStatus(200);
         $data = $response->json('data.data');
         $names = array_column($data, 'name');
-        $this->assertContains('Inactive Offer ' . $uniq, $names);
-        $this->assertNotContains('Active Offer ' . $uniq, $names);
+        $this->assertContains('Inactive Offer '.$uniq, $names);
+        $this->assertNotContains('Active Offer '.$uniq, $names);
     }
 
     public function test_offers_usage_tracking(): void
     {
         Offer::query()->delete();
 
-        $party = \App\Modules\Customers\Models\Party::create([
+        $party = Party::create([
             'firstname' => 'Usage',
             'lastname' => 'Customer',
             'type' => 'customer',
             'is_active' => true,
         ]);
 
-        $address = \App\Modules\Customers\Models\PartyAddress::create([
+        $address = PartyAddress::create([
             'party_id' => $party->id,
             'label' => 'Primary Address',
             'address_line_1' => '123 test street',
@@ -203,9 +207,9 @@ class PromotionsAndOrderSearchTest extends TestCase
             'status' => 'active',
         ]);
 
-        $category = Category::create(['name' => 'Seeds ' . uniqid(), 'slug' => 'seeds-' . uniqid()]);
+        $category = Category::create(['name' => 'Seeds '.uniqid(), 'slug' => 'seeds-'.uniqid()]);
         $product = Product::create([
-            'name' => 'Test Offer Product ' . uniqid(),
+            'name' => 'Test Offer Product '.uniqid(),
             'sku' => 'TEST-OFFER-PROD',
             'slug' => 'test-offer-prod',
             'category_id' => $category->id,
@@ -249,7 +253,7 @@ class PromotionsAndOrderSearchTest extends TestCase
                         'quantity' => 2,
                         'unit_price' => 100.00,
                         'total_amount' => 200.00,
-                    ]
+                    ],
                 ],
                 'applied_offer_id' => $orderOffer->id,
                 'applied_bogo_ids' => [$bogoOffer->id],
@@ -264,4 +268,3 @@ class PromotionsAndOrderSearchTest extends TestCase
         $this->assertEquals(1, $bogoOffer->fresh()->used_count);
     }
 }
-

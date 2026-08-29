@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
-use Carbon\Carbon;
 
 class LeaveSeeder extends Seeder
 {
@@ -16,7 +16,7 @@ class LeaveSeeder extends Seeder
     {
         $faker = Faker::create();
         $users = DB::table('users')->pluck('id')->toArray();
-        
+
         if (empty($users)) {
             return;
         }
@@ -29,7 +29,7 @@ class LeaveSeeder extends Seeder
             $start = Carbon::now()->addDays(rand(-10, 10));
             $end = $start->copy()->addDays(rand(0, 3));
             $status = $faker->randomElement(['Pending', 'Approved', 'Rejected']);
-            
+
             $approvedBy = null;
             $approvedAt = null;
 

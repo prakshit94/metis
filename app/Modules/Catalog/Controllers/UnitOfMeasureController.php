@@ -27,7 +27,6 @@ class UnitOfMeasureController extends Controller implements HasMiddleware
     public function index(Request $request): JsonResponse
     {
 
-
         $query = UnitOfMeasure::query();
 
         if ($search = $request->query('search')) {
@@ -52,7 +51,6 @@ class UnitOfMeasureController extends Controller implements HasMiddleware
     public function store(Request $request): JsonResponse
     {
 
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'status' => 'required|in:active,inactive',
@@ -72,13 +70,11 @@ class UnitOfMeasureController extends Controller implements HasMiddleware
     public function show(UnitOfMeasure $model): JsonResponse
     {
 
-
         return response()->json(['data' => $model]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-
 
         $model = UnitOfMeasure::findOrFail($id);
 

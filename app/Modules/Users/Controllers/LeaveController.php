@@ -4,8 +4,10 @@ namespace App\Modules\Users\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\Leave;
-use Illuminate\Http\Request;
+use App\Modules\Users\Models\LeaveBalance;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class LeaveController extends Controller
 {
@@ -22,11 +24,12 @@ class LeaveController extends Controller
         $filterUserId = $request->input('user_id');
 
         $query = Leave::with(['user', 'approver', 'applier'])
-            ->when(!$isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when(! $isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
             ->when($isGlobalView && $filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
             ->orderBy('start_date', 'desc');
 
         $leaves = $query->paginate(request('per_page', 15));
+
         return response()->json($leaves);
     }
 
@@ -42,7 +45,7 @@ class LeaveController extends Controller
             'reason' => 'nullable|string',
         ]);
 
-        if (!$this->isGlobalView($request)) {
+        if (! $this->isGlobalView($request)) {
             $validated['user_id'] = $request->user()->id;
         }
 
@@ -58,26 +61,27 @@ class LeaveController extends Controller
     {
         abort_unless($request->user()?->can('leave-view'), 403);
 
-        if (!$this->isGlobalView($request) && $leave->user_id !== $request->user()->id) {
+        if (! $this->isGlobalView($request) && $leave->user_id !== $request->user()->id) {
             abort(403, 'Unauthorized to view this leave record.');
         }
 
         $leave->load(['user', 'approver', 'applier']);
+
         return response()->json(['data' => $leave]);
     }
-    
+
     public function update(Request $request, Leave $leave): JsonResponse
     {
         abort_unless($request->user()?->can('leave-edit'), 403);
-        
-        if (!$this->isGlobalView($request) && $leave->user_id !== $request->user()->id) {
+
+        if (! $this->isGlobalView($request) && $leave->user_id !== $request->user()->id) {
             abort(403, 'Unauthorized to modify this leave record.');
         }
-        
+
         if ($leave->status !== 'Pending') {
             return response()->json(['message' => 'Cannot modify an already processed leave request.'], 422);
         }
-        
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'leave_type' => 'required|string',
@@ -87,7 +91,7 @@ class LeaveController extends Controller
             'status' => 'required|in:Pending,Approved,Rejected',
         ]);
 
-        if (!$this->isGlobalView($request)) {
+        if (! $this->isGlobalView($request)) {
             $validated['user_id'] = $request->user()->id;
             $validated['status'] = 'Pending';
         }
@@ -103,7 +107,7 @@ class LeaveController extends Controller
         $originalStatus = $leave->status;
         $originalUserId = $leave->user_id;
         $originalLeaveType = $leave->leave_type;
-        $originalDays = \Carbon\Carbon::parse($leave->start_date)->diffInDays(\Carbon\Carbon::parse($leave->end_date)) + 1;
+        $originalDays = Carbon::parse($leave->start_date)->diffInDays(Carbon::parse($leave->end_date)) + 1;
 
         $leave->update($validated);
 
@@ -111,7 +115,7 @@ class LeaveController extends Controller
 
         // If it was previously approved, refund the original balance first
         if ($originalStatus === 'Approved') {
-            $oldBalance = \App\Modules\Users\Models\LeaveBalance::where('user_id', $originalUserId)
+            $oldBalance = LeaveBalance::where('user_id', $originalUserId)
                 ->where('leave_type', $originalLeaveType)
                 ->first();
             if ($oldBalance) {
@@ -119,11 +123,11 @@ class LeaveController extends Controller
                 $oldBalance->save();
             }
         }
-        
+
         // If the new status is approved, deduct the new balance
         if ($newStatus === 'Approved') {
-            $newDays = \Carbon\Carbon::parse($leave->start_date)->diffInDays(\Carbon\Carbon::parse($leave->end_date)) + 1;
-            $newBalance = \App\Modules\Users\Models\LeaveBalance::where('user_id', $leave->user_id)
+            $newDays = Carbon::parse($leave->start_date)->diffInDays(Carbon::parse($leave->end_date)) + 1;
+            $newBalance = LeaveBalance::where('user_id', $leave->user_id)
                 ->where('leave_type', $leave->leave_type)
                 ->first();
             if ($newBalance) {
@@ -134,25 +138,25 @@ class LeaveController extends Controller
 
         return response()->json(['data' => $leave, 'message' => 'Leave request updated successfully.']);
     }
-    
+
     public function destroy(Request $request, Leave $leave): JsonResponse
     {
         abort_unless($request->user()?->can('leave-delete'), 403);
-        
-        if (!$this->isGlobalView($request) && $leave->user_id !== $request->user()->id) {
+
+        if (! $this->isGlobalView($request) && $leave->user_id !== $request->user()->id) {
             abort(403, 'Unauthorized to delete this leave record.');
         }
-        
+
         if ($leave->status !== 'Pending') {
             return response()->json(['message' => 'Cannot delete an already processed leave request.'], 422);
         }
-        
+
         if ($leave->status === 'Approved') {
             $this->adjustLeaveBalance($leave, 'refund');
         }
-        
+
         $leave->delete();
-        
+
         return response()->json(['message' => 'Leave request deleted successfully.']);
     }
 
@@ -160,7 +164,7 @@ class LeaveController extends Controller
     {
         abort_unless($request->user()?->can('leave-edit'), 403);
 
-        if (!$this->isGlobalView($request)) {
+        if (! $this->isGlobalView($request)) {
             abort(403, 'Unauthorized to approve or reject leave requests.');
         }
 
@@ -204,9 +208,9 @@ class LeaveController extends Controller
 
         if ($action === 'delete') {
             abort_unless($request->user()?->can('leave-delete'), 403);
-            
+
             $query = Leave::whereIn('id', $ids)->where('status', 'Pending');
-            if (!$this->isGlobalView($request)) {
+            if (! $this->isGlobalView($request)) {
                 $query->where('user_id', $request->user()->id);
             }
             $leaves = $query->get();
@@ -217,27 +221,28 @@ class LeaveController extends Controller
                 }
                 $leave->delete();
             }
+
             return response()->json(['message' => 'Selected pending leaves deleted successfully.']);
         }
 
         abort_unless($request->user()?->can('leave-edit'), 403);
 
-        if (!$this->isGlobalView($request)) {
+        if (! $this->isGlobalView($request)) {
             abort(403, 'Unauthorized to approve or reject leave requests.');
         }
 
         $status = $action === 'approve' ? 'Approved' : 'Rejected';
-        
+
         $leaves = Leave::whereIn('id', $ids)->where('status', 'Pending')->get();
         foreach ($leaves as $leave) {
             $originalStatus = $leave->status;
-            
+
             $leave->update([
                 'status' => $status,
                 'approved_by' => $request->user()->id,
                 'approved_at' => now(),
             ]);
-            
+
             if ($originalStatus !== 'Approved' && $status === 'Approved') {
                 $this->adjustLeaveBalance($leave, 'deduct');
             } elseif ($originalStatus === 'Approved' && $status !== 'Approved') {
@@ -245,17 +250,17 @@ class LeaveController extends Controller
             }
         }
 
-        return response()->json(['message' => 'Selected leaves ' . strtolower($status) . ' successfully.']);
+        return response()->json(['message' => 'Selected leaves '.strtolower($status).' successfully.']);
     }
 
     private function adjustLeaveBalance(Leave $leave, $action = 'deduct')
     {
-        $days = \Carbon\Carbon::parse($leave->start_date)->diffInDays(\Carbon\Carbon::parse($leave->end_date)) + 1;
-        
-        $balance = \App\Modules\Users\Models\LeaveBalance::where('user_id', $leave->user_id)
+        $days = Carbon::parse($leave->start_date)->diffInDays(Carbon::parse($leave->end_date)) + 1;
+
+        $balance = LeaveBalance::where('user_id', $leave->user_id)
             ->where('leave_type', $leave->leave_type)
             ->first();
-            
+
         if ($balance) {
             if ($action === 'deduct') {
                 $balance->used_leaves += $days;

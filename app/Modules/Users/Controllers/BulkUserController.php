@@ -38,7 +38,7 @@ class BulkUserController extends Controller
         abort_unless($request->user()?->can($ability), 403);
 
         // Gracefully skip the Master Admin (ID 1) from any bulk action
-        $ids = array_values(array_filter($ids, fn($id) => (int)$id !== 1));
+        $ids = array_values(array_filter($ids, fn ($id) => (int) $id !== 1));
 
         if (empty($ids)) {
             return response()->json(['message' => 'No valid users selected (Master Admin is protected).'], 422);
@@ -76,7 +76,7 @@ class BulkUserController extends Controller
                 ->where('tokenable_type', User::class)
                 ->whereIn('tokenable_id', $ids)
                 ->delete();
-                
+
             DB::table('sessions')
                 ->whereIn('user_id', $ids)
                 ->delete();
@@ -94,7 +94,7 @@ class BulkUserController extends Controller
                 ->where('tokenable_type', User::class)
                 ->whereIn('tokenable_id', $ids)
                 ->delete();
-                
+
             DB::table('sessions')
                 ->whereIn('user_id', $ids)
                 ->delete();
@@ -116,7 +116,7 @@ class BulkUserController extends Controller
                 ->where('tokenable_type', User::class)
                 ->whereIn('tokenable_id', $ids)
                 ->delete();
-                
+
             DB::table('sessions')
                 ->whereIn('user_id', $ids)
                 ->delete();

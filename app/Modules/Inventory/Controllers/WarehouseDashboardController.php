@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Core\Controllers\Controller;
 use App\Modules\Inventory\Services\WarehouseAnalyticsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class WarehouseDashboardController extends Controller
@@ -40,7 +41,7 @@ class WarehouseDashboardController extends Controller
         $shrinkageValue = $this->analyticsService->getShrinkageValue($warehouseId, $dateRange);
         $lowStockAlerts = $this->analyticsService->getLowStockAlerts($warehouseId);
 
-        $warehouses = \Illuminate\Support\Facades\Cache::remember('active_warehouses_list', 3600, function () {
+        $warehouses = Cache::remember('active_warehouses_list', 3600, function () {
             return Warehouse::active()->get();
         });
 

@@ -105,7 +105,7 @@
         </div>
         <div class="card-body p-0">
             <!-- Bulk Actions Bar -->
-            <div class="bulk-actions-bar p-3 bg-light border-bottom" x-show="selectedItems.length > 0" x-transition>
+            <div class="bulk-actions-bar p-3 bg-body-secondary border-bottom" x-show="selectedItems.length > 0" x-transition>
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted">
                         <span x-text="selectedItems.length"></span> item(s) selected
@@ -173,7 +173,7 @@
                                         <template x-if="!item.image">
                                             <img src="/assets/images/product-placeholder.svg" class="rounded object-cover border" style="width: 32px; height: 32px;" alt="No image">
                                         </template>
-                                        <div class="fw-semibold text-dark" x-text="item.name"></div>
+                                        <div class="fw-semibold text-body-emphasis" x-text="item.name"></div>
                                     </div>
                                 </td>
                                 <td>

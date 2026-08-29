@@ -131,20 +131,21 @@
                     <div>
                         <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2 text-primary"></i>Customer Workspace</h5>
                     </div>
-                    <div class="d-flex align-items-center gap-2" x-show="customerDetails" x-cloak>
+                    <div class="d-flex align-items-center gap-3" x-show="customerDetails" x-cloak>
+                        <div class="form-check form-switch cursor-pointer ms-2 mb-0 d-flex align-items-center" title="Toggle Workspace">
+                            <input class="form-check-input mt-0 me-2 shadow-sm" type="checkbox" role="switch" id="workspaceToggleBtn" x-model="showCustomerWorkspace" style="cursor: pointer;">
+                            <label class="form-check-label fw-bold text-body-secondary text-uppercase mb-0" for="workspaceToggleBtn" style="cursor: pointer; font-size: 10px; letter-spacing: 0.5px;" x-text="showCustomerWorkspace ? 'Hide Profile' : 'View Profile'"></label>
+                        </div>
                         @can('customer-edit')
                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm hover-shadow transition-all" @click="$dispatch('open-add-customer-modal', {customer: customerDetails})">
                             <i class="bi bi-pencil-square me-1"></i>Edit Profile
                         </button>
                         @endcan
-                        <div class="form-check form-switch cursor-pointer ms-2 mb-0 d-flex align-items-center" title="Toggle Workspace">
-                            <input class="form-check-input mt-0 me-2 shadow-sm" type="checkbox" role="switch" id="workspaceToggleBtn" x-model="showCustomerWorkspace" style="cursor: pointer;">
-                            <label class="form-check-label fw-bold text-body-secondary text-uppercase mb-0" for="workspaceToggleBtn" style="cursor: pointer; font-size: 10px; letter-spacing: 0.5px;" x-text="showCustomerWorkspace ? 'Hide Profile' : 'View Profile'"></label>
-                        </div>
                     </div>
                 </div>
                 <div class="card-body p-4 p-lg-4" x-show="showCustomerWorkspace">
                     <div class="card border shadow-sm mb-4" x-show="customerDetails" x-cloak>
+
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <div class="d-flex align-items-start gap-4 flex-wrap">
@@ -369,6 +370,7 @@
                         </div>
                     </div>
                     {{-- Addresses Section --}}
+                    {{-- Addresses Section --}}
                     <div id="addresses-section" x-show="partyId" x-cloak class="mt-4 pt-4 border-top transition-all">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Shipping Addresses</h6>
@@ -508,7 +510,7 @@
                                     <div class="small fw-bold text-body-secondary text-uppercase mb-1" style="font-size: 11px; letter-spacing: 1px;">Warehouse</div>
                                     <h6 class="mb-0 fw-bold">Select fulfillment warehouse</h6>
                                 </div>
-                                <select x-select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId" @change="searchProducts(true)">
+                                <select x-select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId" @change="handleWarehouseChange($event)">
                                     <option value="">Select Warehouse</option>
                                     @foreach($warehouses as $w)
                                     <option value="{{ $w->id }}" data-state="{{ $w->state }}">{{ $w->name }}</option>
@@ -536,7 +538,7 @@
                                 <input type="search" class="form-control pe-5" placeholder="Search SKU, name..." x-model="productQuery" @input.debounce.350ms="searchProducts(true)">
                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-body-secondary"></i>
                             </div>
-                            <select x-select class="form-select" style="max-width:180px" x-model="warehouseId" @change="searchProducts(true)">
+                            <select x-select class="form-select" style="max-width:180px" x-model="warehouseId" @change="handleWarehouseChange($event)">
                                 <option value="">Select Warehouse</option>
                                 @foreach($warehouses as $w)
                                 <option value="{{ $w->id }}">{{ $w->name }}</option>
@@ -573,16 +575,16 @@
                         <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
                     </template>
                     {{-- Empty --}}
-                    <template x-if="!searching && products.length === 0">
+                    <template x-if="!searching && filteredProducts.length === 0">
                         <div class="text-center py-5 text-body-secondary"><i class="bi bi-box-seam fs-1 d-block mb-2"></i>No products found</div>
                     </template>
                     {{-- Product Grid / Table --}}
-                    <div class="p-3" x-show="!searching && products.length > 0">
+                    <div class="p-3" x-show="!searching && filteredProducts.length > 0">
                         {{-- Grid View --}}
                         <div class="row g-3" x-show="viewMode === 'grid'">
-                            <template x-for="p in products" :key="p.id">
+                            <template x-for="p in filteredProducts" :key="p.id">
                                 <div class="col-sm-6 col-md-4">
-                                    <div class="card h-100 border shadow-sm transition-all" x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="isHovered ? 'position: relative; z-index: 1050;' : ''" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getWarehouseStock(p) <= 0}">
+                                    <div class="card h-100 border shadow-sm transition-all" x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="isHovered ? 'position: relative; z-index: 1050;' : ''" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getMaxAllowedStock(p) <= 0}">
                                         <div class="card-body p-3">
                                             <div class="d-flex gap-2 mb-3">
                                                 <div x-show="p.grade" 
@@ -615,7 +617,10 @@
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-1 bg-body-tertiary rounded">
                                                 <span class="fw-bold text-primary fs-5" x-text="'₹ ' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></span>
-                                                <span class="badge" :class="getWarehouseStock(p) > 10 ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p))"></span>
+                                                <div>
+                                                    <span class="badge" :class="getWarehouseStock(p) > 10 ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p))"></span>
+                                                    <span x-show="p.allow_overselling" class="badge text-bg-warning-subtle text-warning-emphasis ms-1"><i class="bi bi-infinity"></i> <span x-text="getOversellStock(p)"></span></span>
+                                                </div>
                                             </div>
                                             <div class="d-flex flex-wrap gap-1 mb-3" x-show="getProductPromotions(p).length > 0">
                                                 <div class="position-relative" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
@@ -651,13 +656,13 @@
                                             </div>
                                             <div class="d-flex flex-column gap-2 mt-auto">
                                                 <div class="input-group shadow-sm flex-nowrap" style="min-height: 38px;">
-                                                    <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-dash"></i></button>
-                                                    <input type="number" class="form-control text-center fw-bold px-1 no-spinners flex-grow-1" x-model.number="p._qty" min="1" :max="getWarehouseStock(p) || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0" style="min-width: 0;">
-                                                    <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty < (getWarehouseStock(p) || 9999)) p._qty++" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-plus"></i></button>
+                                                    <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!canAddToCart(p)"><i class="bi bi-dash"></i></button>
+                                                    <input type="number" class="form-control text-center fw-bold px-1 no-spinners flex-grow-1" x-model.number="p._qty" min="1" :max="getMaxAllowedStock(p) || 9999" placeholder="Qty" :disabled="!canAddToCart(p)" style="min-width: 0;">
+                                                    <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty < (getMaxAllowedStock(p) || 9999)) p._qty++" :disabled="!canAddToCart(p)"><i class="bi bi-plus"></i></button>
                                                 </div>
-                                                <button class="btn btn-sm w-100 shadow-sm d-flex align-items-center justify-content-center gap-2 transition-all fw-bold text-nowrap" style="min-height: 38px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
+                                                <button class="btn btn-sm w-100 shadow-sm d-flex align-items-center justify-content-center gap-2 transition-all fw-bold text-nowrap" style="min-height: 38px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!canAddToCart(p)">
                                                     <i class="bi fs-5" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
-                                                    <span x-text="!p.is_sku_enabled ? 'Disabled' : (getWarehouseStock(p) <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 13px;"></span>
+                                                    <span x-text="!p.is_sku_enabled ? 'Disabled' : (!canAddToCart(p) ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 13px;"></span>
                                                 </button>
                                             </div>
                                         </div>
@@ -678,8 +683,8 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <template x-for="p in products" :key="'tbl-'+p.id">
-                                        <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getWarehouseStock(p) <= 0}">
+                                    <template x-for="p in filteredProducts" :key="'tbl-'+p.id">
+                                        <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getMaxAllowedStock(p) <= 0}">
                                             <td>
                                                 <div class="d-flex gap-2">
                                                     <div x-show="p.grade" 
@@ -759,7 +764,7 @@
                                                             <template x-if="p.warehouse_stocks.some(w => String(w.warehouse_id) === String(warehouseId))">
                                                                 <template x-for="(ws, index) in p.warehouse_stocks.filter(w => String(w.warehouse_id) === String(warehouseId))" :key="index">
                                                                     <span class="badge bg-secondary bg-opacity-10 border text-body-emphasis" style="font-size: 0.65rem;">
-                                                                        <span class="fw-bold" :class="ws.available > 0 ? 'text-success' : 'text-danger'" x-text="parseFloat(ws.available)"></span>
+                                                                        <span class="fw-bold" :class="getWarehouseStock(p) > 0 ? 'text-success' : 'text-danger'" x-text="getWarehouseStock(p)"></span>
                                                                     </span>
                                                                 </template>
                                                             </template>
@@ -773,7 +778,7 @@
                                                 </div>
                                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                                     <div class="small text-body-secondary" style="font-size: 11px;" x-show="p.min_stock_level > 0">Min Lvl: <span class="fw-medium" x-text="p.min_stock_level"></span></div>
-                                                    <span x-show="p.allow_overselling" class="badge text-bg-warning-subtle text-warning-emphasis" style="font-size: 9px;" title="Overselling Allowed"><i class="bi bi-infinity"></i> Oversell</span>
+                                                    <span x-show="p.allow_overselling" class="badge text-bg-warning-subtle text-warning-emphasis" style="font-size: 9px;" title="Overselling Allowed"><i class="bi bi-infinity"></i> <span x-text="'Oversell: ' + getOversellStock(p)"></span></span>
                                                 </div>
                                                 <div class="d-flex flex-wrap gap-1 mt-1">
                                                     <span x-show="p.batch_tracking" class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;"><i class="bi bi-box me-1"></i>Batch</span>
@@ -784,13 +789,13 @@
                                             <td class="text-center align-middle">
                                                 <div class="d-flex flex-column gap-2 mx-auto" style="max-width: 130px;">
                                                     <div class="input-group input-group-sm shadow-sm flex-nowrap" style="min-height: 32px;">
-                                                        <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-dash"></i></button>
-                                                        <input type="number" class="form-control text-center fw-bold px-1 no-spinners flex-grow-1" x-model.number="p._qty" min="1" :max="getWarehouseStock(p) || 9999" placeholder="Qty" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0" style="min-width: 0;">
-                                                        <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty < (getWarehouseStock(p) || 9999)) p._qty++" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0"><i class="bi bi-plus"></i></button>
+                                                        <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!canAddToCart(p)"><i class="bi bi-dash"></i></button>
+                                                        <input type="number" class="form-control text-center fw-bold px-1 no-spinners flex-grow-1" x-model.number="p._qty" min="1" :max="getMaxAllowedStock(p) || 9999" placeholder="Qty" :disabled="!canAddToCart(p)" style="min-width: 0;">
+                                                        <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty < (getMaxAllowedStock(p) || 9999)) p._qty++" :disabled="!canAddToCart(p)"><i class="bi bi-plus"></i></button>
                                                     </div>
-                                                    <button class="btn btn-sm shadow-sm w-100 transition-all fw-bold text-nowrap d-flex align-items-center justify-content-center gap-1" style="min-height: 32px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!p.is_sku_enabled || getWarehouseStock(p) <= 0">
+                                                    <button class="btn btn-sm shadow-sm w-100 transition-all fw-bold text-nowrap d-flex align-items-center justify-content-center gap-1" style="min-height: 32px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!canAddToCart(p)">
                                                         <i class="bi" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i> 
-                                                        <span x-text="!p.is_sku_enabled ? 'Disabled' : (getWarehouseStock(p) <= 0 ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 11px;"></span>
+                                                        <span x-text="!p.is_sku_enabled ? 'Disabled' : (!canAddToCart(p) ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 11px;"></span>
                                                     </button>
                                                 </div>
                                             </td>
@@ -2127,7 +2132,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         viewMode: 'table',
         showCustomerWorkspace: true,
         isCartSidebarOpen: false, useWalletBalance: false,
-        partyId: new URLSearchParams(window.location.search).get('customer_id') || '', defaultWarehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', warehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale', shippingFee: 0,
+        partyId: new URLSearchParams(window.location.search).get('customer_id') || '', defaultWarehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', warehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', previousWarehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale', shippingFee: 0,
         orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
         orderStatus: 'pending', futureOrderDate: '',
         editingOrderId: null,
@@ -2583,13 +2588,105 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             return match ? match.name : 'Select warehouse';
         },
 
-        getWarehouseStock(p) {
+        getTotalWarehouseStock(p) {
             if (!p) return 0;
             if (!this.warehouseId || !p.warehouse_stocks || p.warehouse_stocks.length === 0) {
-                return parseFloat(p.available_stock || 0);
+                return parseFloat(p.stock_qty || 0) - parseFloat(p.reserved_qty || 0) - parseFloat(p.pending_qty || 0);
             }
             const match = p.warehouse_stocks.find(w => String(w.warehouse_id) === String(this.warehouseId));
             return match ? parseFloat(match.available || 0) : 0;
+        },
+
+        getWarehouseStock(p) {
+            if (!p) return 0;
+            const totalStock = this.getTotalWarehouseStock(p);
+            const cartQty = this.cart.filter(i => String(i.id) === String(p.id)).reduce((sum, item) => sum + item.quantity, 0);
+            return Math.max(0, totalStock - cartQty);
+        },
+
+        handleWarehouseChange(event) {
+            let notifyWarning = false;
+            let removedCount = 0;
+            
+            this.cart = this.cart.map(item => {
+                if (item.is_gift) return item;
+                
+                let p = item._product;
+                if (!p) {
+                    p = this.products.find(prod => String(prod.id) === String(item.id));
+                }
+                
+                if (!p) return item;
+                
+                const maxAllowed = this.getMaxAllowedStock(p);
+                item.available = maxAllowed;
+                
+                if (item.quantity > maxAllowed) {
+                    notifyWarning = true;
+                    item.quantity = maxAllowed;
+                }
+                
+                return item;
+            }).filter(item => {
+                if (item.quantity > 0) return true;
+                if (!item.is_gift) removedCount++;
+                return false;
+            });
+            
+            if (notifyWarning) {
+                window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cart quantities adjusted based on warehouse stock.'}}));
+            }
+            if (removedCount > 0) {
+                window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:removedCount + ' item(s) removed due to being out of stock.'}}));
+            }
+        },
+
+        getOversellStock(p) {
+            if (!p) return 0;
+            let allow = p.allow_overselling;
+            let limit = parseInt(p.overselling_qty) || 999;
+            
+            if (this.warehouseId && p.warehouse_stocks) {
+                const match = p.warehouse_stocks.find(w => String(w.warehouse_id) === String(this.warehouseId));
+                if (match && match.allow_overselling !== null) {
+                    allow = match.allow_overselling;
+                    limit = parseInt(match.overselling_qty) || 999;
+                }
+            }
+            
+            if (!allow) return 0;
+            
+            const totalStock = this.getTotalWarehouseStock(p);
+            const cartQty = this.cart.filter(i => String(i.id) === String(p.id)).reduce((sum, item) => sum + item.quantity, 0);
+            const usedOversell = Math.max(0, cartQty - totalStock);
+            return Math.max(0, limit - usedOversell);
+        },
+
+        getMaxAllowedStock(p) {
+            if (!p) return 0;
+            const totalStock = this.getTotalWarehouseStock(p);
+            
+            let allow = p.allow_overselling;
+            let limit = parseInt(p.overselling_qty) || 999;
+            
+            if (this.warehouseId && p.warehouse_stocks) {
+                const match = p.warehouse_stocks.find(w => String(w.warehouse_id) === String(this.warehouseId));
+                if (match && match.allow_overselling !== null) {
+                    allow = match.allow_overselling;
+                    limit = parseInt(match.overselling_qty) || 999;
+                }
+            }
+            
+            if (allow) {
+                return totalStock + limit;
+            }
+            return totalStock;
+        },
+
+        canAddToCart(p) {
+            if (!p || !p.is_sku_enabled) return false;
+            const cartQty = this.cart.filter(i => String(i.id) === String(p.id)).reduce((sum, item) => sum + item.quantity, 0);
+            return cartQty < this.getMaxAllowedStock(p);
         },
 
         get futureOrders() {
@@ -2654,12 +2751,21 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         },
 
         
+        get filteredProducts() {
+            if (!this.products) return [];
+            return this.products.filter(p => {
+                const maxStock = this.getMaxAllowedStock(p);
+                if (this.stockFilter === 'available' && maxStock <= 0) return false;
+                if (this.stockFilter === 'out_of_stock' && maxStock > 0) return false;
+                return true;
+            });
+        },
 
         async searchProducts(reset = false) {
             if (reset) this.productPage = 1;
             this.searching = true;
             try {
-                const p = new URLSearchParams({ q: this.productQuery, stock: this.stockFilter, category: this.categoryFilter, perPage: this.perPage, page: this.productPage });
+                const p = new URLSearchParams({ q: this.productQuery, category: this.categoryFilter, perPage: this.perPage, page: this.productPage });
                 const res = await fetch(`/products-search-api?${p}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                 const json = await res.json();
                 this.products = (json.data || []).map(p => ({...p, _qty: 1, _disc: parseFloat(p.default_discount)||0}));
@@ -2767,29 +2873,28 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             const disc = parseFloat(p._disc)||0;
             if (qtyToAdd <= 0) return;
 
-            const existing = this.cart.findIndex(i => i.id === p.id && !i.is_gift);
+            const existing = this.cart.findIndex(i => String(i.id) === String(p.id) && !i.is_gift);
+            const maxAllowed = this.getMaxAllowedStock(p);
             
             let newQty;
             if (existing >= 0) {
                 newQty = this.cart[existing].quantity + qtyToAdd;
                 newQty = this.calculateAutoBogoQty(p.id, newQty, qtyToAdd);
-                const whStock = this.getWarehouseStock(p);
-                if (whStock !== null && whStock !== undefined && newQty > whStock) {
-                    window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+whStock+')'}}));
+                if (maxAllowed !== null && maxAllowed !== undefined && newQty > maxAllowed) {
+                    window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+maxAllowed+')'}}));
                     return;
                 }
                 this.cart[existing].quantity = newQty;
             } else {
                 newQty = qtyToAdd;
                 newQty = this.calculateAutoBogoQty(p.id, newQty, qtyToAdd);
-                const whStock = this.getWarehouseStock(p);
-                if (whStock !== null && whStock !== undefined && newQty > whStock) {
-                    window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+whStock+')'}}));
+                if (maxAllowed !== null && maxAllowed !== undefined && newQty > maxAllowed) {
+                    window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+maxAllowed+')'}}));
                     return;
                 }
-                this.cart.push({ id:p.id, name:p.name, sku:p.sku, price:p.selling_price, image_url:p.image_url, quantity:newQty, available:whStock, taxRate:parseFloat(p.tax_rate)||0, discountValue:disc, discountType:p.default_discount_type||'percent', category_id:p.category_id, batch_number:'' });
+                this.cart.push({ id:p.id, _product: p, name:p.name, sku:p.sku, price:p.selling_price, image_url:p.image_url, quantity:newQty, available:maxAllowed, taxRate:parseFloat(p.tax_rate)||0, discountValue:disc, discountType:p.default_discount_type||'percent', category_id:p.category_id, batch_number:'' });
             }
-            window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:'Added '+p.name+' to cart'}}));
+            window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:`Added ${qtyToAdd} item(s) of ${p.name} to cart`}}));
         },
 
         updateQty(idx, delta) {

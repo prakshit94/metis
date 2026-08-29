@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Modules\Users\Models\Holiday;
+use Illuminate\Database\Seeder;
 
 class HolidaySeeder extends Seeder
 {
@@ -19,7 +19,7 @@ class HolidaySeeder extends Seeder
             ['name' => 'Republic Day', 'date' => "$year-01-26", 'type' => 'National'],
             ['name' => 'Independence Day', 'date' => "$year-08-15", 'type' => 'National'],
             ['name' => 'Mahatma Gandhi Jayanti', 'date' => "$year-10-02", 'type' => 'National'],
-            
+
             // Major Festivals (Often treated as National or Company Holidays)
             ['name' => 'Makar Sankranti / Pongal', 'date' => "$year-01-14", 'type' => 'Company'],
             ['name' => 'Holi', 'date' => "$year-03-04", 'type' => 'Company'], // Note: Dates vary by lunar calendar, using approximation

@@ -2,10 +2,15 @@
 
 namespace Tests\Unit\Shipping;
 
-use Tests\TestCase;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Customers\Models\PartyAddress;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderItem;
 use App\Services\Shipping\Providers\IndiaPostProvider;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
 
 class IndiaPostProviderTest extends TestCase
 {
@@ -16,9 +21,9 @@ class IndiaPostProviderTest extends TestCase
                 'success' => true,
                 'data' => [
                     'access_token' => 'fake_token',
-                    'expires_in' => 3600
-                ]
-            ], 200)
+                    'expires_in' => 3600,
+                ],
+            ], 200),
         ]);
 
         Cache::shouldReceive('remember')
@@ -26,8 +31,8 @@ class IndiaPostProviderTest extends TestCase
             ->with('india_post_access_token', \Mockery::any(), \Mockery::type('Closure'))
             ->andReturn('fake_token');
 
-        $provider = new IndiaPostProvider();
-        
+        $provider = new IndiaPostProvider;
+
         $token = $provider->authenticate();
 
     }
@@ -37,37 +42,37 @@ class IndiaPostProviderTest extends TestCase
         Http::fake([
             '*/v1/access/login' => Http::response(['success' => true, 'data' => ['access_token' => 'token']], 200),
             '*/process-articles/*' => Http::response([
-                'success' => true, 
-                'valid_articles' => [['barcode_no' => 'AWB123', 'tariff' => 150]]
-            ], 200)
+                'success' => true,
+                'valid_articles' => [['barcode_no' => 'AWB123', 'tariff' => 150]],
+            ], 200),
         ]);
 
-        $provider = new IndiaPostProvider();
+        $provider = new IndiaPostProvider;
 
-        $product = new \App\Modules\Catalog\Models\Product([
+        $product = new Product([
             'weight_g' => 200,
             'length_cm' => 15,
             'width_cm' => 20,
             'height_cm' => 5,
         ]);
 
-        $orderItem = new \App\Modules\Orders\Models\OrderItem([
-            'quantity' => 2
+        $orderItem = new OrderItem([
+            'quantity' => 2,
         ]);
         // Mock the relationship
         $orderItem->setRelation('product', $product);
 
-        $order = new \App\Modules\Orders\Models\Order();
+        $order = new Order;
         $order->setRelation('items', collect([$orderItem]));
-        
-        \Illuminate\Database\Eloquent\Model::unguard();
-        $address = new \App\Modules\Customers\Models\PartyAddress([
+
+        Model::unguard();
+        $address = new PartyAddress([
             'first_name' => 'John',
             'last_name' => 'Doe',
             'address_line_1' => '123 Main St',
             'city' => 'Delhi',
             'postal_code' => '110001',
-            'phone_number' => '1234567890'
+            'phone_number' => '1234567890',
         ]);
         $order->setRelation('address', $address);
 

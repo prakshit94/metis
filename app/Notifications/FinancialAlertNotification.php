@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,7 +11,9 @@ class FinancialAlertNotification extends Notification
     use Queueable;
 
     public $type;
+
     public $amount;
+
     public $reference;
 
     /**
@@ -53,7 +54,8 @@ class FinancialAlertNotification extends Notification
      */
     public function toArray(object $notifiable): array
     {
-        $title = ucfirst($this->type) . ' Processed';
+        $title = ucfirst($this->type).' Processed';
+
         return [
             'type' => 'financial_alert',
             'title' => $title,

@@ -2,10 +2,14 @@
 
 namespace App\Modules\Orders\Controllers;
 
+use App\Modules\Catalog\Models\Service;
 use App\Modules\Core\Controllers\Controller;
+use App\Modules\Inventory\Models\Stock;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Models\OrderReturnItem;
+use App\Modules\Orders\Models\Refund;
 use App\Services\FinancialService;
 use App\Services\InventoryService;
 use Illuminate\Http\Request;
@@ -77,7 +81,7 @@ class OrderReturnController extends Controller implements HasMiddleware
                 'stats' => $stats,
                 'statuses' => ['pending', 'received', 'qc_in_progress', 'completed', 'rejected'],
                 'financial_statuses' => ['pending', 'partial_refund', 'fully_refunded', 'credited'],
-                'shipping_services' => \App\Modules\Catalog\Models\Service::active()->select('name')->pluck('name'),
+                'shipping_services' => Service::active()->select('name')->pluck('name'),
             ]);
         }
 
@@ -91,16 +95,16 @@ class OrderReturnController extends Controller implements HasMiddleware
         $orderProductIds = $order->items->pluck('product_id')->toArray();
 
         $validated = $request->validate([
-            'reason'                   => 'required|string',
-            'notes'                    => 'nullable|string',
-            'items'                    => 'required|array|min:1',
-            'items.*.product_id'       => [
+            'reason' => 'required|string',
+            'notes' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => [
                 'required',
                 'integer',
                 'exists:products,id',
                 // Ensure the product actually belongs to this order
                 function ($attribute, $value, $fail) use ($orderProductIds) {
-                    if (!in_array((int) $value, $orderProductIds)) {
+                    if (! in_array((int) $value, $orderProductIds)) {
                         $fail('Product ID '.$value.' was not part of this order and cannot be returned.');
                     }
                 },
@@ -134,11 +138,11 @@ class OrderReturnController extends Controller implements HasMiddleware
                 ]);
 
                 if ($wasInTransit && $order->warehouse_id) {
-                    $stock = \App\Modules\Inventory\Models\Stock::where('product_id', $item['product_id'])
+                    $stock = Stock::where('product_id', $item['product_id'])
                         ->where('warehouse_id', $order->warehouse_id)
                         ->lockForUpdate()
                         ->first();
-                    
+
                     if ($stock) {
                         $stock->dispatched_qty = max(0.0, (float) $stock->dispatched_qty - (float) $item['requested_qty']);
                         $stock->save();
@@ -149,13 +153,13 @@ class OrderReturnController extends Controller implements HasMiddleware
             // Update the main order status and log it
             $order->update([
                 'status' => 'return_requested',
-                'updated_by' => auth()->id()
+                'updated_by' => auth()->id(),
             ]);
 
             $order->statusLogs()->create([
                 'status' => 'return_requested',
-                'notes' => 'Return initiated. Reason: ' . $validated['reason'],
-                'changed_by' => auth()->id()
+                'notes' => 'Return initiated. Reason: '.$validated['reason'],
+                'changed_by' => auth()->id(),
             ]);
 
             return $return;
@@ -178,17 +182,17 @@ class OrderReturnController extends Controller implements HasMiddleware
     public function processQc(Request $request, OrderReturn $return, InventoryService $inventoryService)
     {
         // Guard: only allow QC on returns that have not already been completed or rejected
-        if (!in_array($return->status, ['pending', 'received', 'qc_in_progress'])) {
+        if (! in_array($return->status, ['pending', 'received', 'qc_in_progress'])) {
             return response()->json(['message' => 'Cannot process QC on a return that is already completed or rejected.'], 422);
         }
 
         $validated = $request->validate([
-            'items'                    => 'required|array',
-            'items.*.id'               => 'required|exists:order_return_items,id',
-            'items.*.received_qty'     => 'required|numeric|min:0',
-            'items.*.restocked_qty'    => 'required|numeric|min:0',
-            'items.*.damaged_qty'      => 'required|numeric|min:0',
-            'items.*.qc_notes'         => 'nullable|string',
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:order_return_items,id',
+            'items.*.received_qty' => 'required|numeric|min:0',
+            'items.*.restocked_qty' => 'required|numeric|min:0',
+            'items.*.damaged_qty' => 'required|numeric|min:0',
+            'items.*.qc_notes' => 'nullable|string',
         ]);
 
         // Validate that restocked + damaged does not exceed received for each item
@@ -203,20 +207,20 @@ class OrderReturnController extends Controller implements HasMiddleware
 
         DB::transaction(function () use ($validated, $return, $inventoryService) {
             $refundAmount = 0;
-            
+
             $returnItemIds = collect($validated['items'])->pluck('id');
             $returnItems = OrderReturnItem::where('order_return_id', $return->id)
                 ->whereIn('id', $returnItemIds)
                 ->get()
                 ->keyBy('id');
 
-            $orderItems = \App\Modules\Orders\Models\OrderItem::where('order_id', $return->order_id)
+            $orderItems = OrderItem::where('order_id', $return->order_id)
                 ->get()
                 ->keyBy('product_id');
 
             foreach ($validated['items'] as $itemData) {
                 $item = $returnItems->get($itemData['id']);
-                if (!$item) {
+                if (! $item) {
                     continue;
                 }
 
@@ -231,7 +235,7 @@ class OrderReturnController extends Controller implements HasMiddleware
                 // Calculate proportional refund amount based on received qty
                 $orderItem = $orderItems->get($item->product_id);
                 if ($orderItem && $orderItem->quantity > 0) {
-                    $refundAmount += ((float)$orderItem->total_amount / (float)$orderItem->quantity) * (float)$itemData['received_qty'];
+                    $refundAmount += ((float) $orderItem->total_amount / (float) $orderItem->quantity) * (float) $itemData['received_qty'];
                 }
 
                 // Inventory Update
@@ -251,15 +255,15 @@ class OrderReturnController extends Controller implements HasMiddleware
 
             if ($refundAmount > 0 && $return->order->invoice && $return->order->invoice->paid_amount > 0) {
                 $refundable = min($refundAmount, $return->order->invoice->paid_amount);
-                
+
                 $baseNo = str_replace('ORD-', 'REF-', $return->order->order_no);
                 if ($baseNo === $return->order->order_no) {
                     $baseNo = 'REF-'.$return->order->order_no;
                 }
-                $count = \App\Modules\Orders\Models\Refund::where('order_id', $return->order_id)->count();
+                $count = Refund::where('order_id', $return->order_id)->count();
                 $refundNo = $count > 0 ? $baseNo.'-'.($count + 1) : $baseNo;
 
-                \App\Modules\Orders\Models\Refund::create([
+                Refund::create([
                     'refund_no' => $refundNo,
                     'order_id' => $return->order_id,
                     'invoice_id' => $return->order->invoice->id,
@@ -272,13 +276,13 @@ class OrderReturnController extends Controller implements HasMiddleware
             // Update main order status to returned and log it
             $return->order->update([
                 'status' => 'returned',
-                'updated_by' => auth()->id()
+                'updated_by' => auth()->id(),
             ]);
 
             $return->order->statusLogs()->create([
                 'status' => 'returned',
                 'notes' => 'Return QC completed successfully.',
-                'changed_by' => auth()->id()
+                'changed_by' => auth()->id(),
             ]);
         });
 

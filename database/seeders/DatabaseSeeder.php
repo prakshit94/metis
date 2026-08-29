@@ -41,7 +41,7 @@ class DatabaseSeeder extends Seeder
             LeaveBalanceSeeder::class,
             HrSettingsSeeder::class,
             // OrderSeeder::class,
-            
+
             // Newly added seeders for comprehensive testing
             // SupplierSeeder::class,
             // PurchaseOrderSeeder::class,

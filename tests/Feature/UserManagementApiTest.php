@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Modules\Users\Models\Department;
 use App\Modules\Users\Models\Permission;
 use App\Modules\Users\Models\Role;
 use App\Modules\Users\Models\User;
@@ -42,7 +43,7 @@ class UserManagementApiTest extends TestCase
         $superAdminRole = Role::findOrCreate('Super Admin', 'web');
         $superAdminRole->syncPermissions($permissions);
 
-        $admin = $this->createUser('admin_' . uniqid() . '@example.com');
+        $admin = $this->createUser('admin_'.uniqid().'@example.com');
         $admin->assignRole('Super Admin');
 
         $this->actingAs($admin);
@@ -50,7 +51,7 @@ class UserManagementApiTest extends TestCase
 
     public function test_store_persists_phone_and_department(): void
     {
-        $department = \App\Modules\Users\Models\Department::firstOrCreate(['name' => 'Research']);
+        $department = Department::firstOrCreate(['name' => 'Research']);
 
         $response = $this->postJson('/api/users', [
             'first_name' => 'Ada',
@@ -85,8 +86,8 @@ class UserManagementApiTest extends TestCase
 
     public function test_index_searches_new_profile_fields_and_ignores_unsafe_sort_columns(): void
     {
-        $opsDepartment = \App\Modules\Users\Models\Department::firstOrCreate(['name' => 'Operations']);
-        $salesDepartment = \App\Modules\Users\Models\Department::firstOrCreate(['name' => 'Sales']);
+        $opsDepartment = Department::firstOrCreate(['name' => 'Operations']);
+        $salesDepartment = Department::firstOrCreate(['name' => 'Sales']);
 
         $this->createUser('ops@example.com', [
             'name' => 'Ops User',
@@ -153,12 +154,12 @@ class UserManagementApiTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function createUser(string $email, array $attributes = []): User
     {
         return User::create(array_merge([
-            'name' => 'User ' . $email,
+            'name' => 'User '.$email,
             'email' => $email,
             'password' => Hash::make('Password123'),
             'is_active' => true,

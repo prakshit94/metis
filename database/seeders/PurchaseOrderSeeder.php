@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
-use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class PurchaseOrderSeeder extends Seeder
@@ -29,7 +29,7 @@ class PurchaseOrderSeeder extends Seeder
 
         for ($i = 1; $i <= 10; $i++) {
             $poId = DB::table('purchase_orders')->insertGetId([
-                'po_number' => 'PO-' . date('Ym') . '-' . str_pad((string)$i, 4, '0', STR_PAD_LEFT),
+                'po_number' => 'PO-'.date('Ym').'-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
                 'supplier_id' => $faker->randomElement($suppliers),
                 'warehouse_id' => $faker->randomElement($warehouses),
                 'status' => 'received',
@@ -72,7 +72,7 @@ class PurchaseOrderSeeder extends Seeder
                 ];
             }
             DB::table('purchase_order_items')->insert($poItems);
-            
+
             DB::table('purchase_orders')->where('id', $poId)->update([
                 'total_amount' => $totalAmt,
                 'net_amount' => $totalAmt,
@@ -80,7 +80,7 @@ class PurchaseOrderSeeder extends Seeder
 
             // Create Goods Receipt
             $grnId = DB::table('goods_receipts')->insertGetId([
-                'grn_number' => 'GRN-' . date('Ym') . '-' . str_pad((string)$i, 4, '0', STR_PAD_LEFT),
+                'grn_number' => 'GRN-'.date('Ym').'-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
                 'purchase_order_id' => $poId,
                 'warehouse_id' => $faker->randomElement($warehouses),
                 'received_date' => Carbon::now()->subDays(rand(1, 3)),
@@ -98,7 +98,7 @@ class PurchaseOrderSeeder extends Seeder
                     'goods_receipt_id' => $grnId,
                     'purchase_order_item_id' => $poi->id,
                     'product_id' => $poi->product_id,
-                    'batch_number' => 'BATCH-' . strtoupper(Str::random(6)),
+                    'batch_number' => 'BATCH-'.strtoupper(Str::random(6)),
                     'manufacturing_date' => Carbon::now()->subMonths(2),
                     'expiry_date' => Carbon::now()->addMonths(12),
                     'received_qty' => $poi->quantity,

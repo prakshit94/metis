@@ -2,16 +2,15 @@
 
 namespace App\Modules\Orders\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
 use App\Modules\Catalog\Models\Service;
 use Illuminate\Database\Eloquent\Model;
-
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class Shipment extends Model implements Auditable
 {
     use AuditableTrait;
+
     protected $fillable = [
         'shipment_no',
         'order_id',

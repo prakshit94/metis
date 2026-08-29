@@ -6,9 +6,9 @@ namespace App\Modules\Users\Controllers;
 
 use App\Http\Requests\Auth\LoginRequest;
 use App\Modules\Core\Controllers\Controller;
+use App\Modules\Users\Models\Attendance;
 use App\Modules\Users\Models\LoginHistory;
 use App\Modules\Users\Models\User;
-use App\Modules\Users\Models\Attendance;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Http\JsonResponse;
@@ -64,7 +64,7 @@ class AuthController extends Controller
         $ipKey = 'login_ip:'.$ip;
 
         // ── 1. Check rate limit BEFORE attempting auth ──────────────────────
-        $tooManyAttempts = RateLimiter::tooManyAttempts($emailKey, self::MAX_ATTEMPTS) || 
+        $tooManyAttempts = RateLimiter::tooManyAttempts($emailKey, self::MAX_ATTEMPTS) ||
                            RateLimiter::tooManyAttempts($ipKey, self::MAX_ATTEMPTS);
 
         if ($tooManyAttempts) {
@@ -100,8 +100,8 @@ class AuthController extends Controller
             $isValid = Hash::check($request->validated('password'), $user->password);
         } else {
             // Dummy hash to prevent timing-based user enumeration attacks
-            $dummyHash = in_array(config('hashing.driver'), ['argon2id', 'argon2i']) 
-                ? '$argon2id$v=19$m=65536,t=4,p=1$Z29uOU56Slc0SWRJbFAvYg$ILca1T1tS+yPIT6WNfrXcA6t0S0XqX9wngZa+PXrZj4' 
+            $dummyHash = in_array(config('hashing.driver'), ['argon2id', 'argon2i'])
+                ? '$argon2id$v=19$m=65536,t=4,p=1$Z29uOU56Slc0SWRJbFAvYg$ILca1T1tS+yPIT6WNfrXcA6t0S0XqX9wngZa+PXrZj4'
                 : '$2y$12$R.vP3sZq1WJ/1q0kK8M9V.Qn6Qx.X.vP9Q..';
             Hash::check($request->validated('password'), $dummyHash);
         }
@@ -109,7 +109,7 @@ class AuthController extends Controller
         if ($user === null || ! $isValid) {
             RateLimiter::hit($emailKey, self::LOCKOUT_WINDOW_MIN * 60);
             RateLimiter::hit($ipKey, self::LOCKOUT_WINDOW_MIN * 60);
-            
+
             // Fire the native Failed event so our listener captures it
             Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
 
@@ -120,7 +120,7 @@ class AuthController extends Controller
         if ($user->isSuspended()) {
             RateLimiter::hit($emailKey, self::LOCKOUT_WINDOW_MIN * 60);
             RateLimiter::hit($ipKey, self::LOCKOUT_WINDOW_MIN * 60);
-            
+
             Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
 
             return $this->genericFailure($request);
@@ -129,7 +129,7 @@ class AuthController extends Controller
         if (! $user->isActive()) {
             RateLimiter::hit($emailKey, self::LOCKOUT_WINDOW_MIN * 60);
             RateLimiter::hit($ipKey, self::LOCKOUT_WINDOW_MIN * 60);
-            
+
             Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
 
             return $this->genericFailure($request);
@@ -258,9 +258,9 @@ class AuthController extends Controller
 
         $remember = (bool) $request->boolean('remember');
         Auth::guard('web')->login($user, $remember);
-        
+
         $this->recordAttendanceCheckIn($user);
-        
+
         $request->session()->regenerate();
 
         $response = redirect()->intended(route('dashboard'));
@@ -301,7 +301,7 @@ class AuthController extends Controller
 
         return mb_substr($ua, 0, 255);
     }
-    
+
     private function recordAttendanceCheckIn(User $user): void
     {
         $today = Carbon::today()->toDateString();
@@ -322,7 +322,7 @@ class AuthController extends Controller
             'user_id' => $user->id,
             'date' => $today,
             'status' => 'Present',
-            'check_in' => $now
+            'check_in' => $now,
         ]);
     }
 

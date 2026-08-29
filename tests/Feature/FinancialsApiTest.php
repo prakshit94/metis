@@ -2,14 +2,16 @@
 
 namespace Tests\Feature;
 
-use App\Modules\Orders\Models\Order;
+use App\Modules\Customers\Models\Party;
 use App\Modules\Orders\Models\Invoice;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Models\Payment;
 use App\Modules\Orders\Models\Refund;
-use App\Modules\Orders\Models\OrderReturn;
-use App\Modules\Customers\Models\Party;
 use App\Modules\Users\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class FinancialsApiTest extends TestCase
@@ -17,22 +19,28 @@ class FinancialsApiTest extends TestCase
     use DatabaseTransactions;
 
     protected User $user;
+
     protected Party $customer;
+
     protected Order $order;
+
     protected Invoice $invoice;
+
     protected Payment $payment;
+
     protected OrderReturn $orderReturn;
+
     protected Refund $refund;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
         $this->user = User::create([
             'name' => 'Test User',
-            'email' => 'test_' . uniqid() . '@example.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+            'email' => 'test_'.uniqid().'@example.com',
+            'password' => Hash::make('password123'),
             'is_active' => true,
         ]);
         $this->user->assignRole('Super Admin');
@@ -163,7 +171,7 @@ class FinancialsApiTest extends TestCase
             ->assertJson(['success' => true]);
 
         $this->assertEquals('completed', $this->payment->refresh()->status);
-        
+
         // Check that invoice status is synced. Invoice has total 1000.00. Payment is 500.00.
         // Paid 500 out of 1000 means invoice status should be partially_paid.
         $this->assertEquals('partially_paid', $this->invoice->refresh()->status);

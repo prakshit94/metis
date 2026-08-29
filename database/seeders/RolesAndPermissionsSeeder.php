@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Modules\Users\Models\Permission;
 use App\Modules\Users\Models\Role;
+use App\Modules\Users\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -256,21 +258,21 @@ class RolesAndPermissionsSeeder extends Seeder
         'bulkuser-create',
         'bulkuser-edit',
         'bulkuser-delete',
-        
+
         // ── HR Module ──
-        
+
         // Departments
         'department-view',
         'department-create',
         'department-edit',
         'department-delete',
-        
+
         // Attendances
         'attendance-view',
         'attendance-create',
         'attendance-edit',
         'attendance-delete',
-        
+
         // Leaves
         'leave-view',
         'leave-create',
@@ -286,7 +288,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'audit-log-delete',
         'audit-log-restore',
         'audit-log-permanent-delete',
-        
+
         // Call Center
         'skip-call-log',
 
@@ -297,7 +299,6 @@ class RolesAndPermissionsSeeder extends Seeder
         'orderreason-delete',
         'orderreason-restore',
         'orderreason-permanent-delete',
-
 
         // ── Sales & Orders (Dot Notation) ──
 
@@ -406,7 +407,6 @@ class RolesAndPermissionsSeeder extends Seeder
         'sidebar-view',
         'search-view',
 
-
         // ── Utilities & Tools ──
 
         // Chat
@@ -485,8 +485,8 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     private const array ROLE_PERMISSIONS = [
         'Super Admin' => self::PERMISSIONS,
-        'Admin'       => self::PERMISSIONS,
-        'Manager'     => [
+        'Admin' => self::PERMISSIONS,
+        'Manager' => [
             'sidebar-view',
             'brand-view',
             'catalog-view',
@@ -583,7 +583,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'chat-edit',
             'chat-delete',
         ],
-        'User'        => [
+        'User' => [
             'sidebar-view',
             'dashboard-view',
             'product-view',
@@ -736,31 +736,31 @@ class RolesAndPermissionsSeeder extends Seeder
         // ── Create permissions ───────────────────────────────────────────────
         foreach (self::PERMISSIONS as $permissionName) {
             Permission::firstOrCreate([
-                'name'       => $permissionName,
+                'name' => $permissionName,
                 'guard_name' => 'web',
             ]);
         }
 
-        $this->command->info('✔ Permissions created: ' . implode(', ', self::PERMISSIONS));
+        $this->command->info('✔ Permissions created: '.implode(', ', self::PERMISSIONS));
 
         // ── Create roles and sync permissions ────────────────────────────────
         foreach (self::ROLE_PERMISSIONS as $roleName => $permissions) {
             $role = Role::firstOrCreate([
-                'name'       => $roleName,
+                'name' => $roleName,
                 'guard_name' => 'web',
             ]);
 
             $role->syncPermissions($permissions);
 
-            $this->command->info("✔ Role [{$roleName}] seeded" . (! empty($permissions) ? ' with: ' . implode(', ', $permissions) : '.'));
+            $this->command->info("✔ Role [{$roleName}] seeded".(! empty($permissions) ? ' with: '.implode(', ', $permissions) : '.'));
         }
 
         // ── Create Master Admin User ─────────────────────────────────────────
-        $masterAdmin = \App\Modules\Users\Models\User::firstOrCreate(
+        $masterAdmin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
             [
                 'name' => 'Master Admin',
-                'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                'password' => Hash::make('password'),
                 'is_active' => true,
                 'email_verified_at' => now(),
             ]
@@ -799,7 +799,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'pincode' => '400001',
                 'emergency_contact_name' => 'Sunita Kumar',
                 'emergency_contact_phone' => '9876500001',
-                'role' => 'Manager'
+                'role' => 'Manager',
             ],
             [
                 'email' => 'priya.sharma@example.com',
@@ -826,7 +826,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'pincode' => '110075',
                 'emergency_contact_name' => 'Rahul Sharma',
                 'emergency_contact_phone' => '8765400002',
-                'role' => 'Admin'
+                'role' => 'Admin',
             ],
             [
                 'email' => 'amit.patel@example.com',
@@ -854,7 +854,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'pincode' => '380015',
                 'emergency_contact_name' => 'Neha Patel',
                 'emergency_contact_phone' => '7654300003',
-                'role' => 'User'
+                'role' => 'User',
             ],
             [
                 'email' => 'order.verifier@example.com',
@@ -879,7 +879,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'city' => 'Bangalore',
                 'state' => 'Karnataka',
                 'pincode' => '560001',
-                'role' => 'Verification'
+                'role' => 'Verification',
             ],
             [
                 'email' => 'agent.one@example.com',
@@ -904,7 +904,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'city' => 'Pune',
                 'state' => 'Maharashtra',
                 'pincode' => '411001',
-                'role' => 'Agent'
+                'role' => 'Agent',
             ],
             [
                 'email' => 'operations@example.com',
@@ -929,7 +929,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'city' => 'Chennai',
                 'state' => 'Tamil Nadu',
                 'pincode' => '600001',
-                'role' => 'Operations'
+                'role' => 'Operations',
             ],
             [
                 'email' => 'team.leader@example.com',
@@ -954,18 +954,18 @@ class RolesAndPermissionsSeeder extends Seeder
                 'city' => 'Hyderabad',
                 'state' => 'Telangana',
                 'pincode' => '500001',
-                'role' => 'Team Leader'
+                'role' => 'Team Leader',
             ],
         ];
 
         foreach ($users as $userData) {
             $role = $userData['role'];
             unset($userData['role']);
-            
-            $user = \App\Modules\Users\Models\User::firstOrCreate(
+
+            $user = User::firstOrCreate(
                 ['email' => $userData['email']],
                 array_merge($userData, [
-                    'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                    'password' => Hash::make('password'),
                     'is_active' => true,
                     'email_verified_at' => now(),
                 ])

@@ -78,7 +78,7 @@ class WarehouseSeeder extends Seeder
                 'status' => 'active',
                 'is_default' => false,
                 'is_active' => true,
-            ]
+            ],
         ];
 
         foreach ($warehouses as $warehouse) {

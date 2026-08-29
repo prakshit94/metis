@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Product;
 use App\Modules\Orders\Models\Coupon;
 use App\Modules\Orders\Models\Offer;
-use App\Modules\Catalog\Models\Product;
-use App\Modules\Catalog\Models\Category;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class PromotionSeeder extends Seeder
@@ -160,7 +160,7 @@ class PromotionSeeder extends Seeder
                 'value' => 0,
                 'min_spend' => 0,
                 'max_discount' => null,
-                'applicable_categories' => json_encode($categories), 
+                'applicable_categories' => json_encode($categories),
                 'applicable_products' => null,
                 'excluded_categories' => null,
                 'excluded_products' => null,
@@ -210,7 +210,7 @@ class PromotionSeeder extends Seeder
                 'value' => 1000.00,
                 'min_spend' => 10000.00,
                 'max_discount' => null,
-                'applicable_categories' => json_encode($categories), 
+                'applicable_categories' => json_encode($categories),
                 'applicable_products' => null,
                 'excluded_categories' => null,
                 'excluded_products' => null,
@@ -262,7 +262,7 @@ class PromotionSeeder extends Seeder
                 'min_spend' => 0,
                 'max_discount' => null,
                 'applicable_categories' => json_encode($categories), // Buy any item from these categories
-                'applicable_products' => null, 
+                'applicable_products' => null,
                 'excluded_categories' => null,
                 'excluded_products' => null,
                 'product_id' => $freeProduct ? $freeProduct->id : null, // Get this free

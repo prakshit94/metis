@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace App\Modules\Customers\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
+use App\Models\CallLog;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderComplaint;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class Party extends Model implements Auditable
 {
     use AuditableTrait;
     use SoftDeletes;
-
 
     protected $table = 'parties';
 
@@ -96,7 +98,7 @@ class Party extends Model implements Auditable
 
     public function complaints(): HasMany
     {
-        return $this->hasMany(\App\Modules\Orders\Models\OrderComplaint::class, 'customer_id');
+        return $this->hasMany(OrderComplaint::class, 'customer_id');
     }
 
     public function addresses(): HasMany
@@ -106,7 +108,7 @@ class Party extends Model implements Auditable
 
     public function callLogs(): HasMany
     {
-        return $this->hasMany(\App\Models\CallLog::class, 'customer_id');
+        return $this->hasMany(CallLog::class, 'customer_id');
     }
 
     public function walletTransactions(): HasMany
@@ -119,7 +121,7 @@ class Party extends Model implements Auditable
         return trim(collect([
             $this->attributes['firstname'] ?? null,
             $this->attributes['middlename'] ?? null,
-            $this->attributes['lastname'] ?? null
+            $this->attributes['lastname'] ?? null,
         ])->filter()->implode(' '));
     }
 
@@ -133,7 +135,7 @@ class Party extends Model implements Auditable
         return $this->hasMany(self::class, 'referred_by');
     }
 
-    public function referredOrders(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    public function referredOrders(): HasManyThrough
     {
         return $this->hasManyThrough(Order::class, self::class, 'referred_by', 'party_id');
     }
@@ -144,7 +146,7 @@ class Party extends Model implements Auditable
 
         static::creating(function ($party) {
             if (empty($party->referral_code)) {
-                $party->referral_code = 'REF-' . strtoupper(\Illuminate\Support\Str::random(6));
+                $party->referral_code = 'REF-'.strtoupper(Str::random(6));
             }
         });
     }

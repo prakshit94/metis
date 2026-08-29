@@ -235,14 +235,14 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
                 $processedCount++;
             } catch (\Throwable $e) {
                 $failedCount++;
-                $errors[] = "Adjustment {$adjustment->reference_no}: " . $e->getMessage();
+                $errors[] = "Adjustment {$adjustment->reference_no}: ".$e->getMessage();
             }
         }
 
         if ($failedCount > 0) {
             return response()->json([
                 'message' => "Processed {$processedCount} adjustment(s). Failed {$failedCount} adjustment(s).",
-                'errors'  => $errors,
+                'errors' => $errors,
             ], 422);
         }
 

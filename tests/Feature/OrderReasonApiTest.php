@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Modules\Orders\Models\CancelReason;
+use App\Modules\Orders\Models\DeliveryFailureReason;
+use App\Modules\Orders\Models\RescheduleReason;
 use App\Modules\Users\Models\Permission;
 use App\Modules\Users\Models\Role;
 use App\Modules\Users\Models\User;
-use App\Modules\Orders\Models\CancelReason;
-use App\Modules\Orders\Models\ReturnReason;
-use App\Modules\Orders\Models\RescheduleReason;
-use App\Modules\Orders\Models\DeliveryFailureReason;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
@@ -53,13 +52,13 @@ class OrderReasonApiTest extends TestCase
     public function test_can_list_reasons()
     {
         CancelReason::create(['reason' => 'Customer requested', 'is_active' => true]);
-        
+
         $response = $this->getJson('/order-reasons');
         $response->assertStatus(200);
 
         $response = $this->getJson('/api/order-reasons/cancel');
         $response->assertStatus(200)
-                 ->assertJsonFragment(['reason' => 'Customer requested']);
+            ->assertJsonFragment(['reason' => 'Customer requested']);
     }
 
     public function test_can_create_reason()
@@ -70,7 +69,7 @@ class OrderReasonApiTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonFragment(['reason' => 'Damaged item']);
+            ->assertJsonFragment(['reason' => 'Damaged item']);
 
         $this->assertDatabaseHas('return_reasons', ['reason' => 'Damaged item']);
     }
@@ -85,8 +84,8 @@ class OrderReasonApiTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonFragment(['reason' => 'Customer requested reschedule']);
-                 
+            ->assertJsonFragment(['reason' => 'Customer requested reschedule']);
+
         $this->assertDatabaseHas('reschedule_reasons', [
             'id' => $reason->id,
             'reason' => 'Customer requested reschedule',

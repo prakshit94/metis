@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Customers\Controllers;
 
+use App\Models\Crop;
+use App\Models\IrrigationType;
+use App\Models\LandUnit;
+use App\Models\LeadSource;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Controllers\Controller;
@@ -12,16 +16,14 @@ use App\Modules\Customers\Models\Party;
 use App\Modules\Orders\Models\Coupon;
 use App\Modules\Orders\Models\Offer;
 use App\Modules\Orders\Models\Order;
-use App\Models\Crop;
-use App\Models\LeadSource;
-use App\Models\IrrigationType;
-use App\Models\LandUnit;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -206,13 +208,13 @@ class CustomerController extends Controller implements HasMiddleware
         }
 
         // Handle referral
-        if (!empty($validated['referred_by_code'])) {
+        if (! empty($validated['referred_by_code'])) {
             $referrer = Party::where('referral_code', $validated['referred_by_code'])->first();
             if ($referrer) {
                 $validated['referred_by'] = $referrer->id;
-                
+
                 $source = $validated['source'] ?? [];
-                if (!in_array('Referral', $source)) {
+                if (! in_array('Referral', $source)) {
                     $source[] = 'Referral';
                 }
                 $validated['source'] = $source;
@@ -246,7 +248,7 @@ class CustomerController extends Controller implements HasMiddleware
                 'complaints as total_complaints',
                 'complaints as active_complaints' => function ($q) {
                     $q->whereNotIn('status', ['resolved', 'closed']);
-                }
+                },
             ])
             ->with([
                 'addresses.village.services',
@@ -259,7 +261,7 @@ class CustomerController extends Controller implements HasMiddleware
                         'referredOrders as total_referred_orders',
                         'referredOrders as delivered_referred_orders' => function ($query) {
                             $query->where('orders.status', 'delivered');
-                        }
+                        },
                     ]);
                 },
                 'orders' => function ($q) {
@@ -296,10 +298,10 @@ class CustomerController extends Controller implements HasMiddleware
         $activeCoupons = Cache::remember('active_coupons', 600, fn () => Coupon::where('is_active', true)->get());
 
         // Dynamic database parameters
-        $crops = Cache::remember('dynamic_crops_obj', 3600, fn() => Crop::where('is_active', true)->get(['name']));
-        $irrigationTypes = Cache::remember('dynamic_irrigation_types_obj', 3600, fn() => IrrigationType::where('is_active', true)->get(['name']));
-        $landUnits = Cache::remember('dynamic_land_units_obj', 3600, fn() => LandUnit::where('is_active', true)->get(['name']));
-        $leadSources = Cache::remember('dynamic_lead_sources_obj', 3600, fn() => LeadSource::where('is_active', true)->get(['name']));
+        $crops = Cache::remember('dynamic_crops_obj', 3600, fn () => Crop::where('is_active', true)->get(['name']));
+        $irrigationTypes = Cache::remember('dynamic_irrigation_types_obj', 3600, fn () => IrrigationType::where('is_active', true)->get(['name']));
+        $landUnits = Cache::remember('dynamic_land_units_obj', 3600, fn () => LandUnit::where('is_active', true)->get(['name']));
+        $leadSources = Cache::remember('dynamic_lead_sources_obj', 3600, fn () => LeadSource::where('is_active', true)->get(['name']));
 
         return view('customers.show', compact('customer', 'categories', 'warehouses', 'activeOffers', 'activeCoupons', 'crops', 'irrigationTypes', 'landUnits', 'leadSources'));
     }
@@ -358,7 +360,7 @@ class CustomerController extends Controller implements HasMiddleware
 
         if ($request->hasFile('avatar')) {
             if ($customer->avatar) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($customer->avatar);
+                Storage::disk('public')->delete($customer->avatar);
             }
             $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
@@ -507,11 +509,11 @@ class CustomerController extends Controller implements HasMiddleware
 
         $isActive = $action === 'activate';
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($ids, $isActive) {
+        DB::transaction(function () use ($ids, $isActive) {
             Customer::whereIn('id', $ids)->get()->each(function (Customer $customer) use ($isActive) {
                 $customer->update([
                     'is_active' => $isActive,
-                    'status'    => $isActive ? 'active' : 'inactive',
+                    'status' => $isActive ? 'active' : 'inactive',
                 ]);
             });
         });

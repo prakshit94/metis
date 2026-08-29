@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('designation')->nullable();
             $table->foreignId('designation_id')->nullable()->constrained('designations')->nullOnDelete();
             $table->foreignId('employment_type_id')->nullable()->constrained('employment_types')->nullOnDelete();
-            
+
             // Address details
             $table->string('address_line_1')->nullable();
             $table->string('address_line_2')->nullable();
@@ -42,7 +42,7 @@ return new class extends Migration
             $table->string('city')->nullable();
             $table->string('state')->nullable();
             $table->string('pincode', 20)->nullable();
-            
+
             $table->string('emergency_contact_name')->nullable();
             $table->string('emergency_contact_phone')->nullable();
 

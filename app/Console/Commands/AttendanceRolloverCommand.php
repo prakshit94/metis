@@ -2,9 +2,11 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Modules\Users\Models\Attendance;
+use App\Modules\Users\Models\User;
+use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class AttendanceRolloverCommand extends Command
 {
@@ -28,7 +30,7 @@ class AttendanceRolloverCommand extends Command
     public function handle()
     {
         $today = Carbon::today()->toDateString();
-        
+
         // Find all attendance records that are still open and are from a previous date
         $openAttendances = Attendance::whereNull('check_out')
             ->where('date', '<', $today)
@@ -36,7 +38,8 @@ class AttendanceRolloverCommand extends Command
 
         $count = $openAttendances->count();
         if ($count === 0) {
-            $this->info("No open attendance records found for previous days.");
+            $this->info('No open attendance records found for previous days.');
+
             return;
         }
 
@@ -44,15 +47,15 @@ class AttendanceRolloverCommand extends Command
             // Close the previous day's attendance
             $attendance->check_out = '23:59:59';
             $attendance->save();
-            
+
             // Force user to log in manually the next day by clearing their session
-            $user = \App\Modules\Users\Models\User::find($attendance->user_id);
+            $user = User::find($attendance->user_id);
             if ($user) {
                 // Clear mobile/API tokens
                 $user->tokens()->delete();
-                
+
                 // Clear web session
-                \Illuminate\Support\Facades\DB::table('sessions')
+                DB::table('sessions')
                     ->where('user_id', $user->id)
                     ->delete();
             }

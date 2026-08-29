@@ -17,7 +17,7 @@ class RescheduleReasonsSeeder extends Seeder
             'Waiting for Payment Confirmation',
             'Customer Requested Delay',
             'Stock Verification Pending',
-            'Other'
+            'Other',
         ];
 
         foreach ($reasons as $reason) {

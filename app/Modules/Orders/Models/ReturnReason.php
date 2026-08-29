@@ -2,17 +2,16 @@
 
 namespace App\Modules\Orders\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
 use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class ReturnReason extends Model implements Auditable
 {
     use AuditableTrait;
+
     protected $fillable = [
         'reason',
         'is_active',

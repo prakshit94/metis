@@ -7,12 +7,13 @@ namespace App\Services;
 use App\Modules\Orders\Models\CreditNote;
 use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\OrderReturn;
-use App\Notifications\FinancialAlertNotification;
-use Illuminate\Support\Facades\Notification;
 use App\Modules\Orders\Models\Payment;
 use App\Modules\Orders\Models\Refund;
+use App\Modules\Users\Models\User;
+use App\Notifications\FinancialAlertNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 class FinancialService
@@ -67,7 +68,7 @@ class FinancialService
                 'reverted_by' => auth()->id(),
                 'reverted_at' => now(),
             ]);
-            
+
             $payment->delete();
         });
     }
@@ -125,7 +126,7 @@ class FinancialService
 
             // Dispatch Notification (fail-safe: never break core flow)
             try {
-                $admins = \App\Modules\Users\Models\User::role(['Admin', 'Super Admin', 'Finance Admin'])->get();
+                $admins = User::role(['Admin', 'Super Admin', 'Finance Admin'])->get();
                 Notification::send($admins, new FinancialAlertNotification('refund', (float) $amount, $refund->refund_no));
             } catch (\Throwable) {
                 // Silently fail — notification delivery is non-critical

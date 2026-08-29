@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Modules\Customers\Models\Party;
 use App\Modules\Users\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class OrderComplaint extends Model implements Auditable
 {
@@ -42,7 +43,7 @@ class OrderComplaint extends Model implements Auditable
         static::creating(function (self $complaint) {
             $complaint->created_by = $complaint->created_by ?? auth()->id();
             if (empty($complaint->complaint_number)) {
-                $complaint->complaint_number = 'CMP-' . strtoupper(uniqid());
+                $complaint->complaint_number = 'CMP-'.strtoupper(uniqid());
             }
         });
 
@@ -76,12 +77,12 @@ class OrderComplaint extends Model implements Auditable
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    public function statusLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function statusLogs(): HasMany
     {
         return $this->hasMany(OrderComplaintStatusLog::class, 'order_complaint_id');
     }
 
-    public function replies(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function replies(): HasMany
     {
         return $this->hasMany(OrderComplaintReply::class, 'order_complaint_id');
     }

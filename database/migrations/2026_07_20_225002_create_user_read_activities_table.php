@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('activity_id')->constrained('activity_log')->cascadeOnDelete();
             $table->timestamps();
-            
+
             $table->unique(['user_id', 'activity_id']);
         });
     }

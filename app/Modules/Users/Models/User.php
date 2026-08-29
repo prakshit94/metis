@@ -6,8 +6,6 @@ namespace App\Modules\Users\Models;
 
 use App\Models\Chat\Presence;
 use App\Modules\Catalog\Models\Service;
-use App\Modules\Users\Models\Designation;
-use App\Modules\Users\Models\EmploymentType;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -139,12 +137,12 @@ class User extends Authenticatable implements Auditable
     {
         return $this->belongsTo(User::class, 'manager_id');
     }
-    
+
     public function designationRel(): BelongsTo
     {
         return $this->belongsTo(Designation::class, 'designation_id');
     }
-    
+
     public function employmentTypeRel(): BelongsTo
     {
         return $this->belongsTo(EmploymentType::class, 'employment_type_id');
@@ -221,7 +219,7 @@ class User extends Authenticatable implements Auditable
             ->where('user_id', $this->id)
             ->where('last_activity', '>=', now()->subMinutes(5)->getTimestamp())
             ->exists();
-            
+
         if ($hasActiveSession) {
             return true;
         }
@@ -229,9 +227,9 @@ class User extends Authenticatable implements Auditable
         return DB::table('personal_access_tokens')
             ->where('tokenable_type', self::class)
             ->where('tokenable_id', $this->id)
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->where('last_used_at', '>=', now()->subMinutes(5))
-                  ->orWhere('created_at', '>=', now()->subMinutes(5));
+                    ->orWhere('created_at', '>=', now()->subMinutes(5));
             })
             ->exists();
     }
@@ -241,7 +239,7 @@ class User extends Authenticatable implements Auditable
         $lastSession = DB::table('sessions')
             ->where('user_id', $this->id)
             ->max('last_activity');
-            
+
         $lastToken = DB::table('personal_access_tokens')
             ->where('tokenable_type', self::class)
             ->where('tokenable_id', $this->id)
@@ -270,11 +268,11 @@ class User extends Authenticatable implements Auditable
 
         $tokenTime = $lastToken ? Carbon::parse($lastToken->last_used_at ?? $lastToken->created_at)->timestamp : 0;
         $sessionTime = $session ? (int) $session->last_activity : 0;
-        
+
         if ($tokenTime > $sessionTime) {
             return 'mobile';
         }
-        
+
         if (! $session) {
             return null;
         }

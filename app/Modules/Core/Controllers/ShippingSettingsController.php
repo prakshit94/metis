@@ -5,7 +5,6 @@ namespace App\Modules\Core\Controllers;
 use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Validation\ValidationException;
 
 class ShippingSettingsController extends Controller
 {
@@ -15,7 +14,7 @@ class ShippingSettingsController extends Controller
     public function index()
     {
         $settings = SystemSetting::where('key', 'like', 'india_post_%')->pluck('value', 'key');
-        
+
         // Decrypt password if it exists for the frontend (or just leave it empty for security)
         $password = isset($settings['india_post_password']) ? Crypt::decryptString($settings['india_post_password']) : '';
 
@@ -42,7 +41,7 @@ class ShippingSettingsController extends Controller
 
         foreach ($validated as $key => $value) {
             if ($key === 'india_post_password') {
-                if (!empty($value)) {
+                if (! empty($value)) {
                     SystemSetting::updateOrCreate(
                         ['key' => $key],
                         ['value' => Crypt::encryptString($value)]

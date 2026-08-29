@@ -3,10 +3,10 @@
 namespace App\Modules\Orders\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
+use App\Modules\Orders\Models\CancelReason;
 use App\Modules\Orders\Models\DeliveryFailureReason;
 use App\Modules\Orders\Models\RescheduleReason;
 use App\Modules\Orders\Models\ReturnReason;
-use App\Modules\Orders\Models\CancelReason;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;

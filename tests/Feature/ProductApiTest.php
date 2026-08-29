@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Modules\Catalog\Models\Category;
-use App\Modules\Users\Models\Permission;
+use App\Modules\Catalog\Models\HsnCode;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\TaxRate;
+use App\Modules\Catalog\Models\UnitOfMeasure;
+use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Users\Models\Permission;
 use App\Modules\Users\Models\Role;
 use App\Modules\Users\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -46,7 +51,7 @@ class ProductApiTest extends TestCase
         $superAdminRole = Role::findOrCreate('Super Admin', 'web');
         $superAdminRole->syncPermissions($permissions);
 
-        $admin = $this->createUser('admin_' . uniqid() . '@example.com');
+        $admin = $this->createUser('admin_'.uniqid().'@example.com');
         $admin->assignRole('Super Admin');
 
         $this->actingAs($admin);
@@ -73,20 +78,20 @@ class ProductApiTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'name', 'sku', 'category', 'price', 'stock', 'status'
-                    ]
+                        'id', 'name', 'sku', 'category', 'price', 'stock', 'status',
+                    ],
                 ],
                 'stats',
-                'options'
+                'options',
             ]);
     }
 
     public function test_store_creates_product(): void
     {
         $category = Category::create(['name' => 'Test Cat', 'slug' => 'test-cat-store']);
-        $uom = \App\Modules\Catalog\Models\UnitOfMeasure::firstOrCreate(['code' => 'kg'], ['name' => 'Kg', 'slug' => 'kg']);
-        $taxRate = \App\Modules\Catalog\Models\TaxRate::firstOrCreate(['rate' => 18], ['name' => 'GST 18%']);
-        $hsnCode = \App\Modules\Catalog\Models\HsnCode::firstOrCreate(['code' => 'HSN1234']);
+        $uom = UnitOfMeasure::firstOrCreate(['code' => 'kg'], ['name' => 'Kg', 'slug' => 'kg']);
+        $taxRate = TaxRate::firstOrCreate(['rate' => 18], ['name' => 'GST 18%']);
+        $hsnCode = HsnCode::firstOrCreate(['code' => 'HSN1234']);
 
         $response = $this->postJson('/api/products', [
             'name' => 'New Awesome Product',
@@ -115,9 +120,9 @@ class ProductApiTest extends TestCase
     public function test_update_modifies_product(): void
     {
         $category = Category::create(['name' => 'Test Cat', 'slug' => 'test-cat-update']);
-        $uom = \App\Modules\Catalog\Models\UnitOfMeasure::firstOrCreate(['code' => 'kg2'], ['name' => 'Kg2', 'slug' => 'kg2']);
-        $taxRate = \App\Modules\Catalog\Models\TaxRate::firstOrCreate(['rate' => 12], ['name' => 'GST 12%']);
-        $hsnCode = \App\Modules\Catalog\Models\HsnCode::firstOrCreate(['code' => 'HSN5678']);
+        $uom = UnitOfMeasure::firstOrCreate(['code' => 'kg2'], ['name' => 'Kg2', 'slug' => 'kg2']);
+        $taxRate = TaxRate::firstOrCreate(['rate' => 12], ['name' => 'GST 12%']);
+        $hsnCode = HsnCode::firstOrCreate(['code' => 'HSN5678']);
 
         $product = Product::create([
             'category_id' => $category->id,
@@ -133,7 +138,7 @@ class ProductApiTest extends TestCase
             'weight' => 1.0,
         ]);
 
-        $response = $this->patchJson('/api/products/' . $product->id, [
+        $response = $this->patchJson('/api/products/'.$product->id, [
             'name' => 'New Name',
             'sku' => 'OLD-SKU', // keep same SKU
             'category_id' => $category->id,
@@ -169,7 +174,7 @@ class ProductApiTest extends TestCase
             'status' => 'published',
         ]);
 
-        $response = $this->deleteJson('/api/products/' . $product->id);
+        $response = $this->deleteJson('/api/products/'.$product->id);
 
         $response->assertOk();
 
@@ -252,14 +257,14 @@ class ProductApiTest extends TestCase
     public function test_import_products_with_fallback_and_dynamic_categories(): void
     {
         // Ensure a warehouse exists so the fallback can trigger
-        \App\Modules\Catalog\Models\Warehouse::create(['name' => 'First Main Warehouse', 'code' => 'WH01', 'is_active' => true]);
+        Warehouse::create(['name' => 'First Main Warehouse', 'code' => 'WH01', 'is_active' => true]);
 
         // CSV data with missing categories and missing default_warehouse_id but having stock
-        $csvContent = "Name,SKU,Category,Selling_Price,Stock\n" .
-                      "Imported Product 1,IMP-001,Newly Created Category,25.50,150\n" .
+        $csvContent = "Name,SKU,Category,Selling_Price,Stock\n".
+                      "Imported Product 1,IMP-001,Newly Created Category,25.50,150\n".
                       "Imported Product 2,IMP-002,,19.99,80\n";
 
-        $file = \Illuminate\Http\UploadedFile::fake()->createWithContent('products.csv', $csvContent);
+        $file = UploadedFile::fake()->createWithContent('products.csv', $csvContent);
 
         $response = $this->postJson('/api/products/import', [
             'file' => $file,
@@ -308,12 +313,12 @@ class ProductApiTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function createUser(string $email, array $attributes = []): User
     {
         return User::create(array_merge([
-            'name' => 'User ' . $email,
+            'name' => 'User '.$email,
             'email' => $email,
             'password' => Hash::make('Password123'),
             'is_active' => true,

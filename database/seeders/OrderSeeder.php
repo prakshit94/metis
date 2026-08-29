@@ -4,26 +4,25 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Modules\Orders\Models\Order;
-use App\Modules\Orders\Models\OrderItem;
-use App\Modules\Customers\Models\Party;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Warehouse;
-use App\Modules\Users\Models\User;
+use App\Modules\Customers\Models\Party;
 use App\Modules\Orders\Models\Coupon;
-use App\Modules\Orders\Models\Offer;
 use App\Modules\Orders\Models\Invoice;
-use App\Modules\Orders\Models\Payment;
-use App\Modules\Orders\Models\Shipment;
-use App\Modules\Orders\Models\OrderVerificationLog;
-use App\Modules\Orders\Models\ShipmentTrackingEvent;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Models\OrderReturnItem;
+use App\Modules\Orders\Models\OrderVerificationLog;
+use App\Modules\Orders\Models\Payment;
 use App\Modules\Orders\Models\Refund;
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
+use App\Modules\Orders\Models\Shipment;
+use App\Modules\Orders\Models\ShipmentTrackingEvent;
+use App\Modules\Users\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class OrderSeeder extends Seeder
 {
@@ -50,7 +49,7 @@ class OrderSeeder extends Seeder
                 'usage_limit' => 100,
                 'status' => 'active',
                 'is_active' => true,
-            ]
+            ],
         ];
 
         foreach ($coupons as $coupon) {
@@ -85,7 +84,7 @@ class OrderSeeder extends Seeder
                 $couponCode = rand(0, 1) ? 'WELCOME10' : null;
 
                 $order = Order::create([
-                    'order_no' => 'ORD-' . $year . '-' . str_pad((string) $orderCounter, 5, '0', STR_PAD_LEFT),
+                    'order_no' => 'ORD-'.$year.'-'.str_pad((string) $orderCounter, 5, '0', STR_PAD_LEFT),
                     'type' => 'sale',
                     'party_id' => $party->id,
                     'order_date' => $orderDate,
@@ -109,7 +108,7 @@ class OrderSeeder extends Seeder
 
                 $itemCount = rand(1, 3);
                 $selectedProducts = $products->random(min($itemCount, $products->count()));
-                
+
                 $totalAmount = 0.00;
                 $taxAmount = 0.00;
                 $discountAmount = 0.00;
@@ -117,10 +116,10 @@ class OrderSeeder extends Seeder
                 foreach ($selectedProducts as $prod) {
                     $qty = (float) rand(1, 4);
                     $price = (float) $prod->selling_price;
-                    
-                    // Dynamic Tax Assignment extraction 
+
+                    // Dynamic Tax Assignment extraction
                     $taxRatePercentage = $prod->taxRate ? (float) $prod->taxRate->rate : 18.00;
-                    
+
                     $subTotal = $price * $qty;
                     $itemDiscount = $couponCode ? round($subTotal * 0.10, 2) : 0.00;
                     $taxableAmount = $subTotal - $itemDiscount;
@@ -155,9 +154,9 @@ class OrderSeeder extends Seeder
                 // 3. Invoice Execution
                 if (in_array($status, ['confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'returned'])) {
                     $invoiceStatus = ($status === 'delivered' || $status === 'returned') ? 'paid' : (rand(0, 1) ? 'unpaid' : 'partially_paid');
-                    
+
                     $invoice = Invoice::create([
-                        'invoice_no' => 'INV-' . strtoupper(Str::random(8)),
+                        'invoice_no' => 'INV-'.strtoupper(Str::random(8)),
                         'order_id' => $order->id,
                         'invoice_date' => $orderDate->copy()->addMinutes(30),
                         'total_amount' => $totalAmount,
@@ -169,12 +168,12 @@ class OrderSeeder extends Seeder
                     // 4. Record Safe Ledger Transaction Payments
                     if ($invoiceStatus === 'paid' || $invoiceStatus === 'partially_paid') {
                         Payment::create([
-                            'payment_no' => 'PAY-' . strtoupper(Str::random(8)),
+                            'payment_no' => 'PAY-'.strtoupper(Str::random(8)),
                             'invoice_id' => $invoice->id,
                             'order_id' => $order->id,
                             'amount' => $invoiceStatus === 'paid' ? $netAmount : round($netAmount / 2, 2),
                             'payment_method' => 'bank_transfer',
-                            'transaction_id' => 'TXN' . rand(10000000, 99999999),
+                            'transaction_id' => 'TXN'.rand(10000000, 99999999),
                             'payment_date' => $orderDate->copy()->addHours(1),
                             'status' => 'completed',
                         ]);
@@ -184,7 +183,7 @@ class OrderSeeder extends Seeder
                     if ($status === 'returned') {
                         $return = OrderReturn::create([
                             'order_id' => $order->id,
-                            'return_no' => 'RET-' . strtoupper(Str::random(8)),
+                            'return_no' => 'RET-'.strtoupper(Str::random(8)),
                             'status' => 'completed',
                             'financial_status' => 'fully_refunded',
                             'reason' => 'Defective Item',
@@ -207,13 +206,13 @@ class OrderSeeder extends Seeder
                         }
 
                         Refund::create([
-                            'refund_no' => 'REF-' . strtoupper(Str::random(8)),
+                            'refund_no' => 'REF-'.strtoupper(Str::random(8)),
                             'order_id' => $order->id,
                             'invoice_id' => $invoice->id,
                             'order_return_id' => $return->id,
                             'amount' => $netAmount,
                             'payment_method' => 'bank_transfer',
-                            'transaction_id' => 'TXN' . rand(10000000, 99999999),
+                            'transaction_id' => 'TXN'.rand(10000000, 99999999),
                             'status' => 'completed',
                             'notes' => 'Processed refund back to customer account.',
                         ]);
@@ -231,10 +230,10 @@ class OrderSeeder extends Seeder
 
                     $shipmentCounter++;
                     $shipment = Shipment::create([
-                        'shipment_no' => 'SHP-' . $year . '-' . str_pad((string) $shipmentCounter, 5, '0', STR_PAD_LEFT),
+                        'shipment_no' => 'SHP-'.$year.'-'.str_pad((string) $shipmentCounter, 5, '0', STR_PAD_LEFT),
                         'order_id' => $order->id,
                         'carrier_name' => $carriers[rand(0, count($carriers) - 1)],
-                        'tracking_no' => 'TRK' . rand(100000000, 999999999),
+                        'tracking_no' => 'TRK'.rand(100000000, 999999999),
                         'status' => $shipmentStatus,
                         'shipped_at' => $orderDate->copy()->addDays(1),
                         'delivered_at' => $status === 'delivered' ? $orderDate->copy()->addDays(3) : null,

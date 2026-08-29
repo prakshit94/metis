@@ -203,7 +203,7 @@ class RoleController extends Controller implements HasMiddleware
             403,
         );
 
-        return response()->json(\App\Modules\Users\Models\Role::query()
+        return response()->json(Role::query()
             ->orderBy('name')
             ->get(['id', 'name', 'guard_name']));
     }

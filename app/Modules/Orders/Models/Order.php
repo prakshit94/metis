@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Models\Village;
 use App\Modules\Customers\Models\Party;
 use App\Modules\Customers\Models\PartyAddress;
+use App\Modules\Customers\Models\WalletTransaction;
 use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class Order extends Model implements Auditable
 {
@@ -26,10 +27,10 @@ class Order extends Model implements Auditable
     protected static function booted()
     {
         $clearCache = function () {
-            if (\Illuminate\Support\Facades\Cache::has('order_stats_version')) {
-                \Illuminate\Support\Facades\Cache::increment('order_stats_version');
+            if (Cache::has('order_stats_version')) {
+                Cache::increment('order_stats_version');
             } else {
-                \Illuminate\Support\Facades\Cache::put('order_stats_version', 1);
+                Cache::put('order_stats_version', 1);
             }
         };
 
@@ -38,8 +39,8 @@ class Order extends Model implements Auditable
 
         static::creating(function (self $order) {
             if ($order->status) {
-                $statusField = $order->status . '_at';
-                $byField = $order->status . '_by';
+                $statusField = $order->status.'_at';
+                $byField = $order->status.'_by';
                 $order->{$statusField} = now();
                 $order->{$byField} = auth()->id() ?? $order->created_by;
             }
@@ -49,8 +50,8 @@ class Order extends Model implements Auditable
             if ($order->isDirty('status')) {
                 $newStatus = $order->status;
                 if ($newStatus) {
-                    $statusField = $newStatus . '_at';
-                    $byField = $newStatus . '_by';
+                    $statusField = $newStatus.'_at';
+                    $byField = $newStatus.'_by';
                     $order->{$statusField} = now();
                     $order->{$byField} = auth()->id() ?? $order->updated_by;
                 }
@@ -242,6 +243,7 @@ class Order extends Model implements Auditable
         if ($this->relationLoaded('payments')) {
             return (float) $this->payments->where('status', 'completed')->sum('amount');
         }
+
         return (float) $this->payments()->where('status', 'completed')->sum('amount');
     }
 
@@ -250,11 +252,12 @@ class Order extends Model implements Auditable
         if ($this->relationLoaded('refunds')) {
             return (float) $this->refunds->where('status', 'completed')->sum('amount');
         }
+
         return (float) $this->refunds()->where('status', 'completed')->sum('amount');
     }
 
     public function walletTransactions(): HasMany
     {
-        return $this->hasMany(\App\Modules\Customers\Models\WalletTransaction::class, 'reference_id')->where('reference_type', 'order');
+        return $this->hasMany(WalletTransaction::class, 'reference_id')->where('reference_type', 'order');
     }
 }

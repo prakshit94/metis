@@ -4,21 +4,26 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\ReferralProgram;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Customers\Models\Party;
+use App\Modules\Customers\Models\WalletTransaction;
 use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockReservation;
 use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Orders\Models\Coupon;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Models\Shipment;
-use App\Modules\Orders\Models\Coupon;
-use App\Models\ReferralProgram;
-use Illuminate\Support\Str;
+use App\Modules\Users\Models\User;
 use App\Notifications\LowStockNotification;
-use Illuminate\Support\Facades\Notification;
+use App\Services\Shipping\ShippingManager;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -108,16 +113,16 @@ class InventoryService
         ?string $batchNumber = null
     ): void {
         StockMovement::create([
-            'product_id'     => $productId,
-            'warehouse_id'   => $warehouseId,
-            'quantity'       => $quantity,
-            'type'           => $type,
+            'product_id' => $productId,
+            'warehouse_id' => $warehouseId,
+            'quantity' => $quantity,
+            'type' => $type,
             'reference_type' => $referenceType,
-            'reference_id'   => $referenceId,
-            'status'         => 'active',
-            'batch_number'   => $batchNumber,
+            'reference_id' => $referenceId,
+            'status' => 'active',
+            'batch_number' => $batchNumber,
             // Prefer explicitly passed value; fall back to HTTP auth; fall back to 0 (system)
-            'performed_by'   => $performedBy ?? auth()->id() ?? 0,
+            'performed_by' => $performedBy ?? auth()->id() ?? 0,
         ]);
     }
 
@@ -153,7 +158,9 @@ class InventoryService
 
         $newStatus = $product->status;
 
-        if ($totalAvailable <= 0 && ! $product->allow_overselling) {
+        $canOversell = $product->allow_overselling || Stock::where('product_id', $productId)->where('allow_overselling', true)->exists();
+
+        if ($totalAvailable <= 0 && ! $canOversell) {
             $newStatus = 'out_of_stock';
         } else {
             // If it was out of stock but now has stock or overselling is enabled, activate it
@@ -338,7 +345,7 @@ class InventoryService
             $stock->save();
 
             if ($batchNumber) {
-                $batch = \App\Modules\Inventory\Models\StockBatch::firstOrCreate([
+                $batch = StockBatch::firstOrCreate([
                     'product_id' => $productId,
                     'warehouse_id' => $warehouseId,
                     'batch_number' => $batchNumber,
@@ -393,7 +400,7 @@ class InventoryService
             $stock->save();
 
             if ($batchNumber) {
-                $batch = \App\Modules\Inventory\Models\StockBatch::where([
+                $batch = StockBatch::where([
                     'product_id' => $productId,
                     'warehouse_id' => $warehouseId,
                     'batch_number' => $batchNumber,
@@ -411,7 +418,7 @@ class InventoryService
             // Dispatch Low Stock Notification if quantity is below threshold (fail-safe)
             if ($newQty <= 5) {
                 try {
-                    $admins = \App\Modules\Users\Models\User::role(['Admin', 'Super Admin', 'Inventory Manager'])->get();
+                    $admins = User::role(['Admin', 'Super Admin', 'Inventory Manager'])->get();
                     $productName = $stock->product->name ?? 'Unknown Product';
                     $warehouseName = clone $stock->warehouse ? clone $stock->warehouse->name : 'Unknown Warehouse';
                     Notification::send($admins, new LowStockNotification($productName, (int) $newQty, $warehouseName));
@@ -739,9 +746,9 @@ class InventoryService
             }
 
             foreach ($transfer->items as $item) {
-                $productId   = (int) $item->product_id;
+                $productId = (int) $item->product_id;
                 $warehouseId = (int) $transfer->from_warehouse_id;
-                $qty         = (float) $item->quantity;
+                $qty = (float) $item->quantity;
 
                 $stock = $this->getStockForUpdate($productId, $warehouseId);
 
@@ -753,7 +760,7 @@ class InventoryService
                 }
 
                 // Deduct from source warehouse quantity immediately on dispatch
-                $stock->quantity     = max(0.0, (float) $stock->quantity - $qty);
+                $stock->quantity = max(0.0, (float) $stock->quantity - $qty);
                 $stock->in_transit_qty = (float) $stock->in_transit_qty + $qty;
                 $stock->save();
 
@@ -762,7 +769,7 @@ class InventoryService
             }
 
             $transfer->update([
-                'status'  => 'sent',
+                'status' => 'sent',
                 'sent_at' => now(),
             ]);
         }, 3);
@@ -785,10 +792,10 @@ class InventoryService
             }
 
             foreach ($transfer->items as $item) {
-                $productId   = (int) $item->product_id;
-                $fromWh      = (int) $transfer->from_warehouse_id;
-                $toWh        = (int) $transfer->to_warehouse_id;
-                $qty         = (float) $item->quantity;
+                $productId = (int) $item->product_id;
+                $fromWh = (int) $transfer->from_warehouse_id;
+                $toWh = (int) $transfer->to_warehouse_id;
+                $qty = (float) $item->quantity;
 
                 // Clear in_transit from source (quantity was already deducted in sendTransfer)
                 $fromStock = $this->getStockForUpdate($productId, $fromWh);
@@ -806,7 +813,7 @@ class InventoryService
             }
 
             $transfer->update([
-                'status'      => 'received',
+                'status' => 'received',
                 'received_at' => now(),
             ]);
         }, 3);
@@ -825,6 +832,7 @@ class InventoryService
             if ($transfer->status === 'draft') {
                 // Draft: nothing was deducted yet, just cancel
                 $transfer->update(['status' => 'cancelled']);
+
                 return;
             }
 
@@ -836,12 +844,12 @@ class InventoryService
 
             // Sent: source quantity was deducted in sendTransfer — restore it
             foreach ($transfer->items as $item) {
-                $productId   = (int) $item->product_id;
+                $productId = (int) $item->product_id;
                 $warehouseId = (int) $transfer->from_warehouse_id;
-                $qty         = (float) $item->quantity;
+                $qty = (float) $item->quantity;
 
                 $stock = $this->getStockForUpdate($productId, $warehouseId);
-                $stock->quantity       = (float) $stock->quantity + $qty;
+                $stock->quantity = (float) $stock->quantity + $qty;
                 $stock->in_transit_qty = max(0.0, (float) $stock->in_transit_qty - $qty);
                 $stock->save();
 
@@ -1002,14 +1010,14 @@ class InventoryService
             }
             $shipmentDataArr = [];
             if ($carrierName === 'India Post' && empty($trackingNo)) {
-                $shippingManager = app(\App\Services\Shipping\ShippingManager::class);
+                $shippingManager = app(ShippingManager::class);
                 try {
                     $provider = $shippingManager->driver('india_post');
                     $shipmentDataArr = $provider->createShipment($order);
                     $trackingNo = $shipmentDataArr['tracking_number'];
                 } catch (\Exception $e) {
                     throw ValidationException::withMessages([
-                        'tracking_no' => 'Failed to create shipment with India Post: ' . $e->getMessage()
+                        'tracking_no' => 'Failed to create shipment with India Post: '.$e->getMessage(),
                     ]);
                 }
             }
@@ -1137,19 +1145,19 @@ class InventoryService
             $order->update(['status' => 'delivered', 'updated_by' => auth()->id()]);
 
             // Advanced Referral Reward Logic
-            $party = \App\Modules\Customers\Models\Party::find($order->party_id);
+            $party = Party::find($order->party_id);
             if ($party && $party->referred_by) {
                 // If it's 1, it means the current one is the only delivered order.
                 $deliveredCount = Order::where('party_id', $party->id)->where('status', 'delivered')->count();
                 if ($deliveredCount === 1) {
                     $alreadyRewarded = DB::table('referral_rewards')->where('referred_id', $party->id)->exists();
-                    if (!$alreadyRewarded) {
-                        $referrer = \App\Modules\Customers\Models\Party::find($party->referred_by);
-                        
+                    if (! $alreadyRewarded) {
+                        $referrer = Party::find($party->referred_by);
+
                         if ($referrer) {
                             // Calculate referrer's total successful referrals
                             // A successful referral is someone they referred who has at least one delivered order.
-                            $successfulReferrals = \App\Modules\Customers\Models\Party::where('referred_by', $referrer->id)
+                            $successfulReferrals = Party::where('referred_by', $referrer->id)
                                 ->whereHas('orders', function ($q) {
                                     $q->where('status', 'delivered');
                                 })->count();
@@ -1157,15 +1165,15 @@ class InventoryService
                             // Find Active Program
                             $activeProgram = ReferralProgram::with('milestones')
                                 ->where('is_active', true)
-                                ->where(function($q) {
+                                ->where(function ($q) {
                                     $q->whereNull('start_date')->orWhere('start_date', '<=', now());
                                 })
-                                ->where(function($q) {
+                                ->where(function ($q) {
                                     $q->whereNull('end_date')->orWhere('end_date', '>=', now());
                                 })->first();
 
                             $rewardGranted = false;
-                            
+
                             if ($activeProgram) {
                                 // Find base milestone (0 = every referral) and specific milestone for current count
                                 $baseMilestone = $activeProgram->milestones->where('required_referrals', 0)->first();
@@ -1178,60 +1186,60 @@ class InventoryService
 
                                     // Insert reward record first as 'pending' to allow atomic wallet update
                                     $rewardId = DB::table('referral_rewards')->insertGetId([
-                                        'referrer_id'         => $referrer->id,
-                                        'referred_id'         => $party->id,
-                                        'order_id'            => $order->id,
+                                        'referrer_id' => $referrer->id,
+                                        'referred_id' => $party->id,
+                                        'order_id' => $order->id,
                                         'referral_program_id' => $activeProgram->id,
-                                        'milestone_id'        => $milestone->id,
-                                        'reward_type'         => $milestone->reward_type,
-                                        'reward_amount'       => $rewardAmount,
-                                        'reward_value'        => $milestone->reward_type !== 'wallet' ? $milestone->reward_value : null,
-                                        'status'              => 'pending',
-                                        'created_at'          => now(),
-                                        'updated_at'          => now(),
+                                        'milestone_id' => $milestone->id,
+                                        'reward_type' => $milestone->reward_type,
+                                        'reward_amount' => $rewardAmount,
+                                        'reward_value' => $milestone->reward_type !== 'wallet' ? $milestone->reward_value : null,
+                                        'status' => 'pending',
+                                        'created_at' => now(),
+                                        'updated_at' => now(),
                                     ]);
 
                                     if ($milestone->reward_type === 'wallet') {
                                         $referrer->wallet_balance += $rewardAmount;
                                         $referrer->save();
 
-                                        \App\Modules\Customers\Models\WalletTransaction::create([
+                                        WalletTransaction::create([
                                             'party_id' => $referrer->id,
                                             'amount' => $rewardAmount,
                                             'type' => 'credit',
                                             'reference_type' => 'referral_reward',
                                             'reference_id' => $rewardId,
-                                            'description' => 'Referral reward for referring customer ' . trim($party->firstname . ' ' . $party->lastname),
+                                            'description' => 'Referral reward for referring customer '.trim($party->firstname.' '.$party->lastname),
                                             'created_by' => auth()->id() ?? $order->created_by,
                                         ]);
                                     } elseif ($milestone->reward_type === 'coupon') {
-                                        $couponCode = 'REF-' . strtoupper(Str::random(8));
+                                        $couponCode = 'REF-'.strtoupper(Str::random(8));
                                         Coupon::create([
-                                            'code'        => $couponCode,
-                                            'type'        => 'fixed',
-                                            'value'       => (float) $milestone->reward_value,
+                                            'code' => $couponCode,
+                                            'type' => 'fixed',
+                                            'value' => (float) $milestone->reward_value,
                                             'usage_limit' => 1,
                                             'expiry_date' => now()->addMonths(6), // Referral coupons expire in 6 months
-                                            'is_active'   => true,
-                                            'status'      => 'active',
+                                            'is_active' => true,
+                                            'status' => 'active',
                                         ]);
                                     } elseif ($milestone->reward_type === 'product') {
-                                        $couponCode = 'GIFT-' . strtoupper(Str::random(8));
+                                        $couponCode = 'GIFT-'.strtoupper(Str::random(8));
                                         Coupon::create([
-                                            'code'                => $couponCode,
-                                            'type'                => 'percentage',
-                                            'value'               => 100.00,
-                                            'usage_limit'         => 1,
-                                            'expiry_date'         => now()->addMonths(6),
+                                            'code' => $couponCode,
+                                            'type' => 'percentage',
+                                            'value' => 100.00,
+                                            'usage_limit' => 1,
+                                            'expiry_date' => now()->addMonths(6),
                                             'applicable_products' => [$milestone->reward_value],
-                                            'is_active'           => true,
-                                            'status'              => 'active',
+                                            'is_active' => true,
+                                            'status' => 'active',
                                         ]);
                                     }
 
                                     // Mark as completed only after all side-effects succeed
                                     DB::table('referral_rewards')->where('id', $rewardId)->update([
-                                        'status'     => 'completed',
+                                        'status' => 'completed',
                                         'updated_at' => now(),
                                     ]);
 
@@ -1408,12 +1416,12 @@ class InventoryService
 
         foreach ($rewards as $reward) {
             if ($reward->reward_type === 'wallet') {
-                $referrer = \App\Modules\Customers\Models\Party::find($reward->referrer_id);
+                $referrer = Party::find($reward->referrer_id);
                 if ($referrer) {
                     $referrer->wallet_balance = max(0, $referrer->wallet_balance - $reward->reward_amount);
                     $referrer->save();
 
-                    \App\Modules\Customers\Models\WalletTransaction::create([
+                    WalletTransaction::create([
                         'party_id' => $referrer->id,
                         'amount' => $reward->reward_amount,
                         'type' => 'debit',
@@ -1429,16 +1437,16 @@ class InventoryService
                     ->orWhere(function ($q) use ($reward) {
                         // Match by prefix since we don't store the coupon code on the reward row
                         $prefix = $reward->reward_type === 'coupon' ? 'REF-' : 'GIFT-';
-                        $q->where('code', 'like', $prefix . '%')
-                          ->where('is_active', true)
-                          ->where('usage_limit', 1)
-                          ->where('used_count', 0);
+                        $q->where('code', 'like', $prefix.'%')
+                            ->where('is_active', true)
+                            ->where('usage_limit', 1)
+                            ->where('used_count', 0);
                     })
                     ->update(['is_active' => false, 'status' => 'inactive']);
             }
 
             DB::table('referral_rewards')->where('id', $reward->id)->update([
-                'status'     => 'revoked',
+                'status' => 'revoked',
                 'updated_at' => now(),
             ]);
         }
@@ -1450,18 +1458,18 @@ class InventoryService
     protected function refundOrderWalletUsage(Order $order): void
     {
         if ($order->wallet_amount_used > 0 && $order->party_id) {
-            $party = \App\Modules\Customers\Models\Party::find($order->party_id);
+            $party = Party::find($order->party_id);
             if ($party) {
                 $party->wallet_balance += $order->wallet_amount_used;
                 $party->save();
 
-                \App\Modules\Customers\Models\WalletTransaction::create([
+                WalletTransaction::create([
                     'party_id' => $party->id,
                     'amount' => $order->wallet_amount_used,
                     'type' => 'credit',
                     'reference_type' => 'order_refund',
                     'reference_id' => $order->id,
-                    'description' => 'Wallet balance refunded due to order #' . $order->order_no . ' cancellation',
+                    'description' => 'Wallet balance refunded due to order #'.$order->order_no.' cancellation',
                     'created_by' => auth()->id() ?? $order->created_by,
                 ]);
 
@@ -1477,22 +1485,22 @@ class InventoryService
     protected function revokeOrderCashback(Order $order): void
     {
         if ($order->cashback_earned > 0 && $order->party_id) {
-            $party = \App\Modules\Customers\Models\Party::find($order->party_id);
+            $party = Party::find($order->party_id);
             if ($party) {
                 // Prevent negative balance, cap at 0
-                $clawbackAmount = min((float)$party->wallet_balance, (float)$order->cashback_earned);
-                
+                $clawbackAmount = min((float) $party->wallet_balance, (float) $order->cashback_earned);
+
                 $party->wallet_balance = max(0, $party->wallet_balance - $order->cashback_earned);
                 $party->save();
 
                 if ($clawbackAmount > 0) {
-                    \App\Modules\Customers\Models\WalletTransaction::create([
+                    WalletTransaction::create([
                         'party_id' => $party->id,
                         'amount' => $clawbackAmount,
                         'type' => 'debit',
                         'reference_type' => 'cashback_revoked',
                         'reference_id' => $order->id,
-                        'description' => 'Cashback revoked due to order #' . $order->order_no . ' return/revert',
+                        'description' => 'Cashback revoked due to order #'.$order->order_no.' return/revert',
                         'created_by' => auth()->id() ?? $order->created_by,
                     ]);
                 }

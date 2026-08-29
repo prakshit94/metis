@@ -5,33 +5,24 @@
 
 @section('content')
 @php
-    $now = now();
-    $activeOffers = \Illuminate\Support\Facades\Cache::remember('active_offers_global', 3600, function () use ($now) {
-        return \App\Modules\Orders\Models\Offer::where('is_active', true)
-            ->where(function($q) use ($now) {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
-            })
-            ->where(function($q) use ($now) {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
-            })->get();
-    });
+    $activeOffers = \App\Modules\Orders\Models\Offer::active()->get();
+    $activeCoupons = \App\Modules\Orders\Models\Coupon::where('is_active', true)->get();
     
-    $activeCoupons = \Illuminate\Support\Facades\Cache::remember('active_coupons_global', 3600, function () use ($now) {
-        return \App\Modules\Orders\Models\Coupon::where('is_active', true)
-            ->where(function($q) use ($now) {
-                $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', $now);
-            })->get();
-    });
-        
-    $activeReferrals = \Illuminate\Support\Facades\Cache::remember('active_referrals_global', 3600, function () use ($now) {
-        return \App\Models\ReferralProgram::where('is_active', true)
+    // Check if ReferralProgram exists and has active scope, if not fallback to the original query without cache
+    if (class_exists(\App\Modules\Promotion\Models\ReferralProgram::class) && method_exists(\App\Modules\Promotion\Models\ReferralProgram::class, 'scopeActive')) {
+        $activeReferrals = \App\Modules\Promotion\Models\ReferralProgram::active()->get();
+    } elseif (class_exists(\App\Models\ReferralProgram::class)) {
+        $now = now();
+        $activeReferrals = \App\Models\ReferralProgram::where('is_active', true)
             ->where(function($q) use ($now) {
                 $q->whereNull('start_date')->orWhere('start_date', '<=', $now);
             })
             ->where(function($q) use ($now) {
                 $q->whereNull('end_date')->orWhere('end_date', '>=', $now);
             })->get();
-    });
+    } else {
+        $activeReferrals = collect([]);
+    }
 @endphp
 <script>
     window.globalPromotions = {
@@ -46,15 +37,20 @@
         let cId = String(product.category_id);
         
         let filterFunc = (item) => {
-            if (item.excluded_products && item.excluded_products.map(String).includes(pId)) return false;
-            if (item.excluded_categories && item.excluded_categories.map(String).includes(cId)) return false;
+            let excProd = typeof item.excluded_products === 'string' ? JSON.parse(item.excluded_products || '[]') : (item.excluded_products || []);
+            let excCat = typeof item.excluded_categories === 'string' ? JSON.parse(item.excluded_categories || '[]') : (item.excluded_categories || []);
+            let appProd = typeof item.applicable_products === 'string' ? JSON.parse(item.applicable_products || '[]') : (item.applicable_products || []);
+            let appCat = typeof item.applicable_categories === 'string' ? JSON.parse(item.applicable_categories || '[]') : (item.applicable_categories || []);
+
+            if (excProd.length > 0 && excProd.map(String).includes(pId)) return false;
+            if (excCat.length > 0 && excCat.map(String).includes(cId)) return false;
             
-            let hasProdInc = item.applicable_products && item.applicable_products.length > 0;
-            let hasCatInc = item.applicable_categories && item.applicable_categories.length > 0;
+            let hasProdInc = appProd.length > 0;
+            let hasCatInc = appCat.length > 0;
             
             if (!hasProdInc && !hasCatInc) return true;
-            if (hasProdInc && item.applicable_products.map(String).includes(pId)) return true;
-            if (hasCatInc && item.applicable_categories.map(String).includes(cId)) return true;
+            if (hasProdInc && appProd.map(String).includes(pId)) return true;
+            if (hasCatInc && appCat.map(String).includes(cId)) return true;
             
             return false;
         };
@@ -207,6 +203,17 @@
                                                 </template>
                                             </select>
                                             
+                                            <!-- Warehouse Filter -->
+                                            <select x-select class="form-select form-select-sm" 
+                                                    x-model="warehouseFilter" 
+                                                    @change="filterProducts()"
+                                                    style="width: 150px;">
+                                                <option value="">All Warehouses</option>
+                                                <template x-for="wh in options.warehouses" :key="wh.id">
+                                                    <option :value="String(wh.id)" x-text="wh.name"></option>
+                                                </template>
+                                            </select>
+                                            
                                             <!-- Stock Filter -->
                                             <select x-select class="form-select form-select-sm" 
                                                     x-model="stockFilter" 
@@ -301,7 +308,7 @@
                                                 </tr>
                                             </template>
                                             <template x-for="product in paginatedProducts" :key="product.id">
-                                                <tr>
+                                                <tr :class="{'opacity-50': getEffectiveStock(product) <= 0}">
                                                     <td>
                                                         <input type="checkbox" 
                                                                class="form-check-input" 
@@ -345,13 +352,21 @@
                                                                 <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 13px;" x-text="'₹' + (Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100))).toFixed(2)"></span>
                                                             </div>
                                                         </div>
-                                                        <span class="badge stock-badge" 
-                                                              :class="{
-                                                                  'in-stock': product.stock > (product.min_stock_level || 10),
-                                                                  'low-stock': product.stock > 0 && product.stock <= (product.min_stock_level || 10),
-                                                                  'out-of-stock': product.stock === 0
-                                                              }"
-                                                              x-text="parseFloat(product.stock) + ' units'"></span>
+                                                        <div class="d-flex flex-column align-items-start gap-1">
+                                                            <div class="d-flex align-items-center gap-1">
+                                                                <span class="badge stock-badge" 
+                                                                      :class="{
+                                                                          'in-stock': getEffectiveStock(product) > (product.min_stock_level || 10),
+                                                                          'low-stock': getEffectiveStock(product) > 0 && getEffectiveStock(product) <= (product.min_stock_level || 10),
+                                                                          'out-of-stock': getEffectiveStock(product) <= 0
+                                                                      }"
+                                                                      x-text="getEffectiveStock(product) + ' units'"></span>
+                                                                <span x-show="product.allow_overselling && getRemainingOversell(product) > 0" class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size: 10px;" title="Overselling Allowed" x-text="'+ ' + getRemainingOversell(product) + ' oversell'"></span>
+                                                            </div>
+                                                            <small class="text-muted" style="font-size: 10px;" x-show="warehouseFilter">
+                                                                Physical: <span x-text="getPhysicalStock(product)"></span> units
+                                                            </small>
+                                                        </div>
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center gap-2 mb-1">
@@ -377,12 +392,12 @@
                                                         <div class="dropdown">
                                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
                                                                     type="button" 
-                                                                    data-bs-toggle="dropdown">
+                                                                    data-bs-toggle="dropdown" data-bs-boundary="window">
                                                                 <i class="bi bi-three-dots"></i>
                                                             </button>
                                                             <ul class="dropdown-menu">
                                                                 @can('product-edit')
-                                                                <li><a class="dropdown-item" href="#" @click.prevent="editProduct(product)">
+                                                                <li x-show="warehouseFilter !== ''"><a class="dropdown-item" href="#" @click.prevent="editProduct(product)">
                                                                     <i class="bi bi-pencil me-2"></i>Edit
                                                                 </a></li>
                                                                 @endcan
@@ -444,356 +459,423 @@
                 </div>
                 <div class="modal-body pt-3">
                     <form @submit.prevent="saveProduct()">
-                        <div class="row g-4">
-                            <!-- Left Column -->
-                            <div class="col-lg-8">
-                                <!-- Card 1: Basic Information -->
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-info-circle-fill"></i>
-                                            </div>
-                                            <h6 class="card-title mb-0 fw-bold">Basic Information</h6>
+                                                <div class="d-flex flex-column flex-md-row border-top" x-data="{ activeTab: 'general' }">
+                            <!-- Sidebar Tabs -->
+                            <div class="bg-body-tertiary border-end p-3" style="min-width: 240px;">
+                                <div class="nav flex-column nav-pills gap-1" role="tablist" aria-orientation="vertical">
+                                    <button type="button" class="nav-link text-start d-flex align-items-center rounded-3" :class="{'active': activeTab === 'general', 'bg-body': activeTab !== 'general'}" @click="activeTab = 'general'">
+                                        <i class="bi bi-info-circle me-3 fs-5" :class="{'text-primary': activeTab !== 'general'}"></i>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold">General</span>
+                                            <span class="small" :class="{'text-white-50': activeTab === 'general', 'text-muted': activeTab !== 'general'}" style="font-size: 0.7rem;">Basic info & identifiers</span>
                                         </div>
-                                        <div class="row g-3">
-                                            <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">Product Name <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" x-model="form.name" required placeholder="e.g. Wireless Noise Cancelling Headphones">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Category <span class="text-danger">*</span></label>
-                                                <select x-select class="form-select" x-model="form.category_id" required>
-                                                    <option value="">Select Category</option>
-                                                    <template x-for="category in options.categories" :key="category.id">
-                                                        <optgroup :label="category.name">
-                                                            <option :value="String(category.id)" x-text="category.name + ' (Main)'"></option>
-                                                            <template x-for="child in category.children" :key="child.id">
-                                                                <option :value="String(child.id)" x-text="'↳ ' + child.name"></option>
-                                                            </template>
-                                                        </optgroup>
-                                                    </template>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Brand</label>
-                                                <select x-select class="form-select" x-model="form.brand_id">
-                                                    <option value="">No Brand</option>
-                                                    <template x-for="brand in options.brands" :key="brand.id">
-                                                        <option :value="String(brand.id)" x-text="brand.name"></option>
-                                                    </template>
-                                                </select>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">Product Description</label>
-                                                <textarea class="form-control" x-model="form.description" rows="3" placeholder="Enter detailed product description..."></textarea>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">Application Instructions</label>
-                                                <textarea class="form-control" x-model="form.application_instructions" rows="2" placeholder="Enter instructions for use/application..."></textarea>
-                                            </div>
+                                    </button>
+                                    <button type="button" class="nav-link text-start d-flex align-items-center rounded-3" :class="{'active': activeTab === 'pricing', 'bg-body': activeTab !== 'pricing'}" @click="activeTab = 'pricing'">
+                                        <i class="bi bi-currency-rupee me-3 fs-5" :class="{'text-success': activeTab !== 'pricing'}"></i>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold">Pricing & Tax</span>
+                                            <span class="small" :class="{'text-white-50': activeTab === 'pricing', 'text-muted': activeTab !== 'pricing'}" style="font-size: 0.7rem;">MRP, Selling price & GST</span>
                                         </div>
-                                    </div>
-                                </div>
-
-                                <!-- Card 2: Pricing & Taxation -->
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-currency-rupee"></i>
-                                            </div>
-                                            <h6 class="card-title mb-0 fw-bold">Pricing & Taxation</h6>
+                                    </button>
+                                    <button type="button" class="nav-link text-start d-flex align-items-center rounded-3" :class="{'active': activeTab === 'inventory', 'bg-body': activeTab !== 'inventory'}" @click="activeTab = 'inventory'">
+                                        <i class="bi bi-box-seam me-3 fs-5" :class="{'text-danger': activeTab !== 'inventory'}"></i>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold">Inventory</span>
+                                            <span class="small" :class="{'text-white-50': activeTab === 'inventory', 'text-muted': activeTab !== 'inventory'}" style="font-size: 0.7rem;">Stock, Tracking & Suppliers</span>
                                         </div>
-                                        <div class="row g-3">
-                                            <div class="col-md-4">
-                                                <label class="form-label fw-medium text-muted small">Purchase Price <span class="text-danger">*</span></label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text bg-body-secondary">₹</span>
-                                                    <input type="number" class="form-control" x-model="form.purchase_price" step="0.01" min="0" required placeholder="0.00">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label fw-medium text-muted small">MRP</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text bg-body-secondary">₹</span>
-                                                    <input type="number" class="form-control" x-model="form.mrp" step="0.01" min="0" placeholder="0.00">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label fw-medium text-muted small">Selling Price (Inc. GST) <span class="text-danger">*</span></label>
-                                                <div class="input-group mb-1">
-                                                    <span class="input-group-text bg-body-secondary">₹</span>
-                                                    <input type="number" class="form-control" x-model="form.selling_price_inc_gst" step="0.01" min="0" required placeholder="0.00">
-                                                </div>
-                                                <small class="text-muted fw-medium" x-show="form.selling_price_inc_gst && form.tax_rate_id" x-cloak>
-                                                    Base Price (Excl. GST): ₹<span x-text="baseSellingPriceExcludingTax.toFixed(2)"></span>
-                                                </small>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Tax Rate <span class="text-danger">*</span></label>
-                                                <select x-select class="form-select" x-model="form.tax_rate_id" required>
-                                                    <option value="">No Tax</option>
-                                                    <template x-for="rate in options.taxRates" :key="rate.id">
-                                                        <option :value="String(rate.id)" x-text="rate.name + ' (' + rate.rate + '%)'"></option>
-                                                    </template>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">HSN Code <span class="text-danger">*</span></label>
-                                                <select x-select class="form-select" x-model="form.hsn_code_id" required>
-                                                    <option value="">No HSN</option>
-                                                    <template x-for="hsn in options.hsnCodes" :key="hsn.id">
-                                                        <option :value="String(hsn.id)" x-text="hsn.code + (hsn.description ? ' - ' + hsn.description : '')"></option>
-                                                    </template>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Default Discount</label>
-                                                <input type="number" class="form-control" x-model="form.default_discount" step="0.01" min="0" placeholder="0.00">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Discount Type</label>
-                                                <select x-select class="form-select" x-model="form.default_discount_type">
-                                                    <option value="percent">Percent (%)</option>
-                                                    <option value="flat">Flat (₹)</option>
-                                                </select>
-                                            </div>
+                                    </button>
+                                    <button type="button" class="nav-link text-start d-flex align-items-center rounded-3" :class="{'active': activeTab === 'media', 'bg-body': activeTab !== 'media'}" @click="activeTab = 'media'">
+                                        <i class="bi bi-image me-3 fs-5" :class="{'text-warning': activeTab !== 'media'}"></i>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold">Media & Status</span>
+                                            <span class="small" :class="{'text-white-50': activeTab === 'media', 'text-muted': activeTab !== 'media'}" style="font-size: 0.7rem;">Images, Status & Dimensions</span>
                                         </div>
-                                    </div>
-                                </div>
-
-                                <!-- Card 3: Inventory & Logistics -->
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-box-seam"></i>
-                                            </div>
-                                            <h6 class="card-title mb-0 fw-bold">Inventory & Logistics</h6>
+                                    </button>
+                                    <button type="button" class="nav-link text-start d-flex align-items-center rounded-3" :class="{'active': activeTab === 'attributes', 'bg-body': activeTab !== 'attributes'}" @click="activeTab = 'attributes'">
+                                        <i class="bi bi-tags me-3 fs-5" :class="{'text-info': activeTab !== 'attributes'}"></i>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold">Attributes</span>
+                                            <span class="small" :class="{'text-white-50': activeTab === 'attributes', 'text-muted': activeTab !== 'attributes'}" style="font-size: 0.7rem;">Colors, Sizes & Variants</span>
                                         </div>
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Default Warehouse</label>
-                                                <select x-select class="form-select" x-model="form.default_warehouse_id">
-                                                    <option value="">No Default</option>
-                                                    <template x-for="warehouse in options.warehouses" :key="warehouse.id">
-                                                        <option :value="String(warehouse.id)" x-text="warehouse.name"></option>
-                                                    </template>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Supplier</label>
-                                                <select x-select class="form-select" x-model="form.supplier_id">
-                                                    <option value="">Select Supplier</option>
-                                                    <template x-for="supplier in options.suppliers" :key="supplier.id">
-                                                        <option :value="String(supplier.id)" x-text="supplier.company_name ? supplier.company_name : (supplier.firstname + ' ' + (supplier.lastname || ''))"></option>
-                                                    </template>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label fw-medium text-muted small">Stock Quantity <span class="text-danger">*</span></label>
-                                                <input type="number" class="form-control" x-model="form.stock" min="0" :required="!editingProductId" :disabled="!!editingProductId" placeholder="0">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label fw-medium text-muted small">Min Stock Level</label>
-                                                <input type="number" class="form-control" x-model="form.min_stock_level" min="0" placeholder="0">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label fw-medium text-muted small">Grade</label>
-                                                <select x-select class="form-select" x-model="form.grade">
-                                                    <option value="">No Grade</option>
-                                                    <option value="A">A</option>
-                                                    <option value="B">B</option>
-                                                    <option value="C">C</option>
-                                                    <option value="D">D</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Unit (UOM) <span class="text-danger">*</span></label>
-                                                <select x-select class="form-select" x-model="form.uom_id" required>
-                                                    <option value="">Select Unit</option>
-                                                    <template x-for="uom in options.uoms" :key="uom.id">
-                                                        <option :value="String(uom.id)" x-text="uom.name + (uom.short_name ? ' (' + uom.short_name + ')' : '')"></option>
-                                                    </template>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Weight / Volume <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" x-model="form.weight" required placeholder="e.g. 1kg, 500ml">
-                                            </div>
-                                            <div class="col-md-12 mt-3">
-                                                <h6 class="fw-bold mb-3 border-bottom pb-2" style="font-size: 13px;">Physical Dimensions (For Shipping)</h6>
-                                                <div class="row g-3">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label fw-medium text-muted small">Weight (g)</label>
-                                                        <input type="number" step="0.01" class="form-control" x-model="form.weight_g" placeholder="e.g. 1000">
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label class="form-label fw-medium text-muted small">Length (cm)</label>
-                                                        <input type="number" step="0.01" class="form-control" x-model="form.length_cm" placeholder="e.g. 10">
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label class="form-label fw-medium text-muted small">Width (cm)</label>
-                                                        <input type="number" step="0.01" class="form-control" x-model="form.width_cm" placeholder="e.g. 10">
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label class="form-label fw-medium text-muted small">Height (cm)</label>
-                                                        <input type="number" step="0.01" class="form-control" x-model="form.height_cm" placeholder="e.g. 10">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    </button>
                                 </div>
                             </div>
 
-                            <!-- Right Column -->
-                            <div class="col-lg-4">
-                                <!-- Card 4: Status & Media -->
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-image"></i>
-                                            </div>
-                                            <h6 class="card-title mb-0 fw-bold">Status & Media</h6>
+                            <!-- Tab Content Area -->
+                            <div class="flex-grow-1 p-4 bg-body" style="max-height: 70vh; overflow-y: auto;">
+                                
+                                <!-- GENERAL TAB -->
+                                <div x-show="activeTab === 'general'" x-transition.opacity>
+                                    <h5 class="fw-bold mb-4 text-primary d-flex align-items-center">
+                                        <i class="bi bi-info-circle-fill me-2"></i> Basic Information
+                                    </h5>
+                                    
+                                    <div class="row g-4 mb-5">
+                                        <div class="col-12">
+                                            <label class="form-label fw-medium text-muted small">Product Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" x-model="form.name" required placeholder="e.g. Wireless Noise Cancelling Headphones">
                                         </div>
-                                        <div class="row g-3">
-                                            <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">Product Status <span class="text-danger">*</span></label>
-                                                <select x-select class="form-select" x-model="form.status" required>
-                                                    <option value="">Select Status</option>
-                                                    <template x-for="status in options.statusList" :key="status.value">
-                                                        <option :value="status.value" x-text="status.label"></option>
-                                                    </template>
-                                                </select>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">Product Image</label>
-                                                <div class="border border-dashed rounded p-3 text-center bg-body-secondary d-flex flex-column align-items-center justify-content-center" style="min-height: 150px; border-style: dashed !important;">
-                                                    <div class="mb-2">
-                                                        <template x-if="form.image">
-                                                            <img :src="form.image" alt="Preview" class="rounded border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Category <span class="text-danger">*</span></label>
+                                            <select x-select class="form-select" x-model="form.category_id" required>
+                                                <option value="">Select Category</option>
+                                                <template x-for="category in options.categories" :key="category.id">
+                                                    <optgroup :label="category.name">
+                                                        <option :value="String(category.id)" x-text="category.name + ' (Main)'"></option>
+                                                        <template x-for="child in category.children" :key="child.id">
+                                                            <option :value="String(child.id)" x-text="'↳ ' + child.name"></option>
                                                         </template>
-                                                        <template x-if="!form.image">
-                                                            <i class="bi bi-cloud-arrow-up fs-2 text-muted"></i>
-                                                        </template>
+                                                    </optgroup>
+                                                </template>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Brand</label>
+                                            <select x-select class="form-select" x-model="form.brand_id">
+                                                <option value="">No Brand</option>
+                                                <template x-for="brand in options.brands" :key="brand.id">
+                                                    <option :value="String(brand.id)" x-text="brand.name"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-medium text-muted small">Product Description</label>
+                                            <textarea class="form-control" x-model="form.description" rows="3" placeholder="Enter detailed product description..."></textarea>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-medium text-muted small">Application Instructions</label>
+                                            <textarea class="form-control" x-model="form.application_instructions" rows="2" placeholder="Enter instructions for use/application..."></textarea>
+                                        </div>
+                                    </div>
+                                    
+                                    <h5 class="fw-bold mb-4 pt-3 border-top text-info d-flex align-items-center">
+                                        <i class="bi bi-upc-scan me-2"></i> Identifiers
+                                    </h5>
+                                    
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">SKU <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" x-model="form.sku" :disabled="!form.is_sku_enabled" :required="form.is_sku_enabled" placeholder="SKU Code">
+                                                <div class="input-group-text bg-body-secondary border-start-0">
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input" type="checkbox" role="switch" x-model="form.is_sku_enabled" id="skuEnabledToggle">
+                                                        <label class="form-check-label small fw-medium ms-1" for="skuEnabledToggle" style="margin-top: 2px;">Auto</label>
                                                     </div>
-                                                    <input type="file" class="form-control form-control-sm" accept="image/*" @change="handleImageUpload($event)">
-                                                    <small class="text-muted mt-1" style="font-size: 0.7rem;">Click to upload image</small>
                                                 </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Barcode / UPC</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-body-secondary"><i class="bi bi-upc-scan"></i></span>
+                                                <input type="text" class="form-control" x-model="form.barcode" placeholder="Scan or enter barcode">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Card 5: Identifiers -->
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-upc-scan"></i>
+                                <!-- PRICING TAB -->
+                                <div x-show="activeTab === 'pricing'" x-transition.opacity x-cloak>
+                                    <h5 class="fw-bold mb-4 text-success d-flex align-items-center">
+                                        <i class="bi bi-currency-rupee me-2"></i> Pricing & Taxation
+                                    </h5>
+                                    
+                                    <div class="row g-4">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-medium text-muted small">Purchase Price <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-body-secondary">₹</span>
+                                                <input type="number" class="form-control" x-model="form.purchase_price" step="0.01" min="0" required placeholder="0.00">
                                             </div>
-                                            <h6 class="card-title mb-0 fw-bold">Identifiers</h6>
                                         </div>
-                                        <div class="row g-3">
-                                            <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">SKU <span class="text-danger">*</span></label>
-                                                <div class="input-group">
-                                                    <input type="text" class="form-control" x-model="form.sku" :disabled="!form.is_sku_enabled" :required="form.is_sku_enabled" placeholder="SKU Code">
-                                                    <div class="input-group-text bg-body-secondary border-start-0">
-                                                        <div class="form-check form-switch m-0">
-                                                            <input class="form-check-input" type="checkbox" role="switch" x-model="form.is_sku_enabled" id="skuEnabledToggle">
-                                                            <label class="form-check-label small fw-medium ms-1" for="skuEnabledToggle">Enabled</label>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-medium text-muted small">MRP</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-body-secondary">₹</span>
+                                                <input type="number" class="form-control" x-model="form.mrp" step="0.01" min="0" placeholder="0.00">
                                             </div>
-                                            <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">Barcode / UPC</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text bg-body-secondary"><i class="bi bi-upc-scan"></i></span>
-                                                    <input type="text" class="form-control" x-model="form.barcode" placeholder="Scan or enter barcode">
-                                                </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-medium text-muted small">Selling Price (Inc. GST) <span class="text-danger">*</span></label>
+                                            <div class="input-group mb-1">
+                                                <span class="input-group-text bg-body-secondary">₹</span>
+                                                <input type="number" class="form-control" x-model="form.selling_price_inc_gst" step="0.01" min="0" required placeholder="0.00">
                                             </div>
+                                            <small class="text-muted fw-medium" x-show="form.selling_price_inc_gst && form.tax_rate_id" x-cloak>
+                                                Base (Excl): ₹<span x-text="baseSellingPriceExcludingTax.toFixed(2)"></span>
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Tax Rate <span class="text-danger">*</span></label>
+                                            <select x-select class="form-select" x-model="form.tax_rate_id" required>
+                                                <option value="">No Tax</option>
+                                                <template x-for="rate in options.taxRates" :key="rate.id">
+                                                    <option :value="String(rate.id)" x-text="rate.name + ' (' + rate.rate + '%)'"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">HSN Code <span class="text-danger">*</span></label>
+                                            <select x-select class="form-select" x-model="form.hsn_code_id" required>
+                                                <option value="">No HSN</option>
+                                                <template x-for="hsn in options.hsnCodes" :key="hsn.id">
+                                                    <option :value="String(hsn.id)" x-text="hsn.code + (hsn.description ? ' - ' + hsn.description : '')"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-12 mt-4 pt-4 border-top">
+                                            <h6 class="fw-bold mb-3">Default Discounts</h6>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Default Discount Amount</label>
+                                            <input type="number" class="form-control" x-model="form.default_discount" step="0.01" min="0" placeholder="0.00">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Discount Type</label>
+                                            <select x-select class="form-select" x-model="form.default_discount_type">
+                                                <option value="percent">Percent (%)</option>
+                                                <option value="flat">Flat (₹)</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Card 6: Tracking Parameters -->
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-sliders"></i>
-                                            </div>
-                                            <h6 class="card-title mb-0 fw-bold">Tracking Settings</h6>
+                                
+                                <!-- INVENTORY TAB -->
+                                <div x-show="activeTab === 'inventory'" x-transition.opacity x-cloak>
+                                    <h5 class="fw-bold mb-4 text-danger d-flex align-items-center">
+                                        <i class="bi bi-box-seam me-2"></i> Inventory & Logistics
+                                    </h5>
+                                    
+                                    <div class="row g-4 mb-5">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Stock Quantity <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control form-control-lg" x-model="form.stock" min="0" required placeholder="0">
                                         </div>
-                                        <div class="d-flex flex-column gap-2 mb-3">
-                                            <div class="p-2 border rounded bg-body-secondary">
-                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
-                                                    <label class="form-check-label fw-medium small" for="manageStockToggle">Manage stock</label>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Min Stock Level</label>
+                                            <input type="number" class="form-control form-control-lg" x-model="form.min_stock_level" min="0" placeholder="0">
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Unit (UOM) <span class="text-danger">*</span></label>
+                                            <select x-select class="form-select" x-model="form.uom_id" required>
+                                                <option value="">Select Unit</option>
+                                                <template x-for="uom in options.uoms" :key="uom.id">
+                                                    <option :value="String(uom.id)" x-text="uom.name + (uom.short_name ? ' (' + uom.short_name + ')' : '')"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Weight / Volume <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" x-model="form.weight" required placeholder="e.g. 1kg, 500ml">
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Default Warehouse</label>
+                                            <select x-select class="form-select" x-model="form.default_warehouse_id">
+                                                <option value="">No Default</option>
+                                                <template x-for="warehouse in options.warehouses" :key="warehouse.id">
+                                                    <option :value="String(warehouse.id)" x-text="warehouse.name"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Supplier</label>
+                                            <select x-select class="form-select" x-model="form.supplier_id">
+                                                <option value="">Select Supplier</option>
+                                                <template x-for="supplier in options.suppliers" :key="supplier.id">
+                                                    <option :value="String(supplier.id)" x-text="supplier.company_name ? supplier.company_name : (supplier.firstname + ' ' + (supplier.lastname || ''))"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <h5 class="fw-bold mb-4 pt-3 border-top text-secondary d-flex align-items-center">
+                                        <i class="bi bi-sliders me-2"></i> Tracking & Overselling Settings
+                                    </h5>
+                                    
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="p-3 border rounded bg-body-secondary h-100">
+                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between mb-3">
+                                                    <label class="form-check-label fw-medium" for="manageStockToggle">Manage stock</label>
                                                     <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.manage_stock" id="manageStockToggle">
                                                 </div>
-                                            </div>
-                                            <div class="p-2 border rounded bg-body-secondary">
-                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
-                                                    <label class="form-check-label fw-medium small" for="batchTrackingToggle">Batch tracking</label>
+                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between mb-3">
+                                                    <label class="form-check-label fw-medium" for="batchTrackingToggle">Batch tracking</label>
                                                     <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.batch_tracking" id="batchTrackingToggle">
                                                 </div>
-                                            </div>
-                                            <div class="p-2 border rounded bg-body-secondary">
                                                 <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
-                                                    <label class="form-check-label fw-medium small" for="expiryTrackingToggle">Expiry tracking</label>
+                                                    <label class="form-check-label fw-medium" for="expiryTrackingToggle">Expiry tracking</label>
                                                     <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.expiry_tracking" id="expiryTrackingToggle">
                                                 </div>
                                             </div>
-                                            <div class="p-2 border rounded bg-body-secondary">
-                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
-                                                    <label class="form-check-label fw-medium small" for="allowOversellToggle">Allow overselling</label>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <div class="p-3 border rounded bg-body-secondary h-100">
+                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between mb-3">
+                                                    <label class="form-check-label fw-medium" for="allowOversellToggle">Allow global overselling</label>
                                                     <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.allow_overselling" id="allowOversellToggle">
+                                                </div>
+                                                
+                                                <div x-show="form.allow_overselling" x-transition>
+                                                    <label class="form-label fw-medium text-muted small">Global Overselling Limit</label>
+                                                    <input type="number" class="form-control" x-model="form.overselling_qty" min="0" placeholder="0">
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-12" x-show="form.allow_overselling" x-transition>
-                                            <label class="form-label fw-medium text-muted small">Overselling Limit Quantity</label>
-                                            <input type="number" class="form-control" x-model="form.overselling_qty" min="0" placeholder="0">
+                                        
+                                        <div class="col-12 mt-3" x-show="form.default_warehouse_id" x-transition>
+                                            <div class="p-3 border rounded bg-warning bg-opacity-10 border-warning border-opacity-25">
+                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between mb-2">
+                                                    <div>
+                                                        <label class="form-check-label fw-bold text-warning-emphasis" for="warehouseOversellToggle">
+                                                            Override Warehouse Rule
+                                                        </label>
+                                                        <div class="fw-normal text-muted mt-1" style="font-size: 0.8rem;">Set specific rules for the selected warehouse.</div>
+                                                    </div>
+                                                    <input class="form-check-input m-0" type="checkbox" role="switch" id="warehouseOversellToggle"
+                                                           :checked="form.warehouse_allow_overselling !== null"
+                                                           @change="form.warehouse_allow_overselling = $event.target.checked ? false : null; form.warehouse_overselling_qty = $event.target.checked ? 0 : null">
+                                                </div>
+                                                <div x-show="form.warehouse_allow_overselling !== null" x-transition class="pt-3 border-top border-warning border-opacity-25 mt-3 row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between h-100">
+                                                            <label class="form-check-label fw-medium" for="whAllowOversellToggle">Allow Overselling Here</label>
+                                                            <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.warehouse_allow_overselling" id="whAllowOversellToggle">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6" x-show="form.warehouse_allow_overselling" x-transition>
+                                                        <label class="form-label fw-medium text-muted small">Warehouse Limit Qty</label>
+                                                        <input type="number" class="form-control" x-model="form.warehouse_overselling_qty" min="0" placeholder="0">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- MEDIA & STATUS TAB -->
+                                <div x-show="activeTab === 'media'" x-transition.opacity x-cloak>
+                                    <h5 class="fw-bold mb-4 text-warning d-flex align-items-center">
+                                        <i class="bi bi-image me-2"></i> Media & Status
+                                    </h5>
+                                    
+                                    <div class="row g-4 mb-5">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Product Status <span class="text-danger">*</span></label>
+                                            <select x-select class="form-select form-select-lg" x-model="form.status" required>
+                                                <option value="">Select Status</option>
+                                                <template x-for="status in options.statusList" :key="status.value">
+                                                    <option :value="status.value" x-text="status.label"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-medium text-muted small">Grade</label>
+                                            <select x-select class="form-select form-select-lg" x-model="form.grade">
+                                                <option value="">No Grade</option>
+                                                <option value="A">A</option>
+                                                <option value="B">B</option>
+                                                <option value="C">C</option>
+                                                <option value="D">D</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <label class="form-label fw-medium text-muted small">Product Image</label>
+                                            <div class="border border-dashed rounded-3 p-4 text-center bg-body-secondary d-flex flex-column align-items-center justify-content-center" style="min-height: 200px; border-style: dashed !important; border-width: 2px !important; transition: all 0.2s;">
+                                                <div class="mb-3 position-relative">
+                                                    <template x-if="form.image">
+                                                        <img :src="form.image" alt="Preview" class="rounded border shadow" style="width: 120px; height: 120px; object-fit: cover;">
+                                                    </template>
+                                                    <template x-if="!form.image">
+                                                        <div class="bg-body d-flex align-items-center justify-content-center rounded-circle shadow-sm" style="width: 80px; height: 80px;">
+                                                            <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                                <input type="file" class="form-control" style="max-width: 300px;" accept="image/*" @change="handleImageUpload($event)">
+                                                <small class="text-muted mt-2 d-block">Recommended size: 800x800px (Max 5MB)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <h5 class="fw-bold mb-4 pt-3 border-top text-body-secondary d-flex align-items-center">
+                                        <i class="bi bi-arrows-fullscreen me-2"></i> Physical Dimensions (For Shipping)
+                                    </h5>
+                                    
+                                    <div class="row g-4">
+                                        <div class="col-md-3 col-sm-6">
+                                            <label class="form-label fw-medium text-muted small">Weight (g)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.01" class="form-control" x-model="form.weight_g" placeholder="0">
+                                                <span class="input-group-text bg-body-secondary">g</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 col-sm-6">
+                                            <label class="form-label fw-medium text-muted small">Length (cm)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.01" class="form-control" x-model="form.length_cm" placeholder="0">
+                                                <span class="input-group-text bg-body-secondary">cm</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 col-sm-6">
+                                            <label class="form-label fw-medium text-muted small">Width (cm)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.01" class="form-control" x-model="form.width_cm" placeholder="0">
+                                                <span class="input-group-text bg-body-secondary">cm</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 col-sm-6">
+                                            <label class="form-label fw-medium text-muted small">Height (cm)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.01" class="form-control" x-model="form.height_cm" placeholder="0">
+                                                <span class="input-group-text bg-body-secondary">cm</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- ATTRIBUTES TAB -->
+                                <div x-show="activeTab === 'attributes'" x-transition.opacity x-cloak>
+                                    <h5 class="fw-bold mb-4 text-info d-flex align-items-center">
+                                        <i class="bi bi-tags me-2"></i> Product Attributes
+                                    </h5>
+                                    
+                                    <div class="border rounded-3 p-4 bg-body-secondary">
+                                        <template x-for="attribute in options.attributes" :key="attribute.id">
+                                            <div class="mb-4 last-mb-0">
+                                                <div class="fw-bold mb-3 text-dark text-uppercase d-flex align-items-center" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                                                    <i class="bi bi-tag-fill me-2 text-primary opacity-50"></i>
+                                                    <span x-text="attribute.name"></span>
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-2 ps-4">
+                                                    <template x-for="value in attribute.values" :key="value.id">
+                                                        <label class="btn btn-sm py-2 px-3 border rounded-pill text-nowrap d-flex align-items-center gap-2 fw-medium transition-all"
+                                                               :class="form.attributes.includes(String(value.id)) ? 'btn-primary border-primary shadow-sm' : 'btn-outline-secondary bg-body text-body'"
+                                                               style="cursor: pointer;">
+                                                            <input type="checkbox" class="d-none" :value="String(value.id)" x-model="form.attributes">
+                                                            <i class="bi" :class="form.attributes.includes(String(value.id)) ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                                                            <span x-text="value.value"></span>
+                                                        </label>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <div x-show="!options.attributes || options.attributes.length === 0" class="text-center py-5 text-muted">
+                                            <i class="bi bi-tags fs-1 d-block mb-2 opacity-50"></i>
+                                            <p class="mb-0">No attributes available to configure.</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Card 7: Attributes -->
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-tags"></i>
-                                            </div>
-                                            <h6 class="card-title mb-0 fw-bold">Product Attributes</h6>
-                                        </div>
-                                        <div class="border rounded p-3 bg-body-secondary">
-                                            <template x-for="attribute in options.attributes" :key="attribute.id">
-                                                <div class="mb-3">
-                                                    <div class="fw-bold small mb-2 text-primary text-uppercase" x-text="attribute.name" style="font-size: 0.75rem; letter-spacing: 0.5px;"></div>
-                                                    <div class="d-flex flex-wrap gap-1">
-                                                        <template x-for="value in attribute.values" :key="value.id">
-                                                            <label class="btn btn-xs py-1 px-2 border rounded-pill text-nowrap d-flex align-items-center gap-1"
-                                                                   :class="form.attributes.includes(String(value.id)) ? 'btn-primary border-primary' : 'btn-outline-secondary bg-body'"
-                                                                   style="font-size: 0.75rem; cursor: pointer;">
-                                                                <input type="checkbox" class="d-none" :value="String(value.id)" x-model="form.attributes">
-                                                                <span x-text="value.value"></span>
-                                                            </label>
-                                                        </template>
-                                                    </div>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
-                        </div>
-                        <div class="modal-footer border-top-0 pt-0">
+                        </div><div class="modal-footer border-top-0 pt-0">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                             <button type="submit" class="btn btn-primary px-4">Save Product</button>
                         </div>
@@ -1024,15 +1106,33 @@
                                             <div class="col-md-6 border-end border-secondary border-opacity-25">
                                                 <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary border-opacity-25">
                                                     <div>
-                                                        <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="product ? (parseFloat(product.available_stock !== undefined ? product.available_stock : product.stock) + ' ' + (product.uom || 'Units')) : ''"></div>
+                                                        <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="product ? (parseFloat(Alpine.store('productTable').getEffectiveStock(product)) + ' ' + (product.uom || 'Units')) : ''"></div>
                                                         <div class="text-muted" style="font-size:10px;">Available to Order</div>
                                                     </div>
-                                                    <span class="badge" style="font-size:10px;" :class="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > (product.min_stock_level || 10) ? 'bg-success' : (product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'bg-warning-subtle text-warning-emphasis' : 'bg-danger')" x-text="product && (product.available_stock !== undefined ? product.available_stock : product.stock) > 0 ? 'In Stock' : 'Out of Stock'"></span>
+                                                    <span class="badge" style="font-size:10px;" 
+                                                          :class="product && Alpine.store('productTable').getEffectiveStock(product) > (product.min_stock_level || 10) ? 'bg-success' : (product && Alpine.store('productTable').getEffectiveStock(product) > 0 ? 'bg-warning-subtle text-warning-emphasis' : 'bg-danger')" 
+                                                          x-text="product && Alpine.store('productTable').getEffectiveStock(product) > 0 ? 'In Stock' : 'Out of Stock'"></span>
                                                 </div>
                                                 <div class="row text-center g-1 mb-2">
-                                                    <div class="col-4"><div class="fw-semibold" style="font-size:13px;" x-text="product ? parseFloat(product.physical_available !== undefined ? product.physical_available : product.stock) : 0"></div><div class="text-muted" style="font-size:9px;">Physical</div></div>
-                                                    <div class="col-4 border-start border-end border-secondary border-opacity-25"><div class="fw-semibold text-warning" style="font-size:13px;" x-text="product ? ((product.reserved_qty || 0) + (product.pending_qty || 0)) : 0"></div><div class="text-muted" style="font-size:9px;">Reserved</div></div>
+                                                    <div class="col-4"><div class="fw-semibold" style="font-size:13px;" x-text="product ? parseFloat(Alpine.store('productTable').getPhysicalStock(product)) : 0"></div><div class="text-muted" style="font-size:9px;">Physical</div></div>
+                                                    <div class="col-4 border-start border-end border-secondary border-opacity-25"><div class="fw-semibold text-warning" style="font-size:13px;" x-text="product ? (Alpine.store('productTable').warehouseFilter ? (product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(Alpine.store('productTable').warehouseFilter))?.reserved_qty || 0) : ((product.reserved_qty || 0) + (product.pending_qty || 0))) : 0"></div><div class="text-muted" style="font-size:9px;">Reserved</div></div>
                                                     <div class="col-4"><div class="fw-semibold text-danger" style="font-size:13px;" x-text="product ? (product.min_stock_level || 0) : 0"></div><div class="text-muted" style="font-size:9px;">Min Level</div></div>
+                                                </div>
+                                                
+                                                <!-- Warehouse Wise Breakdown -->
+                                                <div class="mt-3 border-top border-secondary border-opacity-25 pt-2" x-show="product && product.warehouse_stocks && product.warehouse_stocks.length > 0">
+                                                    <label class="form-label mb-2 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Warehouse Breakdown</label>
+                                                    <div class="d-flex flex-column gap-1" style="max-height: 120px; overflow-y: auto;">
+                                                        <template x-for="ws in product.warehouse_stocks" :key="'ws-'+ws.warehouse_id">
+                                                            <div class="d-flex justify-content-between align-items-center bg-body-secondary p-1 px-2 rounded" style="font-size: 10px;">
+                                                                <span class="text-truncate me-2 fw-medium" x-text="ws.warehouse_name" style="max-width: 100px;"></span>
+                                                                <div class="d-flex align-items-center gap-2">
+                                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" x-text="'Qty: ' + ws.quantity"></span>
+                                                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" x-show="ws.reserved_qty > 0" x-text="'Res: ' + ws.reserved_qty"></span>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">

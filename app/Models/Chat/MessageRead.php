@@ -2,17 +2,16 @@
 
 namespace App\Models\Chat;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
 use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class MessageRead extends Model implements Auditable
 {
     use AuditableTrait;
+
     protected $table = 'chat_message_reads';
 
     protected $fillable = ['message_id', 'user_id', 'read_at'];

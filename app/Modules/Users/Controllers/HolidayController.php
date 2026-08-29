@@ -4,8 +4,8 @@ namespace App\Modules\Users\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\Holiday;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -24,6 +24,7 @@ class HolidayController extends Controller implements HasMiddleware
     public function index(Request $request): JsonResponse
     {
         $holidays = Holiday::orderBy('date', 'asc')->paginate((int) $request->input('per_page', 15));
+
         return response()->json($holidays);
     }
 
@@ -39,7 +40,7 @@ class HolidayController extends Controller implements HasMiddleware
 
         return response()->json(['data' => $holiday, 'message' => 'Holiday created successfully.']);
     }
-    
+
     public function update(Request $request, Holiday $holiday): JsonResponse
     {
         $validated = $request->validate([
@@ -56,6 +57,7 @@ class HolidayController extends Controller implements HasMiddleware
     public function destroy(Holiday $holiday): JsonResponse
     {
         $holiday->delete();
+
         return response()->json(['message' => 'Holiday deleted successfully.']);
     }
 
@@ -69,9 +71,10 @@ class HolidayController extends Controller implements HasMiddleware
 
         if ($validated['action'] === 'delete') {
             Holiday::whereIn('id', $validated['ids'])->delete();
+
             return response()->json(['message' => 'Selected holidays deleted successfully.']);
         }
-        
+
         return response()->json(['message' => 'Invalid action.'], 400);
     }
 }

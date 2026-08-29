@@ -182,6 +182,7 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     categoryFilter: '',
     stockFilter: '',
+    warehouseFilter: '',
     sortField: 'name',
     sortDirection: 'asc',
     isLoading: false,
@@ -313,22 +314,111 @@ document.addEventListener('alpine:init', () => {
       this.products = [];
     },
 
+    getRemainingOversell(product) {
+      if (!product) return 0;
+      
+      if (this.warehouseFilter) {
+          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
+          if (ws) {
+              let allow = ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
+              let limit = ws.overselling_qty !== null ? (parseInt(ws.overselling_qty) || 999) : (parseInt(product.overselling_qty) || 999);
+              if (!allow) return 0;
+              const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
+              return rawStock < 0 ? Math.max(0, limit + rawStock) : limit;
+          }
+          return 0;
+      }
+      
+      if (product.warehouse_stocks && product.warehouse_stocks.length > 0) {
+          let totalRemaining = 0;
+          for (const ws of product.warehouse_stocks) {
+              let allow = ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
+              let limit = ws.overselling_qty !== null ? (parseInt(ws.overselling_qty) || 999) : (parseInt(product.overselling_qty) || 999);
+              if (allow) {
+                  const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
+                  totalRemaining += rawStock < 0 ? Math.max(0, limit + rawStock) : limit;
+              }
+          }
+          return totalRemaining;
+      }
+      
+      let allow = product.allow_overselling;
+      if (!allow) return 0;
+      let limit = parseInt(product.overselling_qty) || 999;
+      let rawStock = (product.stock_qty || 0) - (product.reserved_qty || 0) - (product.pending_qty || 0);
+      return rawStock < 0 ? Math.max(0, limit + rawStock) : limit;
+    },
+
+    getEffectiveStock(product) {
+      if (!product) return 0;
+      
+      if (this.warehouseFilter) {
+          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
+          if (ws) {
+              let allow = ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
+              let limit = ws.overselling_qty !== null ? (parseInt(ws.overselling_qty) || 999) : (parseInt(product.overselling_qty) || 999);
+              const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
+              return allow ? Math.max(0, rawStock + limit) : Math.max(0, rawStock);
+          }
+          return 0;
+      }
+      
+      if (product.warehouse_stocks && product.warehouse_stocks.length > 0) {
+          let total = 0;
+          for (const ws of product.warehouse_stocks) {
+              let allow = ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
+              let limit = ws.overselling_qty !== null ? (parseInt(ws.overselling_qty) || 999) : (parseInt(product.overselling_qty) || 999);
+              const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
+              total += allow ? Math.max(0, rawStock + limit) : Math.max(0, rawStock);
+          }
+          return total;
+      }
+      
+      let allow = product.allow_overselling;
+      let limit = parseInt(product.overselling_qty) || 999;
+      const globalRawStock = (product.stock_qty || 0) - (product.reserved_qty || 0) - (product.pending_qty || 0);
+      return allow ? Math.max(0, globalRawStock + limit) : Math.max(0, globalRawStock);
+    },
+    
+    getPhysicalStock(product) {
+      if (!product) return 0;
+      
+      if (this.warehouseFilter) {
+          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
+          return ws ? (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0) : 0;
+      }
+      return (product.stock_qty || 0) - (product.reserved_qty || 0) - (product.pending_qty || 0);
+    },
+
     calculateStats() {
-      this.stats.total = this.products.length;
-      this.stats.active = this.products.filter(p => ['published', 'active'].includes(String(p.status || '').toLowerCase())).length;
-      this.stats.inStock = this.products.filter(p => p.stock > (p.min_stock_level || 10)).length;
-      this.stats.lowStock = this.products.filter(p => p.stock > 0 && p.stock <= (p.min_stock_level || 10)).length;
-      this.stats.outOfStock = this.products.filter(p => p.stock <= 0).length;
-      this.stats.totalValue = this.products.reduce((sum, p) => sum + (p.price * p.stock), 0);
+      // Calculate stats based on base filters (search, category, warehouse) but ignoring stock filter
+      const baseProducts = this.products.filter(product => {
+        const matchesSearch = !this.searchQuery || 
+          product.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+          product.sku.toLowerCase().includes(this.searchQuery.toLowerCase());
+        
+        const matchesCategory = !this.categoryFilter || product.category === this.categoryFilter;
+        
+        const matchesWarehouse = !this.warehouseFilter || (product.warehouse_stocks && product.warehouse_stocks.some(s => String(s.warehouse_id) === String(this.warehouseFilter)));
+        
+        return matchesSearch && matchesCategory && matchesWarehouse;
+      });
+
+      this.stats.total = baseProducts.length;
+      this.stats.active = baseProducts.filter(p => ['published', 'active'].includes(String(p.status || '').toLowerCase())).length;
+      this.stats.inStock = baseProducts.filter(p => this.getEffectiveStock(p) > (p.min_stock_level || 10)).length;
+      this.stats.lowStock = baseProducts.filter(p => this.getEffectiveStock(p) > 0 && this.getEffectiveStock(p) <= (p.min_stock_level || 10)).length;
+      this.stats.outOfStock = baseProducts.filter(p => this.getEffectiveStock(p) <= 0).length;
+      this.stats.totalValue = baseProducts.reduce((sum, p) => sum + ((p.price || 0) * Math.max(0, this.getPhysicalStock(p))), 0);
 
       // Calculate category distribution
       const categories = {};
-      this.products.forEach(product => {
+      baseProducts.forEach(product => {
         const key = product.category || product.category_label || 'uncategorized';
         categories[key] = (categories[key] || 0) + 1;
       });
 
-      const total = this.products.length || 1;
+      const total = baseProducts.length || 1;
       this.categoryStats = Object.entries(categories).map(([name, count]) => ({
         name: name.charAt(0).toUpperCase() + name.slice(1),
         count,
@@ -368,22 +458,28 @@ document.addEventListener('alpine:init', () => {
         
         const matchesCategory = !this.categoryFilter || product.category === this.categoryFilter;
         
-        const matchesStock = !this.stockFilter || 
-          (this.stockFilter === 'in-stock' && product.stock > (product.min_stock_level || 10)) ||
-          (this.stockFilter === 'low-stock' && product.stock > 0 && product.stock <= (product.min_stock_level || 10)) ||
-          (this.stockFilter === 'out-of-stock' && product.stock === 0);
+        const matchesWarehouse = !this.warehouseFilter || (product.warehouse_stocks && product.warehouse_stocks.some(s => String(s.warehouse_id) === String(this.warehouseFilter)));
+        
+        const effStock = this.getEffectiveStock(product);
 
-        return matchesSearch && matchesCategory && matchesStock;
+        const matchesStock = !this.stockFilter || 
+          (this.stockFilter === 'in-stock' && effStock > (product.min_stock_level || 10)) ||
+          (this.stockFilter === 'low-stock' && effStock > 0 && effStock <= (product.min_stock_level || 10)) ||
+          (this.stockFilter === 'out-of-stock' && effStock <= 0);
+
+        return matchesSearch && matchesCategory && matchesWarehouse && matchesStock;
       });
 
       this.sortProducts();
       this.currentPage = 1;
+      this.calculateStats();
     },
 
     resetFilters() {
       this.searchQuery = '';
       this.categoryFilter = '';
       this.stockFilter = '';
+      this.warehouseFilter = '';
       this.filterProducts();
     },
 
@@ -449,6 +545,10 @@ document.addEventListener('alpine:init', () => {
 
     openCreateProduct() {
       this.resetProductForm();
+      const form = this._getProductForm();
+      if (form && this.warehouseFilter) {
+          form.form.default_warehouse_id = String(this.warehouseFilter);
+      }
       getModal('#productModal')?.show();
     },
 
@@ -499,6 +599,23 @@ document.addEventListener('alpine:init', () => {
         grade: product.grade ?? '',
         attributes: Array.isArray(product.attributes) ? product.attributes.map(attribute => String(attribute.id)) : [],
       };
+      
+      const whId = mapped.default_warehouse_id;
+      if (whId && product.warehouse_stocks) {
+          const ws = product.warehouse_stocks.find(s => String(s.warehouse_id) === whId);
+          if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
+              mapped.warehouse_allow_overselling = ws.allow_overselling;
+              mapped.warehouse_overselling_qty = ws.overselling_qty;
+          } else {
+              mapped.warehouse_allow_overselling = null;
+              mapped.warehouse_overselling_qty = null;
+          }
+      } else {
+          mapped.warehouse_allow_overselling = null;
+          mapped.warehouse_overselling_qty = null;
+      }
+      
+      return mapped;
     },
 
     _findProductIndex(productId) {
@@ -525,7 +642,24 @@ document.addEventListener('alpine:init', () => {
       if (!form) return;
 
       form.editingProductId = product.id;
-      form.form = this._mapProductForForm(product);
+      
+      const mapped = this._mapProductForForm(product);
+      
+      if (this.warehouseFilter) {
+          mapped.default_warehouse_id = String(this.warehouseFilter);
+          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
+          mapped.stock = String(ws ? (ws.quantity || 0) : 0);
+          if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
+              mapped.warehouse_allow_overselling = ws.allow_overselling;
+              mapped.warehouse_overselling_qty = ws.overselling_qty;
+          } else {
+              mapped.warehouse_allow_overselling = null;
+              mapped.warehouse_overselling_qty = null;
+          }
+      }
+      
+      form.form = mapped;
+      form.originalProduct = product;
       form.form.imageFile = null;
 
       const title = document.querySelector('#productModal .modal-title');
@@ -883,6 +1017,7 @@ document.addEventListener('alpine:init', () => {
   // Product form component for modals
   Alpine.data('productForm', () => ({
     editingProductId: null,
+    originalProduct: null,
     get options() {
       return Alpine.store('productTable')?.options || {
         categories: [],
@@ -940,10 +1075,13 @@ document.addEventListener('alpine:init', () => {
       image: '/assets/images/product-placeholder.svg',
       imageFile: null,
       attributes: [],
+      warehouse_allow_overselling: null,
+      warehouse_overselling_qty: null,
     },
 
     resetForm() {
       this.editingProductId = null;
+      this.originalProduct = null;
       this.form = {
         name: '',
         sku: '',
@@ -981,12 +1119,29 @@ document.addEventListener('alpine:init', () => {
         image: '/assets/images/product-placeholder.svg',
         imageFile: null,
         attributes: [],
+        warehouse_allow_overselling: null,
+        warehouse_overselling_qty: null,
       };
 
       const table = Alpine.store('productTable');
       if (table && table.options.warehouses && table.options.warehouses.length > 0) {
         this.form.default_warehouse_id = String(table.options.warehouses[0].id);
       }
+    },
+
+    init() {
+      this.$watch('form.default_warehouse_id', (newVal) => {
+         this.form.warehouse_allow_overselling = null;
+         this.form.warehouse_overselling_qty = null;
+         if (this.editingProductId && this.originalProduct) {
+             const ws = this.originalProduct.warehouse_stocks?.find(s => String(s.warehouse_id) === String(newVal));
+             this.form.stock = String(ws ? (ws.quantity || 0) : 0);
+             if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
+                 this.form.warehouse_allow_overselling = ws.allow_overselling;
+                 this.form.warehouse_overselling_qty = ws.overselling_qty;
+             }
+         }
+      });
     },
 
     handleImageUpload(event) {
@@ -1052,9 +1207,7 @@ document.addEventListener('alpine:init', () => {
         formData.append('mrp', String(Number(this.form.mrp)));
       }
       formData.append('selling_price', String(Number(this.baseSellingPriceExcludingTax.toFixed(2))));
-      if (!this.editingProductId) {
-        formData.append('stock', String(Number(this.form.stock || 0)));
-      }
+      formData.append('stock', String(Number(this.form.stock || 0)));
       formData.append('min_stock_level', String(Number(this.form.min_stock_level || 0)));
       formData.append('overselling_qty', String(Number(this.form.overselling_qty || 0)));
       formData.append('default_discount', String(Number(this.form.default_discount || 0)));
@@ -1066,6 +1219,10 @@ document.addEventListener('alpine:init', () => {
       formData.append('batch_tracking', this.form.batch_tracking ? '1' : '0');
       formData.append('expiry_tracking', this.form.expiry_tracking ? '1' : '0');
       formData.append('is_sku_enabled', this.form.is_sku_enabled ? '1' : '0');
+      if (this.form.warehouse_allow_overselling !== null && this.form.warehouse_allow_overselling !== undefined) {
+          formData.append('warehouse_allow_overselling', this.form.warehouse_allow_overselling ? '1' : '0');
+          formData.append('warehouse_overselling_qty', String(Number(this.form.warehouse_overselling_qty || 0)));
+      }
       if (this.form.application_instructions) {
         formData.append('application_instructions', String(this.form.application_instructions).trim());
       }

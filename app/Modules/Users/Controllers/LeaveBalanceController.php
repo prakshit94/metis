@@ -4,8 +4,8 @@ namespace App\Modules\Users\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\LeaveBalance;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -24,20 +24,20 @@ class LeaveBalanceController extends Controller implements HasMiddleware
     public function index(Request $request): JsonResponse
     {
         $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
-        
+
         $query = LeaveBalance::with('user:id,name,employee_id');
-        
-        if (!$isGlobalView) {
+
+        if (! $isGlobalView) {
             $query->where('user_id', $request->user()->id);
-        } else if ($request->filled('user_id')) {
+        } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->input('user_id'));
         }
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
         }
-        
+
         $balances = $query->paginate((int) $request->input('per_page', 15));
-        
+
         return response()->json($balances);
     }
 
@@ -58,7 +58,7 @@ class LeaveBalanceController extends Controller implements HasMiddleware
 
         return response()->json(['data' => $balance, 'message' => 'Leave balance updated successfully.']);
     }
-    
+
     public function update(Request $request, LeaveBalance $leaveBalance): JsonResponse
     {
         $validated = $request->validate([
@@ -75,9 +75,10 @@ class LeaveBalanceController extends Controller implements HasMiddleware
     public function destroy(LeaveBalance $leaveBalance): JsonResponse
     {
         $leaveBalance->delete();
+
         return response()->json(['message' => 'Leave balance deleted successfully.']);
     }
-    
+
     public function bulkAction(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -88,9 +89,10 @@ class LeaveBalanceController extends Controller implements HasMiddleware
 
         if ($validated['action'] === 'delete') {
             LeaveBalance::whereIn('id', $validated['ids'])->delete();
+
             return response()->json(['message' => 'Selected leave balances deleted successfully.']);
         }
-        
+
         return response()->json(['message' => 'Invalid action.'], 400);
     }
 }

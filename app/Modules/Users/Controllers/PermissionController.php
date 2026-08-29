@@ -196,6 +196,6 @@ class PermissionController extends Controller implements HasMiddleware
             403,
         );
 
-        return response()->json(\App\Modules\Users\Models\Permission::orderBy('name')->get(['id', 'name']));
+        return response()->json(Permission::orderBy('name')->get(['id', 'name']));
     }
 }

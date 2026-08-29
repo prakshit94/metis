@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
-use Carbon\Carbon;
 
 class StockTransferSeeder extends Seeder
 {
@@ -17,17 +17,17 @@ class StockTransferSeeder extends Seeder
         $faker = Faker::create();
         $warehouses = DB::table('warehouses')->pluck('id')->toArray();
         $products = DB::table('products')->pluck('id')->toArray();
-        
+
         if (count($warehouses) < 2 || empty($products)) {
             return;
         }
 
         for ($i = 1; $i <= 5; $i++) {
             $from = $faker->randomElement($warehouses);
-            $to = $faker->randomElement(array_filter($warehouses, fn($w) => $w !== $from));
+            $to = $faker->randomElement(array_filter($warehouses, fn ($w) => $w !== $from));
 
             $transferId = DB::table('stock_transfers')->insertGetId([
-                'transfer_no' => 'TRN-' . date('Ym') . '-' . str_pad((string)$i, 4, '0', STR_PAD_LEFT),
+                'transfer_no' => 'TRN-'.date('Ym').'-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
                 'from_warehouse_id' => $from,
                 'to_warehouse_id' => $to,
                 'status' => 'received',

@@ -11,5 +11,5 @@ return [
         'ch' => ['name' => '中国人',    'flag' => 'china.svg',   'title' => 'Chinese'],
         'fr' => ['name' => 'français', 'flag' => 'french.svg',  'title' => 'French'],
         'ar' => ['name' => 'Arabic',   'flag' => 'ae.svg',      'title' => 'Arabic'],
-    ]
+    ],
 ];

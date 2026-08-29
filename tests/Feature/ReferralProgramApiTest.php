@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\ReferralProgram;
-use App\Modules\Users\Models\Permission;
 use App\Modules\Users\Models\Role;
 use App\Modules\Users\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -20,18 +19,18 @@ class ReferralProgramApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $admin = User::create([
             'name' => 'Admin User',
             'email' => 'admin_referral@example.com',
             'password' => Hash::make('Password123'),
             'is_active' => true,
         ]);
-        
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         $superAdminRole = Role::findOrCreate('Super Admin', 'web');
         $admin->assignRole('Super Admin');
-        
+
         $this->actingAs($admin);
         $this->withoutVite();
     }
@@ -48,7 +47,7 @@ class ReferralProgramApiTest extends TestCase
                     'required_referrals' => 5,
                     'reward_type' => 'wallet',
                     'reward_value' => '100',
-                ]
+                ],
             ],
         ]);
 
@@ -72,7 +71,7 @@ class ReferralProgramApiTest extends TestCase
                     'required_referrals' => 10,
                     'reward_type' => 'coupon',
                     'reward_value' => 'ABC10',
-                ]
+                ],
             ],
         ]);
 
@@ -90,7 +89,7 @@ class ReferralProgramApiTest extends TestCase
 
         $response = $this->patch("/promotions/referral-programs/{$program->id}/toggle");
         $response->assertStatus(302);
-        
+
         $this->assertDatabaseHas('referral_programs', ['id' => $program->id, 'is_active' => true]);
     }
 
@@ -115,7 +114,7 @@ class ReferralProgramApiTest extends TestCase
 
         $response = $this->delete("/promotions/referral-programs/{$program->id}");
         $response->assertStatus(302);
-        
+
         $this->assertDatabaseMissing('referral_programs', ['id' => $program->id]);
     }
 }

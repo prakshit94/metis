@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Controllers;
 
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\TaxRate;
+use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Inventory\Models\PurchaseOrder;
-use Illuminate\Http\Request;
+use App\Modules\Inventory\Models\Supplier;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
-use Illuminate\View\View;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Storage;
 
 class PurchaseOrderController extends Controller implements HasMiddleware
 {
@@ -26,7 +31,7 @@ class PurchaseOrderController extends Controller implements HasMiddleware
     {
         if ($request->wantsJson()) {
             $query = PurchaseOrder::with(['supplier', 'warehouse', 'items', 'items.product', 'approver'])->latest();
-            
+
             if ($request->has('trashed')) {
                 if ($request->query('trashed') === 'only') {
                     $query->onlyTrashed();
@@ -35,18 +40,18 @@ class PurchaseOrderController extends Controller implements HasMiddleware
                 }
             }
 
-            if ($request->has('search') && !empty($request->query('search'))) {
+            if ($request->has('search') && ! empty($request->query('search'))) {
                 $search = $request->query('search');
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('po_number', 'like', "%{$search}%")
-                      ->orWhereHas('supplier', function($sq) use ($search) {
-                          $sq->where('firstname', 'like', "%{$search}%")
-                            ->orWhere('company_name', 'like', "%{$search}%");
-                      });
+                        ->orWhereHas('supplier', function ($sq) use ($search) {
+                            $sq->where('firstname', 'like', "%{$search}%")
+                                ->orWhere('company_name', 'like', "%{$search}%");
+                        });
                 });
             }
-            
-            if ($request->has('status') && !empty($request->query('status'))) {
+
+            if ($request->has('status') && ! empty($request->query('status'))) {
                 $query->where('status', $request->query('status'));
             }
 
@@ -59,13 +64,13 @@ class PurchaseOrderController extends Controller implements HasMiddleware
             'pending' => PurchaseOrder::where('status', 'pending')->count(),
             'completed' => PurchaseOrder::where('status', 'received')->count(),
         ];
-        
-        $suppliers = \App\Modules\Inventory\Models\Supplier::select('id', 'company_name', 'firstname', 'lastname')->get();
-        $warehouses = \App\Modules\Catalog\Models\Warehouse::select('id', 'name')->where('is_active', true)->get();
-        $products = \App\Modules\Catalog\Models\Product::with('taxRate:id,rate')
+
+        $suppliers = Supplier::select('id', 'company_name', 'firstname', 'lastname')->get();
+        $warehouses = Warehouse::select('id', 'name')->where('is_active', true)->get();
+        $products = Product::with('taxRate:id,rate')
             ->select('id', 'name', 'sku', 'image_path', 'supplier_id', 'purchase_price', 'tax_rate_id', 'default_discount')
             ->where('is_active', true)->get();
-        $taxRates = \App\Modules\Catalog\Models\TaxRate::select('id', 'name', 'rate')->where('is_active', true)->get();
+        $taxRates = TaxRate::select('id', 'name', 'rate')->where('is_active', true)->get();
 
         return view('procurement.purchase-orders.index', compact('stats', 'suppliers', 'warehouses', 'products', 'taxRates'));
     }
@@ -87,8 +92,8 @@ class PurchaseOrderController extends Controller implements HasMiddleware
 
         \DB::beginTransaction();
         try {
-            $poNumber = 'PO-' . date('Ymd') . '-' . strtoupper(\Str::random(4));
-            
+            $poNumber = 'PO-'.date('Ymd').'-'.strtoupper(\Str::random(4));
+
             $po = PurchaseOrder::create([
                 'po_number' => $poNumber,
                 'supplier_id' => $validated['supplier_id'],
@@ -137,19 +142,22 @@ class PurchaseOrderController extends Controller implements HasMiddleware
             ]);
 
             \DB::commit();
+
             return response()->json(['message' => 'Purchase Order created successfully', 'data' => $po], 201);
         } catch (\Exception $e) {
             \DB::rollBack();
-            return response()->json(['message' => 'Failed to create PO: ' . $e->getMessage()], 500);
+
+            return response()->json(['message' => 'Failed to create PO: '.$e->getMessage()], 500);
         }
     }
 
     public function downloadPdf(PurchaseOrder $order)
     {
         $order->load(['supplier', 'warehouse', 'items.product.taxRate']);
-        
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('procurement.purchase-orders.pdf', compact('order'));
-        return $pdf->download($order->po_number . '.pdf');
+
+        $pdf = Pdf::loadView('procurement.purchase-orders.pdf', compact('order'));
+
+        return $pdf->download($order->po_number.'.pdf');
     }
 
     public function bulkDownloadPdf(Request $request)
@@ -167,7 +175,8 @@ class PurchaseOrderController extends Controller implements HasMiddleware
             return back()->with('error', 'No valid purchase orders found.');
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('procurement.purchase-orders.bulk-pdf', compact('orders'));
+        $pdf = Pdf::loadView('procurement.purchase-orders.bulk-pdf', compact('orders'));
+
         return $pdf->download('Purchase_Orders_Bulk.pdf');
     }
 
@@ -211,8 +220,9 @@ class PurchaseOrderController extends Controller implements HasMiddleware
         if (in_array($order->status, ['received', 'partially_received'])) {
             return response()->json(['message' => 'Cannot delete a Purchase Order that has already been processed.'], 400);
         }
-        
+
         $order->delete();
+
         return response()->json(['message' => 'Purchase Order deleted successfully.']);
     }
 
@@ -220,6 +230,7 @@ class PurchaseOrderController extends Controller implements HasMiddleware
     {
         $order = PurchaseOrder::withTrashed()->findOrFail($id);
         $order->restore();
+
         return response()->json(['message' => 'Purchase Order restored successfully.']);
     }
 
@@ -229,7 +240,7 @@ class PurchaseOrderController extends Controller implements HasMiddleware
             'action' => 'required|string|in:approve,reject,delete,restore',
             'ids' => 'required|array',
             'ids.*' => 'integer',
-            'rejection_reason' => 'required_if:action,reject|string|max:1000|nullable'
+            'rejection_reason' => 'required_if:action,reject|string|max:1000|nullable',
         ]);
 
         $action = $validated['action'];
@@ -238,18 +249,19 @@ class PurchaseOrderController extends Controller implements HasMiddleware
 
         if ($action === 'delete') {
             $deletedCount = PurchaseOrder::whereIn('id', $ids)
-                                         ->whereNotIn('status', ['received', 'partially_received'])
-                                         ->delete();
-                                         
+                ->whereNotIn('status', ['received', 'partially_received'])
+                ->delete();
+
             if ($deletedCount === 0) {
                 return response()->json(['message' => 'Cannot delete processed Purchase Orders.'], 400);
             }
-            
+
             return response()->json(['message' => 'Selected Purchase Orders deleted successfully.']);
         }
 
         if ($action === 'restore') {
             PurchaseOrder::withTrashed()->whereIn('id', $ids)->restore();
+
             return response()->json(['message' => 'Selected Purchase Orders restored successfully.']);
         }
 
@@ -262,6 +274,7 @@ class PurchaseOrderController extends Controller implements HasMiddleware
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
             ]);
+
             return response()->json(['message' => 'Selected Purchase Orders approved successfully.']);
         }
 
@@ -272,6 +285,7 @@ class PurchaseOrderController extends Controller implements HasMiddleware
                 'approved_at' => now(),
                 'rejection_reason' => $reason,
             ]);
+
             return response()->json(['message' => 'Selected Purchase Orders rejected successfully.']);
         }
 
@@ -287,11 +301,11 @@ class PurchaseOrderController extends Controller implements HasMiddleware
         if ($request->hasFile('invoice')) {
             // Delete old invoice if it exists
             if ($order->invoice_path) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($order->invoice_path);
+                Storage::disk('public')->delete($order->invoice_path);
             }
 
             $path = $request->file('invoice')->store('invoices', 'public');
-            
+
             $order->update([
                 'invoice_path' => $path,
             ]);
@@ -305,4 +319,3 @@ class PurchaseOrderController extends Controller implements HasMiddleware
         return response()->json(['message' => 'No file was uploaded.'], 400);
     }
 }
-

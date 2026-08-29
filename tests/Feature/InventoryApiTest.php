@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Modules\Catalog\Models\Category;
-use App\Modules\Users\Models\Permission;
 use App\Modules\Catalog\Models\Product;
-use App\Modules\Users\Models\Role;
-use App\Modules\Users\Models\User;
 use App\Modules\Catalog\Models\Warehouse;
-use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Users\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
@@ -23,8 +22,11 @@ class InventoryApiTest extends TestCase
     use DatabaseTransactions;
 
     protected User $admin;
+
     protected Warehouse $warehouse1;
+
     protected Warehouse $warehouse2;
+
     protected Product $product;
 
     protected function setUp(): void
@@ -37,16 +39,16 @@ class InventoryApiTest extends TestCase
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
 
-        $this->admin = $this->createUser('admin_' . uniqid() . '@example.com');
+        $this->admin = $this->createUser('admin_'.uniqid().'@example.com');
         $this->admin->assignRole('Super Admin');
         $this->actingAs($this->admin);
 
         // Setup base data
         $this->warehouse1 = Warehouse::create(['name' => 'Main Warehouse', 'code' => 'WH-01', 'status' => 'active']);
         $this->warehouse2 = Warehouse::create(['name' => 'Secondary Warehouse', 'code' => 'WH-02', 'status' => 'active']);
-        
+
         $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
         $this->product = Product::create([
             'name' => 'Smartphone',
@@ -83,8 +85,8 @@ class InventoryApiTest extends TestCase
                 [
                     'product_id' => $this->product->id,
                     'quantity' => 10,
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $response->assertCreated()
@@ -177,7 +179,7 @@ class InventoryApiTest extends TestCase
             'product_id' => $this->product->id,
             'quantity' => 20,
         ]);
-        
+
         $this->postJson("/api/inventory/transfers/{$transfer->id}/send");
 
         $response = $this->postJson("/api/inventory/transfers/{$transfer->id}/cancel");
@@ -251,7 +253,7 @@ class InventoryApiTest extends TestCase
     {
         Stock::where('warehouse_id', $this->warehouse2->id)->forceDelete();
 
-        $response = $this->getJson('/api/inventory/stocks?warehouse_id=' . $this->warehouse2->id);
+        $response = $this->getJson('/api/inventory/stocks?warehouse_id='.$this->warehouse2->id);
 
         $response->assertOk();
         $item = collect($response->json('data'))->firstWhere('product_id', $this->product->id);
@@ -280,8 +282,8 @@ class InventoryApiTest extends TestCase
                     'product_id' => $this->product->id,
                     'current_qty' => 100,
                     'new_qty' => 95,
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $response->assertCreated()
@@ -412,13 +414,13 @@ class InventoryApiTest extends TestCase
         Stock::create(['product_id' => $product3->id, 'warehouse_id' => $this->warehouse1->id, 'quantity' => 0, 'reserved_qty' => 0]);
 
         // 1. Filter: in_stock (scope to our test warehouse) - verify product1 appears
-        $response = $this->getJson('/api/inventory/stocks?stock_level=in_stock&warehouse_id=' . $this->warehouse1->id);
+        $response = $this->getJson('/api/inventory/stocks?stock_level=in_stock&warehouse_id='.$this->warehouse1->id);
         $response->assertOk();
         $productIds = collect($response->json('data'))->pluck('product_id')->toArray();
         $this->assertContains($product1->id, $productIds, 'Product1 (qty=20) should appear in in_stock filter');
 
         // 2. Filter: low_stock - product2 (qty=4, threshold=5) should be here
-        $response = $this->getJson('/api/inventory/stocks?stock_level=low_stock&warehouse_id=' . $this->warehouse1->id);
+        $response = $this->getJson('/api/inventory/stocks?stock_level=low_stock&warehouse_id='.$this->warehouse1->id);
         $response->assertOk();
         $this->assertContains(
             $product2->id,
@@ -427,7 +429,7 @@ class InventoryApiTest extends TestCase
         );
 
         // 3. Filter: out_of_stock - product3 (qty=0) should be here
-        $response = $this->getJson('/api/inventory/stocks?stock_level=out_of_stock&warehouse_id=' . $this->warehouse1->id);
+        $response = $this->getJson('/api/inventory/stocks?stock_level=out_of_stock&warehouse_id='.$this->warehouse1->id);
         $response->assertOk();
         $this->assertContains(
             $product3->id,

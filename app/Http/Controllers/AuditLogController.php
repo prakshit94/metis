@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Modules\Core\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use OwenIt\Auditing\Models\Audit;
-use Illuminate\Support\Facades\Gate;
-use App\Modules\Core\Controllers\Controller;
+use Spatie\Activitylog\Models\Activity;
 
 class AuditLogController extends Controller implements HasMiddleware
 {
@@ -33,12 +33,12 @@ class AuditLogController extends Controller implements HasMiddleware
 
             if ($request->filled('search')) {
                 $search = $request->search;
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('event', 'like', "%{$search}%")
-                      ->orWhere('auditable_type', 'like', "%{$search}%")
-                      ->orWhereHas('user', function($uq) use ($search) {
-                          $uq->where('name', 'like', "%{$search}%");
-                      });
+                        ->orWhere('auditable_type', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($uq) use ($search) {
+                            $uq->where('name', 'like', "%{$search}%");
+                        });
                 });
             }
 
@@ -53,6 +53,7 @@ class AuditLogController extends Controller implements HasMiddleware
             $audits->getCollection()->transform(function ($audit) {
                 $modelParts = explode('\\', $audit->auditable_type);
                 $audit->model_name = end($modelParts);
+
                 return $audit;
             });
 
@@ -81,7 +82,7 @@ class AuditLogController extends Controller implements HasMiddleware
      */
     public function clearAll(Request $request)
     {
-        if (!auth()->user()->hasRole('Super Admin')) {
+        if (! auth()->user()->hasRole('Super Admin')) {
             return response()->json(['message' => 'Unauthorized action. Only Super Admin can clear logs.'], 403);
         }
 
@@ -95,19 +96,20 @@ class AuditLogController extends Controller implements HasMiddleware
      */
     public function destroy(Request $request)
     {
-        if (!auth()->user()->hasRole('Super Admin')) {
+        if (! auth()->user()->hasRole('Super Admin')) {
             return response()->json(['message' => 'Unauthorized action.'], 403);
         }
 
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'integer|exists:audits,id'
+            'ids.*' => 'integer|exists:audits,id',
         ]);
 
         Audit::whereIn('id', $request->ids)->delete();
 
         return response()->json(['message' => 'Selected logs deleted.']);
     }
+
     /**
      * Fetch recent activity logs for the authenticated user.
      */
@@ -121,7 +123,7 @@ class AuditLogController extends Controller implements HasMiddleware
         );
 
         $user = auth()->user();
-        $activities = \Spatie\Activitylog\Models\Activity::with('causer')->latest()->limit(15)->get();
+        $activities = Activity::with('causer')->latest()->limit(15)->get();
         $readIds = $user ? $user->readActivities()->whereIn('activity_id', $activities->pluck('id'))->pluck('activity_id')->toArray() : [];
 
         $unreadCount = $activities->whereNotIn('id', $readIds)->count();
@@ -130,15 +132,15 @@ class AuditLogController extends Controller implements HasMiddleware
             'count' => $unreadCount,
             'activities' => $activities->map(function ($a) use ($readIds) {
                 return [
-                    'id'           => $a->id,
-                    'description'  => $a->description,
+                    'id' => $a->id,
+                    'description' => $a->description,
                     'subject_type' => class_basename($a->subject_type),
-                    'causer_name'  => $a->causer->name ?? 'System',
+                    'causer_name' => $a->causer->name ?? 'System',
                     'causer_photo' => $a->causer->photo ?? null,
-                    'time_ago'     => $a->created_at->diffForHumans(),
-                    'is_read'      => in_array($a->id, $readIds),
+                    'time_ago' => $a->created_at->diffForHumans(),
+                    'is_read' => in_array($a->id, $readIds),
                 ];
-            })
+            }),
         ]);
     }
 
@@ -148,15 +150,17 @@ class AuditLogController extends Controller implements HasMiddleware
     public function markAsRead(Request $request, $id)
     {
         $user = auth()->user();
-        if (!$user) return response()->json(['success' => false], 401);
-        
+        if (! $user) {
+            return response()->json(['success' => false], 401);
+        }
+
         if ($id === 'all') {
-            $activityIds = \Spatie\Activitylog\Models\Activity::latest()->limit(50)->pluck('id');
+            $activityIds = Activity::latest()->limit(50)->pluck('id');
             $user->readActivities()->syncWithoutDetaching($activityIds);
         } else {
             $user->readActivities()->syncWithoutDetaching([$id]);
         }
-        
+
         return response()->json(['success' => true]);
     }
 }

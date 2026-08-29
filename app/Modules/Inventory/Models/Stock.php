@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Orders\Models\OrderItem;
@@ -15,12 +12,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class Stock extends Model implements Auditable
 {
     use AuditableTrait;
     use SoftDeletes;
-
 
     protected $fillable = [
         'product_id',
@@ -31,6 +29,8 @@ class Stock extends Model implements Auditable
         'committed_qty',
         'in_transit_qty',
         'damaged_qty',
+        'allow_overselling',
+        'overselling_qty',
         'status',
         'deleted_at',
     ];
@@ -42,6 +42,8 @@ class Stock extends Model implements Auditable
         'committed_qty' => 'float',
         'in_transit_qty' => 'float',
         'damaged_qty' => 'float',
+        'allow_overselling' => 'boolean',
+        'overselling_qty' => 'integer',
     ];
 
     // ─── Computed Attributes ───────────────────────────────────────────────

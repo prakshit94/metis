@@ -4,8 +4,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-    public function up(): void {
+return new class extends Migration
+{
+    public function up(): void
+    {
         Schema::create('stocks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
@@ -16,6 +18,8 @@ return new class extends Migration {
             $table->decimal('committed_qty', 15, 4)->default(0);
             $table->decimal('in_transit_qty', 15, 4)->default(0);
             $table->decimal('damaged_qty', 15, 4)->default(0);
+            $table->boolean('allow_overselling')->nullable();
+            $table->integer('overselling_qty')->nullable();
             $table->string('status')->default('active')->index();
             $table->timestamps();
             $table->softDeletes()->index();
@@ -29,7 +33,8 @@ return new class extends Migration {
         });
     }
 
-    public function down(): void {
+    public function down(): void
+    {
         Schema::dropIfExists('stocks');
     }
 };

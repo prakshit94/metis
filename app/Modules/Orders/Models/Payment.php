@@ -2,21 +2,20 @@
 
 namespace App\Modules\Orders\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
+use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class Payment extends Model implements Auditable
 {
     use AuditableTrait;
     use SoftDeletes;
-
 
     protected $fillable = [
         'payment_no',
@@ -42,12 +41,12 @@ class Payment extends Model implements Auditable
 
     public function recorder()
     {
-        return $this->belongsTo(\App\Modules\Users\Models\User::class, 'recorded_by');
+        return $this->belongsTo(User::class, 'recorded_by');
     }
 
     public function reverter()
     {
-        return $this->belongsTo(\App\Modules\Users\Models\User::class, 'reverted_by');
+        return $this->belongsTo(User::class, 'reverted_by');
     }
 
     protected static function booted()

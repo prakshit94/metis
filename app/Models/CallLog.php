@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
+use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
-
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class CallLog extends Model implements Auditable
 {
     use AuditableTrait;
+
     protected $fillable = [
         'customer_id',
         'agent_id',
@@ -32,7 +32,7 @@ class CallLog extends Model implements Auditable
 
     public function agent()
     {
-        return $this->belongsTo(\App\Modules\Users\Models\User::class, 'agent_id');
+        return $this->belongsTo(User::class, 'agent_id');
     }
 
     public function tagL1()

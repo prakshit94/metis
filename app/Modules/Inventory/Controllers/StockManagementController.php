@@ -35,7 +35,7 @@ class StockManagementController extends Controller implements HasMiddleware
         $this->authorize('product-view');
 
         $query = Stock::query()
-            ->with(['product:id,name,sku,status,image_path', 'warehouse:id,name,code'])
+            ->with(['product:id,name,sku,status,image_path,grade,allow_overselling,overselling_qty', 'warehouse:id,name,code'])
             ->withSum('pendingOrderItems as pending_qty', 'quantity')
             ->withSum('deliveredOrderItems as raw_delivered_qty', 'quantity')
             ->withSum('returnedOrderItems as returned_qty', 'received_qty')
@@ -150,7 +150,7 @@ class StockManagementController extends Controller implements HasMiddleware
 
             return response()->json([
                 'message' => 'Stock updated successfully.',
-                'data' => $stock->load(['product:id,name,sku', 'warehouse:id,name,code']),
+                'data' => $stock->load(['product:id,name,sku,status,image_path,grade,allow_overselling,overselling_qty', 'warehouse:id,name,code']),
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -178,7 +178,7 @@ class StockManagementController extends Controller implements HasMiddleware
         );
 
         return response()->json([
-            'data' => $stock->load(['product:id,name,sku', 'warehouse:id,name,code']),
+            'data' => $stock->load(['product:id,name,sku,status,image_path,grade,allow_overselling,overselling_qty', 'warehouse:id,name,code']),
         ]);
     }
 

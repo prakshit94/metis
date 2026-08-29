@@ -3,24 +3,27 @@
 namespace App\Services\Shipping\Providers;
 
 use App\Contracts\Shipping\ShippingProviderInterface;
+use App\Models\SystemSetting;
 use App\Modules\Orders\Models\Order;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class IndiaPostProvider implements ShippingProviderInterface
 {
     protected $baseUrl;
+
     protected $username;
+
     protected $password;
 
     public function __construct()
     {
-        $settings = \App\Models\SystemSetting::where('key', 'like', 'india_post_%')->pluck('value', 'key');
+        $settings = SystemSetting::where('key', 'like', 'india_post_%')->pluck('value', 'key');
 
         $this->baseUrl = $settings['india_post_base_url'] ?? config('shipping.providers.india_post.base_url');
         $this->username = $settings['india_post_username'] ?? config('shipping.providers.india_post.username');
         $this->password = isset($settings['india_post_password']) ? decrypt($settings['india_post_password']) : config('shipping.providers.india_post.password');
-        
+
         config(['shipping.providers.india_post.bulk_customer_id' => $settings['india_post_bulk_customer_id'] ?? config('shipping.providers.india_post.bulk_customer_id')]);
         config(['shipping.providers.india_post.contracts.SP_INLAND_DOC' => $settings['india_post_contract_sp_doc'] ?? config('shipping.providers.india_post.contracts.SP_INLAND_DOC')]);
         config(['shipping.providers.india_post.contracts.SP_INLAND_PARCEL' => $settings['india_post_contract_sp_parcel'] ?? config('shipping.providers.india_post.contracts.SP_INLAND_PARCEL')]);
@@ -44,7 +47,7 @@ class IndiaPostProvider implements ShippingProviderInterface
                 return $response->json('data.access_token');
             }
 
-            throw new \Exception('Failed to authenticate with India Post: ' . $response->body());
+            throw new \Exception('Failed to authenticate with India Post: '.$response->body());
         });
     }
 
@@ -58,7 +61,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             return $response->json();
         }
 
-        throw new \Exception('Failed to calculate tariff: ' . $response->body());
+        throw new \Exception('Failed to calculate tariff: '.$response->body());
     }
 
     public function createShipment(Order $order): array
@@ -72,7 +75,7 @@ class IndiaPostProvider implements ShippingProviderInterface
         $maxLength = 10;
         $maxWidth = 10;
         $maxHeight = 10;
-        
+
         foreach ($order->items as $item) {
             $product = $item->product;
             if ($product) {
@@ -83,7 +86,7 @@ class IndiaPostProvider implements ShippingProviderInterface
                 $maxHeight += ($product->height_cm ?: 10) * $item->quantity;
             }
         }
-        
+
         $totalWeightG = max(10, $totalWeightG); // Ensure at least some weight
 
         $payload = [
@@ -105,7 +108,7 @@ class IndiaPostProvider implements ShippingProviderInterface
                     'sender_add_line_1' => 'Sender Addr',
                     'sender_city' => 'Sender City',
                     'sender_pincode' => 600001,
-                    'receiver_name' => $order->address->first_name . ' ' . $order->address->last_name ?? 'Receiver Name',
+                    'receiver_name' => $order->address->first_name.' '.$order->address->last_name ?? 'Receiver Name',
                     'receiver_company' => '',
                     'receiver_add_line_1' => $order->address->address_line_1 ?? 'Receiver Addr',
                     'receiver_city' => $order->address->city ?? 'Receiver City',
@@ -115,8 +118,8 @@ class IndiaPostProvider implements ShippingProviderInterface
                     'drop_off_pincode' => 600001,
                     'sender_mobile_no' => '1234567890',
                     'receiver_mobile_no' => $order->address->phone_number ?? '1234567890',
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = Http::withToken($token)
@@ -125,8 +128,9 @@ class IndiaPostProvider implements ShippingProviderInterface
         if ($response->successful() && $response->json('success')) {
             $validArticles = $response->json('valid_articles');
             if (empty($validArticles)) {
-                 throw new \Exception('No valid articles processed. Errors: ' . json_encode($response->json('error_articles')));
+                throw new \Exception('No valid articles processed. Errors: '.json_encode($response->json('error_articles')));
             }
+
             return [
                 'tracking_number' => $validArticles[0]['barcode_no'],
                 'provider_response' => $response->json(),
@@ -138,7 +142,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             ];
         }
 
-        throw new \Exception('Failed to create shipment: ' . $response->body());
+        throw new \Exception('Failed to create shipment: '.$response->body());
     }
 
     public function generateLabel(string $trackingNumber): string
@@ -152,14 +156,14 @@ class IndiaPostProvider implements ShippingProviderInterface
         $token = $this->authenticate();
 
         $response = Http::withToken($token)->post("{$this->baseUrl}/v1/tracking/bulk", [
-            'bulk' => $trackingNumbers
+            'bulk' => $trackingNumbers,
         ]);
 
         if ($response->successful() && $response->json('success')) {
             return $response->json('data');
         }
 
-        throw new \Exception('Failed to get tracking status: ' . $response->body());
+        throw new \Exception('Failed to get tracking status: '.$response->body());
     }
 
     private function generateBarcode(): string
@@ -168,6 +172,7 @@ class IndiaPostProvider implements ShippingProviderInterface
         $prefix = 'ET21433';
         $randomNum = str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
         $suffix = 'XIN';
-        return $prefix . $randomNum . $suffix;
+
+        return $prefix.$randomNum.$suffix;
     }
 }

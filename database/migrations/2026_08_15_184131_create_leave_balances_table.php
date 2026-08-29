@@ -20,7 +20,7 @@ return new class extends Migration
             $table->decimal('balance', 8, 2)->storedAs('total_leaves - used_leaves');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            
+
             $table->unique(['user_id', 'leave_type']);
         });
     }

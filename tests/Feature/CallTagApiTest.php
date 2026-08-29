@@ -20,7 +20,7 @@ class CallTagApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         $permissions = ['settings-view'];
         foreach ($permissions as $permission) {
@@ -37,7 +37,7 @@ class CallTagApiTest extends TestCase
             'is_active' => true,
         ]);
         $admin->assignRole('Super Admin');
-        
+
         $this->actingAs($admin);
         $this->withoutVite();
     }
@@ -48,15 +48,15 @@ class CallTagApiTest extends TestCase
             'name' => 'Sales',
             'level' => 1,
             'is_active' => true,
-            'sort_order' => 1
+            'sort_order' => 1,
         ]);
 
         $response = $this->get('/call-tags-admin');
         $response->assertStatus(200);
-        
+
         $response = $this->getJson('/call-tags');
         $response->assertStatus(200)
-                 ->assertJsonFragment(['name' => 'Sales']);
+            ->assertJsonFragment(['name' => 'Sales']);
     }
 
     public function test_can_create_admin_call_tag()
@@ -68,8 +68,8 @@ class CallTagApiTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonFragment(['name' => 'Support']);
-                 
+            ->assertJsonFragment(['name' => 'Support']);
+
         $this->assertDatabaseHas('call_tags', ['name' => 'Support']);
     }
 
@@ -79,7 +79,7 @@ class CallTagApiTest extends TestCase
             'name' => 'Billing',
             'level' => 1,
             'is_active' => true,
-            'sort_order' => 1
+            'sort_order' => 1,
         ]);
 
         $response = $this->putJson("/call-tags-admin/{$tag->id}", [
@@ -88,8 +88,8 @@ class CallTagApiTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonFragment(['name' => 'Billing Updates']);
-                 
+            ->assertJsonFragment(['name' => 'Billing Updates']);
+
         $this->assertDatabaseHas('call_tags', ['id' => $tag->id, 'name' => 'Billing Updates', 'is_active' => false]);
     }
 
@@ -99,12 +99,12 @@ class CallTagApiTest extends TestCase
             'name' => 'Technical',
             'level' => 1,
             'is_active' => true,
-            'sort_order' => 1
+            'sort_order' => 1,
         ]);
 
         $response = $this->deleteJson("/call-tags-admin/{$tag->id}");
         $response->assertStatus(200);
-        
+
         $this->assertDatabaseMissing('call_tags', ['id' => $tag->id]);
     }
 
@@ -120,12 +120,12 @@ class CallTagApiTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonFragment(['notes' => 'Customer called about issue']);
+            ->assertJsonFragment(['notes' => 'Customer called about issue']);
 
         $this->assertDatabaseHas('call_logs', [
             'tag_l1_id' => $tag1->id,
             'tag_l2_id' => $tag2->id,
-            'notes' => 'Customer called about issue'
+            'notes' => 'Customer called about issue',
         ]);
     }
 }

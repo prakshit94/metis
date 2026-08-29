@@ -26,7 +26,6 @@ class TaxRateController extends Controller implements HasMiddleware
     public function index(Request $request): JsonResponse
     {
 
-
         $query = TaxRate::query();
 
         if ($search = $request->query('search')) {
@@ -52,7 +51,6 @@ class TaxRateController extends Controller implements HasMiddleware
     public function store(Request $request): JsonResponse
     {
 
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'rate' => 'nullable|numeric|min:0|max:100',
@@ -72,13 +70,11 @@ class TaxRateController extends Controller implements HasMiddleware
     public function show(TaxRate $taxRate): JsonResponse
     {
 
-
         return response()->json(['data' => $taxRate]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-
 
         $model = TaxRate::findOrFail($id);
 

@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Customers\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
+use App\Models\CallLog;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderComplaint;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class Customer extends Model implements Auditable
 {
@@ -112,7 +114,7 @@ class Customer extends Model implements Auditable
 
     public function callLogs(): HasMany
     {
-        return $this->hasMany(\App\Models\CallLog::class, 'customer_id');
+        return $this->hasMany(CallLog::class, 'customer_id');
     }
 
     public function defaultAddress(): HasOne
@@ -141,10 +143,10 @@ class Customer extends Model implements Auditable
 
     public function complaints(): HasMany
     {
-        return $this->hasMany(\App\Modules\Orders\Models\OrderComplaint::class, 'customer_id');
+        return $this->hasMany(OrderComplaint::class, 'customer_id');
     }
 
-    public function referredOrders(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    public function referredOrders(): HasManyThrough
     {
         return $this->hasManyThrough(Order::class, self::class, 'referred_by', 'party_id');
     }

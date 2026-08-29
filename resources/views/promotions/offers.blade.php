@@ -119,8 +119,8 @@
                         </span>
                     </div>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-success" @click="bulkAction('activate')"><i class="bi bi-check-circle me-1"></i>Activate</button>
-                        <button class="btn btn-sm btn-warning" @click="bulkAction('deactivate')"><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
+                        <button class="btn btn-sm btn-success" x-show="offers.filter(o => selected.map(String).includes(String(o.id))).some(o => !o.is_active)" @click="bulkAction('activate')"><i class="bi bi-check-circle me-1"></i>Activate</button>
+                        <button class="btn btn-sm btn-warning" x-show="offers.filter(o => selected.map(String).includes(String(o.id))).some(o => o.is_active)" @click="bulkAction('deactivate')"><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
                         <button class="btn btn-sm btn-danger" @click="bulkAction('delete')"><i class="bi bi-trash me-1"></i>Delete</button>
                         <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selected = []" title="Clear selection">
                             <i class="bi bi-x-lg" style="margin-left: 7px"></i>

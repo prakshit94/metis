@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Controllers;
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Core\Models\Village;
+use App\Modules\Inventory\Models\Stock;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -27,7 +28,6 @@ class WarehouseController extends Controller implements HasMiddleware
     public function index(Request $request): JsonResponse
     {
 
-
         $query = Warehouse::query()
             ->withCount('stocks as total_skus')
             ->withSum('stocks as total_physical_stock', 'quantity')
@@ -35,18 +35,18 @@ class WarehouseController extends Controller implements HasMiddleware
             ->withCount('orders as total_orders')
             ->withCount(['orders as fulfillable_orders' => function ($query) {
                 $query->whereIn('status', ['confirmed', 'processing'])
-                      ->orWhere(function ($q) {
-                          $q->where('status', 'pending')
+                    ->orWhere(function ($q) {
+                        $q->where('status', 'pending')
                             ->whereDoesntHave('items', function ($iq) {
                                 $iq->whereRaw('quantity > (IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = order_items.product_id AND stocks.warehouse_id = orders.warehouse_id AND stocks.deleted_at IS NULL), 0))');
                             });
-                      });
+                    });
             }])
             ->withCount(['orders as unfulfillable_orders' => function ($query) {
                 $query->where('status', 'pending')
-                      ->whereHas('items', function ($q) {
-                          $q->whereRaw('quantity > (IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = order_items.product_id AND stocks.warehouse_id = orders.warehouse_id AND stocks.deleted_at IS NULL), 0))');
-                      });
+                    ->whereHas('items', function ($q) {
+                        $q->whereRaw('quantity > (IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = order_items.product_id AND stocks.warehouse_id = orders.warehouse_id AND stocks.deleted_at IS NULL), 0))');
+                    });
             }]);
 
         if ($search = $request->query('search')) {
@@ -79,7 +79,6 @@ class WarehouseController extends Controller implements HasMiddleware
 
     public function store(Request $request): JsonResponse
     {
-
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -138,13 +137,11 @@ class WarehouseController extends Controller implements HasMiddleware
     public function show(Warehouse $model): JsonResponse
     {
 
-
         return response()->json(['data' => $model]);
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-
 
         $model = Warehouse::findOrFail($id);
 
@@ -200,14 +197,13 @@ class WarehouseController extends Controller implements HasMiddleware
     public function destroy($id): JsonResponse
     {
 
-
         $model = Warehouse::findOrFail($id);
 
         if ($model->is_default) {
             return response()->json(['message' => 'Cannot delete the default warehouse.'], 422);
         }
 
-        $hasActiveStock = \App\Modules\Inventory\Models\Stock::where('warehouse_id', $id)
+        $hasActiveStock = Stock::where('warehouse_id', $id)
             ->where(function ($query) {
                 $query->where('quantity', '>', 0)
                     ->orWhere('reserved_qty', '>', 0)
@@ -218,7 +214,7 @@ class WarehouseController extends Controller implements HasMiddleware
 
         if ($hasActiveStock) {
             return response()->json([
-                'message' => 'Cannot delete this warehouse because it contains active inventory or pending orders. Please transfer all stock and clear pending reservations before deletion.'
+                'message' => 'Cannot delete this warehouse because it contains active inventory or pending orders. Please transfer all stock and clear pending reservations before deletion.',
             ], 422);
         }
 

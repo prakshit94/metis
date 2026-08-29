@@ -2,10 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\ReferralProgram;
-use App\Models\ReferralProgramMilestone;
+use Illuminate\Database\Seeder;
 
 class ReferralProgramSeeder extends Seeder
 {
@@ -37,7 +35,7 @@ class ReferralProgramSeeder extends Seeder
                 'required_referrals' => 10,
                 'reward_type' => 'product',
                 'reward_value' => '2', // Free product with ID 2
-            ]
+            ],
         ]);
 
         // 2. Summer Mega Drive (Time-bound, Inactive)
@@ -58,7 +56,7 @@ class ReferralProgramSeeder extends Seeder
                 'required_referrals' => 3,
                 'reward_type' => 'product',
                 'reward_value' => '5', // Free product ID 5
-            ]
+            ],
         ]);
     }
 }

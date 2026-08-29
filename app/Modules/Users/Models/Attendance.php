@@ -2,6 +2,7 @@
 
 namespace App\Modules\Users\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -35,18 +36,18 @@ class Attendance extends Model
     public function getTotalTimeAttribute(): ?string
     {
         if ($this->check_in && $this->check_out) {
-            $checkIn = \Carbon\Carbon::parse($this->check_in);
-            $checkOut = \Carbon\Carbon::parse($this->check_out);
-            
+            $checkIn = Carbon::parse($this->check_in);
+            $checkOut = Carbon::parse($this->check_out);
+
             if ($checkOut->lessThan($checkIn)) {
                 $checkOut->addDay(); // Handle night shifts
             }
-            
+
             $diff = $checkIn->diff($checkOut);
-            
+
             $hours = $diff->h + ($diff->days * 24);
-            $minutes = str_pad((string)$diff->i, 2, '0', STR_PAD_LEFT);
-            
+            $minutes = str_pad((string) $diff->i, 2, '0', STR_PAD_LEFT);
+
             return "{$hours}h {$minutes}m";
         }
 

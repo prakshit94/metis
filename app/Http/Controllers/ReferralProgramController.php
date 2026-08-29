@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\ReferralProgram;
-use App\Models\ReferralProgramMilestone;
-use Illuminate\Http\Request;
+use App\Modules\Catalog\Models\Product;
 use App\Modules\Core\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
@@ -15,9 +15,9 @@ class ReferralProgramController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:promotions-view',   only: ['index']),
+            new Middleware('permission:promotions-view', only: ['index']),
             new Middleware('permission:promotions-create', only: ['store']),
-            new Middleware('permission:promotions-edit',   only: ['update', 'toggle', 'bulk']),
+            new Middleware('permission:promotions-edit', only: ['update', 'toggle', 'bulk']),
             new Middleware('permission:promotions-delete', only: ['destroy']),
         ];
     }
@@ -25,39 +25,39 @@ class ReferralProgramController extends Controller implements HasMiddleware
     public function index()
     {
         $programs = ReferralProgram::with('milestones')->latest()->get();
-        
+
         $products = cache()->remember('referral_products_list', now()->addMinutes(60), function () {
-            return \App\Modules\Catalog\Models\Product::where('status', '!=', 'draft')
+            return Product::where('status', '!=', 'draft')
                 ->orderBy('name')
                 ->get(['id', 'name', 'sku']);
         });
-        
+
         return view('promotions.referrals.index', compact('programs', 'products'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'                              => 'required|string|max:255',
-            'start_date'                        => 'nullable|date',
-            'end_date'                          => 'nullable|date|after_or_equal:start_date',
-            'is_active'                         => 'boolean',
-            'milestones'                        => 'required|array|min:1',
-            'milestones.*.required_referrals'   => 'required|integer|min:0',
-            'milestones.*.reward_type'          => 'required|string|in:wallet,product,coupon',
-            'milestones.*.reward_value'         => 'required|string',
+            'name' => 'required|string|max:255',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'is_active' => 'boolean',
+            'milestones' => 'required|array|min:1',
+            'milestones.*.required_referrals' => 'required|integer|min:0',
+            'milestones.*.reward_type' => 'required|string|in:wallet,product,coupon',
+            'milestones.*.reward_value' => 'required|string',
         ]);
 
         DB::transaction(function () use ($validated) {
-            if (!empty($validated['is_active'])) {
+            if (! empty($validated['is_active'])) {
                 ReferralProgram::where('is_active', true)->update(['is_active' => false]);
             }
 
             $program = ReferralProgram::create([
-                'name'       => $validated['name'],
+                'name' => $validated['name'],
                 'start_date' => $validated['start_date'] ?? null,
-                'end_date'   => $validated['end_date'] ?? null,
-                'is_active'  => $validated['is_active'] ?? false,
+                'end_date' => $validated['end_date'] ?? null,
+                'is_active' => $validated['is_active'] ?? false,
             ]);
 
             $program->milestones()->createMany($validated['milestones']);
@@ -71,26 +71,26 @@ class ReferralProgramController extends Controller implements HasMiddleware
         $program = ReferralProgram::findOrFail($id);
 
         $validated = $request->validate([
-            'name'                              => 'required|string|max:255',
-            'start_date'                        => 'nullable|date',
-            'end_date'                          => 'nullable|date|after_or_equal:start_date',
-            'is_active'                         => 'boolean',
-            'milestones'                        => 'required|array|min:1',
-            'milestones.*.required_referrals'   => 'required|integer|min:0',
-            'milestones.*.reward_type'          => 'required|string|in:wallet,product,coupon',
-            'milestones.*.reward_value'         => 'required|string',
+            'name' => 'required|string|max:255',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'is_active' => 'boolean',
+            'milestones' => 'required|array|min:1',
+            'milestones.*.required_referrals' => 'required|integer|min:0',
+            'milestones.*.reward_type' => 'required|string|in:wallet,product,coupon',
+            'milestones.*.reward_value' => 'required|string',
         ]);
 
         DB::transaction(function () use ($validated, $program) {
-            if (!empty($validated['is_active'])) {
+            if (! empty($validated['is_active'])) {
                 ReferralProgram::where('id', '!=', $program->id)->where('is_active', true)->update(['is_active' => false]);
             }
 
             $program->update([
-                'name'       => $validated['name'],
+                'name' => $validated['name'],
                 'start_date' => $validated['start_date'] ?? null,
-                'end_date'   => $validated['end_date'] ?? null,
-                'is_active'  => $validated['is_active'] ?? false,
+                'end_date' => $validated['end_date'] ?? null,
+                'is_active' => $validated['is_active'] ?? false,
             ]);
 
             $program->milestones()->delete();
@@ -105,10 +105,10 @@ class ReferralProgramController extends Controller implements HasMiddleware
         $program = ReferralProgram::findOrFail($id);
 
         DB::transaction(function () use ($program) {
-            if (!$program->is_active) {
+            if (! $program->is_active) {
                 ReferralProgram::where('id', '!=', $program->id)->where('is_active', true)->update(['is_active' => false]);
             }
-            $program->update(['is_active' => !$program->is_active]);
+            $program->update(['is_active' => ! $program->is_active]);
         });
 
         return back()->with('success', 'Referral program status updated.');
@@ -117,13 +117,13 @@ class ReferralProgramController extends Controller implements HasMiddleware
     public function bulk(Request $request)
     {
         $validated = $request->validate([
-            'action'  => 'required|string|in:activate,deactivate,delete',
-            'ids'     => 'required|array',
-            'ids.*'   => 'integer|exists:referral_programs,id',
+            'action' => 'required|string|in:activate,deactivate,delete',
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:referral_programs,id',
         ]);
 
         $action = $validated['action'];
-        $ids    = $validated['ids'];
+        $ids = $validated['ids'];
 
         DB::transaction(function () use ($action, $ids) {
             if ($action === 'delete') {
@@ -146,6 +146,7 @@ class ReferralProgramController extends Controller implements HasMiddleware
     public function destroy($id)
     {
         ReferralProgram::findOrFail($id)->delete();
+
         return back()->with('success', 'Referral program deleted.');
     }
 }

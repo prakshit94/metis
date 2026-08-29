@@ -6,8 +6,8 @@ namespace App\Modules\Inventory\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Inventory\Models\Supplier;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -28,23 +28,24 @@ class SupplierController extends Controller implements HasMiddleware
         if ($request->wantsJson()) {
             $query = Supplier::with('products:id,supplier_id,name,sku')->latest();
 
-            if ($request->has('search') && !empty($request->query('search'))) {
+            if ($request->has('search') && ! empty($request->query('search'))) {
                 $search = $request->query('search');
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('company_name', 'like', "%{$search}%")
-                      ->orWhere('firstname', 'like', "%{$search}%")
-                      ->orWhere('lastname', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%")
-                      ->orWhere('gst_no', 'like', "%{$search}%");
+                        ->orWhere('firstname', 'like', "%{$search}%")
+                        ->orWhere('lastname', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('gst_no', 'like', "%{$search}%");
                 });
             }
 
-            if ($request->has('status') && !empty($request->query('status'))) {
+            if ($request->has('status') && ! empty($request->query('status'))) {
                 $query->where('status', $request->query('status'));
             }
 
             $perPage = $request->query('per_page', 15);
+
             return response()->json($query->paginate($perPage));
         }
 
@@ -88,7 +89,7 @@ class SupplierController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => 'Supplier created successfully',
-            'data' => $supplier
+            'data' => $supplier,
         ], 201);
     }
 
@@ -99,8 +100,8 @@ class SupplierController extends Controller implements HasMiddleware
             'company_name' => 'required|string|max:255',
             'firstname' => 'nullable|string|max:255',
             'lastname' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255|unique:suppliers,email,' . $supplier->id,
-            'phone' => 'required|string|max:20|unique:suppliers,phone,' . $supplier->id,
+            'email' => 'nullable|email|max:255|unique:suppliers,email,'.$supplier->id,
+            'phone' => 'required|string|max:20|unique:suppliers,phone,'.$supplier->id,
             'gst_no' => 'nullable|string|max:50',
             'pan_no' => 'nullable|string|max:50',
             'credit_limit' => 'nullable|numeric|min:0',
@@ -124,7 +125,7 @@ class SupplierController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => 'Supplier updated successfully',
-            'data' => $supplier
+            'data' => $supplier,
         ]);
     }
 
@@ -141,7 +142,7 @@ class SupplierController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'action' => 'required|string|in:active,inactive,delete',
             'ids' => 'required|array',
-            'ids.*' => 'integer|exists:suppliers,id'
+            'ids.*' => 'integer|exists:suppliers,id',
         ]);
 
         $action = $validated['action'];
@@ -149,10 +150,12 @@ class SupplierController extends Controller implements HasMiddleware
 
         if ($action === 'delete') {
             Supplier::whereIn('id', $ids)->delete();
+
             return response()->json(['message' => 'Suppliers deleted successfully']);
         }
 
         Supplier::whereIn('id', $ids)->update(['status' => $action]);
+
         return response()->json(['message' => 'Suppliers status updated successfully']);
     }
 }

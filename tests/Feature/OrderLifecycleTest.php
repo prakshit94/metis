@@ -5,17 +5,14 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Inventory\Models\Stock;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Users\Models\Permission;
-use App\Modules\Catalog\Models\Product;
 use App\Modules\Users\Models\Role;
-use App\Modules\Orders\Models\Shipment;
-use App\Modules\Inventory\Models\Stock;
-use App\Modules\Inventory\Models\StockMovement;
-use App\Modules\Inventory\Models\StockReservation;
 use App\Modules\Users\Models\User;
-use App\Modules\Catalog\Models\Warehouse;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -27,7 +24,9 @@ class OrderLifecycleTest extends TestCase
     use DatabaseTransactions;
 
     protected User $admin;
+
     protected Warehouse $warehouse;
+
     protected Product $product;
 
     protected function setUp(): void
@@ -106,7 +105,7 @@ class OrderLifecycleTest extends TestCase
     protected function createPendingOrder(float $qty = 10.0): Order
     {
         $order = Order::create([
-            'order_no' => 'ORD-' . strtoupper(Str::random(8)),
+            'order_no' => 'ORD-'.strtoupper(Str::random(8)),
             'type' => 'sale',
             'status' => 'pending',
             'warehouse_id' => $this->warehouse->id,
@@ -349,7 +348,7 @@ class OrderLifecycleTest extends TestCase
             $this->postJson(route('orders.processing', $order))->assertOk();
             $this->postJson(route('orders.ship', $order), [
                 'carrier_name' => 'FedEx Express',
-                'tracking_no' => 'FX-99887766-' . $order->id,
+                'tracking_no' => 'FX-99887766-'.$order->id,
             ])->assertOk();
         }
 
@@ -417,7 +416,7 @@ class OrderLifecycleTest extends TestCase
     public function test_future_dated_draft_orders_expose_future_order_status_for_the_ui(): void
     {
         $order = Order::create([
-            'order_no' => 'ORD-' . strtoupper(Str::random(8)),
+            'order_no' => 'ORD-'.strtoupper(Str::random(8)),
             'type' => 'sale',
             'status' => 'future_order',
             'order_date' => now(),

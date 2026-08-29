@@ -22,7 +22,7 @@ return new class extends Migration
 
             $table->index(['pincode', 'normalized_name'], 'idx_pincode_village');
             $table->index(['district_name', 'state_name'], 'idx_district_state');
-            
+
             $table->charset = 'utf8mb4';
             $table->collation = 'utf8mb4_unicode_ci';
         });

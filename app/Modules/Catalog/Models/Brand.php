@@ -4,17 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class Brand extends Model implements Auditable
 {
     use AuditableTrait;
     use SoftDeletes;
-
 
     protected $fillable = [
         'name',

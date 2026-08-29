@@ -2,9 +2,10 @@
 
 namespace App\Modules\Core\Controllers;
 
-use App\Modules\Catalog\Models\Product;
+use App\Models\CallLog;
 use App\Modules\Catalog\Models\Service;
 use App\Modules\Customers\Models\Party;
+use App\Modules\Inventory\Models\Stock;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
 use Carbon\Carbon;
@@ -16,9 +17,9 @@ class PageController extends Controller
     public function dashboard(Request $request)
     {
         $user = auth()->user();
-        
+
         // Redirect warehouse personnel directly to their command center
-        if ($user && $user->can('warehouse-dashboard-view') && !$user->can('dashboard-view')) {
+        if ($user && $user->can('warehouse-dashboard-view') && ! $user->can('dashboard-view')) {
             return redirect()->route('inventory.dashboard');
         }
 
@@ -89,7 +90,7 @@ class PageController extends Controller
         // Revenue (Last 12 Months for simplicity)
         $revenueData = [];
         $twelveMonthsAgo = Carbon::now()->subMonths(11)->startOfMonth();
-        
+
         $monthlyRevenueRaw = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned', 'future_order'])
             ->where('order_date', '>=', $twelveMonthsAgo)
             ->select(
@@ -116,7 +117,7 @@ class PageController extends Controller
         // Daily Revenue (Last 30 Days)
         $dailyRevenueData = [];
         $thirtyDaysAgo = Carbon::now()->subDays(29)->startOfDay();
-        
+
         $dailyRevenueRaw = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned', 'future_order'])
             ->where('order_date', '>=', $thirtyDaysAgo)
             ->select(
@@ -234,9 +235,10 @@ class PageController extends Controller
                 default => 'bg-secondary',
             };
 
-            $itemsList = $order->items->map(function($item) {
+            $itemsList = $order->items->map(function ($item) {
                 $name = $item->product ? $item->product->name : 'Unknown Product';
-                return $item->quantity . 'x ' . $name;
+
+                return $item->quantity.'x '.$name;
             })->implode(', ');
 
             return [
@@ -262,9 +264,10 @@ class PageController extends Controller
         $futureOrders = $futureOrdersRaw->map(function ($order) {
             $statusClass = 'bg-primary';
 
-            $itemsList = $order->items->map(function($item) {
+            $itemsList = $order->items->map(function ($item) {
                 $name = $item->product ? $item->product->name : 'Unknown Product';
-                return $item->quantity . 'x ' . $name;
+
+                return $item->quantity.'x '.$name;
             })->implode(', ');
 
             return [
@@ -276,7 +279,7 @@ class PageController extends Controller
                     'text' => 'Future Order',
                     'class' => $statusClass,
                 ],
-                'date' => $order->future_order_date ? \Carbon\Carbon::parse($order->future_order_date)->format('M d, Y') : 'N/A',
+                'date' => $order->future_order_date ? Carbon::parse($order->future_order_date)->format('M d, Y') : 'N/A',
             ];
         })->toArray();
 
@@ -345,12 +348,12 @@ class PageController extends Controller
      */
     public function analyticsData(Request $request)
     {
-        $period  = $request->input('period', 'today');
+        $period = $request->input('period', 'today');
         $fromRaw = $request->input('from');
-        $toRaw   = $request->input('to');
-        
+        $toRaw = $request->input('to');
+
         $limit = (int) $request->input('limit', 10);
-        if (!in_array($limit, [5, 10, 15, 20])) {
+        if (! in_array($limit, [5, 10, 15, 20])) {
             $limit = 10;
         }
 
@@ -358,7 +361,7 @@ class PageController extends Controller
         [$start, $end] = $this->analyticsDateRange($period, $fromRaw, $toRaw);
 
         $startStr = $start->toDateTimeString();
-        $endStr   = $end->toDateTimeString();
+        $endStr = $end->toDateTimeString();
 
         try {
             // ── KPI: Sales (sale orders, non-cancelled) ───────────────────────
@@ -383,7 +386,7 @@ class PageController extends Controller
             $totalPurchaseCount = $purchaseData->count ?? 0;
 
             // ── Inward / Outward Payment totals summary ───────────────────────
-            $inwardTotal  = DB::table('payments')
+            $inwardTotal = DB::table('payments')
                 ->join('orders', 'payments.order_id', '=', 'orders.id')
                 ->where('orders.type', 'sale')
                 ->whereBetween('payments.payment_date', [$startStr, $endStr])
@@ -482,10 +485,10 @@ class PageController extends Controller
             $topCustomers = DB::table('parties')
                 ->join('orders', function ($j) use ($startStr, $endStr) {
                     $j->on('orders.party_id', '=', 'parties.id')
-                      ->where('orders.type', 'sale')
-                      ->whereNotIn('orders.status', ['cancelled'])
-                      ->whereBetween('orders.order_date', [$startStr, $endStr])
-                      ->whereNull('orders.deleted_at');
+                        ->where('orders.type', 'sale')
+                        ->whereNotIn('orders.status', ['cancelled'])
+                        ->whereBetween('orders.order_date', [$startStr, $endStr])
+                        ->whereNull('orders.deleted_at');
                 })
                 ->where('parties.type', 'customer')
                 ->whereNull('parties.deleted_at')
@@ -645,45 +648,45 @@ class PageController extends Controller
                 ->count();
 
             return response()->json([
-                'period'   => $period,
+                'period' => $period,
                 'dateFrom' => $start->toDateString(),
-                'dateTo'   => $end->toDateString(),
+                'dateTo' => $end->toDateString(),
                 'kpis' => [
-                    'totalSales'          => round((float) $totalSales, 2),
-                    'totalSalesCount'     => (int) $totalSalesCount,
-                    'totalPurchase'       => round((float) $totalPurchase, 2),
-                    'totalPurchaseCount'  => (int) $totalPurchaseCount,
-                    'inwardPayments'      => round((float) $inwardPayments, 2),
-                    'outwardPayments'     => round((float) $outwardPayments, 2),
-                    'salesOutstanding'    => round((float) $salesOutstanding, 2),
+                    'totalSales' => round((float) $totalSales, 2),
+                    'totalSalesCount' => (int) $totalSalesCount,
+                    'totalPurchase' => round((float) $totalPurchase, 2),
+                    'totalPurchaseCount' => (int) $totalPurchaseCount,
+                    'inwardPayments' => round((float) $inwardPayments, 2),
+                    'outwardPayments' => round((float) $outwardPayments, 2),
+                    'salesOutstanding' => round((float) $salesOutstanding, 2),
                     'salesOutstandingCount' => (int) $salesOutstandingCount,
                     'purchaseOutstanding' => round((float) $purchaseOutstanding, 2),
-                    'newCustomers'        => (int) $newCustomers,
-                    'existingCustomers'   => (int) $existingCustomers,
-                    'totalCustomers'      => (int) $totalCustomersInPeriod,
-                    'inStock'             => (int) $inStock,
-                    'lowStock'            => (int) $lowStock,
-                    'zeroStock'           => (int) $zeroStock,
-                    'loginsToday'         => (int) $loginsToday,
-                    'loginsInPeriod'      => (int) $loginsInPeriod,
-                    'activeUsers'         => (int) $activeUsers,
+                    'newCustomers' => (int) $newCustomers,
+                    'existingCustomers' => (int) $existingCustomers,
+                    'totalCustomers' => (int) $totalCustomersInPeriod,
+                    'inStock' => (int) $inStock,
+                    'lowStock' => (int) $lowStock,
+                    'zeroStock' => (int) $zeroStock,
+                    'loginsToday' => (int) $loginsToday,
+                    'loginsInPeriod' => (int) $loginsInPeriod,
+                    'activeUsers' => (int) $activeUsers,
                 ],
                 'charts' => [
-                    'salesTrend'    => $salesTrend,
+                    'salesTrend' => $salesTrend,
                     'purchaseTrend' => $purchaseTrend,
                     'stateWiseSales' => $stateWiseSales,
                 ],
                 'tables' => [
-                    'topCustomers'     => $topCustomers,
-                    'bestSelling'      => $bestSelling,
-                    'leastSelling'     => $leastSelling,
+                    'topCustomers' => $topCustomers,
+                    'bestSelling' => $bestSelling,
+                    'leastSelling' => $leastSelling,
                     'lowStockProducts' => $lowStockProducts,
-                    'topVendors'       => $topVendors,
-                    'purchaseDue'      => $purchaseDue,
-                    'salesInvoiceDue'  => $salesInvoiceDue,
+                    'topVendors' => $topVendors,
+                    'purchaseDue' => $purchaseDue,
+                    'salesInvoiceDue' => $salesInvoiceDue,
                 ],
                 'payments' => [
-                    'inward'  => $inwardTotal,
+                    'inward' => $inwardTotal,
                     'outward' => $outwardTotal,
                 ],
             ]);
@@ -691,11 +694,11 @@ class PageController extends Controller
         } catch (\Throwable $e) {
             // Gracefully return empty structure if tables are missing/empty
             return response()->json([
-                'period'   => $period,
+                'period' => $period,
                 'dateFrom' => $start->toDateString(),
-                'dateTo'   => $end->toDateString(),
-                'error'    => 'Data not available: ' . $e->getMessage(),
-                'kpis'     => (object)[
+                'dateTo' => $end->toDateString(),
+                'error' => 'Data not available: '.$e->getMessage(),
+                'kpis' => (object) [
                     'totalSales' => 0,
                     'totalSalesCount' => 0,
                     'totalPurchase' => 0,
@@ -715,12 +718,12 @@ class PageController extends Controller
                     'loginsInPeriod' => 0,
                     'activeUsers' => 0,
                 ],
-                'charts'   => (object)[
+                'charts' => (object) [
                     'salesTrend' => [],
                     'purchaseTrend' => [],
                     'stateWiseSales' => [],
                 ],
-                'tables'   => (object)[
+                'tables' => (object) [
                     'topCustomers' => [],
                     'bestSelling' => [],
                     'leastSelling' => [],
@@ -729,7 +732,7 @@ class PageController extends Controller
                     'purchaseDue' => [],
                     'salesInvoiceDue' => [],
                 ],
-                'payments' => (object)[
+                'payments' => (object) [
                     'inward' => null,
                     'outward' => null,
                 ],
@@ -750,17 +753,18 @@ class PageController extends Controller
         }
 
         $now = Carbon::now();
+
         return match ($period) {
-            'today'          => [$now->copy()->startOfDay(),            $now->copy()->endOfDay()],
-            'yesterday'      => [$now->copy()->subDay()->startOfDay(),  $now->copy()->subDay()->endOfDay()],
-            'last7'          => [$now->copy()->subDays(6)->startOfDay(),$now->copy()->endOfDay()],
-            'last30'         => [$now->copy()->subDays(29)->startOfDay(),$now->copy()->endOfDay()],
-            'last_month'     => [$now->copy()->subMonthNoOverflow()->startOfMonth(), $now->copy()->subMonthNoOverflow()->endOfMonth()],
-            'last3m'         => [$now->copy()->subMonths(3)->startOfDay(), $now->copy()->endOfDay()],
-            'last6m'         => [$now->copy()->subMonths(6)->startOfDay(), $now->copy()->endOfDay()],
-            'current_month'  => [$now->copy()->startOfMonth(),           $now->copy()->endOfMonth()],
-            'current_year'   => [$now->copy()->startOfYear(),            $now->copy()->endOfYear()],
-            default          => [$now->copy()->startOfDay(),             $now->copy()->endOfDay()],
+            'today' => [$now->copy()->startOfDay(),            $now->copy()->endOfDay()],
+            'yesterday' => [$now->copy()->subDay()->startOfDay(),  $now->copy()->subDay()->endOfDay()],
+            'last7' => [$now->copy()->subDays(6)->startOfDay(), $now->copy()->endOfDay()],
+            'last30' => [$now->copy()->subDays(29)->startOfDay(), $now->copy()->endOfDay()],
+            'last_month' => [$now->copy()->subMonthNoOverflow()->startOfMonth(), $now->copy()->subMonthNoOverflow()->endOfMonth()],
+            'last3m' => [$now->copy()->subMonths(3)->startOfDay(), $now->copy()->endOfDay()],
+            'last6m' => [$now->copy()->subMonths(6)->startOfDay(), $now->copy()->endOfDay()],
+            'current_month' => [$now->copy()->startOfMonth(),           $now->copy()->endOfMonth()],
+            'current_year' => [$now->copy()->startOfYear(),            $now->copy()->endOfYear()],
+            default => [$now->copy()->startOfDay(),             $now->copy()->endOfDay()],
         };
     }
 
@@ -834,7 +838,7 @@ class PageController extends Controller
         $type = $request->get('type', 'sales_overview');
         $dateFrom = $request->get('from');
         $dateTo = $request->get('to');
-        
+
         return match ($type) {
             'sales_overview' => $this->exportSalesOverview($dateFrom, $dateTo),
             'product_sales' => $this->exportProductSales($dateFrom, $dateTo),
@@ -856,22 +860,22 @@ class PageController extends Controller
 
     private function exportStockValuation()
     {
-        $fileName = 'stock_valuation_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $fileName = 'stock_valuation_'.now()->format('Y-m-d_H-i-s').'.csv';
         $headers = [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=$fileName",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ];
 
         $columns = ['Warehouse', 'SKU', 'Product Name', 'Current Qty', 'Reserved Qty', 'Available Qty'];
-        
-        $callback = function() use($columns) {
+
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
-            
-            \App\Modules\Inventory\Models\Stock::with(['warehouse', 'product'])->chunk(100, function ($stocks) use ($file) {
+
+            Stock::with(['warehouse', 'product'])->chunk(100, function ($stocks) use ($file) {
                 foreach ($stocks as $stock) {
                     $row = [
                         $stock->warehouse ? $stock->warehouse->name : '',
@@ -879,7 +883,7 @@ class PageController extends Controller
                         $stock->product ? $stock->product->name : '',
                         $stock->quantity,
                         $stock->reserved_quantity,
-                        $stock->available_quantity
+                        $stock->available_quantity,
                     ];
                     fputcsv($file, $row);
                 }
@@ -893,43 +897,43 @@ class PageController extends Controller
     private function exportSalesOverview($dateFrom, $dateTo)
     {
         $query = Order::query()->with(['party', 'creator', 'updater', 'warehouse', 'items.product']);
-        
+
         if ($dateFrom) {
-            $query->where('order_date', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+            $query->where('order_date', '>=', Carbon::parse($dateFrom)->startOfDay());
         }
         if ($dateTo) {
-            $query->where('order_date', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+            $query->where('order_date', '<=', Carbon::parse($dateTo)->endOfDay());
         }
-        
+
         $query->orderBy('id');
-        
-        $fileName = 'sales_report_' . now()->format('Y-m-d_H-i-s') . '.csv';
+
+        $fileName = 'sales_report_'.now()->format('Y-m-d_H-i-s').'.csv';
 
         $headers = [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=$fileName",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ];
 
         $columns = [
-            'Sale Order Id', 'Farmer Id', 'Farmer Name', 'Mobile', 
-            'Created On Date', 'Created On Time', 'Created By', 'Modified On Date', 
-            'Modified On Time', 'Modified By', 'Advance Order Date', 'Village', 
-            'PostOffice', 'Taluka', 'District', 'PinCode', 'State', 'Grand Total', 
+            'Sale Order Id', 'Farmer Id', 'Farmer Name', 'Mobile',
+            'Created On Date', 'Created On Time', 'Created By', 'Modified On Date',
+            'Modified On Time', 'Modified By', 'Advance Order Date', 'Village',
+            'PostOffice', 'Taluka', 'District', 'PinCode', 'State', 'Grand Total',
             'Status', 'Item Sku', 'Item Name', 'Item Quantity', 'Item Unit Price',
-            'Item Total Price', 'Item Retail Store Discount', 
-            'Order Type', 'FC Name'
+            'Item Total Price', 'Item Retail Store Discount',
+            'Order Type', 'FC Name',
         ];
 
-        $callback = function() use($query, $columns) {
+        $callback = function () use ($query, $columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
 
             $query->chunk(100, function ($orders) use ($file) {
                 foreach ($orders as $order) {
-                    
+
                     if ($order->items->isEmpty()) {
                         $row = [
                             $order->order_no, // Sale Order Id
@@ -942,7 +946,7 @@ class PageController extends Controller
                             $order->updated_at ? $order->updated_at->format('Y-m-d') : '', // Modified On Date
                             $order->updated_at ? $order->updated_at->format('H:i:s') : '', // Modified On Time
                             $order->updater ? $order->updater->name : '', // Modified By
-                            $order->future_order_date ? \Carbon\Carbon::parse($order->future_order_date)->format('Y-m-d') : '', // Advance Order Date
+                            $order->future_order_date ? Carbon::parse($order->future_order_date)->format('Y-m-d') : '', // Advance Order Date
                             $order->shipping_village_name, // Village
                             $order->shipping_post_office, // PostOffice
                             $order->shipping_taluka, // Taluka
@@ -961,6 +965,7 @@ class PageController extends Controller
                             $order->warehouse ? $order->warehouse->name : '', // FC Name
                         ];
                         fputcsv($file, $row);
+
                         continue;
                     }
 
@@ -976,7 +981,7 @@ class PageController extends Controller
                             $order->updated_at ? $order->updated_at->format('Y-m-d') : '', // Modified On Date
                             $order->updated_at ? $order->updated_at->format('H:i:s') : '', // Modified On Time
                             $order->updater ? $order->updater->name : '', // Modified By
-                            $order->future_order_date ? \Carbon\Carbon::parse($order->future_order_date)->format('Y-m-d') : '', // Advance Order Date
+                            $order->future_order_date ? Carbon::parse($order->future_order_date)->format('Y-m-d') : '', // Advance Order Date
                             $order->shipping_village_name, // Village
                             $order->shipping_post_office, // PostOffice
                             $order->shipping_taluka, // Taluka
@@ -1008,19 +1013,19 @@ class PageController extends Controller
     private function getCsvHeaders($fileName)
     {
         return [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=$fileName",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ];
     }
 
     private function exportProductSales($dateFrom, $dateTo)
     {
-        $headers = $this->getCsvHeaders('product_sales_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('product_sales_'.now()->format('Ymd_His').'.csv');
         $columns = ['Product Name', 'SKU', 'Total Units Sold', 'Avg Unit Price', 'Total Revenue'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('order_items')
@@ -1032,27 +1037,28 @@ class PageController extends Controller
                 ->orderByDesc('total_qty');
 
             if ($dateFrom) {
-                $query->where('orders.order_date', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('orders.order_date', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('orders.order_date', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('orders.order_date', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $cursor = $query->cursor();
-                
+
             foreach ($cursor as $row) {
-                fputcsv($file, [$row->name, $row->sku, $row->total_qty, round((float)$row->avg_price, 2), $row->total_revenue]);
+                fputcsv($file, [$row->name, $row->sku, $row->total_qty, round((float) $row->avg_price, 2), $row->total_revenue]);
             }
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 
     private function exportSalesRegion($dateFrom, $dateTo)
     {
-        $headers = $this->getCsvHeaders('sales_region_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('sales_region_'.now()->format('Ymd_His').'.csv');
         $columns = ['State', 'District', 'Taluka', 'Village', 'Order Count', 'Total Revenue', 'AOV'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('orders')
@@ -1060,27 +1066,28 @@ class PageController extends Controller
                 ->groupBy('shipping_state', 'shipping_district', 'shipping_taluka', 'shipping_village_name');
 
             if ($dateFrom) {
-                $query->where('orders.order_date', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('orders.order_date', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('orders.order_date', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('orders.order_date', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $cursor = $query->cursor();
-                
+
             foreach ($cursor as $row) {
-                fputcsv($file, [$row->shipping_state, $row->shipping_district, $row->shipping_taluka, $row->shipping_village_name, $row->order_count, $row->total_revenue, round((float)$row->aov, 2)]);
+                fputcsv($file, [$row->shipping_state, $row->shipping_district, $row->shipping_taluka, $row->shipping_village_name, $row->order_count, $row->total_revenue, round((float) $row->aov, 2)]);
             }
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 
     private function exportPaymentReconciliation($dateFrom, $dateTo)
     {
-        $headers = $this->getCsvHeaders('payment_reconciliation_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('payment_reconciliation_'.now()->format('Ymd_His').'.csv');
         $columns = ['Payment ID', 'Order No', 'Amount', 'Status', 'Transaction ID', 'Payment Date'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('payments')
@@ -1089,27 +1096,28 @@ class PageController extends Controller
                 ->orderBy('payments.id');
 
             if ($dateFrom) {
-                $query->where('payments.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('payments.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('payments.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('payments.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $query->chunk(100, function ($rows) use ($file) {
-                    foreach ($rows as $row) {
-                        fputcsv($file, [$row->id, $row->order_no, $row->amount, $row->status, $row->transaction_id, $row->created_at]);
-                    }
-                });
+                foreach ($rows as $row) {
+                    fputcsv($file, [$row->id, $row->order_no, $row->amount, $row->status, $row->transaction_id, $row->created_at]);
+                }
+            });
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 
     private function exportStockLedger($dateFrom, $dateTo)
     {
-        $headers = $this->getCsvHeaders('stock_ledger_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('stock_ledger_'.now()->format('Ymd_His').'.csv');
         $columns = ['Date', 'Type', 'SKU', 'Product Name', 'Warehouse', 'Qty Before', 'Qty Moved', 'Qty After'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('stock_movements')
@@ -1119,27 +1127,28 @@ class PageController extends Controller
                 ->orderBy('stock_movements.id');
 
             if ($dateFrom) {
-                $query->where('stock_movements.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('stock_movements.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('stock_movements.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('stock_movements.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $query->chunk(100, function ($rows) use ($file) {
-                    foreach ($rows as $row) {
-                        fputcsv($file, [$row->created_at, $row->type, $row->sku, $row->name, $row->warehouse_name, $row->quantity_before, $row->quantity, $row->quantity_after]);
-                    }
-                });
+                foreach ($rows as $row) {
+                    fputcsv($file, [$row->created_at, $row->type, $row->sku, $row->name, $row->warehouse_name, $row->quantity_before, $row->quantity, $row->quantity_after]);
+                }
+            });
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 
     private function exportLowStock()
     {
-        $headers = $this->getCsvHeaders('low_stock_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('low_stock_'.now()->format('Ymd_His').'.csv');
         $columns = ['SKU', 'Product Name', 'Warehouse', 'Current Qty', 'Reserved Qty', 'Available Qty'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             DB::table('stocks')
@@ -1155,14 +1164,15 @@ class PageController extends Controller
                 });
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 
     private function exportPOFulfillment($dateFrom, $dateTo)
     {
-        $headers = $this->getCsvHeaders('po_fulfillment_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('po_fulfillment_'.now()->format('Ymd_His').'.csv');
         $columns = ['PO Number', 'Supplier', 'Order Date', 'Expected Delivery', 'Total Amount', 'Status'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('purchase_orders')
@@ -1171,27 +1181,28 @@ class PageController extends Controller
                 ->orderBy('purchase_orders.id');
 
             if ($dateFrom) {
-                $query->where('purchase_orders.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('purchase_orders.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('purchase_orders.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('purchase_orders.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $query->chunk(100, function ($rows) use ($file) {
-                    foreach ($rows as $row) {
-                        fputcsv($file, [$row->po_number, $row->supplier_name, $row->order_date, $row->expected_delivery_date, $row->net_amount, $row->status]);
-                    }
-                });
+                foreach ($rows as $row) {
+                    fputcsv($file, [$row->po_number, $row->supplier_name, $row->order_date, $row->expected_delivery_date, $row->net_amount, $row->status]);
+                }
+            });
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 
     private function exportGRNDiscrepancy($dateFrom, $dateTo)
     {
-        $headers = $this->getCsvHeaders('grn_discrepancy_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('grn_discrepancy_'.now()->format('Ymd_His').'.csv');
         $columns = ['GRN Number', 'SKU', 'Ordered Qty', 'Received Qty', 'Rejected Qty'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('goods_receipt_items')
@@ -1201,83 +1212,86 @@ class PageController extends Controller
                 ->orderBy('goods_receipt_items.id');
 
             if ($dateFrom) {
-                $query->where('goods_receipt_items.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('goods_receipt_items.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('goods_receipt_items.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('goods_receipt_items.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $query->chunk(100, function ($rows) use ($file) {
-                    foreach ($rows as $row) {
-                        fputcsv($file, [$row->grn_number, $row->sku, $row->ordered_quantity, $row->received_quantity, $row->rejected_quantity]);
-                    }
-                });
+                foreach ($rows as $row) {
+                    fputcsv($file, [$row->grn_number, $row->sku, $row->ordered_quantity, $row->received_quantity, $row->rejected_quantity]);
+                }
+            });
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 
     private function exportCallPerformance($dateFrom, $dateTo)
     {
-        $headers = $this->getCsvHeaders('call_performance_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('call_performance_'.now()->format('Ymd_His').'.csv');
         $columns = ['Call ID', 'Agent Name', 'Customer ID', 'Level 1 Tag', 'Level 2 Tag', 'Level 3 Tag', 'Notes', 'Logged Date'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
-            $query = \App\Models\CallLog::with(['agent', 'tagL1', 'tagL2', 'tagL3'])->chunk(100, function ($logs) use ($file) {
+            $query = CallLog::with(['agent', 'tagL1', 'tagL2', 'tagL3'])->chunk(100, function ($logs) use ($file) {
                 foreach ($logs as $log) {
                     fputcsv($file, [
-                        $log->id, 
-                        $log->agent ? $log->agent->name : '', 
-                        $log->customer_id, 
-                        $log->tagL1 ? $log->tagL1->name : '', 
-                        $log->tagL2 ? $log->tagL2->name : '', 
-                        $log->tagL3 ? $log->tagL3->name : '', 
-                        $log->notes, 
-                        $log->created_at
+                        $log->id,
+                        $log->agent ? $log->agent->name : '',
+                        $log->customer_id,
+                        $log->tagL1 ? $log->tagL1->name : '',
+                        $log->tagL2 ? $log->tagL2->name : '',
+                        $log->tagL3 ? $log->tagL3->name : '',
+                        $log->notes,
+                        $log->created_at,
                     ]);
                 }
             });
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 
     private function exportCallTagging($dateFrom, $dateTo)
     {
-        $headers = $this->getCsvHeaders('call_tagging_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('call_tagging_'.now()->format('Ymd_His').'.csv');
         $columns = ['Call ID', 'Agent Name', 'Customer ID', 'Level 1 Tag', 'Level 2 Tag', 'Level 3 Tag', 'Dynamic Form Data', 'Notes', 'Logged Date'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
-            
-            $query = \App\Models\CallLog::with(['agent', 'tagL1', 'tagL2', 'tagL3', 'metas'])->chunk(100, function ($logs) use ($file) {
+
+            $query = CallLog::with(['agent', 'tagL1', 'tagL2', 'tagL3', 'metas'])->chunk(100, function ($logs) use ($file) {
                 foreach ($logs as $log) {
-                    $metaString = $log->metas->map(fn($m) => $m->key . ': ' . $m->value)->implode(' | ');
-                    
+                    $metaString = $log->metas->map(fn ($m) => $m->key.': '.$m->value)->implode(' | ');
+
                     fputcsv($file, [
-                        $log->id, 
-                        $log->agent ? $log->agent->name : '', 
-                        $log->customer_id, 
-                        $log->tagL1 ? $log->tagL1->name : '', 
-                        $log->tagL2 ? $log->tagL2->name : '', 
-                        $log->tagL3 ? $log->tagL3->name : '', 
+                        $log->id,
+                        $log->agent ? $log->agent->name : '',
+                        $log->customer_id,
+                        $log->tagL1 ? $log->tagL1->name : '',
+                        $log->tagL2 ? $log->tagL2->name : '',
+                        $log->tagL3 ? $log->tagL3->name : '',
                         $metaString,
-                        $log->notes, 
-                        $log->created_at
+                        $log->notes,
+                        $log->created_at,
                     ]);
                 }
             });
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 
     private function exportCustomerRetention($dateFrom, $dateTo)
     {
-        $headers = $this->getCsvHeaders('customer_retention_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('customer_retention_'.now()->format('Ymd_His').'.csv');
         $columns = ['Customer ID', 'Name', 'Mobile', 'Joined Date', 'Total Orders', 'LTV'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('parties')
@@ -1288,27 +1302,28 @@ class PageController extends Controller
                 ->orderByDesc('ltv');
 
             if ($dateFrom) {
-                $query->where('parties.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('parties.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('parties.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('parties.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $cursor = $query->cursor();
-                
+
             foreach ($cursor as $row) {
                 fputcsv($file, [$row->id, $row->name, $row->mobile, $row->created_at, $row->total_orders, $row->ltv]);
             }
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 
     private function exportReturnAnalysis($dateFrom, $dateTo)
     {
-        $headers = $this->getCsvHeaders('return_analysis_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('return_analysis_'.now()->format('Ymd_His').'.csv');
         $columns = ['Return ID', 'Order No', 'Reason', 'Status', 'Refund Amount'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('order_returns')
@@ -1318,27 +1333,28 @@ class PageController extends Controller
                 ->orderBy('order_returns.id');
 
             if ($dateFrom) {
-                $query->where('order_returns.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('order_returns.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('order_returns.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('order_returns.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $query->chunk(100, function ($rows) use ($file) {
-                    foreach ($rows as $row) {
-                        fputcsv($file, [$row->id, $row->order_no, $row->reason, $row->status, $row->refund_amount]);
-                    }
-                });
+                foreach ($rows as $row) {
+                    fputcsv($file, [$row->id, $row->order_no, $row->reason, $row->status, $row->refund_amount]);
+                }
+            });
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 
     private function exportAuditTrail($dateFrom, $dateTo)
     {
-        $headers = $this->getCsvHeaders('audit_trail_' . now()->format('Ymd_His') . '.csv');
+        $headers = $this->getCsvHeaders('audit_trail_'.now()->format('Ymd_His').'.csv');
         $columns = ['Timestamp', 'User', 'Action', 'Subject Type', 'Subject ID'];
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('activity_log')
@@ -1347,19 +1363,20 @@ class PageController extends Controller
                 ->orderByDesc('activity_log.id');
 
             if ($dateFrom) {
-                $query->where('activity_log.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('activity_log.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('activity_log.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('activity_log.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $query->chunk(100, function ($rows) use ($file) {
-                    foreach ($rows as $row) {
-                        fputcsv($file, [$row->created_at, $row->user_name, $row->description, $row->subject_type, $row->subject_id]);
-                    }
-                });
+                foreach ($rows as $row) {
+                    fputcsv($file, [$row->created_at, $row->user_name, $row->description, $row->subject_type, $row->subject_id]);
+                }
+            });
             fclose($file);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 

@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Customers\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
 use App\Models\Crop;
 use App\Models\IrrigationType;
 use App\Models\LandUnit;
 use App\Models\LeadSource;
+use App\Modules\Core\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Cache;
 
 class CustomerSettingsController extends Controller implements HasMiddleware
 {
@@ -23,6 +23,7 @@ class CustomerSettingsController extends Controller implements HasMiddleware
             new Middleware('permission:settings-edit', only: ['store', 'update', 'toggle', 'destroy']),
         ];
     }
+
     protected array $models = [
         'crop' => Crop::class,
         'irrigation' => IrrigationType::class,
@@ -37,7 +38,7 @@ class CustomerSettingsController extends Controller implements HasMiddleware
 
     public function list(string $type)
     {
-        if (!array_key_exists($type, $this->models)) {
+        if (! array_key_exists($type, $this->models)) {
             return response()->json(['error' => 'Invalid settings type.'], 400);
         }
 
@@ -49,7 +50,7 @@ class CustomerSettingsController extends Controller implements HasMiddleware
 
     public function store(Request $request, string $type)
     {
-        if (!array_key_exists($type, $this->models)) {
+        if (! array_key_exists($type, $this->models)) {
             return response()->json(['error' => 'Invalid settings type.'], 400);
         }
 
@@ -67,15 +68,15 @@ class CustomerSettingsController extends Controller implements HasMiddleware
         $this->clearCache($type);
 
         return response()->json([
-            'success' => true, 
-            'message' => ucfirst(str_replace('_', ' ', $type)) . ' created successfully.',
-            'item' => $item
+            'success' => true,
+            'message' => ucfirst(str_replace('_', ' ', $type)).' created successfully.',
+            'item' => $item,
         ]);
     }
 
     public function update(Request $request, string $type, $id)
     {
-        if (!array_key_exists($type, $this->models)) {
+        if (! array_key_exists($type, $this->models)) {
             return response()->json(['error' => 'Invalid settings type.'], 400);
         }
 
@@ -94,36 +95,36 @@ class CustomerSettingsController extends Controller implements HasMiddleware
         $this->clearCache($type);
 
         return response()->json([
-            'success' => true, 
-            'message' => ucfirst(str_replace('_', ' ', $type)) . ' updated successfully.',
-            'item' => $model
+            'success' => true,
+            'message' => ucfirst(str_replace('_', ' ', $type)).' updated successfully.',
+            'item' => $model,
         ]);
     }
 
     public function toggle(Request $request, string $type, $id)
     {
-        if (!array_key_exists($type, $this->models)) {
+        if (! array_key_exists($type, $this->models)) {
             return response()->json(['error' => 'Invalid settings type.'], 400);
         }
 
         $modelClass = $this->models[$type];
         $model = $modelClass::findOrFail($id);
         $model->update([
-            'is_active' => !$model->is_active,
+            'is_active' => ! $model->is_active,
         ]);
 
         $this->clearCache($type);
 
         return response()->json([
-            'success' => true, 
-            'message' => ucfirst(str_replace('_', ' ', $type)) . ' status toggled.',
-            'is_active' => $model->is_active
+            'success' => true,
+            'message' => ucfirst(str_replace('_', ' ', $type)).' status toggled.',
+            'is_active' => $model->is_active,
         ]);
     }
-    
+
     public function destroy(string $type, $id)
     {
-        if (!array_key_exists($type, $this->models)) {
+        if (! array_key_exists($type, $this->models)) {
             return response()->json(['error' => 'Invalid settings type.'], 400);
         }
 
@@ -134,8 +135,8 @@ class CustomerSettingsController extends Controller implements HasMiddleware
         $this->clearCache($type);
 
         return response()->json([
-            'success' => true, 
-            'message' => ucfirst(str_replace('_', ' ', $type)) . ' deleted successfully.'
+            'success' => true,
+            'message' => ucfirst(str_replace('_', ' ', $type)).' deleted successfully.',
         ]);
     }
 
@@ -152,7 +153,7 @@ class CustomerSettingsController extends Controller implements HasMiddleware
         if ($cacheKey) {
             Cache::forget($cacheKey);
         }
-        
+
         // Also clear the modal specific caches
         $modalCacheKey = match ($type) {
             'crop' => 'dynamic_crops',
@@ -161,7 +162,7 @@ class CustomerSettingsController extends Controller implements HasMiddleware
             'lead_source' => 'dynamic_lead_sources',
             default => null,
         };
-        
+
         if ($modalCacheKey) {
             Cache::forget($modalCacheKey);
         }

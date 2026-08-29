@@ -2,9 +2,9 @@
 
 namespace App\Modules\Customers\Models;
 
+use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Modules\Users\Models\User;
 
 class WalletTransaction extends Model
 {

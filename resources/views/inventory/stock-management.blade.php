@@ -264,6 +264,15 @@
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
+                                            <div x-show="item.product?.grade" 
+                                                 class="badge border shadow-sm rounded-2 d-flex flex-column align-items-center justify-content-center me-2 flex-shrink-0" 
+                                                 style="width: 28px; height: 34px; font-size: 11px; padding: 2px;"
+                                                 :class="{'bg-success-subtle text-success-emphasis border-success': item.product?.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': item.product?.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': item.product?.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(item.product?.grade)}"
+                                                 :title="'Grade ' + (item.product?.grade || '')"
+                                                 x-cloak>
+                                                <i class="bi bi-star-fill text-warning" style="font-size: 10px; line-height: 1; margin-bottom: 2px;"></i>
+                                                <span x-text="item.product?.grade" style="line-height: 1; font-weight: 800;"></span>
+                                            </div>
                                             <template x-if="item.product?.image_url">
                                                 <div class="rounded overflow-hidden d-flex align-items-center justify-content-center me-3 flex-shrink-0 border border-secondary-subtle bg-white" style="width:38px;height:38px;">
                                                     <img :src="item.product.image_url" alt="" class="w-100 h-100 object-fit-contain">
@@ -276,7 +285,15 @@
                                             </template>
                                             <div>
                                                 <div class="fw-medium" x-text="item.product?.name || '-'"></div>
-                                                <small class="text-muted font-monospace" x-text="item.product?.sku || ''"></small>
+                                                <div class="d-flex align-items-center gap-2 mt-1">
+                                                    <small class="text-muted font-monospace" x-text="item.product?.sku || ''"></small>
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" 
+                                                          style="font-size:9px; padding: 2px 4px;" 
+                                                          x-show="item.allow_overselling ?? item.product?.allow_overselling" 
+                                                          title="Overselling Allowed" x-cloak>
+                                                        <i class="bi bi-arrow-down-up me-1"></i>Oversell
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -284,24 +301,40 @@
                                         <span class="badge bg-body-secondary text-body-emphasis border" x-text="item.warehouse?.name || '-'"></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge stock-badge"
-                                              :class="{
-                                                  'in-stock':     parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > (item.product?.min_stock_level ?? 5),
-                                                  'low-stock':    parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > 0 && parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= (item.product?.min_stock_level ?? 5),
-                                                  'out-of-stock': parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= 0
-                                              }"
-                                              x-text="parseFloat(item.quantity || 0) + ' units'">
-                                        </span>
+                                        <div class="d-flex align-items-center justify-content-center gap-1">
+                                            <span class="badge stock-badge"
+                                                  :class="{
+                                                      'in-stock':     parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > (item.product?.min_stock_level ?? 5),
+                                                      'low-stock':    parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > 0 && parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= (item.product?.min_stock_level ?? 5),
+                                                      'out-of-stock': parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= 0
+                                                  }"
+                                                  x-text="parseFloat(item.quantity || 0) + ' units'">
+                                            </span>
+                                            <span x-show="item.allow_overselling ?? item.product?.allow_overselling" 
+                                                  class="badge bg-danger-subtle text-danger border border-danger-subtle px-1" 
+                                                  style="font-size: 10px;"
+                                                  title="Overselling Limit" x-cloak>
+                                                +<span x-text="item.overselling_qty ?? (item.product?.overselling_qty || 0)"></span>
+                                            </span>
+                                        </div>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge stock-badge"
-                                              :class="{
-                                                  'in-stock':     (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 5,
-                                                  'low-stock':    (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 0 && (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 5,
-                                                  'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 0
-                                              }"
-                                              x-text="parseFloat(Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)).toFixed(4))">
-                                        </span>
+                                        <div class="d-flex align-items-center justify-content-center gap-1">
+                                            <span class="badge stock-badge"
+                                                  :class="{
+                                                      'in-stock':     (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 5,
+                                                      'low-stock':    (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 0 && (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 5,
+                                                      'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 0
+                                                  }"
+                                                  x-text="parseFloat((parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)).toFixed(4))">
+                                            </span>
+                                            <span x-show="item.allow_overselling ?? item.product?.allow_overselling" 
+                                                  class="badge bg-danger-subtle text-danger border border-danger-subtle px-1" 
+                                                  style="font-size: 10px;"
+                                                  title="Overselling Limit" x-cloak>
+                                                +<span x-text="item.overselling_qty ?? (item.product?.overselling_qty || 0)"></span>
+                                            </span>
+                                        </div>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle"

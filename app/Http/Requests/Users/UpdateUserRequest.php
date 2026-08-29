@@ -15,7 +15,7 @@ class UpdateUserRequest extends FormRequest
         if (! $this->user()) {
             return false;
         }
-        
+
         if ($this->user()->can('user-edit')) {
             return true;
         }

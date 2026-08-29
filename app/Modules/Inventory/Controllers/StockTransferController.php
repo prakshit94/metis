@@ -176,7 +176,7 @@ class StockTransferController extends Controller implements HasMiddleware
         ]);
 
         $action = $validated['action'];
-        $ids    = $validated['ids'];
+        $ids = $validated['ids'];
 
         $transfers = StockTransfer::with('items')->whereIn('id', $ids)->get();
         $processedCount = 0;
@@ -204,14 +204,14 @@ class StockTransferController extends Controller implements HasMiddleware
                 $processedCount++;
             } catch (\Throwable $e) {
                 $failedCount++;
-                $errors[] = "Transfer {$transfer->transfer_no}: " . $e->getMessage();
+                $errors[] = "Transfer {$transfer->transfer_no}: ".$e->getMessage();
             }
         }
 
         if ($failedCount > 0) {
             return response()->json([
                 'message' => "Processed {$processedCount} transfer(s). Failed {$failedCount} transfer(s).",
-                'errors'  => $errors,
+                'errors' => $errors,
             ], 422);
         }
 

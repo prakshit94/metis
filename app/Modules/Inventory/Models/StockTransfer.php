@@ -4,18 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
 use App\Modules\Catalog\Models\Warehouse;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class StockTransfer extends Model implements Auditable
 {
     use AuditableTrait;
+
     protected $fillable = [
         'transfer_no',
         'from_warehouse_id',

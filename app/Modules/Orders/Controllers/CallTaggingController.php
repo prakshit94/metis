@@ -2,11 +2,12 @@
 
 namespace App\Modules\Orders\Controllers;
 
-use App\Modules\Core\Controllers\Controller;
-use App\Models\CallTag;
-use App\Models\CallTagFormField;
 use App\Models\CallLog;
 use App\Models\CallLogMeta;
+use App\Models\CallTag;
+use App\Models\CallTagFormField;
+use App\Models\Crop;
+use App\Modules\Core\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -31,10 +32,10 @@ class CallTaggingController extends Controller
     public function getFormFields($tagId)
     {
         $fields = CallTagFormField::where('call_tag_id', $tagId)->orderBy('sort_order')->get();
-        
+
         foreach ($fields as $field) {
             if (strtolower($field->name) === 'crop') {
-                $crops = \App\Models\Crop::where('is_active', true)->pluck('name')->toArray();
+                $crops = Crop::where('is_active', true)->pluck('name')->toArray();
                 $field->options = json_encode($crops);
                 $field->type = 'multi_select';
             }
@@ -51,7 +52,7 @@ class CallTaggingController extends Controller
             'tag_l2_id' => 'required|exists:call_tags,id',
             'tag_l3_id' => 'nullable|exists:call_tags,id',
             'notes' => 'nullable|string',
-            'meta' => 'nullable|array'
+            'meta' => 'nullable|array',
         ]);
 
         try {
@@ -66,7 +67,7 @@ class CallTaggingController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
-            if (!empty($validated['meta'])) {
+            if (! empty($validated['meta'])) {
                 foreach ($validated['meta'] as $key => $value) {
                     // Convert arrays to JSON strings for storage if needed
                     $val = is_array($value) ? json_encode($value) : $value;
@@ -85,6 +86,7 @@ class CallTaggingController extends Controller
             return response()->json(['message' => 'Call log saved successfully', 'call_log' => $callLog]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json(['error' => 'Failed to save call log', 'details' => $e->getMessage()], 500);
         }
     }

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Modules\Orders\Models\Order;
-use App\Modules\Users\Models\Permission;
-use App\Modules\Users\Models\Role;
-use App\Modules\Orders\Models\Shipment;
 use App\Modules\Catalog\Models\Service;
+use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\Shipment;
 use App\Modules\Users\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
@@ -31,7 +31,7 @@ class ShippingApiTest extends TestCase
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
 
         // Create Admin user
         $this->admin = User::create([
@@ -80,7 +80,7 @@ class ShippingApiTest extends TestCase
         // 4. Toggle Active Status
         $response = $this->postJson("/api/shipping/services/{$serviceId}/toggle");
         $response->assertOk();
-        $this->assertFalse((bool)$response->json('service.is_active'));
+        $this->assertFalse((bool) $response->json('service.is_active'));
 
         // 5. Delete Shipping Service
         $response = $this->deleteJson("/api/shipping/services/{$serviceId}");
@@ -91,7 +91,7 @@ class ShippingApiTest extends TestCase
     public function test_shipments_and_tracking_flow(): void
     {
         // Create Mock Order with warehouse (required for dispatch)
-        $warehouse = \App\Modules\Catalog\Models\Warehouse::first();
+        $warehouse = Warehouse::first();
         $order = Order::create([
             'order_no' => 'ORD-TEST12345',
             'status' => 'ready_to_ship',
@@ -149,7 +149,7 @@ class ShippingApiTest extends TestCase
         $response = $this->getJson("/api/shipping/shipments/{$shipment->id}/tracking");
         $response->assertOk();
         $this->assertCount(2, $response->json('events'));
-        
+
         $eventNames = collect($response->json('events'))->pluck('event_name')->toArray();
         $this->assertContains('Custom Transit Event', $eventNames);
         $this->assertContains('Status Updated to In_transit', $eventNames);

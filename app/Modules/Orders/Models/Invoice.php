@@ -2,18 +2,16 @@
 
 namespace App\Modules\Orders\Models;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class Invoice extends Model implements Auditable
 {
     use AuditableTrait;
     use SoftDeletes;
-
 
     protected $fillable = [
         'invoice_no',
@@ -53,6 +51,7 @@ class Invoice extends Model implements Auditable
         if ($this->relationLoaded('payments')) {
             return $this->payments->where('status', 'completed')->sum('amount');
         }
+
         return $this->payments()->where('status', 'completed')->sum('amount');
     }
 
@@ -76,6 +75,7 @@ class Invoice extends Model implements Auditable
         if ($this->relationLoaded('refunds')) {
             return $this->refunds->where('status', 'completed')->sum('amount');
         }
+
         return $this->refunds()->where('status', 'completed')->sum('amount');
     }
 }

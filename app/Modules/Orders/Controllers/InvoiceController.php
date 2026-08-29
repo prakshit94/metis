@@ -66,12 +66,12 @@ class InvoiceController extends Controller implements HasMiddleware
 
         if ($request->wantsJson() || $request->ajax()) {
             $totalInvoiced = (float) $statsQuery()->sum('net_amount');
-            
+
             // Subquery prevents packet limit / bindings explosion compared to pluck('id')
             $collectedAmount = (float) Payment::where('status', 'completed')
                 ->whereIn('invoice_id', $statsQuery()->select('id'))
                 ->sum('amount');
-                
+
             $pendingAmount = max(0, $totalInvoiced - $collectedAmount);
 
             $avgValue = (float) $statsQuery()->avg('net_amount');
@@ -105,15 +105,15 @@ class InvoiceController extends Controller implements HasMiddleware
     public function bulkStatus(Request $request, FinancialService $financialService)
     {
         $validated = $request->validate([
-            'ids'    => 'required|array',
-            'ids.*'  => 'exists:invoices,id',
+            'ids' => 'required|array',
+            'ids.*' => 'exists:invoices,id',
             'status' => 'required|in:paid,unpaid,cancelled',
         ]);
 
         if (in_array($validated['status'], ['paid', 'unpaid'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invoice status is automatically derived from payments. You cannot manually force an invoice to be paid or unpaid without recording an actual payment.'
+                'message' => 'Invoice status is automatically derived from payments. You cannot manually force an invoice to be paid or unpaid without recording an actual payment.',
             ], 422);
         }
 
@@ -121,7 +121,7 @@ class InvoiceController extends Controller implements HasMiddleware
 
         // Scope: prevent users from updating invoices for orders they don't own
         $query = Invoice::whereIn('id', $validated['ids']);
-        
+
         $invoices = $query->get();
 
         if ($validated['status'] === 'cancelled') {
@@ -129,7 +129,7 @@ class InvoiceController extends Controller implements HasMiddleware
                 if ($invoice->paid_amount > 0) {
                     return response()->json([
                         'success' => false,
-                        'message' => "Cannot cancel Invoice #{$invoice->invoice_no} because it has completed payments. Please refund all associated payments first."
+                        'message' => "Cannot cancel Invoice #{$invoice->invoice_no} because it has completed payments. Please refund all associated payments first.",
                     ], 422);
                 }
             }

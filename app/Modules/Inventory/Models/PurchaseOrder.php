@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Models;
 
 use App\Modules\Catalog\Models\Warehouse;
-use App\Modules\Inventory\Models\Supplier;
 use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class PurchaseOrder extends Model
 {
@@ -78,6 +78,6 @@ class PurchaseOrder extends Model
 
     public function getInvoiceUrlAttribute(): ?string
     {
-        return $this->invoice_path ? \Illuminate\Support\Facades\Storage::url($this->invoice_path) : null;
+        return $this->invoice_path ? Storage::url($this->invoice_path) : null;
     }
 }

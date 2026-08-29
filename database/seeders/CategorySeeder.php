@@ -194,21 +194,21 @@ class CategorySeeder extends Seeder
 
         foreach ($categoryTree as $category) {
             $parent = Category::firstOrCreate(['slug' => $category['slug']], [
-                'name'      => $category['name'],
-                'image'     => $category['image'],
+                'name' => $category['name'],
+                'image' => $category['image'],
                 'parent_id' => null,
-                'status'    => 'active',
+                'status' => 'active',
                 'is_active' => true,
             ]);
 
             if (isset($category['children'])) {
                 foreach ($category['children'] as $child) {
                     Category::firstOrCreate(['slug' => $child['slug']], [
-                        'name'      => $child['name'],
+                        'name' => $child['name'],
                         // Child inherits parent image as default
-                        'image'     => $category['image'],
+                        'image' => $category['image'],
                         'parent_id' => $parent->id,
-                        'status'    => 'active',
+                        'status' => 'active',
                         'is_active' => true,
                     ]);
                 }

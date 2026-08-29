@@ -2,6 +2,7 @@
 
 namespace App\Services\Shipping;
 
+use App\Services\Shipping\Providers\IndiaPostProvider;
 use Illuminate\Support\Manager;
 
 class ShippingManager extends Manager
@@ -19,10 +20,10 @@ class ShippingManager extends Manager
     /**
      * Create an instance of the India Post driver.
      *
-     * @return \App\Services\Shipping\Providers\IndiaPostProvider
+     * @return IndiaPostProvider
      */
     public function createIndiaPostDriver()
     {
-        return new Providers\IndiaPostProvider();
+        return new IndiaPostProvider;
     }
 }
