@@ -38,7 +38,7 @@ class IndiaPostProvider implements ShippingProviderInterface
         $cacheKey = 'india_post_access_token';
 
         return Cache::remember($cacheKey, now()->addMinutes(55), function () {
-            $response = Http::post("{$this->baseUrl}/v1/access/login", [
+            $response = Http::withoutVerifying()->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])->post("{$this->baseUrl}/v1/access/login", [
                 'username' => $this->username,
                 'password' => $this->password,
             ]);
@@ -55,7 +55,7 @@ class IndiaPostProvider implements ShippingProviderInterface
     {
         $token = $this->authenticate();
 
-        $response = Http::withToken($token)->get("{$this->baseUrl}/v1/speed-post/tariffs", $packageDetails);
+        $response = Http::withoutVerifying()->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])->withToken($token)->get("{$this->baseUrl}/v1/speed-post/tariffs", $packageDetails);
 
         if ($response->successful() && $response->json('success')) {
             return $response->json();
@@ -122,7 +122,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             ],
         ];
 
-        $response = Http::withToken($token)
+        $response = Http::withoutVerifying()->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])->withToken($token)
             ->post("{$this->baseUrl}/process-articles/{$customId}", $payload);
 
         if ($response->successful() && $response->json('success')) {
@@ -155,7 +155,7 @@ class IndiaPostProvider implements ShippingProviderInterface
     {
         $token = $this->authenticate();
 
-        $response = Http::withToken($token)->post("{$this->baseUrl}/v1/tracking/bulk", [
+        $response = Http::withoutVerifying()->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])->withToken($token)->post("{$this->baseUrl}/v1/tracking/bulk", [
             'bulk' => $trackingNumbers,
         ]);
 
