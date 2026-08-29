@@ -316,76 +316,81 @@
                                                                :checked="selectedProducts.includes(product.id)"
                                                                @change="toggleProduct(product.id)">
                                                     </td>
-                                                    <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <div x-show="product.grade" 
-                                                                 class="badge border shadow-sm rounded-2 d-flex flex-column align-items-center justify-content-center me-2 flex-shrink-0" 
-                                                                 style="width: 28px; height: 34px; font-size: 11px; padding: 2px;"
-                                                                 :class="{'bg-success-subtle text-success-emphasis border-success': product.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(product.grade)}"
-                                                                 :title="'Grade ' + product.grade"
-                                                                 x-cloak>
-                                                                <i class="bi bi-star-fill text-warning" style="font-size: 10px; line-height: 1; margin-bottom: 2px;"></i>
-                                                                <span x-text="product.grade" style="line-height: 1; font-weight: 800;"></span>
-                                                            </div>
-                                                            <img :src="product.image" 
-                                                                 class="product-image me-3" 
-                                                                 :alt="product.name">
-                                                            <div>
-                                                                <a href="#" class="fw-bold text-decoration-none text-body-emphasis mb-1 d-block" @click.prevent="viewProduct(product)" x-text="product.name"></a>
-                                                                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                                                                    <small class="text-muted" style="font-size: 11px;" x-text="'SKU: ' + product.sku"></small>
-                                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px; padding: 0.25em 0.5em;" x-text="product.category"></span>
+                                                    <td class="align-middle">
+                                                        <div class="d-flex align-items-start gap-3">
+                                                            <div class="position-relative flex-shrink-0">
+                                                                <img :src="product.image || '/assets/images/product-placeholder.svg'" 
+                                                                     class="rounded border shadow-sm object-fit-cover" 
+                                                                     style="width: 48px; height: 48px;" 
+                                                                     :alt="product.name"
+                                                                     x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                                <div x-show="product.grade" 
+                                                                     class="position-absolute top-100 start-50 translate-middle badge border shadow-sm rounded-pill px-2 d-flex align-items-center" 
+                                                                     style="font-size: 9px; padding-top: 2px; padding-bottom: 2px;"
+                                                                     :class="{'bg-success-subtle text-success-emphasis border-success': product.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(product.grade)}"
+                                                                     :title="'Grade ' + product.grade"
+                                                                     x-cloak>
+                                                                    <i class="bi bi-star-fill text-warning me-1" style="font-size: 8px;"></i><span x-text="product.grade" style="font-weight: 800;"></span>
                                                                 </div>
-                                                                <!-- Offers Button -->
-                                                                <div class="mt-2" x-data="{ promos: window.getApplicablePromotions(product) }" x-show="promos.offers.length > 0 || promos.coupons.length > 0 || promos.referrals.length > 0">
-                                                                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill d-flex align-items-center gap-1 bg-body" style="font-size: 10px; padding: 2px 8px;" data-bs-toggle="modal" data-bs-target="#offersModal" @click="$dispatch('set-promos', promos)">
-                                                                        <i class="bi bi-gift-fill"></i> View Offers (<span x-text="promos.offers.length + promos.coupons.length + promos.referrals.length"></span>)
+                                                            </div>
+                                                            <div class="d-flex flex-column min-w-0 pt-1">
+                                                                <a href="#" class="fw-bold text-decoration-none text-body-emphasis text-truncate mb-1" style="max-width: 220px;" @click.prevent="viewProduct(product)" x-text="product.name"></a>
+                                                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                                                    <small class="text-muted" style="font-size: 11px;" x-text="'SKU: ' + product.sku"></small>
+                                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis border border-secondary border-opacity-25" style="font-size: 9px; padding: 0.25em 0.5em;" x-text="product.category"></span>
+                                                                </div>
+                                                                <div x-data="{ promos: window.getApplicablePromotions(product) }" x-show="promos.offers.length > 0 || promos.coupons.length > 0 || promos.referrals.length > 0">
+                                                                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill py-0 px-2 d-inline-flex align-items-center gap-1 bg-body" style="font-size: 10px;" data-bs-toggle="modal" data-bs-target="#offersModal" @click="$dispatch('set-promos', promos)">
+                                                                        <i class="bi bi-gift-fill"></i> <span x-text="promos.offers.length + promos.coupons.length + promos.referrals.length + ' Offers'"></span>
                                                                     </button>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td>
-                                                        <div class="d-flex flex-column gap-1 mb-2">
-                                                            <div class="d-flex align-items-center flex-wrap gap-2">
-                                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="product.mrp && Number(product.mrp) > (Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100)))" x-text="'MRP: ₹' + Number(product.mrp).toFixed(2)"></span>
+                                                    <td class="align-middle">
+                                                        <div class="d-flex flex-column gap-2">
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="product.mrp && Number(product.mrp) > (Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100)))" x-text="'₹' + Number(product.mrp).toFixed(2)"></span>
                                                                 <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 13px;" x-text="'₹' + (Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100))).toFixed(2)"></span>
                                                             </div>
-                                                        </div>
-                                                        <div class="d-flex flex-column align-items-start gap-1">
-                                                            <div class="d-flex align-items-center gap-1">
-                                                                <span class="badge stock-badge" 
-                                                                      :class="{
-                                                                          'in-stock': getEffectiveStock(product) > (product.min_stock_level || 10),
-                                                                          'low-stock': getEffectiveStock(product) > 0 && getEffectiveStock(product) <= (product.min_stock_level || 10),
-                                                                          'out-of-stock': getEffectiveStock(product) <= 0
-                                                                      }"
-                                                                      x-text="getEffectiveStock(product) + ' units'"></span>
-                                                                <span x-show="product.allow_overselling && getRemainingOversell(product) > 0" class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size: 10px;" title="Overselling Allowed" x-text="'+ ' + getRemainingOversell(product) + ' oversell'"></span>
+                                                            <div class="p-2 bg-body-tertiary rounded border shadow-sm w-100" style="min-width: 160px; max-width: 200px;">
+                                                                <div class="d-flex justify-content-between align-items-center mb-1 border-bottom border-secondary border-opacity-10 pb-1">
+                                                                    <span class="text-muted fw-medium" style="font-size: 9px; letter-spacing: 0.5px;">AVAILABLE FOR SELL</span>
+                                                                    <span class="badge stock-badge" 
+                                                                          :class="{
+                                                                              'in-stock': getEffectiveStock(product) > (product.min_stock_level || 10),
+                                                                              'low-stock': getEffectiveStock(product) > 0 && getEffectiveStock(product) <= (product.min_stock_level || 10),
+                                                                              'out-of-stock': getEffectiveStock(product) <= 0
+                                                                          }"
+                                                                          x-text="getEffectiveStock(product)"></span>
+                                                                </div>
+                                                                <div class="d-flex justify-content-between align-items-center" style="font-size: 10px;">
+                                                                    <span class="text-muted">Physical: <span class="fw-bold text-body-emphasis" x-text="getPhysicalStock(product)"></span></span>
+                                                                    <span x-show="product.allow_overselling && getRemainingOversell(product) > 0" class="text-warning fw-bold" title="Overselling Allowed" x-text="'+' + getRemainingOversell(product) + ' (OS)'"></span>
+                                                                </div>
                                                             </div>
-                                                            <small class="text-muted" style="font-size: 10px;" x-show="warehouseFilter">
-                                                                Physical: <span x-text="getPhysicalStock(product)"></span> units
-                                                            </small>
                                                         </div>
                                                     </td>
-                                                    <td>
-                                                        <div class="d-flex align-items-center gap-2 mb-1">
-                                                            <span class="badge" 
-                                                                  :class="{
-                                                                      'bg-success': ['published', 'active'].includes(product.status),
-                                                                      'bg-secondary': product.status === 'draft',
-                                                                      'bg-warning': ['pending', 'out_of_stock'].includes(product.status)
-                                                                  }"
-                                                                  x-text="product.status"></span>
-                                                            <small class="text-muted" style="font-size: 10px;" x-text="product.created"></small>
-                                                        </div>
-                                                        <div class="d-flex flex-wrap gap-1 mt-1">
-                                                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style="font-size:9px;" x-show="product.is_sku_enabled" title="SKU Enabled"><i class="bi bi-upc-scan me-1"></i>SKU On</span>
-                                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="!product.is_sku_enabled" title="SKU Disabled"><i class="bi bi-upc-scan me-1"></i>SKU Off</span>
-                                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="product.batch_tracking" title="Batch Tracking"><i class="bi bi-layers me-1"></i>Batch</span>
-                                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size:9px;" x-show="product.expiry_tracking" title="Expiry Tracking"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
-                                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:9px;" x-show="product.allow_overselling" title="Allow Overselling"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span>
-                                                            <span class="text-muted small" style="font-size:10px;" x-show="!product.is_sku_enabled && !product.batch_tracking && !product.expiry_tracking && !product.allow_overselling">-</span>
+                                                    <td class="align-middle">
+                                                        <div class="d-flex flex-column gap-2">
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <span class="badge" 
+                                                                      :class="{
+                                                                          'bg-success': ['published', 'active'].includes(product.status),
+                                                                          'bg-secondary': product.status === 'draft',
+                                                                          'bg-warning': ['pending', 'out_of_stock'].includes(product.status)
+                                                                      }"
+                                                                      x-text="product.status"></span>
+                                                                <small class="text-muted" style="font-size: 10px;"><i class="bi bi-clock me-1"></i><span x-text="product.created"></span></small>
+                                                            </div>
+                                                            <div class="d-flex flex-wrap gap-1" style="max-width: 180px;">
+                                                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style="font-size:9px;" x-show="product.is_sku_enabled" title="SKU Enabled"><i class="bi bi-upc-scan me-1"></i>SKU On</span>
+                                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="!product.is_sku_enabled" title="SKU Disabled"><i class="bi bi-upc-scan me-1"></i>SKU Off</span>
+                                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="product.batch_tracking" title="Batch Tracking"><i class="bi bi-layers me-1"></i>Batch</span>
+                                                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size:9px;" x-show="product.expiry_tracking" title="Expiry Tracking"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
+                                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:9px;" x-show="product.allow_overselling" title="Allow Overselling"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span>
+                                                                <span class="text-muted small" style="font-size:10px;" x-show="!product.is_sku_enabled && !product.batch_tracking && !product.expiry_tracking && !product.allow_overselling">-</span>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td class="text-end pe-4">
