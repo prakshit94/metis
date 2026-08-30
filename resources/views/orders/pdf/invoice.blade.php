@@ -163,10 +163,10 @@ br {
                <strong>Tracking No:</strong> {{ $shipment->tracking_no ?? 'N/A' }}<br>
                @if($shipment->tracking_no)
                @php
-                  $generator = new \Picqer\Barcode\BarcodeGeneratorPNG();
+                  $generator = new \Picqer\Barcode\BarcodeGeneratorSVG();
                   $barcodeBase64 = base64_encode($generator->getBarcode($shipment->tracking_no, $generator::TYPE_CODE_128));
                @endphp
-               <img src="data:image/png;base64,{{ $barcodeBase64 }}" style="height: 25px; max-width: 100%; margin-top: 3px; margin-bottom: 3px;" alt="Barcode" /><br>
+               <img src="data:image/svg+xml;base64,{{ $barcodeBase64 }}" style="height: 25px; max-width: 100%; margin-top: 3px; margin-bottom: 3px;" alt="Barcode" /><br>
                @endif
                @if($shipment->actual_weight_g)
                <strong>Weight:</strong> {{ $shipment->actual_weight_g }} g<br>

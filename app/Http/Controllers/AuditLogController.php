@@ -21,6 +21,8 @@ class AuditLogController extends Controller implements HasMiddleware
 
     /**
      * Display a listing of the audit logs.
+     * 
+     * @return array{data: array<int, \OwenIt\Auditing\Models\Audit&array{model_name: string, user: \App\Modules\Users\Models\User|null}>, total: int, current_page: int, last_page: int, stats: array{total: int, created: int, updated: int, deleted: int}}
      */
     public function index(Request $request)
     {

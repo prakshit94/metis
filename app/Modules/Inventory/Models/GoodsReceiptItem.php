@@ -7,9 +7,13 @@ namespace App\Modules\Inventory\Models;
 use App\Modules\Catalog\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 class GoodsReceiptItem extends Model
-{
+ implements Auditable{
+    use AuditableTrait;
+
     protected $fillable = [
         'goods_receipt_id',
         'purchase_order_item_id',

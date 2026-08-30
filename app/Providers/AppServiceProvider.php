@@ -102,3 +102,29 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 }
+
+class ScrambleGroupingExtension extends \Dedoc\Scramble\Extensions\OperationExtension
+{
+    public function handle(\Dedoc\Scramble\Support\Generator\Operation $operation, \Dedoc\Scramble\Support\RouteInfo $routeInfo)
+    {
+        $className = $routeInfo->className();
+
+        if ($className) {
+            // Group by App\Modules\{Module}
+            if (\Illuminate\Support\Str::startsWith($className, 'App\\Modules\\')) {
+                $parts = explode('\\', $className);
+                if (isset($parts[2])) {
+                    $operation->setTags([$parts[2]]);
+                    return;
+                }
+            }
+            
+            // Group by App\Http\Controllers
+            if (\Illuminate\Support\Str::startsWith($className, 'App\\Http\\Controllers\\')) {
+                $operation->setTags(['General']);
+                return;
+            }
+        }
+    }
+}
+

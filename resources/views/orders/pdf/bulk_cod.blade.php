@@ -119,7 +119,7 @@
                     $shipment = $order->shipments()->latest()->first();
                     $barcodeBase64 = null;
                     if ($shipment && $shipment->tracking_no) {
-                        $generator = new \Picqer\Barcode\BarcodeGeneratorPNG();
+                        $generator = new \Picqer\Barcode\BarcodeGeneratorSVG();
                         $barcodeBase64 = base64_encode($generator->getBarcode($shipment->tracking_no, $generator::TYPE_CODE_128));
                     }
                 @endphp
@@ -131,7 +131,7 @@
                     </div>
                     @if($barcodeBase64)
                     <div>
-                        <img src="data:image/png;base64,{{ $barcodeBase64 }}" style="height: 35px; max-width: 100%; margin-bottom: 5px;" alt="Barcode" />
+                        <img src="data:image/svg+xml;base64,{{ $barcodeBase64 }}" style="height: 35px; max-width: 100%; margin-bottom: 5px;" alt="Barcode" />
                     </div>
                     @endif
                     <div class="muted">
