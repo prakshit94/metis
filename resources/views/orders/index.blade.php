@@ -179,13 +179,13 @@
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-dark-subtle text-dark-emphasis me-3">
+                    <div class="stats-icon text-bg-dark-subtle text-body-emphasis-emphasis me-3">
                         <i class="bi bi-box-seam"></i>
                     </div>
                     <div>
                         <p class="h6 mb-0 text-muted">Ready to Ship</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.ready_to_ship"></span></div>
-                        <small class="text-dark" x-text="'Value: ' + formatCurrency(stats.ready_to_ship_amount)"></small>
+                        <small class="text-body-emphasis" x-text="'Value: ' + formatCurrency(stats.ready_to_ship_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -362,7 +362,7 @@
                                 <div class="d-flex align-items-center gap-3 mb-4">
                                     <div class="badge text-bg-primary-subtle text-primary-emphasis-subtle py-2 px-3 fs-6 rounded-pill" x-text="`${wh.total} Orders`"></div>
                                 </div>
-                                <div class="p-3 bg-light bg-opacity-50 rounded-4 border border-secondary-subtle mb-3 shadow-sm">
+                                <div class="p-3 bg-body-tertiary bg-opacity-50 rounded-4 border border-secondary-subtle mb-3 shadow-sm">
                                     <span class="d-block text-muted small fw-medium mb-1 text-uppercase tracking-wider">Total Value</span>
                                     <span class="fs-4 fw-bold text-success" x-text="`₹ ${formatCurrency(wh.total_amount)}`"></span>
                                 </div>
@@ -466,7 +466,7 @@
                                     @can('orders.view.cancelled')
                                     <div class="d-flex align-items-center gap-2" x-show="wh.cancelled > 0">
                                         <div class="bg-dark rounded-circle" style="width: 8px; height: 8px;"></div>
-                                        <span class="small text-dark-emphasis fw-medium">Cancelled: <span x-text="wh.cancelled"></span></span>
+                                        <span class="small text-body-emphasis-emphasis fw-medium">Cancelled: <span x-text="wh.cancelled"></span></span>
                                     </div>
                                     @endcan
                                 </div>
@@ -545,6 +545,18 @@
                         <option value="week">This Week</option>
                         <option value="month">This Month</option>
                         <option value="prev_month">Previous Month</option>
+                    </select>
+
+                    <!-- Items Per Page -->
+                    <select x-select class="form-select form-select-sm"
+                            x-model.number="itemsPerPage"
+                            @change="filterOrders()"
+                            style="width: 120px;">
+                        <option value="10">10 / page</option>
+                        <option value="15">15 / page</option>
+                        <option value="20">20 / page</option>
+                        <option value="25">25 / page</option>
+                        <option value="50">50 / page</option>
                     </select>
 
 
@@ -1402,7 +1414,7 @@
                                             <i class="bi bi-lightning-charge me-1"></i> Order Actions
                                         </h6>
                                         <div class="d-flex flex-wrap gap-2">
-                                            <button class="btn btn-sm btn-light flex-grow-1 shadow-sm fw-semibold border-secondary border-opacity-25" @click="editOrder(selectedOrder)">
+                                            <button class="btn btn-sm btn-outline-secondary flex-grow-1 shadow-sm fw-semibold border-secondary border-opacity-25" @click="editOrder(selectedOrder)">
                                                 <i class="bi bi-pencil-square me-1"></i>Edit
                                             </button>
                                             <template x-if="['pending', 'pending_confirmation'].includes(selectedOrder.status)">
@@ -1421,7 +1433,7 @@
                                             </template>
                                             <template x-if="selectedOrder.status === 'processing'">
                                                 @can('orders.ship')
-                                                <button class="btn btn-sm btn-warning text-dark flex-grow-1 shadow-sm fw-semibold" @click="openShipModal(selectedOrder)">
+                                                <button class="btn btn-sm btn-warning text-body-emphasis flex-grow-1 shadow-sm fw-semibold" @click="openShipModal(selectedOrder)">
                                                     <i class="bi bi-truck me-1"></i>Ready to Ship
                                                 </button>
                                                 @endcan
@@ -1802,7 +1814,7 @@
                         </div>
                         <div class="small ms-4 ps-1 text-body">
                             <div class="mb-1"><strong class="text-body-emphasis">Date:</strong> <span class="fw-medium text-body" x-text="new Date(confirmModalOrder.scheduledConfirmDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', year:'numeric', hour: '2-digit', minute:'2-digit', hour12: true })"></span></div>
-                            <div><strong class="text-body-emphasis">Previous Attempts:</strong> <span class="badge bg-warning text-dark ms-1" x-text="confirmModalOrder.confirmAttempts || 0"></span></div>
+                            <div><strong class="text-body-emphasis">Previous Attempts:</strong> <span class="badge bg-warning text-body-emphasis ms-1" x-text="confirmModalOrder.confirmAttempts || 0"></span></div>
                         </div>
                     </div>
                 </template>

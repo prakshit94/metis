@@ -221,7 +221,7 @@
                                 <td>
                                     <span class="badge" 
                                           :class="{
-                                              'bg-dark bg-opacity-25 text-dark border border-dark border-opacity-50': payment.deleted_at,
+                                              'bg-dark bg-opacity-25 text-body-emphasis border border-dark border-opacity-50': payment.deleted_at,
                                               'bg-success bg-opacity-25 text-success border border-success border-opacity-50': !payment.deleted_at && payment.status === 'completed',
                                               'bg-info bg-opacity-25 text-info border border-info border-opacity-50': !payment.deleted_at && payment.status === 'authorized',
                                               'bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50': !payment.deleted_at && payment.status === 'pending',
@@ -372,7 +372,7 @@
                                     </pre>
                                 </div>
                                 <div class="col-12 mt-2">
-                                    <div class="p-4 bg-white border border-light-subtle rounded-4 shadow-sm">
+                                    <div class="p-4 bg-body border border-light-subtle rounded-4 shadow-sm">
                                         <div class="row align-items-center">
                                             <div class="col-6 border-end">
                                                 <div class="d-flex align-items-center gap-2 mb-1">
@@ -449,7 +449,7 @@
                         </div>
                     </div>
                     <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary px-4" :disabled="isSubmitting">
                             <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status"></span>
                             Save Changes

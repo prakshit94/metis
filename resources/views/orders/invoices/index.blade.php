@@ -320,7 +320,7 @@
                                         <span class="badge" 
                                               :class="{
                                                   'bg-success': selectedInvoice.status === 'paid',
-                                                  'bg-warning text-dark': selectedInvoice.status === 'partially_paid',
+                                                  'bg-warning text-body-emphasis': selectedInvoice.status === 'partially_paid',
                                                   'bg-danger': selectedInvoice.status === 'unpaid',
                                                   'bg-secondary': selectedInvoice.status === 'cancelled'
                                               }"
@@ -410,7 +410,7 @@
                         </div>
                     </div>
                     <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary px-4" :disabled="isSubmitting">
                             <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status"></span>
                             Record Payment

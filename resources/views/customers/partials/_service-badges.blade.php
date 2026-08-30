@@ -24,7 +24,7 @@
         ['bg' => 'bg-warning',  'text' => 'text-warning'],
         ['bg' => 'bg-danger',   'text' => 'text-danger'],
         ['bg' => 'bg-secondary','text' => 'text-secondary'],
-        ['bg' => 'bg-dark',     'text' => 'text-dark'],
+        ['bg' => 'bg-dark',     'text' => 'text-body-emphasis'],
     ];
 @endphp
 

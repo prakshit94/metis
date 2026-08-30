@@ -207,10 +207,11 @@
                                 x-model.number="itemsPerPage"
                                 @change="filterCustomers()"
                                 style="width: 120px;">
+                            <option value="10">10 / page</option>
                             <option value="15">15 / page</option>
-                            <option value="30">30 / page</option>
+                            <option value="20">20 / page</option>
+                            <option value="25">25 / page</option>
                             <option value="50">50 / page</option>
-                            <option value="100">100 / page</option>
                         </select>
                         
                         <button class="btn btn-sm btn-outline-secondary" type="button" @click="resetFilters()">
@@ -796,7 +797,7 @@
                             <!-- Selected Village Details -->
                             <template x-if="addressForm.village_name">
                                 <div class="col-12">
-                                    <div class="card bg-light border-0">
+                                    <div class="card bg-body-tertiary border-0">
                                         <div class="card-body p-3">
                                             <div class="row g-2">
                                                 <div class="col-md-4">

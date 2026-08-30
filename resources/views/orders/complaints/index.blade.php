@@ -480,7 +480,7 @@
                                                                     <div class="ms-1 d-flex flex-column opacity-75">
                                                                         <div class="position-absolute bg-warning rounded-circle" style="width: 8px; height: 8px; left: -20px; top: 4px; border: 1px solid var(--bs-body-bg);"></div>
                                                                         <div class="w-100 d-flex gap-2 align-items-center mb-1" style="font-size:0.7rem;">
-                                                                            <span class="badge bg-warning rounded-pill fw-medium py-0 text-dark" x-text="item.event ? item.event.toUpperCase() : 'AUDIT'"></span>
+                                                                            <span class="badge bg-warning rounded-pill fw-medium py-0 text-body-emphasis" x-text="item.event ? item.event.toUpperCase() : 'AUDIT'"></span>
                                                                             <span x-text="item.user ? (item.user.name || item.user.first_name) : 'System'"></span>
                                                                             <span class="text-muted" x-text="formatDateTime(item.created_at)"></span>
                                                                         </div>

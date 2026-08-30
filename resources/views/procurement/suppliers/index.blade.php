@@ -81,10 +81,11 @@
                 <div class="col-12 col-md-7 col-lg-8 text-md-end">
                     <div class="d-inline-flex gap-2 w-100 w-md-auto">
                         <select class="form-select bg-body-tertiary w-auto flex-grow-1 flex-md-grow-0" x-model.number="itemsPerPage" @change="fetchSuppliers()">
+                            <option value="10">10 / page</option>
                             <option value="15">15 / page</option>
+                            <option value="20">20 / page</option>
                             <option value="25">25 / page</option>
                             <option value="50">50 / page</option>
-                            <option value="100">100 / page</option>
                         </select>
                         <select class="form-select bg-body-tertiary w-auto flex-grow-1 flex-md-grow-0" x-model="filters.status" @change="fetchSuppliers()">
                             <option value="">All Statuses</option>
@@ -181,7 +182,7 @@
                             </td>
                             <td class="text-end pe-4">
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-light dropdown-toggle border" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false" title="Supplier actions">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle border" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false" title="Supplier actions">
                                         <i class="bi bi-three-dots"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">

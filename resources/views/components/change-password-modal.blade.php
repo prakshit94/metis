@@ -65,7 +65,7 @@
                 </div>
                 
                 <div class="modal-footer bg-body-secondary border-top-0 py-3 px-4 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-light border-0 fw-semibold shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-secondary border-0 fw-semibold shadow-sm" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary fw-bold shadow-sm d-flex align-items-center gap-2" :disabled="isLoading">
                         <span x-show="!isLoading">Update Password</span>
                         <span x-show="isLoading" x-cloak>

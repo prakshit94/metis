@@ -9,7 +9,7 @@
         <div class="col-lg-10">
             <div class="card shadow border-0 rounded-4 overflow-hidden">
                 <!-- Header -->
-                <div class="card-header bg-light p-4 p-md-5 border-bottom-0">
+                <div class="card-header bg-body-tertiary p-4 p-md-5 border-bottom-0">
                     <div class="row align-items-center g-4">
                         <div class="col-md-6">
                             <div class="d-flex align-items-center gap-3 mb-3">
@@ -37,7 +37,7 @@
                 </div>
 
                 <!-- Info Grid -->
-                <div class="bg-light bg-opacity-50 p-4 p-md-5 border-top border-bottom border-light-subtle">
+                <div class="bg-body-tertiary bg-opacity-50 p-4 p-md-5 border-top border-bottom border-light-subtle">
                     <div class="row g-4">
                         <div class="col-md-6">
                             <h5 class="small fw-bold text-muted text-uppercase tracking-wider mb-3">Customer Details</h5>
@@ -73,13 +73,13 @@
                                 @foreach($order->items as $item)
                                     <tr class="border-bottom border-light-subtle">
                                         <td class="py-4">
-                                            <div class="fw-bold text-dark">{{ $item->product?->name }}</div>
+                                            <div class="fw-bold text-body-emphasis">{{ $item->product?->name }}</div>
                                             <div class="text-muted small font-monospace mt-1">{{ $item->product?->sku ?: 'SKU N/A' }}</div>
                                         </td>
                                         <td class="py-4 text-center fw-bold">{{ number_format($item->quantity, 0) }}</td>
                                         <td class="py-4 text-end text-muted">₹ {{ number_format($item->unit_price, 2) }}</td>
                                         <td class="py-4 text-end text-success">-₹ {{ number_format($item->discount_amount, 2) }}</td>
-                                        <td class="py-4 text-end fw-bold text-dark">₹ {{ number_format($item->total_amount, 2) }}</td>
+                                        <td class="py-4 text-end fw-bold text-body-emphasis">₹ {{ number_format($item->total_amount, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -88,7 +88,7 @@
                 </div>
 
                 <!-- Summary -->
-                <div class="bg-light bg-opacity-25 p-4 p-md-5 border-top border-light-subtle">
+                <div class="bg-body-tertiary bg-opacity-25 p-4 p-md-5 border-top border-light-subtle">
                     <div class="row justify-content-end">
                         <div class="col-md-5 col-lg-4">
                             <div class="d-flex justify-content-between mb-3 text-muted small">
@@ -123,7 +123,7 @@
                 </div>
 
                 <!-- Footer / Actions -->
-                <div class="card-footer bg-light p-4 border-top border-light-subtle text-center">
+                <div class="card-footer bg-body-tertiary p-4 border-top border-light-subtle text-center">
                     <p class="small text-muted mb-4">This is a computer generated document. No signature is required.</p>
                     <div class="d-flex align-items-center justify-content-center gap-2 print-hidden">
                         <button onclick="window.print()" class="btn btn-primary d-flex align-items-center gap-2 px-4">

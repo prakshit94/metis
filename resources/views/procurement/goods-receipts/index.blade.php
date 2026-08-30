@@ -510,7 +510,7 @@
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     <span x-text="isBulkDelete ? 'Bulk Delete Receipts' : 'Delete Receipt'"></span>
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 text-center">
                 <div class="mb-3">
@@ -523,7 +523,7 @@
                 </p>
             </div>
             <div class="modal-footer bg-body-tertiary border-top-0 justify-content-center py-3">
-                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger px-4" @click="submitDeleteForm" :disabled="isDeleting">
                     <span x-show="isDeleting" class="spinner-border spinner-border-sm me-2"></span>
                     Delete
@@ -554,7 +554,7 @@
                 </p>
             </div>
             <div class="modal-footer bg-body-tertiary border-top-0 justify-content-center py-3">
-                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-warning px-4" @click="submitRestoreForm" :disabled="isRestoring">
                     <span x-show="isRestoring" class="spinner-border spinner-border-sm me-2"></span>
                     Restore
@@ -753,7 +753,7 @@ document.addEventListener('alpine:init', () => {
                     <div class="toast-body">
                         ${message}
                     </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             `;
 

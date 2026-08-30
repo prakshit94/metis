@@ -104,7 +104,7 @@
                                       :class="{
                                           'bg-success': item.status === 'Approved',
                                           'bg-danger': item.status === 'Rejected',
-                                          'bg-warning text-dark': item.status === 'Pending'
+                                          'bg-warning text-body-emphasis': item.status === 'Pending'
                                       }" 
                                       x-text="item.status"></span>
                                 <template x-if="item.status !== 'Pending' && item.approver && item.approved_at">

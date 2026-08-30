@@ -105,7 +105,7 @@
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <span class="badge bg-light text-dark" x-text="component.category"></span>
+                                                        <span class="badge bg-body-tertiary text-body-emphasis" x-text="component.category"></span>
                                                     </td>
                                                     <td x-text="component.examples"></td>
                                                     <td>

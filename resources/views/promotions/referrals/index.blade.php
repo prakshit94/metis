@@ -320,7 +320,7 @@
 
                                         <template x-for="(milestone, index) in milestones" :key="index">
                                             <div class="p-3 mb-3 bg-body border border-secondary border-opacity-25 rounded-3 shadow-sm position-relative">
-                                                <button type="button" class="btn btn-sm btn-light text-danger border-0 position-absolute top-0 end-0 m-2" @click="removeMilestone(index)" x-show="milestones.length > 1" style="width: 28px; height: 28px; padding: 0;">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary text-danger border-0 position-absolute top-0 end-0 m-2" @click="removeMilestone(index)" x-show="milestones.length > 1" style="width: 28px; height: 28px; padding: 0;">
                                                     <i class="bi bi-x-lg"></i>
                                                 </button>
                                                 

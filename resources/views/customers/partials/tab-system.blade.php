@@ -9,21 +9,21 @@
                     </h4>
                     <div class="d-flex flex-column gap-4">
                         <div class="d-flex align-items-center gap-4">
-                            <div class="bg-light text-secondary rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
+                            <div class="bg-body-tertiary text-secondary rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
                                 <i class="bi bi-calendar3 fs-4"></i>
                             </div>
                             <div>
                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Created On</p>
-                                <p class="mb-0 fw-bold text-dark fs-6">{{ $customer->created_at->format('M d, Y h:i A') }}</p>
+                                <p class="mb-0 fw-bold text-body-emphasis fs-6">{{ $customer->created_at->format('M d, Y h:i A') }}</p>
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-4">
-                            <div class="bg-light text-secondary rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
+                            <div class="bg-body-tertiary text-secondary rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
                                 <i class="bi bi-arrow-repeat fs-4"></i>
                             </div>
                             <div>
                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Last Updated</p>
-                                <p class="mb-0 fw-bold text-dark fs-6">{{ $customer->updated_at->diffForHumans() }}</p>
+                                <p class="mb-0 fw-bold text-body-emphasis fs-6">{{ $customer->updated_at->diffForHumans() }}</p>
                             </div>
                         </div>
                     </div>
@@ -40,7 +40,7 @@
                     <h4 class="mb-4 text-danger fw-bold text-uppercase d-flex align-items-center gap-2" style="font-size: 11px; letter-spacing: 2px;">
                         <span class="bg-danger rounded-circle shadow-sm" style="width: 8px; height: 8px; animation: pulse 2s infinite;"></span> Danger Zone
                     </h4>
-                    <p class="fs-5 fw-bold text-dark mb-2">Archive Customer Record</p>
+                    <p class="fs-5 fw-bold text-body-emphasis mb-2">Archive Customer Record</p>
                     <p class="text-muted small mb-4 pb-2" style="max-width: 300px;">This action will hide the customer from main views but can be restored by an admin.</p>
                     
                     <form action="{{ route('api.customers.destroy', $customer) }}" method="POST" onsubmit="return confirm('Archive this customer?')" class="m-0">

@@ -254,9 +254,10 @@
                                 @change="filterData()"
                                 style="width: 120px;">
                             <option value="10">10 / page</option>
+                            <option value="15">15 / page</option>
+                            <option value="20">20 / page</option>
                             <option value="25">25 / page</option>
                             <option value="50">50 / page</option>
-                            <option value="100">100 / page</option>
                         </select>
                         <!-- Advanced Filters Trigger -->
                         <button class="btn btn-sm"
@@ -557,7 +558,7 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4 bg-light bg-opacity-50">
+                <div class="modal-body p-4 bg-body-tertiary bg-opacity-50">
                     <template x-if="selectedShipment">
                         <div class="card shadow-sm border-0 mb-4 rounded-4">
                             <div class="card-body">
@@ -749,8 +750,8 @@
                             <textarea class="form-control shadow-sm border-secondary border-opacity-25 rounded-3" rows="3" x-model="returnForm.notes" placeholder="Please provide any relevant details..."></textarea>
                         </div>
                         <div class="modal-footer border-top-0 px-0 pb-0 mt-2">
-                            <button type="button" class="btn btn-light border-secondary border-opacity-25 rounded-pill px-4 fw-semibold shadow-sm" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-warning rounded-pill px-4 fw-semibold shadow-sm text-dark d-flex align-items-center gap-2" :disabled="saving">
+                            <button type="button" class="btn btn-outline-secondary border-secondary border-opacity-25 rounded-pill px-4 fw-semibold shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-warning rounded-pill px-4 fw-semibold shadow-sm text-body-emphasis d-flex align-items-center gap-2" :disabled="saving">
                                 <span x-show="saving" class="spinner-border spinner-border-sm" role="status"></span>
                                 <i class="bi bi-arrow-return-left" x-show="!saving"></i> Process Return
                             </button>

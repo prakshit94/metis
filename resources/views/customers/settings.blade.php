@@ -105,9 +105,10 @@
                         </select>
                         <select x-select class="form-select form-select-sm" x-model.number="itemsPerPage" @change="filterItems()" style="width: 120px;">
                             <option value="10">10 / page</option>
+                            <option value="15">15 / page</option>
+                            <option value="20">20 / page</option>
                             <option value="25">25 / page</option>
                             <option value="50">50 / page</option>
-                            <option value="100">100 / page</option>
                         </select>
                     </div>
                 </div>
@@ -291,7 +292,7 @@
                         </div>
                     </div>
                     <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary px-4" :disabled="isSubmitting">
                             <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status"></span>
                             <span x-text="editingId ? 'Save Changes' : 'Create Item'"></span>
@@ -317,7 +318,7 @@
                     <h5 class="fw-bold mb-2">Confirm Action</h5>
                     <p class="text-muted mb-4" x-text="confirmMessage"></p>
                     <div class="d-flex gap-2 justify-content-center">
-                        <button type="button" class="btn btn-light w-50" data-bs-dismiss="modal" :disabled="isConfirming">Cancel</button>
+                        <button type="button" class="btn btn-outline-secondary w-50" data-bs-dismiss="modal" :disabled="isConfirming">Cancel</button>
                         <button type="button" class="btn w-50 fw-semibold" 
                                 :class="confirmActionType.includes('delete') ? 'btn-danger' : 'btn-primary'" 
                                 @click="executeConfirmAction()" 
@@ -370,7 +371,7 @@
                 'bi-info-circle-fill'
             } me-2"></i><span></span>
           </div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>`;
         toast.querySelector(".toast-body span").textContent = message;
         container.appendChild(toast);

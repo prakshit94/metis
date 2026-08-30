@@ -47,7 +47,7 @@
                                         <button type="button" class="btn btn-danger me-2 mb-2">Danger</button>
                                         <button type="button" class="btn btn-warning me-2 mb-2">Warning</button>
                                         <button type="button" class="btn btn-info me-2 mb-2">Info</button>
-                                        <button type="button" class="btn btn-light me-2 mb-2">Light</button>
+                                        <button type="button" class="btn btn-outline-secondary me-2 mb-2">Light</button>
                                         <button type="button" class="btn btn-dark me-2 mb-2">Dark</button>
                                         <button type="button" class="btn btn-link me-2 mb-2">Link</button>
                                     </div>
@@ -58,7 +58,7 @@
 &lt;button type="button" class="btn btn-danger"&gt;Danger&lt;/button&gt;
 &lt;button type="button" class="btn btn-warning"&gt;Warning&lt;/button&gt;
 &lt;button type="button" class="btn btn-info"&gt;Info&lt;/button&gt;
-&lt;button type="button" class="btn btn-light"&gt;Light&lt;/button&gt;
+&lt;button type="button" class="btn btn-outline-secondary"&gt;Light&lt;/button&gt;
 &lt;button type="button" class="btn btn-dark"&gt;Dark&lt;/button&gt;
 &lt;button type="button" class="btn btn-link"&gt;Link&lt;/button&gt;</code></pre>
                                     </div>

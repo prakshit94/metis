@@ -10,7 +10,7 @@
                 <div class="card-header bg-primary bg-opacity-10 border-bottom-0 py-3 d-flex align-items-center justify-content-between rounded-top-4">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-person-fill text-primary fs-5"></i>
-                        <h6 class="mb-0 fw-bold text-uppercase text-dark" style="font-size: 12px; letter-spacing: 1px;">Personal Information</h6>
+                        <h6 class="mb-0 fw-bold text-uppercase text-body-emphasis" style="font-size: 12px; letter-spacing: 1px;">Personal Information</h6>
                     </div>
                     <button type="button" @click="$dispatch('open-modal', { name: 'edit-profile-modal' })" 
                         class="btn btn-sm btn-outline-primary fw-bold text-uppercase d-flex align-items-center gap-2 rounded-pill px-3" style="font-size: 10px; letter-spacing: 1px;">
@@ -31,12 +31,12 @@
                             ['Registered On', $customer->created_at->format('M d, Y'), 'bi-calendar3'],
                         ] as [$label, $val, $icon])
                         <div class="col-sm-6 d-flex align-items-start gap-3">
-                            <div class="bg-light text-secondary rounded-3 d-flex align-items-center justify-content-center flex-shrink-0 mt-1" style="width: 32px; height: 32px;">
+                            <div class="bg-body-tertiary text-secondary rounded-3 d-flex align-items-center justify-content-center flex-shrink-0 mt-1" style="width: 32px; height: 32px;">
                                 <i class="{{ $icon }}"></i>
                             </div>
                             <div class="min-w-0">
                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">{{ $label }}</p>
-                                <p class="mb-0 fw-bold text-dark text-truncate" style="font-size: 14px;">{{ $val }}</p>
+                                <p class="mb-0 fw-bold text-body-emphasis text-truncate" style="font-size: 14px;">{{ $val }}</p>
                             </div>
                         </div>
                         @endforeach
@@ -48,7 +48,7 @@
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-header bg-info bg-opacity-10 border-bottom-0 py-3 d-flex align-items-center gap-2 rounded-top-4">
                     <i class="bi bi-file-earmark-text-fill text-info fs-5"></i>
-                    <h6 class="mb-0 fw-bold text-uppercase text-dark" style="font-size: 12px; letter-spacing: 1px;">Tax & Business Info</h6>
+                    <h6 class="mb-0 fw-bold text-uppercase text-body-emphasis" style="font-size: 12px; letter-spacing: 1px;">Tax & Business Info</h6>
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-4">
@@ -68,7 +68,7 @@
                             </div>
                             <div class="min-w-0">
                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">{{ $label }}</p>
-                                <p class="mb-0 fw-bold text-dark font-monospace" style="font-size: 14px;">{{ $val }}</p>
+                                <p class="mb-0 fw-bold text-body-emphasis font-monospace" style="font-size: 14px;">{{ $val }}</p>
                             </div>
                         </div>
                         @endforeach
@@ -80,7 +80,7 @@
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-header bg-warning bg-opacity-10 border-bottom-0 py-3 d-flex align-items-center gap-2 rounded-top-4">
                     <i class="bi bi-brightness-high-fill text-warning fs-5"></i>
-                    <h6 class="mb-0 fw-bold text-uppercase text-dark" style="font-size: 12px; letter-spacing: 1px;">Agriculture Profile</h6>
+                    <h6 class="mb-0 fw-bold text-uppercase text-body-emphasis" style="font-size: 12px; letter-spacing: 1px;">Agriculture Profile</h6>
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-4">
@@ -90,7 +90,7 @@
                             </div>
                             <div>
                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Land Area</p>
-                                <p class="mb-0 fw-bold text-dark" style="font-size: 14px;">{{ $customer->land_area ?? 0 }} {{ $customer->land_unit ?? 'Acre' }}</p>
+                                <p class="mb-0 fw-bold text-body-emphasis" style="font-size: 14px;">{{ $customer->land_area ?? 0 }} {{ $customer->land_unit ?? 'Acre' }}</p>
                             </div>
                         </div>
 
@@ -100,7 +100,7 @@
                             </div>
                             <div class="min-w-0">
                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Irrigation Type</p>
-                                <p class="mb-0 fw-bold text-dark" style="font-size: 14px;">
+                                <p class="mb-0 fw-bold text-body-emphasis" style="font-size: 14px;">
                                     {{ is_array($customer->irrigation_type) ? implode(', ', $customer->irrigation_type) : ($customer->irrigation_type ?: '—') }}
                                 </p>
                             </div>
@@ -134,7 +134,7 @@
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-header bg-success bg-opacity-10 border-bottom-0 py-3 d-flex align-items-center gap-2 rounded-top-4">
                     <i class="bi bi-bar-chart-fill text-success fs-5"></i>
-                    <h6 class="mb-0 fw-bold text-uppercase text-dark" style="font-size: 12px; letter-spacing: 1px;">Quick Stats</h6>
+                    <h6 class="mb-0 fw-bold text-uppercase text-body-emphasis" style="font-size: 12px; letter-spacing: 1px;">Quick Stats</h6>
                 </div>
                 <div class="card-body p-4 d-flex flex-column gap-3">
                     <div class="d-flex align-items-center gap-3 p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-10">
@@ -143,7 +143,7 @@
                         </div>
                         <div>
                             <p class="mb-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Total Orders</p>
-                            <p class="mb-0 fw-black text-dark fs-3 lh-1">{{ $customer->orders()->count() }}</p>
+                            <p class="mb-0 fw-black text-body-emphasis fs-3 lh-1">{{ $customer->orders()->count() }}</p>
                         </div>
                     </div>
                     
@@ -153,7 +153,7 @@
                         </div>
                         <div>
                             <p class="mb-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Addresses</p>
-                            <p class="mb-0 fw-black text-dark fs-3 lh-1">{{ $customer->addresses->count() }}</p>
+                            <p class="mb-0 fw-black text-body-emphasis fs-3 lh-1">{{ $customer->addresses->count() }}</p>
                         </div>
                     </div>
                     
@@ -163,7 +163,7 @@
                         </div>
                         <div>
                             <p class="mb-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Credit Limit</p>
-                            <p class="mb-0 fw-black text-dark fs-4 lh-1 mt-1">₹ {{ number_format($customer->credit_limit ?? 0) }}</p>
+                            <p class="mb-0 fw-black text-body-emphasis fs-4 lh-1 mt-1">₹ {{ number_format($customer->credit_limit ?? 0) }}</p>
                         </div>
                     </div>
                 </div>
@@ -173,17 +173,17 @@
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-header bg-secondary bg-opacity-10 border-bottom-0 py-3 d-flex align-items-center gap-2 rounded-top-4">
                     <i class="bi bi-gear-fill text-secondary fs-5"></i>
-                    <h6 class="mb-0 fw-bold text-uppercase text-dark" style="font-size: 12px; letter-spacing: 1px;">System Info</h6>
+                    <h6 class="mb-0 fw-bold text-uppercase text-body-emphasis" style="font-size: 12px; letter-spacing: 1px;">System Info</h6>
                 </div>
                 <div class="card-body p-4 d-flex flex-column gap-3">
                     <div>
                         <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Created At</p>
-                        <p class="mb-0 fw-bold text-dark fs-6">{{ $customer->created_at->format('M d, Y — h:i A') }}</p>
+                        <p class="mb-0 fw-bold text-body-emphasis fs-6">{{ $customer->created_at->format('M d, Y — h:i A') }}</p>
                         <p class="mb-0 text-muted" style="font-size: 11px;">{{ $customer->created_at->diffForHumans() }}</p>
                     </div>
                     <div>
                         <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Last Updated</p>
-                        <p class="mb-0 fw-bold text-dark fs-6">{{ $customer->updated_at->format('M d, Y — h:i A') }}</p>
+                        <p class="mb-0 fw-bold text-body-emphasis fs-6">{{ $customer->updated_at->format('M d, Y — h:i A') }}</p>
                         <p class="mb-0 text-muted" style="font-size: 11px;">{{ $customer->updated_at->diffForHumans() }}</p>
                     </div>
                 </div>

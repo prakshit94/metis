@@ -265,9 +265,10 @@
                         </select>
                         <select x-select class="form-select form-select-sm" x-model.number="itemsPerPage" @change="filterItems()" style="width: 120px;">
                             <option value="10">10 / page</option>
+                            <option value="15">15 / page</option>
+                            <option value="20">20 / page</option>
                             <option value="25">25 / page</option>
                             <option value="50">50 / page</option>
-                            <option value="100">100 / page</option>
                         </select>
                     </div>
                 </div>
@@ -353,7 +354,7 @@
                                         <span class="badge bg-info align-self-start" x-text="`${item.permissions_count || 0} permissions`"></span>
                                         <div class="d-flex flex-wrap gap-1" x-show="item.permissionGroups.length > 0">
                                             <template x-for="group in item.permissionGroups.slice(0, 4)" :key="`${item.id}-${group.key}`">
-                                                <span class="badge text-bg-light border">
+                                                <span class="badge text-bg-body-tertiary border">
                                                     <i class="bi me-1" :class="`bi-${group.icon}`"></i>
                                                     <span x-text="group.label"></span>
                                                     <span class="text-muted" x-text="`(${group.items.length})`"></span>
@@ -523,7 +524,7 @@
                                                                     </div>
                                                                 </div>
                                                             </td>
-                                                            <td class="text-center bg-light bg-opacity-50 align-middle">
+                                                            <td class="text-center bg-body-tertiary bg-opacity-50 align-middle">
                                                                 <div class="d-flex justify-content-center mb-0">
                                                                     <input class="user-select-checkbox cursor-pointer shadow-sm" type="checkbox" :id="`toggle-all-${group.key}`" 
                                                                            :checked="isPermissionGroupSelected(group)" 
@@ -687,7 +688,7 @@
                                                                 <h6 class="fw-semibold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.05em;" x-text="subGroup.label" x-show="group.subGroups.length > 1 || subGroup.label !== group.label"></h6>
                                                                 <div class="d-flex flex-wrap gap-1">
                                                                     <template x-for="entry in subGroup.items" :key="entry.id">
-                                                                        <span class="badge bg-light text-dark border fw-normal" style="font-size: 0.7rem;" x-text="entry.actionLabel || entry.name"></span>
+                                                                        <span class="badge bg-body-tertiary text-body-emphasis border fw-normal" style="font-size: 0.7rem;" x-text="entry.actionLabel || entry.name"></span>
                                                                     </template>
                                                                 </div>
                                                             </div>
@@ -750,7 +751,7 @@
                     <i class="bi bi-upload me-2 fs-4"></i>
                     <span>Import Access Records</span>
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body position-relative" style="margin-top: -15px; border-radius: 12px 12px 0 0; background: var(--bs-body-bg);">
                 <div class="alert alert-info mb-3">
@@ -782,7 +783,7 @@
                 </template>
             </div>
             <div class="modal-footer bg-body-tertiary border-top-0 rounded-bottom-3">
-                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
                 @canany(['role-import', 'permission-import'])
                 <button type="button" class="btn btn-primary px-4 shadow-sm" @click="importItems()" :disabled="importing || !file">
                     <span x-show="importing" class="spinner-border spinner-border-sm me-2"></span>

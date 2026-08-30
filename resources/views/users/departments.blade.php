@@ -115,9 +115,10 @@
                         </select>
                         <select x-select class="form-select form-select-sm" x-model.number="itemsPerPage" @change="filterItems()" style="width: 120px;">
                             <option value="10">10 / page</option>
+                            <option value="15">15 / page</option>
+                            <option value="20">20 / page</option>
                             <option value="25">25 / page</option>
                             <option value="50">50 / page</option>
-                            <option value="100">100 / page</option>
                         </select>
                     </div>
                 </div>
@@ -428,14 +429,14 @@
     <div class="modal-dialog modal-dialog-centered" :class="{ 'modal-lg': window.Alpine.$data(document.querySelector('[x-data^=\'organizationTable\']')).activeTab === 'departments' }">
         <div class="modal-content border-0 shadow-lg rounded-4" x-data="itemForm">
             <form @submit.prevent="saveItem()">
-                <div class="modal-header bg-light border-bottom-0 pb-3 pt-4 px-4">
+                <div class="modal-header bg-body-tertiary border-bottom-0 pb-3 pt-4 px-4">
                     <h5 class="modal-title fw-bold d-flex align-items-center">
                         <i class="bi bi-diagram-3 text-primary fs-4 me-2"></i>
                         <span x-text="editingId ? 'Edit ' + getTabTitle() : 'Add New ' + getTabTitle()"></span>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body bg-light pt-0 px-4">
+                <div class="modal-body bg-body-tertiary pt-0 px-4">
                     <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
                     
                     <div class="card border-0 shadow-sm mb-3">
@@ -495,8 +496,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top-0 px-4 pb-4 pt-0">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <div class="modal-footer bg-body-tertiary border-top-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary px-4" :disabled="saving">
                         <span x-show="saving" class="spinner-border spinner-border-sm me-2"></span>
                         <span x-text="editingId ? 'Save Changes' : 'Create'"></span>
@@ -511,14 +512,14 @@
 <div class="modal fade" id="viewDepartmentModal">
     <div class="modal-dialog modal-dialog-centered modal-xl" x-data="viewDepartmentData">
         <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header bg-light border-bottom-0 pb-3 pt-4 px-4">
+            <div class="modal-header bg-body-tertiary border-bottom-0 pb-3 pt-4 px-4">
                 <h5 class="modal-title d-flex align-items-center fw-bold">
                     <i class="bi bi-building text-primary fs-4 me-2"></i>
                     <span x-text="department ? department.name : 'Loading...'"></span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body bg-light pt-0 px-4">
+            <div class="modal-body bg-body-tertiary pt-0 px-4">
                 <template x-if="loading">
                     <div class="text-center py-5">
                         <div class="spinner-border text-primary" role="status"></div>
@@ -655,7 +656,7 @@
                 'bi-info-circle-fill'
             } me-2"></i><span></span>
           </div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>`;
         toast.querySelector(".toast-body span").textContent = message;
         container.appendChild(toast);

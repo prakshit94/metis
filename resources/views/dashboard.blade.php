@@ -451,7 +451,7 @@
                 <div class="toast-body fw-bold">
                     <i class="bi bi-check-circle-fill me-2"></i>Customer profile successfully closed.
                 </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close" onclick="this.closest('.toast').remove()"></button>
+                <button type="button" class="btn-close btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close" onclick="this.closest('.toast').remove()"></button>
             </div>
         </div>`;
         const container = document.getElementById('toast-container');

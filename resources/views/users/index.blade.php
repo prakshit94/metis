@@ -351,9 +351,10 @@
                                                     @change="filterUsers()"
                                                     style="width: 120px;">
                                                 <option value="10">10 / page</option>
+                                                <option value="15">15 / page</option>
+                                                <option value="20">20 / page</option>
                                                 <option value="25">25 / page</option>
                                                 <option value="50">50 / page</option>
-                                                <option value="100">100 / page</option>
                                             </select>
                                         </div>
                                     </div>
@@ -472,7 +473,7 @@
                                                                      height="42"
                                                                      :alt="user.name"
                                                                      style="object-fit: cover;">
-                                                                <span class="position-absolute bottom-0 end-0 border border-2 border-white rounded-circle d-flex align-items-center justify-content-center" 
+                                                                <span class="position-absolute bottom-0 end-0 border border-2 border-body rounded-circle d-flex align-items-center justify-content-center" 
                                                                       :class="user.is_online ? 'bg-success text-white' : 'bg-secondary text-white'" 
                                                                       style="width: 18px; height: 18px; font-size: 9px; right: -2px !important; bottom: -2px !important;"
                                                                       :title="user.is_online ? 'Online via ' + user.device_type : 'Offline'">

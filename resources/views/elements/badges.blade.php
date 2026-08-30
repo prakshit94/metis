@@ -47,7 +47,7 @@
                                         <span class="badge bg-danger me-2 mb-2">Danger</span>
                                         <span class="badge bg-warning me-2 mb-2">Warning</span>
                                         <span class="badge bg-info me-2 mb-2">Info</span>
-                                        <span class="badge bg-light text-dark me-2 mb-2">Light</span>
+                                        <span class="badge bg-body-tertiary text-body-emphasis me-2 mb-2">Light</span>
                                         <span class="badge bg-dark me-2 mb-2">Dark</span>
                                     </div>
                                     <div class="element-code-block">
@@ -57,7 +57,7 @@
 &lt;span class="badge bg-danger"&gt;Danger&lt;/span&gt;
 &lt;span class="badge text-bg-warning"&gt;Warning&lt;/span&gt;
 &lt;span class="badge text-bg-info"&gt;Info&lt;/span&gt;
-&lt;span class="badge bg-light text-dark"&gt;Light&lt;/span&gt;
+&lt;span class="badge bg-body-tertiary text-body-emphasis"&gt;Light&lt;/span&gt;
 &lt;span class="badge bg-dark"&gt;Dark&lt;/span&gt;</code></pre>
                                     </div>
                                     <button class="btn btn-sm btn-outline-secondary" onclick="copyCode(this)">

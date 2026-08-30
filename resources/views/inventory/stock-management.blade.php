@@ -184,9 +184,10 @@
                                     @change="currentPage = 1; loadData()"
                                     style="width: 110px;">
                                 <option value="10">10 / page</option>
+                                <option value="15">15 / page</option>
+                                <option value="20">20 / page</option>
                                 <option value="25">25 / page</option>
                                 <option value="50">50 / page</option>
-                                <option value="100">100 / page</option>
                             </select>
                         </div>
                     </div>
@@ -267,14 +268,14 @@
                                             <div x-show="item.product?.grade" 
                                                  class="badge border shadow-sm rounded-2 d-flex flex-column align-items-center justify-content-center me-2 flex-shrink-0" 
                                                  style="width: 28px; height: 34px; font-size: 11px; padding: 2px;"
-                                                 :class="{'bg-success-subtle text-success-emphasis border-success': item.product?.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': item.product?.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': item.product?.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(item.product?.grade)}"
+                                                 :class="{'bg-success-subtle text-success-emphasis border-success': item.product?.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': item.product?.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': item.product?.grade === 'C', 'bg-dark-subtle text-body-emphasis-emphasis border-dark': !['A','B','C'].includes(item.product?.grade)}"
                                                  :title="'Grade ' + (item.product?.grade || '')"
                                                  x-cloak>
                                                 <i class="bi bi-star-fill text-warning" style="font-size: 10px; line-height: 1; margin-bottom: 2px;"></i>
                                                 <span x-text="item.product?.grade" style="line-height: 1; font-weight: 800;"></span>
                                             </div>
                                             <template x-if="item.product?.image_url">
-                                                <div class="rounded overflow-hidden d-flex align-items-center justify-content-center me-3 flex-shrink-0 border border-secondary-subtle bg-white" style="width:38px;height:38px;">
+                                                <div class="rounded overflow-hidden d-flex align-items-center justify-content-center me-3 flex-shrink-0 border border-secondary-subtle bg-body" style="width:38px;height:38px;">
                                                     <img :src="item.product.image_url" alt="" class="w-100 h-100 object-fit-contain">
                                                 </div>
                                             </template>

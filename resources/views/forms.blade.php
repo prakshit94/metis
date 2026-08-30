@@ -698,7 +698,7 @@
                                                     <!-- Review Section -->
                                                     <div class="mb-4">
                                                         <h6 class="mb-3">Review Your Information</h6>
-                                                        <div class="card bg-light">
+                                                        <div class="card bg-body-tertiary">
                                                             <div class="card-body">
                                                                 <div class="row">
                                                                     <div class="col-md-6">

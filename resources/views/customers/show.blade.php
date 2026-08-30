@@ -86,10 +86,10 @@
                         <div class="card border border-primary border-opacity-10 bg-primary bg-opacity-10 rounded-4 d-none d-lg-block">
                             <div class="card-body p-4">
                                 <p class="mb-1 text-primary fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Customer Since</p>
-                                <p class="mb-3 fw-bold text-dark fs-6">{{ $customer->created_at->format('M Y') }}</p>
+                                <p class="mb-3 fw-bold text-body-emphasis fs-6">{{ $customer->created_at->format('M Y') }}</p>
                                 <div class="pt-3 border-top border-primary border-opacity-10">
                                     <p class="mb-1 text-primary fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Loyalty Points</p>
-                                    <p class="mb-0 fw-black text-dark fs-4">1,250</p>
+                                    <p class="mb-0 fw-black text-body-emphasis fs-4">1,250</p>
                                 </div>
                             </div>
                         </div>

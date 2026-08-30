@@ -159,13 +159,13 @@
                                 </td>
                                 <td>-</td>
                                 <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-light border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l1->id }}, '{{ addslashes($l1->name) }}', 1, null, {{ $l1->is_active }})" title="Edit">
+                                    <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l1->id }}, '{{ addslashes($l1->name) }}', 1, null, {{ $l1->is_active }})" title="Edit">
                                         <i class="bi bi-pencil text-secondary"></i>
                                     </button>
                                     <button class="btn btn-sm btn-outline-primary shadow-sm me-1 rounded-pill fw-bold px-3 transition-all hover-shadow" style="font-size: 11px; letter-spacing: 0.5px;" @click="openModal(null, '', 2, {{ $l1->id }}, 1)" title="Add L2 Tag">
                                         <i class="bi bi-plus-lg me-1"></i> ADD L2
                                     </button>
-                                    <button class="btn btn-sm btn-light text-danger border shadow-sm rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="deleteTag({{ $l1->id }})" title="Delete">
+                                    <button class="btn btn-sm btn-outline-secondary text-danger border shadow-sm rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="deleteTag({{ $l1->id }})" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </td>
@@ -198,13 +198,13 @@
                                         @endif
                                     </td>
                                     <td class="text-end pe-4">
-                                        <button class="btn btn-sm btn-light border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l2->id }}, '{{ addslashes($l2->name) }}', 2, {{ $l2->parent_id }}, {{ $l2->is_active }}, {{ json_encode($l2->formFields) }})" title="Edit">
+                                        <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l2->id }}, '{{ addslashes($l2->name) }}', 2, {{ $l2->parent_id }}, {{ $l2->is_active }}, {{ json_encode($l2->formFields) }})" title="Edit">
                                             <i class="bi bi-pencil text-secondary"></i>
                                         </button>
                                         <button class="btn btn-sm btn-outline-info shadow-sm me-1 rounded-pill fw-bold px-3 transition-all hover-shadow" style="font-size: 11px; letter-spacing: 0.5px;" @click="openModal(null, '', 3, {{ $l2->id }}, 1)" title="Add L3 Tag">
                                             <i class="bi bi-plus-lg me-1"></i> ADD L3
                                         </button>
-                                        <button class="btn btn-sm btn-light text-danger border shadow-sm rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="deleteTag({{ $l2->id }})" title="Delete">
+                                        <button class="btn btn-sm btn-outline-secondary text-danger border shadow-sm rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="deleteTag({{ $l2->id }})" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>
@@ -231,10 +231,10 @@
                                         </td>
                                         <td>-</td>
                                         <td class="text-end pe-4">
-                                            <button class="btn btn-sm btn-light border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l3->id }}, '{{ addslashes($l3->name) }}', 3, {{ $l3->parent_id }}, {{ $l3->is_active }})" title="Edit">
+                                            <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l3->id }}, '{{ addslashes($l3->name) }}', 3, {{ $l3->parent_id }}, {{ $l3->is_active }})" title="Edit">
                                                 <i class="bi bi-pencil text-secondary"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-light text-danger border shadow-sm rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="deleteTag({{ $l3->id }})" title="Delete">
+                                            <button class="btn btn-sm btn-outline-secondary text-danger border shadow-sm rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="deleteTag({{ $l3->id }})" title="Delete">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </td>

@@ -231,9 +231,10 @@
                                                     @change="filterProducts()"
                                                     style="width: 120px;">
                                                 <option value="10">10 / page</option>
+                                                <option value="15">15 / page</option>
+                                                <option value="20">20 / page</option>
                                                 <option value="25">25 / page</option>
                                                 <option value="50">50 / page</option>
-                                                <option value="100">100 / page</option>
                                             </select>
                                             
                                             <button class="btn btn-sm btn-outline-secondary" type="button" @click="resetFilters()">
@@ -331,7 +332,7 @@
                                                                 <div x-show="product.grade" 
                                                                      class="position-absolute top-100 start-50 translate-middle badge border shadow-sm rounded-pill px-2 d-flex align-items-center" 
                                                                      style="font-size: 9px; padding-top: 2px; padding-bottom: 2px;"
-                                                                     :class="{'bg-success-subtle text-success-emphasis border-success': product.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(product.grade)}"
+                                                                     :class="{'bg-success-subtle text-success-emphasis border-success': product.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product.grade === 'C', 'bg-dark-subtle text-body-emphasis-emphasis border-dark': !['A','B','C'].includes(product.grade)}"
                                                                      :title="'Grade ' + product.grade"
                                                                      x-cloak>
                                                                     <i class="bi bi-star-fill text-warning me-1" style="font-size: 8px;"></i><span x-text="product.grade" style="font-weight: 800;"></span>
@@ -855,7 +856,7 @@
                                     <div class="border rounded-3 p-4 bg-body-secondary">
                                         <template x-for="attribute in options.attributes" :key="attribute.id">
                                             <div class="mb-4 last-mb-0">
-                                                <div class="fw-bold mb-3 text-dark text-uppercase d-flex align-items-center" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                                                <div class="fw-bold mb-3 text-body-emphasis text-uppercase d-flex align-items-center" style="font-size: 0.85rem; letter-spacing: 0.5px;">
                                                     <i class="bi bi-tag-fill me-2 text-primary opacity-50"></i>
                                                     <span x-text="attribute.name"></span>
                                                 </div>
@@ -904,7 +905,7 @@
                     <h5 class="modal-title fw-bold mb-0" x-text="product ? product.name : ''"></h5>
                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" x-text="product ? product.sku : ''"></span>
                     <span class="badge text-uppercase" :class="product && ['published', 'active'].includes(product.status) ? 'bg-success' : 'bg-warning-subtle text-warning-emphasis'" x-text="product ? product.status : ''"></span>
-                    <span x-show="product && product.grade" class="badge border shadow-sm" :class="{'bg-success-subtle text-success-emphasis border-success': product?.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product?.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product?.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(product?.grade)}"><i class="bi bi-star-fill me-1 text-warning"></i>Grade <span x-text="product ? product.grade : ''"></span></span>
+                    <span x-show="product && product.grade" class="badge border shadow-sm" :class="{'bg-success-subtle text-success-emphasis border-success': product?.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product?.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product?.grade === 'C', 'bg-dark-subtle text-body-emphasis-emphasis border-dark': !['A','B','C'].includes(product?.grade)}"><i class="bi bi-star-fill me-1 text-warning"></i>Grade <span x-text="product ? product.grade : ''"></span></span>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>

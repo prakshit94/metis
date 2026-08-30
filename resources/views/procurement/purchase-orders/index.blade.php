@@ -125,7 +125,7 @@
                     <div class="d-flex gap-2">
                         <template x-if="selected.length > 0 && items.filter(i => selected.includes(i.id) && !i.deleted_at).length > 0">
                             <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-primary fw-medium shadow-sm bg-white" @click="downloadBulkPdf()">
+                                <button class="btn btn-sm btn-outline-primary fw-medium shadow-sm bg-body" @click="downloadBulkPdf()">
                                     <i class="bi bi-file-pdf me-1"></i>Download PDFs
                                 </button>
                                 <template x-if="items.filter(i => selected.includes(i.id) && !i.deleted_at && i.status === 'pending').length > 0 && items.filter(i => selected.includes(i.id) && !i.deleted_at && i.status !== 'pending').length === 0">
@@ -141,7 +141,7 @@
                                     </div>
                                 </template>
                                 @can('purchaseorder-delete')
-                                <button class="btn btn-sm btn-outline-danger fw-medium shadow-sm bg-white" @click="openBulkDeleteModal()">
+                                <button class="btn btn-sm btn-outline-danger fw-medium shadow-sm bg-body" @click="openBulkDeleteModal()">
                                     <i class="bi bi-trash me-1"></i>Delete Selected
                                 </button>
                                 @endcan
@@ -250,7 +250,7 @@
                                 </td>
                                 <td>
                                     <template x-if="item.invoice_path">
-                                        <a :href="item.invoice_url" target="_blank" class="btn btn-sm btn-light border d-inline-flex align-items-center" title="View Attached Invoice">
+                                        <a :href="item.invoice_url" target="_blank" class="btn btn-sm btn-outline-secondary border d-inline-flex align-items-center" title="View Attached Invoice">
                                             <i class="bi bi-file-earmark-pdf text-danger me-2"></i> <span class="small fw-medium">View</span>
                                         </a>
                                     </template>
@@ -951,14 +951,14 @@
                 <div class="modal-footer bg-body-tertiary border-top-0 d-flex justify-content-between">
                     <div class="d-flex gap-2">
                         <div x-show="selectedPO" style="display: none;">
-                            <a :href="'/procurement/purchase-orders/' + selectedPO.id + '/pdf'" target="_blank" class="btn btn-outline-primary rounded-pill px-4 fw-bold shadow-sm bg-white">
+                            <a :href="'/procurement/purchase-orders/' + selectedPO.id + '/pdf'" target="_blank" class="btn btn-outline-primary rounded-pill px-4 fw-bold shadow-sm bg-body">
                                 <i class="bi bi-file-pdf me-1"></i> Download PDF
                             </a>
                         </div>
                         @can('purchaseorder-delete')
                         <template x-if="selectedPO && selectedPO.status === 'pending' && !selectedPO.deleted_at">
                             <div>
-                                <button type="button" class="btn btn-outline-danger rounded-pill px-4 fw-bold shadow-sm bg-white" @click="
+                                <button type="button" class="btn btn-outline-danger rounded-pill px-4 fw-bold shadow-sm bg-body" @click="
                                     bootstrap.Modal.getInstance(document.getElementById('viewPoModal')).hide();
                                     setTimeout(() => { openDeleteModal(selectedPO.id); }, 300);
                                 ">
@@ -1018,7 +1018,7 @@
                             <input type="file" class="form-control" x-ref="invoiceFile" accept=".pdf,.png,.jpg,.jpeg" required>
                         </div>
                         <div class="d-flex justify-content-end gap-2 mt-4">
-                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                             <button type="submit" class="btn btn-primary" :disabled="isUploading">
                                 <span x-show="isUploading" class="spinner-border spinner-border-sm me-2"></span>
                                 Upload
@@ -1148,7 +1148,7 @@ document.addEventListener('alpine:init', () => {
                 const bsType = type === 'error' ? 'danger' : (type === 'info' ? 'info' : 'success');
                 toast.className = `toast align-items-center text-bg-${bsType} border-0 show mb-2 shadow-sm`;
                 toast.setAttribute("role", "alert");
-                toast.innerHTML = `<div class="d-flex"><div class="toast-body fw-semibold">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+                toast.innerHTML = `<div class="d-flex"><div class="toast-body fw-semibold">${msg}</div><button type="button" class="btn-close btn-close me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
                 container.appendChild(toast);
                 setTimeout(() => toast.remove(), 5000);
             }

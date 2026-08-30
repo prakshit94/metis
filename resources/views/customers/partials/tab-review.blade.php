@@ -7,10 +7,10 @@
     
     <div class="d-flex flex-column gap-4 mx-auto" style="max-width: 1200px;">
         {{-- ── Action Bar ── --}}
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-light bg-opacity-50">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-body-tertiary bg-opacity-50">
             <div class="card-body p-3 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
                 <button type="button" @click="activeTab = 'order'" 
-                    class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 rounded-pill px-4 fw-bold text-uppercase w-100 w-sm-auto shadow-sm bg-white" style="font-size: 10px; letter-spacing: 1px;">
+                    class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 rounded-pill px-4 fw-bold text-uppercase w-100 w-sm-auto shadow-sm bg-body" style="font-size: 10px; letter-spacing: 1px;">
                     <i class="bi bi-arrow-left"></i> Back to Cart
                 </button>
                 <div class="d-none d-sm-block text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 3px;">Final Validation Phase</div>
@@ -24,7 +24,7 @@
                         <i class="bi bi-pencil-square fs-5"></i>
                     </div>
                     <div>
-                        <h4 class="fw-bold mb-1 fs-6 text-dark">Edit Mode Active</h4>
+                        <h4 class="fw-bold mb-1 fs-6 text-body-emphasis">Edit Mode Active</h4>
                         <p class="mb-0 text-muted small">You are updating an existing order. Your changes will overwrite the current record.</p>
                     </div>
                 </div>
@@ -49,19 +49,19 @@
                     <div class="row g-4">
                         <div class="col-sm-6 col-lg-3">
                             <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Full Name</p>
-                            <p class="mb-0 fw-bold text-dark fs-6">{{ $customer->name }}</p>
+                            <p class="mb-0 fw-bold text-body-emphasis fs-6">{{ $customer->name }}</p>
                         </div>
                         <div class="col-sm-6 col-lg-3">
                             <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Mobile</p>
-                            <p class="mb-0 fw-bold text-dark fs-6">{{ $customer->phone ?? 'N/A' }}</p>
+                            <p class="mb-0 fw-bold text-body-emphasis fs-6">{{ $customer->phone ?? 'N/A' }}</p>
                         </div>
                         <div class="col-sm-6 col-lg-3">
                             <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Alt Mobile</p>
-                            <p class="mb-0 fw-bold text-dark fs-6">{{ $customer->alternatemobile ?? '—' }}</p>
+                            <p class="mb-0 fw-bold text-body-emphasis fs-6">{{ $customer->alternatemobile ?? '—' }}</p>
                         </div>
                         <div class="col-sm-6 col-lg-3">
                             <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Relative Mobile</p>
-                            <p class="mb-0 fw-bold text-dark fs-6">{{ $customer->relative_name ?? '—' }}</p>
+                            <p class="mb-0 fw-bold text-body-emphasis fs-6">{{ $customer->relative_name ?? '—' }}</p>
                         </div>
                     </div>
                 </div>
@@ -85,12 +85,12 @@
                     <div class="d-flex flex-column gap-3">
                         @foreach($customer->addresses as $addr)
                             <label class="position-relative d-flex flex-column p-4 rounded-4 border border-2 cursor-pointer transition-all w-100"
-                                :class="selectedBillingAddressId == {{ $addr->id }} ? 'border-primary bg-primary bg-opacity-10' : 'border-light bg-light hover-border-secondary'">
+                                :class="selectedBillingAddressId == {{ $addr->id }} ? 'border-primary bg-primary bg-opacity-10' : 'border-light bg-body-tertiary hover-border-secondary'">
                                 <input type="radio" x-model="selectedBillingAddressId" value="{{ $addr->id }}" class="d-none">
                                 
                                 <div class="d-flex align-items-start justify-content-between mb-3">
                                     <div class="d-flex align-items-center gap-2">
-                                        <span class="badge border fw-bold text-uppercase text-dark bg-white" style="font-size: 9px; letter-spacing: 1px;"
+                                        <span class="badge border fw-bold text-uppercase text-body-emphasis bg-body" style="font-size: 9px; letter-spacing: 1px;"
                                             :class="selectedBillingAddressId == {{ $addr->id }} ? 'border-primary text-primary' : ''">
                                             {{ $addr->label ?: 'Address' }}
                                         </span>
@@ -106,7 +106,7 @@
                                 <div class="row g-4">
                                     <div class="col-md-6">
                                         <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Street / Landmark</p>
-                                        <p class="mb-0 fw-bold text-dark fs-6">{{ $addr->address_line_1 }}</p>
+                                        <p class="mb-0 fw-bold text-body-emphasis fs-6">{{ $addr->address_line_1 }}</p>
                                         @if($addr->address_line_2)
                                             <p class="mb-0 text-muted small mt-1">{{ $addr->address_line_2 }}</p>
                                         @endif
@@ -115,19 +115,19 @@
                                         <div class="row g-3">
                                             <div class="col-6">
                                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Village</p>
-                                                <p class="mb-0 fw-bold text-dark small">{{ $addr->village?->village_name ?? $addr->village_name ?? '—' }}</p>
+                                                <p class="mb-0 fw-bold text-body-emphasis small">{{ $addr->village?->village_name ?? $addr->village_name ?? '—' }}</p>
                                             </div>
                                             <div class="col-6">
                                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Post Office</p>
-                                                <p class="mb-0 fw-bold text-dark small">{{ $addr->village?->post_so_name ?? $addr->post_office ?? '—' }}</p>
+                                                <p class="mb-0 fw-bold text-body-emphasis small">{{ $addr->village?->post_so_name ?? $addr->post_office ?? '—' }}</p>
                                             </div>
                                             <div class="col-6">
                                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Taluka</p>
-                                                <p class="mb-0 fw-bold text-dark small">{{ $addr->village?->taluka_name ?? $addr->taluka ?? '—' }}</p>
+                                                <p class="mb-0 fw-bold text-body-emphasis small">{{ $addr->village?->taluka_name ?? $addr->taluka ?? '—' }}</p>
                                             </div>
                                             <div class="col-6">
                                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">District / State / Pin</p>
-                                                <p class="mb-0 fw-bold text-dark small">{{ $addr->village?->district_name ?? $addr->city ?? '—' }}, {{ !empty($addr->village?->state_name) ? $addr->village->state_name : (!empty($addr->state) ? $addr->state : '—') }} - {{ $addr->village?->pincode ?? $addr->pincode }}</p>
+                                                <p class="mb-0 fw-bold text-body-emphasis small">{{ $addr->village?->district_name ?? $addr->city ?? '—' }}, {{ !empty($addr->village?->state_name) ? $addr->village->state_name : (!empty($addr->state) ? $addr->state : '—') }} - {{ $addr->village?->pincode ?? $addr->pincode }}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -154,7 +154,7 @@
                         <div class="d-flex align-items-center gap-4">
                             <div class="form-check form-switch m-0">
                                 <input class="form-check-input" type="checkbox" role="switch" id="sameAsBilling" x-model="sameAsBilling">
-                                <label class="form-check-label text-dark fw-bold text-uppercase" for="sameAsBilling" style="font-size: 10px; letter-spacing: 1px; cursor: pointer;">Same as Billing</label>
+                                <label class="form-check-label text-body-emphasis fw-bold text-uppercase" for="sameAsBilling" style="font-size: 10px; letter-spacing: 1px; cursor: pointer;">Same as Billing</label>
                             </div>
                             <button type="button" @click.prevent="openAddModal" class="btn btn-link text-primary p-0 text-decoration-none fw-bold text-uppercase d-flex align-items-center gap-1" style="font-size: 9px; letter-spacing: 1px;">
                                 <i class="bi bi-plus"></i> New Address
@@ -165,12 +165,12 @@
                     <div x-show="!sameAsBilling" x-transition class="d-flex flex-column gap-3">
                         @foreach($customer->addresses as $addr)
                             <label class="position-relative d-flex flex-column p-4 rounded-4 border border-2 cursor-pointer transition-all w-100"
-                                :class="selectedShippingAddressId == {{ $addr->id }} ? 'border-primary bg-primary bg-opacity-10' : 'border-light bg-light hover-border-secondary'">
+                                :class="selectedShippingAddressId == {{ $addr->id }} ? 'border-primary bg-primary bg-opacity-10' : 'border-light bg-body-tertiary hover-border-secondary'">
                                 <input type="radio" x-model="selectedShippingAddressId" value="{{ $addr->id }}" class="d-none">
                                 
                                 <div class="d-flex align-items-start justify-content-between mb-3">
                                     <div class="d-flex align-items-center gap-2">
-                                        <span class="badge border fw-bold text-uppercase text-dark bg-white" style="font-size: 9px; letter-spacing: 1px;"
+                                        <span class="badge border fw-bold text-uppercase text-body-emphasis bg-body" style="font-size: 9px; letter-spacing: 1px;"
                                             :class="selectedShippingAddressId == {{ $addr->id }} ? 'border-primary text-primary' : ''">
                                             {{ $addr->label ?: 'Address' }}
                                         </span>
@@ -183,7 +183,7 @@
                                 <div class="row g-4">
                                     <div class="col-md-6">
                                         <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Street / Landmark</p>
-                                        <p class="mb-0 fw-bold text-dark fs-6">{{ $addr->address_line_1 }}</p>
+                                        <p class="mb-0 fw-bold text-body-emphasis fs-6">{{ $addr->address_line_1 }}</p>
                                         @if($addr->address_line_2)
                                             <p class="mb-0 text-muted small mt-1">{{ $addr->address_line_2 }}</p>
                                         @endif
@@ -192,19 +192,19 @@
                                         <div class="row g-3">
                                             <div class="col-6">
                                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Village</p>
-                                                <p class="mb-0 fw-bold text-dark small">{{ $addr->village?->village_name ?? $addr->village_name ?? '—' }}</p>
+                                                <p class="mb-0 fw-bold text-body-emphasis small">{{ $addr->village?->village_name ?? $addr->village_name ?? '—' }}</p>
                                             </div>
                                             <div class="col-6">
                                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Post Office</p>
-                                                <p class="mb-0 fw-bold text-dark small">{{ $addr->village?->post_so_name ?? $addr->post_office ?? '—' }}</p>
+                                                <p class="mb-0 fw-bold text-body-emphasis small">{{ $addr->village?->post_so_name ?? $addr->post_office ?? '—' }}</p>
                                             </div>
                                             <div class="col-6">
                                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Taluka</p>
-                                                <p class="mb-0 fw-bold text-dark small">{{ $addr->village?->taluka_name ?? $addr->taluka ?? '—' }}</p>
+                                                <p class="mb-0 fw-bold text-body-emphasis small">{{ $addr->village?->taluka_name ?? $addr->taluka ?? '—' }}</p>
                                             </div>
                                             <div class="col-6">
                                                 <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">District / State / Pin</p>
-                                                <p class="mb-0 fw-bold text-dark small">{{ $addr->village?->district_name ?? $addr->city ?? '—' }}, {{ !empty($addr->village?->state_name) ? $addr->village->state_name : (!empty($addr->state) ? $addr->state : '—') }} - {{ $addr->village?->pincode ?? $addr->pincode }}</p>
+                                                <p class="mb-0 fw-bold text-body-emphasis small">{{ $addr->village?->district_name ?? $addr->city ?? '—' }}, {{ !empty($addr->village?->state_name) ? $addr->village->state_name : (!empty($addr->state) ? $addr->state : '—') }} - {{ $addr->village?->pincode ?? $addr->pincode }}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -216,7 +216,7 @@
                         @endforeach
                     </div>
 
-                    <div x-show="sameAsBilling" class="p-5 rounded-4 border border-2 border-dashed bg-light d-flex flex-column align-items-center justify-content-center text-center">
+                    <div x-show="sameAsBilling" class="p-5 rounded-4 border border-2 border-dashed bg-body-tertiary d-flex flex-column align-items-center justify-content-center text-center">
                         <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 40px; height: 40px;">
                             <i class="bi bi-check fs-4"></i>
                         </div>
@@ -240,7 +240,7 @@
 
                     <div class="mb-4" style="max-width: 400px;">
                         <label class="form-label text-muted fw-bold text-uppercase ms-1" style="font-size: 9px; letter-spacing: 1px;">Select Dispatch Hub</label>
-                        <select x-select x-model="selectedWarehouseId" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                        <select x-select x-model="selectedWarehouseId" class="form-select bg-body-tertiary border-0 shadow-sm fw-bold px-3 py-2">
                             @foreach($warehouses as $wh)
                                 <option value="{{ $wh->id }}">{{ $wh->name }} ({{ $wh->code }})</option>
                             @endforeach
@@ -255,7 +255,7 @@
                                     <i class="bi bi-shield-check"></i> Company Information (Sender)
                                 </div>
                                 <div class="text-muted small">
-                                    <p class="fw-bold text-dark fs-6 mb-1" x-text="selectedWarehouseId && warehousesMap[selectedWarehouseId]?.company_name ? warehousesMap[selectedWarehouseId].company_name : 'Krushify Agro Pvt. Ltd.'"></p>
+                                    <p class="fw-bold text-body-emphasis fs-6 mb-1" x-text="selectedWarehouseId && warehousesMap[selectedWarehouseId]?.company_name ? warehousesMap[selectedWarehouseId].company_name : 'Krushify Agro Pvt. Ltd.'"></p>
                                     <p class="mb-3" x-text="selectedWarehouseId && warehousesMap[selectedWarehouseId]?.address_line_1 ? `${warehousesMap[selectedWarehouseId].address_line_1}${warehousesMap[selectedWarehouseId].address_line_2 ? ', ' + warehousesMap[selectedWarehouseId].address_line_2 : ''}, ${warehousesMap[selectedWarehouseId].city || 'Rajkot'}, ${warehousesMap[selectedWarehouseId].state || 'Gujarat'} - ${warehousesMap[selectedWarehouseId].pincode || '360003'}` : 'Plot No 19, Raj Ind Amul Cross Road, Ruda Transport Nagar, 360003 Rajkot, Gujarat.'"></p>
                                     <div class="d-flex flex-wrap gap-3" style="font-size: 11px;">
                                         <span class="d-flex align-items-center gap-1 font-monospace text-primary fw-bold"><i class="bi bi-file-earmark-text"></i> GSTIN: <span x-text="selectedWarehouseId && warehousesMap[selectedWarehouseId]?.gstin ? warehousesMap[selectedWarehouseId].gstin : '24AAMCK0386L1Z6'"></span></span>
@@ -267,14 +267,14 @@
 
                         {{-- Dispatching Warehouse Info --}}
                         <div class="col-md-6">
-                            <div class="p-4 rounded-4 bg-light border h-100">
-                                <div class="d-flex align-items-center gap-2 text-dark fw-bold text-uppercase mb-3" style="font-size: 12px; letter-spacing: 1px;">
+                            <div class="p-4 rounded-4 bg-body-tertiary border h-100">
+                                <div class="d-flex align-items-center gap-2 text-body-emphasis fw-bold text-uppercase mb-3" style="font-size: 12px; letter-spacing: 1px;">
                                     <i class="bi bi-house"></i> Selected Hub Address
                                 </div>
                                 <div class="text-muted small">
                                     <template x-if="selectedWarehouseId && warehousesMap[selectedWarehouseId]">
                                         <div>
-                                            <p class="fw-bold text-dark fs-6 mb-1" x-text="`${warehousesMap[selectedWarehouseId].name} (${warehousesMap[selectedWarehouseId].code})`"></p>
+                                            <p class="fw-bold text-body-emphasis fs-6 mb-1" x-text="`${warehousesMap[selectedWarehouseId].name} (${warehousesMap[selectedWarehouseId].code})`"></p>
                                             <p class="mb-0">
                                                 <span x-text="warehousesMap[selectedWarehouseId].address_line_1"></span>
                                                 <template x-if="warehousesMap[selectedWarehouseId].address_line_2">
@@ -289,7 +289,7 @@
                                     </template>
                                     <template x-if="!selectedWarehouseId || !warehousesMap[selectedWarehouseId]">
                                         <div>
-                                            <p class="fw-bold text-dark fs-6 mb-1">Default Central Warehouse</p>
+                                            <p class="fw-bold text-body-emphasis fs-6 mb-1">Default Central Warehouse</p>
                                             <p class="mb-0">Rajkot Hub, Gujarat - 360003</p>
                                         </div>
                                     </template>
@@ -302,8 +302,8 @@
 
             {{-- 5. Order Items Matrix --}}
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <div class="card-header bg-light border-bottom p-4 d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0 text-dark fw-bold text-uppercase d-flex align-items-center gap-3" style="font-size: 10px; letter-spacing: 2px;">
+                <div class="card-header bg-body-tertiary border-bottom p-4 d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0 text-body-emphasis fw-bold text-uppercase d-flex align-items-center gap-3" style="font-size: 10px; letter-spacing: 2px;">
                         <i class="bi bi-bag"></i> Order Items
                     </h4>
                     <span class="text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;" x-text="cart.length + ' Product Units'"></span>
@@ -324,7 +324,7 @@
                                 <tr>
                                     <td class="px-4 py-3">
                                         <div class="d-flex align-items-center gap-3">
-                                            <div class="bg-light border rounded-3 d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width: 48px; height: 48px;">
+                                            <div class="bg-body-tertiary border rounded-3 d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width: 48px; height: 48px;">
                                                 <template x-if="item.image_url">
                                                     <img :src="item.image_url" class="w-100 h-100" style="object-fit: cover;">
                                                 </template>
@@ -333,7 +333,7 @@
                                                 </template>
                                             </div>
                                             <div>
-                                                <p class="mb-0 fw-bold text-dark" x-text="item.name"></p>
+                                                <p class="mb-0 fw-bold text-body-emphasis" x-text="item.name"></p>
                                                 <div class="d-flex align-items-center gap-2 mt-1">
                                                     <span class="font-monospace fw-bold text-primary text-uppercase" style="font-size: 10px; letter-spacing: -0.5px;" x-text="item.sku"></span>
                                                     <span class="text-muted">|</span>
@@ -355,14 +355,14 @@
                                         </div>
                                     </td>
                                     <td class="px-4 py-3 text-center">
-                                        <div class="input-group input-group-sm bg-light rounded-3 p-1 mx-auto" style="width: 100px;">
+                                        <div class="input-group input-group-sm bg-body-tertiary rounded-3 p-1 mx-auto" style="width: 100px;">
                                             <button type="button" @click.prevent="updateCartQty(index, -1)"
-                                                class="btn btn-sm btn-white border-0 fw-bold text-dark w-25 p-0">
+                                                class="btn btn-sm btn-white border-0 fw-bold text-body-emphasis w-25 p-0">
                                                 <i class="bi bi-dash"></i>
                                             </button>
-                                            <span class="form-control bg-transparent border-0 text-center fw-bold text-dark px-1" x-text="item.quantity"></span>
+                                            <span class="form-control bg-transparent border-0 text-center fw-bold text-body-emphasis px-1" x-text="item.quantity"></span>
                                             <button type="button" @click.prevent="updateCartQty(index, 1)"
-                                                class="btn btn-sm btn-white border-0 fw-bold text-dark w-25 p-0">
+                                                class="btn btn-sm btn-white border-0 fw-bold text-body-emphasis w-25 p-0">
                                                 <i class="bi bi-plus"></i>
                                             </button>
                                         </div>
@@ -371,7 +371,7 @@
                                         <span class="text-muted fw-bold" style="font-size: 12px;" x-text="'₹ ' + Number(item.price).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                     </td>
                                     <td class="px-4 py-3 text-end">
-                                        <span class="fw-bold text-dark fs-6" x-text="'₹ ' + Number(itemLineTotal(item)).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                        <span class="fw-bold text-body-emphasis fs-6" x-text="'₹ ' + Number(itemLineTotal(item)).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                     </td>
                                     <td class="px-4 py-3 text-end">
                                         <button type="button" @click.prevent="removeFromCart(index)" class="btn btn-sm btn-link text-danger p-0 shadow-none">
@@ -385,10 +385,10 @@
                 </div>
 
                 {{-- Order Summary Block (Below Items) --}}
-                <div class="card-footer bg-light p-4 p-md-5 border-top">
+                <div class="card-footer bg-body-tertiary p-4 p-md-5 border-top">
                     <div class="row g-5">
                         <div class="col-lg-7">
-                            <div class="p-4 rounded-4 bg-white border shadow-sm d-flex gap-3 align-items-start">
+                            <div class="p-4 rounded-4 bg-body border shadow-sm d-flex gap-3 align-items-start">
                                 <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
                                     <i class="bi bi-shield-check fs-5"></i>
                                 </div>
@@ -401,7 +401,7 @@
                             <div class="d-flex flex-column gap-3">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Gross Subtotal</span>
-                                    <span class="fw-bold text-dark" x-text="'₹ ' + Number(subtotal).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                    <span class="fw-bold text-body-emphasis" x-text="'₹ ' + Number(subtotal).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                 </div>
                                 <template x-if="bogoDiscountTotal > 0">
                                     <div class="d-flex justify-content-between align-items-center text-success">
@@ -444,7 +444,7 @@
                                     </template>
                                 </div>
                                 <div x-show="!couponApplied" class="mt-2">
-                                    <div class="input-group input-group-sm bg-white border rounded-3 p-1 shadow-sm">
+                                    <div class="input-group input-group-sm bg-body border rounded-3 p-1 shadow-sm">
                                         <input type="text" x-model="couponCode" @keydown.enter.prevent="applyCoupon()"
                                             placeholder="Promo code"
                                             class="form-control border-0 bg-transparent font-monospace text-uppercase shadow-none" style="font-size: 11px;">
@@ -472,7 +472,7 @@
                                 </template>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Statutory Tax</span>
-                                    <span class="fw-bold text-dark" x-text="'₹ ' + Number(taxAmount).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                    <span class="fw-bold text-body-emphasis" x-text="'₹ ' + Number(taxAmount).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                 </div>
                                 
                                 <div class="pt-4 mt-2 border-top d-flex flex-column gap-4">
@@ -505,7 +505,7 @@
                                                         <i class="bi bi-wallet2"></i>
                                                     </div>
                                                     <div>
-                                                        <label class="form-check-label fw-bold text-dark m-0" for="useWalletSwitch">Use Wallet Balance</label>
+                                                        <label class="form-check-label fw-bold text-body-emphasis m-0" for="useWalletSwitch">Use Wallet Balance</label>
                                                         <p class="mb-0 text-success fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Available: ₹ <span x-text="Number(wallet_balance).toFixed(2)"></span></p>
                                                     </div>
                                                 </div>
@@ -516,11 +516,11 @@
                                         </template>
                                         
                                         {{-- Order Details Form --}}
-                                        <div class="mb-4 p-3 rounded-4 border bg-white" x-show="!editingOrderId">
+                                        <div class="mb-4 p-3 rounded-4 border bg-body" x-show="!editingOrderId">
                                             <div class="d-flex flex-column gap-3">
                                                 <div>
                                                     <label class="form-label text-muted fw-bold text-uppercase ms-1 mb-1" style="font-size: 9px; letter-spacing: 1px;">Order Type</label>
-                                                    <select x-select x-model="orderType" class="form-select form-select-lg border shadow-sm fw-semibold bg-light fs-6">
+                                                    <select x-select x-model="orderType" class="form-select form-select-lg border shadow-sm fw-semibold bg-body-tertiary fs-6">
                                                         <option value="sale">Regular Sale</option>
                                                         <option value="sample">Free Sample</option>
                                                         <option value="replacement">Replacement</option>
@@ -528,7 +528,7 @@
                                                 </div>
                                                 <div>
                                                     <label class="form-label text-muted fw-bold text-uppercase ms-1 mb-1" style="font-size: 9px; letter-spacing: 1px;">Order Date</label>
-                                                    <input type="date" x-model="orderDate" max="{{ date('Y-m-d') }}" class="form-control form-control-lg border shadow-sm fw-semibold bg-light fs-6">
+                                                    <input type="date" x-model="orderDate" max="{{ date('Y-m-d') }}" class="form-control form-control-lg border shadow-sm fw-semibold bg-body-tertiary fs-6">
                                                 </div>
                                             </div>
                                             
@@ -538,7 +538,7 @@
                                                         <i class="bi bi-clock-history"></i>
                                                     </div>
                                                     <div>
-                                                        <label class="form-check-label fw-bold text-dark m-0" for="isDraftSwitch">Save as Future Order</label>
+                                                        <label class="form-check-label fw-bold text-body-emphasis m-0" for="isDraftSwitch">Save as Future Order</label>
                                                         <p class="mb-0 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Draft order for a later date</p>
                                                     </div>
                                                 </div>
@@ -551,7 +551,7 @@
                                                         <i class="bi bi-calendar-event text-primary"></i> Follow-up Date <span class="text-danger">*</span>
                                                     </label>
                                                     <input type="date" x-model="futureOrderDate" min="{{ date('Y-m-d') }}"
-                                                        class="form-control form-control-lg border shadow-sm fw-bold bg-light">
+                                                        class="form-control form-control-lg border shadow-sm fw-bold bg-body-tertiary">
                                                 </div>
                                             </div>
                                         </div>
@@ -559,7 +559,7 @@
                                         <button type="button" @click="placeOrder" :disabled="placing"
                                             class="btn btn-lg w-100 rounded-pill fw-bold text-uppercase d-flex align-items-center justify-content-center gap-2 shadow text-white transition-all position-relative overflow-hidden"
                                             style="font-size: 13px; letter-spacing: 2px;"
-                                            :class="editingOrderId ? 'btn-warning text-dark' : (isDraft ? 'btn-primary bg-gradient' : 'btn-success bg-gradient')">
+                                            :class="editingOrderId ? 'btn-warning text-body-emphasis' : (isDraft ? 'btn-primary bg-gradient' : 'btn-success bg-gradient')">
                                             
                                             {{-- Loading Spinner --}}
                                             <div class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-25" x-show="placing" x-cloak>

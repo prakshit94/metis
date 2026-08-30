@@ -13,11 +13,11 @@
                     <div class="d-flex flex-column gap-4">
                         <div>
                             <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">GST Number</p>
-                            <p class="mb-0 fs-5 font-monospace fw-bold text-dark">{{ $customer->gst_no ?: 'Not Provided' }}</p>
+                            <p class="mb-0 fs-5 font-monospace fw-bold text-body-emphasis">{{ $customer->gst_no ?: 'Not Provided' }}</p>
                         </div>
                         <div>
                             <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">PAN Number</p>
-                            <p class="mb-0 fs-5 font-monospace fw-bold text-dark">{{ $customer->pan_no ?: 'Not Provided' }}</p>
+                            <p class="mb-0 fs-5 font-monospace fw-bold text-body-emphasis">{{ $customer->pan_no ?: 'Not Provided' }}</p>
                         </div>
                     </div>
                 </div>
@@ -40,15 +40,15 @@
                         </div>
                         <div>
                             <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Payment Terms</p>
-                            <p class="mb-0 fs-4 fw-bold text-dark lh-1">{{ $customer->credit_days ?: 0 }} <span class="fs-6 text-muted fw-normal">Days</span></p>
+                            <p class="mb-0 fs-4 fw-bold text-body-emphasis lh-1">{{ $customer->credit_days ?: 0 }} <span class="fs-6 text-muted fw-normal">Days</span></p>
                         </div>
                         <div>
                             <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Wallet Balance</p>
-                            <p class="mb-0 fs-3 fw-black {{ ($customer->outstanding_balance ?? 0) > 0 ? 'text-danger' : 'text-dark' }} lh-1">₹ {{ number_format($customer->outstanding_balance ?? 0, 2) }}</p>
+                            <p class="mb-0 fs-3 fw-black {{ ($customer->outstanding_balance ?? 0) > 0 ? 'text-danger' : 'text-body-emphasis' }} lh-1">₹ {{ number_format($customer->outstanding_balance ?? 0, 2) }}</p>
                         </div>
                         <div>
                             <p class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Credit Valid Till</p>
-                            <p class="mb-0 fw-bold text-dark">{{ $customer->credit_valid_till ? $customer->credit_valid_till->format('M d, Y') : 'No Expiry' }}</p>
+                            <p class="mb-0 fw-bold text-body-emphasis">{{ $customer->credit_valid_till ? $customer->credit_valid_till->format('M d, Y') : 'No Expiry' }}</p>
                         </div>
                     </div>
                 </div>

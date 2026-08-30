@@ -123,10 +123,11 @@
                                 x-model.number="itemsPerPage"
                                 @change="fetchData()"
                                 style="width: 120px;">
+                            <option value="10">10 / page</option>
                             <option value="15">15 / page</option>
-                            <option value="30">30 / page</option>
+                            <option value="20">20 / page</option>
+                            <option value="25">25 / page</option>
                             <option value="50">50 / page</option>
-                            <option value="100">100 / page</option>
                         </select>
                         
                         <button class="btn btn-sm btn-outline-secondary" type="button" @click="resetFilters()">
@@ -307,7 +308,7 @@
                                             <span class="badge"
                                                 :class="{
                                                     'bg-success': viewData.event === 'created',
-                                                    'bg-warning text-dark': viewData.event === 'updated',
+                                                    'bg-warning text-body-emphasis': viewData.event === 'updated',
                                                     'bg-danger': viewData.event === 'deleted',
                                                     'bg-info': viewData.event === 'restored'
                                                 }"
@@ -393,7 +394,7 @@
                     <p class="text-muted small mt-2 mb-0">This action cannot be undone and will permanently remove the entire system audit history.</p>
                 </div>
                 <div class="modal-footer border-top-0 pt-0 pb-3 pe-3">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-danger rounded-pill px-4 shadow-sm" @click="executeClearAll">Yes, Clear All Logs</button>
                 </div>
             </div>

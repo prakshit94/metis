@@ -128,7 +128,7 @@
                         style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none;">
                     
                     <!-- Hover Effect -->
-                    <div class="position-absolute top-0 start-0 w-100 h-100 bg-white opacity-0 transition-all group-hover-opacity-25"></div>
+                    <div class="position-absolute top-0 start-0 w-100 h-100 bg-body opacity-0 transition-all group-hover-opacity-25"></div>
 
                     <span x-show="!isSubmitting" class="d-flex align-items-center justify-content-center gap-2 position-relative z-1">
                         Sign In to Account

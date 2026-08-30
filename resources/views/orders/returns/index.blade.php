@@ -156,7 +156,7 @@
                                 <td><span class="text-muted font-monospace small" x-text="ret.order_no"></span></td>
                                 <td><span class="small" x-text="ret.customer?.name"></span></td>
                                 <td>
-                                    <span class="badge bg-light text-dark border small" x-text="ret.order?.shipments?.length ? ret.order.shipments[ret.order.shipments.length - 1].carrier_name || '—' : '—'"></span>
+                                    <span class="badge bg-body-tertiary text-body-emphasis border small" x-text="ret.order?.shipments?.length ? ret.order.shipments[ret.order.shipments.length - 1].carrier_name || '—' : '—'"></span>
                                 </td>
                                 <td>
                                     <span class="badge bg-secondary bg-opacity-25 text-body small text-capitalize"

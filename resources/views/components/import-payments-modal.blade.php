@@ -73,7 +73,7 @@
                     </div>
 
                     <div class="d-flex justify-content-between mt-4">
-                        <button type="button" class="btn btn-light" @click="importStep = 1; importFile = null; document.getElementById('importFile').value = '';">
+                        <button type="button" class="btn btn-outline-secondary" @click="importStep = 1; importFile = null; document.getElementById('importFile').value = '';">
                             <i class="bi bi-arrow-left me-1"></i>Back
                         </button>
                         <button type="button" class="btn btn-success px-4" @click="processImport" :disabled="isImporting || importErrors.length > 0 || importPreview.length === 0">

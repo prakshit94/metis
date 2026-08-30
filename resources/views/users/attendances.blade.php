@@ -320,7 +320,7 @@
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-light btn-icon rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
+                                        <button class="btn btn-sm btn-outline-secondary btn-icon rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
@@ -380,7 +380,7 @@
                         <div class="calendar-main" style="padding: 0; background: transparent;">
                             <div class="calendar-content">
                                 <div class="month-view border-0 shadow-none">
-                    <div class="month-header bg-light">
+                    <div class="month-header bg-body-tertiary">
                         <div class="month-header-day text-muted fw-bold">Sun</div>
                         <div class="month-header-day text-muted fw-bold">Mon</div>
                         <div class="month-header-day text-muted fw-bold">Tue</div>

@@ -164,7 +164,7 @@ document.addEventListener('alpine:init', () => {
                         <i class="bi ${iconMap[type] || 'bi-info-circle-fill'} me-2"></i>
                         <span>${message}</span>
                     </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    <button type="button" class="btn-close btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
                 </div>`;
                 
             container.appendChild(toast);

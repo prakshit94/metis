@@ -393,7 +393,7 @@
                                                             <span x-show="addr.is_default" class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Default</span>
                                                         </div>
                                                         @can('customeraddress-edit')
-                                                        <button type="button" class="btn btn-sm btn-light border rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 12px; right: 12px; width: 28px; height: 28px; z-index: 20;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary border rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 12px; right: 12px; width: 28px; height: 28px; z-index: 20;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
                                                             <i class="bi bi-pencil text-primary" style="font-size: 12px;"></i>
                                                         </button>
                                                         @endcan
@@ -459,7 +459,7 @@
                                                             <span x-show="addr.is_default" class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Default</span>
                                                         </div>
                                                         @can('customeraddress-edit')
-                                                        <button type="button" class="btn btn-sm btn-light border rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 12px; right: 12px; width: 28px; height: 28px; z-index: 20;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary border rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 12px; right: 12px; width: 28px; height: 28px; z-index: 20;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
                                                             <i class="bi bi-pencil text-primary" style="font-size: 12px;"></i>
                                                         </button>
                                                         @endcan
@@ -590,7 +590,7 @@
                                                 <div x-show="p.grade" 
                                                      class="badge border shadow-sm rounded-2 d-flex flex-column align-items-center justify-content-center flex-shrink-0" 
                                                      style="width: 28px; height: 34px; font-size: 11px; padding: 2px;"
-                                                     :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(p.grade)}"
+                                                     :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-dark-subtle text-body-emphasis-emphasis border-dark': !['A','B','C'].includes(p.grade)}"
                                                      :title="'Grade ' + p.grade"
                                                      x-cloak>
                                                     <i class="bi bi-star-fill text-warning" style="font-size: 10px; line-height: 1; margin-bottom: 2px;"></i>
@@ -696,7 +696,7 @@
                                                         <div x-show="p.grade" 
                                                              class="position-absolute top-100 start-50 translate-middle badge border shadow-sm rounded-pill px-2 d-flex align-items-center" 
                                                              style="font-size: 9px; padding-top: 2px; padding-bottom: 2px;"
-                                                             :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-dark-subtle text-dark-emphasis border-dark': !['A','B','C'].includes(p.grade)}"
+                                                             :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-dark-subtle text-body-emphasis-emphasis border-dark': !['A','B','C'].includes(p.grade)}"
                                                              :title="'Grade ' + p.grade"
                                                              x-cloak>
                                                             <i class="bi bi-star-fill text-warning me-1" style="font-size: 8px;"></i><span x-text="p.grade" style="font-weight: 800;"></span>
@@ -876,7 +876,7 @@
                                         <div class="font-monospace text-body-secondary" style="font-size: 11px;" x-text="item.sku"></div>
                                     </div>
                                     <template x-if="!item.is_gift">
-                                        <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-body-secondary hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
+                                        <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-outline-secondary text-body-secondary hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
                                             <i class="bi bi-trash3"></i>
                                         </button>
                                     </template>
@@ -957,7 +957,7 @@
                                                 <div class="font-monospace text-body-secondary text-truncate" style="font-size: 11px;" x-text="item.sku"></div>
                                             </div>
                                             <template x-if="!item.is_gift">
-                                                <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-light text-body-secondary hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
+                                                <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-outline-secondary text-body-secondary hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
                                                     <i class="bi bi-trash3"></i>
                                                 </button>
                                             </template>
@@ -1033,7 +1033,7 @@
                                             <p class="mb-0 fw-semibold text-success opacity-75 small" x-text="'Saving ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></p>
                                         </div>
                                     </div>
-                                    <button type="button" @click.prevent="appliedOfferId = 'none'" class="btn btn-sm btn-light text-body-secondary hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
+                                    <button type="button" @click.prevent="appliedOfferId = 'none'" class="btn btn-sm btn-outline-secondary text-body-secondary hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
                                 </div>
@@ -1061,7 +1061,7 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <button type="button" @click.prevent="removeCoupon()" class="btn btn-sm btn-light text-body-secondary hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
+                                    <button type="button" @click.prevent="removeCoupon()" class="btn btn-sm btn-outline-secondary text-body-secondary hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
                                 </div>
@@ -1754,7 +1754,7 @@
                                                         </template>
                                                         <template x-if="!(bestOrderOffer && bestOrderOffer.id === offer.id)">
                                                             <button class="btn btn-sm rounded-pill px-3 fw-medium" 
-                                                                    :class="orderOfferDiscount(offer) === 0 ? 'btn-light text-body-secondary border' : 'btn-outline-secondary'" 
+                                                                    :class="orderOfferDiscount(offer) === 0 ? 'btn-outline-secondary text-body-secondary border' : 'btn-outline-secondary'" 
                                                                     :disabled="orderOfferDiscount(offer) === 0">
                                                                 Apply
                                                             </button>
@@ -2027,7 +2027,7 @@
                         <span x-show="selectedProductForModal && isInCart(selectedProductForModal.id)" class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Currently in cart</span>
                     </div>
                     <div>
-                        <button type="button" class="btn btn-light me-2 fw-medium" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-outline-secondary me-2 fw-medium" data-bs-dismiss="modal">Close</button>
                         <button x-show="selectedProductForModal" type="button" class="btn btn-primary fw-bold px-4" @click="selectedProductForModal && addToCart(selectedProductForModal); bootstrap.Modal.getInstance(document.getElementById('productDetailsModal')).hide();">
                             <i class="bi" :class="selectedProductForModal && isInCart(selectedProductForModal.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
                             <span x-text="selectedProductForModal && isInCart(selectedProductForModal.id) ? 'Add More' : 'Add to Cart'"></span>
@@ -2334,7 +2334,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                         <i class="bi ${iconMap[type] || iconMap.info} flex-shrink-0"></i>
                         <span>${message}</span>
                     </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>`;
                 container.appendChild(el);
                 setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 4000);

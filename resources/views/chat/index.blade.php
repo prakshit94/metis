@@ -69,10 +69,10 @@
                         <div class="p-2 border-bottom">
                             <small class="text-muted fw-bold text-uppercase px-2">People</small>
                             <template x-for="user in searchResults.users" :key="user.id">
-                                <button type="button" @click="startDirect(user.id)" class="btn btn-light text-start w-100 d-flex align-items-center gap-2 mb-1 p-2 border-0">
+                                <button type="button" @click="startDirect(user.id)" class="btn btn-outline-secondary text-start w-100 d-flex align-items-center gap-2 mb-1 p-2 border-0">
                                     <div class="position-relative flex-shrink-0">
                                         <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
-                                        <span class="position-absolute bottom-0 end-0 rounded-circle border border-white" style="width: 10px; height: 10px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
+                                        <span class="position-absolute bottom-0 end-0 rounded-circle border border-body" style="width: 10px; height: 10px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
                                     </div>
                                     <div class="min-w-0 flex-grow-1">
                                         <div class="d-flex align-items-center mb-1 gap-1">
@@ -104,9 +104,9 @@
                             style="border-bottom: 1px solid var(--bs-border-color) !important; transition: background 0.15s;"
                             :class="activeConversation?.id === conversation.id ? 'bg-primary bg-opacity-10' : 'bg-transparent'">
                             <div class="position-relative flex-shrink-0">
-                                <img :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-white" style="width: 42px; height: 42px; ">
+                                <img :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body" style="width: 42px; height: 42px; ">
                                 <span x-show="isOnline(conversation)"
-                                      class="position-absolute bottom-0 end-0 rounded-circle border-2 border-white bg-success"
+                                      class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body bg-success"
                                       style="width:11px;height:11px;"></span>
                             </div>
                             <div class="min-w-0 flex-grow-1">
@@ -141,10 +141,10 @@
                     <div class="d-flex flex-column h-100">
                         <header class="d-flex align-items-center justify-content-between p-3 border-bottom shadow-sm z-1">
                             <div class="d-flex align-items-center gap-3 min-w-0">
-                                <button type="button" class="btn btn-light d-lg-none p-2 rounded-circle" @click="activeConversation = null; replyTo = null; errorMessage = ''">
+                                <button type="button" class="btn btn-outline-secondary d-lg-none p-2 rounded-circle" @click="activeConversation = null; replyTo = null; errorMessage = ''">
                                     <i class="bi bi-arrow-left"></i>
                                 </button>
-                                <img :src="getConversationPhotoUrl(activeConversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-white" style="width: 42px; height: 42px; ">
+                                <img :src="getConversationPhotoUrl(activeConversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body" style="width: 42px; height: 42px; ">
                                 <div class="min-w-0">
                                     <div class="d-flex align-items-center gap-2">
                                         <h6 class="mb-0 fw-bold text-truncate flex-grow-1" x-text="conversationTitle(activeConversation)"></h6>
@@ -209,7 +209,7 @@
                                                 <div class="d-flex flex-column gap-2">
                                                     <textarea x-model="editingDraft" rows="2" class="form-control form-control-sm"></textarea>
                                                     <div class="d-flex justify-content-end gap-1">
-                                                        <button type="button" @click="cancelEdit" class="btn btn-sm btn-light py-0" style="font-size: 10px;">Cancel</button>
+                                                        <button type="button" @click="cancelEdit" class="btn btn-sm btn-outline-secondary py-0" style="font-size: 10px;">Cancel</button>
                                                         <button type="button" @click="saveEdit(message)" class="btn btn-sm btn-success py-0" style="font-size: 10px;">Save</button>
                                                     </div>
                                                 </div>
@@ -225,7 +225,7 @@
                                                                 </a>
                                                             </template>
                                                             <template x-if="!isImageAttachment(attachment)">
-                                                                <a :href="formatAttachmentUrl(attachment.path)" target="_blank" class="btn btn-sm btn-light d-flex align-items-center gap-2 text-start">
+                                                                <a :href="formatAttachmentUrl(attachment.path)" target="_blank" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2 text-start">
                                                                     <i class="bi bi-file-earmark-text"></i>
                                                                     <span class="text-truncate flex-grow-1" x-text="attachment.name || attachment.path"></span>
                                                                     <i class="bi bi-download text-muted"></i>
@@ -333,11 +333,11 @@
                         </div>
                         <div class="d-flex gap-1">
                             @can('chat-export')
-                            <button type="button" @click="exportUsersToCSV" class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Export Data">
+                            <button type="button" @click="exportUsersToCSV" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Export Data">
                                 <i class="bi bi-download"></i>
                             </button>
                             @endcan
-                            <button type="button" @click="fetchUsers" class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Refresh users">
+                            <button type="button" @click="fetchUsers" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Refresh users">
                                 <i class="bi bi-arrow-clockwise"></i>
                             </button>
                         </div>
@@ -367,7 +367,7 @@
                                 :disabled="startingUserId === user.id">
                             <div class="position-relative flex-shrink-0 mt-1">
                                 <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px; ">
-                                <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-white" style="width: 12px; height: 12px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
+                                <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body" style="width: 12px; height: 12px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
                             </div>
                             <div class="min-w-0 flex-grow-1">
                                 <!-- First Row: Name & Badge -->
@@ -486,7 +486,7 @@
                     </div>
                 </div>
                 <div class="d-flex justify-content-end gap-2 p-4 pt-0">
-                    <button type="button" @click="showGroupModal = false; groupError = ''" class="btn btn-light fw-bold" :disabled="groupBusy">Cancel</button>
+                    <button type="button" @click="showGroupModal = false; groupError = ''" class="btn btn-outline-secondary fw-bold" :disabled="groupBusy">Cancel</button>
                     @can('chat-create')
                     <button type="submit" class="btn btn-primary fw-bold px-4" :disabled="groupBusy || !groupForm.name.trim()">
                         <span x-show="groupBusy" class="spinner-border spinner-border-sm me-2"></span>
@@ -513,7 +513,7 @@
                         </div>
                         <small class="opacity-75" x-text="conversationSubtitle(activeConversation)"></small>
                     </div>
-                    <button type="button" @click="closeGroupSettings" class="btn-close btn-close-white"></button>
+                    <button type="button" @click="closeGroupSettings" class="btn-close btn-close"></button>
                 </div>
                 
                 <div class="p-4 overflow-y-auto">
@@ -610,7 +610,7 @@
                                         <div class="d-flex align-items-center gap-3">
                                             <div class="position-relative">
                                                 <img :src="getUserPhotoUrl(member.user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
-                                                <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-white" style="width: 12px; height: 12px;" :class="member.user?.is_online ? 'bg-success' : 'bg-secondary'"></span>
+                                                <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body" style="width: 12px; height: 12px;" :class="member.user?.is_online ? 'bg-success' : 'bg-secondary'"></span>
                                             </div>
                                             <div class="min-w-0 flex-grow-1 text-truncate">
                                                 <div class="d-flex align-items-center gap-2 mb-1">
@@ -627,7 +627,7 @@
                                         </div>
                                         @can('chat-edit')
                                         <div x-show="canManageSettings && member.user_id !== currentUserId" class="dropdown">
-                                            <button class="btn btn-light btn-sm px-2 rounded-circle border shadow-sm d-flex align-items-center justify-content-center" style="width:28px;height:28px;" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical" style="font-size:12px;"></i></button>
+                                            <button class="btn btn-outline-secondary btn-sm px-2 rounded-circle border shadow-sm d-flex align-items-center justify-content-center" style="width:28px;height:28px;" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical" style="font-size:12px;"></i></button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 text-sm py-2">
                                                 <li><button type="button" @click="updateGroupMemberRole(member, member.role === 'admin' ? 'member' : 'admin')" class="dropdown-item small" x-text="member.role === 'admin' ? 'Demote to Member' : 'Make Admin'"></button></li>
                                                 <li><hr class="dropdown-divider my-2"></li>
@@ -655,7 +655,7 @@
                 <h5 class="fw-bold mb-2" x-text="confirmModal.title"></h5>
                 <p class="text-muted small mb-4" x-text="confirmModal.message"></p>
                 <div class="d-flex gap-2">
-                    <button type="button" @click="closeConfirm()" class="btn btn-light fw-semibold flex-grow-1" x-text="confirmModal.cancelText"></button>
+                    <button type="button" @click="closeConfirm()" class="btn btn-outline-secondary fw-semibold flex-grow-1" x-text="confirmModal.cancelText"></button>
                     <button type="button" @click="confirmModal.onConfirm()" class="btn btn-danger fw-semibold flex-grow-1" x-text="confirmModal.confirmText"></button>
                 </div>
             </div>

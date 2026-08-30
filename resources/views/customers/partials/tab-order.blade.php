@@ -3,7 +3,7 @@
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
 
         {{-- Table Header: Title + Filters + Search --}}
-        <div class="card-header bg-light border-bottom p-4">
+        <div class="card-header bg-body-tertiary border-bottom p-4">
 
             {{-- Row 1: Title + Cart Badge --}}
             <div class="d-flex align-items-center justify-content-between gap-4 mb-3">
@@ -12,7 +12,7 @@
                         <i class="bi bi-box-seam fs-5"></i>
                     </div>
                     <div>
-                        <h3 class="h5 fw-bold mb-0 text-dark">Available Products</h3>
+                        <h3 class="h5 fw-bold mb-0 text-body-emphasis">Available Products</h3>
                         <p class="mb-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">
                             <span x-text="productTotal"></span> products &nbsp;·&nbsp; Showing <span x-text="productFrom"></span>–<span x-text="productTo"></span>
                         </p>
@@ -42,7 +42,7 @@
                 <div class="btn-group shadow-sm" role="group">
                     <template x-for="opt in [{v:'available',l:'In Stock'},{v:'out_of_stock',l:'Out of Stock'},{v:'',l:'All'}]" :key="opt.v">
                         <button type="button" @click="productStockFilter = opt.v; searchProducts(true)"
-                            :class="productStockFilter === opt.v ? 'btn btn-sm btn-primary fw-bold text-uppercase' : 'btn btn-sm btn-light fw-bold text-uppercase text-muted'"
+                            :class="productStockFilter === opt.v ? 'btn btn-sm btn-primary fw-bold text-uppercase' : 'btn btn-sm btn-outline-secondary fw-bold text-uppercase text-muted'"
                             style="font-size: 10px; letter-spacing: 1px;"
                             x-text="opt.l">
                         </button>
@@ -60,12 +60,12 @@
 
                 {{-- Search --}}
                 <div class="input-group input-group-sm shadow-sm" style="max-width: 250px;">
-                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <span class="input-group-text bg-body border-end-0 text-muted"><i class="bi bi-search"></i></span>
                     <input type="text" x-model="productSearchQuery"
                         @input.debounce.400ms="searchProducts(true)"
                         placeholder="Search by name, SKU..."
                         class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;">
-                    <span x-show="searchingProducts" class="input-group-text bg-white border-start-0 text-primary" x-cloak>
+                    <span x-show="searchingProducts" class="input-group-text bg-body border-start-0 text-primary" x-cloak>
                         <span class="spinner-border spinner-border-sm" role="status"></span>
                     </span>
                 </div>
@@ -108,10 +108,10 @@
                     <template x-if="!searchingProducts && productSearchResults.length === 0">
                         <tr>
                             <td colspan="6" class="py-5 text-center text-muted">
-                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
+                                <div class="bg-body-tertiary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
                                     <i class="bi bi-box-seam text-secondary fs-2"></i>
                                 </div>
-                                <p class="fw-bold text-uppercase text-dark mb-1" style="font-size: 12px; letter-spacing: 1px;">No products found</p>
+                                <p class="fw-bold text-uppercase text-body-emphasis mb-1" style="font-size: 12px; letter-spacing: 1px;">No products found</p>
                                 <p class="small mb-0">Try adjusting your search or filters</p>
                             </td>
                         </tr>
@@ -124,7 +124,7 @@
                             {{-- Product Identity --}}
                             <td>
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="bg-light border rounded-3 d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width: 48px; height: 48px;">
+                                    <div class="bg-body-tertiary border rounded-3 d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width: 48px; height: 48px;">
                                         <template x-if="product.image_url">
                                             <img :src="product.image_url" class="w-100 h-100" style="object-fit: cover;">
                                         </template>
@@ -133,7 +133,7 @@
                                         </template>
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="mb-0 fw-bold text-dark text-truncate" x-text="product.name"></p>
+                                        <p class="mb-0 fw-bold text-body-emphasis text-truncate" x-text="product.name"></p>
                                         <div x-show="product.brand">
                                             <span class="text-muted small fw-semibold" x-text="product.brand"></span>
                                         </div>
@@ -163,7 +163,7 @@
                             {{-- Pricing --}}
                             <td>
                                 <div class="d-flex flex-column">
-                                    <span class="fw-bold text-dark" style="font-size: 14px;" x-text="'₹ ' + Number(product.selling_price).toFixed(2)"></span>
+                                    <span class="fw-bold text-body-emphasis" style="font-size: 14px;" x-text="'₹ ' + Number(product.selling_price).toFixed(2)"></span>
                                     <span class="text-muted text-decoration-line-through" style="font-size: 10px;" x-show="product.mrp && product.mrp > product.selling_price" x-text="'MRP ₹ ' + Number(product.mrp).toFixed(2)"></span>
                                     <span class="text-muted" style="font-size: 10px;" x-show="product.purchase_price" x-text="'Cost ₹ ' + Number(product.purchase_price).toFixed(2)"></span>
                                 </div>
@@ -255,10 +255,10 @@
         </div>
 
         {{-- Pagination Footer --}}
-        <div class="card-footer bg-light border-top d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 p-3">
+        <div class="card-footer bg-body-tertiary border-top d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 p-3">
             <p class="mb-0 text-muted fw-semibold" style="font-size: 11px;">
-                Showing <span class="fw-bold text-dark" x-text="productFrom"></span>–<span class="fw-bold text-dark" x-text="productTo"></span>
-                of <span class="fw-bold text-dark" x-text="productTotal"></span> products
+                Showing <span class="fw-bold text-body-emphasis" x-text="productFrom"></span>–<span class="fw-bold text-body-emphasis" x-text="productTo"></span>
+                of <span class="fw-bold text-body-emphasis" x-text="productTotal"></span> products
             </p>
             <div class="d-flex align-items-center gap-1">
                 <button type="button" @click="productPage = 1; searchProducts()"
@@ -273,7 +273,7 @@
                 </button>
                 
                 <span class="px-3 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">
-                    Page <span class="text-dark fs-6 ms-1 me-1" x-text="productPage"></span> of <span class="text-dark fs-6 ms-1 me-1" x-text="productLastPage"></span>
+                    Page <span class="text-body-emphasis fs-6 ms-1 me-1" x-text="productPage"></span> of <span class="text-body-emphasis fs-6 ms-1 me-1" x-text="productLastPage"></span>
                 </span>
 
                 <button type="button" @click="productPage++; searchProducts()"
