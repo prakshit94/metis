@@ -4,29 +4,29 @@
         <div class="container-fluid align-items-center h-100 px-3 px-md-4 d-flex justify-content-between">
 
             {{-- ── LEFT SECTION (Brand & Toggle) ────────────────── --}}
-            <div class="d-flex align-items-center gap-3 flex-shrink-0" style="min-width: 0;">
+            <div class="d-flex align-items-center gap-2 gap-md-4 flex-shrink-0" style="min-width: 0;">
                 
                 {{-- SIDEBAR TOGGLE --}}
                 @if(!isset($hideSidebar) || !$hideSidebar)
-                <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary flex-shrink-0"
-                        style="width: 40px; height: 40px;"
+                <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
+                        style="width: 42px; height: 42px;"
                         type="button"
                         data-sidebar-toggle
                         aria-label="Toggle sidebar"
                         aria-controls="admin-sidebar"
                         aria-expanded="false">
-                    <i class="bi bi-list fs-4" aria-hidden="true"></i>
+                    <i class="bi bi-list fs-4 text-body-emphasis" aria-hidden="true"></i>
                 </button>
                 @endif
 
                 {{-- BRAND --}}
-                <a class="navbar-brand d-flex align-items-center gap-2 m-0" href="{{ route('dashboard') }}" aria-label="Ecommerce Admin — go to dashboard">
-                    <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
-                        <img src="{{ asset('assets/images/logo.svg') }}" alt="" width="24" height="24" aria-hidden="true">
+                <a class="navbar-brand d-flex align-items-center gap-3 m-0 py-2" href="{{ route('dashboard') }}" aria-label="Ecommerce Admin — go to dashboard">
+                    <div class="brand-logo-container rounded-4 d-flex align-items-center justify-content-center flex-shrink-0 transition-all hover-rotate" style="width: 42px; height: 42px;">
+                        <img src="{{ asset('assets/images/logo.png') }}" alt="Logo" width="36" height="36" aria-hidden="true" class="shadow-sm rounded-circle">
                     </div>
                     <div class="d-none d-xl-flex flex-column lh-1 text-truncate">
-                        <span class="fw-bold text-body fs-5 tracking-tight">Ecommerce</span>
-                        <span class="text-primary fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 2px;">Admin</span>
+                        <span class="fw-black text-body-emphasis fs-5 tracking-tight mb-1" style="letter-spacing: -0.5px;">Ecommerce</span>
+                        <span class="text-primary fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 2.5px;">Admin Portal</span>
                     </div>
                 </a>
             </div>
@@ -112,19 +112,20 @@
                 }">
                     <div class="position-relative d-flex align-items-center">
                         <div class="position-absolute start-0 ps-3 text-muted d-flex align-items-center" style="z-index: 10;">
-                            <i class="bi bi-search fs-5" aria-hidden="true"></i>
+                            <i class="bi bi-search fs-5 text-primary" aria-hidden="true"></i>
                         </div>
                         
                         <input type="text"
-                               class="form-control form-control-lg bg-body-secondary border-0 rounded-pill shadow-none fw-semibold pe-4 w-100"
-                               style="font-size: 14px; letter-spacing: 0.5px; padding-left: 3rem !important;"
-                               placeholder="Search anywhere..."
+                               class="form-control form-control-lg bg-body-secondary bg-opacity-50 border-0 rounded-pill shadow-none fw-semibold w-100 transition-all focus-ring focus-ring-primary"
+                               style="font-size: 14px; letter-spacing: 0.5px; padding-left: 3rem !important; padding-right: 4rem !important;"
+                               placeholder="Search or jump to..."
                                x-model="searchQuery"
                                @keydown.escape="clearSearch()"
                                aria-label="Search pages">
                                
-                        <div class="position-absolute end-0 pe-2 d-flex align-items-center" style="z-index: 10;" x-show="searchQuery.length > 0" x-cloak>
-                            <button type="button" class="btn btn-sm btn-link text-muted p-1 text-decoration-none" @click="clearSearch()">
+                        <div class="position-absolute end-0 pe-2 d-flex align-items-center gap-1" style="z-index: 10;">
+                            <span class="badge bg-body-tertiary text-body border shadow-sm rounded-2 px-2 py-1 d-none d-lg-block" style="font-size: 10px;" x-show="searchQuery.length === 0">⌘K</span>
+                            <button type="button" class="btn btn-sm btn-link text-muted p-1 text-decoration-none" @click="clearSearch()" x-show="searchQuery.length > 0" x-cloak>
                                 <i class="bi bi-x-circle-fill"></i>
                             </button>
                         </div>
@@ -160,8 +161,8 @@
 
 {{-- Theme Toggle --}}
                 <div x-data="themeSwitch" class="h-100 d-flex align-items-center d-none d-md-flex">
-                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
-                            style="width: 40px; height: 40px;"
+                    <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
+                            style="width: 42px; height: 42px;"
                             type="button"
                             @click="toggle()"
                             data-bs-toggle="tooltip"
@@ -174,15 +175,15 @@
                 </div>
 
 {{-- Fullscreen Toggle --}}
-                <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all d-none d-lg-flex"
-                        style="width: 40px; height: 40px;"
+                <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale d-none d-lg-flex"
+                        style="width: 42px; height: 42px;"
                         type="button"
                         data-fullscreen-toggle
                         data-bs-toggle="tooltip"
                         data-bs-placement="bottom"
                         title="Toggle fullscreen"
                         aria-label="Toggle fullscreen">
-                    <i class="bi bi-arrows-fullscreen fs-5" aria-hidden="true"></i>
+                    <i class="bi bi-arrows-fullscreen fs-5 text-secondary" aria-hidden="true"></i>
                 </button>
 
 @php
@@ -210,15 +211,15 @@
                 @if(count($availableWebApps) > 0)
                 {{-- Web Apps Dropdown --}}
                 <div class="dropdown h-100 d-flex align-items-center">
-                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
-                            style="width: 40px; height: 40px;"
+                    <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
+                            style="width: 42px; height: 42px;"
                             type="button"
                             id="webAppsMenuBtn"
                             data-bs-toggle="dropdown"
                             data-bs-display="static"
                             aria-expanded="false"
                             aria-label="Quick Links">
-                        <i class="bi bi-grid-3x3-gap-fill fs-5" aria-hidden="true"></i>
+                        <i class="bi bi-grid-3x3-gap-fill fs-5 text-secondary" aria-hidden="true"></i>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="webAppsMenuBtn" style="width: 320px;">
                         <div class="p-3 border-bottom bg-body-secondary bg-opacity-50 rounded-top-4">
@@ -246,8 +247,8 @@
 {{-- Shopping Cart Dropdown --}}
                 @if(request()->routeIs('orders.create', 'promotions.coupons', 'promotions.offers'))
                 <div class="dropdown h-100 d-flex align-items-center" x-data="headerCart">
-                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
-                            style="width: 40px; height: 40px;"
+                    <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
+                            style="width: 42px; height: 42px;"
                             type="button"
                             id="cartMenuBtn"
                             data-bs-toggle="dropdown"
@@ -255,8 +256,8 @@
                             data-bs-display="static"
                             aria-expanded="false"
                             aria-label="Shopping cart">
-                        <i class="bi bi-bag-fill fs-5" aria-hidden="true"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary border border-2 border-body" style="font-size: 9px; margin-top: 6px; margin-left: -10px;" x-text="items.length" x-show="items.length > 0" x-cloak></span>
+                        <i class="bi bi-bag-fill fs-5 text-secondary" aria-hidden="true"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary border border-2 border-body shadow-sm" style="font-size: 10px; margin-top: 8px; margin-left: -12px;" x-text="items.length" x-show="items.length > 0" x-cloak></span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="cartMenuBtn" style="width: 350px;">
                         <div class="p-3 border-bottom bg-body-secondary bg-opacity-50 rounded-top-4">
@@ -326,8 +327,8 @@
 @endphp
                 {{-- Notifications Dropdown --}}
                 <div class="dropdown h-100 d-flex align-items-center" x-data="notificationApp(@js($initialActivities), {{ $initialUnreadCount }})">
-                    <button class="btn btn-body-secondary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-none text-secondary position-relative transition-all"
-                            style="width: 40px; height: 40px;"
+                    <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
+                            style="width: 42px; height: 42px;"
                             type="button"
                             id="notificationsMenuBtn"
                             data-bs-toggle="dropdown"
@@ -336,8 +337,8 @@
                             @click="fetchActivities"
                             aria-expanded="false"
                             aria-label="Notifications">
-                        <i class="bi bi-bell-fill fs-5" aria-hidden="true"></i>
-                        <span x-show="count > 0" x-cloak class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body" style="font-size: 9px; margin-top: 6px; margin-left: -10px;" x-text="count"></span>
+                        <i class="bi bi-bell-fill fs-5 text-secondary" aria-hidden="true"></i>
+                        <span x-show="count > 0" x-cloak class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body shadow-sm d-flex align-items-center justify-content-center" style="font-size: 10px; min-width: 18px; height: 18px; margin-top: 8px; margin-left: -12px;"><span x-text="count"></span></span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3"
                          aria-labelledby="notificationsMenuBtn"
@@ -467,14 +468,14 @@
 
                 {{-- User Menu --}}
                 <div class="dropdown h-100 d-flex align-items-center">
-                    <button class="btn btn-body-secondary p-1 pe-md-3 d-flex align-items-center gap-2 rounded-pill shadow-none border-0 transition-all hover-bg-secondary"
+                    <button class="btn btn-outline-secondary border-0 shadow-sm bg-body p-1 pe-md-3 d-flex align-items-center gap-2 rounded-pill transition-all hover-scale"
                             type="button"
                             id="userMenuBtn"
                             data-bs-toggle="dropdown"
                             data-bs-display="static"
                             aria-expanded="false"
                             aria-label="User menu">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm border border-2 border-body overflow-hidden" style="width: 36px; height: 36px;">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 38px; height: 38px;">
                             <img src="{{ Auth::user()?->photo ? (str_starts_with(Auth::user()->photo, 'http') || str_starts_with(Auth::user()->photo, '/') ? Auth::user()->photo : asset('storage/' . Auth::user()->photo)) : asset('assets/images/default_avatar.jpeg') }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="this.onerror=null; this.src='{{ asset('assets/images/default_avatar.jpeg') }}';">
                         </div>
                         <span class="d-none d-md-flex flex-column text-start ms-1 lh-1">
@@ -541,6 +542,10 @@
 <style>
 .hover-bg-secondary:hover { background-color: var(--bs-secondary-bg) !important; }
 .hover-bg-danger-subtle:hover { background-color: rgba(var(--bs-danger-rgb), 0.1) !important; }
+.hover-scale { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.hover-scale:hover { transform: scale(1.05); box-shadow: var(--bs-box-shadow) !important; }
+.hover-rotate { transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.hover-rotate:hover { transform: rotate(-10deg) scale(1.05); }
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--bs-body-color-rgb), 0.1); border-radius: 4px; }

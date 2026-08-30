@@ -761,19 +761,6 @@ document.addEventListener('alpine:init', () => {
         .catch((error) => showToast(error.message || 'Failed to delete products.', 'danger'));
     },
 
-    duplicateProduct(product) {
-      apiFetch(`${this.apiBase}/${product.id}/duplicate`, {
-        method: 'POST',
-      })
-        .then(async () => {
-          await this.loadProductsFromApi();
-          this.filterProducts();
-          this.calculateStats();
-          showToast('Product duplicated successfully!', 'success');
-        })
-        .catch((error) => showToast(error.message || 'Failed to duplicate product.', 'danger'));
-    },
-
     deleteProduct(product) {
       this.deleteProductsByIds([product.id]);
     },

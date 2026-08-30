@@ -1,13 +1,16 @@
 {{-- ── Header Section ── --}}
-<div class="bg-body-tertiary border-bottom mb-4">
-    <div class="container-fluid px-4 px-lg-5 pt-4 pb-3">
+<div class="bg-body position-relative mb-4 pb-3" style="border-bottom: 1px solid rgba(var(--bs-primary-rgb), 0.1);">
+    <!-- Decorative background element -->
+    <div class="position-absolute top-0 start-0 w-100 h-100 bg-primary bg-opacity-10" style="z-index: 0; mask-image: linear-gradient(to bottom, black, transparent); -webkit-mask-image: linear-gradient(to bottom, black, transparent);"></div>
+    
+    <div class="container-fluid px-4 px-lg-5 pt-4 position-relative" style="z-index: 1;">
         
         {{-- Header Content --}}
         <div class="d-flex flex-column flex-md-row align-items-md-end justify-content-between gap-4 mb-2">
             <div class="d-flex align-items-center gap-4">
                 {{-- Avatar --}}
-                <div class="position-relative flex-shrink-0">
-                    <div class="d-flex align-items-center justify-content-center bg-primary text-white fw-bold fs-3 rounded-4 shadow-sm overflow-hidden" style="width: 64px; height: 64px;">
+                <div class="position-relative flex-shrink-0 transition-all hover-scale">
+                    <div class="d-flex align-items-center justify-content-center bg-primary bg-gradient text-white fw-bold fs-3 rounded-circle shadow border border-4 border-body overflow-hidden" style="width: 72px; height: 72px;">
                         <img src="{{ isset($customer->avatar) && $customer->avatar ? Storage::url($customer->avatar) : asset('assets/images/farmersprofileimage.png') }}" alt="{{ $customer->name }}" class="w-100 h-100 object-fit-cover">
                     </div>
                     @php
@@ -17,12 +20,12 @@
                             default     => 'bg-warning',
                         };
                     @endphp
-                    <span class="position-absolute bottom-0 end-0 p-1 {{ $dotClass }} border border-2 border-white rounded-circle" style="width: 16px; height: 16px; transform: translate(25%, 25%);"></span>
+                    <span class="position-absolute bottom-0 end-0 p-1 {{ $dotClass }} border border-2 border-body rounded-circle" style="width: 16px; height: 16px; transform: translate(25%, 25%);"></span>
                 </div>
                 
                 <div>
                     <div class="d-flex align-items-center gap-3 mb-1">
-                        <h1 class="h3 fw-bold mb-0 text-dark">{{ $customer->name }}</h1>
+                        <h1 class="h3 fw-bold mb-0 text-body-emphasis">{{ $customer->name }}</h1>
                         @php
                             $badgeClass = match($customer->status) {
                                 'active'    => 'bg-success-subtle text-success border-success-subtle',

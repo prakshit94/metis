@@ -17,8 +17,8 @@
     <!-- Overlay for better contrast with the background image -->
     <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.35);"></div>
 
-    <!-- Theme-aware Glassmorphism Card (Now Transparent & Smaller) -->
-    <div class="auth-card position-relative z-1 shadow-lg border border-secondary-subtle mx-3" x-data="loginApp()" style="background: transparent; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 20px; max-width: 380px; width: 100%; padding: 2.5rem 2rem;">
+    <!-- Theme-aware Glassmorphism Card (Now frosted for text legibility) -->
+    <div class="auth-card position-relative z-1 shadow-lg border border-secondary-subtle mx-3" x-data="loginApp()" style="background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 20px; max-width: 380px; width: 100%; padding: 2.5rem 2rem;">
 
 
 
@@ -26,6 +26,14 @@
         {{-- ── SIGN-IN PANEL ─────────────────────────────────────────────── --}}
         {{-- ════════════════════════════════════════════════════════════════ --}}
         <div>
+            {{-- ── Brand Logo Header ─────────────────────────────────────── --}}
+            <div class="text-center mb-4 pb-2">
+                <div class="brand-logo-container rounded-4 d-inline-flex align-items-center justify-content-center transition-all hover-rotate mb-3" style="width: 72px; height: 72px;">
+                    <img src="{{ asset('assets/images/logo.png') }}" alt="Ecommerce Logo" class="w-100 h-100 object-fit-contain shadow-sm rounded-circle bg-body">
+                </div>
+                <h4 class="fw-black text-body-emphasis mb-1 tracking-tight">Welcome Back</h4>
+                <p class="text-secondary small fw-medium mb-0">Sign in to your Ecommerce Admin account</p>
+            </div>
             {{-- ── Server-side session flash / validation errors ─────────── --}}
             @if (session('error'))
                 <div class="alert alert-danger d-flex align-items-center gap-2 mb-4 py-3 px-3 border-0 rounded-3 shadow-sm" role="alert">

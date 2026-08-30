@@ -376,6 +376,10 @@ document.addEventListener('alpine:init', () => {
         if (this.dateFilter === 'today') {
           activeFromDate = formatDate(today);
           activeToDate = formatDate(today);
+        } else if (this.dateFilter === 'yesterday') {
+          const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+          activeFromDate = formatDate(yesterday);
+          activeToDate = formatDate(yesterday);
         } else if (this.dateFilter === 'week') {
           const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
           activeFromDate = formatDate(weekAgo);
@@ -1235,10 +1239,6 @@ document.addEventListener('alpine:init', () => {
 
     printCOD(order) {
       window.open(`/orders/${order.id}/cod-pdf`, '_blank');
-    },
-
-    printReceipt(order) {
-      window.open(`/orders/${order.id}/receipt`, '_blank');
     },
 
     async generateAndPrintInvoice(order) {

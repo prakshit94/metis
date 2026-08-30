@@ -255,10 +255,14 @@
                                         </div>
                                         <div class="d-flex gap-2">
                                             @can('product-edit')
-                                            <button class="btn btn-sm btn-outline-secondary bg-body" @click="bulkAction('publish')">
+                                            <button class="btn btn-sm btn-outline-secondary bg-body" 
+                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => p.status !== 'published' && p.status !== 'active')" 
+                                                    @click="bulkAction('publish')">
                                                 <i class="bi bi-eye me-1"></i>Publish
                                             </button>
-                                            <button class="btn btn-sm btn-outline-secondary bg-body" @click="bulkAction('unpublish')">
+                                            <button class="btn btn-sm btn-outline-secondary bg-body" 
+                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => p.status === 'published' || p.status === 'active')" 
+                                                    @click="bulkAction('unpublish')">
                                                 <i class="bi bi-eye-slash me-1"></i>Unpublish
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary bg-body" 
@@ -295,7 +299,7 @@
                                                 <th>Product Details</th>
                                                 <th @click="sortBy('price')" class="sortable">Pricing & Inventory</th>
                                                 <th>Status & Tracking</th>
-                                                <th style="width: 80px;" class="text-end pe-4">Actions</th>
+                                                <th style="width: 80px;" class="text-end pe-4" x-show="warehouseFilter !== ''">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -393,7 +397,7 @@
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td class="text-end pe-4">
+                                                    <td class="text-end pe-4" x-show="warehouseFilter !== ''">
                                                         <div class="dropdown">
                                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
                                                                     type="button" 
@@ -407,11 +411,7 @@
                                                                 </a></li>
                                                                 @endcan
 
-                                                                @can('product-create')
-                                                                <li><a class="dropdown-item" href="#" @click.prevent="duplicateProduct(product)">
-                                                                    <i class="bi bi-copy me-2"></i>Duplicate
-                                                                </a></li>
-                                                                @endcan
+
                                                                 @can('product-delete')
                                                                 <li><hr class="dropdown-divider"></li>
                                                                 <li><a class="dropdown-item text-danger" href="#" @click.prevent="deleteProduct(product)">

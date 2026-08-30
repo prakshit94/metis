@@ -69,7 +69,7 @@
 <!-- Order Stats Widgets -->
 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-6 g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-primary-subtle text-primary-emphasis me-3">
@@ -86,7 +86,7 @@
     </div>
     @can('orders.view.future_order')
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-info-subtle text-info-emphasis me-3">
@@ -104,7 +104,7 @@
     @endcan
     @can('orders.view.pending_confirmation')
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-warning-subtle text-warning-emphasis me-3">
@@ -122,7 +122,7 @@
     @endcan
     @can('orders.view.pending')
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-warning-subtle text-warning-emphasis me-3">
@@ -140,7 +140,7 @@
     @endcan
     @can('orders.view.confirmed')
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-info-subtle text-info-emphasis me-3">
@@ -158,7 +158,7 @@
     @endcan
     @can('orders.view.processing')
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis me-3">
@@ -176,7 +176,7 @@
     @endcan
     @can('orders.view.ready_to_ship')
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-dark-subtle text-dark-emphasis me-3">
@@ -194,7 +194,7 @@
     @endcan
     @can('orders.view.dispatched')
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-info-subtle text-info-emphasis me-3">
@@ -212,7 +212,7 @@
     @endcan
     @can('orders.view.delivered')
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-success-subtle text-success-emphasis me-3">
@@ -230,7 +230,7 @@
     @endcan
     @can('orders.view.cancelled')
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-danger-subtle text-danger-emphasis me-3">
@@ -248,7 +248,7 @@
     @endcan
     @can('orders.view.return_requested')
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-warning-subtle text-warning-emphasis me-3">
@@ -266,7 +266,7 @@
     @endcan
     @can('orders.view.returned')
     <div class="col">
-        <div class="card stats-card">
+        <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex align-items-center">
                     <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis me-3">
@@ -490,13 +490,13 @@
                 <div class="d-flex flex-wrap gap-2 justify-content-end">
                     <!-- Search -->
                     <div class="position-relative">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted z-1" style="font-size: 0.85rem;"></i>
                         <input type="search" 
-                               class="form-control form-control-sm" 
+                               class="form-control form-control-sm ps-4" 
                                placeholder="Search orders..."
                                x-model="searchQuery"
                                @input="filterOrders()"
                                style="width: 200px;">
-                        <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                     </div>
                     
                     <!-- Status Filter -->
@@ -541,6 +541,7 @@
                             style="width: 150px;">
                         <option value="">All Dates</option>
                         <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
                         <option value="week">This Week</option>
                         <option value="month">This Month</option>
                         <option value="prev_month">Previous Month</option>
@@ -1092,11 +1093,7 @@
                                             <i class="bi bi-file-earmark-pdf me-2"></i>Print COD Receipt
                                         </a></li>
                                         @endcan
-                                        @can('orders.receipt')
-                                        <li><a class="dropdown-item" href="#" @click.prevent="printReceipt(order)">
-                                            <i class="bi bi-receipt me-2"></i>Print Receipt
-                                        </a></li>
-                                        @endcan
+
                                     </ul>
                                 </div>
                             </td>
@@ -1395,11 +1392,7 @@
                                         </button>
                                         @endcan
                                     </template>
-                                    @can('orders.receipt')
-                                    <button class="btn btn-outline-secondary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printReceipt(selectedOrder)">
-                                        <i class="bi bi-receipt me-2"></i>Receipt
-                                    </button>
-                                    @endcan
+
                                 </div>
                                 
                                 <!-- Order Actions -->
