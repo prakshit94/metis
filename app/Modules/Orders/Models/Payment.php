@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Payment extends Model implements Auditable
 {
+    use LogsActivity;
     use AuditableTrait;
     use SoftDeletes;
 
@@ -129,5 +132,13 @@ class Payment extends Model implements Auditable
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

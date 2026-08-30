@@ -12,9 +12,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class OrderComplaint extends Model implements Auditable
 {
+    use LogsActivity;
     use AuditableTrait;
     use SoftDeletes;
 
@@ -85,5 +88,13 @@ class OrderComplaint extends Model implements Auditable
     public function replies(): HasMany
     {
         return $this->hasMany(OrderComplaintReply::class, 'order_complaint_id');
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

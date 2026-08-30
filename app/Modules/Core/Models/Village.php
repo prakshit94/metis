@@ -12,9 +12,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Village extends Model implements Auditable
 {
+    use LogsActivity;
     use AuditableTrait;
     use SoftDeletes;
 
@@ -82,5 +85,13 @@ class Village extends Model implements Auditable
             ->whereHas('service', fn ($q) => $q->where('code', $serviceCode))
             ->where('is_available', true)
             ->exists();
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

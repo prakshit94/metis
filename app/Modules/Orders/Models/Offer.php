@@ -9,9 +9,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Offer extends Model implements Auditable
 {
+    use LogsActivity;
     use AuditableTrait;
     use HasFactory;
 
@@ -122,5 +125,13 @@ class Offer extends Model implements Auditable
                 $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
 
             });
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

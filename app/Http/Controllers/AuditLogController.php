@@ -51,10 +51,86 @@ class AuditLogController extends Controller implements HasMiddleware
             $perPage = $request->input('per_page', 15);
             $audits = $query->paginate($perPage);
 
+            // Collect all user IDs from old/new values to prevent N+1 queries
+            $userIdsToFetch = [];
+            $userKeys = ['created_by', 'updated_by', 'changed_by', 'deleted_by', 'user_id', 'manager_id'];
+            
+            foreach ($audits as $audit) {
+                foreach (['old_values', 'new_values'] as $valueType) {
+                    $values = $audit->{$valueType};
+                    if (is_array($values)) {
+                        foreach ($userKeys as $key) {
+                            if (isset($values[$key]) && is_numeric($values[$key])) {
+                                $userIdsToFetch[] = $values[$key];
+                            }
+                        }
+                    }
+                }
+            }
+            
+            $userIdsToFetch = array_unique($userIdsToFetch);
+            $userNames = count($userIdsToFetch) > 0 
+                ? \App\Modules\Users\Models\User::whereIn('id', $userIdsToFetch)->pluck('name', 'id')->toArray() 
+                : [];
+
             // Transform the class names for frontend friendly display
-            $audits->getCollection()->transform(function ($audit) {
+            $audits->getCollection()->transform(function ($audit) use ($userKeys, $userNames) {
                 $modelParts = explode('\\', $audit->auditable_type);
                 $audit->model_name = end($modelParts);
+
+                // Replace user IDs with actual names in the JSON payload
+                $oldValues = $audit->old_values;
+                $newValues = $audit->new_values;
+
+                foreach ($userKeys as $key) {
+                    if (is_array($oldValues) && isset($oldValues[$key]) && isset($userNames[$oldValues[$key]])) {
+                        $oldValues[$key] = $userNames[$oldValues[$key]] . ' (ID: ' . $oldValues[$key] . ')';
+                    }
+                    if (is_array($newValues) && isset($newValues[$key]) && isset($userNames[$newValues[$key]])) {
+                        $newValues[$key] = $userNames[$newValues[$key]] . ' (ID: ' . $newValues[$key] . ')';
+                    }
+                }
+
+                $formatValue = function ($key, $value) {
+                    if (is_null($value)) return $value;
+
+                    // Format amounts
+                    $amountKeys = ['amount', 'price', 'cost', 'tax', 'discount', 'total', 'net'];
+                    foreach ($amountKeys as $ak) {
+                        if (str_contains($key, $ak) && is_numeric($value)) {
+                            return '₹' . number_format((float)$value, 2);
+                        }
+                    }
+
+                    // Format dates
+                    $dateKeys = ['_at', '_date', 'date_', 'time_', '_until', 'dob'];
+                    foreach ($dateKeys as $dk) {
+                        if (str_contains($key, $dk) && is_string($value) && strtotime($value) !== false) {
+                            try {
+                                return \Illuminate\Support\Carbon::parse($value)->format('d M Y, h:i A');
+                            } catch (\Exception $e) {
+                                return $value;
+                            }
+                        }
+                    }
+
+                    return $value;
+                };
+
+                if (is_array($oldValues)) {
+                    foreach ($oldValues as $k => $v) {
+                        $oldValues[$k] = $formatValue($k, $v);
+                    }
+                }
+
+                if (is_array($newValues)) {
+                    foreach ($newValues as $k => $v) {
+                        $newValues[$k] = $formatValue($k, $v);
+                    }
+                }
+
+                $audit->old_values = $oldValues;
+                $audit->new_values = $newValues;
 
                 return $audit;
             });

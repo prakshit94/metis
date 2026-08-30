@@ -13,9 +13,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class PurchaseOrder extends Model
  implements Auditable{
+    use LogsActivity;
     use AuditableTrait;
 
     use SoftDeletes;
@@ -83,5 +86,13 @@ class PurchaseOrder extends Model
     public function getInvoiceUrlAttribute(): ?string
     {
         return $this->invoice_path ? Storage::url($this->invoice_path) : null;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

@@ -6,9 +6,12 @@ use App\Modules\Catalog\Models\Service;
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Shipment extends Model implements Auditable
 {
+    use LogsActivity;
     use AuditableTrait;
 
     protected $fillable = [
@@ -82,5 +85,13 @@ class Shipment extends Model implements Auditable
         }
 
         return $prefix.'-01';
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }
