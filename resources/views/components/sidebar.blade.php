@@ -41,12 +41,14 @@
             <ul class="nav flex-column gap-1">
 
                 {{-- ── COMMUNICATION (Visible to all) ──────────────── --}}
+                @can('chat-view')
                 <li class="nav-item">
                     <a class="nav-link {{ $current === 'chat.index' ? 'active' : '' }}" href="{{ route('chat.index') }}">
                         <i class="bi bi-chat-text-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">Team Chat</span>
                     </a>
                 </li>
+                @endcan
 
                 {{-- ── MAIN ───────────────────────────────────────── --}}
                 @canany(['dashboard-view', 'analytics-view', 'reports-view'])
@@ -417,7 +419,7 @@
                 @endcanany
 
                 {{-- ── ADMINISTRATION ─────────────────────────────── --}}
-                @canany(['user-view', 'role-view', 'department-view', 'attendance-view', 'leave-view', 'village-view', 'orderreason-view', 'settings-view', 'audit-log-view'])
+                @canany(['user-view', 'role-view', 'department-view', 'attendance-view', 'leave-view', 'village-view', 'orderreason-view', 'settings-view'])
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Administration</small>
                 </li>
@@ -518,7 +520,7 @@
                 @endcanany
 
                 {{-- System Settings Dropdown --}}
-                @canany(['village-view', 'orderreason-view', 'settings-view', 'audit-log-view'])
+                @canany(['village-view', 'orderreason-view', 'settings-view'])
                 <li class="nav-item">
                     <a class="nav-link {{ in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index', 'files']) ? 'active' : 'collapsed' }}"
                        href="#"
