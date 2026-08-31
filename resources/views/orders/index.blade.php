@@ -79,8 +79,8 @@
                     </div>
                     <div class="w-100" style="min-width: 0;">
                         <p class="h6 mb-0 text-muted" title="Total Orders">Total Orders</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.total"></span></div>
-                        <small class="text-muted d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.revenue)"></small>
+                        <div class="h3 mb-0" aria-live="polite"><span x-text="(stats.total || 0) - (stats.future_order || 0)"></span></div>
+                        <small class="text-muted d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency((stats.revenue || 0) - (stats.future_order_amount || 0))"></small>
                     </div>
                 </div>
             </div>

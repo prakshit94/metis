@@ -33,7 +33,7 @@ class ShippingController extends Controller implements HasMiddleware
     public function shipmentsIndex(Request $request): JsonResponse
     {
 
-        $query = Shipment::with(['order.items.product', 'service.providers:id,name,email,phone,department_id,is_active']);
+        $query = Shipment::with(['order.items.product', 'order.party', 'service.providers:id,name,email,phone,department_id,is_active']);
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -57,13 +57,18 @@ class ShippingController extends Controller implements HasMiddleware
         if ($carrier = $request->query('carrier')) {
             $query->where('carrier_name', $carrier);
         }
+        
+        $dateField = $request->query('date_type', 'created_at');
+        if (!in_array($dateField, ['created_at', 'shipped_at', 'delivered_at'])) {
+            $dateField = 'created_at';
+        }
 
         if ($fromDate = $request->query('from_date')) {
-            $query->whereDate('created_at', '>=', $fromDate);
+            $query->whereDate($dateField, '>=', $fromDate);
         }
 
         if ($toDate = $request->query('to_date')) {
-            $query->whereDate('created_at', '<=', $toDate);
+            $query->whereDate($dateField, '<=', $toDate);
         }
 
         $sortBy = $request->query('sort_by', 'id');

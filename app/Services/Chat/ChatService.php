@@ -310,9 +310,10 @@ class ChatService
             ->keyBy('user_id');
 
         $todayOrders = DB::table('orders')
-            ->selectRaw('created_by, count(*) as today_orders, sum(total_amount) as today_revenue')
+            ->selectRaw('created_by, count(*) as today_orders, sum(net_amount) as today_revenue')
             ->whereIn('created_by', $userIds)
-            ->whereDate('created_at', now()->toDateString())
+            ->whereNotIn('status', ['cancelled', 'future_order'])
+            ->whereDate('order_date', now()->toDateString())
             ->groupBy('created_by')
             ->get()
             ->keyBy('created_by');

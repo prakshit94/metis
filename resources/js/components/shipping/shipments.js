@@ -56,6 +56,7 @@ export default () => {
         searchQuery: '',
         statusFilter: '',
         carrierFilter: '',
+        dateType: 'created_at',
         fromDate: '',
         toDate: '',
         sortField: 'id',
@@ -63,6 +64,159 @@ export default () => {
         currentPage: 1,
         itemsPerPage: 10,
         selectedItems: [],
+
+        // Provider Tracker State
+        allFetchedItems: [],
+        providerSearchQuery: '',
+        providerCurrentPage: 1,
+        providerPerPage: 5,
+        providerDatePreset: 'today',
+        providerFromDate: '',
+        providerToDate: '',
+        
+        get filteredProviders() {
+            if (!this.topProviders) return [];
+            let p = this.topProviders;
+            if (this.providerSearchQuery) {
+                p = p.filter(x => x.name.toLowerCase().includes(this.providerSearchQuery.toLowerCase()));
+            }
+            return p;
+        },
+        
+        get paginatedProviders() {
+            const start = (this.providerCurrentPage - 1) * this.providerPerPage;
+            return this.filteredProviders.slice(start, start + this.providerPerPage);
+        },
+        
+        get providerTotalPages() {
+            return Math.ceil(this.filteredProviders.length / this.providerPerPage) || 1;
+        },
+
+        applyProviderPreset() {
+            if (this.providerDatePreset === 'custom') return;
+            const today = new Date();
+            let from = '';
+            let to = '';
+            
+            const formatDate = (date) => {
+                const d = new Date(date);
+                let month = '' + (d.getMonth() + 1);
+                let day = '' + d.getDate();
+                const year = d.getFullYear();
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+                return [year, month, day].join('-');
+            };
+
+            switch (this.providerDatePreset) {
+                case 'today':
+                    from = to = formatDate(today);
+                    break;
+                case 'yesterday':
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    from = to = formatDate(yesterday);
+                    break;
+                case 'this_week':
+                    const firstDay = new Date(today);
+                    firstDay.setDate(firstDay.getDate() - firstDay.getDay());
+                    from = formatDate(firstDay);
+                    to = formatDate(today);
+                    break;
+                case 'this_month':
+                    from = formatDate(new Date(today.getFullYear(), today.getMonth(), 1));
+                    to = formatDate(today);
+                    break;
+                case 'prev_month':
+                    from = formatDate(new Date(today.getFullYear(), today.getMonth() - 1, 1));
+                    to = formatDate(new Date(today.getFullYear(), today.getMonth(), 0));
+                    break;
+                case 'this_year':
+                    from = formatDate(new Date(today.getFullYear(), 0, 1));
+                    to = formatDate(today);
+                    break;
+            }
+
+            this.providerFromDate = from;
+            this.providerToDate = to;
+            this.calculateProviders();
+        },
+
+        calculateProviders() {
+            if (!this.allFetchedItems) return;
+            
+            let itemsToProcess = this.allFetchedItems;
+            
+            if (this.providerFromDate || this.providerToDate) {
+                itemsToProcess = itemsToProcess.filter(item => {
+                    const dateStr = item.shipped_at || item.delivered_at || item.created_at;
+                    if (!dateStr) return true;
+                    
+                    const itemDate = new Date(dateStr).setHours(0,0,0,0);
+                    let isValid = true;
+                    
+                    if (this.providerFromDate) {
+                        const from = new Date(this.providerFromDate).setHours(0,0,0,0);
+                        if (itemDate < from) isValid = false;
+                    }
+                    if (this.providerToDate) {
+                        const to = new Date(this.providerToDate).setHours(23,59,59,999);
+                        if (itemDate > to) isValid = false;
+                    }
+                    return isValid;
+                });
+            }
+
+            const providerMap = {};
+            itemsToProcess.forEach(item => {
+                const c = item.carrier_name || 'Unassigned';
+                if (!providerMap[c]) {
+                    providerMap[c] = { name: c, total: 0, pending: 0, in_transit: 0, delivered: 0, returned: 0, failed: 0, contact_persons: [] };
+                }
+                
+                if (item.service && item.service.providers) {
+                    item.service.providers.forEach(p => {
+                        if (!providerMap[c].contact_persons.find(existing => existing.id === p.id)) {
+                            providerMap[c].contact_persons.push(p);
+                        }
+                    });
+                }
+                
+                providerMap[c].total++;
+                if (item.status === 'pending' || item.status === 'shipped') providerMap[c].pending++;
+                if (item.status === 'in_transit') providerMap[c].in_transit++;
+                if (item.status === 'delivered') providerMap[c].delivered++;
+                if (item.status === 'returned') providerMap[c].returned++;
+                if (item.status === 'failed') providerMap[c].failed++;
+            });
+
+            const colorClasses = ['primary', 'info', 'warning', 'danger', 'success'];
+            this.topProviders = Object.values(providerMap).map((p, idx) => {
+                const activeTotal = p.total - p.pending;
+                const onTimeRate = activeTotal > 0 ? Math.round((p.delivered / activeTotal) * 100) : 0;
+                const exceptionRate = activeTotal > 0 ? (((p.failed + p.returned) / activeTotal) * 100).toFixed(1) : '0.0';
+                const successScore = Math.max(0, 100 - parseFloat(exceptionRate) - (100 - onTimeRate));
+                const deliveryPercentage = p.total > 0 ? Math.round((p.delivered / p.total) * 100) : 0;
+                return {
+                    name: p.name,
+                    total: p.total,
+                    pending: p.pending,
+                    in_transit: p.in_transit,
+                    delivered: p.delivered,
+                    returned: p.returned,
+                    failed: p.failed,
+                    contact_persons: p.contact_persons,
+                    onTimeRate: onTimeRate,
+                    avgTime: (Math.random() * 2 + 1.5).toFixed(1) + ' Days',
+                    exceptionRate: parseFloat(exceptionRate),
+                    successScore: Math.round(successScore),
+                    deliveryPercentage: deliveryPercentage,
+                    theme: colorClasses[idx % colorClasses.length]
+                };
+            }).sort((a, b) => b.total - a.total);
+            
+            this.providerCurrentPage = 1;
+        },
 
         charts: {},
         chartsInitialized: false,
@@ -129,74 +283,6 @@ export default () => {
             if (returnOrderEl) {
                 this.returnModal = Modal.getOrCreateInstance(returnOrderEl);
             }
-
-            setTimeout(() => {
-                this.initCharts();
-            }, 300);
-        },
-
-        initCharts() {
-            if (this.chartsInitialized) {
-                this.updateCharts();
-                return;
-            }
-            this.renderTrendChart();
-            this.renderStatusChart();
-            this.chartsInitialized = true;
-        },
-
-        renderTrendChart() {
-            const chartElement = document.getElementById('shipmentTrendsChart');
-            if (!chartElement) return;
-
-            // Generate some mock trend data based on the stats
-            const trendsData = {
-                series: [{
-                    name: 'Shipments',
-                    data: [12, 19, 15, 25, 22, 30, this.stats.total]
-                }],
-                chart: {
-                    type: 'area',
-                    height: 300,
-                    toolbar: { show: false },
-                    fontFamily: 'inherit'
-                },
-                colors: ['var(--bs-primary)'],
-                fill: {
-                    type: 'gradient',
-                    gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.3 }
-                },
-                stroke: { curve: 'smooth', width: 2 },
-                xaxis: {
-                    categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                }
-            };
-
-            this.charts.trends = new ApexCharts(chartElement, trendsData);
-            this.charts.trends.render();
-        },
-
-        renderStatusChart() {
-            const chartElement = document.getElementById('statusChart');
-            if (!chartElement) return;
-
-            const chartData = {
-                series: this.statusStats.map(stat => stat.count),
-                chart: { type: 'donut', height: 200 },
-                labels: this.statusStats.map(stat => stat.name),
-                colors: this.statusStats.map(stat => stat.color),
-                plotOptions: { pie: { donut: { size: '70%' } } },
-                legend: { show: false }
-            };
-
-            this.charts.status = new ApexCharts(chartElement, chartData);
-            this.charts.status.render();
-        },
-
-        updateCharts() {
-            if (this.charts.status) {
-                this.charts.status.updateSeries(this.statusStats.map(stat => stat.count));
-            }
         },
 
         async apiRequest(url, options = {}) {
@@ -247,42 +333,9 @@ export default () => {
                     { name: 'Returned', count: this.stats.returned, percentage: this.stats.total ? Math.round((this.stats.returned / this.stats.total) * 100) : 0, color: 'var(--bs-secondary)' },
                     { name: 'Failed', count: this.stats.failed, percentage: this.stats.total ? Math.round((this.stats.failed / this.stats.total) * 100) : 0, color: 'var(--bs-danger)' }
                 ].filter(stat => stat.count > 0);
-
-                const providerMap = {};
-                allItems.forEach(item => {
-                    const c = item.carrier_name || 'Unassigned';
-                    if (!providerMap[c]) {
-                        providerMap[c] = { name: c, total: 0, pending: 0, in_transit: 0, delivered: 0, returned: 0, failed: 0 };
-                    }
-                    providerMap[c].total++;
-                    if (item.status === 'pending' || item.status === 'shipped') providerMap[c].pending++;
-                    if (item.status === 'in_transit') providerMap[c].in_transit++;
-                    if (item.status === 'delivered') providerMap[c].delivered++;
-                    if (item.status === 'returned') providerMap[c].returned++;
-                    if (item.status === 'failed') providerMap[c].failed++;
-                });
-
-                const colorClasses = ['primary', 'info', 'warning', 'danger', 'success'];
-                this.topProviders = Object.values(providerMap).map((p, idx) => {
-                    const activeTotal = p.total - p.pending;
-                    const onTimeRate = activeTotal > 0 ? Math.round((p.delivered / activeTotal) * 100) : 0;
-                    const exceptionRate = activeTotal > 0 ? (((p.failed + p.returned) / activeTotal) * 100).toFixed(1) : '0.0';
-                    const successScore = Math.max(0, 100 - parseFloat(exceptionRate) - (100 - onTimeRate));
-                    return {
-                        name: p.name,
-                        total: p.total,
-                        pending: p.pending,
-                        in_transit: p.in_transit,
-                        delivered: p.delivered,
-                        returned: p.returned,
-                        failed: p.failed,
-                        onTimeRate: onTimeRate,
-                        avgTime: (Math.random() * 2 + 1.5).toFixed(1) + ' Days',
-                        exceptionRate: parseFloat(exceptionRate),
-                        successScore: Math.round(successScore),
-                        theme: colorClasses[idx % colorClasses.length]
-                    };
-                }).sort((a, b) => b.total - a.total);
+                
+                this.allFetchedItems = allItems;
+                this.applyProviderPreset();
 
                 if (this.chartsInitialized) {
                     this.updateCharts();
@@ -294,6 +347,7 @@ export default () => {
                 if (this.carrierFilter) query += `&carrier=${this.carrierFilter}`;
                 if (this.fromDate) query += `&from_date=${this.fromDate}`;
                 if (this.toDate) query += `&to_date=${this.toDate}`;
+                if (this.dateType) query += `&date_type=${this.dateType}`;
 
                 const payload = await this.apiRequest(`${this.apiBase}?${query}`);
 

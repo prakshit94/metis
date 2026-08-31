@@ -126,56 +126,162 @@
         </div>
     </div>
 
-    <!-- Charts & Providers Row -->
+    <!-- Providers Row -->
     <div class="row g-4 mb-4">
-        <!-- Trends Chart -->
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0 rounded-4 h-100 overflow-hidden">
-                <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-                    <h2 class="h6 fw-bold mb-0 text-body-emphasis"><i class="bi bi-graph-up text-primary me-2"></i>Fulfillment Trends</h2>
-                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill">Last 7 Days</span>
-                </div>
-                <div class="card-body p-4">
-                    <div id="shipmentTrendsChart" style="height: 300px;"></div>
-                </div>
-            </div>
-        </div>
-
         <!-- Service Providers -->
-        <div class="col-lg-4">
+        <div class="col-12">
             <div class="card shadow-sm border-0 rounded-4 h-100 overflow-hidden d-flex flex-column">
-                <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h2 class="h6 fw-bold mb-0 text-body-emphasis"><i class="bi bi-truck text-success me-2"></i>Service Providers Tracker</h2>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <select class="form-select form-select-sm w-auto" x-model="providerDatePreset" @change="applyProviderPreset()">
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="this_week">This Week</option>
+                            <option value="this_month">This Month</option>
+                            <option value="prev_month">Previous Month</option>
+                            <option value="this_year">This Year</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                        <div class="input-group input-group-sm w-auto" x-show="providerDatePreset === 'custom'" style="display: none;">
+                            <input type="date" class="form-control" x-model="providerFromDate" @change="calculateProviders()">
+                            <span class="input-group-text bg-body-tertiary">to</span>
+                            <input type="date" class="form-control" x-model="providerToDate" @change="calculateProviders()">
+                        </div>
+                        <div class="input-group input-group-sm" style="width: 200px;">
+                            <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control border-start-0 ps-0" placeholder="Search providers..." x-model="providerSearchQuery" @input="providerCurrentPage = 1">
+                        </div>
+                        <select class="form-select form-select-sm w-auto" x-model="providerPerPage" @change="providerCurrentPage = 1">
+                            <option value="5">5 / page</option>
+                            <option value="10">10 / page</option>
+                            <option value="20">20 / page</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="card-body p-0 d-flex flex-column">
-                    <!-- Provider Distribution Chart (small) -->
-                    <div class="p-3 border-bottom bg-body-tertiary">
-                        <div id="statusChart" style="height: 150px;"></div>
-                    </div>
                     <!-- Provider List (scrollable) -->
-                    <div class="flex-grow-1 overflow-auto p-0" style="max-height: 250px;">
-                        <ul class="list-group list-group-flush">
-                            <template x-for="provider in topProviders" :key="provider.name">
-                                <li class="list-group-item p-3 border-bottom">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div class="fw-bold text-body-emphasis" x-text="provider.name"></div>
-                                        <span class="badge bg-body-secondary text-body border border-secondary-subtle" x-text="provider.total + ' Shipments'"></span>
-                                    </div>
-                                    <div class="d-flex justify-content-between text-muted small mb-2">
-                                        <span class="text-primary fw-semibold"><i class="bi bi-truck me-1"></i> <span x-text="provider.in_transit"></span> Dispatched</span>
-                                        <span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i> <span x-text="provider.delivered"></span> Delivered</span>
-                                    </div>
-                                    <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar bg-success" role="progressbar" :style="'width: ' + provider.successScore + '%'" :aria-valuenow="provider.successScore" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
+                    <div class="flex-grow-1 overflow-auto p-4" style="max-height: 400px;">
+                        <table class="table table-hover table-bordered align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Carrier & Support</th>
+                                    <th style="width: 200px;">Volume Pipeline</th>
+                                    <th style="width: 200px;">Delivery Outcomes</th>
+                                    <th style="width: 250px;">Performance Profile</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="provider in paginatedProviders" :key="provider.name">
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <div class="bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                                                    <i class="bi bi-truck" style="font-size: 0.9rem;"></i>
+                                                </div>
+                                                <div class="fw-bold text-body-emphasis" style="font-size: 0.85rem;" x-text="provider.name"></div>
+                                            </div>
+                                            <template x-if="provider.contact_persons && provider.contact_persons.length > 0">
+                                                <div class="d-flex flex-column gap-1 mt-2 border-top pt-2 border-secondary-subtle">
+                                                    <span class="small text-muted fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px; text-transform: uppercase;">Support Contacts</span>
+                                                    <template x-for="contact in provider.contact_persons" :key="contact.id">
+                                                        <div class="d-flex align-items-start gap-2 small lh-sm">
+                                                            <i class="bi bi-headset text-primary opacity-75 mt-1" style="font-size: 0.8rem;"></i>
+                                                            <div>
+                                                                <div class="fw-semibold text-primary" style="font-size: 0.8rem;" x-text="contact.name"></div>
+                                                                <div class="text-muted" style="font-size: 0.75rem;" x-text="[contact.phone, contact.department].filter(Boolean).join(' · ') || 'N/A'"></div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                            <div x-show="!provider.contact_persons || provider.contact_persons.length === 0" class="text-muted small mt-2 border-top pt-2 border-secondary-subtle fst-italic">No contacts assigned</div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="text-muted small"><i class="bi bi-boxes me-1 opacity-75"></i>Total</span>
+                                                    <span class="fw-bold" x-text="provider.total"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="text-muted small"><i class="bi bi-hourglass-split me-1 text-warning opacity-75"></i>Pending</span>
+                                                    <span class="fw-semibold text-warning" x-text="provider.pending"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="text-muted small"><i class="bi bi-truck me-1 text-primary opacity-75"></i>Dispatched</span>
+                                                    <span class="fw-semibold text-primary" x-text="provider.in_transit"></span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="text-muted small"><i class="bi bi-check-circle me-1 text-success opacity-75"></i>Delivered</span>
+                                                    <span class="fw-semibold text-success" x-text="provider.delivered"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="text-muted small"><i class="bi bi-arrow-return-left me-1 text-secondary opacity-75"></i>Returned</span>
+                                                    <span class="fw-semibold text-secondary" x-text="provider.returned"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="text-muted small"><i class="bi bi-x-circle me-1 text-danger opacity-75"></i>Failed</span>
+                                                    <span class="fw-semibold text-danger" x-text="provider.failed"></span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="small text-muted fw-medium">Delivery Rate</span>
+                                                    <span class="fw-bold text-dark" style="font-size: 0.85rem;" x-text="provider.deliveryPercentage + '%'"></span>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-info" role="progressbar" :style="'width: ' + provider.deliveryPercentage + '%'" :aria-valuenow="provider.deliveryPercentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="small text-muted fw-medium">Success Score</span>
+                                                    <span class="fw-bold text-success" style="font-size: 0.85rem;" x-text="provider.successScore + '%'"></span>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-success" role="progressbar" :style="'width: ' + provider.successScore + '%'" :aria-valuenow="provider.successScore" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template x-if="filteredProviders.length === 0">
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted border-0">No carrier data found.</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Provider Pagination -->
+                    <div class="d-flex justify-content-between align-items-center p-3 border-top" x-show="filteredProviders.length > 0">
+                        <div class="text-muted small">
+                            Showing <span x-text="((providerCurrentPage - 1) * providerPerPage) + 1"></span> to 
+                            <span x-text="Math.min(providerCurrentPage * providerPerPage, filteredProviders.length)"></span> of 
+                            <span x-text="filteredProviders.length"></span> providers
+                        </div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item" :class="{ 'disabled': providerCurrentPage === 1 }">
+                                    <a class="page-link" href="#" @click.prevent="providerCurrentPage--">Previous</a>
                                 </li>
-                            </template>
-                            <template x-if="topProviders.length === 0">
-                                <li class="list-group-item text-center py-4 text-muted border-0">
-                                    No carrier data available.
+                                <template x-for="page in Array.from({length: providerTotalPages}, (_, i) => i + 1)" :key="page">
+                                    <li class="page-item" :class="{ 'active': page === providerCurrentPage }">
+                                        <a class="page-link" href="#" @click.prevent="providerCurrentPage = page" x-text="page"></a>
+                                    </li>
+                                </template>
+                                <li class="page-item" :class="{ 'disabled': providerCurrentPage >= providerTotalPages }">
+                                    <a class="page-link" href="#" @click.prevent="providerCurrentPage++">Next</a>
                                 </li>
-                            </template>
-                        </ul>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -189,19 +295,22 @@
             <!-- Quick Filter Tabs -->
             <ul class="nav nav-tabs nav-tabs-custom border-bottom-0 mb-3" role="tablist">
                 <li class="nav-item">
-                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active': statusFilter === '' }" href="#" @click.prevent="statusFilter = ''; filterData()">All Shipments</a>
+                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active': statusFilter === '' }" href="#" @click.prevent="statusFilter = ''; filterData()">All Shipments <span class="badge ms-1" :class="statusFilter === '' ? 'bg-secondary' : 'bg-secondary text-white'" x-text="stats.total || 0"></span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link fw-bold text-primary px-3 py-2" :class="{ 'active': statusFilter === 'in_transit', 'bg-primary text-white rounded-top-2': statusFilter === 'in_transit' }" href="#" @click.prevent="statusFilter = 'in_transit'; filterData()">Dispatched</a>
+                    <a class="nav-link fw-bold text-primary px-3 py-2" :class="{ 'active': statusFilter === 'in_transit', 'bg-primary text-white rounded-top-2': statusFilter === 'in_transit' }" href="#" @click.prevent="statusFilter = 'in_transit'; filterData()">Dispatched <span class="badge ms-1" :class="statusFilter === 'in_transit' ? 'bg-white text-primary' : 'bg-primary text-white'" x-text="stats.in_transit || 0"></span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active text-warning border-warning border-bottom-0': statusFilter === 'pending' }" href="#" @click.prevent="statusFilter = 'pending'; filterData()">Pending</a>
+                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active text-warning border-warning border-bottom-0': statusFilter === 'pending' }" href="#" @click.prevent="statusFilter = 'pending'; filterData()">Pending <span class="badge ms-1 bg-warning text-dark" x-text="stats.pending || 0"></span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active text-success border-success border-bottom-0': statusFilter === 'delivered' }" href="#" @click.prevent="statusFilter = 'delivered'; filterData()">Delivered</a>
+                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active text-success border-success border-bottom-0': statusFilter === 'delivered' }" href="#" @click.prevent="statusFilter = 'delivered'; filterData()">Delivered <span class="badge ms-1 bg-success text-white" x-text="stats.delivered || 0"></span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link fw-semibold text-danger px-3 py-2" :class="{ 'active border-danger border-bottom-0': statusFilter === 'failed' }" href="#" @click.prevent="statusFilter = 'failed'; filterData()">Exceptions</a>
+                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active text-secondary border-secondary border-bottom-0': statusFilter === 'returned' }" href="#" @click.prevent="statusFilter = 'returned'; filterData()">Returned <span class="badge ms-1 bg-secondary text-white" x-text="stats.returned || 0"></span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active text-danger border-danger border-bottom-0': statusFilter === 'failed' }" href="#" @click.prevent="statusFilter = 'failed'; filterData()">Failed <span class="badge ms-1 bg-danger text-white" x-text="stats.failed || 0"></span></a>
                 </li>
             </ul>
 
@@ -260,6 +369,28 @@
         <div class="collapse" id="advancedFilters">
             <div class="p-3 bg-body-tertiary border-top border-bottom border-secondary-subtle">
                 <div class="row g-3">
+                    <!-- Date Type Filter -->
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold text-body-secondary">Date Type</label>
+                        <select class="form-select form-select-sm" x-model="dateType" @change="filterData()">
+                            <option value="created_at">Order Date</option>
+                            <option value="shipped_at">Shipped Date</option>
+                            <option value="delivered_at">Delivered Date</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Range From -->
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold text-body-secondary">From Date</label>
+                        <input type="date" class="form-control form-control-sm" x-model="fromDate" @change="filterData()">
+                    </div>
+
+                    <!-- Date Range To -->
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold text-body-secondary">To Date</label>
+                        <input type="date" class="form-control form-control-sm" x-model="toDate" @change="filterData()">
+                    </div>
+
                     <!-- Carrier Filter -->
                     <div class="col-md-3">
                         <label class="form-label small fw-semibold text-body-secondary">Carrier</label>
@@ -271,18 +402,6 @@
                         </select>
                     </div>
                     
-                    <!-- Date Range From -->
-                    <div class="col-md-3">
-                        <label class="form-label small fw-semibold text-body-secondary">From Date</label>
-                        <input type="date" class="form-control form-control-sm" x-model="fromDate" @change="filterData()">
-                    </div>
-
-                    <!-- Date Range To -->
-                    <div class="col-md-3">
-                        <label class="form-label small fw-semibold text-body-secondary">To Date</label>
-                        <input type="date" class="form-control form-control-sm" x-model="toDate" @change="filterData()">
-                    </div>
-
                     <!-- Reset Filters -->
                     <div class="col-md-3 d-flex align-items-end">
                         <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center" @click="clearFilters()">
@@ -330,21 +449,17 @@
                                        @change="$event.isTrusted && toggleAll($event.target.checked)"
                                        :checked="selectedItems.length === items.length && items.length > 0">
                             </th>
-                            <th @click="sortBy('shipment_no')" class="sortable">Shipment No</th>
-                            <th>Order No</th>
-                            <th>Carrier</th>
-                            <th>Tracking No</th>
-                            <th @click="sortBy('status')" class="sortable">Status</th>
-                            <th @click="sortBy('shipped_at')" class="sortable">Shipped At</th>
-                            <th @click="sortBy('delivered_at')" class="sortable">Delivered At</th>
-                            <th @click="sortBy('delivered_by')" class="sortable">Delivered By</th>
+                            <th @click="sortBy('shipment_no')" class="sortable">Shipment Details</th>
+                            <th>Order & Customer</th>
+                            <th>Carrier & Support</th>
+                            <th @click="sortBy('status')" class="sortable">Status & Timeline</th>
                             <th style="width: 120px;" class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <template x-if="items.length === 0">
                             <tr>
-                                <td colspan="9" class="text-center py-5 text-muted">
+                                <td colspan="6" class="text-center py-5 text-muted">
                                     <div x-show="isLoading" class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
                                     <div x-show="!isLoading">
                                         <i class="bi bi-truck fs-2 d-block mb-2 text-muted"></i>
@@ -361,52 +476,76 @@
                                            :value="String(item.id)"
                                            x-model="selectedItems">
                                 </td>
-                                <td class="fw-medium text-body" x-text="item.shipment_no"></td>
                                 <td>
-                                    <div class="fw-semibold text-secondary" x-text="item.order ? item.order.order_no : ('ORD-' + item.order_id)"></div>
-                                    <template x-if="item.next_followup_date">
-                                        <div class="small text-muted mt-1">
-                                            <i class="bi bi-calendar-event me-1"></i> Follow-up: <span class="fw-medium" x-text="new Date(item.next_followup_date).toLocaleDateString()"></span>
-                                            <template x-if="item.reschedule_reason">
-                                                <div class="fst-italic mt-1 text-secondary" style="font-size: 0.7rem;" x-text="'- ' + item.reschedule_reason"></div>
-                                            </template>
-                                        </div>
-                                    </template>
-                                    <template x-if="item.delivery_attempts > 0">
-                                        <div class="small mt-1" :class="item.delivery_attempts >= 3 ? 'text-danger fw-bold' : (item.delivery_attempts === 2 ? 'text-danger' : 'text-warning')">
-                                            <i class="bi bi-arrow-repeat me-1"></i> Attempts: <span class="fw-medium" x-text="item.delivery_attempts"></span>
+                                    <div class="fw-bold text-body" x-text="item.shipment_no"></div>
+                                    <div class="small text-muted mt-1 d-flex align-items-center gap-1">
+                                        <i class="bi bi-upc-scan opacity-75"></i>
+                                        <span class="font-monospace" x-text="item.tracking_no || 'No Tracking'"></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-primary mb-2" x-text="item.order ? item.order.order_no : ('ORD-' + item.order_id)"></div>
+                                    <template x-if="item.order && item.order.party">
+                                        <div class="d-flex align-items-start gap-2 bg-body-tertiary p-2 rounded-3 border border-secondary-subtle">
+                                            <i class="bi bi-person-badge text-secondary mt-1" style="font-size: 0.85rem;"></i>
+                                            <div class="lh-sm">
+                                                <div class="fw-semibold text-body mb-1" style="font-size: 0.8rem;" x-text="item.order.party.name || 'Unknown Customer'"></div>
+                                                <div class="text-muted font-monospace" style="font-size: 0.75rem;"><i class="bi bi-telephone-fill me-1 opacity-50"></i><span x-text="item.order.party.phone || 'N/A'"></span></div>
+                                            </div>
                                         </div>
                                     </template>
                                 </td>
                                 <td>
-                                    <div class="fw-medium text-body mb-1" x-text="item.carrier_name || '-'"></div>
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <div class="bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-truck" style="font-size: 0.9rem;"></i>
+                                        </div>
+                                        <div class="fw-bold text-body-emphasis" style="font-size: 0.85rem;" x-text="item.carrier_name || '-'"></div>
+                                    </div>
                                     <template x-if="item.service && item.service.providers?.length">
-                                        <div class="d-flex flex-column gap-1 mt-2 border-top pt-2 border-secondary-subtle">
-                                            <span class="small text-muted fw-semibold" style="font-size: 0.7rem; text-transform: uppercase;">Providers</span>
+                                        <div class="d-flex flex-column gap-1 border-top pt-2 border-secondary-subtle">
+                                            <span class="small text-muted fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px; text-transform: uppercase;">Support Persons</span>
                                             <template x-for="provider in item.service.providers" :key="provider.id">
-                                                <div class="small lh-sm">
-                                                    <div class="fw-semibold text-primary" x-text="provider.name"></div>
-                                                    <div class="text-muted" style="font-size: 0.75rem;" x-text="[provider.phone, provider.department].filter(Boolean).join(' · ')"></div>
+                                                <div class="d-flex align-items-start gap-2 small lh-sm">
+                                                    <i class="bi bi-headset text-primary opacity-75 mt-1" style="font-size: 0.8rem;"></i>
+                                                    <div>
+                                                        <div class="fw-semibold text-primary" style="font-size: 0.8rem;" x-text="provider.name"></div>
+                                                        <div class="text-muted" style="font-size: 0.75rem;" x-text="[provider.phone, provider.department].filter(Boolean).join(' · ')"></div>
+                                                    </div>
                                                 </div>
                                             </template>
                                         </div>
                                     </template>
                                 </td>
-                                <td class="font-monospace" x-text="item.tracking_no || '-'"></td>
                                 <td>
-                                    <span class="badge rounded-pill px-3 py-1.5" 
-                                          :class="{
-                                              'bg-warning-subtle text-warning border border-warning border-opacity-50': item.status === 'pending',
-                                              'bg-primary text-white shadow-sm': item.status === 'in_transit',
-                                              'bg-success-subtle text-success border border-success border-opacity-50': item.status === 'delivered',
-                                              'bg-secondary-subtle text-secondary border border-secondary border-opacity-50': item.status === 'returned',
-                                              'bg-danger-subtle text-danger border border-danger border-opacity-50': item.status === 'failed'
-                                          }"
-                                          x-text="item.status === 'in_transit' ? 'DISPATCHED' : item.status.toUpperCase()"></span>
+                                    <div class="mb-2">
+                                        <span class="badge rounded-pill px-3 py-1.5" 
+                                              :class="{
+                                                  'bg-warning-subtle text-warning border border-warning border-opacity-50': item.status === 'pending',
+                                                  'bg-primary text-white shadow-sm': item.status === 'in_transit',
+                                                  'bg-success-subtle text-success border border-success border-opacity-50': item.status === 'delivered',
+                                                  'bg-secondary-subtle text-secondary border border-secondary border-opacity-50': item.status === 'returned',
+                                                  'bg-danger-subtle text-danger border border-danger border-opacity-50': item.status === 'failed'
+                                              }"
+                                              x-text="item.status === 'in_transit' ? 'DISPATCHED' : item.status.toUpperCase()"></span>
+                                    </div>
+                                    <div class="small lh-sm text-muted">
+                                        <template x-if="item.shipped_at">
+                                            <div class="mb-1"><i class="bi bi-box-seam me-1 opacity-75"></i>Shipped: <span class="fw-medium text-body" x-text="new Date(item.shipped_at).toLocaleDateString()"></span></div>
+                                        </template>
+                                        <template x-if="item.delivered_at">
+                                            <div class="mb-1"><i class="bi bi-check2-all me-1 opacity-75"></i>Delivered: <span class="fw-medium text-body" x-text="new Date(item.delivered_at).toLocaleDateString()"></span> <template x-if="item.delivered_by"><span class="fst-italic" x-text="'by ' + item.delivered_by"></span></template></div>
+                                        </template>
+                                        <template x-if="item.next_followup_date">
+                                            <div class="mb-1 text-info"><i class="bi bi-calendar-event me-1"></i>Follow-up: <span class="fw-medium" x-text="new Date(item.next_followup_date).toLocaleDateString()"></span></div>
+                                        </template>
+                                        <template x-if="item.delivery_attempts > 0">
+                                            <div :class="item.delivery_attempts >= 3 ? 'text-danger fw-bold' : (item.delivery_attempts === 2 ? 'text-danger' : 'text-warning')">
+                                                <i class="bi bi-arrow-repeat me-1"></i>Attempts: <span class="fw-medium" x-text="item.delivery_attempts"></span>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </td>
-                                <td x-text="item.shipped_at ? new Date(item.shipped_at).toLocaleString() : '-'"></td>
-                                <td x-text="item.delivered_at ? new Date(item.delivered_at).toLocaleString() : '-'"></td>
-                                <td x-text="item.delivered_by || '-'"></td>
                                 <td class="text-end pe-4">
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
