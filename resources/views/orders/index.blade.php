@@ -1531,7 +1531,14 @@
                                             </h6>
                                             <template x-if="selectedOrder.shipment">
                                                 <div class="bg-body p-3 rounded-4 shadow-sm mb-3">
-                                                    <p class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.65rem;">Tracking Number</p>
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <p class="small text-muted mb-0 text-uppercase fw-semibold" style="font-size: 0.65rem;">Tracking Number</p>
+                                                        @can('orders.ship')
+                                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" @click="editShipmentDetails(selectedOrder)">
+                                                            <i class="bi bi-pencil-square me-1"></i>Edit
+                                                        </button>
+                                                        @endcan
+                                                    </div>
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <p class="fw-bold text-body-emphasis font-monospace mb-0 fs-6" x-text="selectedOrder.shipment.trackingNo"></p>
                                                         <span class="badge text-bg-info-subtle text-info-emphasis border-opacity-25 rounded-pill" x-text="selectedOrder.shipment.carrier"></span>
@@ -1733,19 +1740,21 @@
                         </template>
                     </select>
                 </div>
-                <div class="mb-3" x-show="shipCarrierName !== 'India Post'">
+                <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <label class="form-label fw-semibold mb-0">Tracking Number <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold mb-0">
+                            Tracking Number 
+                            <span class="text-danger" x-show="shipCarrierName !== 'India Post'">*</span>
+                            <span class="text-muted fw-normal" x-show="shipCarrierName === 'India Post'">(Optional)</span>
+                        </label>
                         <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" @click="shipTrackingNo = 'TRK-' + Math.random().toString(36).substring(2, 12).toUpperCase()">
                             <i class="bi bi-magic me-1"></i>Generate Demo ID
                         </button>
                     </div>
                     <input type="text" class="form-control font-monospace" x-model="shipTrackingNo" placeholder="Enter tracking number (e.g. TRK-12345678)" :required="shipCarrierName !== 'India Post'">
-                </div>
-                <div class="mb-3" x-show="shipCarrierName === 'India Post'" style="display: none;">
-                    <div class="alert alert-info py-2 px-3 mb-0 d-flex align-items-center">
-                        <i class="bi bi-info-circle-fill me-2 fs-5"></i>
-                        <span class="small">Tracking ID and shipping cost will be automatically calculated and retrieved from the India Post API.</span>
+                    
+                    <div class="form-text mt-2 text-info" x-show="shipCarrierName === 'India Post'" style="display: none;">
+                        <i class="bi bi-info-circle-fill me-1"></i> Leave blank to automatically calculate and retrieve Tracking ID and shipping cost from the India Post API.
                     </div>
                 </div>
             </div>

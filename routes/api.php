@@ -409,6 +409,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::prefix('shipping')->name('api.shipping.')->group(function (): void {
         Route::get('/shipments', [ShippingController::class, 'shipmentsIndex'])->name('shipments.index');
         Route::post('/shipments/bulk-action', [ShippingController::class, 'shipmentsBulk'])->name('shipments.bulk');
+        Route::patch('/shipments/{shipment}', [ShippingController::class, 'updateShipment'])->name('shipments.update');
         Route::post('/shipments/{shipment}/status', [ShippingController::class, 'updateShipmentStatus'])->name('shipments.status');
         Route::get('/shipments/{shipment}/tracking', [ShippingController::class, 'trackingEvents'])->name('shipments.tracking');
         Route::post('/shipments/{shipment}/tracking-event', [ShippingController::class, 'addTrackingEvent'])->name('shipments.add-tracking-event');

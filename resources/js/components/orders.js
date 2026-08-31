@@ -934,6 +934,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async processOrder(order) {
+      getModal('#orderDetailModal')?.hide();
       const confirmed = await Swal.fire({
         title: 'Process Order?',
         text: `Are you sure you want to mark order ${order.orderNumber} as processing?`,
@@ -944,8 +945,9 @@ document.addEventListener('alpine:init', () => {
         customClass: {
           confirmButton: 'btn btn-primary me-2',
           cancelButton: 'btn btn-secondary',
-          popup: 'rounded-3 shadow-lg',
-          title: 'fs-4 fw-bold'
+          popup: 'rounded-4 shadow-lg border-0 bg-body',
+          title: 'fs-4 fw-bold text-body-emphasis',
+          htmlContainer: 'text-body text-start'
         },
         buttonsStyling: false
       });
@@ -960,7 +962,85 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    async editShipmentDetails(order) {
+      if (!order || !order.shipment || !order.original?.shipments?.[0]?.id) return;
+      
+      getModal('#orderDetailModal')?.hide();
+      
+      const shipment = order.original.shipments[0];
+      const shipmentId = shipment.id;
+
+      const result = await Swal.fire({
+        title: 'Edit Shipping Details',
+        html: `
+          <div class="text-start">
+            <label class="form-label fw-bold">Carrier Name <span class="text-danger">*</span></label>
+            <select id="swal-edit-carrier" class="form-select mb-3">
+              <option value="" disabled>Select Carrier</option>
+              ${(this.carriersList || []).map(c => `<option value="${c}" ${c === order.shipment.carrier ? 'selected' : ''}>${c}</option>`).join('')}
+            </select>
+            <label class="form-label fw-bold">Tracking Number</label>
+            <input type="text" id="swal-edit-tracking" class="form-control" value="${order.shipment.trackingNo !== 'N/A' ? order.shipment.trackingNo : ''}" placeholder="Enter tracking details">
+            <small class="text-muted mt-1 d-block">For India Post, tracking number is optional.</small>
+          </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Save Details',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-4 shadow-lg border-0 bg-body',
+          title: 'fs-4 fw-bold text-body-emphasis',
+          htmlContainer: 'text-body text-start'
+        },
+        buttonsStyling: false,
+        preConfirm: () => {
+          const cName = document.getElementById('swal-edit-carrier').value;
+          const tNo = document.getElementById('swal-edit-tracking').value;
+          if (!cName) {
+            Swal.showValidationMessage('Please select a carrier');
+            return false;
+          }
+          if (cName !== 'India Post' && (!tNo || !tNo.trim())) {
+            Swal.showValidationMessage('Tracking number is required for carriers other than India Post');
+            return false;
+          }
+          return { carrierName: cName, trackingNo: tNo };
+        }
+      });
+
+      if (!result.isConfirmed) return;
+      const { carrierName, trackingNo } = result.value;
+
+      try {
+        const res = await apiFetch(`/api/shipping/shipments/${shipmentId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            carrier_name: carrierName,
+            tracking_no: trackingNo
+          })
+        });
+        showToast(res.message || 'Shipping details updated.');
+        
+        // Reload details in modal
+        const details = await apiFetch(`/orders/${order.id}`);
+        if (details && details.order) {
+          this.selectedOrder = this.mapOrder(details.order);
+          // Also update it in the main list
+          const index = this.orders.findIndex(o => o.id === order.id);
+          if (index !== -1) {
+            this.orders[index] = this.selectedOrder;
+          }
+        }
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
     openShipModal(order) {
+      getModal('#orderDetailModal')?.hide();
       this.shipOrderId = order.id;
       this.shipOrderNo = order.orderNumber;
       const availableCarriers = order?.availableCarrierOptions || [];
@@ -1007,6 +1087,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async dispatchOrder(order) {
+      getModal('#orderDetailModal')?.hide();
       const confirmed = await Swal.fire({
         title: 'Dispatch Order?',
         text: `Mark order ${order.orderNumber} as dispatched?`,
@@ -1017,8 +1098,9 @@ document.addEventListener('alpine:init', () => {
         customClass: {
           confirmButton: 'btn btn-primary me-2',
           cancelButton: 'btn btn-secondary',
-          popup: 'rounded-3 shadow-lg',
-          title: 'fs-4 fw-bold'
+          popup: 'rounded-4 shadow-lg border-0 bg-body',
+          title: 'fs-4 fw-bold text-body-emphasis',
+          htmlContainer: 'text-body text-start'
         },
         buttonsStyling: false
       });
@@ -1034,6 +1116,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     deliverOrder(order) {
+      getModal('#orderDetailModal')?.hide();
       const userNameMeta = document.querySelector('meta[name="user-name"]');
       const userName = userNameMeta ? userNameMeta.content : '';
 
@@ -1082,6 +1165,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async returnOrder(order) {
+      getModal('#orderDetailModal')?.hide();
       this.returnModalOrder = order;
       this.returnReason = '';
       this.returnNotes = '';
@@ -1124,6 +1208,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async cancelOrder(order) {
+      getModal('#orderDetailModal')?.hide();
       this.cancelModalOrder = order;
       this.cancelReason = '';
       this.cancelNotes = '';
@@ -1156,6 +1241,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async revertStatus(order) {
+      getModal('#orderDetailModal')?.hide();
       let options;
       switch (order.status) {
         case 'confirmed': options = { pending: 'Pending' }; break;
@@ -1305,8 +1391,9 @@ document.addEventListener('alpine:init', () => {
           customClass: {
             confirmButton: 'btn btn-primary me-2',
             cancelButton: 'btn btn-secondary',
-            popup: 'rounded-3 shadow-lg',
-            title: 'fs-4 fw-bold'
+            popup: 'rounded-4 shadow-lg border-0 bg-body',
+            title: 'fs-4 fw-bold text-body-emphasis',
+            htmlContainer: 'text-body text-start'
           },
           buttonsStyling: false,
           preConfirm: () => {
@@ -1338,8 +1425,9 @@ document.addEventListener('alpine:init', () => {
           customClass: {
             confirmButton: 'btn btn-primary me-2',
             cancelButton: 'btn btn-secondary',
-            popup: 'rounded-3 shadow-lg',
-            title: 'fs-4 fw-bold'
+            popup: 'rounded-4 shadow-lg border-0 bg-body',
+            title: 'fs-4 fw-bold text-body-emphasis',
+            htmlContainer: 'text-body text-start'
           },
           buttonsStyling: false
         });
@@ -1413,8 +1501,9 @@ document.addEventListener('alpine:init', () => {
         customClass: {
           confirmButton: 'btn btn-primary me-2',
           cancelButton: 'btn btn-secondary',
-          popup: 'rounded-3 shadow-lg',
-          title: 'fs-4 fw-bold'
+          popup: 'rounded-4 shadow-lg border-0 bg-body',
+          title: 'fs-4 fw-bold text-body-emphasis',
+          htmlContainer: 'text-body text-start'
         },
         buttonsStyling: false
       });

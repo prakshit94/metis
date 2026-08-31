@@ -22,7 +22,7 @@ class ShippingController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:shipping-view', only: ['shipmentsIndex', 'trackingEvents', 'servicesIndex', 'providerOptions']),
             new Middleware('permission:shipping-create', only: ['addTrackingEvent', 'storeService']),
-            new Middleware('permission:shipping-edit', only: ['updateShipmentStatus', 'updateService', 'toggleService', 'shipmentsBulk', 'servicesBulk']),
+            new Middleware('permission:shipping-edit', only: ['updateShipmentStatus', 'updateShipment', 'updateService', 'toggleService', 'shipmentsBulk', 'servicesBulk']),
             new Middleware('permission:shipping-delete', only: ['destroyService']),
         ];
     }
@@ -82,6 +82,48 @@ class ShippingController extends Controller implements HasMiddleware
         $perPage = min(max($perPage, 1), 100);
 
         return response()->json($query->paginate($perPage));
+    }
+
+    /**
+     * Update shipment details (carrier and tracking number).
+     */
+    public function updateShipment(Request $request, Shipment $shipment): JsonResponse
+    {
+        $validated = $request->validate([
+            'carrier_name' => 'required|string|max:255',
+            'tracking_no' => 'required_unless:carrier_name,India Post|nullable|string|max:255',
+        ]);
+
+        $oldCarrier = $shipment->carrier_name;
+        $oldTracking = $shipment->tracking_no;
+
+        $shipment->update([
+            'carrier_name' => $validated['carrier_name'],
+            'tracking_no' => $validated['tracking_no'] ?? null,
+        ]);
+
+        if ($oldCarrier !== $shipment->carrier_name || $oldTracking !== $shipment->tracking_no) {
+            ShipmentTrackingEvent::create([
+                'shipment_id' => $shipment->id,
+                'event_name' => 'Shipment Details Updated',
+                'location' => 'System',
+                'description' => "Shipment details updated. Carrier: {$oldCarrier} -> {$shipment->carrier_name}. Tracking: {$oldTracking} -> ".($shipment->tracking_no ?? 'None'),
+                'occurred_at' => now(),
+            ]);
+            
+            if ($shipment->order) {
+                $shipment->order->statusLogs()->create([
+                    'status' => $shipment->order->status,
+                    'notes' => "Shipment details updated. Carrier: {$shipment->carrier_name}. Tracking: ".($shipment->tracking_no ?? 'None'),
+                    'changed_by' => auth()->id(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Shipment details updated successfully.',
+            'shipment' => $shipment->load('order'),
+        ]);
     }
 
     /**
