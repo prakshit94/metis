@@ -568,6 +568,7 @@
 
 
                     <!-- Advanced Filters Trigger -->
+                    @canany(['orders.filter_product', 'orders.filter_fulfillment', 'orders.filter_carrier', 'orders.filter_warehouse', 'orders.filter_date', 'orders.filter_state', 'orders.filter_district', 'orders.filter_taluka', 'orders.filter_village'])
                     <button class="btn btn-sm"
                             :class="hasActiveAdvancedFilters() ? 'btn-primary' : 'btn-outline-secondary'"
                             type="button"
@@ -576,6 +577,7 @@
                             aria-expanded="false">
                         <i class="bi bi-funnel me-1"></i>Filters
                     </button>
+                    @endcanany
                 </div>
             </div>
         </div>
@@ -779,11 +781,13 @@
                 @endcan
 
                 <!-- Reset Filters -->
+                @canany(['orders.filter_status', 'orders.filter_date', 'orders.filter_product', 'orders.filter_fulfillment', 'orders.filter_carrier', 'orders.filter_warehouse', 'orders.filter_state', 'orders.filter_district', 'orders.filter_taluka', 'orders.filter_village'])
                 <div class="col-md-1 d-flex align-items-end">
                     <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center" @click="clearFilters()">
                         <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
                     </button>
                 </div>
+                @endcanany
             </div>
         </div>
     </div>
