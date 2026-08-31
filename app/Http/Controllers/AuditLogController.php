@@ -264,9 +264,11 @@ class AuditLogController extends Controller implements HasMiddleware
             $date = $subject ? $subject->date : ($attrs['date'] ?? null);
             if ($date) $detail = ' for ' . \Carbon\Carbon::parse($date)->format('d M Y');
         } elseif ($subjectName === 'Stock') {
+            $subject?->loadMissing('product');
             $productName = $subject?->product?->name ?? 'Product';
             $detail = ' for ' . $productName;
         } elseif ($subjectName === 'OrderItem') {
+            $subject?->loadMissing(['product', 'order']);
             $productName = $subject?->product?->name ?? 'Product';
             $detail = ' for ' . $productName;
             $orderNo = $subject?->order?->order_no ?? null;
@@ -345,6 +347,7 @@ class AuditLogController extends Controller implements HasMiddleware
                 $date = $subject ? $subject->date : ($attrs['date'] ?? null);
                 if ($date) $detail = ' for ' . \Carbon\Carbon::parse($date)->format('d M Y');
             } elseif ($subjectName === 'Stock') {
+                $subject?->loadMissing('product');
                 $productName = $subject?->product?->name ?? 'Product';
                 $detail = ' for ' . $productName;
                 
@@ -362,6 +365,7 @@ class AuditLogController extends Controller implements HasMiddleware
                     }
                 }
             } elseif ($subjectName === 'OrderItem') {
+                $subject?->loadMissing(['product', 'order']);
                 $productName = $subject?->product?->name ?? 'Product';
                 $detail = ' for ' . $productName;
                 $orderNo = $subject?->order?->order_no ?? null;
