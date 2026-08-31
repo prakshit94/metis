@@ -173,7 +173,7 @@
                             </th>
                             <th class="border-0">Date & Time</th>
                             <th class="border-0">Event</th>
-                            <th class="border-0">Model</th>
+                            <th class="border-0">Details</th>
                             <th class="border-0">User</th>
                             <th class="border-0">IP Address</th>
                             <th style="width: 80px;" class="border-0 pe-4 rounded-end"></th>
@@ -230,8 +230,8 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="fw-medium text-primary"><span x-text="item.model_name"></span></div>
-                                    <div class="text-muted small font-monospace" x-text="'ID: ' + item.auditable_id"></div>
+                                    <div class="text-wrap" style="max-width: 400px; line-height: 1.5;" x-html="item.formatted_description"></div>
+                                    <div class="text-muted small font-monospace mt-1" x-text="'DB ID: ' + item.auditable_id"></div>
                                 </td>
                                 <td>
                                     <div class="fw-medium" x-text="item.user ? item.user.name : 'System / Guest'"></div>

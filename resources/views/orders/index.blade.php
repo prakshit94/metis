@@ -54,9 +54,11 @@
             </ul>
         </div>
         @endcan
+        @can('orders.create')
         <a href="{{ route('orders.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-2"></i>New Order
         </a>
+        @endcan
     </div>
 </div>
 
@@ -71,14 +73,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-primary-subtle text-primary-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-primary-subtle text-primary-emphasis mb-3">
                         <i class="bi bi-bag-check"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted">Total Orders</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted" title="Total Orders">Total Orders</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.total"></span></div>
-                        <small class="text-muted" x-text="'Value: ' + formatCurrency(stats.revenue)"></small>
+                        <small class="text-muted d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.revenue)"></small>
                     </div>
                 </div>
             </div>
@@ -88,14 +90,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-info-subtle text-info-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3">
                         <i class="bi bi-calendar-event"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted">Future Order</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted" title="Future Order">Future Order</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.future_order"></span></div>
-                        <small class="text-info" x-text="'Value: ' + formatCurrency(stats.future_order_amount)"></small>
+                        <small class="text-info d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.future_order_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -106,14 +108,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3">
                         <i class="bi bi-hourglass-split"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Pending Confirmation">Pend. Confirm</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted"  title="Pending Confirmation">Pending Confirmation</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.pending_confirmation"></span></div>
-                        <small class="text-warning" x-text="'Value: ' + formatCurrency(stats.pending_confirmation_amount)"></small>
+                        <small class="text-warning d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.pending_confirmation_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -124,14 +126,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3">
                         <i class="bi bi-clock"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted">Pending</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted" title="Pending">Pending</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.pending"></span></div>
-                        <small class="text-warning" x-text="'Value: ' + formatCurrency(stats.pending_amount)"></small>
+                        <small class="text-warning d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.pending_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -142,14 +144,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-info-subtle text-info-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3">
                         <i class="bi bi-check-circle"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted">Confirmed</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted" title="Confirmed">Confirmed</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.confirmed"></span></div>
-                        <small class="text-info" x-text="'Value: ' + formatCurrency(stats.confirmed_amount)"></small>
+                        <small class="text-info d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.confirmed_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -160,14 +162,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis mb-3">
                         <i class="bi bi-gear"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted">Processing</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted" title="Processing">Processing</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.processing"></span></div>
-                        <small class="text-secondary" x-text="'Value: ' + formatCurrency(stats.processing_amount)"></small>
+                        <small class="text-secondary d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.processing_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -178,14 +180,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-dark-subtle text-body-emphasis-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-dark-subtle text-body-emphasis-emphasis mb-3">
                         <i class="bi bi-box-seam"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted">Ready to Ship</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted" title="Ready to Ship">Ready to Ship</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.ready_to_ship"></span></div>
-                        <small class="text-body-emphasis" x-text="'Value: ' + formatCurrency(stats.ready_to_ship_amount)"></small>
+                        <small class="text-body-emphasis d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.ready_to_ship_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -196,14 +198,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-info-subtle text-info-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3">
                         <i class="bi bi-truck"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted">Dispatched</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted" title="Dispatched">Dispatched</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.dispatched"></span></div>
-                        <small class="text-info" x-text="'Value: ' + formatCurrency(stats.dispatched_amount)"></small>
+                        <small class="text-info d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.dispatched_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -214,14 +216,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-success-subtle text-success-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-success-subtle text-success-emphasis mb-3">
                         <i class="bi bi-currency-rupee"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted">Delivered</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted" title="Delivered">Delivered</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.delivered"></span></div>
-                        <small class="text-success-emphasis" x-text="'Value: ' + formatCurrency(stats.delivered_amount)"></small>
+                        <small class="text-success-emphasis d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.delivered_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -232,14 +234,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-danger-subtle text-danger-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-danger-subtle text-danger-emphasis mb-3">
                         <i class="bi bi-x-circle"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted">Cancelled</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted" title="Cancelled">Cancelled</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.cancelled"></span></div>
-                        <small class="text-danger" x-text="'Value: ' + formatCurrency(stats.cancelled_amount)"></small>
+                        <small class="text-danger d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.cancelled_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -250,14 +252,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3">
                         <i class="bi bi-arrow-return-left"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Return Requested">Return Req.</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted"  title="Return Requested">Return Requested</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.return_requested"></span></div>
-                        <small class="text-warning" x-text="'Value: ' + formatCurrency(stats.return_requested_amount)"></small>
+                        <small class="text-warning d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.return_requested_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -268,14 +270,14 @@
     <div class="col">
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis me-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis mb-3">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </div>
-                    <div>
-                        <p class="h6 mb-0 text-muted">Returned</p>
+                    <div class="w-100" style="min-width: 0;">
+                        <p class="h6 mb-0 text-muted" title="Returned">Returned</p>
                         <div class="h3 mb-0" aria-live="polite"><span x-text="stats.returned"></span></div>
-                        <small class="text-secondary" x-text="'Value: ' + formatCurrency(stats.returned_amount)"></small>
+                        <small class="text-secondary d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.returned_amount)"></small>
                     </div>
                 </div>
             </div>
@@ -364,7 +366,7 @@
                                 </div>
                                 <div class="p-3 bg-body-tertiary bg-opacity-50 rounded-4 border border-secondary-subtle mb-3 shadow-sm">
                                     <span class="d-block text-muted small fw-medium mb-1 text-uppercase tracking-wider">Total Value</span>
-                                    <span class="fs-4 fw-bold text-success" x-text="`₹ ${formatCurrency(wh.total_amount)}`"></span>
+                                    <span class="fs-4 fw-bold text-success d-block" x-text="`₹ ${formatCurrency(wh.total_amount)}`"></span>
                                 </div>
                                 
                                 <div class="px-1">
@@ -399,7 +401,7 @@
                                     @can('orders.view.pending')
                                     <div class="flex-fill p-3 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
                                         <span class="small text-warning-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Pending</span>
-                                        <span class="fw-bold fs-4 text-warning-emphasis lh-1 mb-1" x-text="wh.pending"></span>
+                                        <span class="fw-bold fs-4 text-warning-emphasis lh-1 mb-1 d-block" x-text="wh.pending"></span>
                                         <small class="text-warning-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.pending_amount)}`"></small>
                                         <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-warning opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
                                     </div>
@@ -409,7 +411,7 @@
                                     @can('orders.view.confirmed')
                                     <div class="flex-fill p-3 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
                                         <span class="small text-info-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Confirmed</span>
-                                        <span class="fw-bold fs-4 text-info-emphasis lh-1 mb-1" x-text="wh.confirmed"></span>
+                                        <span class="fw-bold fs-4 text-info-emphasis lh-1 mb-1 d-block" x-text="wh.confirmed"></span>
                                         <small class="text-info-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.confirmed_amount)}`"></small>
                                         <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-info opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
                                     </div>
@@ -419,7 +421,7 @@
                                     @can('orders.view.processing')
                                     <div class="flex-fill p-3 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
                                         <span class="small text-primary-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Processing</span>
-                                        <span class="fw-bold fs-4 text-primary-emphasis lh-1 mb-1" x-text="wh.processing"></span>
+                                        <span class="fw-bold fs-4 text-primary-emphasis lh-1 mb-1 d-block" x-text="wh.processing"></span>
                                         <small class="text-primary-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.processing_amount)}`"></small>
                                         <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-primary opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
                                     </div>
@@ -429,7 +431,7 @@
                                     @can('orders.view.ready_to_ship')
                                     <div class="flex-fill p-3 rounded-4 bg-warning-subtle bg-opacity-50 border border-warning border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
                                         <span class="small text-warning-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Ready</span>
-                                        <span class="fw-bold fs-4 text-warning-emphasis lh-1 mb-1" x-text="wh.ready_to_ship"></span>
+                                        <span class="fw-bold fs-4 text-warning-emphasis lh-1 mb-1 d-block" x-text="wh.ready_to_ship"></span>
                                         <small class="text-warning-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.ready_to_ship_amount)}`"></small>
                                         <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-warning opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
                                     </div>
@@ -439,7 +441,7 @@
                                     @can('orders.view.dispatched')
                                     <div class="flex-fill p-3 rounded-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
                                         <span class="small text-secondary-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Dispatched</span>
-                                        <span class="fw-bold fs-4 text-secondary-emphasis lh-1 mb-1" x-text="wh.dispatched"></span>
+                                        <span class="fw-bold fs-4 text-secondary-emphasis lh-1 mb-1 d-block" x-text="wh.dispatched"></span>
                                         <small class="text-secondary-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.dispatched_amount)}`"></small>
                                         <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-secondary opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
                                     </div>
@@ -449,7 +451,7 @@
                                     @can('orders.view.delivered')
                                     <div class="flex-fill p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 d-flex flex-column text-center transition-hover" style="min-width: 130px;">
                                         <span class="small text-success-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Delivered</span>
-                                        <span class="fw-bold fs-4 text-success-emphasis lh-1 mb-1" x-text="wh.delivered"></span>
+                                        <span class="fw-bold fs-4 text-success-emphasis lh-1 mb-1 d-block" x-text="wh.delivered"></span>
                                         <small class="text-success-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.delivered_amount)}`"></small>
                                     </div>
                                     @endcan
@@ -500,6 +502,7 @@
                     </div>
                     
                     <!-- Status Filter -->
+                    @can('orders.filter_status')
                     <div class="position-relative" @click.away="showStatusDropdown = false" :style="showStatusDropdown ? 'z-index: 1050;' : ''">
                         <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: pointer; width: 150px;" @click="showStatusDropdown = !showStatusDropdown">
                             <template x-if="statusFilter.length === 0">
@@ -533,8 +536,10 @@
                             </template>
                         </div>
                     </div>
+                    @endcan
                     
                     <!-- Date Range -->
+                    @can('orders.filter_date')
                     <select x-select class="form-select form-select-sm" 
                             x-model="dateFilter" 
                             @change="filterOrders()"
@@ -546,6 +551,7 @@
                         <option value="month">This Month</option>
                         <option value="prev_month">Previous Month</option>
                     </select>
+                    @endcan
 
                     <!-- Items Per Page -->
                     <select x-select class="form-select form-select-sm"
@@ -580,6 +586,7 @@
         <div class="p-3 bg-body-tertiary border-top border-bottom border-secondary-subtle">
             <div class="row g-3">
                 <!-- Product Filter -->
+                @can('orders.filter_product')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Product</label>
                     <select x-select class="form-select form-select-sm" x-model="productFilter" @change="filterOrders()">
@@ -589,8 +596,10 @@
                         </template>
                     </select>
                 </div>
+                @endcan
                 
                 <!-- Fulfillment Filter -->
+                @can('orders.filter_fulfillment')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Fulfillment Status</label>
                     <select x-select class="form-select form-select-sm" x-model="fulfillmentFilter" @change="filterOrders()">
@@ -599,8 +608,10 @@
                         <option value="unfulfillable">Unfulfillable</option>
                     </select>
                 </div>
+                @endcan
 
                 <!-- Carrier Filter -->
+                @can('orders.filter_carrier')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Carrier</label>
                     <select x-select class="form-select form-select-sm" x-model="carrierFilter" @change="filterOrders()">
@@ -610,8 +621,10 @@
                         </template>
                     </select>
                 </div>
+                @endcan
 
                 <!-- Warehouse Filter -->
+                @can('orders.filter_warehouse')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Warehouse</label>
                     <select x-select class="form-select form-select-sm" x-model="warehouseFilter" @change="filterOrders()">
@@ -621,8 +634,10 @@
                         </template>
                     </select>
                 </div>
+                @endcan
 
                 <!-- Date Range From -->
+                @can('orders.filter_date')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">From Date</label>
                     <input type="date" class="form-control form-control-sm" x-model="fromDate" @change="filterOrders()">
@@ -633,8 +648,10 @@
                     <label class="form-label small fw-semibold text-body-secondary">To Date</label>
                     <input type="date" class="form-control form-control-sm" x-model="toDate" @change="filterOrders()">
                 </div>
+                @endcan
 
                 <!-- State Filter -->
+                @can('orders.filter_state')
                 <div class="col-md-3 position-relative" @click.away="showStateDropdown = false" :style="showStateDropdown ? 'z-index: 1050;' : ''">
                     <label class="form-label small fw-semibold text-body-secondary">
                         State <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="stateFilter.length + ' / ' + Object.keys(statesList).length"></span>
@@ -663,8 +680,10 @@
                         </template>
                     </div>
                 </div>
+                @endcan
 
                 <!-- District Filter -->
+                @can('orders.filter_district')
                 <div class="col-md-3 position-relative" @click.away="showDistrictDropdown = false" :style="showDistrictDropdown ? 'z-index: 1050;' : ''">
                     <label class="form-label small fw-semibold text-body-secondary">
                         District <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="districtFilter.length + ' / ' + Object.keys(districtsList).length"></span>
@@ -693,8 +712,10 @@
                         </template>
                     </div>
                 </div>
+                @endcan
 
                 <!-- Taluka Filter -->
+                @can('orders.filter_taluka')
                 <div class="col-md-3 position-relative" @click.away="showTalukaDropdown = false" :style="showTalukaDropdown ? 'z-index: 1050;' : ''">
                     <label class="form-label small fw-semibold text-body-secondary">
                         Taluka <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="talukaFilter.length + ' / ' + Object.keys(talukasList).length"></span>
@@ -723,8 +744,10 @@
                         </template>
                     </div>
                 </div>
+                @endcan
 
                 <!-- Village Filter -->
+                @can('orders.filter_village')
                 <div class="col-md-3 position-relative" @click.away="showVillageDropdown = false" :style="showVillageDropdown ? 'z-index: 1050;' : ''">
                     <label class="form-label small fw-semibold text-body-secondary">
                         Village <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="villageFilter.length + ' / ' + Object.keys(villagesList).length"></span>
@@ -753,6 +776,7 @@
                         </template>
                     </div>
                 </div>
+                @endcan
 
                 <!-- Reset Filters -->
                 <div class="col-md-1 d-flex align-items-end">
@@ -828,7 +852,7 @@
                     </button>
                     @endcan
 
-                    @can('orders.cancel')
+                    @can('orders.bulk_cancel')
                     {{-- Cancel (always shown if any selected order is cancellable) --}}
                     <button class="btn btn-sm btn-outline-danger"
                             x-show="bulkAvailableActions.canCancel"
@@ -963,7 +987,7 @@
                                             <span class="badge bg-danger ms-1" style="font-size: 0.65rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Unfulfillable</span>
                                         </template>
                                     </div>
-                                    <small class="text-muted d-block text-truncate mt-1" style="max-width: 200px;" x-text="order.items.length > 0 ? order.items[0].name + (order.itemCount > 1 ? ' +' + (order.itemCount - 1) + ' more' : '') : '—'"></small>
+                                    <small class="text-muted d-block mt-1" style="max-width: 200px;" x-text="order.items.length > 0 ? order.items[0].name + (order.itemCount > 1 ? ' +' + (order.itemCount - 1) + ' more' : '') : '—'"></small>
                                 </div>
                             </td>
                             <td class="fw-medium small" x-text="`₹ ${order.total}`"></td>
@@ -991,7 +1015,7 @@
                                         <div class="text-muted mt-1" x-show="order.shipment.delivery_attempts > 0">
                                             <i class="bi bi-arrow-repeat me-1 text-danger"></i>Attempts: <span class="fw-bold text-danger" x-text="order.shipment.delivery_attempts"></span>
                                         </div>
-                                        <div class="text-muted mt-1 text-truncate" style="max-width: 150px;" x-show="order.shipment.reschedule_reason" :title="order.shipment.reschedule_reason">
+                                        <div class="text-muted mt-1" style="max-width: 150px;" x-show="order.shipment.reschedule_reason" :title="order.shipment.reschedule_reason">
                                             <i class="bi bi-info-circle me-1"></i><span x-text="order.shipment.reschedule_reason"></span>
                                         </div>
                                     </div>
@@ -1028,9 +1052,11 @@
                                         <i class="bi bi-three-dots"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
+                                        @can('orders.view')
                                         <li><a class="dropdown-item" href="#" @click.prevent="viewOrder(order)">
                                             <i class="bi bi-eye me-2"></i>View Details
                                         </a></li>
+                                        @endcan
                                         <template x-if="!['cancelled', 'delivered', 'returned'].includes(order.status)">
                                             @can('orders.edit')
                                             <li><a class="dropdown-item" href="#" @click.prevent="editOrder(order)">

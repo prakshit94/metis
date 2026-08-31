@@ -315,8 +315,7 @@
     $initialActivities = \Spatie\Activitylog\Models\Activity::with('causer')->latest()->limit(10)->get()->map(function($a) {
         return [
             'id' => $a->id,
-            'description' => $a->description,
-            'subject_type' => class_basename($a->subject_type),
+            'formatted_description' => \App\Http\Controllers\AuditLogController::formatActivityDescription($a),
             'causer_name' => $a->causer->name ?? 'System',
             'causer_photo' => $a->causer->photo ?? null,
             'time_ago' => $a->created_at->diffForHumans(),
@@ -324,9 +323,169 @@
         ];
     });
     $initialUnreadCount = $initialActivities->where('is_read', false)->count();
+
+    // -- Alerts Logic --
+    $systemAlerts = collect();
+
+    // 1. Low Stock Products
+    if (\Illuminate\Support\Facades\Schema::hasTable('products') && \Illuminate\Support\Facades\Schema::hasTable('stocks')) {
+        try {
+            $lowStocks = \App\Modules\Catalog\Models\Product::where('manage_stock', true)
+                ->where('min_stock_level', '>', 0)
+                ->withSum('stocks', 'quantity')
+                ->get()
+                ->filter(function($product) {
+                    return (float)($product->stocks_sum_quantity ?? 0) <= $product->min_stock_level;
+                })
+                ->take(5);
+            foreach ($lowStocks as $product) {
+                $qty = floatval($product->stocks_sum_quantity ?? 0);
+                $systemAlerts->push((object)[
+                    'id' => 'stock_' . $product->id,
+                    'type' => 'warning',
+                    'icon' => 'bi-box-seam',
+                    'title' => 'Low Stock Alert',
+                    'message' => "<b>{$product->name}</b> is low on stock (<b>{$qty}</b> left).",
+                    'time_ago' => null,
+                    'link' => route('catalog.products', ['search' => $product->sku])
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 2. Open Complaints
+    if (\Illuminate\Support\Facades\Schema::hasTable('order_complaints')) {
+        try {
+            $openComplaints = \App\Modules\Orders\Models\OrderComplaint::where('status', 'open')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($openComplaints as $complaint) {
+                $systemAlerts->push((object)[
+                    'id' => 'complaint_' . $complaint->id,
+                    'type' => 'danger',
+                    'icon' => 'bi-exclamation-triangle',
+                    'title' => 'Open Complaint',
+                    'message' => "Complaint <b>{$complaint->complaint_number}</b> requires attention.",
+                    'time_ago' => $complaint->created_at ? $complaint->created_at->diffForHumans() : null,
+                    'link' => '#'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 3. Pending Leaves
+    if (\Illuminate\Support\Facades\Schema::hasTable('leaves')) {
+        try {
+            $pendingLeaves = \App\Modules\Users\Models\Leave::with('user')->where('status', 'Pending')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($pendingLeaves as $leave) {
+                $systemAlerts->push((object)[
+                    'id' => 'leave_' . $leave->id,
+                    'type' => 'info',
+                    'icon' => 'bi-calendar-event',
+                    'title' => 'Pending Leave Request',
+                    'message' => "<b>{$leave->user?->name}</b> applied for leave.",
+                    'time_ago' => $leave->created_at ? $leave->created_at->diffForHumans() : null,
+                    'link' => route('leaves')
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 4. Pending Orders
+    if (\Illuminate\Support\Facades\Schema::hasTable('orders')) {
+        try {
+            $pendingOrders = \App\Modules\Orders\Models\Order::where('status', 'pending_confirmation')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($pendingOrders as $order) {
+                $systemAlerts->push((object)[
+                    'id' => 'order_' . $order->id,
+                    'type' => 'primary',
+                    'icon' => 'bi-cart-check',
+                    'title' => 'Pending Order Confirmation',
+                    'message' => "Order <b>{$order->order_no}</b> is awaiting confirmation.",
+                    'time_ago' => $order->created_at ? $order->created_at->diffForHumans() : null,
+                    'link' => '/orders'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 5. Overdue Invoices
+    if (\Illuminate\Support\Facades\Schema::hasTable('invoices')) {
+        try {
+            $overdueInvoices = \App\Modules\Orders\Models\Invoice::where('status', 'unpaid')
+                ->whereNotNull('due_date')
+                ->where('due_date', '<', now())
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($overdueInvoices as $invoice) {
+                $systemAlerts->push((object)[
+                    'id' => 'invoice_' . $invoice->id,
+                    'type' => 'danger',
+                    'icon' => 'bi-receipt',
+                    'title' => 'Overdue Invoice',
+                    'message' => "Invoice <b>{$invoice->invoice_no}</b> is overdue.",
+                    'time_ago' => $invoice->due_date ? \Carbon\Carbon::parse($invoice->due_date)->diffForHumans() : null,
+                    'link' => '/invoices'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 6. Failed Shipments
+    if (\Illuminate\Support\Facades\Schema::hasTable('shipments')) {
+        try {
+            $failedShipments = \App\Modules\Orders\Models\Shipment::where('status', 'failed')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($failedShipments as $shipment) {
+                $systemAlerts->push((object)[
+                    'id' => 'shipment_' . $shipment->id,
+                    'type' => 'danger',
+                    'icon' => 'bi-truck',
+                    'title' => 'Failed Shipment',
+                    'message' => "Shipment <b>{$shipment->shipment_no}</b> has failed delivery.",
+                    'time_ago' => $shipment->updated_at ? $shipment->updated_at->diffForHumans() : null,
+                    'link' => '/shipping'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    $unreadMessages = collect();
+    if (\Illuminate\Support\Facades\Schema::hasTable('chat_notifications') && auth()->check()) {
+        try {
+            $unreadMessages = \Illuminate\Support\Facades\DB::table('chat_notifications')
+                ->where('user_id', auth()->id())
+                ->whereNull('read_at')
+                ->latest()
+                ->limit(5)
+                ->get()
+                ->map(function($msg) {
+                    $payload = json_decode($msg->payload, true);
+                    return (object)[
+                        'id' => $msg->id,
+                        'sender_name' => $payload['sender_name'] ?? 'System',
+                        'snippet' => $payload['snippet'] ?? 'You have a new message.',
+                        'time_ago' => $msg->created_at ? \Carbon\Carbon::parse($msg->created_at)->diffForHumans() : null
+                    ];
+                });
+        } catch (\Exception $e) {}
+    }
+
+    $otherAlertsCount = $systemAlerts->count() + $unreadMessages->count();
+    $totalInitialUnread = $initialUnreadCount + $otherAlertsCount;
 @endphp
                 {{-- Notifications Dropdown --}}
-                <div class="dropdown h-100 d-flex align-items-center" x-data="notificationApp(@js($initialActivities), {{ $initialUnreadCount }})">
+                <div class="dropdown h-100 d-flex align-items-center" x-data="notificationApp(@js($initialActivities), {{ $initialUnreadCount }}, {{ $otherAlertsCount }})">
                     <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
                             style="width: 42px; height: 42px;"
                             type="button"
@@ -338,7 +497,7 @@
                             aria-expanded="false"
                             aria-label="Notifications">
                         <i class="bi bi-bell-fill fs-5 text-secondary" aria-hidden="true"></i>
-                        <span x-show="count > 0" x-cloak class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body shadow-sm d-flex align-items-center justify-content-center" style="font-size: 10px; min-width: 18px; height: 18px; margin-top: 8px; margin-left: -12px;"><span x-text="count"></span></span>
+                        <span x-cloak class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body shadow-sm align-items-center justify-content-center {{ $totalInitialUnread > 0 ? 'd-flex' : 'd-none' }}" :class="totalCount > 0 ? 'd-flex' : 'd-none'" style="font-size: 10px; min-width: 18px; height: 18px; margin-top: 8px; margin-left: -12px;"><span x-text="totalCount"></span></span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3"
                          aria-labelledby="notificationsMenuBtn"
@@ -404,9 +563,7 @@
                                                         <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
                                                     </template>
                                                 </div>
-                                                <p class="mb-1 fs-13" :class="!activity.is_read ? 'text-body fw-bold' : 'text-muted'" style="line-height: 1.4;">
-                                                    <span x-text="activity.description"></span> a <b x-text="activity.subject_type"></b>.
-                                                </p>
+                                                <p class="mb-1 fs-13" :class="!activity.is_read ? 'text-body' : 'text-muted'" style="line-height: 1.4;" x-html="activity.formatted_description"></p>
                                                 <p class="mb-0 small" :class="!activity.is_read ? 'text-primary text-opacity-75 fw-semibold' : 'text-muted'"><i class="bi bi-clock me-1"></i> <span x-text="activity.time_ago"></span></p>
                                             </div>
                                         </a>
@@ -417,48 +574,68 @@
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="messages-noti-tab" role="tabpanel">
+                                @if($unreadMessages->isEmpty())
+                                <div class="p-5 text-center opacity-75">
+                                    <i class="bi bi-chat-slash fs-2 text-muted mb-2 d-block"></i>
+                                    <p class="text-muted mb-0">No new messages.</p>
+                                </div>
+                                @else
                                 <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
-                                    
-                                    <!-- Unread Message (Distinct styling) -->
-                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all bg-primary bg-opacity-10 position-relative" href="#">
-                                        <!-- Unread Dot Indicator -->
+                                    @foreach($unreadMessages as $msg)
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all bg-primary bg-opacity-10 position-relative" href="/chat">
                                         <div class="position-absolute top-50 start-0 translate-middle-y bg-primary rounded-circle ms-2 shadow-sm" style="width: 8px; height: 8px;"></div>
-                                        
-                                        <img src="{{ asset('assets/images/users/avatar-3.jpg') }}" class="rounded-circle flex-shrink-0 object-fit-cover ms-2 border border-2 border-primary border-opacity-25" alt="James" width="40" height="40" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <h6 class="mb-0 fw-bold text-primary fs-13">James Lemire</h6>
-                                                <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
-                                            </div>
-                                            <p class="mb-1 text-body fw-bold fs-13">We talked about a project on linkedin.</p>
-                                            <p class="mb-0 text-primary text-opacity-75 small fw-semibold"><i class="bi bi-clock me-1"></i> 30 min ago</p>
-                                        </div>
-                                    </a>
-
-                                    <!-- Read Message (Muted styling) -->
-                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary transition-all" href="#">
-                                        <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-3" style="width: 40px; height: 40px;">
+                                        <div class="bg-primary bg-opacity-25 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2 border border-2 border-primary border-opacity-25" style="width: 40px; height: 40px;">
                                             <i class="bi bi-person-fill fs-5"></i>
                                         </div>
-                                        <div class="flex-grow-1 opacity-75">
+                                        <div class="flex-grow-1">
                                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <h6 class="mb-0 fw-semibold text-body fs-13">Sarah Smith</h6>
+                                                <h6 class="mb-0 fw-bold text-primary fs-13">{{ $msg->sender_name }}</h6>
+                                                <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
                                             </div>
-                                            <p class="mb-1 text-muted fs-13">Can you send me the latest invoice?</p>
-                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> 2 hours ago</p>
+                                            <p class="mb-1 text-body fw-bold fs-13">{{ $msg->snippet }}</p>
+                                            @if($msg->time_ago)
+                                            <p class="mb-0 text-primary text-opacity-75 small fw-semibold"><i class="bi bi-clock me-1"></i> {{ $msg->time_ago }}</p>
+                                            @endif
                                         </div>
                                     </a>
-
+                                    @endforeach
                                 </div>
                                 <div class="p-2 text-center bg-body-secondary bg-opacity-50 rounded-bottom-4">
                                     <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All Messages <i class="bi bi-arrow-right-short align-middle"></i></button>
                                 </div>
+                                @endif
                             </div>
-                            <div class="tab-pane fade p-5 text-center" id="alerts-noti-tab" role="tabpanel">
-                                <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
-                                    <i class="bi bi-bell-slash fs-2"></i>
+                            <div class="tab-pane fade" id="alerts-noti-tab" role="tabpanel">
+                                @if($systemAlerts->isEmpty())
+                                <div class="p-5 text-center">
+                                    <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
+                                        <i class="bi bi-bell-slash fs-2"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-muted mb-0">No new alerts yet!</h6>
                                 </div>
-                                <h6 class="fw-bold text-muted mb-0">No new alerts yet!</h6>
+                                @else
+                                <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
+                                    @foreach($systemAlerts as $alert)
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary transition-all" href="{{ $alert->link }}">
+                                        <div class="bg-{{ $alert->type }} bg-opacity-10 text-{{ $alert->type }} rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2 border border-2 border-{{ $alert->type }} border-opacity-25" style="width: 40px; height: 40px;">
+                                            <i class="bi {{ $alert->icon }} fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <h6 class="mb-0 fw-bold text-{{ $alert->type }} fs-13">{{ $alert->title }}</h6>
+                                            </div>
+                                            <p class="mb-1 text-body fs-13">{!! $alert->message !!}</p>
+                                            @if($alert->time_ago)
+                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> {{ $alert->time_ago }}</p>
+                                            @endif
+                                        </div>
+                                    </a>
+                                    @endforeach
+                                </div>
+                                <div class="p-2 text-center bg-body-secondary bg-opacity-50 rounded-bottom-4">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All Alerts <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                </div>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -626,10 +803,14 @@ document.addEventListener('alpine:init', () => {
 
 
 
-    window.notificationApp = function(initialActivities, initialCount) {
+    window.notificationApp = function(initialActivities, initialCount, otherAlertsCount) {
         return {
             activities: initialActivities || [],
             count: initialCount || 0,
+            otherCount: otherAlertsCount || 0,
+            get totalCount() {
+                return this.count + this.otherCount;
+            },
             init() {
                 // Periodically fetch updates every 3 seconds for instant-like feel
                 setInterval(() => {

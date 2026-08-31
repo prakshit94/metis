@@ -377,9 +377,7 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         $statusesList = $this->allowedOrderFilterStatuses($user);
-        $productsList = Cache::remember('active_products_list', 3600, function () {
-            return Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']);
-        });
+        $productsList = Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']);
 
         $statesList = Cache::remember('geo_states', 3600, function () {
             return Village::distinct()->pluck('state_name')->filter()->sort()->values();
@@ -406,19 +404,17 @@ class OrderController extends Controller implements HasMiddleware
                 ->distinct()->pluck('village_name')->filter()->sort()->values();
         }) : [];
 
-        $services = Cache::remember('active_services_list', 3600, function () {
-            return Service::active()->get();
-        });
+        $services = Service::active()->get();
         $carriersList = $services->pluck('name')
             ->filter()
             ->unique()
             ->sort()
             ->values();
 
-        $returnReasons = Cache::remember('active_return_reasons', 3600, fn () => ReturnReason::where('is_active', true)->orderBy('id')->get());
-        $rescheduleReasons = Cache::remember('active_reschedule_reasons', 3600, fn () => RescheduleReason::where('is_active', true)->orderBy('id')->get());
-        $deliveryFailureReasons = Cache::remember('active_delivery_failure_reasons', 3600, fn () => DeliveryFailureReason::where('is_active', true)->orderBy('id')->get());
-        $cancelReasons = Cache::remember('active_cancel_reasons', 3600, fn () => CancelReason::where('is_active', true)->orderBy('id')->get());
+        $returnReasons = ReturnReason::where('is_active', true)->orderBy('id')->get();
+        $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
+        $deliveryFailureReasons = DeliveryFailureReason::where('is_active', true)->orderBy('id')->get();
+        $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
         // 7 Day Trends Data (Cached)
         $trendsData = Cache::remember('order_trends_7_days_'.auth()->id(), 300, function () {
@@ -445,7 +441,7 @@ class OrderController extends Controller implements HasMiddleware
             return $data;
         });
 
-        $warehousesList = Cache::remember('active_warehouses_list', 3600, fn () => Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name']));
+        $warehousesList = Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name']);
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -483,11 +479,11 @@ class OrderController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $warehouses = Cache::remember('all_warehouses', 3600, fn () => Warehouse::orderBy('name')->get());
+        $warehouses = Warehouse::orderBy('name')->get();
         $parties = Party::orderBy('firstname')->get();
-        $activeOffers = Cache::remember('active_offers_with_products', 3600, fn () => Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get());
-        $activeCoupons = Cache::remember('active_coupons', 3600, fn () => Coupon::where('is_active', true)->get());
-        $categories = Cache::remember('categories_with_children', 3600, fn () => Category::whereNull('parent_id')->with('children')->orderBy('name')->get());
+        $activeOffers = Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
+        $activeCoupons = Coupon::where('is_active', true)->get();
+        $categories = Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
         $initialCustomer = null;
         $initialOrder = null;
 
@@ -593,8 +589,8 @@ class OrderController extends Controller implements HasMiddleware
 
         $hideSidebar = true;
         $lockSearch = true;
-        $rescheduleReasons = Cache::remember('active_reschedule_reasons', 3600, fn () => RescheduleReason::where('is_active', true)->orderBy('id')->get());
-        $cancelReasons = Cache::remember('active_cancel_reasons', 3600, fn () => CancelReason::where('is_active', true)->orderBy('id')->get());
+        $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
+        $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
         return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
     }
@@ -637,22 +633,22 @@ class OrderController extends Controller implements HasMiddleware
             },
         ]);
 
-        $warehouses = Cache::remember('all_warehouses', 3600, fn () => Warehouse::orderBy('name')->get());
+        $warehouses = Warehouse::orderBy('name')->get();
         $parties = Party::orderBy('firstname')->get();
-        $categories = Cache::remember('categories_active', 3600, fn () => Category::where('is_active', true)->orderBy('name')->get());
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
 
-        $activeOffers = Cache::remember('active_offers_priority', 3600, fn () => Offer::active()->orderByDesc('priority')->get());
-        $activeCoupons = Cache::remember('active_coupons_valid', 3600, fn () => Coupon::active()->where(function ($q) {
+        $activeOffers = Offer::active()->orderByDesc('priority')->get();
+        $activeCoupons = Coupon::active()->where(function ($q) {
             $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', now()->startOfDay());
-        })->get());
+        })->get();
 
         $initialCustomer = $order->party;
         $initialOrder = $order;
 
         $hideSidebar = true;
         $lockSearch = true;
-        $rescheduleReasons = Cache::remember('active_reschedule_reasons', 3600, fn () => RescheduleReason::where('is_active', true)->orderBy('id')->get());
-        $cancelReasons = Cache::remember('active_cancel_reasons', 3600, fn () => CancelReason::where('is_active', true)->orderBy('id')->get());
+        $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
+        $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
         return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
     }

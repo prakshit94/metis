@@ -237,7 +237,9 @@
                                 <th @click="sortBy('return_requested_qty')" class="sortable text-center"><i class="bi bi-arrow-return-left me-1 text-secondary"></i>Return Req</th>
                                 <th @click="sortBy('in_transit_qty')" class="sortable text-center"><i class="bi bi-truck me-1 text-secondary"></i>In Transit</th>
                                 <th @click="sortBy('damaged_qty')" class="sortable text-center"><i class="bi bi-exclamation-octagon me-1 text-secondary"></i>Bad Qty</th>
+                                @canany(['stockmanagement-edit', 'stocktransfer-create'])
                                 <th style="width: 120px;" class="text-end pe-4"><i class="bi bi-lightning-charge me-1 text-secondary"></i>Actions</th>
+                                @endcanany
                             </tr>
                         </thead>
                         <tbody>
@@ -353,6 +355,7 @@
                                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle"
                                               x-text="parseFloat(item.damaged_qty || 0).toFixed(2)"></span>
                                     </td>
+                                    @canany(['stockmanagement-edit', 'stocktransfer-create'])
                                     <td class="text-end pe-4">
                                         <div class="dropdown">
                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
@@ -378,6 +381,7 @@
                                             </ul>
                                         </div>
                                     </td>
+                                    @endcanany
                                 </tr>
                             </template>
                         </tbody>

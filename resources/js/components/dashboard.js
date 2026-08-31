@@ -22,6 +22,7 @@ export class DashboardManager {
       orders: [],
       performance: [],
       recentOrders: [],
+      futureOrders: [],
       salesByLocation: []
     };
     this.currentPeriod = '7d';
@@ -37,6 +38,7 @@ export class DashboardManager {
     this.initStorageChart();
     this.initSalesByLocationChart();
     this.populateRecentOrders();
+    this.populateFutureOrders();
 
     this.initInteractiveElements();
     this.initResizeHandler();
@@ -81,6 +83,7 @@ export class DashboardManager {
         completed: 0, pending: 0, cancelled: 0, processing: 0
       };
       this.data.recentOrders = window.dashboardData.recentOrders || [];
+      this.data.futureOrders = window.dashboardData.futureOrders || [];
       this.data.salesByLocation = window.dashboardData.salesByLocation || [];
     }
   }
@@ -274,6 +277,10 @@ export class DashboardManager {
       const customerCell = document.createElement('td');
       customerCell.textContent = order.customer;
 
+      const phoneCell = document.createElement('td');
+      phoneCell.textContent = order.phone || '\u2014';
+      phoneCell.className = 'text-muted small';
+
       const itemsCell = document.createElement('td');
       itemsCell.textContent = order.items || '-';
       itemsCell.className = 'text-truncate text-muted small';
@@ -292,7 +299,68 @@ export class DashboardManager {
       const dateCell = document.createElement('td');
       dateCell.textContent = order.date;
 
-      tr.append(idCell, customerCell, itemsCell, amountCell, statusCell, dateCell);
+      tr.append(idCell, customerCell, phoneCell, itemsCell, amountCell, statusCell, dateCell);
+      tableBody.appendChild(tr);
+    }
+  }
+
+  populateFutureOrders() {
+    const tableBody = document.getElementById('future-orders-table');
+    if (!tableBody) return;
+
+    tableBody.replaceChildren();
+
+    if (this.data.futureOrders.length === 0) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 7;
+      td.className = 'text-center text-muted py-4 small';
+      td.innerHTML = '<i class="bi bi-calendar-event me-2"></i>No upcoming future orders.';
+      tr.appendChild(td);
+      tableBody.appendChild(tr);
+      return;
+    }
+
+    for (const order of this.data.futureOrders) {
+      const tr = document.createElement('tr');
+
+      const idCell = document.createElement('td');
+      const strong = document.createElement('strong');
+      strong.textContent = order.id;
+      idCell.appendChild(strong);
+
+      const customerCell = document.createElement('td');
+      customerCell.textContent = order.customer;
+
+      const phoneCell = document.createElement('td');
+      phoneCell.textContent = order.phone || '\u2014';
+      phoneCell.className = 'text-muted small';
+
+      const itemsCell = document.createElement('td');
+      itemsCell.textContent = order.items || '-';
+      itemsCell.className = 'text-truncate text-muted small';
+      itemsCell.style.maxWidth = '200px';
+      itemsCell.title = order.items || '';
+
+      const amountCell = document.createElement('td');
+      amountCell.textContent = order.amount;
+
+      const statusCell = document.createElement('td');
+      const badge = document.createElement('span');
+      badge.className = `badge ${order.status.class}`;
+      badge.textContent = order.status.text;
+      statusCell.appendChild(badge);
+
+      const dateCell = document.createElement('td');
+      const placedDiv = document.createElement('div');
+      placedDiv.textContent = order.placed_date;
+      const scheduledDiv = document.createElement('div');
+      scheduledDiv.className = 'mt-1';
+      scheduledDiv.innerHTML = `<span class="badge bg-primary-subtle text-primary-emphasis border border-primary border-opacity-25" style="font-size:0.7rem;"><i class="bi bi-calendar-event me-1"></i>Scheduled: ${order.scheduled_for}</span>`;
+      dateCell.appendChild(placedDiv);
+      dateCell.appendChild(scheduledDiv);
+
+      tr.append(idCell, customerCell, phoneCell, itemsCell, amountCell, statusCell, dateCell);
       tableBody.appendChild(tr);
     }
   }

@@ -348,9 +348,17 @@
                 <!-- Data Tables -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <div class="col-lg-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h2 class="h5 card-title mb-0">Recent Orders</h2>
+                        <div class="card" x-data="{ tableTab: 'recent' }">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h2 class="h5 card-title mb-0">Orders</h2>
+                                <ul class="nav nav-pills card-header-pills" style="margin: -0.5rem 0;">
+                                    <li class="nav-item">
+                                        <button class="nav-link btn-sm py-1 px-3 rounded-pill" :class="tableTab === 'recent' ? 'active shadow-sm' : 'text-muted'" @click="tableTab = 'recent'">Recent</button>
+                                    </li>
+                                    <li class="nav-item ms-2">
+                                        <button class="nav-link btn-sm py-1 px-3 rounded-pill" :class="tableTab === 'future' ? 'active shadow-sm' : 'text-muted'" @click="tableTab = 'future'">Future</button>
+                                    </li>
+                                </ul>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
@@ -359,14 +367,18 @@
                                             <tr>
                                                 <th>Order ID</th>
                                                 <th>Customer</th>
+                                                <th>Mobile</th>
                                                 <th>Items</th>
                                                 <th>Amount</th>
                                                 <th>Status</th>
-                                                <th>Date</th>
+                                                <th>Order Placed</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="recent-orders-table">
+                                        <tbody id="recent-orders-table" x-show="tableTab === 'recent'">
                                             <!-- Orders will be injected here by dashboard.js -->
+                                        </tbody>
+                                        <tbody id="future-orders-table" x-show="tableTab === 'future'" style="display: none;">
+                                            <!-- Future Orders will be injected here by dashboard.js -->
                                         </tbody>
                                     </table>
                                 </div>

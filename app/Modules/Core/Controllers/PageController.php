@@ -242,15 +242,16 @@ class PageController extends Controller
             })->implode(', ');
 
             return [
-                'id' => $order->order_no,
+                'id'       => $order->order_no,
                 'customer' => $order->party ? $order->party->name : 'Unknown',
-                'items' => $itemsList,
-                'amount' => 'Rs '.number_format($order->net_amount, 2),
-                'status' => [
-                    'text' => $order->statusLabel(),
+                'phone'    => $order->party ? $order->party->phone : null,
+                'items'    => $itemsList,
+                'amount'   => 'Rs '.number_format($order->net_amount, 2),
+                'status'   => [
+                    'text'  => $order->statusLabel(),
                     'class' => $statusClass,
                 ],
-                'date' => $order->order_date ? $order->order_date->format('M d, Y h:i A') : 'N/A',
+                'date'     => $order->order_date ? $order->order_date->format('M d, Y h:i A') : 'N/A',
             ];
         })->toArray();
 
@@ -271,15 +272,17 @@ class PageController extends Controller
             })->implode(', ');
 
             return [
-                'id' => $order->order_no,
-                'customer' => $order->party ? $order->party->name : 'Unknown',
-                'items' => $itemsList,
-                'amount' => 'Rs '.number_format($order->net_amount, 2),
-                'status' => [
-                    'text' => 'Future Order',
+                'id'            => $order->order_no,
+                'customer'      => $order->party ? $order->party->name : 'Unknown',
+                'phone'         => $order->party ? $order->party->phone : null,
+                'items'         => $itemsList,
+                'amount'        => 'Rs '.number_format($order->net_amount, 2),
+                'status'        => [
+                    'text'  => 'Future Order',
                     'class' => $statusClass,
                 ],
-                'date' => $order->future_order_date ? Carbon::parse($order->future_order_date)->format('M d, Y') : 'N/A',
+                'placed_date'   => $order->order_date ? $order->order_date->format('M d, Y') : 'N/A',
+                'scheduled_for' => $order->future_order_date ? Carbon::parse($order->future_order_date)->format('M d, Y') : 'N/A',
             ];
         })->toArray();
 

@@ -77,10 +77,10 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('components.add-customer-modal', function ($view) {
-            $dynamicCrops = Cache::remember('dynamic_crops', 3600, fn () => Crop::where('is_active', true)->pluck('name'));
-            $dynamicLeadSources = Cache::remember('dynamic_lead_sources', 3600, fn () => LeadSource::where('is_active', true)->pluck('name'));
-            $dynamicIrrigationTypes = Cache::remember('dynamic_irrigation_types', 3600, fn () => IrrigationType::where('is_active', true)->pluck('name'));
-            $dynamicLandUnits = Cache::remember('dynamic_land_units', 3600, fn () => LandUnit::where('is_active', true)->pluck('name'));
+            $dynamicCrops = Crop::where('is_active', true)->pluck('name');
+            $dynamicLeadSources = LeadSource::where('is_active', true)->pluck('name');
+            $dynamicIrrigationTypes = IrrigationType::where('is_active', true)->pluck('name');
+            $dynamicLandUnits = LandUnit::where('is_active', true)->pluck('name');
 
             $view->with(compact('dynamicCrops', 'dynamicLeadSources', 'dynamicIrrigationTypes', 'dynamicLandUnits'));
         });

@@ -287,21 +287,21 @@ class CustomerController extends Controller implements HasMiddleware
             ]);
         }
 
-        $categories = Cache::remember('categories_parent_null', 600, fn () => Category::whereNull('parent_id')->get());
-        $warehouses = Cache::remember('warehouses_active_village', 600, fn () => Warehouse::with('village')->where('status', 'active')->get());
-        $activeOffers = Cache::remember('active_offers_with_product', 600, fn () => Offer::active()
+        $categories = Category::whereNull('parent_id')->get();
+        $warehouses = Warehouse::with('village')->where('status', 'active')->get();
+        $activeOffers = Offer::active()
             ->with('product:id,name,sku')
             ->orderByDesc('priority')
             ->orderBy('id')
-            ->get());
+            ->get();
 
-        $activeCoupons = Cache::remember('active_coupons', 600, fn () => Coupon::where('is_active', true)->get());
+        $activeCoupons = Coupon::where('is_active', true)->get();
 
         // Dynamic database parameters
-        $crops = Cache::remember('dynamic_crops_obj', 3600, fn () => Crop::where('is_active', true)->get(['name']));
-        $irrigationTypes = Cache::remember('dynamic_irrigation_types_obj', 3600, fn () => IrrigationType::where('is_active', true)->get(['name']));
-        $landUnits = Cache::remember('dynamic_land_units_obj', 3600, fn () => LandUnit::where('is_active', true)->get(['name']));
-        $leadSources = Cache::remember('dynamic_lead_sources_obj', 3600, fn () => LeadSource::where('is_active', true)->get(['name']));
+        $crops = Crop::where('is_active', true)->get(['name']);
+        $irrigationTypes = IrrigationType::where('is_active', true)->get(['name']);
+        $landUnits = LandUnit::where('is_active', true)->get(['name']);
+        $leadSources = LeadSource::where('is_active', true)->get(['name']);
 
         return view('customers.show', compact('customer', 'categories', 'warehouses', 'activeOffers', 'activeCoupons', 'crops', 'irrigationTypes', 'landUnits', 'leadSources'));
     }
