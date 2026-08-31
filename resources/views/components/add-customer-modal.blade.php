@@ -145,8 +145,8 @@
                                         <div class="col-sm-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Primary Phone *</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-phone"></i></span>
-                                                <input type="text" name="phone" x-model="form.phone" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" required pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
+                                                <span class="input-group-text text-muted border-end-0" :class="isEdit ? 'bg-body-secondary' : 'bg-body'"><i class="bi bi-phone"></i></span>
+                                                <input type="text" name="phone" x-model="form.phone" class="form-control border-start-0 ps-0 fw-semibold" :class="isEdit ? 'bg-body-secondary text-muted opacity-75' : ''" style="font-size: 12px;" required pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)" :readonly="isEdit">
                                             </div>
                                         </div>
                                         <div class="col-sm-4">
