@@ -73,7 +73,7 @@ export default () => {
         providerDatePreset: 'today',
         providerFromDate: '',
         providerToDate: '',
-        
+
         get filteredProviders() {
             if (!this.topProviders) return [];
             let p = this.topProviders;
@@ -82,12 +82,12 @@ export default () => {
             }
             return p;
         },
-        
+
         get paginatedProviders() {
             const start = (this.providerCurrentPage - 1) * this.providerPerPage;
             return this.filteredProviders.slice(start, start + this.providerPerPage);
         },
-        
+
         get providerTotalPages() {
             return Math.ceil(this.filteredProviders.length / this.providerPerPage) || 1;
         },
@@ -97,7 +97,7 @@ export default () => {
             const today = new Date();
             let from = '';
             let to = '';
-            
+
             const formatDate = (date) => {
                 const d = new Date(date);
                 let month = '' + (d.getMonth() + 1);
@@ -144,23 +144,23 @@ export default () => {
 
         calculateProviders() {
             if (!this.allFetchedItems) return;
-            
+
             let itemsToProcess = this.allFetchedItems;
-            
+
             if (this.providerFromDate || this.providerToDate) {
                 itemsToProcess = itemsToProcess.filter(item => {
                     const dateStr = item.shipped_at || item.delivered_at || item.created_at;
                     if (!dateStr) return true;
-                    
-                    const itemDate = new Date(dateStr).setHours(0,0,0,0);
+
+                    const itemDate = new Date(dateStr).setHours(0, 0, 0, 0);
                     let isValid = true;
-                    
+
                     if (this.providerFromDate) {
-                        const from = new Date(this.providerFromDate).setHours(0,0,0,0);
+                        const from = new Date(this.providerFromDate).setHours(0, 0, 0, 0);
                         if (itemDate < from) isValid = false;
                     }
                     if (this.providerToDate) {
-                        const to = new Date(this.providerToDate).setHours(23,59,59,999);
+                        const to = new Date(this.providerToDate).setHours(23, 59, 59, 999);
                         if (itemDate > to) isValid = false;
                     }
                     return isValid;
@@ -173,7 +173,7 @@ export default () => {
                 if (!providerMap[c]) {
                     providerMap[c] = { name: c, total: 0, pending: 0, in_transit: 0, delivered: 0, returned: 0, failed: 0, contact_persons: [] };
                 }
-                
+
                 if (item.service && item.service.providers) {
                     item.service.providers.forEach(p => {
                         if (!providerMap[c].contact_persons.find(existing => existing.id === p.id)) {
@@ -181,7 +181,7 @@ export default () => {
                         }
                     });
                 }
-                
+
                 providerMap[c].total++;
                 if (item.status === 'pending' || item.status === 'shipped') providerMap[c].pending++;
                 if (item.status === 'in_transit') providerMap[c].in_transit++;
@@ -214,7 +214,7 @@ export default () => {
                     theme: colorClasses[idx % colorClasses.length]
                 };
             }).sort((a, b) => b.total - a.total);
-            
+
             this.providerCurrentPage = 1;
         },
 
@@ -333,7 +333,7 @@ export default () => {
                     { name: 'Returned', count: this.stats.returned, percentage: this.stats.total ? Math.round((this.stats.returned / this.stats.total) * 100) : 0, color: 'var(--bs-secondary)' },
                     { name: 'Failed', count: this.stats.failed, percentage: this.stats.total ? Math.round((this.stats.failed / this.stats.total) * 100) : 0, color: 'var(--bs-danger)' }
                 ].filter(stat => stat.count > 0);
-                
+
                 this.allFetchedItems = allItems;
                 this.applyProviderPreset();
 
@@ -373,7 +373,7 @@ export default () => {
 
         filterData() {
             this.currentPage = 1;
-                        this.loadData();
+            this.loadData();
         },
 
         clearFilters() {
@@ -400,10 +400,10 @@ export default () => {
 
         get bulkAvailableActions() {
             if (this.selectedItems.length === 0) return {};
-            
+
             const selectedObjs = this.items.filter(i => this.selectedItems.includes(String(i.id)));
             const statuses = new Set(selectedObjs.map(i => i.status));
-            
+
             return {
                 canInTransit: [...statuses].some(s => ['pending', 'failed'].includes(s)),
                 canDelivered: [...statuses].some(s => ['in_transit'].includes(s)),
@@ -433,7 +433,7 @@ export default () => {
             const applicableIds = applicableObjs.map(i => String(i.id));
 
             let returnReason = '';
-            
+
             if (action === 'mark_returned') {
                 const { value: reason, isConfirmed } = await Swal.fire({
                     title: 'Return Reason',
@@ -490,7 +490,7 @@ export default () => {
                                 requested_qty: item.quantity,
                                 max_qty: item.quantity
                             }));
-                            
+
                             await this.apiRequest(`/orders/${orderId}/returns`, {
                                 method: 'POST',
                                 body: JSON.stringify({
@@ -501,7 +501,7 @@ export default () => {
                             }).catch(e => console.error(e));
                         }
                     }
-                    
+
                     await this.apiRequest(`${this.apiBase}/bulk-action`, {
                         method: 'POST',
                         body: JSON.stringify({
@@ -574,7 +574,7 @@ export default () => {
 
         openStatusModal(shipment) {
             this.selectedShipment = shipment;
-            
+
             let defaultFollowUp;
             if (shipment.next_followup_date) {
                 defaultFollowUp = shipment.next_followup_date.split('T')[0];
@@ -596,7 +596,7 @@ export default () => {
                 reschedule_reason: shipment.reschedule_reason || '',
                 delivered_by: shipment.delivered_by || userName
             };
-            
+
             this.onStatusChange();
 
             this.statusModal?.show();
@@ -610,7 +610,7 @@ export default () => {
                 if (this.selectedShipment) {
                     this.statusForm.delivery_attempts = this.selectedShipment.delivery_attempts || 0;
                 }
-                
+
                 if (newStatus === 'returned' && this.selectedShipment && this.selectedShipment.order && this.selectedShipment.order.items) {
                     this.returnForm.reason = '';
                     this.returnItems = (this.selectedShipment.order.items || []).map(item => ({
@@ -644,7 +644,7 @@ export default () => {
                     if (itemsToReturn.length === 0) {
                         throw new Error('Please select at least one item to return with a quantity greater than 0.');
                     }
-                    
+
                     const orderId = this.selectedShipment.order?.id || this.selectedShipment.order_id;
                     await this.apiRequest(`/orders/${orderId}/returns`, {
                         method: 'POST',
@@ -750,7 +750,7 @@ export default () => {
             this.saving = true;
             try {
                 const itemsToReturn = this.returnItems.filter(i => i.requested_qty > 0);
-                
+
                 this.statusForm = {
                     status: 'returned',
                     location: '',
@@ -782,8 +782,8 @@ export default () => {
             };
 
             const headers = [
-                'ID', 'Shipment No', 'Order No', 'Carrier', 'Service Providers', 
-                'Tracking No', 'Status', 'Delivery Attempts', 'Next Follow-up Date', 
+                'ID', 'Shipment No', 'Order No', 'Carrier', 'Service Providers',
+                'Tracking No', 'Status', 'Delivery Attempts', 'Next Follow-up Date',
                 'Reschedule Reason', 'Delivered By', 'Shipped At', 'Delivered At', 'Created At'
             ];
             const csvRows = [headers.join(',')];
