@@ -1212,7 +1212,7 @@
             getUserPhotoUrl(user) {
                 if (!user) return '/assets/images/default_avatar.jpeg';
                 const photo = user.photo || user.avatar;
-                if (!photo) return '/assets/images/default_avatar.jpeg';
+                if (!photo) return user.gender === 'Male' ? '/assets/images/default_male.png' : (user.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg');
                 return this.formatAttachmentUrl(photo);
             },
             

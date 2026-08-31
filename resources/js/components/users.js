@@ -483,7 +483,7 @@ document.addEventListener('alpine:init', () => {
         designation: u.designation,
         emergency_contact_name: u.emergency_contact_name,
         emergency_contact_phone: u.emergency_contact_phone,
-        avatar: '/assets/images/default_avatar.jpeg',
+        avatar: u.gender === 'Male' ? '/assets/images/default_male.png' : (u.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg'),
       };
     },
 
@@ -1071,7 +1071,7 @@ document.addEventListener('alpine:init', () => {
       state: '',
       pincode: '',
       date_of_birth: '',
-      gender: '',
+      gender: 'Male',
       blood_group: '',
       designation: '',
       emergency_contact_name: '',
@@ -1227,7 +1227,7 @@ document.addEventListener('alpine:init', () => {
         state: '',
         pincode: '',
         date_of_birth: '',
-        gender: '',
+        gender: 'Male',
         blood_group: '',
         designation: '',
         emergency_contact_name: '',

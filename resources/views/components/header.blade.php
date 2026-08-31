@@ -653,7 +653,7 @@
                             aria-expanded="false"
                             aria-label="User menu">
                         <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 38px; height: 38px;">
-                            <img src="{{ Auth::user()?->photo ? (str_starts_with(Auth::user()->photo, 'http') || str_starts_with(Auth::user()->photo, '/') ? Auth::user()->photo : asset('storage/' . Auth::user()->photo)) : asset('assets/images/default_avatar.jpeg') }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="this.onerror=null; this.src='{{ asset('assets/images/default_avatar.jpeg') }}';">
+                            <img src="{{ Auth::user()?->photo ? (str_starts_with(Auth::user()->photo, 'http') || str_starts_with(Auth::user()->photo, '/') ? Auth::user()->photo : asset('storage/' . Auth::user()->photo)) : (Auth::user()?->gender === 'Male' ? asset('assets/images/default_male.png') : (Auth::user()?->gender === 'Female' ? asset('assets/images/default_female.png') : asset('assets/images/default_avatar.jpeg'))) }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="this.onerror=null; this.src='{{ Auth::user()?->gender === 'Male' ? asset('assets/images/default_male.png') : (Auth::user()?->gender === 'Female' ? asset('assets/images/default_female.png') : asset('assets/images/default_avatar.jpeg')) }}';">
                         </div>
                         <span class="d-none d-md-flex flex-column text-start ms-1 lh-1">
                             <span class="fw-bold text-body" style="font-size: 13px;">{{ Auth::user()?->name ?? 'User' }}</span>
@@ -666,7 +666,7 @@
                         
                         <li class="px-4 py-3 d-flex align-items-center gap-3 border-bottom mb-2">
                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 48px; height: 48px;">
-                                <img src="{{ Auth::user()?->photo ? (str_starts_with(Auth::user()->photo, 'http') || str_starts_with(Auth::user()->photo, '/') ? Auth::user()->photo : asset('storage/' . Auth::user()->photo)) : asset('assets/images/default_avatar.jpeg') }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="this.onerror=null; this.src='{{ asset('assets/images/default_avatar.jpeg') }}';">
+                                <img src="{{ Auth::user()?->photo ? (str_starts_with(Auth::user()->photo, 'http') || str_starts_with(Auth::user()->photo, '/') ? Auth::user()->photo : asset('storage/' . Auth::user()->photo)) : (Auth::user()?->gender === 'Male' ? asset('assets/images/default_male.png') : (Auth::user()?->gender === 'Female' ? asset('assets/images/default_female.png') : asset('assets/images/default_avatar.jpeg'))) }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="this.onerror=null; this.src='{{ Auth::user()?->gender === 'Male' ? asset('assets/images/default_male.png') : (Auth::user()?->gender === 'Female' ? asset('assets/images/default_female.png') : asset('assets/images/default_avatar.jpeg')) }}';">
                             </div>
                             <div style="min-width: 0;">
                                 <h6 class="mb-1 fw-bold text-body text-truncate">{{ Auth::user()?->name ?? 'User' }}</h6>

@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="user-management" x-data="userTable">
-    <div x-data="{ showAnalytics: localStorage.getItem('users_show_analytics') === 'true' }" x-init="$watch('showAnalytics', val => localStorage.setItem('users_show_analytics', val))">
+    <div>
 <!-- Page Header -->
                     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
                         <div>
@@ -13,11 +13,7 @@
                             <p class="text-muted mb-0">Manage users, roles, and permissions</p>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <!-- Analytics Toggle -->
-                            <div class="form-check form-switch m-0 me-2 pe-3 border-end cursor-pointer d-flex align-items-center gap-2">
-                                <input class="form-check-input m-0" type="checkbox" role="switch" id="usersAnalyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
-                                <label class="form-check-label small fw-bold text-muted mb-0 ms-1" for="usersAnalyticsToggle" style="cursor: pointer; padding-top: 2px;">Analytics</label>
-                            </div>
+
                             @can('user-import')
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                                 <i class="bi bi-upload me-2"></i>Import Users
@@ -113,8 +109,8 @@
                             </div>
                         </div>
 
-                        <!-- Enhanced Analytics Widgets Row -->
-                        <div x-show="showAnalytics" x-transition.opacity.duration.300ms>
+                        <!-- Analytics section removed -->
+                        <div style="display:none;">
                         <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                             <!-- User Growth Chart -->
                             <div class="col-lg-8">
@@ -467,7 +463,7 @@
                                                     <td>
                                                         <div class="d-flex align-items-center">
                                                             <div class="position-relative me-3">
-                                                                <img :src="user.photo || user.avatar || '/assets/images/default_avatar.jpeg'" 
+                                                                <img :src="user.photo || user.avatar || (user.gender === 'Male' ? '/assets/images/default_male.png' : (user.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg'))" 
                                                                      class="rounded-circle shadow-sm" 
                                                                      width="42" 
                                                                      height="42"
@@ -650,7 +646,7 @@
                     <div class="d-flex align-items-start justify-content-between mb-4 pb-4 border-bottom">
                         <div class="d-flex align-items-center gap-4">
                             <div class="position-relative">
-                                <img :src="form.photo || '/assets/images/default_avatar.jpeg'" class="rounded-circle border border-3 shadow-sm bg-body-tertiary" style="width: 110px; height: 110px; object-fit: cover; border-color: var(--bs-border-color) !important;" alt="Profile Picture">
+                                <img :src="form.photo || (form.gender === 'Male' ? '/assets/images/default_male.png' : (form.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg'))" class="rounded-circle border border-3 shadow-sm bg-body-tertiary" style="width: 110px; height: 110px; object-fit: cover; border-color: var(--bs-border-color) !important;" alt="Profile Picture">
                                 <span class="position-absolute bottom-0 end-0 p-2 border border-2 rounded-circle shadow-sm" :class="form.is_active ? 'bg-success' : 'bg-secondary'" style="width: 22px; height: 22px; right: 6px !important; bottom: 6px !important; border-color: var(--bs-body-bg) !important;"></span>
                             </div>
                             <div>
@@ -896,11 +892,8 @@
                                         <div class="col-md-4">
                                             <label class="form-label fw-medium text-muted small">Gender</label>
                                             <select x-select data-no-search class="form-select form-select-sm" x-model="form.gender">
-                                                <option value="">None</option>
                                                 <option value="Male">Male</option>
                                                 <option value="Female">Female</option>
-                                                <option value="Other">Other</option>
-                                                <option value="Prefer not to say">Prefer not to say</option>
                                             </select>
                                         </div>
                                         <div class="col-md-4">
@@ -1134,7 +1127,7 @@
                                                         <img :src="form.photo" alt="Preview" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
                                                     </template>
                                                     <template x-if="!form.photo">
-                                                        <i class="bi bi-cloud-arrow-up fs-2 text-muted"></i>
+                                                        <img :src="form.gender === 'Male' ? '/assets/images/default_male.png' : (form.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg')" alt="Default Avatar" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover; opacity: 0.5;">
                                                     </template>
                                                 </div>
                                                 <input type="file" class="form-control form-control-sm" accept="image/*" @change="handlePhotoUpload($event)">

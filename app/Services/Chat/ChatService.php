@@ -27,7 +27,7 @@ class ChatService
         return Conversation::query()
             ->visibleTo($user)
             ->with([
-                'activeMembers.user:id,name,first_name,last_name,email,photo',
+                'activeMembers.user:id,name,first_name,last_name,email,photo,gender',
                 'latestMessage.sender:id,name',
             ])
             ->withCount([
@@ -283,7 +283,7 @@ class ChatService
     public function listUsersWithPresence(User $viewer, ?string $term = null, bool $includeSelf = false): SupportCollection
     {
         $users = User::query()
-            ->select('id', 'name', 'first_name', 'last_name', 'email', 'employee_id', 'photo', 'is_active as status', 'village_name', 'district', 'state')
+            ->select('id', 'name', 'first_name', 'last_name', 'email', 'employee_id', 'photo', 'gender', 'is_active as status', 'village_name', 'district', 'state')
             ->where('is_active', 1)
             ->when(! $includeSelf, fn ($query) => $query->where('id', '!=', $viewer->id))
             ->when($term, fn ($query) => $query->where(function ($nested) use ($term) {
@@ -372,6 +372,7 @@ class ChatService
                 'email' => $user->email,
                 'employee_id' => $user->employee_id,
                 'photo' => $user->photo,
+                'gender' => $user->gender,
                 'location' => $location,
                 'is_online' => $isOnline,
                 'presence_status' => $isOnline ? 'online' : 'offline',
