@@ -394,7 +394,7 @@
                 @endif
 
 @php
-    $initialActivities = \Spatie\Activitylog\Models\Activity::with('causer')->latest()->limit(10)->get()->map(function($a) {
+    $initialActivities = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->latest()->limit(10)->get()->map(function($a) {
         return [
             'id' => $a->id,
             'formatted_description' => \App\Http\Controllers\AuditLogController::formatActivityDescription($a),

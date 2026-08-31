@@ -203,7 +203,7 @@ class AuditLogController extends Controller implements HasMiddleware
         );
 
         $user = auth()->user();
-        $activities = Activity::with('causer')->latest()->limit(15)->get();
+        $activities = Activity::with(['causer', 'subject'])->latest()->limit(15)->get();
         $readIds = $user ? $user->readActivities()->whereIn('activity_id', $activities->pluck('id'))->pluck('activity_id')->toArray() : [];
 
         $unreadCount = $activities->whereNotIn('id', $readIds)->count();
@@ -348,7 +348,8 @@ class AuditLogController extends Controller implements HasMiddleware
                 $productName = $subject?->product?->name ?? 'Product';
                 $detail = ' for ' . $productName;
                 
-                $relatedOrderActivity = \Spatie\Activitylog\Models\Activity::where('subject_type', 'App\Modules\Orders\Models\Order')
+                $relatedOrderActivity = \Spatie\Activitylog\Models\Activity::with('subject')
+                    ->where('subject_type', 'App\Modules\Orders\Models\Order')
                     ->where('causer_id', $a->causer_id)
                     ->whereBetween('created_at', [$a->created_at->copy()->subSeconds(2), $a->created_at->copy()->addSeconds(2)])
                     ->first();
