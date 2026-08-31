@@ -511,10 +511,10 @@
 <script>
 function erpAnalyticsDashboard() {
     return {
-        period: 'this_month',
+        period: 'today',
         customFrom: '',
         customTo: '',
-        limit: 10,
+        limit: 5,
         loading: false,
         error: null,
         

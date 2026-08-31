@@ -67,43 +67,6 @@
         </div>
     </div>
 
-    <!-- Charts Row -->
-    <div class="row g-4 g-lg-5 mb-5 mb-lg-5 mb-xl-6">
-        <!-- Trends Chart -->
-        <div class="col-lg-8">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h2 class="h5 card-title mb-0">Service Activity</h2>
-                </div>
-                <div class="card-body p-3 p-lg-4">
-                    <div id="serviceTrendsChart" style="height: 300px;"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Status Distribution -->
-        <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h2 class="h5 card-title mb-0">Service Status</h2>
-                </div>
-                <div class="card-body p-3 p-lg-4">
-                    <div id="statusChart" style="height: 200px;"></div>
-                    <div class="mt-3">
-                        <template x-for="status in statusStats" :key="status.name">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="small" x-text="status.name"></span>
-                                <div class="d-flex align-items-center">
-                                    <span class="small text-muted me-2" x-text="`${status.percentage}%`"></span>
-                                    <span class="small fw-medium" x-text="status.count"></span>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Main Directory Card -->
     <div class="card">
