@@ -20,8 +20,10 @@ class ShippingController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:shipping-view', only: ['shipmentsIndex', 'trackingEvents', 'servicesIndex']),
-            new Middleware('permission:shipping-manage', only: ['addTrackingEvent', 'storeService', 'updateShipmentStatus', 'updateService', 'toggleService', 'destroyService', 'shipmentsBulk', 'servicesBulk', 'providerOptions']),
+            new Middleware('permission:shipping-view', only: ['shipmentsIndex', 'trackingEvents', 'servicesIndex', 'providerOptions']),
+            new Middleware('permission:shipping-create', only: ['addTrackingEvent', 'storeService']),
+            new Middleware('permission:shipping-edit', only: ['updateShipmentStatus', 'updateService', 'toggleService', 'shipmentsBulk', 'servicesBulk']),
+            new Middleware('permission:shipping-delete', only: ['destroyService']),
         ];
     }
 
@@ -31,7 +33,7 @@ class ShippingController extends Controller implements HasMiddleware
     public function shipmentsIndex(Request $request): JsonResponse
     {
 
-        $query = Shipment::with(['order', 'service.providers:id,name,email,phone,department_id,is_active']);
+        $query = Shipment::with(['order.items.product', 'service.providers:id,name,email,phone,department_id,is_active']);
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -147,7 +149,7 @@ class ShippingController extends Controller implements HasMiddleware
                         'notes' => 'Shipment delivered.',
                         'changed_by' => auth()->id(),
                     ]);
-                } elseif ($newStatus === 'returned' && ! in_array($order->status, ['returned', 'cancelled'], true)) {
+                } elseif ($newStatus === 'returned' && ! in_array($order->status, ['returned', 'cancelled'], true) && ! request()->boolean('skip_order_sync')) {
                     $inventoryService->returnOrder($order);
                 }
 
@@ -280,7 +282,7 @@ class ShippingController extends Controller implements HasMiddleware
                         $inventoryService->dispatchOrder($order);
                     } elseif ($newStatus === 'delivered' && in_array($order->status, ['dispatched', 'shipped'], true)) {
                         $inventoryService->deliverOrder($order);
-                    } elseif ($newStatus === 'returned' && ! in_array($order->status, ['returned', 'cancelled'], true)) {
+                    } elseif ($newStatus === 'returned' && ! in_array($order->status, ['returned', 'cancelled'], true) && ! request()->boolean('skip_order_sync')) {
                         $inventoryService->returnOrder($order);
                     }
                 }

@@ -161,7 +161,7 @@ export default () => {
                     toolbar: { show: false },
                     fontFamily: 'inherit'
                 },
-                colors: ['#3b82f6'],
+                colors: ['var(--bs-primary)'],
                 fill: {
                     type: 'gradient',
                     gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.3 }
@@ -241,11 +241,11 @@ export default () => {
                 this.stats.returned = allItems.filter(i => i.status === 'returned').length;
 
                 this.statusStats = [
-                    { name: 'Pending', count: this.stats.pending, percentage: this.stats.total ? Math.round((this.stats.pending / this.stats.total) * 100) : 0, color: '#f97316' },
-                    { name: 'In Transit', count: this.stats.in_transit, percentage: this.stats.total ? Math.round((this.stats.in_transit / this.stats.total) * 100) : 0, color: '#3b82f6' },
-                    { name: 'Delivered', count: this.stats.delivered, percentage: this.stats.total ? Math.round((this.stats.delivered / this.stats.total) * 100) : 0, color: '#10b981' },
-                    { name: 'Returned', count: this.stats.returned, percentage: this.stats.total ? Math.round((this.stats.returned / this.stats.total) * 100) : 0, color: '#64748b' },
-                    { name: 'Failed', count: this.stats.failed, percentage: this.stats.total ? Math.round((this.stats.failed / this.stats.total) * 100) : 0, color: '#ef4444' }
+                    { name: 'Pending', count: this.stats.pending, percentage: this.stats.total ? Math.round((this.stats.pending / this.stats.total) * 100) : 0, color: 'var(--bs-warning)' },
+                    { name: 'In Transit', count: this.stats.in_transit, percentage: this.stats.total ? Math.round((this.stats.in_transit / this.stats.total) * 100) : 0, color: 'var(--bs-primary)' },
+                    { name: 'Delivered', count: this.stats.delivered, percentage: this.stats.total ? Math.round((this.stats.delivered / this.stats.total) * 100) : 0, color: 'var(--bs-success)' },
+                    { name: 'Returned', count: this.stats.returned, percentage: this.stats.total ? Math.round((this.stats.returned / this.stats.total) * 100) : 0, color: 'var(--bs-secondary)' },
+                    { name: 'Failed', count: this.stats.failed, percentage: this.stats.total ? Math.round((this.stats.failed / this.stats.total) * 100) : 0, color: 'var(--bs-danger)' }
                 ].filter(stat => stat.count > 0);
 
                 const providerMap = {};
@@ -344,36 +344,127 @@ export default () => {
             }
         },
 
+        get bulkAvailableActions() {
+            if (this.selectedItems.length === 0) return {};
+            
+            const selectedObjs = this.items.filter(i => this.selectedItems.includes(String(i.id)));
+            const statuses = new Set(selectedObjs.map(i => i.status));
+            
+            return {
+                canInTransit: [...statuses].some(s => ['pending', 'failed'].includes(s)),
+                canDelivered: [...statuses].some(s => ['in_transit'].includes(s)),
+                canReturned: [...statuses].some(s => !['delivered', 'returned'].includes(s))
+            };
+        },
+
         async bulkAction(action) {
             if (this.selectedItems.length === 0) return;
 
-            const actionLabels = {
-                mark_in_transit: 'mark in transit',
-                mark_delivered: 'mark delivered',
-                mark_returned: 'mark returned'
-            };
+            const selectedObjs = this.items.filter(i => this.selectedItems.includes(String(i.id)));
+            let applicableObjs = [];
 
-            const result = await Swal.fire({
-                title: 'Confirm Bulk Action',
-                text: `Are you sure you want to ${actionLabels[action]} for ${this.selectedItems.length} shipment(s)?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, proceed'
-            });
+            if (action === 'mark_in_transit') {
+                applicableObjs = selectedObjs.filter(i => ['pending', 'failed'].includes(i.status));
+            } else if (action === 'mark_delivered') {
+                applicableObjs = selectedObjs.filter(i => ['in_transit'].includes(i.status));
+            } else if (action === 'mark_returned') {
+                applicableObjs = selectedObjs.filter(i => !['delivered', 'returned'].includes(i.status));
+            }
 
-            if (!result.isConfirmed) return;
+            if (applicableObjs.length === 0) {
+                showToast('No applicable shipments selected for this action.', 'warning');
+                return;
+            }
+
+            const applicableIds = applicableObjs.map(i => String(i.id));
+
+            let returnReason = '';
+            
+            if (action === 'mark_returned') {
+                const { value: reason, isConfirmed } = await Swal.fire({
+                    title: 'Return Reason',
+                    text: `Please select a reason for returning these ${applicableIds.length} applicable shipment(s).`,
+                    input: 'select',
+                    inputOptions: window.AppConfig?.returnReasons || {
+                        'defective': 'Defective / Damaged in Transit',
+                        'wrong_item': 'Wrong Item Sent',
+                        'not_needed': 'No Longer Needed / Refused',
+                        'undeliverable': 'Undeliverable / Failed Delivery',
+                        'other': 'Other Reason'
+                    },
+                    inputPlaceholder: 'Select a reason...',
+                    showCancelButton: true,
+                    confirmButtonText: 'Proceed with Return',
+                    confirmButtonColor: 'var(--bs-primary)',
+                    cancelButtonColor: 'var(--bs-danger)',
+                    inputValidator: (value) => {
+                        return new Promise((resolve) => {
+                            if (value) resolve();
+                            else resolve('You need to select a reason.');
+                        });
+                    }
+                });
+                if (!isConfirmed) return;
+                returnReason = reason;
+            } else {
+                const actionLabels = {
+                    mark_in_transit: 'mark in transit',
+                    mark_delivered: 'mark delivered'
+                };
+
+                const result = await Swal.fire({
+                    title: 'Confirm Bulk Action',
+                    text: `Are you sure you want to ${actionLabels[action]} for ${applicableIds.length} applicable shipment(s)?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: 'var(--bs-primary)',
+                    cancelButtonColor: 'var(--bs-danger)',
+                    confirmButtonText: 'Yes, proceed'
+                });
+
+                if (!result.isConfirmed) return;
+            }
 
             this.isLoading = true;
             try {
-                await this.apiRequest(`${this.apiBase}/bulk-action`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: action,
-                        ids: this.selectedItems
-                    })
-                });
+                if (action === 'mark_returned') {
+                    for (const shipment of applicableObjs) {
+                        const orderId = shipment.order?.id || shipment.order_id;
+                        if (shipment.order && shipment.order.items) {
+                            const itemsToReturn = shipment.order.items.map(item => ({
+                                product_id: item.product_id,
+                                requested_qty: item.quantity,
+                                max_qty: item.quantity
+                            }));
+                            
+                            await this.apiRequest(`/orders/${orderId}/returns`, {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                    reason: returnReason,
+                                    notes: 'Bulk return processed via Shipments dashboard.',
+                                    items: itemsToReturn
+                                })
+                            }).catch(e => console.error(e));
+                        }
+                    }
+                    
+                    await this.apiRequest(`${this.apiBase}/bulk-action`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: action,
+                            ids: applicableIds,
+                            skip_order_sync: true
+                        })
+                    });
+                } else {
+                    await this.apiRequest(`${this.apiBase}/bulk-action`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: action,
+                            ids: applicableIds
+                        })
+                    });
+                }
 
                 showToast(`Bulk action completed successfully.`, 'success');
                 this.selectedItems = [];
@@ -446,21 +537,74 @@ export default () => {
                 status: shipment.status,
                 location: '',
                 description: '',
-                delivery_attempts: (shipment.delivery_attempts || 0) + 1,
+                delivery_attempts: shipment.delivery_attempts || 0,
                 next_followup_date: defaultFollowUp,
                 reschedule_reason: shipment.reschedule_reason || '',
                 delivered_by: shipment.delivered_by || userName
             };
+            
+            this.onStatusChange();
+
             this.statusModal?.show();
+        },
+
+        onStatusChange() {
+            const newStatus = this.statusForm.status;
+            if (newStatus === 'delivered' || newStatus === 'returned') {
+                this.statusForm.next_followup_date = '';
+                this.statusForm.reschedule_reason = '';
+                if (this.selectedShipment) {
+                    this.statusForm.delivery_attempts = this.selectedShipment.delivery_attempts || 0;
+                }
+                
+                if (newStatus === 'returned' && this.selectedShipment && this.selectedShipment.order && this.selectedShipment.order.items) {
+                    this.returnForm.reason = '';
+                    this.returnItems = (this.selectedShipment.order.items || []).map(item => ({
+                        product_id: item.product_id,
+                        name: item.product?.name || item.name || 'Unknown Product',
+                        requested_qty: item.quantity,
+                        max_qty: item.quantity
+                    }));
+                }
+            } else if (newStatus === 'failed' || newStatus === 'in_transit' || newStatus === 'pending') {
+                if (this.selectedShipment) {
+                    this.statusForm.delivery_attempts = (this.selectedShipment.delivery_attempts || 0) + 1;
+                    if (!this.statusForm.next_followup_date) {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        this.statusForm.next_followup_date = tomorrow.toISOString().split('T')[0];
+                    }
+                }
+            }
         },
 
         async saveStatus() {
             if (!this.selectedShipment) return;
             this.saving = true;
             try {
+                if (this.statusForm.status === 'returned') {
+                    if (!this.returnForm.reason) {
+                        throw new Error('Please select a return reason.');
+                    }
+                    const itemsToReturn = this.returnItems.filter(i => i.requested_qty > 0);
+                    if (itemsToReturn.length === 0) {
+                        throw new Error('Please select at least one item to return with a quantity greater than 0.');
+                    }
+                    
+                    const orderId = this.selectedShipment.order?.id || this.selectedShipment.order_id;
+                    await this.apiRequest(`/orders/${orderId}/returns`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            reason: this.returnForm.reason,
+                            notes: this.statusForm.description,
+                            items: itemsToReturn
+                        })
+                    });
+                }
+
                 await this.apiRequest(`${this.apiBase}/${this.selectedShipment.id}/status`, {
                     method: 'POST',
-                    body: JSON.stringify(this.statusForm)
+                    body: JSON.stringify({ ...this.statusForm, skip_order_sync: true })
                 });
                 showToast('Shipment status updated successfully.', 'success');
                 this.statusModal?.hide();
@@ -522,22 +666,16 @@ export default () => {
             this.returnForm = { reason: '', notes: '' };
             this.returnItems = [];
 
-            try {
-                const orderId = shipment.order?.id || shipment.order_id;
-                const orderPayload = await this.apiRequest(`/orders/${orderId}`);
-                if (!orderPayload || !orderPayload.order) {
-                    throw new Error("Order details not found.");
-                }
-                const order = orderPayload.order;
-                this.returnItems = (order.items || []).map(item => ({
+            if (shipment.order && shipment.order.items) {
+                this.returnItems = (shipment.order.items || []).map(item => ({
                     product_id: item.product_id,
                     name: item.product?.name || item.name || 'Unknown Product',
                     requested_qty: item.quantity,
                     max_qty: item.quantity
                 }));
                 this.returnModal?.show();
-            } catch (error) {
-                showToast(error.message, 'error');
+            } else {
+                showToast('Order items not available for this shipment.', 'error');
             }
         },
 
@@ -557,30 +695,18 @@ export default () => {
 
             this.saving = true;
             try {
-                const orderId = this.selectedShipment.order?.id || this.selectedShipment.order_id;
-                const payload = {
-                    reason: this.returnForm.reason,
-                    notes: this.returnForm.notes,
-                    items: itemsToReturn
-                };
-
-                await this.apiRequest(`/orders/${orderId}/returns`, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-
-                showToast('Order return initiated successfully.', 'success');
-                this.returnModal?.hide();
-
+                const itemsToReturn = this.returnItems.filter(i => i.requested_qty > 0);
+                
                 this.statusForm = {
                     status: 'returned',
                     location: '',
-                    description: 'Order Returned: ' + this.returnForm.reason,
+                    description: `Order Returned: ${this.returnForm.reason}. ${this.returnForm.notes}`,
                     delivery_attempts: this.selectedShipment.delivery_attempts || 0,
                     next_followup_date: this.selectedShipment.next_followup_date || '',
                     delivered_by: this.selectedShipment.delivered_by || ''
                 };
                 await this.saveStatus();
+                this.returnModal?.hide();
 
             } catch (error) {
                 showToast(error.message, 'error');
@@ -590,25 +716,41 @@ export default () => {
         },
 
         exportData() {
-            // Simple export logic
             if (this.items.length === 0) {
                 showToast('No data to export.', 'warning');
                 return;
             }
 
-            const headers = ['ID', 'Shipment No', 'Order ID', 'Carrier', 'Tracking No', 'Status', 'Shipped At', 'Delivered At'];
+            const formatDate = (dateString) => {
+                if (!dateString) return '';
+                const d = new Date(dateString);
+                return isNaN(d.getTime()) ? dateString : `"${d.toLocaleString()}"`;
+            };
+
+            const headers = [
+                'ID', 'Shipment No', 'Order No', 'Carrier', 'Service Providers', 
+                'Tracking No', 'Status', 'Delivery Attempts', 'Next Follow-up Date', 
+                'Reschedule Reason', 'Delivered By', 'Shipped At', 'Delivered At', 'Created At'
+            ];
             const csvRows = [headers.join(',')];
 
             this.items.forEach(item => {
+                const providers = item.service?.providers?.map(p => p.name).join('; ') || '';
                 const values = [
                     item.id,
-                    item.shipment_no,
-                    item.order?.order_number || item.order_id,
+                    `"${item.shipment_no || ''}"`,
+                    `"${item.order?.order_no || item.order_id || ''}"`,
                     `"${(item.carrier_name || '').replace(/"/g, '""')}"`,
-                    item.tracking_no || '',
-                    item.status,
-                    item.shipped_at || '',
-                    item.delivered_at || ''
+                    `"${providers.replace(/"/g, '""')}"`,
+                    `"${(item.tracking_no || '').replace(/"/g, '""')}"`,
+                    `"${item.status.toUpperCase()}"`,
+                    item.delivery_attempts || 0,
+                    formatDate(item.next_followup_date),
+                    `"${(item.reschedule_reason || '').replace(/"/g, '""')}"`,
+                    `"${(item.delivered_by || '').replace(/"/g, '""')}"`,
+                    formatDate(item.shipped_at),
+                    formatDate(item.delivered_at),
+                    formatDate(item.created_at)
                 ];
                 csvRows.push(values.join(','));
             });
@@ -617,7 +759,7 @@ export default () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.setAttribute('href', url);
-            a.setAttribute('download', 'shipments_export.csv');
+            a.setAttribute('download', `shipments_export_${new Date().toISOString().split('T')[0]}.csv`);
             a.click();
             URL.revokeObjectURL(url);
         }

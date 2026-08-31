@@ -1466,8 +1466,10 @@ class PageController extends Controller
             ->unique()
             ->sort()
             ->values();
+            
+        $returnReasons = \App\Modules\Orders\Models\ReturnReason::where('is_active', true)->orderBy('id')->get();
 
-        return view('shipping.shipments', compact('carriersList'));
+        return view('shipping.shipments', compact('carriersList', 'returnReasons'));
     }
 
     public function shippingServices()
