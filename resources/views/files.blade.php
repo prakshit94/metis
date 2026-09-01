@@ -159,11 +159,11 @@
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div :class="file.type !== 'image' ? `file-icon ${file.type} text-center me-3 rounded text-white` : 'me-3'" :style="file.type !== 'image' ? 'width:36px; height:36px; display:flex; align-items:center; justify-content:center; overflow:hidden;' : ''">
-                                            <img x-show="file.type === 'image'" :src="file.url" alt="Preview" class="border" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px;" x-on:error="$el.style.display='none'">
+                                            <img x-show="file.type === 'image'" :src="file.url" alt="Preview" class="border" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px; cursor: pointer;" x-on:error="$el.style.display='none'" @click.stop="openFile(file)">
                                             <i x-show="file.type !== 'image'" :class="file.icon" class="fs-5"></i>
                                         </div>
                                         <div class="d-flex flex-column">
-                                            <span class="fw-medium small" x-text="file.name"></span>
+                                            <a href="#" class="fw-medium small text-decoration-none text-body-emphasis" @click.prevent.stop="openFile(file)" x-text="file.name"></a>
                                             <span x-show="file.isLoginBackground" class="badge bg-primary-subtle text-primary-emphasis mt-1 border border-primary-subtle" style="width:fit-content; font-size:0.65rem;">Login Background</span>
                                         </div>
                                     </div>
@@ -182,17 +182,18 @@
                                             <li><a class="dropdown-item" href="#" @click.prevent="downloadFile(file)">
                                                 <i class="bi bi-download me-2 text-primary"></i>Download
                                             </a></li>
-                                            <li><a class="dropdown-item" href="#" @click.prevent="shareFile(file)">
-                                                <i class="bi bi-share me-2 text-info"></i>Share
-                                            </a></li>
                                             <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setLoginBackground(file)">
                                                 <i class="bi bi-card-image me-2 text-success"></i>Set Login Background
                                             </a></li>
-                                            <li><a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
+                                            <li x-show="file.type === 'image'"><hr class="dropdown-divider"></li>
+                                            <li x-show="file.type === 'image'"><h6 class="dropdown-header">Set as Default</h6></li>
+                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a></li>
+                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a></li>
+                                            <li x-show="!file.isAsset"><hr class="dropdown-divider"></li>
+                                            <li x-show="!file.isAsset"><a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
                                                 <i class="bi bi-pencil me-2 text-warning"></i>Rename
                                             </a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
+                                            <li x-show="!file.isAsset"><a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
                                                 <i class="bi bi-trash me-2"></i>Delete
                                             </a></li>
                                         </ul>
@@ -217,10 +218,10 @@
                                         <input type="checkbox" class="form-check-input border-secondary" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)" @click.stop style="cursor:pointer;">
                                     </div>
                                     <div :class="file.type !== 'image' ? `file-icon ${file.type} text-white rounded d-inline-flex align-items-center justify-content-center mb-2` : 'mb-2'" :style="file.type !== 'image' ? 'width:48px; height:48px; overflow:hidden;' : ''">
-                                        <img x-show="file.type === 'image'" :src="file.url" alt="Preview" class="border" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;" x-on:error="$el.style.display='none'">
+                                        <img x-show="file.type === 'image'" :src="file.url" alt="Preview" class="border" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px; cursor: pointer;" x-on:error="$el.style.display='none'" @click.stop="openFile(file)">
                                         <i x-show="file.type !== 'image'" :class="file.icon" class="fs-3"></i>
                                     </div>
-                                    <h6 class="fw-semibold text-truncate small mb-1" x-text="file.name" :title="file.name"></h6>
+                                    <h6 class="fw-semibold text-truncate small mb-1"><a href="#" class="text-decoration-none text-body-emphasis" @click.prevent.stop="openFile(file)" x-text="file.name" :title="file.name"></a></h6>
                                     <p class="text-muted small mb-0" style="font-size:0.7rem;" x-text="`${file.size} • ${file.modifiedDate}`"></p>
                                     <span x-show="file.isLoginBackground" class="badge bg-primary-subtle text-primary-emphasis mt-2 border border-primary-subtle" style="font-size:0.6rem;">Login Background</span>
                                 </div>

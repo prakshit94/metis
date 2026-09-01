@@ -48,11 +48,12 @@ document.addEventListener('alpine:init', () => {
         const response = await fetch('/api/files');
         const files = await response.json();
         
-        this.allFiles = files.map(file => ({ ...file, folder: 'Uploads' }));
+        this.allFiles = files.map(file => ({ ...file, folder: file.isAsset ? 'Assets' : 'Uploads' }));
         this.currentFiles = [...this.allFiles];
         
         this.folders = [
-          { id: 1, name: 'Uploads', fileCount: this.allFiles.length, icon: 'bi-folder-fill' }
+          { id: 1, name: 'Uploads', fileCount: this.allFiles.filter(f => f.folder === 'Uploads').length, icon: 'bi-folder-fill' },
+          { id: 2, name: 'Assets', fileCount: this.allFiles.filter(f => f.folder === 'Assets').length, icon: 'bi-images' }
         ];
 
         this.recentFiles = [...this.allFiles].sort((a, b) => new Date(b.modifiedDate) - new Date(a.modifiedDate)).slice(0, 5);
@@ -267,36 +268,53 @@ document.addEventListener('alpine:init', () => {
     // File Actions
     openFile(file) {
       if (typeof Swal !== 'undefined') {
-        Swal.fire({
-          title: `Opening ${file.name}`,
-          html: `
-            <div class="text-start">
-              ${file.type === 'image' ? `<div class="mb-4 text-center"><img src="${file.url}" alt="Preview" class="img-fluid rounded shadow-sm border border-secondary border-opacity-25" style="max-height: 250px; object-fit: contain;"></div>` : ''}
-              <p><strong>📁 File:</strong> ${file.name}</p>
-              <p><strong>📏 Size:</strong> ${file.size}</p>
-              <p><strong>📅 Modified:</strong> ${file.modifiedDate}</p>
-              <p><strong>📂 Folder:</strong> ${file.folder}</p>
-              <p><strong>🏷️ Type:</strong> ${file.typeLabel}</p>
-            </div>
-          `,
-          icon: 'info',
-          showCancelButton: true,
-          confirmButtonText: 'Open',
-          cancelButtonText: 'Close',
-          customClass: {
-            confirmButton: 'btn btn-primary me-2',
-            cancelButton: 'btn btn-secondary',
-            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
-            title: 'text-body-emphasis fs-4 fw-bold mt-2',
-            htmlContainer: 'text-body'
-          },
-          buttonsStyling: false,
-          background: 'transparent'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            this.showNotification(`Opening ${file.name} in default application...`, 'success');
-          }
-        });
+        if (file.type === 'image') {
+          Swal.fire({
+            title: file.name,
+            imageUrl: file.url,
+            imageAlt: file.name,
+            width: 'auto',
+            padding: '1em',
+            showConfirmButton: false,
+            showCloseButton: true,
+            background: 'transparent',
+            customClass: {
+              popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+              image: 'img-fluid rounded',
+              title: 'text-body-emphasis fs-5 mb-2'
+            }
+          });
+        } else {
+          Swal.fire({
+            title: `Opening ${file.name}`,
+            html: `
+              <div class="text-start">
+                <p><strong>📁 File:</strong> ${file.name}</p>
+                <p><strong>📏 Size:</strong> ${file.size}</p>
+                <p><strong>📅 Modified:</strong> ${file.modifiedDate}</p>
+                <p><strong>📂 Folder:</strong> ${file.folder}</p>
+                <p><strong>🏷️ Type:</strong> ${file.typeLabel}</p>
+              </div>
+            `,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Open',
+            cancelButtonText: 'Close',
+            customClass: {
+              confirmButton: 'btn btn-primary me-2',
+              cancelButton: 'btn btn-secondary',
+              popup: 'bg-body text-body rounded-4 shadow-lg border-0',
+              title: 'text-body-emphasis fs-4 fw-bold mt-2',
+              htmlContainer: 'text-body'
+            },
+            buttonsStyling: false,
+            background: 'transparent'
+          }).then((result) => {
+            if (result.isConfirmed) {
+              this.showNotification(`Opening ${file.name} in default application...`, 'success');
+            }
+          });
+        }
       } else {
         this.showNotification(`Opening ${file.name}`, 'info');
       }
@@ -345,52 +363,12 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    shareFile(file) {
-      if (typeof Swal !== 'undefined') {
-        Swal.fire({
-          title: `Share ${file.name}`,
-          html: `
-            <div class="text-start">
-              <div class="mb-3">
-                <label class="form-label">Share with:</label>
-                <input type="email" class="form-control bg-body text-body border-secondary border-opacity-25" placeholder="Enter email address..." id="shareEmail">
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Permissions:</label>
-                <select class="form-select bg-body text-body border-secondary border-opacity-25" id="sharePermissions">
-                  <option value="view">View only</option>
-                  <option value="edit">Can edit</option>
-                  <option value="download">Can download</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Share link:</label>
-                <div class="input-group">
-                  <input type="text" class="form-control bg-body text-body border-secondary border-opacity-25" value="https://files.app/share/${file.id}" readonly>
-                  <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText('https://files.app/share/${file.id}')">Copy</button>
-                </div>
-              </div>
-            </div>
-          `,
-          showCancelButton: true,
-          confirmButtonText: 'Send Invite',
-          cancelButtonText: 'Close',
-          customClass: {
-            confirmButton: 'btn btn-primary me-2',
-            cancelButton: 'btn btn-secondary',
-            popup: 'bg-body text-body rounded-4 shadow-lg border-0',
-            title: 'text-body-emphasis fs-4 fw-bold mt-2',
-            htmlContainer: 'text-body'
-          },
-          buttonsStyling: false,
-          background: 'transparent'
-        });
-      } else {
-        this.showNotification('Share dialog would open here', 'info');
-      }
-    },
 
     renameFile(file) {
+      if (file.isAsset) {
+        this.showNotification('Cannot rename core asset files', 'warning');
+        return;
+      }
       if (typeof Swal !== 'undefined') {
         Swal.fire({
           title: 'Rename File',
@@ -492,6 +470,10 @@ document.addEventListener('alpine:init', () => {
     },
 
     deleteFile(file) {
+      if (file.isAsset) {
+        this.showNotification('Cannot delete core asset files', 'warning');
+        return;
+      }
       if (typeof Swal !== 'undefined') {
         Swal.fire({
           title: 'Delete File',
@@ -556,6 +538,30 @@ document.addEventListener('alpine:init', () => {
         } catch (error) {
             console.error('Failed to set login background', error);
             this.showNotification('Failed to update background', 'error');
+        }
+    },
+
+    async setDefaultImage(file, targetName) {
+        try {
+            const response = await fetch('/api/files/set-default-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                },
+                body: JSON.stringify({ file_id: file.id, target_name: targetName })
+            });
+            
+            if (response.ok) {
+                this.showNotification(`Default image ${targetName} updated`, 'success');
+                this.loadFiles();
+            } else {
+                const error = await response.json();
+                this.showNotification(error.error || 'Failed to update default image', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to update default image', error);
+            this.showNotification('Failed to update default image', 'error');
         }
     },
 

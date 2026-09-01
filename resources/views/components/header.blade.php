@@ -21,9 +21,6 @@
 
                 {{-- BRAND --}}
                 <a class="navbar-brand d-flex align-items-center gap-3 m-0 py-2" href="{{ route('dashboard') }}" aria-label="Ecommerce Admin — go to dashboard">
-                    <div class="brand-logo-container rounded-4 d-flex align-items-center justify-content-center flex-shrink-0 transition-all hover-rotate" style="width: 42px; height: 42px;">
-                        <img src="{{ asset('assets/images/logo.png') }}" alt="Logo" width="36" height="36" aria-hidden="true" class="shadow-sm rounded-circle">
-                    </div>
                     <div class="d-none d-xl-flex flex-column lh-1 text-truncate">
                         <span class="fw-black text-body-emphasis fs-5 tracking-tight mb-1" style="letter-spacing: -0.5px;">Ecommerce</span>
                         <span class="text-primary fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 2.5px;">Admin Portal</span>

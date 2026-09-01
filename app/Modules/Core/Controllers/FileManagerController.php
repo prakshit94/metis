@@ -56,7 +56,33 @@ class FileManagerController extends Controller
             });
         }
 
-        return response()->json($files->values());
+        // Add assets images
+        $assetImagesPath = public_path('assets/images');
+        $assetFiles = collect();
+        if (is_dir($assetImagesPath)) {
+            $iterator = new \DirectoryIterator($assetImagesPath);
+            foreach ($iterator as $fileinfo) {
+                if ($fileinfo->isFile() && in_array(strtolower($fileinfo->getExtension()), ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'])) {
+                    $url = asset('assets/images/' . $fileinfo->getFilename());
+                    $assetFiles->push([
+                        'id' => 'asset:' . $fileinfo->getFilename(),
+                        'name' => $fileinfo->getFilename(),
+                        'filename' => $fileinfo->getFilename(),
+                        'type' => 'image',
+                        'icon' => 'bi-file-earmark-image',
+                        'size' => $this->formatBytes($fileinfo->getSize()),
+                        'modifiedDate' => date('M d, Y h:i A', $fileinfo->getMTime()),
+                        'url' => $url,
+                        'typeLabel' => 'Image',
+                        'isAsset' => true,
+                    ]);
+                }
+            }
+        }
+        
+        $allFiles = $files->concat($assetFiles);
+
+        return response()->json($allFiles->values());
     }
 
     public function upload(Request $request)
@@ -192,6 +218,51 @@ class FileManagerController extends Controller
         );
 
         return response()->json(['message' => 'Login background updated successfully']);
+    }
+
+    public function setDefaultImage(Request $request)
+    {
+        $request->validate([
+            'file_id' => 'required',
+            'target_name' => 'required|string',
+        ]);
+
+        $fileId = $request->input('file_id');
+        $targetName = $request->input('target_name');
+
+        // Check if the source file is an asset or a SystemFile
+        $sourcePath = '';
+        if (str_starts_with($fileId, 'asset:')) {
+            $filename = str_replace('asset:', '', $fileId);
+            $sourcePath = public_path('assets/images/' . $filename);
+            if (!file_exists($sourcePath)) {
+                return response()->json(['error' => 'Source asset file not found'], 404);
+            }
+        } else {
+            $fileRecord = SystemFile::find($fileId);
+            if (!$fileRecord) {
+                return response()->json(['error' => 'Source file not found'], 404);
+            }
+            $sourcePath = storage_path('app/public/' . $fileRecord->path);
+            if (!file_exists($sourcePath)) {
+                return response()->json(['error' => 'Source physical file not found'], 404);
+            }
+        }
+
+        // Validate target name to prevent directory traversal
+        if (str_contains($targetName, '/') || str_contains($targetName, '\\')) {
+            return response()->json(['error' => 'Invalid target name'], 400);
+        }
+
+        $targetPath = public_path('assets/images/' . $targetName);
+
+        try {
+            copy($sourcePath, $targetPath);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to copy image: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json(['message' => 'Default image updated successfully']);
     }
 
     private function formatBytes($bytes, $precision = 2)

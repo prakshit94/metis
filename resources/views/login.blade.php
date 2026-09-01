@@ -28,9 +28,6 @@
         <div>
             {{-- ── Brand Logo Header ─────────────────────────────────────── --}}
             <div class="text-center mb-4 pb-2">
-                <div class="brand-logo-container rounded-4 d-inline-flex align-items-center justify-content-center transition-all hover-rotate mb-3" style="width: 72px; height: 72px;">
-                    <img src="{{ asset('assets/images/logo.png') }}" alt="Ecommerce Logo" class="w-100 h-100 object-fit-contain shadow-sm rounded-circle bg-body">
-                </div>
                 <h4 class="fw-black text-body-emphasis mb-1 tracking-tight">Welcome Back</h4>
                 <p class="text-secondary small fw-medium mb-0">Sign in to your Ecommerce Admin account</p>
             </div>
@@ -54,7 +51,7 @@
             @endif
 
             {{-- ── Login Form (posts to real Laravel route) ─────────────── --}}
-            <form method="POST" action="{{ route('login.submit') }}" id="loginForm" @submit="isSubmitting = true">
+            <form method="POST" action="{{ route('login.submit') }}" id="loginForm" @submit="isSubmitting = true" autocomplete="off">
                 @csrf
 
                 {{-- Email ------------------------------------------------- --}}
@@ -68,7 +65,7 @@
                                name="email"
                                value="{{ old('email', request()->cookie('remembered_email')) }}"
                                placeholder="name@company.com"
-                               autocomplete="email"
+                               autocomplete="off"
                                autofocus
                                required>
                     </div>
@@ -89,7 +86,7 @@
                                id="loginPassword"
                                name="password"
                                placeholder="••••••••"
-                               autocomplete="current-password"
+                               autocomplete="new-password"
                                required>
                         <button class="btn btn-link text-secondary text-decoration-none border-0 px-3 hover-text-primary"
                                 type="button"

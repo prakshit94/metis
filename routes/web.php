@@ -194,6 +194,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/rename', [FileManagerController::class, 'rename']);
         Route::post('/download-zip', [FileManagerController::class, 'downloadZip']);
         Route::post('/login-background', [FileManagerController::class, 'setLoginBackground']);
+        Route::post('/set-default-image', [FileManagerController::class, 'setDefaultImage']);
     });
     Route::get('/forms', [PageController::class, 'forms'])->name('forms');
     Route::get('/security', [PageController::class, 'security'])->name('security');
