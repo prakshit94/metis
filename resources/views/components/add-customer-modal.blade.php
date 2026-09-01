@@ -165,6 +165,123 @@
                                 </div>
                             </div>
                             
+                            {{-- Primary Address (Only for New Customers) --}}
+                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 15;" x-show="!isEdit" x-cloak>
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                        <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                            <i class="bi bi-geo fs-6"></i>
+                                        </div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Primary Address</h6>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 1</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-house"></i></span>
+                                                <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_1">
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 2</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-signpost"></i></span>
+                                                <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_2">
+                                            </div>
+                                        </div>
+                            
+                                        <div class="col-12 position-relative" @click.away="villageResults = []">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Village Search</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-search"></i></span>
+                                                <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" placeholder="Type 3 letters to search village..." 
+                                                       x-model="villageSearchQuery" @input.debounce.300ms="searchVillages()">
+                                            </div>
+                                            <div class="position-absolute w-100 bg-body border rounded shadow-lg mt-1 overflow-auto" style="max-height: 200px; z-index: 1060;" x-show="villageResults.length > 0">
+                                                <template x-for="v in villageResults" :key="v.id">
+                                                    <button type="button" class="dropdown-item w-100 text-start py-2 px-3 border-bottom custom-hover-bg" @click="selectVillage(v)">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <span class="fw-bold text-primary" style="font-size: 12px;" x-text="v.village_name"></span>
+                                                            <span class="badge bg-secondary-subtle text-secondary-emphasis" x-text="v.pincode"></span>
+                                                        </div>
+                                                        <div class="text-muted small" style="font-size: 0.75rem;">
+                                                            <span x-show="v.post_so_name" x-text="'PO: ' + v.post_so_name + ' · '"></span>
+                                                            <span x-show="v.taluka_name" x-text="'Taluka: ' + v.taluka_name + ' · '"></span>
+                                                            <span x-show="v.district_name" x-text="'District: ' + v.district_name"></span>
+                                                        </div>
+                                                    </button>
+                                                </template>
+                                            </div>
+                                        </div>
+                            
+                                        <!-- Selected Village Details -->
+                                        <template x-if="form.village_name">
+                                            <div class="col-12 mt-2">
+                                                <div class="card bg-body border-0 border-start border-4 border-primary shadow-sm">
+                                                    <div class="card-body p-2">
+                                                        <div class="row g-1">
+                                                            <div class="col-4">
+                                                                <div class="small fw-bold text-muted text-uppercase" style="font-size: 9px;">VILLAGE</div>
+                                                                <div class="fw-semibold text-truncate" style="font-size: 11px;" x-text="form.village_name || '—'"></div>
+                                                            </div>
+                                                            <div class="col-4">
+                                                                <div class="small fw-bold text-muted text-uppercase" style="font-size: 9px;">POST OFFICE</div>
+                                                                <div class="fw-semibold text-truncate" style="font-size: 11px;" x-text="form.post_office || '—'"></div>
+                                                            </div>
+                                                            <div class="col-4">
+                                                                <div class="small fw-bold text-muted text-uppercase" style="font-size: 9px;">TALUKA</div>
+                                                                <div class="fw-semibold text-truncate" style="font-size: 11px;" x-text="form.taluka || '—'"></div>
+                                                            </div>
+                                                            <div class="col-4 mt-2">
+                                                                <div class="small fw-bold text-muted text-uppercase" style="font-size: 9px;">DISTRICT</div>
+                                                                <div class="fw-semibold text-truncate" style="font-size: 11px;" x-text="form.district || '—'"></div>
+                                                            </div>
+                                                            <div class="col-4 mt-2">
+                                                                <div class="small fw-bold text-muted text-uppercase" style="font-size: 9px;">STATE</div>
+                                                                <div class="fw-semibold text-truncate" style="font-size: 11px;" x-text="form.state || '—'"></div>
+                                                            </div>
+                                                            <div class="col-4 mt-2">
+                                                                <div class="small fw-bold text-muted text-uppercase" style="font-size: 9px;">PINCODE</div>
+                                                                <div class="fw-bold text-primary" style="font-size: 11px;" x-text="form.pincode || '—'"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mt-2 pt-2 border-top">
+                                                            <div class="small text-body-secondary fw-semibold text-uppercase mb-1" style="font-size: 10px; letter-spacing: .5px;">Available services</div>
+                                                            <div class="d-flex flex-wrap gap-1" x-show="selectedVillageServices && selectedVillageServices.length > 0">
+                                                                <template x-for="(service, index) in selectedVillageServices" :key="service.id">
+                                                                    <span class="badge text-bg-success" x-text="`${Number(service.pivot?.priority) > 0 ? Number(service.pivot.priority) : index + 1}. ${service.name}`"></span>
+                                                                </template>
+                                                            </div>
+                                                            <span class="small text-body-secondary" x-show="!selectedVillageServices || selectedVillageServices.length === 0">No service available for this address</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                            
+                                        <!-- Manual Input Fields (no village selected) -->
+                                        <template x-if="!form.village_name && form.address_line_1">
+                                            <div class="col-12 mt-2">
+                                                <div class="row g-2">
+                                                    <div class="col-md-4">
+                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">City *</label>
+                                                        <input type="text" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.city" :required="!isEdit && !form.village_name && form.address_line_1.length > 0">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">State *</label>
+                                                        <input type="text" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.state" :required="!isEdit && !form.village_name && form.address_line_1.length > 0">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Pincode *</label>
+                                                        <input type="text" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.pincode" :required="!isEdit && !form.village_name && form.address_line_1.length > 0">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             {{-- Internal Notes --}}
                             <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-3 mb-lg-0" style="z-index: 10;">
                                 <div class="card-body p-3">
@@ -384,10 +501,14 @@ document.addEventListener('alpine:init', () => {
         isValidatingReferral: false,
         referralValid: false,
         referralName: '',
+        villageSearchQuery: '',
+        villageResults: [],
+        selectedVillageServices: [],
         form: {
             firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
             category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
-            land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: '', referred_by_code: ''
+            land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: '', referred_by_code: '',
+            address_line_1: '', address_line_2: '', village_id: '', village_name: '', post_office: '', taluka: '', district: '', city: '', state: '', pincode: ''
         },
         avatarPreview: '{{ asset('assets/images/farmersprofileimage.png') }}',
 
@@ -458,10 +579,14 @@ document.addEventListener('alpine:init', () => {
         },
 
         resetForm() {
+            this.villageSearchQuery = '';
+            this.villageResults = [];
+            this.selectedVillageServices = [];
             this.form = {
                 firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
                 category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
-                land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: '', referred_by_code: ''
+                land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: '', referred_by_code: '',
+                address_line_1: '', address_line_2: '', village_id: '', village_name: '', post_office: '', taluka: '', district: '', city: '', state: '', pincode: ''
             };
             this.selectedSources = [];
             this.selectedIrrigation = [];
@@ -556,8 +681,47 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
                 
-                // Success
+                // Orchestrate Address Creation (Only for New Customers if address provided)
+                if (!this.isEdit && (this.form.address_line_1 || this.form.village_id || this.form.city)) {
+                    try {
+                        const addrFormData = new FormData();
+                        addrFormData.append('label', 'Home');
+                        addrFormData.append('is_default', '1');
+                        addrFormData.append('status', 'active');
+                        addrFormData.append('address_line_1', this.form.address_line_1);
+                        if (this.form.address_line_2) addrFormData.append('address_line_2', this.form.address_line_2);
+                        if (this.form.village_id) addrFormData.append('village_id', this.form.village_id);
+                        if (this.form.city) addrFormData.append('city', this.form.city);
+                        if (this.form.state) addrFormData.append('state', this.form.state);
+                        if (this.form.pincode) addrFormData.append('pincode', this.form.pincode);
+
+                        const addrResponse = await fetch(`/api/customers/${data.data.id}/addresses`, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: addrFormData
+                        });
+                        
+                        if (!addrResponse.ok) {
+                            const errData = await addrResponse.json();
+                            console.error('Failed to create address:', errData);
+                            
+                            // Customer was created, but address failed.
+                            // We shouldn't stop the redirect completely, but we should alert the user.
+                            alert('Customer profile was created, but the address failed to save. Please add it manually from the customer management screen.');
+                        }
+                    } catch (addrErr) {
+                        console.error('Failed to create address:', addrErr);
+                        alert('Customer profile was created, but a network error prevented the address from saving.');
+                    }
+                }
+                
                 this.isSubmitting = false;
+
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addCustomerModal'));
                 if (modal) modal.hide();
                 
@@ -581,6 +745,48 @@ document.addEventListener('alpine:init', () => {
                 this.formError = 'Network error occurred. Please try again.';
                 this.isSubmitting = false;
             }
+        },
+
+        async searchVillages() {
+            if (!this.villageSearchQuery || this.villageSearchQuery.length < 3) {
+                this.villageResults = [];
+                return;
+            }
+            try {
+                const res = await fetch(`/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                this.villageResults = data.data || [];
+            } catch (e) {
+                console.error('Village search failed:', e);
+            }
+        },
+
+        selectVillage(v) {
+            this.form.village_id = v.id;
+            this.form.village_name = v.village_name || v.name || '';
+            this.form.post_office = v.post_so_name || v.post_office || '';
+            this.form.taluka = v.taluka_name || v.taluka || '';
+            this.form.district = v.district_name || v.district || '';
+            this.form.city = v.district_name || v.district || v.city || '';
+            this.form.state = v.state_name || v.state || '';
+            this.form.pincode = v.pincode || '';
+            
+            this.selectedVillageServices = (v.services || []).filter(service => {
+                const today = new Date().toISOString().slice(0, 10);
+                const pivot = service.pivot || {};
+                const hasStarted = !pivot.serviceable_from_date || pivot.serviceable_from_date <= today;
+                const hasNotEnded = !pivot.serviceable_to_date || pivot.serviceable_to_date >= today;
+                return hasStarted && hasNotEnded;
+            }).sort((a, b) => {
+                const priorityA = Number(a.pivot?.priority ?? 0);
+                const priorityB = Number(b.pivot?.priority ?? 0);
+                return priorityA - priorityB || String(a.name).localeCompare(String(b.name));
+            });
+            
+            this.villageSearchQuery = '';
+            this.villageResults = [];
         }
     }));
 });

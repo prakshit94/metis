@@ -35,6 +35,7 @@ class Stock extends Model implements Auditable
         'allow_overselling',
         'overselling_qty',
         'status',
+        'is_sku_enabled',
         'deleted_at',
     ];
 
@@ -47,6 +48,7 @@ class Stock extends Model implements Auditable
         'damaged_qty' => 'float',
         'allow_overselling' => 'boolean',
         'overselling_qty' => 'integer',
+        'is_sku_enabled' => 'boolean',
     ];
 
     // ─── Computed Attributes ───────────────────────────────────────────────

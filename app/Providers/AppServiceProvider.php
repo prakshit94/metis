@@ -36,7 +36,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Model::shouldBeStrict(! app()->isProduction());
+        // Enable strict modes but handle lazy loading gracefully to prevent app crashes
+        Model::preventSilentlyDiscardingAttributes(! app()->isProduction());
+        Model::preventAccessingMissingAttributes(! app()->isProduction());
+        
+        Model::preventLazyLoading(! app()->isProduction());
+        Model::handleLazyLoadingViolationUsing(function ($model, $relation) {
+            \Illuminate\Support\Facades\Log::warning(sprintf(
+                'N+1 Query Detected: Attempted to lazy load [%s] on model [%s].',
+                $relation, get_class($model)
+            ));
+        });
 
         $this->configureSanctum();
 
@@ -77,10 +87,15 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('components.add-customer-modal', function ($view) {
-            $dynamicCrops = Crop::where('is_active', true)->pluck('name');
-            $dynamicLeadSources = LeadSource::where('is_active', true)->pluck('name');
-            $dynamicIrrigationTypes = IrrigationType::where('is_active', true)->pluck('name');
-            $dynamicLandUnits = LandUnit::where('is_active', true)->pluck('name');
+            static $dynamicCrops = null;
+            static $dynamicLeadSources = null;
+            static $dynamicIrrigationTypes = null;
+            static $dynamicLandUnits = null;
+
+            $dynamicCrops ??= Crop::where('is_active', true)->pluck('name');
+            $dynamicLeadSources ??= LeadSource::where('is_active', true)->pluck('name');
+            $dynamicIrrigationTypes ??= IrrigationType::where('is_active', true)->pluck('name');
+            $dynamicLandUnits ??= LandUnit::where('is_active', true)->pluck('name');
 
             $view->with(compact('dynamicCrops', 'dynamicLeadSources', 'dynamicIrrigationTypes', 'dynamicLandUnits'));
         });

@@ -47,10 +47,10 @@
                                 </div>
 
                                 <div class="col-sm-6">
-                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 1 *</label>
+                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 1</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-house"></i></span>
-                                        <input type="text" name="address_line_1" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_1" required>
+                                        <input type="text" name="address_line_1" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_1">
                                     </div>
                                 </div>
                                 <div class="col-sm-6">
@@ -133,20 +133,20 @@
                                 </template>
 
                                 <!-- Manual Input Fields (no village selected) -->
-                                <template x-if="!form.village_name">
+                                <template x-if="!form.village_name && form.address_line_1">
                                     <div class="col-12 mt-2">
                                         <div class="row g-2">
                                             <div class="col-md-4">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">City *</label>
-                                                <input type="text" name="city" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.city" required>
+                                                <input type="text" name="city" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.city" :required="!form.village_name && form.address_line_1.length > 0">
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">State *</label>
-                                                <input type="text" name="state" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.state" required>
+                                                <input type="text" name="state" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.state" :required="!form.village_name && form.address_line_1.length > 0">
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Pincode *</label>
-                                                <input type="text" name="pincode" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.pincode" required>
+                                                <input type="text" name="pincode" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.pincode" :required="!form.village_name && form.address_line_1.length > 0">
                                             </div>
                                         </div>
                                     </div>
@@ -292,8 +292,10 @@ document.addEventListener('alpine:init', () => {
             try {
                 const response = await fetch(url, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
                         'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: formData

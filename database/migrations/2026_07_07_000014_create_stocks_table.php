@@ -21,6 +21,7 @@ return new class extends Migration
             $table->boolean('allow_overselling')->nullable();
             $table->integer('overselling_qty')->nullable();
             $table->string('status')->default('active')->index();
+            $table->boolean('is_sku_enabled')->nullable();
             $table->timestamps();
             $table->softDeletes()->index();
 

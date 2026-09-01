@@ -314,6 +314,28 @@ document.addEventListener('alpine:init', () => {
       this.products = [];
     },
 
+    isOversellingAllowed(product) {
+      if (!product) return false;
+      if (this.warehouseFilter) {
+          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
+          if (ws && ws.allow_overselling !== null) {
+              return ws.allow_overselling;
+          }
+      }
+      return Boolean(product.allow_overselling);
+    },
+
+    getOversellingLimit(product) {
+      if (!product) return 0;
+      if (this.warehouseFilter) {
+          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
+          if (ws && ws.allow_overselling !== null) {
+              return ws.overselling_qty !== null ? (parseInt(ws.overselling_qty) || 999) : (parseInt(product.overselling_qty) || 999);
+          }
+      }
+      return parseInt(product.overselling_qty) || 999;
+    },
+
     getRemainingOversell(product) {
       if (!product) return 0;
       
@@ -388,6 +410,18 @@ document.addEventListener('alpine:init', () => {
           return ws ? (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0) : 0;
       }
       return (product.stock_qty || 0) - (product.reserved_qty || 0) - (product.pending_qty || 0);
+    },
+
+    isSkuEnabled(product) {
+      if (!product) return false;
+      
+      if (this.warehouseFilter) {
+          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
+          if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
+              return ws.is_sku_enabled;
+          }
+      }
+      return Boolean(product.is_sku_enabled);
     },
 
     calculateStats() {
@@ -610,9 +644,15 @@ document.addEventListener('alpine:init', () => {
               mapped.warehouse_allow_overselling = null;
               mapped.warehouse_overselling_qty = null;
           }
+          if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
+              mapped.warehouse_is_sku_enabled = ws.is_sku_enabled;
+          } else {
+              mapped.warehouse_is_sku_enabled = null;
+          }
       } else {
           mapped.warehouse_allow_overselling = null;
           mapped.warehouse_overselling_qty = null;
+          mapped.warehouse_is_sku_enabled = null;
       }
       
       return mapped;
@@ -655,6 +695,11 @@ document.addEventListener('alpine:init', () => {
           } else {
               mapped.warehouse_allow_overselling = null;
               mapped.warehouse_overselling_qty = null;
+          }
+          if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
+              mapped.warehouse_is_sku_enabled = ws.is_sku_enabled;
+          } else {
+              mapped.warehouse_is_sku_enabled = null;
           }
       }
       
@@ -1108,6 +1153,7 @@ document.addEventListener('alpine:init', () => {
         attributes: [],
         warehouse_allow_overselling: null,
         warehouse_overselling_qty: null,
+        warehouse_is_sku_enabled: null,
       };
 
       const table = Alpine.store('productTable');
@@ -1120,12 +1166,16 @@ document.addEventListener('alpine:init', () => {
       this.$watch('form.default_warehouse_id', (newVal) => {
          this.form.warehouse_allow_overselling = null;
          this.form.warehouse_overselling_qty = null;
+         this.form.warehouse_is_sku_enabled = null;
          if (this.editingProductId && this.originalProduct) {
              const ws = this.originalProduct.warehouse_stocks?.find(s => String(s.warehouse_id) === String(newVal));
              this.form.stock = String(ws ? (ws.quantity || 0) : 0);
              if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
                  this.form.warehouse_allow_overselling = ws.allow_overselling;
                  this.form.warehouse_overselling_qty = ws.overselling_qty;
+             }
+             if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
+                 this.form.warehouse_is_sku_enabled = ws.is_sku_enabled;
              }
          }
       });
@@ -1209,6 +1259,9 @@ document.addEventListener('alpine:init', () => {
       if (this.form.warehouse_allow_overselling !== null && this.form.warehouse_allow_overselling !== undefined) {
           formData.append('warehouse_allow_overselling', this.form.warehouse_allow_overselling ? '1' : '0');
           formData.append('warehouse_overselling_qty', String(Number(this.form.warehouse_overselling_qty || 0)));
+      }
+      if (this.form.warehouse_is_sku_enabled !== null && this.form.warehouse_is_sku_enabled !== undefined) {
+          formData.append('warehouse_is_sku_enabled', this.form.warehouse_is_sku_enabled ? '1' : '0');
       }
       if (this.form.application_instructions) {
         formData.append('application_instructions', String(this.form.application_instructions).trim());

@@ -300,7 +300,7 @@
                                                 <th>Product Details</th>
                                                 <th @click="sortBy('price')" class="sortable">Pricing & Inventory</th>
                                                 <th>Status & Tracking</th>
-                                                <th style="width: 80px;" class="text-end pe-4" x-show="warehouseFilter !== ''">Actions</th>
+                                                <th style="width: 80px;" class="text-end pe-4">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -371,7 +371,7 @@
                                                                 </div>
                                                                 <div class="d-flex justify-content-between align-items-center" style="font-size: 10px;">
                                                                     <span class="text-muted">Physical: <span class="fw-bold text-body-emphasis" x-text="getPhysicalStock(product)"></span></span>
-                                                                    <span x-show="product.allow_overselling && getRemainingOversell(product) > 0" class="text-warning fw-bold" title="Overselling Allowed" x-text="'+' + getRemainingOversell(product) + ' (OS)'"></span>
+                                                                    <span x-show="isOversellingAllowed(product) && getRemainingOversell(product) > 0" class="text-warning fw-bold" title="Overselling Allowed" x-text="'+' + getRemainingOversell(product) + ' (OS)'"></span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -389,16 +389,16 @@
                                                                 <small class="text-muted" style="font-size: 10px;"><i class="bi bi-clock me-1"></i><span x-text="product.created"></span></small>
                                                             </div>
                                                             <div class="d-flex flex-wrap gap-1" style="max-width: 180px;">
-                                                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style="font-size:9px;" x-show="product.is_sku_enabled" title="SKU Enabled"><i class="bi bi-upc-scan me-1"></i>SKU On</span>
-                                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="!product.is_sku_enabled" title="SKU Disabled"><i class="bi bi-upc-scan me-1"></i>SKU Off</span>
+                                                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style="font-size:9px;" x-show="isSkuEnabled(product)" title="SKU Enabled"><i class="bi bi-upc-scan me-1"></i>SKU On</span>
+                                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="!isSkuEnabled(product)" title="SKU Disabled"><i class="bi bi-upc-scan me-1"></i>SKU Off</span>
                                                                 <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="product.batch_tracking" title="Batch Tracking"><i class="bi bi-layers me-1"></i>Batch</span>
                                                                 <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size:9px;" x-show="product.expiry_tracking" title="Expiry Tracking"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
-                                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:9px;" x-show="product.allow_overselling" title="Allow Overselling"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span>
-                                                                <span class="text-muted small" style="font-size:10px;" x-show="!product.is_sku_enabled && !product.batch_tracking && !product.expiry_tracking && !product.allow_overselling">-</span>
+                                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:9px;" x-show="isOversellingAllowed(product)" title="Allow Overselling"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span>
+                                                                <span class="text-muted small" style="font-size:10px;" x-show="!isSkuEnabled(product) && !product.batch_tracking && !product.expiry_tracking && !isOversellingAllowed(product)">-</span>
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td class="text-end pe-4" x-show="warehouseFilter !== ''">
+                                                    <td class="text-end pe-4">
                                                         <div class="dropdown">
                                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
                                                                     type="button" 
@@ -407,7 +407,7 @@
                                                             </button>
                                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="z-index: 1050;">
                                                                 @can('product-edit')
-                                                                <li x-show="warehouseFilter !== ''"><a class="dropdown-item" href="#" @click.prevent="editProduct(product)">
+                                                                <li><a class="dropdown-item" href="#" @click.prevent="editProduct(product)">
                                                                     <i class="bi bi-pencil me-2"></i>Edit
                                                                 </a></li>
                                                                 @endcan
@@ -745,10 +745,10 @@
                                                         <div class="fw-normal text-muted mt-1" style="font-size: 0.8rem;">Set specific rules for the selected warehouse.</div>
                                                     </div>
                                                     <input class="form-check-input m-0" type="checkbox" role="switch" id="warehouseOversellToggle"
-                                                           :checked="form.warehouse_allow_overselling !== null"
-                                                           @change="form.warehouse_allow_overselling = $event.target.checked ? false : null; form.warehouse_overselling_qty = $event.target.checked ? 0 : null">
+                                                           :checked="form.warehouse_allow_overselling !== null || form.warehouse_is_sku_enabled !== null"
+                                                           @change="form.warehouse_allow_overselling = $event.target.checked ? false : null; form.warehouse_overselling_qty = $event.target.checked ? 0 : null; form.warehouse_is_sku_enabled = $event.target.checked ? form.is_sku_enabled : null;">
                                                 </div>
-                                                <div x-show="form.warehouse_allow_overselling !== null" x-transition class="pt-3 border-top border-warning border-opacity-25 mt-3 row g-3">
+                                                <div x-show="form.warehouse_allow_overselling !== null || form.warehouse_is_sku_enabled !== null" x-transition class="pt-3 border-top border-warning border-opacity-25 mt-3 row g-3">
                                                     <div class="col-md-6">
                                                         <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between h-100">
                                                             <label class="form-check-label fw-medium" for="whAllowOversellToggle">Allow Overselling Here</label>
@@ -758,6 +758,12 @@
                                                     <div class="col-md-6" x-show="form.warehouse_allow_overselling" x-transition>
                                                         <label class="form-label fw-medium text-muted small">Warehouse Limit Qty</label>
                                                         <input type="number" class="form-control" x-model="form.warehouse_overselling_qty" min="0" placeholder="0">
+                                                    </div>
+                                                    <div class="col-12 mt-3 pt-3 border-top border-warning border-opacity-25" x-show="form.warehouse_allow_overselling !== null || form.warehouse_is_sku_enabled !== null" x-transition>
+                                                        <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between h-100">
+                                                            <label class="form-check-label fw-medium" for="whSkuToggle">Enable SKU Here</label>
+                                                            <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.warehouse_is_sku_enabled" id="whSkuToggle">
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1147,8 +1153,8 @@
                                                     <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-box-seam me-1"></i>Manage Stock</span><span class="badge" style="font-size:9px;" :class="product && product.manage_stock ? 'bg-success' : 'bg-secondary'" x-text="product && product.manage_stock ? 'YES' : 'NO'"></span></div>
                                                     <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-layers me-1"></i>Batch Tracking</span><span class="badge" style="font-size:9px;" :class="product && product.batch_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.batch_tracking ? 'ON' : 'OFF'"></span></div>
                                                     <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-calendar-x me-1"></i>Expiry Tracking</span><span class="badge" style="font-size:9px;" :class="product && product.expiry_tracking ? 'bg-success' : 'bg-secondary'" x-text="product && product.expiry_tracking ? 'ON' : 'OFF'"></span></div>
-                                                    <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-arrow-down-up me-1"></i>Overselling</span><span class="badge" style="font-size:9px;" :class="product && product.allow_overselling ? 'bg-success' : 'bg-secondary'" x-text="product && product.allow_overselling ? 'ON' + (product && product.overselling_qty > 0 ? ' (Limit ' + product.overselling_qty + ')' : '') : 'OFF'"></span></div>
-                                                    <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-upc-scan me-1"></i>SKU Enabled</span><span class="badge" style="font-size:9px;" :class="product && product.is_sku_enabled ? 'bg-success' : 'bg-secondary'" x-text="product && product.is_sku_enabled ? 'YES' : 'NO'"></span></div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-arrow-down-up me-1"></i>Overselling</span><span class="badge" style="font-size:9px;" :class="product && Alpine.store('productTable').isOversellingAllowed(product) ? 'bg-success' : 'bg-secondary'" x-text="product && Alpine.store('productTable').isOversellingAllowed(product) ? 'ON' + (product && Alpine.store('productTable').getOversellingLimit(product) > 0 ? ' (Limit ' + Alpine.store('productTable').getOversellingLimit(product) + ')' : '') : 'OFF'"></span></div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1 bg-transparent"><span class="text-muted" style="font-size:10px;"><i class="bi bi-upc-scan me-1"></i>SKU Enabled</span><span class="badge" style="font-size:9px;" :class="product && Alpine.store('productTable').isSkuEnabled(product) ? 'bg-success' : 'bg-secondary'" x-text="product && Alpine.store('productTable').isSkuEnabled(product) ? 'YES' : 'NO'"></span></div>
                                                 </div>
                                             </div>
                                         </div>

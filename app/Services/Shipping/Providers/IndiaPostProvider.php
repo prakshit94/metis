@@ -18,7 +18,8 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     public function __construct()
     {
-        $settings = SystemSetting::where('key', 'like', 'india_post_%')->pluck('value', 'key');
+        static $settings = null;
+        $settings ??= SystemSetting::where('key', 'like', 'india_post_%')->pluck('value', 'key');
 
         $this->baseUrl = $settings['india_post_base_url'] ?? config('shipping.providers.india_post.base_url');
         $this->username = $settings['india_post_username'] ?? config('shipping.providers.india_post.username');

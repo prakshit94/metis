@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('party_id')->constrained('parties')->cascadeOnDelete();
             $table->string('label')->default('Primary');
-            $table->string('address_line_1');
+            $table->string('address_line_1')->nullable();
             $table->string('address_line_2')->nullable();
             $table->foreignId('village_id')->nullable()->constrained('villages')->nullOnDelete();
             $table->string('village_name')->nullable();

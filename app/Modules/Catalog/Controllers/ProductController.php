@@ -81,6 +81,9 @@ class ProductController extends Controller
         if ($request->has('warehouse_overselling_qty')) {
             $extraData['overselling_qty'] = $request->input('warehouse_overselling_qty');
         }
+        if ($request->has('warehouse_is_sku_enabled')) {
+            $extraData['is_sku_enabled'] = $request->input('warehouse_is_sku_enabled');
+        }
 
         $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0), 'overwrite', $extraData);
 
@@ -107,13 +110,16 @@ class ProductController extends Controller
         }
 
         // Only sync stock if stock value was explicitly submitted
-        if (array_key_exists('stock', $data) || array_key_exists('stock_quantity', $data) || $request->has('warehouse_allow_overselling') || $request->has('warehouse_overselling_qty')) {
+        if (array_key_exists('stock', $data) || array_key_exists('stock_quantity', $data) || $request->has('warehouse_allow_overselling') || $request->has('warehouse_overselling_qty') || $request->has('warehouse_is_sku_enabled')) {
             $extraData = [];
             if ($request->has('warehouse_allow_overselling')) {
                 $extraData['allow_overselling'] = $request->input('warehouse_allow_overselling');
             }
             if ($request->has('warehouse_overselling_qty')) {
                 $extraData['overselling_qty'] = $request->input('warehouse_overselling_qty');
+            }
+            if ($request->has('warehouse_is_sku_enabled')) {
+                $extraData['is_sku_enabled'] = $request->input('warehouse_is_sku_enabled');
             }
             $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0), 'overwrite', $extraData);
         }
@@ -709,6 +715,7 @@ class ProductController extends Controller
                 'available' => $s->quantity - $s->reserved_qty - (float) ($s->pending_qty ?? 0),
                 'allow_overselling' => $s->allow_overselling !== null ? (bool) $s->allow_overselling : null,
                 'overselling_qty' => $s->overselling_qty !== null ? (int) $s->overselling_qty : null,
+                'is_sku_enabled' => $s->is_sku_enabled !== null ? (bool) $s->is_sku_enabled : null,
             ])->values()->toArray() : [],
             'name' => $product->name,
             'sku' => $product->sku,
@@ -890,6 +897,9 @@ class ProductController extends Controller
         }
         if (array_key_exists('overselling_qty', $extraData)) {
             $stock->overselling_qty = $extraData['overselling_qty'] !== null ? (int) $extraData['overselling_qty'] : null;
+        }
+        if (array_key_exists('is_sku_enabled', $extraData)) {
+            $stock->is_sku_enabled = $extraData['is_sku_enabled'] !== null ? filter_var($extraData['is_sku_enabled'], FILTER_VALIDATE_BOOL) : null;
         }
 
         $stock->reserved_qty = $stock->reserved_qty ?? 0;

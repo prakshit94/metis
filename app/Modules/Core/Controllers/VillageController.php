@@ -345,6 +345,10 @@ class VillageController extends Controller implements HasMiddleware
 
         $term = (string) $request->input('q');
         $villages = Village::search($term)
+            ->with(['services' => function ($q) {
+                $q->where('is_active', true)
+                  ->where('village_service_mappings.is_available', true);
+            }])
             ->limit(30)
             ->get();
 

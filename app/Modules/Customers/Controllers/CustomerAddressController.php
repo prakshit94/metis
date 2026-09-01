@@ -29,7 +29,7 @@ class CustomerAddressController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'label' => ['required', 'string', 'max:255'],
             'status' => ['nullable', 'string', 'in:active,inactive'],
-            'address_line_1' => ['required', 'string', 'max:255'],
+            'address_line_1' => ['nullable', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
             'village_id' => ['nullable', 'exists:villages,id'],
             'city' => ['nullable', 'string', 'max:255'],
@@ -84,7 +84,7 @@ class CustomerAddressController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'label' => ['required', 'string', 'max:255'],
             'status' => ['nullable', 'string', 'in:active,inactive'],
-            'address_line_1' => ['required', 'string', 'max:255'],
+            'address_line_1' => ['nullable', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
             'village_id' => ['nullable', 'exists:villages,id'],
             'city' => ['nullable', 'string', 'max:255'],
