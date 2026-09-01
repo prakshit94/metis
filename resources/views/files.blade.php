@@ -164,7 +164,11 @@
                                         </div>
                                         <div class="d-flex flex-column">
                                             <a href="#" class="fw-medium small text-decoration-none text-body-emphasis" @click.prevent.stop="openFile(file)" x-text="file.name"></a>
-                                            <span x-show="file.isLoginBackground" class="badge bg-primary-subtle text-primary-emphasis mt-1 border border-primary-subtle" style="width:fit-content; font-size:0.65rem;">Login Background</span>
+                                            <div class="d-flex flex-wrap mt-1">
+                                                <template x-for="role in (file.defaultRoles || [])">
+                                                    <span class="badge bg-primary-subtle text-primary-emphasis me-1 border border-primary-subtle" style="width:fit-content; font-size:0.65rem;" x-text="role"></span>
+                                                </template>
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -187,6 +191,7 @@
                                             </a></li>
                                             <li x-show="file.type === 'image'"><hr class="dropdown-divider"></li>
                                             <li x-show="file.type === 'image'"><h6 class="dropdown-header">Set as Default</h6></li>
+                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.png')"><i class="bi bi-star me-2 text-primary"></i>App Logo (PNG)</a></li>
                                             <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a></li>
                                             <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a></li>
                                             <li x-show="!file.isAsset"><hr class="dropdown-divider"></li>
@@ -223,7 +228,11 @@
                                     </div>
                                     <h6 class="fw-semibold text-truncate small mb-1"><a href="#" class="text-decoration-none text-body-emphasis" @click.prevent.stop="openFile(file)" x-text="file.name" :title="file.name"></a></h6>
                                     <p class="text-muted small mb-0" style="font-size:0.7rem;" x-text="`${file.size} • ${file.modifiedDate}`"></p>
-                                    <span x-show="file.isLoginBackground" class="badge bg-primary-subtle text-primary-emphasis mt-2 border border-primary-subtle" style="font-size:0.6rem;">Login Background</span>
+                                    <div class="d-flex flex-wrap justify-content-center mt-2">
+                                        <template x-for="role in (file.defaultRoles || [])">
+                                            <span class="badge bg-primary-subtle text-primary-emphasis m-1 border border-primary-subtle" style="font-size:0.6rem;" x-text="role"></span>
+                                        </template>
+                                    </div>
                                 </div>
                             </div>
                         </div>

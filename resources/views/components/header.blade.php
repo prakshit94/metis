@@ -1,4 +1,8 @@
 <!-- Header -->
+@php
+    $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
+    $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
+@endphp
 <header class="admin-header border-bottom shadow-sm sticky-top" role="banner" style="z-index: 1040; min-height: 70px; background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
     <nav class="navbar navbar-expand h-100 py-0" aria-label="Main navigation">
         <div class="container-fluid align-items-center h-100 px-3 px-md-4 d-flex justify-content-between">
@@ -21,6 +25,9 @@
 
                 {{-- BRAND --}}
                 <a class="navbar-brand d-flex align-items-center gap-3 m-0 py-2" href="{{ route('dashboard') }}" aria-label="Ecommerce Admin — go to dashboard">
+                    <div class="brand-logo-container rounded-4 d-flex align-items-center justify-content-center flex-shrink-0 transition-all hover-rotate" style="width: 42px; height: 42px;">
+                        <img src="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Logo" width="36" height="36" aria-hidden="true" class="shadow-sm rounded-circle">
+                    </div>
                     <div class="d-none d-xl-flex flex-column lh-1 text-truncate">
                         <span class="fw-black text-body-emphasis fs-5 tracking-tight mb-1" style="letter-spacing: -0.5px;">Ecommerce</span>
                         <span class="text-primary fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 2.5px;">Admin Portal</span>

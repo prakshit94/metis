@@ -11,6 +11,9 @@
         $loginBg = parse_url($loginBg, PHP_URL_PATH) ?: $loginBg;
     }
     $bgImage = $loginBg ? $loginBg : asset('assets/images/background.png');
+
+    $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
+    $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
 @endphp
 <div class="auth-page position-relative min-vh-100 d-flex align-items-center justify-content-center py-5" id="main-content" style="background: url('{{ $bgImage }}') center center / cover no-repeat fixed !important;">
     
@@ -28,6 +31,9 @@
         <div>
             {{-- ── Brand Logo Header ─────────────────────────────────────── --}}
             <div class="text-center mb-4 pb-2">
+                <div class="brand-logo-container rounded-4 d-inline-flex align-items-center justify-content-center transition-all hover-rotate mb-3" style="width: 72px; height: 72px;">
+                    <img src="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Ecommerce Logo" class="w-100 h-100 object-fit-contain shadow-sm rounded-circle bg-body">
+                </div>
                 <h4 class="fw-black text-body-emphasis mb-1 tracking-tight">Welcome Back</h4>
                 <p class="text-secondary small fw-medium mb-0">Sign in to your Ecommerce Admin account</p>
             </div>

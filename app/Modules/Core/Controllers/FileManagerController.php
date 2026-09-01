@@ -42,19 +42,7 @@ class FileManagerController extends Controller
             ];
         });
 
-        // Add login background indicator if exists
-        $loginBg = SystemSetting::where('key', 'login_background_image')->first();
-        if ($loginBg && $loginBg->value) {
-            $files->transform(function ($item) use ($loginBg) {
-                $itemPath = parse_url($item['url'], PHP_URL_PATH);
-                $bgPath = parse_url($loginBg->value, PHP_URL_PATH);
-                if ($item['url'] === $loginBg->value || ($itemPath && $bgPath && $itemPath === $bgPath)) {
-                    $item['isLoginBackground'] = true;
-                }
 
-                return $item;
-            });
-        }
 
         // Add assets images
         $assetImagesPath = public_path('assets/images');
@@ -81,6 +69,26 @@ class FileManagerController extends Controller
         }
         
         $allFiles = $files->concat($assetFiles);
+
+        $resolvedRoles = [
+            'Login Background' => SystemSetting::where('key', 'login_background_image')->value('value') ?: asset('assets/images/background.png'),
+            'App Logo (PNG)' => SystemSetting::where('key', 'default_image_logo_png')->value('value') ?: asset('assets/images/logo.png'),
+            'App Logo (SVG)' => SystemSetting::where('key', 'default_image_logo_svg')->value('value') ?: asset('assets/images/logo.svg'),
+            'Default Avatar' => SystemSetting::where('key', 'default_image_default_avatar_jpeg')->value('value') ?: asset('assets/images/default_avatar.jpeg'),
+            'Product Placeholder' => SystemSetting::where('key', 'default_image_product-placeholder_svg')->value('value') ?: asset('assets/images/product-placeholder.svg')
+        ];
+
+        $allFiles->transform(function ($item) use ($resolvedRoles) {
+            $item['defaultRoles'] = [];
+            $itemPath = parse_url($item['url'], PHP_URL_PATH);
+            foreach ($resolvedRoles as $roleName => $resolvedUrl) {
+                $rolePath = parse_url($resolvedUrl, PHP_URL_PATH);
+                if ($item['url'] === $resolvedUrl || ($itemPath && $rolePath && $itemPath === $rolePath)) {
+                    $item['defaultRoles'][] = $roleName;
+                }
+            }
+            return $item;
+        });
 
         return response()->json($allFiles->values());
     }
@@ -230,37 +238,22 @@ class FileManagerController extends Controller
         $fileId = $request->input('file_id');
         $targetName = $request->input('target_name');
 
-        // Check if the source file is an asset or a SystemFile
-        $sourcePath = '';
+        $url = '';
         if (str_starts_with($fileId, 'asset:')) {
             $filename = str_replace('asset:', '', $fileId);
-            $sourcePath = public_path('assets/images/' . $filename);
-            if (!file_exists($sourcePath)) {
-                return response()->json(['error' => 'Source asset file not found'], 404);
-            }
+            $url = '/assets/images/' . $filename;
         } else {
             $fileRecord = SystemFile::find($fileId);
-            if (!$fileRecord) {
-                return response()->json(['error' => 'Source file not found'], 404);
-            }
-            $sourcePath = storage_path('app/public/' . $fileRecord->path);
-            if (!file_exists($sourcePath)) {
-                return response()->json(['error' => 'Source physical file not found'], 404);
-            }
+            $url = Storage::disk('public')->url($fileRecord->path);
+            $url = parse_url($url, PHP_URL_PATH) ?: $url;
         }
 
-        // Validate target name to prevent directory traversal
-        if (str_contains($targetName, '/') || str_contains($targetName, '\\')) {
-            return response()->json(['error' => 'Invalid target name'], 400);
-        }
+        $settingKey = 'default_image_' . str_replace('.', '_', $targetName);
 
-        $targetPath = public_path('assets/images/' . $targetName);
-
-        try {
-            copy($sourcePath, $targetPath);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to copy image: ' . $e->getMessage()], 500);
-        }
+        SystemSetting::updateOrCreate(
+            ['key' => $settingKey],
+            ['value' => $url]
+        );
 
         return response()->json(['message' => 'Default image updated successfully']);
     }
