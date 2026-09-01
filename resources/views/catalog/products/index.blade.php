@@ -267,12 +267,12 @@
                                                 <i class="bi bi-eye-slash me-1"></i>Unpublish
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary bg-body" 
-                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => p.is_sku_enabled)" 
+                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => isSkuEnabled(p))" 
                                                     @click="bulkAction('disable_sku')">
                                                 <i class="bi bi-tags me-1"></i>Disable SKU
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary bg-body" 
-                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => !p.is_sku_enabled)" 
+                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => !isSkuEnabled(p))" 
                                                     @click="bulkAction('enable_sku')">
                                                 <i class="bi bi-tags-fill me-1"></i>Enable SKU
                                             </button>

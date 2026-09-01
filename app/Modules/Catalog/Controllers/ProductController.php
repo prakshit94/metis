@@ -190,11 +190,39 @@ class ProductController extends Controller
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'exists:products,id'],
+            'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
         ]);
 
-        Product::whereIn('id', $data['ids'])->update([
-            'is_sku_enabled' => false,
-        ]);
+        if (!empty($data['warehouse_id'])) {
+            Stock::whereIn('product_id', $data['ids'])
+                ->where('warehouse_id', $data['warehouse_id'])
+                ->update(['is_sku_enabled' => false]);
+            
+            $existingProductIds = Stock::whereIn('product_id', $data['ids'])
+                ->where('warehouse_id', $data['warehouse_id'])
+                ->pluck('product_id')
+                ->toArray();
+            
+            $missingIds = array_diff($data['ids'], $existingProductIds);
+            $newStocks = [];
+            foreach ($missingIds as $pid) {
+                $newStocks[] = [
+                    'product_id' => $pid,
+                    'warehouse_id' => $data['warehouse_id'],
+                    'is_sku_enabled' => false,
+                    'quantity' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+            if (!empty($newStocks)) {
+                Stock::insert($newStocks);
+            }
+        } else {
+            Product::whereIn('id', $data['ids'])->update([
+                'is_sku_enabled' => false,
+            ]);
+        }
 
         return response()->json([
             'message' => 'SKUs disabled for selected products.',
@@ -208,11 +236,39 @@ class ProductController extends Controller
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'exists:products,id'],
+            'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
         ]);
 
-        Product::whereIn('id', $data['ids'])->update([
-            'is_sku_enabled' => true,
-        ]);
+        if (!empty($data['warehouse_id'])) {
+            Stock::whereIn('product_id', $data['ids'])
+                ->where('warehouse_id', $data['warehouse_id'])
+                ->update(['is_sku_enabled' => true]);
+            
+            $existingProductIds = Stock::whereIn('product_id', $data['ids'])
+                ->where('warehouse_id', $data['warehouse_id'])
+                ->pluck('product_id')
+                ->toArray();
+            
+            $missingIds = array_diff($data['ids'], $existingProductIds);
+            $newStocks = [];
+            foreach ($missingIds as $pid) {
+                $newStocks[] = [
+                    'product_id' => $pid,
+                    'warehouse_id' => $data['warehouse_id'],
+                    'is_sku_enabled' => true,
+                    'quantity' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+            if (!empty($newStocks)) {
+                Stock::insert($newStocks);
+            }
+        } else {
+            Product::whereIn('id', $data['ids'])->update([
+                'is_sku_enabled' => true,
+            ]);
+        }
 
         return response()->json([
             'message' => 'SKUs enabled for selected products.',
@@ -307,6 +363,7 @@ class ProductController extends Controller
                     'available' => $s->quantity - $s->reserved_qty - (float) ($s->pending_qty ?? 0),
                     'allow_overselling' => $s->allow_overselling !== null ? (bool) $s->allow_overselling : null,
                     'overselling_qty' => $s->overselling_qty !== null ? (int) $s->overselling_qty : null,
+                    'is_sku_enabled' => $s->is_sku_enabled !== null ? (bool) $s->is_sku_enabled : null,
                 ])->values()->toArray(),
                 'name' => $p->name,
                 'sku' => $p->sku,

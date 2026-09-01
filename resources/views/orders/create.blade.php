@@ -584,7 +584,7 @@
                         <div class="row g-3" x-show="viewMode === 'grid'">
                             <template x-for="p in filteredProducts" :key="p.id">
                                 <div class="col-sm-6 col-md-4">
-                                    <div class="card h-100 border shadow-sm transition-all" x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="isHovered ? 'position: relative; z-index: 1050;' : ''" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getMaxAllowedStock(p) <= 0}">
+                                    <div class="card h-100 border shadow-sm transition-all" x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="isHovered ? 'position: relative; z-index: 1050;' : ''" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !isSkuEnabled(p) || getMaxAllowedStock(p) <= 0}">
                                         <div class="card-body p-3">
                                             <div class="d-flex gap-2 mb-3">
                                                 <div x-show="p.grade" 
@@ -662,7 +662,7 @@
                                                 </div>
                                                 <button class="btn btn-sm w-100 shadow-sm d-flex align-items-center justify-content-center gap-2 transition-all fw-bold text-nowrap" style="min-height: 38px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!canAddToCart(p)">
                                                     <i class="bi fs-5" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
-                                                    <span x-text="!p.is_sku_enabled ? 'Disabled' : (!canAddToCart(p) ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 13px;"></span>
+                                                    <span x-text="!isSkuEnabled(p) ? 'Disabled' : (!canAddToCart(p) ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 13px;"></span>
                                                 </button>
                                             </div>
                                         </div>
@@ -684,7 +684,7 @@
                                 </thead>
                                 <tbody>
                                     <template x-for="p in filteredProducts" :key="'tbl-'+p.id">
-                                        <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id), 'opacity-50': !p.is_sku_enabled || getMaxAllowedStock(p) <= 0}">
+                                        <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id), 'opacity-50': !isSkuEnabled(p) || getMaxAllowedStock(p) <= 0}">
                                             <td class="align-middle">
                                                 <div class="d-flex align-items-start gap-3">
                                                     <div class="position-relative flex-shrink-0 cursor-pointer" @click="openProductModal(p)">
@@ -787,8 +787,8 @@
                                                         </div>
                                                     </div>
                                                     <div class="d-flex flex-wrap gap-1" style="max-width: 180px;">
-                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style="font-size:9px;" x-show="p.is_sku_enabled" title="SKU Enabled"><i class="bi bi-upc-scan me-1"></i>SKU On</span>
-                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="!p.is_sku_enabled" title="SKU Disabled"><i class="bi bi-upc-scan me-1"></i>SKU Off</span>
+                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style="font-size:9px;" x-show="isSkuEnabled(p)" title="SKU Enabled"><i class="bi bi-upc-scan me-1"></i>SKU On</span>
+                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="!isSkuEnabled(p)" title="SKU Disabled"><i class="bi bi-upc-scan me-1"></i>SKU Off</span>
                                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="p.batch_tracking" title="Batch Tracking"><i class="bi bi-layers me-1"></i>Batch</span>
                                                         <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size:9px;" x-show="p.expiry_tracking" title="Expiry Tracking"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
                                                         <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:9px;" x-show="p.allow_overselling" title="Allow Overselling"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span>
@@ -804,7 +804,7 @@
                                                     </div>
                                                     <button class="btn btn-sm w-100 shadow-sm d-flex align-items-center justify-content-center gap-2 transition-all fw-bold text-nowrap" style="min-height: 32px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!canAddToCart(p)">
                                                         <i class="bi" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
-                                                        <span x-text="!p.is_sku_enabled ? 'Disabled' : (!canAddToCart(p) ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 11px;"></span>
+                                                        <span x-text="!isSkuEnabled(p) ? 'Disabled' : (!canAddToCart(p) ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 11px;"></span>
                                                     </button>
                                                 </div>
                                             </td>
@@ -2613,10 +2613,12 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             return Math.max(0, totalStock - cartQty);
         },
 
-        handleWarehouseChange(event) {
+        async handleWarehouseChange(event) {
             let notifyWarning = false;
             let removedCount = 0;
             
+            await this.searchProducts(true);
+
             this.cart = this.cart.map(item => {
                 if (item.is_gift) return item;
                 
@@ -2626,6 +2628,11 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 }
                 
                 if (!p) return item;
+
+                if (!this.isSkuEnabled(p)) {
+                    item.quantity = 0;
+                    return item;
+                }
                 
                 const maxAllowed = this.getMaxAllowedStock(p);
                 item.available = maxAllowed;
@@ -2646,7 +2653,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cart quantities adjusted based on warehouse stock.'}}));
             }
             if (removedCount > 0) {
-                window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:removedCount + ' item(s) removed due to being out of stock.'}}));
+                window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:removedCount + ' item(s) removed due to being disabled or out of stock.'}}));
             }
         },
 
@@ -2692,8 +2699,19 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             return totalStock;
         },
 
+        isSkuEnabled(p) {
+            if (!p) return false;
+            if (this.warehouseId && p.warehouse_stocks) {
+                const match = p.warehouse_stocks.find(w => String(w.warehouse_id) === String(this.warehouseId));
+                if (match && match.is_sku_enabled !== null && match.is_sku_enabled !== undefined) {
+                    return match.is_sku_enabled;
+                }
+            }
+            return Boolean(p.is_sku_enabled);
+        },
+
         canAddToCart(p) {
-            if (!p || !p.is_sku_enabled) return false;
+            if (!p || !this.isSkuEnabled(p)) return false;
             const cartQty = this.cart.filter(i => String(i.id) === String(p.id)).reduce((sum, item) => sum + item.quantity, 0);
             return cartQty < this.getMaxAllowedStock(p);
         },
@@ -2763,6 +2781,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         get filteredProducts() {
             if (!this.products) return [];
             return this.products.filter(p => {
+                if (!this.isSkuEnabled(p)) return false;
                 const maxStock = this.getMaxAllowedStock(p);
                 if (this.stockFilter === 'available' && maxStock <= 0) return false;
                 if (this.stockFilter === 'out_of_stock' && maxStock > 0) return false;

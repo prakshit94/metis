@@ -729,7 +729,7 @@ document.addEventListener('alpine:init', () => {
       if (action === 'disable_sku') {
         apiFetch(`${this.apiBase}/bulk-disable-sku`, {
           method: 'POST',
-          body: JSON.stringify({ ids: this.selectedProducts }),
+          body: JSON.stringify({ ids: this.selectedProducts, warehouse_id: this.warehouseFilter || null }),
         })
           .then(async () => {
             await this.loadProductsFromApi();
@@ -745,7 +745,7 @@ document.addEventListener('alpine:init', () => {
       if (action === 'enable_sku') {
         apiFetch(`${this.apiBase}/bulk-enable-sku`, {
           method: 'POST',
-          body: JSON.stringify({ ids: this.selectedProducts }),
+          body: JSON.stringify({ ids: this.selectedProducts, warehouse_id: this.warehouseFilter || null }),
         })
           .then(async () => {
             await this.loadProductsFromApi();

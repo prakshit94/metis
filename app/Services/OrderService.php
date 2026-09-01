@@ -272,8 +272,13 @@ class OrderService
 
         // Load products to verify prices
         $productIds = array_filter(array_column($cart, 'id'));
+        $warehouseId = $data['warehouse_id'] ?? null;
         $products = Product::whereIn('id', $productIds)
-            ->with('taxRate')
+            ->with(['taxRate', 'stocks' => function($q) use ($warehouseId) {
+                if ($warehouseId) {
+                    $q->where('warehouse_id', $warehouseId);
+                }
+            }])
             ->get()
             ->keyBy('id');
 
@@ -407,6 +412,20 @@ class OrderService
             if (! $isUpdate && (! in_array($product->status, ['active', 'published']) || ! $product->is_active)) {
                 throw ValidationException::withMessages([
                     'cart' => "Product '{$product->name}' is currently unavailable.",
+                ]);
+            }
+
+            $skuEnabled = (bool) $product->is_sku_enabled;
+            if (isset($warehouseId) && $product->stocks->isNotEmpty()) {
+                $whStock = $product->stocks->first();
+                if ($whStock->is_sku_enabled !== null) {
+                    $skuEnabled = (bool) $whStock->is_sku_enabled;
+                }
+            }
+
+            if (! $isUpdate && ! $skuEnabled) {
+                throw ValidationException::withMessages([
+                    'cart' => "SKU for '{$product->name}' is currently disabled.",
                 ]);
             }
 
