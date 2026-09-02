@@ -860,12 +860,12 @@
                     </div>
                 </div>
 
-                <form id="userModalForm" @submit.prevent="saveUser()" x-show="!isViewMode">
+                <form id="userModalForm" @submit.prevent="saveUser()" x-show="!isViewMode" autocomplete="off">
                     <fieldset :disabled="isViewMode">
                     <div class="row g-3">
                         <!-- Left Column -->
                         <div class="col-lg-8">
-                            <!-- Card 1: Personal Info -->
+                            <!-- Card 1: Personal Information -->
                             <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
@@ -914,12 +914,12 @@
                                 </div>
                             </div>
                             
-                            <!-- Card 2: Contact & Address -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary" style="z-index: 10;">
+                            <!-- Card 2: Contact Information -->
+                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
-                                        <i class="bi bi-geo-alt-fill text-info fs-5 me-2"></i>
-                                        <h6 class="card-title mb-0 fw-bold">Contact & Address</h6>
+                                        <i class="bi bi-telephone-fill text-info fs-5 me-2"></i>
+                                        <h6 class="card-title mb-0 fw-bold">Contact Information</h6>
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-6">
@@ -944,7 +944,18 @@
                                             <label class="form-label fw-medium text-muted small">Emergency Contact Phone</label>
                                             <input type="tel" class="form-control form-control-sm" x-model="form.emergency_contact_phone" placeholder="10 digits" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                         </div>
-                                        
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Card 3: Address Details -->
+                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary" style="z-index: 10;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+                                        <i class="bi bi-geo-alt-fill text-success fs-5 me-2"></i>
+                                        <h6 class="card-title mb-0 fw-bold">Address Details</h6>
+                                    </div>
+                                    <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Address Line 1</label>
                                             <input type="text" name="address_line_1" class="form-control form-control-sm" placeholder="House/Flat No., Street" x-model="form.address_line_1">
@@ -1018,7 +1029,7 @@
                                         </template>
 
                                         <template x-if="!form.village_name">
-                                            <div class="col-12">
+                                            <div class="col-12 d-none">
                                                 <div class="row g-3">
                                                     <div class="col-md-4">
                                                         <label class="form-label fw-medium text-muted small">City</label>
@@ -1038,12 +1049,12 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Card 3: Employment Details -->
+                            
+                            <!-- Card 4: Employment Details -->
                             <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
-                                        <i class="bi bi-briefcase-fill text-success fs-5 me-2"></i>
+                                        <i class="bi bi-briefcase-fill text-warning fs-5 me-2"></i>
                                         <h6 class="card-title mb-0 fw-bold">Employment Details</h6>
                                     </div>
                                     <div class="row g-3">
@@ -1103,24 +1114,15 @@
 
                         <!-- Right Column -->
                         <div class="col-lg-4">
-                            <!-- Card 4: Status & Media -->
+                            <!-- Card 5: Profile Photo -->
                             <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
-                                        <i class="bi bi-image text-warning fs-5 me-2"></i>
-                                        <h6 class="card-title mb-0 fw-bold">Status & Media</h6>
+                                        <i class="bi bi-image text-secondary fs-5 me-2"></i>
+                                        <h6 class="card-title mb-0 fw-bold">Profile Photo</h6>
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-12">
-                                            <div class="p-2 border rounded bg-body-secondary">
-                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
-                                                    <label class="form-check-label fw-medium small" for="userActiveSwitch">Active Account</label>
-                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.is_active" id="userActiveSwitch">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12 mt-3">
-                                            <label class="form-label fw-medium text-muted small">Profile Photo</label>
                                             <div class="border border-dashed rounded p-3 text-center bg-body-secondary d-flex flex-column align-items-center justify-content-center" style="min-height: 150px; border-style: dashed !important;">
                                                 <div class="mb-2">
                                                     <template x-if="form.photo">
@@ -1138,7 +1140,7 @@
                                 </div>
                             </div>
 
-                            <!-- Card 5: Account Settings -->
+                            <!-- Card 6: Account Settings -->
                             <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
@@ -1173,11 +1175,18 @@
                                                 <input type="password" class="form-control form-control-sm" x-model="form.password_confirmation" :required="!editingUserId && form.password.length > 0" placeholder="Repeat password">
                                             </div>
                                         </div>
+                                        <div class="col-12 mt-3 border-top pt-3">
+                                            <div class="p-2 border rounded bg-body-secondary">
+                                                <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
+                                                    <label class="form-check-label fw-medium small" for="userActiveSwitch">Active Account</label>
+                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.is_active" id="userActiveSwitch">
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            
-                                                    </div>
+                        </div>
                     </div>
                     </fieldset>
                 </form>
