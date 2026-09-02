@@ -9,7 +9,7 @@
     </script>
 
     <div x-data="createOrderApp(window.__INITIAL_ORDER_CUSTOMER__, window.__INITIAL_ORDER_TO_EDIT__)"
-         @call-log-added.window="if(customerDetails) { isCallLoggedOrClosed = true; window.location.href = '{{ route('dashboard') }}'; }">
+         @call-log-added.window="if(customerDetails) { clearCartCache(); isCallLoggedOrClosed = true; window.location.href = '{{ route('dashboard') }}'; }">
     
     {{-- Page Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
@@ -41,12 +41,12 @@
         </div>
         <div class="d-flex gap-2">
             <template x-if="editingOrderId || isConfirmMode">
-                <a href="{{ route('orders') }}" data-bypass="true" class="btn btn-outline-danger shadow-sm" @click="isCallLoggedOrClosed = true">
+                <a href="{{ route('orders') }}" data-bypass="true" class="btn btn-outline-danger shadow-sm" @click="clearCartCache(); isCallLoggedOrClosed = true">
                     <i class="bi bi-x-circle me-1"></i> <span x-text="isConfirmMode ? 'Cancel Confirmation' : 'Cancel Edit Mode'"></span>
                 </a>
             </template>
             @can('skip-call-log')
-            <button type="button" class="btn btn-outline-danger shadow-sm" x-show="customerDetails" @click="isCallLoggedOrClosed = true; window.location.href = '{{ route('dashboard') }}'" title="Bypass Call Logging">
+            <button type="button" class="btn btn-outline-danger shadow-sm" x-show="customerDetails" @click="clearCartCache(); isCallLoggedOrClosed = true; window.location.href = '{{ route('dashboard') }}'" title="Bypass Call Logging">
                 <i class="bi bi-door-closed me-1"></i> Close Profile
             </button>
             @endcan
@@ -1133,7 +1133,7 @@
                                 <div class="mt-4 p-3 bg-body-tertiary rounded-4 border shadow-sm transition-all" :class="useWalletBalance ? 'border-primary' : ''">
                                     <div class="form-check form-switch d-flex align-items-center justify-content-between gap-3 p-0 m-0 cursor-pointer" @click="useWalletBalance = !useWalletBalance">
                                         <div>
-                                            <label class="form-check-label fw-bold mb-0 text-body-emphasis" style="cursor: pointer;">Redeem Cashback Wallet</label>
+                                            <label class="form-check-label fw-bold mb-0 text-body-emphasis" style="cursor: pointer;">Use Wallet Balance</label>
                                             <div class="small text-body-secondary mt-1" style="font-size: 11px;">
                                                 Available Balance: <span class="text-success" x-text="'₹ ' + Number(customerDetails.wallet_balance).toFixed(2)"></span> 
                                             </div>
@@ -2179,6 +2179,12 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         cancelReason: '',
         cancelNotes: '',
         cancelReasons: @json($cancelReasons ?? []),
+        
+        clearCartCache() {
+            localStorage.removeItem(`ecommerce_create_order_cart_${this.partyId}`);
+            localStorage.removeItem(`ecommerce_create_order_cart_total_${this.partyId}`);
+            this.cart = [];
+        },
 
         async init() {
             // Intercept browser refresh/close tab
@@ -2252,10 +2258,10 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
 
             if (initialOrder) {
                 this.applyOrderForEdit(initialOrder);
-                localStorage.removeItem('ecommerce_create_order_cart');
+                localStorage.removeItem(`ecommerce_create_order_cart_${this.partyId}`);
                 this.isCartSidebarOpen = true;
             } else {
-                const saved = localStorage.getItem('ecommerce_create_order_cart');
+                const saved = localStorage.getItem(`ecommerce_create_order_cart_${this.partyId}`);
                 if (saved) {
                     try {
                         this.cart = JSON.parse(saved);
@@ -2264,7 +2270,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             }
 
             this.$watch('cart', async (v) => {
-                localStorage.setItem('ecommerce_create_order_cart', JSON.stringify(v));
+                localStorage.setItem(`ecommerce_create_order_cart_${this.partyId}`, JSON.stringify(v));
                 window.dispatchEvent(new CustomEvent('cart-updated'));
                 if (v.length === 0) {
                     this.removeCoupon();
@@ -2302,10 +2308,10 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             });
 
             this.$watch('grandTotal', v => {
-                localStorage.setItem('ecommerce_create_order_cart_total', v);
+                localStorage.setItem(`ecommerce_create_order_cart_total_${this.partyId}`, v);
                 window.dispatchEvent(new CustomEvent('cart-total-updated', { detail: v }));
             });
-            localStorage.setItem('ecommerce_create_order_cart_total', this.grandTotal);
+            localStorage.setItem(`ecommerce_create_order_cart_total_${this.partyId}`, this.grandTotal);
 
             // Listen for notify events (e.g. address saved, profile updated)
             window.addEventListener('notify', (e) => {
@@ -2340,7 +2346,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
 
             // Listen to cart changes from header dropdown or other components
             window.addEventListener('cart-updated', () => {
-                const updated = localStorage.getItem('ecommerce_create_order_cart');
+                const updated = localStorage.getItem(`ecommerce_create_order_cart_${this.partyId}`);
                 if (updated) {
                     try {
                         const parsed = JSON.parse(updated);
@@ -2567,7 +2573,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             });
 
             if (this.cart.length > 0) {
-                localStorage.setItem('ecommerce_create_order_cart', JSON.stringify(this.cart));
+                localStorage.setItem(`ecommerce_create_order_cart_${this.partyId}`, JSON.stringify(this.cart));
             }
         },
 
@@ -3349,7 +3355,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 const isSaved = await this.saveOrderData();
                 if (!isSaved) return;
                 
-                localStorage.removeItem('ecommerce_create_order_cart');
+                localStorage.removeItem(`ecommerce_create_order_cart_${this.partyId}`);
                 this.cart = [];
                 const successMessage = this.editingOrderId ? 'Order updated successfully!' : 'Order placed successfully!';
                 window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:successMessage}}));
