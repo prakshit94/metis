@@ -126,7 +126,7 @@
                             </div>
                             
                             {{-- Contact Channels --}}
-                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 20;">
+                            <div class="card mb-3 mb-lg-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 20;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                         <div class="bg-indigo text-indigo bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; color: #6610f2;">
@@ -139,7 +139,7 @@
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Email Address</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-envelope"></i></span>
-                                                <input type="email" name="email" x-model="form.email" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;">
+                                                <input type="email" name="email" x-model="form.email" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address">
                                             </div>
                                         </div>
                                         <div class="col-sm-4">
@@ -165,8 +165,13 @@
                                 </div>
                             </div>
                             
+                        </div>
+
+                        {{-- RIGHT COLUMN --}}
+                        <div class="col-lg-6">
+                            
                             {{-- Primary Address (Only for New Customers) --}}
-                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 15;" x-show="!isEdit" x-cloak>
+                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 40;" x-show="!isEdit" x-cloak>
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                         <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -281,24 +286,6 @@
                                     </div>
                                 </div>
                             </div>
-                            
-                            {{-- Internal Notes --}}
-                            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-3 mb-lg-0" style="z-index: 10;">
-                                <div class="card-body p-3">
-                                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
-                                        <div class="bg-secondary bg-opacity-10 text-secondary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
-                                            <i class="bi bi-file-text fs-6"></i>
-                                        </div>
-                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Internal Notes</h6>
-                                    </div>
-                                    <textarea name="internal_notes" x-model="form.internal_notes" rows="1" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" placeholder="Administrative notes..."></textarea>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        {{-- RIGHT COLUMN --}}
-                        <div class="col-lg-6">
                             
                             {{-- Business & Compliance --}}
                             <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 30;" x-show="form.category === 'business'" x-transition x-cloak>
@@ -422,8 +409,21 @@
                                 </div>
                             </div>
 
+                            {{-- Internal Notes --}}
+                            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-3 mb-lg-0" style="z-index: 10;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                        <div class="bg-secondary bg-opacity-10 text-secondary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                            <i class="bi bi-file-text fs-6"></i>
+                                        </div>
+                                        <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Internal Notes</h6>
+                                    </div>
+                                    <textarea name="internal_notes" x-model="form.internal_notes" rows="1" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" placeholder="Administrative notes..."></textarea>
+                                </div>
+                            </div>
+
                             {{-- Financial Terms --}}
-                            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 10;">
+                            <div class="card d-none border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 10;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                         <div class="bg-danger bg-opacity-10 text-danger rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
