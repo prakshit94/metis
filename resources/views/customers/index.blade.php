@@ -234,6 +234,11 @@
                         </span>
                     </div>
                     <div class="d-flex gap-2">
+                        @can('customer-export')
+                        <button class="btn btn-sm btn-outline-dark" @click="exportCustomers()">
+                            <i class="bi bi-download me-1"></i>Export
+                        </button>
+                        @endcan
                         @can('customer-activate')
                         <button class="btn btn-sm btn-success" @click="bulkAction('activate')" x-show="hasSelectedActiveCustomers">
                             <i class="bi bi-check-circle me-1"></i>Activate
