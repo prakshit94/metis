@@ -901,7 +901,7 @@
 
 {{-- ═══════════════════════ Import Customers Modal ═══════════════════════════ --}}
 <div class="modal fade" id="importModal" aria-labelledby="importModalLabel">
-    <div class="modal-dialog modal-dialog-scrollable" x-data="importForm">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable" x-data="importForm">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold" id="importModalLabel">
@@ -910,16 +910,45 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body pt-3">
-                <div class="alert alert-info mb-3">
-                    <i class="bi bi-info-circle me-2"></i>
-                    <strong>CSV Format:</strong> firstname, middlename, lastname, email, phone, category, status, company_name, kyc_completed<br>
-                    <small>Example: John, Marie, Doe, john@example.com, 9876543210, individual, active, , false</small>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label fw-semibold mb-0">Select CSV File</label>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @click="downloadTemplate()">
+                        <i class="bi bi-file-earmark-arrow-down me-1"></i> Download Template
+                    </button>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Select CSV File</label>
-                    <input type="file" class="form-control" accept=".csv"
-                           @change="handleFile($event)">
+                    <input type="file" class="form-control" accept=".csv" @change="handleFile($event)">
                 </div>
+                                <template x-if="previewData.length > 0 && !result">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Preview (First 5 Rows)</label>
+                        <div class="table-responsive border rounded">
+                            <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>First Name</th>
+                                        <th>Last Name</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Category</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="(row, index) in previewData" :key="index">
+                                        <tr>
+                                            <td x-text="row.firstname || '—'"></td>
+                                            <td x-text="row.lastname || '—'"></td>
+                                            <td x-text="row.email || '—'"></td>
+                                            <td x-text="row.phone || '—'"></td>
+                                            <td x-text="row.category || '—'"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </template>
                 <template x-if="result">
                     <div>
                         <div class="alert alert-success" x-show="result.created > 0">

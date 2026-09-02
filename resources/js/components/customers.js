@@ -547,12 +547,19 @@ document.addEventListener('alpine:init', () => {
     async exportCustomers() {
       try {
         const list = await this.fetchAllFilteredCustomers();
-        const headers = ['ID','Code','Name','Email','Phone','Category','Outstanding Balance','Credit Limit','Credit Days','Crops','Irrigation Source','KYC Status','Account Status','Joined'];
+        const headers = [
+          'First Name', 'Middle Name', 'Last Name', 'Email', 'Phone', 'Alternate Mobile',
+          'Relative Name', 'Relative Phone', 'Category', 'Company Name', 'GST No', 'PAN No', 'Tax No',
+          'Land Area', 'Land Unit', 'Credit Limit', 'Credit Days', 'Outstanding Balance', 'Wallet Balance',
+          'Credit Valid Till', 'Aadhaar Last 4', 'KYC Completed', 'Status', 'Is Active', 'Is Blacklisted',
+          'Internal Notes', 'Crops', 'Irrigation Source', 'Source', 'Tags'
+        ];
         const rows = list.map(c => [
-          c.id, c.party_code, c.name, c.email || '', c.phone || '', c.category || 'individual',
-          c.outstanding_balance, c.credit_limit, c.credit_days,
-          c.cropsList.join('; '), c.irrigationList.join('; '),
-          c.kyc_completed ? 'Verified' : 'Pending', c.status, c.joinDate
+          c.firstname || '', c.middlename || '', c.lastname || '', c.email || '', c.phone || '', c.alternatemobile || '',
+          c.relative_name || '', c.relative_phone || '', c.category || 'individual', c.company_name || '', c.gst_no || '', c.pan_no || '', c.tax_no || '',
+          c.land_area || '', c.land_unit || '', c.credit_limit || '0', c.credit_days || '0', c.outstanding_balance || '0', c.wallet_balance || '0',
+          c.credit_valid_till ? c.credit_valid_till.split('T')[0] : '', c.aadhaar_last4 || '', c.kyc_completed ? 'true' : 'false', c.status || 'active', c.is_active ? 'true' : 'false', c.is_blacklisted ? 'true' : 'false',
+          c.internal_notes || '', (c.cropsList || []).join(';'), (c.irrigationList || []).join(';'), (Array.isArray(c.source) ? c.source : JSON.parse(c.source || '[]')).join(';'), (Array.isArray(c.tags) ? c.tags : JSON.parse(c.tags || '[]')).join(';')
         ]);
         const csv = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\n');
         downloadBlob('customers-export.csv', csv, 'text/csv;charset=utf-8;');
@@ -805,6 +812,7 @@ document.addEventListener('alpine:init', () => {
     file:     null,
     importing: false,
     result:   null,
+    previewData: [],
 
     async importCustomers() {
       if (!this.file) {
@@ -822,17 +830,22 @@ document.addEventListener('alpine:init', () => {
         return;
       }
 
-      // Format: firstname, middlename, lastname, email, phone, category, status, company_name, kyc_completed
       let created = 0;
       let errors  = [];
 
       for (let i = 1; i < lines.length; i++) {
         const values = parseCsvLine(lines[i]);
-        const [firstname, middlename, lastname, email, phone, category, statusRaw, companyName, kycRaw] = values;
+        const [
+          firstname, middlename, lastname, email, phone, alternatemobile,
+          relative_name, relative_phone, category, company_name, gst_no, pan_no, tax_no,
+          land_area, land_unit, credit_limit, credit_days, outstanding_balance, wallet_balance,
+          credit_valid_till, aadhaar_last4, kyc_completed, statusRaw, is_active, is_blacklisted,
+          internal_notes, crops, irrigation_type, source, tags
+        ] = values;
+
         if (!firstname || !lastname) { errors.push(`Row ${i + 1}: missing first or last name`); continue; }
 
         const status = ['active', 'inactive', 'suspended'].includes(statusRaw?.toLowerCase()) ? statusRaw.toLowerCase() : 'active';
-        const kyc_completed = kycRaw?.toLowerCase() === 'true' || kycRaw === '1';
 
         try {
           await apiFetch('/api/customers', {
@@ -843,11 +856,31 @@ document.addEventListener('alpine:init', () => {
               lastname,
               email: email || null,
               phone: phone || null,
+              alternatemobile: alternatemobile || null,
+              relative_name: relative_name || null,
+              relative_phone: relative_phone || null,
               category: ['individual', 'business'].includes(category?.toLowerCase()) ? category.toLowerCase() : 'individual',
+              company_name: company_name || null,
+              gst_no: gst_no || null,
+              pan_no: pan_no || null,
+              tax_no: tax_no || null,
+              land_area: land_area ? parseFloat(land_area) : null,
+              land_unit: land_unit || null,
+              credit_limit: credit_limit ? parseFloat(credit_limit) : null,
+              credit_days: credit_days ? parseInt(credit_days) : null,
+              outstanding_balance: outstanding_balance ? parseFloat(outstanding_balance) : null,
+              wallet_balance: wallet_balance ? parseFloat(wallet_balance) : null,
+              credit_valid_till: credit_valid_till || null,
+              aadhaar_last4: aadhaar_last4 || null,
+              kyc_completed: kyc_completed?.toLowerCase() === 'true' || kyc_completed === '1',
               status,
-              company_name: companyName || null,
-              kyc_completed,
-              is_active: status === 'active',
+              is_active: is_active?.toLowerCase() !== 'false' && is_active !== '0',
+              is_blacklisted: is_blacklisted?.toLowerCase() === 'true' || is_blacklisted === '1',
+              internal_notes: internal_notes || null,
+              crops: crops ? crops.split(';').map(s => s.trim()).filter(Boolean) : [],
+              irrigation_type: irrigation_type ? irrigation_type.split(';').map(s => s.trim()).filter(Boolean) : [],
+              source: source ? source.split(';').map(s => s.trim()).filter(Boolean) : [],
+              tags: tags ? tags.split(';').map(s => s.trim()).filter(Boolean) : [],
             }),
           });
           created++;
@@ -869,10 +902,53 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    handleFile(event) {
+    async handleFile(event) {
       this.file   = event.target.files[0] ?? null;
       this.result = null;
+      this.previewData = [];
+      
+      if (this.file) {
+        try {
+          const text = await this.file.text();
+          const lines = text.trim().split('\n').filter(l => l.trim());
+          if (lines.length > 1) {
+            const previewLines = lines.slice(1, 6);
+            this.previewData = previewLines.map(line => {
+              const values = parseCsvLine(line);
+              return {
+                firstname: values[0],
+                lastname: values[2],
+                email: values[3],
+                phone: values[4],
+                category: values[8]
+              };
+            });
+          }
+        } catch (e) {
+          console.error("Preview failed", e);
+        }
+      }
     },
+
+    downloadTemplate() {
+      const headers = [
+        'First Name', 'Middle Name', 'Last Name', 'Email', 'Phone', 'Alternate Mobile',
+        'Relative Name', 'Relative Phone', 'Category', 'Company Name', 'GST No', 'PAN No', 'Tax No',
+        'Land Area', 'Land Unit', 'Credit Limit', 'Credit Days', 'Outstanding Balance', 'Wallet Balance',
+        'Credit Valid Till', 'Aadhaar Last 4', 'KYC Completed', 'Status', 'Is Active', 'Is Blacklisted',
+        'Internal Notes', 'Crops', 'Irrigation Source', 'Source', 'Tags'
+      ];
+      const exampleRow = [
+        'John', 'Marie', 'Doe', 'john@example.com', '9876543210', '9876543211',
+        'Jane Doe', '9876543212', 'individual', 'Acme Corp', '22AAAAA0000A1Z5', 'ABCDE1234F', '',
+        '10', 'acres', '50000', '30', '0', '0',
+        '2026-12-31', '1234', 'true', 'active', 'true', 'false',
+        'Good customer', 'Wheat;Rice', 'Drip;Sprinkler', 'Walk-in', 'VIP;Bulk'
+      ];
+      const csv = [headers, exampleRow].map(r => r.map(csvEscape).join(',')).join('\n');
+      downloadBlob('customers-import-template.csv', csv, 'text/csv;charset=utf-8;');
+      showToast('Template downloaded successfully.');
+    }
   }));
 
 });
