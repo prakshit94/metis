@@ -588,7 +588,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'chat-view',
             'chat-export',
             'chat-create',
-            'chat-create-group',
             'chat-edit',
             'chat-delete',
         ],
@@ -598,7 +597,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'product-view',
             'chat-view',
             'chat-create',
-            'chat-create-group',
             'chat-edit',
             'chat-delete',
         ],
@@ -629,7 +627,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'orders.export',
             'chat-view',
             'chat-create',
-            'chat-create-group',
             'chat-edit',
             'chat-delete',
         ],
@@ -692,7 +689,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'product-view',
             'chat-view',
             'chat-create',
-            'chat-create-group',
             'chat-edit',
             'chat-delete',
         ],
@@ -715,7 +711,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'customer-export',
             'chat-view',
             'chat-create',
-            'chat-create-group',
             'chat-edit',
             'chat-delete',
         ],
@@ -778,6 +773,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'name' => $roleName,
                 'guard_name' => 'web',
             ]);
+
+            if ($roleName === 'Admin') {
+                $permissions = array_values(array_diff($permissions, ['chat-create-group']));
+            }
 
             $role->syncPermissions($permissions);
 
