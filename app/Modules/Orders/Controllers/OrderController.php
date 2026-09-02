@@ -592,6 +592,18 @@ class OrderController extends Controller implements HasMiddleware
         $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
         $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
+        if ($initialCustomer && class_exists(Invoice::class)) {
+            $invoices = Invoice::whereIn('order_id', function ($query) use ($initialCustomer) {
+                $query->select('id')->from('orders')->where('party_id', $initialCustomer->id);
+            })->whereIn('status', ['unpaid', 'partially_paid'])->get();
+            
+            $due = 0;
+            foreach ($invoices as $invoice) {
+                $due += $invoice->due_amount;
+            }
+            $initialCustomer->setAttribute('calculated_outstanding', (float) $due);
+        }
+
         return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
     }
 

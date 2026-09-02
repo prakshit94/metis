@@ -61,6 +61,7 @@ class Customer extends Model implements Auditable
         'first_purchase_at',
         'last_purchase_at',
         'orders_count',
+        'wallet_balance',
         'status',
         'is_active',
         'is_blacklisted',
@@ -74,6 +75,7 @@ class Customer extends Model implements Auditable
     protected $casts = [
         'credit_limit' => 'decimal:2',
         'outstanding_balance' => 'decimal:2',
+        'wallet_balance' => 'decimal:2',
         'land_area' => 'decimal:2',
         'credit_days' => 'integer',
         'orders_count' => 'integer',

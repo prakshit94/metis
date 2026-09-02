@@ -145,8 +145,8 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     statusFilter: '',
     categoryFilter: '',
-    sortField: 'name',
-    sortDirection: 'asc',
+    sortField: 'updated_at',
+    sortDirection: 'desc',
     
     // Selection
     selectedCustomers: [],

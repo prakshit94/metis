@@ -276,15 +276,37 @@
                                        @change="toggleAll($event.target.checked)">
                             </th>
                             <th @click="sort('name')" style="cursor: pointer;" class="border-0">
-                                Name <i class="bi" :class="getSortIcon('name')"></i>
+                                Identity <i class="bi" :class="getSortIcon('name')"></i>
                             </th>
-                            <th class="border-0">Code</th>
-                            <th class="border-0">Category</th>
-                            <th class="border-0">Phone</th>
+                            <th @click="sort('code')" style="cursor: pointer;" class="border-0">
+                                Code <i class="bi" :class="getSortIcon('code')"></i>
+                            </th>
+                            <th @click="sort('company')" style="cursor: pointer;" class="border-0">
+                                Company <i class="bi" :class="getSortIcon('company')"></i>
+                            </th>
+                            <th @click="sort('phone')" style="cursor: pointer;" class="border-0">
+                                Phone <i class="bi" :class="getSortIcon('phone')"></i>
+                            </th>
+                            <th @click="sort('email')" style="cursor: pointer;" class="border-0">
+                                Email <i class="bi" :class="getSortIcon('email')"></i>
+                            </th>
                             <th class="border-0">Outstanding</th>
-                            <th class="border-0">KYC</th>
-                            <th class="border-0">Status</th>
-                            <th class="border-0">Joined</th>
+                            <th @click="sort('wallet')" style="cursor: pointer;" class="border-0">
+                                Wallet <i class="bi" :class="getSortIcon('wallet')"></i>
+                            </th>
+                            <th @click="sort('limit')" style="cursor: pointer;" class="border-0 text-nowrap">
+                                Cr. Limit <i class="bi" :class="getSortIcon('limit')"></i>
+                            </th>
+                            <th @click="sort('orders')" style="cursor: pointer;" class="border-0">
+                                Orders <i class="bi" :class="getSortIcon('orders')"></i>
+                            </th>
+                            <th class="border-0">KYC & Status</th>
+                            <th @click="sort('created_at')" style="cursor: pointer;" class="border-0 text-nowrap">
+                                Created At <i class="bi" :class="getSortIcon('created_at')"></i>
+                            </th>
+                            <th @click="sort('updated_at')" style="cursor: pointer;" class="border-0 text-nowrap">
+                                Updated At <i class="bi" :class="getSortIcon('updated_at')"></i>
+                            </th>
                             <th style="width: 80px;" class="border-0 pe-4 rounded-end"></th>
                         </tr>
                     </thead>
@@ -316,37 +338,39 @@
                                            @change="toggleCustomer(c.id)">
                                 </td>
                                 <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar bg-primary bg-opacity-10 text-primary rounded-circle me-3 d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px;" x-text="c.initials"></div>
+                                    <div class="d-flex align-items-center" style="min-width: 150px">
+                                        <div class="avatar bg-primary bg-opacity-10 text-primary rounded-circle me-3 d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 40px; height: 40px;" x-text="c.initials"></div>
                                         <div>
                                             <a :href="'/customers/' + c.id" class="fw-semibold text-body text-decoration-none hover-primary" x-text="c.name"></a>
-                                            <div class="small text-muted" x-text="c.email || 'No email'"></div>
+                                            <div class="small text-muted text-capitalize" x-text="c.category || 'individual'"></div>
                                         </div>
                                     </div>
                                 </td>
-                                <td x-text="c.party_code"></td>
+                                <td><span class="font-monospace text-muted" x-text="c.party_code || '—'"></span></td>
+                                <td><span class="text-body-secondary" x-text="c.company_name || '—'"></span></td>
+                                <td><span class="fw-medium text-body text-nowrap" x-text="c.phone || '—'"></span></td>
+                                <td><span class="small text-muted" x-text="c.email || '—'"></span></td>
                                 <td>
-                                    <span class="badge bg-body-secondary text-body-secondary text-capitalize border" x-text="c.category || 'individual'"></span>
+                                    <span class="fw-bold" :class="Number(c.calculated_outstanding !== undefined ? c.calculated_outstanding : c.outstanding_balance) > 0 ? 'text-danger' : 'text-success'" x-text="Number(c.calculated_outstanding !== undefined ? c.calculated_outstanding : c.outstanding_balance).toLocaleString('en-IN', {style: 'currency', currency: 'INR'})"></span>
                                 </td>
-                                <td x-text="c.phone || '—'"></td>
+                                <td><span class="fw-bold text-success text-nowrap" x-text="Number(c.wallet_balance || 0).toLocaleString('en-IN', {style: 'currency', currency: 'INR'})"></span></td>
+                                <td><span class="fw-medium text-body-secondary text-nowrap" x-text="Number(c.credit_limit || 0).toLocaleString('en-IN', {style: 'currency', currency: 'INR'})"></span></td>
+                                <td><span class="badge bg-primary bg-opacity-10 text-primary rounded-pill" x-text="c.orders_count || 0"></span></td>
                                 <td>
-                                    <span class="fw-medium text-body" x-text="c.formattedOutstanding"></span>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="badge text-capitalize border" 
+                                              :class="{
+                                                  'bg-success bg-opacity-10 text-success border-success': c.status === 'active',
+                                                  'bg-secondary bg-opacity-10 text-secondary border-secondary': c.status === 'inactive',
+                                                  'bg-danger bg-opacity-10 text-danger border-danger': c.status === 'suspended' || c.status === 'deleted',
+                                              }" x-text="c.status"></span>
+                                        <span class="badge" 
+                                              :class="c.kyc_completed ? 'bg-success bg-opacity-10 text-success' : 'bg-warning bg-opacity-10 text-warning'"
+                                              x-text="c.kyc_completed ? 'KYC' : 'No KYC'"></span>
+                                    </div>
                                 </td>
-                                <td>
-                                    <span class="badge" 
-                                          :class="c.kyc_completed ? 'bg-success bg-opacity-10 text-success' : 'bg-warning bg-opacity-10 text-warning'"
-                                          x-text="c.kyc_completed ? 'Verified' : 'Pending'"></span>
-                                </td>
-                                <td>
-                                    <span class="badge"
-                                          :class="{
-                                              'bg-success': c.status === 'active',
-                                              'bg-secondary': c.status === 'inactive',
-                                              'bg-danger': c.status === 'suspended' || c.status === 'deleted',
-                                          }"
-                                          x-text="c.status"></span>
-                                </td>
-                                <td x-text="c.joinDate"></td>
+                                <td><span class="small text-muted text-nowrap" x-text="c.created_at ? new Date(c.created_at).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '—'"></span></td>
+                                <td><span class="small text-muted text-nowrap" x-text="c.updated_at ? new Date(c.updated_at).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '—'"></span></td>
                                 <td>
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle"

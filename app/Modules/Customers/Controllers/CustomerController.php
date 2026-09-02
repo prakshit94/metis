@@ -50,14 +50,19 @@ class CustomerController extends Controller implements HasMiddleware
     {
         $sortMap = [
             'name' => 'firstname',
+            'code' => 'party_code',
+            'company' => 'company_name',
             'email' => 'email',
             'phone' => 'phone',
+            'wallet' => 'wallet_balance',
+            'limit' => 'credit_limit',
+            'orders' => 'orders_count',
             'created_at' => 'created_at',
             'updated_at' => 'updated_at',
         ];
 
-        $sortBy = $sortMap[$request->input('sort_by', 'name')] ?? 'firstname';
-        $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $sortBy = $sortMap[$request->input('sort_by', 'updated_at')] ?? 'updated_at';
+        $sortDir = strtolower((string) $request->input('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
         $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
 
         $deletedFilter = $request->input('deleted');
@@ -70,6 +75,7 @@ class CustomerController extends Controller implements HasMiddleware
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
             ->with(['addresses.village'])
+            ->withCount('orders')
             ->when(
                 $request->filled('search'),
                 fn ($q) => $q->where(function ($inner) use ($request): void {
@@ -93,6 +99,30 @@ class CustomerController extends Controller implements HasMiddleware
             )
             ->orderBy($sortBy, $sortDir)
             ->paginate($perPage);
+
+        if (class_exists(\App\Modules\Orders\Models\Invoice::class)) {
+            $customerIds = $customers->pluck('id')->toArray();
+            
+            if (!empty($customerIds)) {
+                $allInvoices = \App\Modules\Orders\Models\Invoice::whereIn('order_id', function ($query) use ($customerIds) {
+                    $query->select('id')->from('orders')->whereIn('party_id', $customerIds);
+                })->whereIn('status', ['unpaid', 'partially_paid'])
+                  ->with('order:id,party_id')
+                  ->get();
+                
+                $customers->getCollection()->transform(function ($customer) use ($allInvoices) {
+                    $due = 0;
+                    $customerInvoices = $allInvoices->filter(function ($inv) use ($customer) {
+                        return $inv->order && $inv->order->party_id === $customer->id;
+                    });
+                    foreach ($customerInvoices as $invoice) {
+                        $due += $invoice->due_amount;
+                    }
+                    $customer->setAttribute('calculated_outstanding', (float) $due);
+                    return $customer;
+                });
+            }
+        }
 
         return response()->json($customers);
     }
@@ -176,6 +206,7 @@ class CustomerController extends Controller implements HasMiddleware
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'credit_days' => ['nullable', 'integer', 'min:0'],
             'outstanding_balance' => ['nullable', 'numeric'],
+            'wallet_balance' => ['nullable', 'numeric'],
             'credit_valid_till' => ['nullable', 'date'],
             'aadhaar_last4' => ['nullable', 'digits:4'],
             'kyc_completed' => ['nullable', 'boolean'],
@@ -199,6 +230,7 @@ class CustomerController extends Controller implements HasMiddleware
         $validated['credit_limit'] = $validated['credit_limit'] ?? 0.00;
         $validated['credit_days'] = $validated['credit_days'] ?? 0;
         $validated['outstanding_balance'] = $validated['outstanding_balance'] ?? 0.00;
+        $validated['wallet_balance'] = $validated['wallet_balance'] ?? 0.00;
         $validated['kyc_completed'] = (bool) ($validated['kyc_completed'] ?? false);
         $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
         $validated['is_blacklisted'] = (bool) ($validated['is_blacklisted'] ?? false);
@@ -347,6 +379,7 @@ class CustomerController extends Controller implements HasMiddleware
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'credit_days' => ['nullable', 'integer', 'min:0'],
             'outstanding_balance' => ['nullable', 'numeric'],
+            'wallet_balance' => ['nullable', 'numeric'],
             'credit_valid_till' => ['nullable', 'date'],
             'aadhaar_last4' => ['nullable', 'digits:4'],
             'kyc_completed' => ['nullable', 'boolean'],

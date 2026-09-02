@@ -442,6 +442,10 @@
                                         </div>
                                         <div class="col-sm-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Wallet Balance</label>
+                                            <input type="number" step="0.01" name="wallet_balance" x-model="form.wallet_balance" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Outstanding Bal.</label>
                                             <input type="number" step="0.01" name="outstanding_balance" x-model="form.outstanding_balance" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-6">
@@ -507,7 +511,7 @@ document.addEventListener('alpine:init', () => {
         form: {
             firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
             category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
-            land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: '', referred_by_code: '',
+            land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', wallet_balance: '', credit_valid_till: '', referred_by_code: '',
             address_line_1: '', address_line_2: '', village_id: '', village_name: '', post_office: '', taluka: '', district: '', city: '', state: '', pincode: ''
         },
         avatarPreview: '{{ asset('assets/images/farmersprofileimage.png') }}',
@@ -585,7 +589,7 @@ document.addEventListener('alpine:init', () => {
             this.form = {
                 firstname: '', middlename: '', lastname: '', email: '', phone: '', alternatemobile: '', relative_name: '', relative_phone: '',
                 category: 'individual', status: 'active', internal_notes: '', company_name: '', gst_no: '', pan_no: '', tax_no: '', aadhaar_last4: '', kyc_completed: false, is_blacklisted: false,
-                land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', credit_valid_till: '', referred_by_code: '',
+                land_area: '', land_unit: 'Acre', credit_limit: '', credit_days: '', outstanding_balance: '', wallet_balance: '', credit_valid_till: '', referred_by_code: '',
                 address_line_1: '', address_line_2: '', village_id: '', village_name: '', post_office: '', taluka: '', district: '', city: '', state: '', pincode: ''
             };
             this.selectedSources = [];
