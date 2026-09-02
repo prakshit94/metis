@@ -127,7 +127,7 @@ class ChatService
             $conversation->touch();
 
             $preview = str($message->content ?? $message->type)->limit(120)->toString();
-            ProcessMessageDeliveries::dispatch(
+            ProcessMessageDeliveries::dispatchAfterResponse(
                 $message->id,
                 $conversation->id,
                 $sender->id,
@@ -309,14 +309,16 @@ class ChatService
             ->get()
             ->keyBy('user_id');
 
-        $todayOrders = DB::table('orders')
-            ->selectRaw('created_by, count(*) as today_orders, sum(net_amount) as today_revenue')
-            ->whereIn('created_by', $userIds)
-            ->whereNotIn('status', ['cancelled', 'future_order'])
-            ->whereDate('order_date', now()->toDateString())
-            ->groupBy('created_by')
-            ->get()
-            ->keyBy('created_by');
+        $todayOrders = \Illuminate\Support\Facades\Cache::remember('chat_today_orders_' . now()->toDateString(), 60, function () use ($userIds) {
+            return DB::table('orders')
+                ->selectRaw('created_by, count(*) as today_orders, sum(net_amount) as today_revenue')
+                ->whereIn('created_by', $userIds)
+                ->whereNotIn('status', ['cancelled', 'future_order'])
+                ->whereDate('order_date', now()->toDateString())
+                ->groupBy('created_by')
+                ->get()
+                ->keyBy('created_by');
+        });
 
         $tokens = DB::table('personal_access_tokens')
             ->selectRaw('tokenable_id, max(COALESCE(last_used_at, created_at)) as last_token_activity')
