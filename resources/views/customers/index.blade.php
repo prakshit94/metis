@@ -927,26 +927,22 @@
                 </div>
                                 <template x-if="previewData.length > 0 && !result">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small text-muted">Preview (First 5 Rows)</label>
+                        <label class="form-label fw-semibold small text-muted">Preview (All Rows)</label>
                         <div class="table-responsive border rounded">
-                            <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                            <table class="table table-sm table-hover align-middle mb-0 text-nowrap" style="font-size: 0.85rem;">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>First Name</th>
-                                        <th>Last Name</th>
-                                        <th>Email</th>
-                                        <th>Phone</th>
-                                        <th>Category</th>
+                                        <template x-for="(header, index) in previewHeaders" :key="index">
+                                            <th x-text="header"></th>
+                                        </template>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <template x-for="(row, index) in previewData" :key="index">
+                                    <template x-for="(row, rowIndex) in previewData" :key="rowIndex">
                                         <tr>
-                                            <td x-text="row.firstname || '—'"></td>
-                                            <td x-text="row.lastname || '—'"></td>
-                                            <td x-text="row.email || '—'"></td>
-                                            <td x-text="row.phone || '—'"></td>
-                                            <td x-text="row.category || '—'"></td>
+                                            <template x-for="(col, colIndex) in row" :key="colIndex">
+                                                <td x-text="col || '—'"></td>
+                                            </template>
                                         </tr>
                                     </template>
                                 </tbody>

@@ -828,6 +828,7 @@ document.addEventListener('alpine:init', () => {
     file:     null,
     importing: false,
     result:   null,
+    previewHeaders: [],
     previewData: [],
 
     async importCustomers() {
@@ -957,43 +958,51 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    expectedHeaders: [
+      'First Name', 'Middle Name', 'Last Name', 'Email', 'Phone', 'Alternate Mobile',
+      'Relative Name', 'Relative Phone', 'Category', 'Company Name', 'GST No', 'PAN No', 'Tax No',
+      'Land Area', 'Land Unit', 'Credit Limit', 'Credit Days', 'Outstanding Balance', 'Wallet Balance',
+      'Credit Valid Till', 'Aadhaar Last 4', 'KYC Completed', 'Status', 'Is Active', 'Is Blacklisted',
+      'Internal Notes', 'Crops', 'Irrigation Source', 'Source', 'Tags',
+      'Address Label', 'Address Line 1', 'Address Line 2', 'City', 'State', 'Pincode'
+    ],
+
     async handleFile(event) {
       this.file   = event.target.files[0] ?? null;
       this.result = null;
+      this.previewHeaders = [];
       this.previewData = [];
       
       if (this.file) {
         try {
           const text = await this.file.text();
           const lines = text.trim().split('\n').filter(l => l.trim());
+          if (lines.length > 0) {
+            const parsedHeaders = parseCsvLine(lines[0]);
+            
+            // Validate headers
+            if (parsedHeaders.join(',') !== this.expectedHeaders.join(',')) {
+               showToast('Invalid Format! Please use the provided template exactly as is.', 'error');
+               event.target.value = '';
+               this.file = null;
+               return;
+            }
+            this.previewHeaders = parsedHeaders;
+          }
           if (lines.length > 1) {
-            const previewLines = lines.slice(1, 6);
-            this.previewData = previewLines.map(line => {
-              const values = parseCsvLine(line);
-              return {
-                firstname: values[0],
-                lastname: values[2],
-                email: values[3],
-                phone: values[4],
-                category: values[8]
-              };
-            });
+            const previewLines = lines.slice(1);
+            this.previewData = previewLines.map(line => parseCsvLine(line));
           }
         } catch (e) {
           console.error("Preview failed", e);
+          showToast('Failed to parse file. Ensure it is a valid CSV.', 'error');
+          event.target.value = '';
+          this.file = null;
         }
       }
     },
 
     downloadTemplate() {
-      const headers = [
-        'First Name', 'Middle Name', 'Last Name', 'Email', 'Phone', 'Alternate Mobile',
-        'Relative Name', 'Relative Phone', 'Category', 'Company Name', 'GST No', 'PAN No', 'Tax No',
-        'Land Area', 'Land Unit', 'Credit Limit', 'Credit Days', 'Outstanding Balance', 'Wallet Balance',
-        'Credit Valid Till', 'Aadhaar Last 4', 'KYC Completed', 'Status', 'Is Active', 'Is Blacklisted',
-        'Internal Notes', 'Crops', 'Irrigation Source', 'Source', 'Tags',
-        'Address Label', 'Address Line 1', 'Address Line 2', 'City', 'State', 'Pincode'
-      ];
       const exampleRow = [
         'John', 'Marie', 'Doe', 'john@example.com', '9876543210', '9876543211',
         'Jane Doe', '9876543212', 'individual', 'Acme Corp', '22AAAAA0000A1Z5', 'ABCDE1234F', '',
@@ -1002,7 +1011,7 @@ document.addEventListener('alpine:init', () => {
         'Good customer', 'Wheat;Rice', 'Drip;Sprinkler', 'Walk-in', 'VIP;Bulk',
         'Office', '123 Main St', 'Suite 100', 'Mumbai', 'Maharashtra', '400001'
       ];
-      const csv = [headers, exampleRow].map(r => r.map(csvEscape).join(',')).join('\n');
+      const csv = [this.expectedHeaders, exampleRow].map(r => r.map(csvEscape).join(',')).join('\n');
       downloadBlob('customers-import-template.csv', csv, 'text/csv;charset=utf-8;');
       showToast('Template downloaded successfully.');
     }
