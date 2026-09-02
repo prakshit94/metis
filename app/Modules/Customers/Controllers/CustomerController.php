@@ -301,8 +301,8 @@ class CustomerController extends Controller implements HasMiddleware
                         'items.product:id,name,sku,image_path,tax_rate_id',
                         'items.product.taxRate',
                         'warehouse:id,name',
-                        'shippingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
-                        'billingAddress:id,party_id,label,address_line_1,address_line_2,city,state,pincode',
+                        'shippingAddress:id,party_id,label,address_line_1,address_line_2,village_id,village_name,post_office,taluka,district,city,state,pincode',
+                        'billingAddress:id,party_id,label,address_line_1,address_line_2,village_id,village_name,post_office,taluka,district,city,state,pincode',
                         'appliedOffer:id,name,discount_type,value',
                         'creator:id,first_name,last_name,name',
                     ]);

@@ -400,7 +400,7 @@
                                                     </div>
                                                     <p class="mb-1 small fw-bold" x-text="addr.address_line_1"></p>
                                                     <p class="mb-1 small text-body-secondary" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
-                                                    <p class="mb-1 small text-body-secondary" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
+                                                    <p class="mb-1 small text-body-secondary" x-show="addr.village || addr.village_name" x-text="[(addr.village?.village_name || addr.village_name) ? 'Vill: '+(addr.village?.village_name || addr.village_name) : null, (addr.village?.post_so_name || addr.post_office) ? 'PO: '+(addr.village?.post_so_name || addr.post_office) : null, (addr.village?.taluka_name || addr.taluka) ? 'Ta: '+(addr.village?.taluka_name || addr.taluka) : null, (addr.village?.district_name || addr.district) ? 'Dist: '+(addr.village?.district_name || addr.district) : null].filter(Boolean).join(', ')"></p>
                                                     <p class="mb-0 small text-body-secondary fw-medium">
                                                         <span x-show="addr.city" x-text="addr.city + ', '"></span>
                                                         <span x-show="addr.state" x-text="addr.state"></span>
@@ -466,7 +466,7 @@
                                                     </div>
                                                     <p class="mb-1 small fw-bold" x-text="addr.address_line_1"></p>
                                                     <p class="mb-1 small text-body-secondary" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
-                                                    <p class="mb-1 small text-body-secondary" x-show="addr.village" x-text="[addr.village?.village_name ? 'Vill: '+addr.village?.village_name : null, addr.village?.post_so_name ? 'PO: '+addr.village?.post_so_name : null, addr.village?.taluka_name ? 'Ta: '+addr.village?.taluka_name : null, addr.village?.district_name ? 'Dist: '+addr.village?.district_name : null].filter(Boolean).join(', ')"></p>
+                                                    <p class="mb-1 small text-body-secondary" x-show="addr.village || addr.village_name" x-text="[(addr.village?.village_name || addr.village_name) ? 'Vill: '+(addr.village?.village_name || addr.village_name) : null, (addr.village?.post_so_name || addr.post_office) ? 'PO: '+(addr.village?.post_so_name || addr.post_office) : null, (addr.village?.taluka_name || addr.taluka) ? 'Ta: '+(addr.village?.taluka_name || addr.taluka) : null, (addr.village?.district_name || addr.district) ? 'Dist: '+(addr.village?.district_name || addr.district) : null].filter(Boolean).join(', ')"></p>
                                                     <p class="mb-0 small text-body-secondary fw-medium">
                                                         <span x-show="addr.city" x-text="addr.city + ', '"></span>
                                                         <span x-show="addr.state" x-text="addr.state"></span>
@@ -1314,7 +1314,7 @@
                                                                             <i class="bi bi-truck text-body-secondary me-2 opacity-75"></i>
                                                                             <div class="fw-bold text-body-emphasis" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Shipping Address</div>
                                                                         </div>
-                                                                        <div class="small text-body-secondary lh-sm" style="font-size: 0.75rem;" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name, order.shipping_post_office, order.shipping_taluka, order.shipping_city, order.shipping_district, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') : 'Not available'">
+                                                                        <div class="small text-body-secondary lh-sm" style="font-size: 0.75rem;" x-text="[order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name ? 'Vill: '+order.shipping_village_name : null, order.shipping_post_office ? 'PO: '+order.shipping_post_office : null, order.shipping_taluka ? 'Ta: '+order.shipping_taluka : null, order.shipping_city, order.shipping_district ? 'Dist: '+order.shipping_district : null, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') || 'Not available'">
                                                                         </div>
                                                                     </div>
                                                                     
@@ -1323,7 +1323,7 @@
                                                                             <i class="bi bi-receipt text-body-secondary me-2 opacity-75"></i>
                                                                             <div class="fw-bold text-body-emphasis" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Billing Address</div>
                                                                         </div>
-                                                                        <div class="small text-body-secondary lh-sm" style="font-size: 0.75rem;" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name, order.billing_post_office, order.billing_taluka, order.billing_city, order.billing_district, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') : 'Not available'">
+                                                                        <div class="small text-body-secondary lh-sm" style="font-size: 0.75rem;" x-text="[order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name ? 'Vill: '+order.billing_village_name : null, order.billing_post_office ? 'PO: '+order.billing_post_office : null, order.billing_taluka ? 'Ta: '+order.billing_taluka : null, order.billing_city, order.billing_district ? 'Dist: '+order.billing_district : null, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') || 'Not available'">
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -1495,13 +1495,13 @@
                                                         <div class="col-lg-4">
                                                             <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
                                                                 <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Shipping</div>
-                                                                <div class="small text-body-secondary" x-text="order.shipping_address_line_1 ? [order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name, order.shipping_post_office, order.shipping_taluka, order.shipping_city, order.shipping_district, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') : 'Not available'"></div>
+                                                                <div class="small text-body-secondary" x-text="[order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name ? 'Vill: '+order.shipping_village_name : null, order.shipping_post_office ? 'PO: '+order.shipping_post_office : null, order.shipping_taluka ? 'Ta: '+order.shipping_taluka : null, order.shipping_city, order.shipping_district ? 'Dist: '+order.shipping_district : null, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') || 'Not available'"></div>
                                                             </div>
                                                         </div>
                                                         <div class="col-lg-4">
                                                             <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
                                                                 <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Billing</div>
-                                                                <div class="small text-body-secondary" x-text="order.billing_address_line_1 ? [order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name, order.billing_post_office, order.billing_taluka, order.billing_city, order.billing_district, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') : 'Same as shipping'"></div>
+                                                                <div class="small text-body-secondary" x-text="[order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name ? 'Vill: '+order.billing_village_name : null, order.billing_post_office ? 'PO: '+order.billing_post_office : null, order.billing_taluka ? 'Ta: '+order.billing_taluka : null, order.billing_city, order.billing_district ? 'Dist: '+order.billing_district : null, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') || 'Same as shipping'"></div>
                                                             </div>
                                                         </div>
                                                     </div>

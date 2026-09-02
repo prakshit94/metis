@@ -27,15 +27,19 @@ class CustomerAddressController extends Controller implements HasMiddleware
     public function store(Request $request, Party $customer): JsonResponse
     {
         $validated = $request->validate([
-            'label' => ['required', 'string', 'max:255'],
-            'status' => ['nullable', 'string', 'in:active,inactive'],
+            'label'          => ['required', 'string', 'max:255'],
+            'status'         => ['nullable', 'string', 'in:active,inactive'],
             'address_line_1' => ['nullable', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
-            'village_id' => ['nullable', 'exists:villages,id'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'state' => ['nullable', 'string', 'max:255'],
-            'pincode' => ['nullable', 'string', 'max:20'],
-            'is_default' => ['nullable', 'boolean'],
+            'village_id'     => ['nullable', 'exists:villages,id'],
+            'village_name'   => ['nullable', 'string', 'max:255'],
+            'post_office'    => ['nullable', 'string', 'max:255'],
+            'taluka'         => ['nullable', 'string', 'max:255'],
+            'district'       => ['nullable', 'string', 'max:255'],
+            'city'           => ['nullable', 'string', 'max:255'],
+            'state'          => ['nullable', 'string', 'max:255'],
+            'pincode'        => ['nullable', 'string', 'max:20'],
+            'is_default'     => ['nullable', 'boolean'],
         ]);
 
         // Defaults
@@ -56,15 +60,22 @@ class CustomerAddressController extends Controller implements HasMiddleware
         $address->is_default = $isDefault;
 
         if (! empty($validated['village_id'])) {
+            // Prefer live village record for accuracy
             $village = Village::find($validated['village_id']);
             if ($village) {
                 $address->village_name = $village->village_name;
-                $address->post_office = $village->post_so_name;
-                $address->taluka = $village->taluka_name;
-                $address->district = $village->district_name;
-                $address->state = $address->state ?? $village->state_name;
-                $address->pincode = $address->pincode ?? $village->pincode;
+                $address->post_office  = $village->post_so_name;
+                $address->taluka       = $village->taluka_name;
+                $address->district     = $village->district_name;
+                $address->state        = $address->state   ?? $village->state_name;
+                $address->pincode      = $address->pincode ?? $village->pincode;
             }
+        } else {
+            // No village_id (e.g. CSV import with plain-text geographic fields)
+            $address->village_name = $validated['village_name'] ?? null;
+            $address->post_office  = $validated['post_office']  ?? null;
+            $address->taluka       = $validated['taluka']       ?? null;
+            $address->district     = $validated['district']     ?? null;
         }
 
         $customer->addresses()->save($address);
@@ -82,15 +93,19 @@ class CustomerAddressController extends Controller implements HasMiddleware
         }
 
         $validated = $request->validate([
-            'label' => ['required', 'string', 'max:255'],
-            'status' => ['nullable', 'string', 'in:active,inactive'],
+            'label'          => ['required', 'string', 'max:255'],
+            'status'         => ['nullable', 'string', 'in:active,inactive'],
             'address_line_1' => ['nullable', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
-            'village_id' => ['nullable', 'exists:villages,id'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'state' => ['nullable', 'string', 'max:255'],
-            'pincode' => ['nullable', 'string', 'max:20'],
-            'is_default' => ['nullable', 'boolean'],
+            'village_id'     => ['nullable', 'exists:villages,id'],
+            'village_name'   => ['nullable', 'string', 'max:255'],
+            'post_office'    => ['nullable', 'string', 'max:255'],
+            'taluka'         => ['nullable', 'string', 'max:255'],
+            'district'       => ['nullable', 'string', 'max:255'],
+            'city'           => ['nullable', 'string', 'max:255'],
+            'state'          => ['nullable', 'string', 'max:255'],
+            'pincode'        => ['nullable', 'string', 'max:20'],
+            'is_default'     => ['nullable', 'boolean'],
         ]);
 
         // Defaults
@@ -105,16 +120,18 @@ class CustomerAddressController extends Controller implements HasMiddleware
         $validated['is_default'] = $isDefault;
 
         if (! empty($validated['village_id'])) {
+            // Prefer live village record for accuracy
             $village = Village::find($validated['village_id']);
             if ($village) {
                 $validated['village_name'] = $village->village_name;
-                $validated['post_office'] = $village->post_so_name;
-                $validated['taluka'] = $village->taluka_name;
-                $validated['district'] = $village->district_name;
-                $validated['state'] = $validated['state'] ?? $village->state_name;
-                $validated['pincode'] = $validated['pincode'] ?? $village->pincode;
+                $validated['post_office']  = $village->post_so_name;
+                $validated['taluka']       = $village->taluka_name;
+                $validated['district']     = $village->district_name;
+                $validated['state']        = $validated['state']   ?? $village->state_name;
+                $validated['pincode']      = $validated['pincode'] ?? $village->pincode;
             }
         }
+        // When no village_id, plain-text geographic fields from $validated are already present
 
         $address->update($validated);
 

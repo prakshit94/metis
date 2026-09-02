@@ -218,19 +218,19 @@ br {
                   @endif
                   <tr>
                      <td class="label">Village</td>
-                     <td>{{ $invoice->order->billingAddress->village->village_name ?? $invoice->order->billingAddress->city ?? '-' }}</td>
+                     <td>{{ $invoice->order->billingAddress->village->village_name ?? $invoice->order->billingAddress->village_name ?? $invoice->order->billingAddress->city ?? '-' }}</td>
                   </tr>
                   <tr>
                      <td class="label">Taluka</td>
-                     <td>{{ $invoice->order->billingAddress->village->taluka_name ?? '-' }}</td>
+                     <td>{{ $invoice->order->billingAddress->village->taluka_name ?? $invoice->order->billingAddress->taluka ?? '-' }}</td>
                   </tr>
                   <tr>
                      <td class="label">District</td>
-                     <td>{{ $invoice->order->billingAddress->village->district_name ?? '-' }}</td>
+                     <td>{{ $invoice->order->billingAddress->village->district_name ?? $invoice->order->billingAddress->district ?? '-' }}</td>
                   </tr>
                   <tr>
                      <td class="label">Post Office</td>
-                     <td>{{ $invoice->order->billingAddress->village->post_so_name ?? '-' }}</td>
+                     <td>{{ $invoice->order->billingAddress->village->post_so_name ?? $invoice->order->billingAddress->post_office ?? '-' }}</td>
                   </tr>
                   <tr>
                      <td class="label">State / PIN</td>
@@ -275,19 +275,19 @@ br {
                   @endif
                   <tr>
                      <td class="label">Village</td>
-                     <td>{{ $invoice->order->shippingAddress->village->village_name ?? $invoice->order->shippingAddress->city ?? '-' }}</td>
+                     <td>{{ $invoice->order->shippingAddress->village->village_name ?? $invoice->order->shippingAddress->village_name ?? $invoice->order->shippingAddress->city ?? '-' }}</td>
                   </tr>
                   <tr>
                      <td class="label">Taluka</td>
-                     <td>{{ $invoice->order->shippingAddress->village->taluka_name ?? '-' }}</td>
+                     <td>{{ $invoice->order->shippingAddress->village->taluka_name ?? $invoice->order->shippingAddress->taluka ?? '-' }}</td>
                   </tr>
                   <tr>
                      <td class="label">District</td>
-                     <td>{{ $invoice->order->shippingAddress->village->district_name ?? '-' }}</td>
+                     <td>{{ $invoice->order->shippingAddress->village->district_name ?? $invoice->order->shippingAddress->district ?? '-' }}</td>
                   </tr>
                   <tr>
                      <td class="label">Post Office</td>
-                     <td>{{ $invoice->order->shippingAddress->village->post_so_name ?? '-' }}</td>
+                     <td>{{ $invoice->order->shippingAddress->village->post_so_name ?? $invoice->order->shippingAddress->post_office ?? '-' }}</td>
                   </tr>
                   <tr>
                      <td class="label">State / PIN</td>

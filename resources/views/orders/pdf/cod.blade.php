@@ -163,14 +163,10 @@
                 @if($address->address_line_2) 
                     {{ $address->address_line_2 }}<br>
                 @endif
-                @if($address->village) 
-                    <strong>Village:</strong> {{ $address->village->village_name ?? $address->city ?? '-' }},
-                @endif
-                @if($address->village && $address->village->taluka_name) 
-                    <strong>Taluka:</strong> {{ $address->village->taluka_name }}, 
-                @endif
-                <strong>District:</strong> {{ $address->village->district_name ?? '-' }}<br>
-                <strong>Post Office:</strong> {{ $address->village->post_so_name ?? '-' }}<br>
+                <strong>Village:</strong> {{ $address->village->village_name ?? $address->village_name ?? $address->city ?? '-' }},
+                <strong>Taluka:</strong> {{ $address->village->taluka_name ?? $address->taluka ?? '-' }}, 
+                <strong>District:</strong> {{ $address->village->district_name ?? $address->district ?? '-' }}<br>
+                <strong>Post Office:</strong> {{ $address->village->post_so_name ?? $address->post_office ?? '-' }}<br>
                 <strong>State:</strong> {{ $address->state }} - {{ $address->pincode }}<br>
             @else
                 <strong>Address:</strong> N/A (No Address details available)<br>

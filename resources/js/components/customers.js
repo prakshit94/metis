@@ -533,12 +533,29 @@ document.addEventListener('alpine:init', () => {
     },
 
     async fetchAllFilteredCustomers() {
-      const first = await apiFetch(`/api/customers?page=1&per_page=100&sort_by=${this.sortField}&sort_dir=${this.sortDirection}`);
-      const mapped = (first.data ?? []).map(c => this._mapCustomer(c));
+      // Build the same filter params as the table view
+      const buildParams = (page) => {
+        const p = new URLSearchParams({
+          page,
+          per_page: 100,
+          sort_by: this.sortField,
+          sort_dir: this.sortDirection,
+        });
+        if (this.searchQuery)   p.set('search', this.searchQuery);
+        if (this.statusFilter) {
+          if (this.statusFilter === 'deleted') p.set('deleted', 'only');
+          else p.set('status', this.statusFilter);
+        }
+        if (this.categoryFilter) p.set('category', this.categoryFilter);
+        return p.toString();
+      };
+
+      const first    = await apiFetch(`/api/customers?${buildParams(1)}`);
+      const mapped   = (first.data ?? []).map(c => this._mapCustomer(c));
       const lastPage = first.last_page ?? 1;
 
       for (let page = 2; page <= lastPage; page++) {
-        const data = await apiFetch(`/api/customers?page=${page}&per_page=100&sort_by=${this.sortField}&sort_dir=${this.sortDirection}`);
+        const data = await apiFetch(`/api/customers?${buildParams(page)}`);
         mapped.push(...(data.data ?? []).map(c => this._mapCustomer(c)));
       }
       return mapped;
@@ -547,39 +564,112 @@ document.addEventListener('alpine:init', () => {
     async exportCustomers() {
       try {
         let list = await this.fetchAllFilteredCustomers();
-        
+
         if (this.selectedCustomers && this.selectedCustomers.length > 0) {
-            list = list.filter(c => this.selectedCustomers.includes(c.id));
+          list = list.filter(c => this.selectedCustomers.includes(c.id));
         }
+
+        // ── All columns from parties migration + party_addresses migration ──
         const headers = [
-          'First Name', 'Middle Name', 'Last Name', 'Email', 'Phone', 'Alternate Mobile',
-          'Relative Name', 'Relative Phone', 'Category', 'Company Name', 'GST No', 'PAN No', 'Tax No',
-          'Land Area', 'Land Unit', 'Credit Limit', 'Credit Days', 'Outstanding Balance', 'Wallet Balance',
-          'Credit Valid Till', 'Aadhaar Last 4', 'KYC Completed', 'Status', 'Is Active', 'Is Blacklisted',
-          'Internal Notes', 'Crops', 'Irrigation Source', 'Source', 'Tags',
-          'Address Label', 'Address Line 1', 'Address Line 2', 'City', 'State', 'Pincode'
+          // Identity
+          'Party Code', 'UUID', 'Referral Code', 'Referred By (Party Code)',
+          // Name
+          'First Name', 'Middle Name', 'Last Name',
+          // Contact
+          'Email', 'Phone', 'Alternate Mobile', 'Relative Name', 'Relative Phone',
+          // Classification
+          'Source', 'Category',
+          // Business
+          'Company Name', 'GST No', 'PAN No', 'Tax No',
+          // Agriculture
+          'Land Area', 'Land Unit', 'Crops', 'Irrigation Type',
+          // Financial
+          'Credit Limit', 'Credit Days', 'Outstanding Balance', 'Wallet Balance', 'Credit Valid Till',
+          // KYC
+          'Aadhaar Last 4', 'KYC Completed', 'KYC Verified At',
+          // Engagement
+          'First Purchase At', 'Last Purchase At', 'Orders Count',
+          // Status
+          'Status', 'Is Active', 'Is Blacklisted', 'Internal Notes', 'Tags',
+          // Address columns (party_addresses)
+          'Addr Label', 'Addr Line 1', 'Addr Line 2',
+          'Village Name', 'Post Office', 'Taluka', 'District',
+          'City', 'State', 'Pincode',
+          'Addr Is Default', 'Addr Status',
         ];
+
         const rows = [];
+
         list.forEach(c => {
+          const source  = Array.isArray(c.source)         ? c.source         : (c.source         ? JSON.parse(c.source         || '[]') : []);
+          const tags    = Array.isArray(c.tags)           ? c.tags           : (c.tags           ? JSON.parse(c.tags           || '[]') : []);
+          const crops   = Array.isArray(c.crops)          ? c.crops          : (c.crops          ? JSON.parse(c.crops          || '[]') : []);
+          const irrig   = Array.isArray(c.irrigation_type)? c.irrigation_type: (c.irrigation_type? JSON.parse(c.irrigation_type|| '[]') : []);
+
+          const fmt = (v) => v ? String(v).split('T')[0] : '';
+
           const baseRow = [
-            c.firstname || '', c.middlename || '', c.lastname || '', c.email || '', c.phone || '', c.alternatemobile || '',
-            c.relative_name || '', c.relative_phone || '', c.category || 'individual', c.company_name || '', c.gst_no || '', c.pan_no || '', c.tax_no || '',
-            c.land_area || '', c.land_unit || '', c.credit_limit || '0', c.credit_days || '0', c.outstanding_balance || '0', c.wallet_balance || '0',
-            c.credit_valid_till ? c.credit_valid_till.split('T')[0] : '', c.aadhaar_last4 || '', c.kyc_completed ? 'true' : 'false', c.status || 'active', c.is_active ? 'true' : 'false', c.is_blacklisted ? 'true' : 'false',
-            c.internal_notes || '', (c.cropsList || []).join(';'), (c.irrigationList || []).join(';'), (Array.isArray(c.source) ? c.source : JSON.parse(c.source || '[]')).join(';'), (Array.isArray(c.tags) ? c.tags : JSON.parse(c.tags || '[]')).join(';')
+            // Identity
+            c.party_code     || '',
+            c.uuid           || '',
+            c.referral_code  || '',
+            c.referrer?.party_code || '',
+            // Name
+            c.firstname  || '', c.middlename || '', c.lastname || '',
+            // Contact
+            c.email || '', c.phone || '', c.alternatemobile || '',
+            c.relative_name || '', c.relative_phone || '',
+            // Classification
+            source.join(';'), c.category || 'individual',
+            // Business
+            c.company_name || '', c.gst_no || '', c.pan_no || '', c.tax_no || '',
+            // Agriculture
+            c.land_area || '', c.land_unit || '',
+            crops.join(';'), irrig.join(';'),
+            // Financial
+            c.credit_limit || '0', c.credit_days || '0',
+            c.outstanding_balance || '0', c.wallet_balance || '0',
+            fmt(c.credit_valid_till),
+            // KYC
+            c.aadhaar_last4 || '',
+            c.kyc_completed ? 'true' : 'false',
+            fmt(c.kyc_verified_at),
+            // Engagement
+            fmt(c.first_purchase_at), fmt(c.last_purchase_at),
+            c.orders_count ?? '',
+            // Status
+            c.status || 'active',
+            c.is_active       ? 'true' : 'false',
+            c.is_blacklisted  ? 'true' : 'false',
+            c.internal_notes  || '',
+            tags.join(';'),
           ];
-          
-          if (c.addresses && c.addresses.length > 0) {
-            c.addresses.forEach(addr => {
-              rows.push([...baseRow, addr.label || '', addr.address_line_1 || '', addr.address_line_2 || '', addr.city || '', addr.state || '', addr.pincode || '']);
-            });
-          } else {
-            rows.push([...baseRow, '', '', '', '', '', '']);
-          }
+
+          const addresses = c.addresses && c.addresses.length > 0 ? c.addresses : [null];
+
+          addresses.forEach(addr => {
+            const addrRow = addr ? [
+              addr.label            || '',
+              addr.address_line_1   || '',
+              addr.address_line_2   || '',
+              addr.village_name     || (addr.village?.village_name  || ''),
+              addr.post_office      || (addr.village?.post_so_name  || ''),
+              addr.taluka           || (addr.village?.taluka_name   || ''),
+              addr.district         || (addr.village?.district_name || ''),
+              addr.city             || '',
+              addr.state            || '',
+              addr.pincode          || '',
+              addr.is_default       ? 'true' : 'false',
+              addr.status           || 'active',
+            ] : ['', '', '', '', '', '', '', '', '', '', '', ''];
+
+            rows.push([...baseRow, ...addrRow]);
+          });
         });
+
         const csv = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\n');
         downloadBlob('customers-export.csv', csv, 'text/csv;charset=utf-8;');
-        showToast(`Exported ${list.length} customer(s).`);
+        showToast(`Exported ${list.length} customer(s) with full details.`);
       } catch (err) {
         showToast('Export failed: ' + err.message, 'danger');
       }
@@ -855,70 +945,95 @@ document.addEventListener('alpine:init', () => {
       for (let i = 1; i < lines.length; i++) {
         const values = parseCsvLine(lines[i]);
         const [
-          firstname, middlename, lastname, email, phone, alternatemobile,
-          relative_name, relative_phone, category, company_name, gst_no, pan_no, tax_no,
-          land_area, land_unit, credit_limit, credit_days, outstanding_balance, wallet_balance,
-          credit_valid_till, aadhaar_last4, kyc_completed, statusRaw, is_active, is_blacklisted,
-          internal_notes, crops, irrigation_type, source, tags,
-          address_label, address_line_1, address_line_2, city, state, pincode
+          // Identity
+          party_code, _uuid, _referral_code, _referred_by_code,
+          // Name
+          firstname, middlename, lastname,
+          // Contact
+          email, phone, alternatemobile, relative_name, relative_phone,
+          // Classification
+          source, category,
+          // Business
+          company_name, gst_no, pan_no, tax_no,
+          // Agriculture
+          land_area, land_unit, crops, irrigation_type,
+          // Financial
+          credit_limit, credit_days, outstanding_balance, wallet_balance, credit_valid_till,
+          // KYC
+          aadhaar_last4, kyc_completed, _kyc_verified_at,
+          // Engagement (read-only, ignored on import)
+          _first_purchase_at, _last_purchase_at, _orders_count,
+          // Status
+          statusRaw, is_active, is_blacklisted, internal_notes, tags,
+          // Address (party_addresses)
+          address_label, address_line_1, address_line_2,
+          village_name, post_office, taluka, district,
+          city, state, pincode,
+          addr_is_default, _addr_status,
         ] = values;
 
         if (!firstname || !lastname) { errors.push(`Row ${i + 1}: missing first or last name`); continue; }
-        
+
         const uniqueKey = phone || email || `${firstname} ${lastname}`;
-        
+
         if (!customerMap[uniqueKey]) {
-            const status = ['active', 'inactive', 'suspended'].includes(statusRaw?.toLowerCase()) ? statusRaw.toLowerCase() : 'active';
-            
-            customerMap[uniqueKey] = {
-              rowIndex: i + 1,
-              payload: {
-                  firstname,
-                  middlename: middlename || null,
-                  lastname,
-                  email: email || null,
-                  phone: phone || null,
-                  alternatemobile: alternatemobile || null,
-                  relative_name: relative_name || null,
-                  relative_phone: relative_phone || null,
-                  category: ['individual', 'business'].includes(category?.toLowerCase()) ? category.toLowerCase() : 'individual',
-                  company_name: company_name || null,
-                  gst_no: gst_no || null,
-                  pan_no: pan_no || null,
-                  tax_no: tax_no || null,
-                  land_area: land_area ? parseFloat(land_area) : null,
-                  land_unit: land_unit || null,
-                  credit_limit: credit_limit ? parseFloat(credit_limit) : null,
-                  credit_days: credit_days ? parseInt(credit_days) : null,
-                  outstanding_balance: outstanding_balance ? parseFloat(outstanding_balance) : null,
-                  wallet_balance: wallet_balance ? parseFloat(wallet_balance) : null,
-                  credit_valid_till: credit_valid_till || null,
-                  aadhaar_last4: aadhaar_last4 || null,
-                  kyc_completed: kyc_completed?.toLowerCase() === 'true' || kyc_completed === '1',
-                  status,
-                  is_active: is_active?.toLowerCase() !== 'false' && is_active !== '0',
-                  is_blacklisted: is_blacklisted?.toLowerCase() === 'true' || is_blacklisted === '1',
-                  internal_notes: internal_notes || null,
-                  crops: crops ? crops.split(';').map(s => s.trim()).filter(Boolean) : [],
-                  irrigation_type: irrigation_type ? irrigation_type.split(';').map(s => s.trim()).filter(Boolean) : [],
-                  source: source ? source.split(';').map(s => s.trim()).filter(Boolean) : [],
-                  tags: tags ? tags.split(';').map(s => s.trim()).filter(Boolean) : [],
-              },
-              addresses: []
-            };
+          const status = ['active', 'inactive', 'suspended'].includes(statusRaw?.toLowerCase()) ? statusRaw.toLowerCase() : 'active';
+
+          customerMap[uniqueKey] = {
+            rowIndex: i + 1,
+            payload: {
+              party_code:         party_code || null,
+              firstname,
+              middlename:         middlename || null,
+              lastname,
+              email:              email || null,
+              phone:              phone || null,
+              alternatemobile:    alternatemobile || null,
+              relative_name:      relative_name || null,
+              relative_phone:     relative_phone || null,
+              source:             source ? source.split(';').map(s => s.trim()).filter(Boolean) : [],
+              category:           ['individual', 'business'].includes(category?.toLowerCase()) ? category.toLowerCase() : 'individual',
+              company_name:       company_name || null,
+              gst_no:             gst_no || null,
+              pan_no:             pan_no || null,
+              tax_no:             tax_no || null,
+              land_area:          land_area  ? parseFloat(land_area)  : null,
+              land_unit:          land_unit  || null,
+              crops:              crops         ? crops.split(';').map(s => s.trim()).filter(Boolean)         : [],
+              irrigation_type:    irrigation_type ? irrigation_type.split(';').map(s => s.trim()).filter(Boolean) : [],
+              credit_limit:       credit_limit       ? parseFloat(credit_limit)       : null,
+              credit_days:        credit_days        ? parseInt(credit_days)          : null,
+              outstanding_balance: outstanding_balance ? parseFloat(outstanding_balance) : null,
+              wallet_balance:     wallet_balance     ? parseFloat(wallet_balance)     : null,
+              credit_valid_till:  credit_valid_till  || null,
+              aadhaar_last4:      aadhaar_last4      || null,
+              kyc_completed:      kyc_completed?.toLowerCase() === 'true' || kyc_completed === '1',
+              status,
+              is_active:          is_active?.toLowerCase() !== 'false' && is_active !== '0',
+              is_blacklisted:     is_blacklisted?.toLowerCase() === 'true' || is_blacklisted === '1',
+              internal_notes:     internal_notes || null,
+              tags:               tags ? tags.split(';').map(s => s.trim()).filter(Boolean) : [],
+            },
+            addresses: []
+          };
         }
-        
-        if (address_line_1 || city || state || pincode) {
-            customerMap[uniqueKey].addresses.push({
-                label: address_label || (customerMap[uniqueKey].addresses.length === 0 ? 'Primary' : 'Secondary'),
-                address_line_1: address_line_1 || '',
-                address_line_2: address_line_2 || '',
-                city: city || '',
-                state: state || '',
-                pincode: pincode || '',
-                is_default: customerMap[uniqueKey].addresses.length === 0,
-                status: 'active'
-            });
+
+        if (address_line_1 || village_name || city || state || pincode) {
+          const addrCount = customerMap[uniqueKey].addresses.length;
+          customerMap[uniqueKey].addresses.push({
+            label:          address_label || (addrCount === 0 ? 'Primary' : 'Secondary'),
+            address_line_1: address_line_1 || '',
+            address_line_2: address_line_2 || '',
+            village_name:   village_name   || '',
+            post_office:    post_office    || '',
+            taluka:         taluka         || '',
+            district:       district       || '',
+            city:           city           || '',
+            state:          state          || '',
+            pincode:        pincode        || '',
+            is_default:     addr_is_default?.toLowerCase() === 'true' || addrCount === 0,
+            status:         'active',
+          });
         }
       }
 
@@ -959,12 +1074,31 @@ document.addEventListener('alpine:init', () => {
     },
 
     expectedHeaders: [
-      'First Name', 'Middle Name', 'Last Name', 'Email', 'Phone', 'Alternate Mobile',
-      'Relative Name', 'Relative Phone', 'Category', 'Company Name', 'GST No', 'PAN No', 'Tax No',
-      'Land Area', 'Land Unit', 'Credit Limit', 'Credit Days', 'Outstanding Balance', 'Wallet Balance',
-      'Credit Valid Till', 'Aadhaar Last 4', 'KYC Completed', 'Status', 'Is Active', 'Is Blacklisted',
-      'Internal Notes', 'Crops', 'Irrigation Source', 'Source', 'Tags',
-      'Address Label', 'Address Line 1', 'Address Line 2', 'City', 'State', 'Pincode'
+      // Identity
+      'Party Code', 'UUID', 'Referral Code', 'Referred By (Party Code)',
+      // Name
+      'First Name', 'Middle Name', 'Last Name',
+      // Contact
+      'Email', 'Phone', 'Alternate Mobile', 'Relative Name', 'Relative Phone',
+      // Classification
+      'Source', 'Category',
+      // Business
+      'Company Name', 'GST No', 'PAN No', 'Tax No',
+      // Agriculture
+      'Land Area', 'Land Unit', 'Crops', 'Irrigation Type',
+      // Financial
+      'Credit Limit', 'Credit Days', 'Outstanding Balance', 'Wallet Balance', 'Credit Valid Till',
+      // KYC
+      'Aadhaar Last 4', 'KYC Completed', 'KYC Verified At',
+      // Engagement
+      'First Purchase At', 'Last Purchase At', 'Orders Count',
+      // Status
+      'Status', 'Is Active', 'Is Blacklisted', 'Internal Notes', 'Tags',
+      // Address columns (party_addresses)
+      'Addr Label', 'Addr Line 1', 'Addr Line 2',
+      'Village Name', 'Post Office', 'Taluka', 'District',
+      'City', 'State', 'Pincode',
+      'Addr Is Default', 'Addr Status',
     ],
 
     async handleFile(event) {
@@ -1004,12 +1138,31 @@ document.addEventListener('alpine:init', () => {
 
     downloadTemplate() {
       const exampleRow = [
-        'John', 'Marie', 'Doe', 'john@example.com', '9876543210', '9876543211',
-        'Jane Doe', '9876543212', 'individual', 'Acme Corp', '22AAAAA0000A1Z5', 'ABCDE1234F', '',
-        '10', 'acres', '50000', '30', '0', '0',
-        '2026-12-31', '1234', 'true', 'active', 'true', 'false',
-        'Good customer', 'Wheat;Rice', 'Drip;Sprinkler', 'Walk-in', 'VIP;Bulk',
-        'Office', '123 Main St', 'Suite 100', 'Mumbai', 'Maharashtra', '400001'
+        // Identity (leave UUID/referral_code blank — auto-generated on import)
+        'CUST-EXAMPLE', '', '', '',
+        // Name
+        'John', 'Marie', 'Doe',
+        // Contact
+        'john@example.com', '9876543210', '9876543211', 'Jane Doe', '9876543212',
+        // Classification
+        'Walk-in', 'individual',
+        // Business
+        'Acme Corp', '22AAAAA0000A1Z5', 'ABCDE1234F', '',
+        // Agriculture
+        '10', 'acres', 'Wheat;Rice', 'Drip;Sprinkler',
+        // Financial
+        '50000', '30', '0', '0', '2026-12-31',
+        // KYC
+        '1234', 'true', '',
+        // Engagement (informational — not written on import)
+        '', '', '',
+        // Status
+        'active', 'true', 'false', 'Good customer', 'VIP;Bulk',
+        // Address
+        'Office', '123 Main St', 'Suite 100',
+        'Springfield', 'Main Post Office', 'Springfield Taluka', 'Springfield District',
+        'Mumbai', 'Maharashtra', '400001',
+        'true', 'active',
       ];
       const csv = [this.expectedHeaders, exampleRow].map(r => r.map(csvEscape).join(',')).join('\n');
       downloadBlob('customers-import-template.csv', csv, 'text/csv;charset=utf-8;');
