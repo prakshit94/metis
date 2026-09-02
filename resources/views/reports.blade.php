@@ -45,10 +45,14 @@
                             <option value="grn_discrepancy">GRN Discrepancy</option>
                         </optgroup>
                         <optgroup label="CRM & Support">
+                            <option value="suppliers_report">Suppliers Directory</option>
                             <option value="call_performance">Call Center Performance</option>
                             <option value="call_tagging">Call Tagging Analysis</option>
                             <option value="customer_retention">Customer Retention</option>
                             <option value="return_analysis">Return & Cancellation Analysis</option>
+                        </optgroup>
+                        <optgroup label="HR & Team">
+                            <option value="attendance_report">Employee Attendance</option>
                         </optgroup>
                         <optgroup label="System Auditing">
                             <option value="audit_trail">System Audit Trail</option>
