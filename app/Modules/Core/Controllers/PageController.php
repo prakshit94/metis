@@ -29,8 +29,37 @@ class PageController extends Controller
         $orderQuery = Order::query();
 
         if (! $isGlobalView) {
-            $customerQuery->where('created_by', $user->id);
-            $orderQuery->where('created_by', $user->id);
+            if ($user && $user->can('view_all_customer')) {
+                // Can see all customers
+            } else {
+                $customerQuery->where('created_by', $user->id);
+            }
+
+            $allowedStatuses = [];
+            if ($user) {
+                if ($user->can('orders.view.future_order')) $allowedStatuses[] = 'future_order';
+                if ($user->can('orders.view.pending')) {
+                    $allowedStatuses[] = 'pending';
+                    $allowedStatuses[] = 'pending_confirmation';
+                }
+                if ($user->can('orders.view.confirmed')) $allowedStatuses[] = 'confirmed';
+                if ($user->can('orders.view.processing')) $allowedStatuses[] = 'processing';
+                if ($user->can('orders.view.ready_to_ship')) $allowedStatuses[] = 'ready_to_ship';
+                if ($user->can('orders.view.dispatched')) $allowedStatuses[] = 'dispatched';
+                if ($user->can('orders.view.delivered')) $allowedStatuses[] = 'delivered';
+                if ($user->can('orders.view.return_requested')) $allowedStatuses[] = 'return_requested';
+                if ($user->can('orders.view.returned')) $allowedStatuses[] = 'returned';
+                if ($user->can('orders.view.cancelled')) $allowedStatuses[] = 'cancelled';
+            }
+
+            if (empty($allowedStatuses)) {
+                $orderQuery->whereRaw('1 = 0');
+            } else {
+                $orderQuery->whereIn('status', $allowedStatuses);
+                if (! ($user && $user->can('view_all_order'))) {
+                    $orderQuery->where('created_by', $user->id);
+                }
+            }
         }
 
         $filter = $request->input('filter', 'today');

@@ -182,7 +182,7 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     categoryFilter: '',
     stockFilter: '',
-    warehouseFilter: '',
+    warehouseFilter: window.userContext?.isMasterAdmin ? '' : (window.userContext?.warehouseId ? String(window.userContext.warehouseId) : ''),
     sortField: 'name',
     sortDirection: 'asc',
     isLoading: false,
@@ -513,7 +513,7 @@ document.addEventListener('alpine:init', () => {
       this.searchQuery = '';
       this.categoryFilter = '';
       this.stockFilter = '';
-      this.warehouseFilter = '';
+      this.warehouseFilter = window.userContext?.isMasterAdmin ? '' : (window.userContext?.warehouseId ? String(window.userContext.warehouseId) : '');
       this.filterProducts();
     },
 

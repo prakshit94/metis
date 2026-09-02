@@ -31,6 +31,39 @@ class OrderReturnController extends Controller implements HasMiddleware
     {
         $query = OrderReturn::with(['order.party', 'order.payments', 'order.shipments', 'items.product', 'refunds', 'creditNote']);
 
+        $user = auth()->user();
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
+        
+        if (! $isGlobalView) {
+            $allowedStatuses = [];
+            if ($user) {
+                if ($user->can('orders.view.future_order')) $allowedStatuses[] = 'future_order';
+                if ($user->can('orders.view.pending')) {
+                    $allowedStatuses[] = 'pending';
+                    $allowedStatuses[] = 'pending_confirmation';
+                }
+                if ($user->can('orders.view.confirmed')) $allowedStatuses[] = 'confirmed';
+                if ($user->can('orders.view.processing')) $allowedStatuses[] = 'processing';
+                if ($user->can('orders.view.ready_to_ship')) $allowedStatuses[] = 'ready_to_ship';
+                if ($user->can('orders.view.dispatched')) $allowedStatuses[] = 'dispatched';
+                if ($user->can('orders.view.delivered')) $allowedStatuses[] = 'delivered';
+                if ($user->can('orders.view.return_requested')) $allowedStatuses[] = 'return_requested';
+                if ($user->can('orders.view.returned')) $allowedStatuses[] = 'returned';
+                if ($user->can('orders.view.cancelled')) $allowedStatuses[] = 'cancelled';
+            }
+
+            $query->whereHas('order', function ($q) use ($user, $allowedStatuses) {
+                if (empty($allowedStatuses)) {
+                    $q->whereRaw('1 = 0');
+                } else {
+                    $q->whereIn('status', $allowedStatuses);
+                    if (! ($user && $user->can('view_all_order'))) {
+                        $q->where('created_by', $user->id);
+                    }
+                }
+            });
+        }
+
         if ($request->filled('search')) {
             $s = trim($request->search);
             $query->where(function ($subQuery) use ($s) {
@@ -68,12 +101,12 @@ class OrderReturnController extends Controller implements HasMiddleware
 
         if ($request->wantsJson() || $request->ajax()) {
             $stats = [
-                'total' => OrderReturn::count(),
-                'pending_qc' => OrderReturn::whereIn('status', ['pending', 'received', 'qc_in_progress'])->count(),
-                'completed' => OrderReturn::where('status', 'completed')->count(),
-                'rejected' => OrderReturn::where('status', 'rejected')->count(),
-                'total_refunded' => OrderReturn::sum('refund_amount'),
-                'total_credited' => OrderReturn::sum('credit_note_amount'),
+                'total' => (clone $query)->count(),
+                'pending_qc' => (clone $query)->whereIn('order_returns.status', ['pending', 'received', 'qc_in_progress'])->count(),
+                'completed' => (clone $query)->where('order_returns.status', 'completed')->count(),
+                'rejected' => (clone $query)->where('order_returns.status', 'rejected')->count(),
+                'total_refunded' => (clone $query)->sum('order_returns.refund_amount'),
+                'total_credited' => (clone $query)->sum('order_returns.credit_note_amount'),
             ];
 
             return response()->json([

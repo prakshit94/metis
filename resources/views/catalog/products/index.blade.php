@@ -23,12 +23,20 @@
     } else {
         $activeReferrals = collect([]);
     }
+
+    $user = auth()->user();
+    $isMasterAdmin = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
+    $userWarehouseId = $user ? $user->warehouse_id : null;
 @endphp
 <script>
     window.globalPromotions = {
         offers: @js($activeOffers),
         coupons: @js($activeCoupons),
         referrals: @js($activeReferrals)
+    };
+    window.userContext = {
+        isMasterAdmin: @json($isMasterAdmin),
+        warehouseId: @json($userWarehouseId)
     };
     window.getApplicablePromotions = function(product) {
         if (!product) return { offers: [], coupons: [], referrals: window.globalPromotions.referrals };
@@ -208,7 +216,9 @@
                                                     x-model="warehouseFilter" 
                                                     @change="filterProducts()"
                                                     style="width: 150px;">
+                                                @if($isMasterAdmin)
                                                 <option value="">All Warehouses</option>
+                                                @endif
                                                 <template x-for="wh in options.warehouses" :key="wh.id">
                                                     <option :value="String(wh.id)" x-text="wh.name"></option>
                                                 </template>
@@ -246,7 +256,7 @@
                             </div>
                             <div class="card-body p-0">
                                 <!-- Bulk Actions Bar -->
-                                <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedProducts.length > 0" x-transition>
+                                <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedProducts.length > 0 && warehouseFilter !== ''" x-transition>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center">
                                             <i class="bi bi-check-circle-fill text-primary me-2"></i>
@@ -300,7 +310,7 @@
                                                 <th>Product Details</th>
                                                 <th @click="sortBy('price')" class="sortable">Pricing & Inventory</th>
                                                 <th>Status & Tracking</th>
-                                                <th style="width: 80px;" class="text-end pe-4">Actions</th>
+                                                <th style="width: 80px;" class="text-end pe-4" x-show="warehouseFilter !== ''">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -398,7 +408,7 @@
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td class="text-end pe-4">
+                                                    <td class="text-end pe-4" x-show="warehouseFilter !== ''">
                                                         <div class="dropdown">
                                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
                                                                     type="button" 

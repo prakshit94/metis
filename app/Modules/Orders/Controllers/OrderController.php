@@ -1442,21 +1442,18 @@ class OrderController extends Controller implements HasMiddleware
             return;
         }
 
-        if ($user->can('view_all_order')) {
-            $allowedStatuses = $this->allowedOrderFilterStatuses($user);
-            if (! empty($allowedStatuses)) {
-                $query->where(function ($q) use ($user, $allowedStatuses) {
-                    $q->where('created_by', $user->id)
-                        ->orWhereIn('status', $allowedStatuses);
-                });
-            } else {
-                $query->where('created_by', $user->id);
-            }
+        $allowedStatuses = $this->allowedOrderFilterStatuses($user);
 
+        if (empty($allowedStatuses)) {
+            $query->whereRaw('1 = 0');
             return;
         }
 
-        $query->where('created_by', $user->id);
+        $query->whereIn('status', $allowedStatuses);
+
+        if (! $user->can('view_all_order')) {
+            $query->where('created_by', $user->id);
+        }
     }
 
     private function allowedOrderFilterStatuses($user): array

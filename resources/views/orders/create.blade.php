@@ -511,7 +511,6 @@
                                     <h6 class="mb-0 fw-bold">Select fulfillment warehouse</h6>
                                 </div>
                                 <select x-select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId" @change="handleWarehouseChange($event)">
-                                    <option value="">Select Warehouse</option>
                                     @foreach($warehouses as $w)
                                     <option value="{{ $w->id }}" data-state="{{ $w->state }}">{{ $w->name }}</option>
                                     @endforeach
@@ -539,7 +538,6 @@
                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-body-secondary"></i>
                             </div>
                             <select x-select class="form-select" style="max-width:180px" x-model="warehouseId" @change="handleWarehouseChange($event)">
-                                <option value="">Select Warehouse</option>
                                 @foreach($warehouses as $w)
                                 <option value="{{ $w->id }}">{{ $w->name }}</option>
                                 @endforeach
