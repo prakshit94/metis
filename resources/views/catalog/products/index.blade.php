@@ -26,7 +26,7 @@
 
     $user = auth()->user();
     $isMasterAdmin = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
-    $userWarehouseId = $user ? $user->warehouse_id : null;
+    $userWarehouseId = $user->warehouse_id ?? null;
 @endphp
 <script>
     window.globalPromotions = {
