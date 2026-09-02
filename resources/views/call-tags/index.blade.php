@@ -22,60 +22,60 @@
     <!-- Stats Row -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 h-100">
+            <div class="card stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
-                            <i class="bi bi-tags-fill fs-4"></i>
+                        <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
+                            <i class="bi bi-tags-fill"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted" style="font-size: 13px;">Total Tags</p>
-                            <div class="h3 mb-0 fw-bold">{{ $stats['total'] ?? 0 }}</div>
+                            <p class="h6 mb-0 text-muted">Total Tags</p>
+                            <div class="h3 mb-0" aria-live="polite"><span>{{ $stats['total'] ?? 0 }}</span></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 h-100">
+            <div class="card stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
-                        <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
-                            <i class="bi bi-check-circle-fill fs-4"></i>
+                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
+                            <i class="bi bi-check-circle-fill"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted" style="font-size: 13px;">Active</p>
-                            <div class="h3 mb-0 fw-bold">{{ $stats['active'] ?? 0 }}</div>
+                            <p class="h6 mb-0 text-muted">Active</p>
+                            <div class="h3 mb-0" aria-live="polite"><span>{{ $stats['active'] ?? 0 }}</span></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 h-100">
+            <div class="card stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
-                        <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
-                            <i class="bi bi-folder-fill fs-4"></i>
+                        <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
+                            <i class="bi bi-folder-fill"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted" style="font-size: 13px;">Level 1 Categories</p>
-                            <div class="h3 mb-0 fw-bold">{{ $stats['level_1'] ?? 0 }}</div>
+                            <p class="h6 mb-0 text-muted">Level 1 Categories</p>
+                            <div class="h3 mb-0" aria-live="polite"><span>{{ $stats['level_1'] ?? 0 }}</span></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 h-100">
+            <div class="card stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
-                        <div class="bg-danger bg-opacity-10 text-danger rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
-                            <i class="bi bi-x-circle-fill fs-4"></i>
+                        <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
+                            <i class="bi bi-pause-circle-fill"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted" style="font-size: 13px;">Inactive</p>
-                            <div class="h3 mb-0 fw-bold">{{ $stats['inactive'] ?? 0 }}</div>
+                            <p class="h6 mb-0 text-muted">Inactive</p>
+                            <div class="h3 mb-0" aria-live="polite"><span>{{ $stats['inactive'] ?? 0 }}</span></div>
                         </div>
                     </div>
                 </div>
@@ -84,11 +84,15 @@
     </div>
 
     <!-- Directory Card -->
-    <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-header bg-body border-bottom py-3 rounded-top-4">
+    <div class="card">
+        <div class="card-header">
             <div class="row align-items-center">
-                <div class="col">
-                    <h2 class="h5 card-title mb-0 fw-bold text-body">Call Tags Directory</h2>
+                <div class="col d-flex align-items-center gap-3">
+                    <h2 class="h5 card-title mb-0">Tags Directory</h2>
+                    <div class="btn-group shadow-sm">
+                        <button type="button" class="btn btn-sm btn-light border" @click="expandAll()" title="Expand All"><i class="bi bi-arrows-expand me-1"></i>Expand All</button>
+                        <button type="button" class="btn btn-sm btn-light border" @click="collapseAll()" title="Collapse All"><i class="bi bi-arrows-collapse me-1"></i>Collapse All</button>
+                    </div>
                 </div>
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
@@ -128,25 +132,40 @@
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-body-secondary bg-opacity-75">
+                    <thead class="text-uppercase small">
                         <tr>
-                            <th style="width:40px" class="ps-4"><input type="checkbox" class="form-check-input shadow-sm border-secondary border-opacity-25" @change="$event.isTrusted && toggleAll($event)" :checked="allSelected"></th>
+                            <th style="width:40px"><input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event)" :checked="allSelected"></th>
                             <th>Tag Hierarchy</th>
                             <th>Level</th>
                             <th>Status</th>
                             <th>Dynamic Fields</th>
-                            <th class="text-end pe-4">Actions</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($tags as $l1)
                             {{-- LEVEL 1 --}}
-                            <tr class="bg-body-tertiary" x-show="isVisible('{{ addslashes($l1->name) }}', {{ $l1->is_active }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l1->id }}) }">
-                                <td class="ps-4">
+                            <tr x-show="isVisible('{{ addslashes($l1->name) }}', {{ $l1->is_active ? 1 : 0 }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l1->id }}) }">
+                                <td><input type="checkbox" class="user-select-checkbox tag-checkbox" value="{{ $l1->id }}" x-model.number="selected"></td>
+                                <td>
                                     <div class="d-flex align-items-center">
-                                        <input type="checkbox" class="form-check-input shadow-sm border-secondary border-opacity-25 me-3" value="{{ $l1->id }}" x-model.number="selected">
-                                        <i class="bi bi-folder-fill text-warning me-2 fs-5"></i>
-                                        <span class="fw-bold">{{ $l1->name }}</span>
+                                        @if($l1->children->count() > 0)
+                                        <div class="p-2 rounded-circle me-3 d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary transition-all" 
+                                             style="width: 38px; height: 38px; cursor: pointer;" @click.stop.prevent="toggleL1({{ $l1->id }})">
+                                            <i class="fs-5 bi" :class="isL1Expanded({{ $l1->id }}) ? 'bi-folder2-open' : 'bi-folder-fill'"></i>
+                                        </div>
+                                        @else
+                                        <div class="p-2 rounded-circle me-3 d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary" 
+                                             style="width: 38px; height: 38px;">
+                                            <i class="fs-5 bi bi-folder-fill"></i>
+                                        </div>
+                                        @endif
+                                        <div>
+                                            <div class="fw-bold text-primary" @if($l1->children->count() > 0) @click.stop.prevent="toggleL1({{ $l1->id }})" style="cursor: pointer; text-decoration: underline;" @endif>
+                                                {{ $l1->name }}
+                                            </div>
+                                            <div class="text-muted small" style="font-size: 10px;">ID: #{{ $l1->id }}</div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td><span class="badge bg-secondary bg-opacity-10 text-secondary border">Level 1</span></td>
@@ -158,8 +177,8 @@
                                     @endif
                                 </td>
                                 <td>-</td>
-                                <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l1->id }}, '{{ addslashes($l1->name) }}', 1, null, {{ $l1->is_active }})" title="Edit">
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l1->id }}, '{{ addslashes($l1->name) }}', 1, null, {{ $l1->is_active ? 1 : 0 }})" title="Edit">
                                         <i class="bi bi-pencil text-secondary"></i>
                                     </button>
                                     <button class="btn btn-sm btn-outline-primary shadow-sm me-1 rounded-pill fw-bold px-3 transition-all hover-shadow" style="font-size: 11px; letter-spacing: 0.5px;" @click="openModal(null, '', 2, {{ $l1->id }}, 1)" title="Add L2 Tag">
@@ -173,13 +192,28 @@
                             
                             @foreach($l1->children as $l2)
                                 {{-- LEVEL 2 --}}
-                                <tr x-show="isVisible('{{ addslashes($l2->name) }}', {{ $l2->is_active }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l2->id }}) }">
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center ms-4">
-                                            <input type="checkbox" class="form-check-input shadow-sm border-secondary border-opacity-25 me-3" value="{{ $l2->id }}" x-model.number="selected">
+                                <tr x-show="isL1Expanded({{ $l1->id }}) && isVisible('{{ addslashes($l2->name) }}', {{ $l2->is_active ? 1 : 0 }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l2->id }}) }">
+                                    <td><input type="checkbox" class="user-select-checkbox tag-checkbox" value="{{ $l2->id }}" x-model.number="selected"></td>
+                                    <td>
+                                        <div class="d-flex align-items-center" style="padding-left: 2rem;">
                                             <i class="bi bi-arrow-return-right text-muted me-2"></i>
-                                            <i class="bi bi-folder2-open text-info me-2 fs-5"></i>
-                                            <span class="fw-semibold text-body-emphasis">{{ $l2->name }}</span>
+                                            @if($l2->children->count() > 0)
+                                            <div class="p-2 rounded-circle me-3 d-flex align-items-center justify-content-center bg-info bg-opacity-10 text-info transition-all" 
+                                                 style="width: 34px; height: 34px; cursor: pointer;" @click.stop.prevent="toggleL2({{ $l2->id }})">
+                                                <i class="fs-6 bi" :class="isL2Expanded({{ $l2->id }}) ? 'bi-folder2-open' : 'bi-folder-fill'"></i>
+                                            </div>
+                                            @else
+                                            <div class="p-2 rounded-circle me-3 d-flex align-items-center justify-content-center bg-info bg-opacity-10 text-info" 
+                                                 style="width: 34px; height: 34px;">
+                                                <i class="fs-6 bi bi-folder-fill"></i>
+                                            </div>
+                                            @endif
+                                            <div>
+                                                <div class="fw-semibold text-body-emphasis" @if($l2->children->count() > 0) @click.stop.prevent="toggleL2({{ $l2->id }})" style="cursor: pointer; text-decoration: underline;" @endif>
+                                                    {{ $l2->name }}
+                                                </div>
+                                                <div class="text-muted small" style="font-size: 10px;">ID: #{{ $l2->id }}</div>
+                                            </div>
                                         </div>
                                     </td>
                                     <td><span class="badge bg-info bg-opacity-10 text-info border border-info-subtle">Level 2</span></td>
@@ -197,8 +231,8 @@
                                             <span class="text-muted small">-</span>
                                         @endif
                                     </td>
-                                    <td class="text-end pe-4">
-                                        <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l2->id }}, '{{ addslashes($l2->name) }}', 2, {{ $l2->parent_id }}, {{ $l2->is_active }}, {{ json_encode($l2->formFields) }})" title="Edit">
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l2->id }}, '{{ addslashes($l2->name) }}', 2, {{ $l2->parent_id }}, {{ $l2->is_active ? 1 : 0 }}, {{ e(json_encode($l2->formFields)) }})" title="Edit">
                                             <i class="bi bi-pencil text-secondary"></i>
                                         </button>
                                         <button class="btn btn-sm btn-outline-info shadow-sm me-1 rounded-pill fw-bold px-3 transition-all hover-shadow" style="font-size: 11px; letter-spacing: 0.5px;" @click="openModal(null, '', 3, {{ $l2->id }}, 1)" title="Add L3 Tag">
@@ -212,13 +246,13 @@
                                 
                                 @foreach($l2->children as $l3)
                                     {{-- LEVEL 3 --}}
-                                    <tr x-show="isVisible('{{ addslashes($l3->name) }}', {{ $l3->is_active }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l3->id }}) }">
-                                        <td class="ps-4">
-                                            <div class="d-flex align-items-center ms-5" style="padding-left: 2rem;">
-                                                <input type="checkbox" class="form-check-input shadow-sm border-secondary border-opacity-25 me-3" value="{{ $l3->id }}" x-model.number="selected">
+                                    <tr x-show="isL1Expanded({{ $l1->id }}) && isL2Expanded({{ $l2->id }}) && isVisible('{{ addslashes($l3->name) }}', {{ $l3->is_active ? 1 : 0 }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l3->id }}) }">
+                                        <td><input type="checkbox" class="user-select-checkbox tag-checkbox" value="{{ $l3->id }}" x-model.number="selected"></td>
+                                        <td>
+                                            <div class="d-flex align-items-center" style="padding-left: 4rem;">
                                                 <i class="bi bi-arrow-return-right text-muted me-2"></i>
                                                 <i class="bi bi-tag text-success me-2"></i>
-                                                <span class="text-secondary">{{ $l3->name }}</span>
+                                                <span class="text-secondary fw-medium">{{ $l3->name }}</span>
                                             </div>
                                         </td>
                                         <td><span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">Level 3</span></td>
@@ -230,8 +264,8 @@
                                             @endif
                                         </td>
                                         <td>-</td>
-                                        <td class="text-end pe-4">
-                                            <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l3->id }}, '{{ addslashes($l3->name) }}', 3, {{ $l3->parent_id }}, {{ $l3->is_active }})" title="Edit">
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l3->id }}, '{{ addslashes($l3->name) }}', 3, {{ $l3->parent_id }}, {{ $l3->is_active ? 1 : 0 }})" title="Edit">
                                                 <i class="bi bi-pencil text-secondary"></i>
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary text-danger border shadow-sm rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="deleteTag({{ $l3->id }})" title="Delete">
@@ -395,6 +429,42 @@ document.addEventListener('alpine:init', () => {
             is_active: 1,
             form_fields: []
         },
+        
+        expandedL1: {{ json_encode($tags->pluck('id')->values()->toArray()) }},
+        expandedL2: {{ json_encode($tags->flatMap->children->pluck('id')->values()->toArray()) }},
+        allL1Ids: {{ json_encode($tags->pluck('id')->values()->toArray()) }},
+        allL2Ids: {{ json_encode($tags->flatMap->children->pluck('id')->values()->toArray()) }},
+        
+        toggleL1(id) {
+            id = Number(id);
+            if (this.expandedL1.includes(id)) {
+                this.expandedL1 = this.expandedL1.filter(i => i !== id);
+            } else {
+                this.expandedL1 = [...this.expandedL1, id];
+            }
+        },
+        
+        toggleL2(id) {
+            id = Number(id);
+            if (this.expandedL2.includes(id)) {
+                this.expandedL2 = this.expandedL2.filter(i => i !== id);
+            } else {
+                this.expandedL2 = [...this.expandedL2, id];
+            }
+        },
+        
+        expandAll() {
+            this.expandedL1 = [...this.allL1Ids];
+            this.expandedL2 = [...this.allL2Ids];
+        },
+        
+        collapseAll() {
+            this.expandedL1 = [];
+            this.expandedL2 = [];
+        },
+        
+        isL1Expanded(id) { return this.search !== '' || this.expandedL1.includes(Number(id)); },
+        isL2Expanded(id) { return this.search !== '' || this.expandedL2.includes(Number(id)); },
         
         get allSelected() {
             const visibleCheckboxes = Array.from(document.querySelectorAll('.table tbody tr:not([style*="display: none"]) input[type="checkbox"]'));

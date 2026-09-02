@@ -3392,8 +3392,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
 }
 </script>
 @endpush
-
-
+@push('modals')
 <x-add-customer-modal />
 <x-customer-address-modal />
 <x-call-tagging-modal />
@@ -3418,5 +3417,6 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         </div>
     </div>
 </div>
+@endpush
 
 @endsection
