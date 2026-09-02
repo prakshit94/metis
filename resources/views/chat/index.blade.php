@@ -42,7 +42,7 @@
                             <h5 class="mb-0 fw-bold">Messages</h5>
                             <small class="text-muted" x-text="onlineLabel"></small>
                         </div>
-                        @can('chat-create')
+                        @can('chat-create-group')
                         <button type="button" @click="showGroupModal = true; groupError = ''" class="btn btn-primary btn-sm d-flex align-items-center gap-1" title="Create group">
                             <i class="bi bi-people-fill"></i>
                             <span class="d-none d-xl-inline">New Group</span>
@@ -313,7 +313,7 @@
                             </div>
                             <h5 class="fw-bold mb-1">Your Messages</h5>
                             <p class="text-muted small mb-3">Select a conversation or start a new one</p>
-                            @can('chat-create')
+                            @can('chat-create-group')
                             <button type="button" @click="showGroupModal = true" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-plus-circle me-1"></i>New Group
                             </button>
@@ -487,7 +487,7 @@
                 </div>
                 <div class="d-flex justify-content-end gap-2 p-4 pt-0">
                     <button type="button" @click="showGroupModal = false; groupError = ''" class="btn btn-outline-secondary fw-bold" :disabled="groupBusy">Cancel</button>
-                    @can('chat-create')
+                    @can('chat-create-group')
                     <button type="submit" class="btn btn-primary fw-bold px-4" :disabled="groupBusy || !groupForm.name.trim()">
                         <span x-show="groupBusy" class="spinner-border spinner-border-sm me-2"></span>
                         <span x-text="groupBusy ? 'Creating...' : 'Create Group'"></span>
