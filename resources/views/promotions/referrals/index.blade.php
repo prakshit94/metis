@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', '⭐ Referral Programs')
+@section('title', 'Referral Programs')
 @section('page', 'referrals.programs.index')
 
 @section('content')

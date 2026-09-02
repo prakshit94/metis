@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '🧾 Credit Notes Management')
+@section('title', 'Credit Notes Management')
 @section('page', 'orders-credit-notes')
 
 @section('content')

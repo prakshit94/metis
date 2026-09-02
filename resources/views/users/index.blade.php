@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '👥 User Management')
+@section('title', 'User Management')
 @section('page', 'users')
 
 @section('content')

@@ -16,9 +16,13 @@
     <!-- Theme Color -->
     <meta name="theme-color" content="#6366f1">
 
+    @php
+        $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
+        $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
+    @endphp
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/icons/favicon.svg') }}">
-    <link rel="icon" type="image/png" href="{{ asset('assets/icons/favicon.png') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
+    <link rel="icon" type="image/png" href="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
 
     <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

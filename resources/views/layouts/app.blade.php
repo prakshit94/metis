@@ -17,9 +17,13 @@
     <meta property="og:description" content="Clean and modern admin dashboard template built with Bootstrap 5">
     <meta property="og:type" content="website">
 
+    @php
+        $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
+        $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
+    @endphp
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/icons/favicon.svg') }}">
-    <link rel="icon" type="image/png" href="{{ asset('assets/icons/favicon.png') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
+    <link rel="icon" type="image/png" href="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
 
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,9 +59,13 @@
 <body data-page="@yield('page', 'dashboard')" class="admin-layout">
     <a href="#main-content" class="skip-link">Skip to main content</a>
 
+
     <!-- Loading Screen -->
     <div id="loading-screen" class="loading-screen">
         <div class="loading-spinner">
+            <div class="brand-logo-container rounded-4 d-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 64px; height: 64px; background-color: var(--bs-body-bg);">
+                <img src="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Loading Logo" class="w-100 h-100 object-fit-contain rounded-circle p-1">
+            </div>
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '📋 Order Reasons Management')
+@section('title', 'Order Reasons Management')
 @section('page', 'order.reasons')
 
 @section('content')

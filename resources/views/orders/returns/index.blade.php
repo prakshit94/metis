@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', '↩️ Returns Management')
+@section('title', 'Returns Management')
 @section('page', 'returns')
 
 @section('content')

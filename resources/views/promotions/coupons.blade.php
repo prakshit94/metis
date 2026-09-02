@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', '🎟️ Coupon Codes')
+@section('title', 'Coupon Codes')
 @section('page', 'promotions.coupons')
 
 @section('content')

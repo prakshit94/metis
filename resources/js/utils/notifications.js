@@ -364,9 +364,10 @@ export class NotificationManager {
 
   showBrowserNotification(title, options = {}) {
     if ('Notification' in window && Notification.permission === 'granted') {
+      const appLogoUrl = document.querySelector('link[rel="icon"]')?.getAttribute('href') || '/assets/images/logo.png';
       const notification = new Notification(title, {
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
+        icon: appLogoUrl,
+        badge: appLogoUrl,
         ...options
       });
 

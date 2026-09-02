@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '🏖️ Leave Management')
+@section('title', 'Leave Management')
 @section('page', 'leaves')
 
 @section('content')

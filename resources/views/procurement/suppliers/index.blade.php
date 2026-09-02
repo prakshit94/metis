@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '🏢 Supplier Management')
+@section('title', 'Supplier Management')
 
 @section('content')
 <div class="container-fluid p-0" x-data="suppliersTable()">
