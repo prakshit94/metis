@@ -102,6 +102,11 @@ class LogAuthenticationAttempts
             return 'mobile';
         }
 
+        // Impersonation API routes are called from the web dashboard via AJAX
+        if ($this->request->is('api/security/impersonate/*') || $this->request->is('api/security/stop-impersonate')) {
+            return 'web';
+        }
+
         if (str_starts_with($this->request->path(), 'api/')) {
             return 'mobile';
         }
