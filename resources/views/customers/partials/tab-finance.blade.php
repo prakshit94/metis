@@ -1,5 +1,5 @@
 {{-- ══ TAB: Finance ══ --}}
-<div x-show="activeTab === 'finance'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-cloak>
+<div x-show="activeTab === 'finance'" class="security-section" x-cloak>
     <div class="row g-4">
         <div class="col-md-6">
             <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden">

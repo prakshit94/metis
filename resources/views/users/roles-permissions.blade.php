@@ -255,6 +255,9 @@
                                                 <a class="dropdown-item" href="#" @click.prevent="editItem(item)" x-show="!item.isDeleted">
                                                     <i class="bi bi-pencil me-2"></i>Edit
                                                 </a>
+                                                <a class="dropdown-item" href="#" @click.prevent="cloneRole(item)" x-show="!item.isDeleted && activeTab === 'roles'">
+                                                    <i class="bi bi-copy me-2 text-info"></i>Clone
+                                                </a>
                                             </li>
                                             @endcanany
                                             <li><hr class="dropdown-divider"></li>

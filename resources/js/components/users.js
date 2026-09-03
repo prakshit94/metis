@@ -745,6 +745,30 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    async impersonateUser(user) {
+      if (user.isDeleted) {
+        showToast('Restore this user before impersonating.', 'warning');
+        return;
+      }
+      
+      const confirmed = await confirmDelete({
+        title: 'Impersonate User?',
+        text: `Are you sure you want to log in as ${user.name}? All actions you take will be logged as them.`,
+        confirmButtonText: 'Yes, impersonate',
+      });
+      if (!confirmed) return;
+
+      try {
+        const res = await apiFetch(`/api/security/impersonate/${user.id}`, { method: 'POST' });
+        showToast(res.message, 'success');
+        if (res.redirect) {
+          window.location.href = res.redirect;
+        }
+      } catch (err) {
+        showToast(`Failed to impersonate ${user.name}: ${err.message}`, 'danger');
+      }
+    },
+
     // ── Bulk Operations ───────────────────────────────────────────────────────
     async bulkAction(action) {
       if (this.selectedUsers.length === 0) {

@@ -105,7 +105,7 @@ document.addEventListener('alpine:init', () => {
             }
             
             window.addEventListener('open-change-password-modal', (e) => {
-                this.userId = e.detail.userId;
+                this.userId = (e.detail && e.detail.userId) ? e.detail.userId : this.defaultUserId;
                 this.resetForm();
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('changePasswordModal')).show();
             });

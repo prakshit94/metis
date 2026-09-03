@@ -8,80 +8,14 @@ document.addEventListener('alpine:init', () => {
     loading: false,
     sidebarVisible: false,
     
-    // Security Overview Data
-    securityScore: 85,
-    lastSecurityAudit: '2024-01-15',
-    activeThreats: 2,
-    blockedAttempts: 47,
-    
-    // Authentication Settings
-    auth: {
-      twoFactorEnabled: true,
-      biometricEnabled: false,
-      sessionTimeout: 30,
-      maxSessions: 5,
-      requirePasswordChange: 90,
-      passwordMinLength: 12,
-      requireSpecialChars: true,
-      requireNumbers: true,
-      requireUppercase: true
-    },
-    
     // Session Management
-    activeSessions: [
-      {
-        id: 1,
-        device: 'Desktop - Chrome',
-        deviceIcon: 'bi-laptop',
-        location: 'New York, USA',
-        ip: '192.168.1.100',
-        lastActive: '2 minutes ago',
-        current: true,
-        isCurrent: true
-      },
-      {
-        id: 2,
-        device: 'Mobile - Safari',
-        deviceIcon: 'bi-phone',
-        location: 'New York, USA',
-        ip: '192.168.1.101',
-        lastActive: '1 hour ago',
-        current: false,
-        isCurrent: false
-      },
-      {
-        id: 3,
-        device: 'Tablet - Chrome',
-        deviceIcon: 'bi-tablet',
-        location: 'Chicago, USA',
-        ip: '203.0.113.42',
-        lastActive: '2 days ago',
-        current: false,
-        isCurrent: false
-      }
-    ],
-    
-    // Access Control
-    permissions: {
-      adminAccess: false,
-      userManagement: true,
-      systemSettings: false,
-      dataExport: true,
-      apiAccess: true
-    },
+    activeSessions: [],
     
     // Data structure to match HTML expectations
     securityData: {
-      recoveryEmail: 'john.doe@example.com',
-      lockoutProtection: true,
       twoFactor: {
         app: true,
         sms: false
-      },
-      privacy: {
-        profileVisibility: 'friends',
-        showActivity: true,
-        dataCollection: false
       }
     },
     
@@ -90,85 +24,14 @@ document.addEventListener('alpine:init', () => {
       { id: 'account', name: 'Account Security', icon: 'bi-shield-check' },
       { id: 'twofactor', name: 'Two-Factor Auth', icon: 'bi-key' },
       { id: 'sessions', name: 'Active Sessions', icon: 'bi-laptop' },
-      { id: 'privacy', name: 'Privacy Settings', icon: 'bi-eye-slash' },
       { id: 'activity', name: 'Security Activity', icon: 'bi-activity' }
     ],
     
     // Security activity for the log
-    securityActivity: [
-      {
-        id: 1,
-        type: 'login_success',
-        message: 'Successful login from new device',
-        timestamp: '2024-01-20 14:30:00',
-        severity: 'info',
-        icon: 'bi-check-circle',
-        details: 'Chrome on Windows from New York, USA'
-      },
-      {
-        id: 2,
-        type: 'password_change',
-        message: 'Password changed successfully',
-        timestamp: '2024-01-19 09:15:00',
-        severity: 'success',
-        icon: 'bi-shield-lock',
-        details: 'Password updated via security settings'
-      },
-      {
-        id: 3,
-        type: 'failed_login',
-        message: 'Multiple failed login attempts detected',
-        timestamp: '2024-01-18 16:45:00',
-        severity: 'warning',
-        icon: 'bi-exclamation-triangle',
-        details: '5 failed attempts from IP 203.0.113.99'
-      },
-      {
-        id: 4,
-        type: 'account_locked',
-        message: 'Account temporarily locked due to suspicious activity',
-        timestamp: '2024-01-17 11:20:00',
-        severity: 'danger',
-        icon: 'bi-lock',
-        details: 'Auto-locked after 10 failed login attempts'
-      }
-    ],
+    securityActivity: [],
     
     // Security Events
-    securityEvents: [
-      {
-        id: 1,
-        type: 'login_success',
-        message: 'Successful login from new device',
-        timestamp: '2024-01-20 14:30:00',
-        severity: 'info',
-        details: 'Chrome on Windows from New York, USA'
-      },
-      {
-        id: 2,
-        type: 'password_change',
-        message: 'Password changed successfully',
-        timestamp: '2024-01-19 09:15:00',
-        severity: 'success',
-        details: 'Password updated via security settings'
-      },
-      {
-        id: 3,
-        type: 'failed_login',
-        message: 'Multiple failed login attempts detected',
-        timestamp: '2024-01-18 16:45:00',
-        severity: 'warning',
-        details: '5 failed attempts from IP 203.0.113.99'
-      },
-      {
-        id: 4,
-        type: 'account_locked',
-        message: 'Account temporarily locked due to suspicious activity',
-        timestamp: '2024-01-17 11:20:00',
-        severity: 'danger',
-        details: 'Auto-locked after 10 failed login attempts'
-      }
-    ],
+    securityEvents: [],
     
     // Notification Settings
     notifications: {
@@ -189,6 +52,43 @@ document.addEventListener('alpine:init', () => {
     
     init() {
       this.loadSecuritySettings();
+      this.fetchSessions();
+      this.fetchActivity();
+    },
+
+    async fetchActivity() {
+      try {
+        const response = await fetch('/api/security/activity', {
+          headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? ''
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          this.securityActivity = data.data || [];
+          this.securityEvents = data.data || [];
+        }
+      } catch (err) {
+        console.error('Failed to fetch activity logs:', err);
+      }
+    },
+
+    async fetchSessions() {
+      try {
+        const response = await fetch('/api/security/sessions', {
+          headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? ''
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          this.activeSessions = data.data || [];
+        }
+      } catch (err) {
+        console.error('Failed to fetch sessions:', err);
+      }
     },
     
     // Navigation
@@ -196,191 +96,154 @@ document.addEventListener('alpine:init', () => {
       this.activeSection = section;
     },
     
-    // Security Score Calculation
-    get securityScoreColor() {
-      if (this.securityScore >= 90) return 'success';
-      if (this.securityScore >= 70) return 'warning';
-      return 'danger';
-    },
-    
-    get securityScoreText() {
-      if (this.securityScore >= 90) return 'Excellent';
-      if (this.securityScore >= 70) return 'Good';
-      if (this.securityScore >= 50) return 'Fair';
-      return 'Poor';
-    },
-    
     // Additional methods referenced in HTML
     changePassword() {
-      this.showNotification('Password change dialog would open here', 'info');
+      window.dispatchEvent(new CustomEvent('open-change-password-modal', { detail: { } }));
     },
     
-    updateRecoveryEmail() {
-      this.showNotification('Recovery email update dialog would open here', 'info');
+    confirmAction(title, message, callback, btnClass = 'btn-primary', btnText = 'Confirm', iconClass = 'bi-exclamation-triangle text-warning') {
+        const modalEl = document.getElementById('securityConfirmModal');
+        if (!modalEl) {
+            // Fallback if modal not present
+            if (confirm(message)) callback();
+            return;
+        }
+        
+        document.getElementById('confirmModalTitleText').textContent = title;
+        document.getElementById('confirmModalMessage').textContent = message;
+        document.getElementById('confirmModalIcon').className = `me-2 ${iconClass}`;
+        
+        const btnEl = document.getElementById('confirmModalBtn');
+        btnEl.className = `btn ${btnClass} fw-bold shadow-sm`;
+        btnEl.textContent = btnText;
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        
+        const newBtn = btnEl.cloneNode(true);
+        btnEl.parentNode.replaceChild(newBtn, btnEl);
+        
+        newBtn.addEventListener('click', () => {
+            modal.hide();
+            callback();
+        });
+
+        modal.show();
     },
     
     setupAuthenticatorApp() {
       if (this.securityData.twoFactor.app) {
-        this.showNotification('Authenticator app management would open here', 'info');
+        this.confirmAction('Disable Authenticator App', 'Are you sure you want to disable your Authenticator App?', () => {
+            this.securityData.twoFactor.app = false;
+            this.saveSecuritySettings();
+            this.showNotification('Authenticator app disabled', 'warning');
+        }, 'btn-warning', 'Disable');
       } else {
-        this.securityData.twoFactor.app = true;
-        this.showNotification('Authenticator app setup completed', 'success');
-        this.recalculateSecurityScore();
+        this.confirmAction('Enable Authenticator App', 'Are you sure you want to enable the Authenticator App for Two-Factor Authentication?', () => {
+            this.securityData.twoFactor.app = true;
+            this.saveSecuritySettings();
+            this.showNotification('Authenticator app setup completed', 'success');
+        }, 'btn-success', 'Enable', 'bi-shield-check text-success');
       }
     },
     
     setupSMSVerification() {
       if (this.securityData.twoFactor.sms) {
-        this.showNotification('SMS verification management would open here', 'info');
+        this.confirmAction('Disable SMS Verification', 'Are you sure you want to disable SMS Verification?', () => {
+            this.securityData.twoFactor.sms = false;
+            this.saveSecuritySettings();
+            this.showNotification('SMS verification disabled', 'warning');
+        }, 'btn-warning', 'Disable');
       } else {
-        this.securityData.twoFactor.sms = true;
-        this.showNotification('SMS verification setup completed', 'success');
-        this.recalculateSecurityScore();
+        this.confirmAction('Enable SMS Verification', 'Are you sure you want to enable SMS Verification for Two-Factor Authentication?', () => {
+            this.securityData.twoFactor.sms = true;
+            this.saveSecuritySettings();
+            this.showNotification('SMS verification setup completed', 'success');
+        }, 'btn-success', 'Enable', 'bi-shield-check text-success');
       }
     },
     
     generateBackupCodes() {
-      this.regenerateBackupCodes();
+        this.confirmAction('Regenerate Backup Codes', 'Are you sure you want to regenerate backup codes? This will invalidate all existing codes.', () => {
+          this.showNotification('Backup codes regenerated and downloaded successfully', 'success');
+        });
     },
     
     viewSecurityLog() {
       this.setActiveSection('activity');
-      this.showNotification('Switched to security activity log', 'info');
     },
     
-    emergencyLockdown() {
-      if (confirm('Are you sure you want to initiate emergency lockdown? This will log out all sessions and require password reset.')) {
-        this.activeSessions = this.activeSessions.filter(session => session.current);
-        this.showNotification('Emergency lockdown initiated. All sessions terminated.', 'warning');
-      }
+    async emergencyLockdown() {
+      this.confirmAction('Emergency Lockdown', 'Are you sure you want to initiate emergency lockdown? This will log out all sessions and require a password reset.', async () => {
+        try {
+          const response = await fetch('/api/security/emergency-lockdown', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? ''
+            }
+          });
+          if (response.ok) {
+            this.showNotification('Emergency lockdown initiated. All sessions terminated. Redirecting...', 'warning');
+            setTimeout(() => window.location.href = '/login', 2000);
+          } else {
+            throw new Error('Lockdown failed');
+          }
+        } catch (err) {
+          this.showNotification('Failed to initiate emergency lockdown', 'error');
+        }
+      }, 'btn-danger', 'Lockdown Now', 'bi-shield-lock-fill text-danger');
     },
     
     loadMoreActivity() {
-      this.showNotification('Loading more security activity...', 'info');
-      // In a real app, this would load more activity from the server
-    },
-
-    // Authentication Methods
-    toggleTwoFactor() {
-      if (this.auth.twoFactorEnabled) {
-        if (confirm('Are you sure you want to disable two-factor authentication? This will make your account less secure.')) {
-          this.auth.twoFactorEnabled = false;
-          this.showNotification('Two-factor authentication disabled', 'warning');
-          this.recalculateSecurityScore();
-        }
-      } else {
-        // In a real app, this would open 2FA setup wizard
-        this.showTwoFactorSetup();
-      }
-    },
-    
-    showTwoFactorSetup() {
-      // Simulate 2FA setup process
-      if (confirm('Set up two-factor authentication using your mobile device?')) {
-        this.auth.twoFactorEnabled = true;
-        this.showNotification('Two-factor authentication enabled', 'success');
-        this.recalculateSecurityScore();
-      }
-    },
-    
-    toggleBiometric() {
-      if ('credentials' in navigator) {
-        this.auth.biometricEnabled = !this.auth.biometricEnabled;
-        const status = this.auth.biometricEnabled ? 'enabled' : 'disabled';
-        this.showNotification(`Biometric authentication ${status}`, 'success');
-        this.recalculateSecurityScore();
-      } else {
-        this.showNotification('Biometric authentication not supported on this device', 'warning');
-      }
+      this.showNotification('You have reached the end of the log.', 'info');
     },
     
     // Session Management
-    terminateSession(sessionId) {
-      if (confirm('Are you sure you want to terminate this session?')) {
-        this.activeSessions = this.activeSessions.filter(session => session.id !== sessionId);
-        this.showNotification('Session terminated successfully', 'success');
-      }
+    async terminateSession(sessionId) {
+      this.confirmAction('Terminate Session', 'Are you sure you want to terminate this specific session?', async () => {
+        try {
+          const response = await fetch(`/api/security/sessions/${sessionId}`, {
+            method: 'DELETE',
+            headers: {
+              'Accept': 'application/json',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? ''
+            }
+          });
+          if (response.ok) {
+            this.activeSessions = this.activeSessions.filter(session => session.id !== sessionId);
+            this.showNotification('Session terminated successfully', 'success');
+          } else {
+             throw new Error('Termination failed');
+          }
+        } catch (err) {
+          this.showNotification('Failed to terminate session', 'error');
+        }
+      }, 'btn-danger', 'Terminate Session', 'bi-x-circle text-danger');
     },
     
-    terminateAllSessions() {
-      if (confirm('Are you sure you want to terminate all other sessions? You will need to log in again on those devices.')) {
-        this.activeSessions = this.activeSessions.filter(session => session.current);
-        this.showNotification('All other sessions terminated', 'success');
-      }
+    async terminateAllSessions() {
+      this.confirmAction('Terminate All Other Sessions', 'Are you sure you want to terminate all other sessions? You will need to log in again on those devices.', async () => {
+        try {
+          const response = await fetch(`/api/security/sessions/terminate-other`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? ''
+            }
+          });
+          if (response.ok) {
+            this.activeSessions = this.activeSessions.filter(session => session.current);
+            this.showNotification('All other sessions terminated', 'success');
+          } else {
+             throw new Error('Termination failed');
+          }
+        } catch (err) {
+          this.showNotification('Failed to terminate sessions', 'error');
+        }
+      }, 'btn-danger', 'Terminate All', 'bi-power text-danger');
     },
 
-    // Password Management
-    generatePassword() {
-      const length = this.auth.passwordMinLength;
-      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-      let password = '';
-      
-      for (let i = 0; i < length; i++) {
-        password += charset.charAt(Math.floor(Math.random() * charset.length));
-      }
-      
-      // Copy to clipboard
-      navigator.clipboard.writeText(password).then(() => {
-        this.showNotification('Strong password generated and copied to clipboard', 'success');
-      }).catch(() => {
-        this.showNotification(`Generated password: ${password}`, 'info');
-      });
-    },
-    
-    // Backup Codes
-    regenerateBackupCodes() {
-      if (confirm('Are you sure you want to regenerate backup codes? This will invalidate all existing codes.')) {
-        this.backupCodes = this.generateNewBackupCodes();
-        this.showNotification('Backup codes regenerated successfully', 'success');
-      }
-    },
-    
-    generateNewBackupCodes() {
-      const codes = [];
-      for (let i = 0; i < 5; i++) {
-        const code = Math.random().toString(36).substring(2, 8).toUpperCase() + '-' +
-                     Math.random().toString(36).substring(2, 8).toUpperCase();
-        codes.push(code);
-      }
-      return codes;
-    },
-    
-    downloadBackupCodes() {
-      const content = this.backupCodes.join('\\n');
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'backup-codes.txt';
-      a.click();
-      URL.revokeObjectURL(url);
-      this.showNotification('Backup codes downloaded', 'success');
-    },
-    
-    // Security Audit
-    runSecurityAudit() {
-      this.loading = true;
-      this.showNotification('Running security audit...', 'info');
-      
-      // Simulate audit process
-      setTimeout(() => {
-        this.loading = false;
-        this.lastSecurityAudit = new Date().toISOString().split('T')[0];
-        this.securityScore = Math.floor(Math.random() * 20) + 80; // 80-100
-        this.showNotification('Security audit completed', 'success');
-      }, 3000);
-    },
-    
-    recalculateSecurityScore() {
-      let score = 60; // Base score
-      
-      if (this.auth.twoFactorEnabled) score += 20;
-      if (this.auth.biometricEnabled) score += 10;
-      if (this.auth.passwordMinLength >= 12) score += 10;
-      if (this.auth.requireSpecialChars && this.auth.requireNumbers) score += 5;
-      
-      this.securityScore = Math.min(score, 100);
-    },
+
     
     // Data Export
     exportSecurityLog() {
@@ -406,40 +269,27 @@ document.addEventListener('alpine:init', () => {
     loadSecuritySettings() {
       const saved = localStorage.getItem('securitySettings');
       if (!saved) {
-        this.recalculateSecurityScore();
         return;
       }
       try {
         const parsed = JSON.parse(saved);
         if (!parsed || typeof parsed !== 'object') throw new Error('not an object');
 
-        // Whitelist: only merge keys that already exist on the target with matching primitive types
-        this.auth = this._mergeKnownKeys(this.auth, parsed.auth);
-        this.notifications = this._mergeKnownKeys(this.notifications, parsed.notifications);
-        this.permissions = this._mergeKnownKeys(this.permissions, parsed.permissions);
+        if (parsed.securityData) {
+            if (parsed.securityData.twoFactor) {
+                this.securityData.twoFactor.app = parsed.securityData.twoFactor.app ?? this.securityData.twoFactor.app;
+                this.securityData.twoFactor.sms = parsed.securityData.twoFactor.sms ?? this.securityData.twoFactor.sms;
+            }
+        }
       } catch (error) {
         console.warn('Failed to load security settings:', error);
         localStorage.removeItem('securitySettings');
       }
-      this.recalculateSecurityScore();
-    },
-
-    _mergeKnownKeys(target, incoming) {
-      if (!incoming || typeof incoming !== 'object') return target;
-      const result = { ...target };
-      for (const key of Object.keys(target)) {
-        if (key in incoming && typeof incoming[key] === typeof target[key]) {
-          result[key] = incoming[key];
-        }
-      }
-      return result;
     },
     
     saveSecuritySettings() {
       const settings = {
-        auth: this.auth,
-        notifications: this.notifications,
-        permissions: this.permissions
+        securityData: this.securityData
       };
       
       try {

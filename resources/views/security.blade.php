@@ -52,31 +52,11 @@
                                     <div class="security-item">
                                         <div class="security-info">
                                             <h6>Password</h6>
-                                            <small>Last changed 45 days ago</small>
+                                            <small>Update your account password</small>
                                         </div>
                                         <button class="btn btn-outline-primary btn-sm" @click="changePassword()">
                                             Change Password
                                         </button>
-                                    </div>
-                                    
-                                    <div class="security-item">
-                                        <div class="security-info">
-                                            <h6>Account Recovery Email</h6>
-                                            <small x-text="securityData.recoveryEmail"></small>
-                                        </div>
-                                        <button class="btn btn-outline-secondary btn-sm" @click="updateRecoveryEmail()">
-                                            Update
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="security-item">
-                                        <div class="security-info">
-                                            <h6>Account Lockout Protection</h6>
-                                            <small>Automatically lock account after failed login attempts</small>
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" x-model="securityData.lockoutProtection">
-                                        </div>
                                     </div>
                                 </div>
 
@@ -92,9 +72,9 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <span class="security-status" :class="securityData.twoFactor.app ? 'enabled' : 'disabled'" x-text="securityData.twoFactor.app ? 'Enabled' : 'Disabled'"></span>
-                                            <button class="btn btn-outline-primary btn-sm" @click="setupAuthenticatorApp()">
-                                                <span x-show="!securityData.twoFactor.app">Setup</span>
-                                                <span x-show="securityData.twoFactor.app">Manage</span>
+                                            <button class="btn btn-sm" :class="securityData.twoFactor.app ? 'btn-outline-danger' : 'btn-outline-primary'" @click="setupAuthenticatorApp()">
+                                                <span x-show="!securityData.twoFactor.app">Enable</span>
+                                                <span x-show="securityData.twoFactor.app">Disable</span>
                                             </button>
                                         </div>
                                     </div>
@@ -106,9 +86,9 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <span class="security-status" :class="securityData.twoFactor.sms ? 'enabled' : 'disabled'" x-text="securityData.twoFactor.sms ? 'Enabled' : 'Disabled'"></span>
-                                            <button class="btn btn-outline-primary btn-sm" @click="setupSMSVerification()">
-                                                <span x-show="!securityData.twoFactor.sms">Setup</span>
-                                                <span x-show="securityData.twoFactor.sms">Manage</span>
+                                            <button class="btn btn-sm" :class="securityData.twoFactor.sms ? 'btn-outline-danger' : 'btn-outline-primary'" @click="setupSMSVerification()">
+                                                <span x-show="!securityData.twoFactor.sms">Enable</span>
+                                                <span x-show="securityData.twoFactor.sms">Disable</span>
                                             </button>
                                         </div>
                                     </div>
@@ -160,43 +140,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Privacy Controls -->
-                                <div x-show="activeSection === 'privacy'" class="security-section">
-                                    <h5>Privacy Controls</h5>
-                                    <p>Control your privacy settings and data visibility</p>
-                                    
-                                    <div class="security-item">
-                                        <div class="security-info">
-                                            <h6>Profile Visibility</h6>
-                                            <small>Control who can view your profile information</small>
-                                        </div>
-                                        <select x-select class="form-select" style="width: auto;" x-model="securityData.privacy.profileVisibility">
-                                            <option value="public">Public</option>
-                                            <option value="team">Team Members Only</option>
-                                            <option value="private">Private</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="security-item">
-                                        <div class="security-info">
-                                            <h6>Activity Status</h6>
-                                            <small>Show when you're online to other users</small>
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" x-model="securityData.privacy.showActivity">
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="security-item">
-                                        <div class="security-info">
-                                            <h6>Data Collection</h6>
-                                            <small>Allow collection of usage data for analytics</small>
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" x-model="securityData.privacy.dataCollection">
-                                        </div>
-                                    </div>
-                                </div>
+
 
                                 <!-- Security Activity -->
                                 <div x-show="activeSection === 'activity'" class="security-section">
@@ -231,6 +175,28 @@
                     </div>
 
                 </div>
+
+                <!-- Custom Confirmation Modal -->
+                <div class="modal fade" id="securityConfirmModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-sm">
+                        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                            <div class="modal-header bg-body-secondary border-bottom-0 py-3 px-4">
+                                <h6 class="modal-title fw-bold text-body" id="confirmModalTitle">
+                                    <i class="bi bi-exclamation-triangle text-warning me-2" id="confirmModalIcon"></i><span id="confirmModalTitleText">Confirm Action</span>
+                                </h6>
+                                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <p class="mb-0 text-muted" id="confirmModalMessage">Are you sure you want to proceed?</p>
+                            </div>
+                            <div class="modal-footer bg-body-secondary border-top-0 py-3 px-4 d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary border-0 fw-semibold shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary fw-bold shadow-sm" id="confirmModalBtn">Confirm</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
 @endsection
 
 @push('scripts')

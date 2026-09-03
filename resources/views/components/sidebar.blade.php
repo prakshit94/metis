@@ -522,17 +522,17 @@
                 {{-- System Settings Dropdown --}}
                 @canany(['village-view', 'orderreason-view', 'settings-view'])
                 <li class="nav-item">
-                    <a class="nav-link {{ in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index', 'files']) ? 'active' : 'collapsed' }}"
+                    <a class="nav-link {{ in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index', 'security', 'files']) ? 'active' : 'collapsed' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#systemSubmenu"
-                       aria-expanded="{{ in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index', 'files']) ? 'true' : 'false' }}"
+                       aria-expanded="{{ in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index', 'security', 'files']) ? 'true' : 'false' }}"
                        aria-controls="systemSubmenu">
                         <i class="bi bi-gear-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">System Settings</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index', 'files']) ? 'show' : '' }}" id="systemSubmenu">
+                    <div class="collapse {{ in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index', 'security', 'files']) ? 'show' : '' }}" id="systemSubmenu">
                         <ul class="nav nav-submenu">
                             @can('village-view')
                             <li class="nav-item">
@@ -565,6 +565,12 @@
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Audit Logs</span>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'security' ? 'active' : '' }}" href="{{ route('security') }}">
+                                    <i class="bi bi-shield-fill-check"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Security</span>
+                                </a>
+                            </li>
                             @endrole
                             @can('settings-view')
                             <li class="nav-item">
@@ -587,17 +593,17 @@
 
                 {{-- Utilities & Workspace Dropdown --}}
                 <li class="nav-item">
-                    <a class="nav-link {{ in_array($current, ['messages', 'calendar', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'active' : 'collapsed' }}"
+                    <a class="nav-link {{ in_array($current, ['messages', 'calendar', 'forms', 'settings', 'help']) || Str::startsWith($current, 'elements') ? 'active' : 'collapsed' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#toolsSubmenu"
-                       aria-expanded="{{ in_array($current, ['messages', 'calendar', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'true' : 'false' }}"
+                       aria-expanded="{{ in_array($current, ['messages', 'calendar', 'forms', 'settings', 'help']) || Str::startsWith($current, 'elements') ? 'true' : 'false' }}"
                        aria-controls="toolsSubmenu">
                         <i class="bi bi-wrench-adjustable-circle-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">Utilities &amp; Tools</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ in_array($current, ['messages', 'calendar', 'forms', 'settings', 'security', 'help']) || Str::startsWith($current, 'elements') ? 'show' : '' }}" id="toolsSubmenu">
+                    <div class="collapse {{ in_array($current, ['messages', 'calendar', 'forms', 'settings', 'help']) || Str::startsWith($current, 'elements') ? 'show' : '' }}" id="toolsSubmenu">
                         <ul class="nav nav-submenu">
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'messages' ? 'active' : '' }}" href="{{ route('messages') }}">
@@ -626,12 +632,6 @@
                                 </a>
                             </li>
                             @endcan
-                            <li class="nav-item">
-                                <a class="nav-link {{ $current === 'security' ? 'active' : '' }}" href="{{ route('security') }}">
-                                    <i class="bi bi-shield-fill-check"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Security</span>
-                                </a>
-                            </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url('/docs/api') }}" target="_blank">
                                     <i class="bi bi-file-earmark-code-fill"></i>

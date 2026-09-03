@@ -42,6 +42,7 @@ use App\Modules\Users\Controllers\AttendanceController;
 use App\Modules\Users\Controllers\AuthController;
 use App\Modules\Users\Controllers\BulkUserController;
 use App\Modules\Users\Controllers\DepartmentController;
+use App\Modules\Users\Controllers\SecurityController;
 use App\Modules\Users\Controllers\HolidayController;
 use App\Modules\Users\Controllers\HrSettingController;
 use App\Modules\Users\Controllers\LeaveBalanceController;
@@ -170,6 +171,16 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::middleware('permission:department-create')->post('/departments', [DepartmentController::class, 'store']);
         Route::middleware('permission:department-edit')->put('/departments/{department}', [DepartmentController::class, 'update']);
         Route::middleware('permission:department-delete')->delete('/departments/{department}', [DepartmentController::class, 'destroy']);
+
+        // Security / Impersonation Routes
+        Route::get('/security/sessions', [SecurityController::class, 'sessions']);
+        Route::get('/security/activity', [SecurityController::class, 'activity']);
+        Route::delete('/security/sessions/{id}', [SecurityController::class, 'terminateSession']);
+        Route::post('/security/sessions/terminate-other', [SecurityController::class, 'terminateOtherSessions']);
+        Route::post('/security/emergency-lockdown', [SecurityController::class, 'emergencyLockdown']);
+        Route::post('/security/impersonate/{user}', [SecurityController::class, 'impersonate']);
+        Route::post('/security/stop-impersonate', [SecurityController::class, 'stopImpersonating']);
+        Route::post('/roles/{role}/clone', [SecurityController::class, 'cloneRole']);
 
         // Org Chart
         Route::middleware('permission:department-view')->get('/org-chart', [OrgChartController::class, 'index']);

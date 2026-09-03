@@ -535,8 +535,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     async forceDeleteItem(item) {
+      const typeLabel = this.activeTab === 'roles' ? 'role' : 'permission';
       const confirmed = await confirmDelete({
-        title: `Permanently delete ${this.singularLabel}?`,
+        title: `Permanently delete ${typeLabel}?`,
         text: `This will permanently delete ${item.name}. This action cannot be undone.`,
         confirmButtonText: 'Yes, permanently delete',
       });
@@ -544,10 +545,31 @@ document.addEventListener('alpine:init', () => {
 
       try {
         const res = await apiFetch(`${endpointFor(this.activeTab)}/${item.id}/force`, { method: 'DELETE' });
-        showToast(res.message || `${item.name} permanently deleted successfully.`);
-        await this.loadCurrent();
+        showToast(res.message || `${item.name} permanently deleted successfully.`, 'success');
+        await this.loadData();
       } catch (err) {
         showToast(`Failed to permanently delete ${item.name}: ${err.message}`, 'danger');
+      }
+    },
+
+    async cloneRole(item) {
+      if (item.isDeleted) {
+        showToast('Restore this role before cloning.', 'warning');
+        return;
+      }
+      
+      const newName = prompt(`Enter a name for the new role (cloning from ${item.name}):`, `${item.name} (Copy)`);
+      if (!newName || newName.trim() === '') return;
+
+      try {
+        const res = await apiFetch(`/api/roles/${item.id}/clone`, { 
+          method: 'POST',
+          body: JSON.stringify({ new_name: newName.trim() })
+        });
+        showToast(res.message, 'success');
+        await this.loadData();
+      } catch (err) {
+        showToast(`Failed to clone ${item.name}: ${err.message}`, 'danger');
       }
     },
 
