@@ -62,6 +62,17 @@ class PageController extends Controller
             }
         }
 
+        // LOB/State scoping: if the user is assigned to a state team, restrict
+        // both the order and customer base queries to that state only.
+        // Global users (Super Admin / Admin / view-all-data) always get null → no restriction.
+        if ($lobStateName = $user?->lob_state_name) {
+            $orderQuery->where('shipping_state', $lobStateName);
+            // Customers: scope by address state (via default address relationship)
+            $customerQuery->whereHas('addresses', function ($q) use ($lobStateName) {
+                $q->where('state', $lobStateName)->where('is_default', true);
+            });
+        }
+
         $filter = $request->input('filter', 'today');
         if ($filter === 'today') {
             $orderQuery->whereDate('order_date', Carbon::today());
@@ -474,12 +485,14 @@ class PageController extends Controller
                 ->count();
 
             // ── Chart: Sales vs Purchase Trend (daily) ────────────────────────
+            $analyticsLobState = $analyticsLobState ?? auth()->user()?->lob_state_name;
             $salesTrend = DB::table('orders')
                 ->select(DB::raw('DATE(order_date) as day'), DB::raw('SUM(net_amount) as total'))
                 ->where('type', 'sale')
                 ->whereNotIn('status', ['cancelled'])
                 ->whereBetween('order_date', [$startStr, $endStr])
                 ->whereNull('deleted_at')
+                ->when($analyticsLobState, fn ($q) => $q->where('shipping_state', $analyticsLobState))
                 ->groupBy('day')
                 ->orderBy('day')
                 ->get();
@@ -501,6 +514,8 @@ class PageController extends Controller
                 ->count();
 
             // ── Sales State-Wise ──────────────────────────────────────────────
+            // For LOB users, only show their own state; global users see all 10.
+            $analyticsLobState = auth()->user()?->lob_state_name;
             $stateWiseSales = DB::table('orders')
                 ->select('shipping_state', DB::raw('SUM(net_amount) as total'), DB::raw('COUNT(id) as order_count'))
                 ->where('type', 'sale')
@@ -508,6 +523,7 @@ class PageController extends Controller
                 ->whereBetween('order_date', [$startStr, $endStr])
                 ->whereNotNull('shipping_state')
                 ->whereNull('deleted_at')
+                ->when($analyticsLobState, fn ($q) => $q->where('shipping_state', $analyticsLobState))
                 ->groupBy('shipping_state')
                 ->orderByDesc('total')
                 ->limit(10)

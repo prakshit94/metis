@@ -152,9 +152,9 @@ class User extends Authenticatable implements Auditable
      * Bypasses Spatie's active team_id session filter to fetch ALL roles across all
      * LOB/State teams for this user. Essential for admin user-management APIs.
      *
-     * Standard `$user->roles` only returns roles matching the CURRENT session team,
-     * so users scoped to a state (team_id = 1, 2, …) would show as having no role
-     * in the default (null) global context used by the admin panel session.
+     * Standard `$user->roles` uses Spatie's scope which only returns roles matching
+     * the CURRENT session team_id — users scoped to a state (team_id=1,2,…) would
+     * show as role-less when the admin panel session is in global (null) context.
      */
     public function allRoles(): \Illuminate\Database\Eloquent\Relations\MorphToMany
     {
@@ -165,6 +165,75 @@ class User extends Authenticatable implements Auditable
             config('permission.column_names.model_morph_key'),
             'role_id'
         )->withPivot('team_id');
+    }
+
+    /**
+     * Returns the team_id this user is scoped to, or null if they are a global user.
+     *
+     * Global users: Super Admin, Admin, or anyone with 'view-all-data' permission.
+     * LOB users: any other role assigned with a non-null pivot team_id.
+     *
+     * Result is cached on the model instance (resolved once per request).
+     */
+    public function getLobTeamIdAttribute(): ?int
+    {
+        if (isset($this->_lob_team_id_cache)) {
+            return $this->_lob_team_id_cache === -1 ? null : $this->_lob_team_id_cache;
+        }
+
+        // Global users bypass all LOB scoping
+        if ($this->hasRole(['Super Admin', 'Admin']) || $this->can('view-all-data')) {
+            $this->_lob_team_id_cache = -1; // sentinel for null
+            return null;
+        }
+
+        $lobRole = $this->allRoles()->whereNotNull('model_has_roles.team_id')->first();
+        $teamId = $lobRole ? (int) $lobRole->pivot->team_id : null;
+
+        $this->_lob_team_id_cache = $teamId ?? -1;
+        return $teamId;
+    }
+
+    /**
+     * Returns the full state name(s) this user's LOB is scoped to.
+     * Returns null for global users (no filter applied).
+     *
+     * Example: 'Gujarat' for a GJ-team user.
+     */
+    public function getLobStateNameAttribute(): ?string
+    {
+        $teamId = $this->lob_team_id;
+        if ($teamId === null) {
+            return null; // global user — no state restriction
+        }
+
+        $team = Team::find($teamId);
+        return $team?->resolved_state_name;
+    }
+
+    /**
+     * Returns an array of all user IDs that belong to the same LOB team.
+     * Useful for scoping Attendance, Leaves etc. to team members.
+     *
+     * Returns null for global users (meaning "no restriction").
+     *
+     * @return int[]|null  null = no restriction (global user), [] = team has no members
+     */
+    public function getLobTeamUserIds(): ?array
+    {
+        $teamId = $this->lob_team_id;
+        if ($teamId === null) {
+            return null; // global — caller should not restrict
+        }
+
+        return \Illuminate\Support\Facades\DB::table('model_has_roles')
+            ->where('team_id', $teamId)
+            ->where('model_type', static::class)
+            ->pluck('model_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->toArray();
     }
 
     public function subordinates(): HasMany

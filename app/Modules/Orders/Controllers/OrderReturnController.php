@@ -64,6 +64,11 @@ class OrderReturnController extends Controller implements HasMiddleware
             });
         }
 
+        // LOB/State scoping: restrict to returns for orders in the user's state
+        if ($lobStateName = $user?->lob_state_name) {
+            $query->whereHas('order', fn ($q) => $q->where('shipping_state', $lobStateName));
+        }
+
         if ($request->filled('search')) {
             $s = trim($request->search);
             $query->where(function ($subQuery) use ($s) {

@@ -70,8 +70,16 @@ class CustomerController extends Controller implements HasMiddleware
         $user = $request->user();
         $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
 
+        // LOB/State scoping: restrict customers to those whose default address
+        // is in the user's assigned state. Applies on top of the created_by scope.
+        $lobStateName = $user?->lob_state_name;
+
         $customers = Customer::query()
             ->when(! $isGlobalView, fn ($q) => $q->where('created_by', $user->id))
+            ->when($lobStateName, function ($q) use ($lobStateName) {
+                // Filter by default address state for LOB-scoped users
+                $q->whereHas('addresses', fn ($a) => $a->where('state', $lobStateName)->where('is_default', true));
+            })
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
             ->with(['addresses.village'])

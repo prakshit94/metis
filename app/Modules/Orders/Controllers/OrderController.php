@@ -82,6 +82,12 @@ class OrderController extends Controller implements HasMiddleware
         $user = auth()->user();
         $this->applyOrderActionPermissionScope($query, $user);
 
+        // LOB/State scoping: restrict orders to the user's assigned state.
+        // Returns null for Super Admin / Admin / view-all-data users → no restriction.
+        if ($lobStateName = $user?->lob_state_name) {
+            $query->where('shipping_state', $lobStateName);
+        }
+
         if ($request->filled('search')) {
             $s = trim($request->search);
             $query->where(function ($subQuery) use ($s) {
@@ -379,9 +385,15 @@ class OrderController extends Controller implements HasMiddleware
         $statusesList = $this->allowedOrderFilterStatuses($user);
         $productsList = Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']);
 
-        $statesList = Cache::remember('geo_states', 3600, function () {
-            return Village::distinct()->pluck('state_name')->filter()->sort()->values();
-        });
+        // For LOB-scoped users, limit the state filter dropdown to their own state only
+        $lobStateName = $user?->lob_state_name;
+        if ($lobStateName) {
+            $statesList = collect([$lobStateName]);
+        } else {
+            $statesList = Cache::remember('geo_states', 3600, function () {
+                return Village::distinct()->pluck('state_name')->filter()->sort()->values();
+            });
+        }
 
         $districtsList = $request->filled('state') ? Cache::remember('geo_districts_'.md5($request->state), 3600, function () use ($request) {
             return Village::whereIn('state_name', array_map('trim', explode(',', $request->state)))
@@ -416,9 +428,12 @@ class OrderController extends Controller implements HasMiddleware
         $deliveryFailureReasons = DeliveryFailureReason::where('is_active', true)->orderBy('id')->get();
         $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
-        // 7 Day Trends Data (Cached)
-        $trendsData = Cache::remember('order_trends_7_days_'.auth()->id(), 300, function () {
+        // 7 Day Trends Data (scoped by LOB state for non-global users)
+        $lobStateForTrends = $user?->lob_state_name;
+        $trendsCacheKey = 'order_trends_7_days_'.auth()->id().($lobStateForTrends ? '_'.md5($lobStateForTrends) : '');
+        $trendsData = Cache::remember($trendsCacheKey, 300, function () use ($lobStateForTrends) {
             $trendsQuery = Order::whereDate('order_date', '>=', now()->subDays(6))
+                ->when($lobStateForTrends, fn ($q) => $q->where('shipping_state', $lobStateForTrends))
                 ->groupBy(DB::raw('DATE(order_date)'))
                 ->orderBy(DB::raw('DATE(order_date)'))
                 ->get([
@@ -1452,6 +1467,11 @@ class OrderController extends Controller implements HasMiddleware
 
         if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view-all-data')) {
             return;
+        }
+
+        // LOB/State scope: restrict to the user's assigned state (null = no restriction)
+        if ($lobStateName = $user->lob_state_name) {
+            $query->where('shipping_state', $lobStateName);
         }
 
         $allowedStatuses = $this->allowedOrderFilterStatuses($user);

@@ -77,11 +77,28 @@ class UserController extends Controller implements HasMiddleware
         $allActiveUserIds = array_map('intval', array_unique(array_merge($activeSessionUserIds, $activeApiUserIds)));
         $activeUserIdsString = empty($allActiveUserIds) ? '0' : implode(',', $allActiveUserIds);
 
+        // LOB/State scoping: non-global users can only see users in their own team.
+        // Resolved via model_has_roles pivot (same table used by allRoles relationship).
+        $authUser = $request->user();
+        $lobTeamId = $authUser?->lob_team_id;
+
         $users = User::query()
             ->select('users.*')
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
             ->with(['allRoles', 'permissions', 'department', 'manager'])
+            // LOB restriction: if the requesting user belongs to a team, only
+            // show users who are also assigned to that same team.
+            ->when($lobTeamId, function ($q) use ($lobTeamId) {
+                $lobUserIds = DB::table('model_has_roles')
+                    ->where('team_id', $lobTeamId)
+                    ->where('model_type', User::class)
+                    ->pluck('model_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->toArray();
+                $q->whereIn('users.id', ! empty($lobUserIds) ? $lobUserIds : [0]);
+            })
             ->when(
                 $request->filled('search'),
                 fn ($q) => $q->where(function ($inner) use ($request): void {

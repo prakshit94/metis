@@ -46,10 +46,18 @@ class AttendanceController extends Controller implements HasMiddleware
         $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
         $filterUserId = $request->input('user_id');
 
+        // LOB scoping: resolve the team member IDs once.
+        // null = global user (no restriction), [] = LOB user with no team members, [ids] = restrict to these.
+        $lobTeamUserIds = $isGlobalView ? null : $request->user()?->getLobTeamUserIds();
+
         $query = Attendance::query()
             ->select('attendances.*')
             ->join('users', 'attendances.user_id', '=', 'users.id')
-            ->when(! $isGlobalView, fn ($q) => $q->where('attendances.user_id', $request->user()->id))
+            ->when(
+                ! $isGlobalView && $lobTeamUserIds !== null,
+                // LOB user: show all team members' attendance (filtered further below)
+                fn ($q) => $q->whereIn('attendances.user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
+            )
             ->when($isGlobalView, function ($q) use ($request, $filterUserId) {
                 if ($filterUserId) {
                     $q->where('attendances.user_id', $filterUserId);
@@ -96,7 +104,10 @@ class AttendanceController extends Controller implements HasMiddleware
                 $startDate = $request->input('start_date');
                 $endDate = $request->input('end_date');
 
-                $leaves = Leave::when(! $isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
+                $leaves = Leave::when(
+                        ! $isGlobalView && $lobTeamUserIds !== null,
+                        fn ($q) => $q->whereIn('user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
+                    )
                     ->when($isGlobalView, function ($q) use ($request, $filterUserId) {
                         if ($filterUserId) {
                             $q->where('user_id', $filterUserId);
@@ -134,7 +145,10 @@ class AttendanceController extends Controller implements HasMiddleware
             $startDate = $request->input('start_date');
             $endDate = $request->input('end_date');
 
-            $leaves = Leave::when(! $isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
+            $leaves = Leave::when(
+                    ! $isGlobalView && $lobTeamUserIds !== null,
+                    fn ($q) => $q->whereIn('user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
+                )
                 ->when($isGlobalView, function ($q) use ($request, $filterUserId) {
                     if ($filterUserId) {
                         $q->where('user_id', $filterUserId);

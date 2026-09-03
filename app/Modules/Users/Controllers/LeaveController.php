@@ -23,8 +23,15 @@ class LeaveController extends Controller
         $isGlobalView = $this->isGlobalView($request);
         $filterUserId = $request->input('user_id');
 
+        // LOB scoping: non-global users see all leaves for their team members.
+        // null = global (no extra restriction), [ids] = LOB team member IDs.
+        $lobTeamUserIds = $isGlobalView ? null : $request->user()?->getLobTeamUserIds();
+
         $query = Leave::with(['user', 'approver', 'applier'])
-            ->when(! $isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when(
+                ! $isGlobalView && $lobTeamUserIds !== null,
+                fn ($q) => $q->whereIn('user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
+            )
             ->when($isGlobalView && $filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
             ->orderBy('start_date', 'desc');
 
