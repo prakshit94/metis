@@ -1162,6 +1162,17 @@
                                                 </template>
                                             </select>
                                         </div>
+                                        <div class="col-12 mt-2">
+                                            <label class="form-label fw-medium text-muted small">Assigned Team (LOB/State)</label>
+                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.team_id">
+                                                <option value="">Global / Master Context</option>
+                                                @if(isset($teams))
+                                                    @foreach($teams as $team)
+                                                        <option value="{{ $team->id }}">{{ $team->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
                                         <div class="col-12 mt-3 border-top pt-3">
                                             <label class="form-label fw-medium text-muted small">
                                                 Password

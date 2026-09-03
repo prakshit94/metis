@@ -155,7 +155,7 @@ function permissionGroupFor(name) {
     warehouse: 'building', inventoryadjustment: 'sliders', stockmanagement: 'boxes', stocktransfer: 'arrow-left-right',
     coupon: 'ticket', promotions: 'megaphone',
     chat: 'chat', messages: 'envelope', calendar: 'calendar', files: 'folder', forms: 'ui-radios', security: 'shield-lock', help: 'question-circle',
-    village: 'pin-map', shipping: 'truck', role: 'shield-shaded', permission: 'key', user: 'person-badge', dashboard: 'speedometer2', analytics: 'graph-up', reports: 'file-earmark-bar-graph', settings: 'gear', audit: 'journal-text',
+    village: 'pin-map', shipping: 'truck', role: 'shield-shaded', permission: 'key', user: 'person-badge', dashboard: 'speedometer2', analytics: 'graph-up', reports: 'file-earmark-bar-graph', settings: 'gear', audit: 'journal-text', team: 'buildings',
     'view-all-data': 'globe'
   };
 

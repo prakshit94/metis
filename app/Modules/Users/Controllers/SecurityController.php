@@ -230,7 +230,8 @@ class SecurityController extends Controller
 
         $newRole = Role::create([
             'name' => $newRoleName,
-            'guard_name' => $role->guard_name
+            'guard_name' => $role->guard_name,
+            'team_id' => null, // Force global role clone
         ]);
 
         $newRole->syncPermissions($role->permissions);

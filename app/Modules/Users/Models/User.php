@@ -148,6 +148,25 @@ class User extends Authenticatable implements Auditable
         return $this->belongsTo(EmploymentType::class, 'employment_type_id');
     }
 
+    /**
+     * Bypasses Spatie's active team_id session filter to fetch ALL roles across all
+     * LOB/State teams for this user. Essential for admin user-management APIs.
+     *
+     * Standard `$user->roles` only returns roles matching the CURRENT session team,
+     * so users scoped to a state (team_id = 1, 2, …) would show as having no role
+     * in the default (null) global context used by the admin panel session.
+     */
+    public function allRoles(): \Illuminate\Database\Eloquent\Relations\MorphToMany
+    {
+        return $this->morphToMany(
+            config('permission.models.role'),
+            'model',
+            config('permission.table_names.model_has_roles'),
+            config('permission.column_names.model_morph_key'),
+            'role_id'
+        )->withPivot('team_id');
+    }
+
     public function subordinates(): HasMany
     {
         return $this->hasMany(User::class, 'manager_id');

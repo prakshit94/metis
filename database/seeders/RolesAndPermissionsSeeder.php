@@ -257,6 +257,16 @@ class RolesAndPermissionsSeeder extends Seeder
         'bulkuser-create',
         'bulkuser-edit',
         'bulkuser-delete',
+        'bulkuser-restore',
+        'bulkuser-permanent-delete',
+
+        // Teams (LOB / State)
+        'team-view',
+        'team-create',
+        'team-edit',
+        'team-delete',
+        'team-restore',
+        'team-permanent-delete',
 
         // ── HR Module ──
 
@@ -583,6 +593,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'user-report',
             'customer-export',
             'customer-activate',
+            'team-view',
+            'team-create',
+            'team-edit',
+            'team-delete',
             'audit-log-view',
             'skip-call-log',
             'chat-view',

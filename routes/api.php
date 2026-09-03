@@ -134,6 +134,15 @@ Route::middleware('auth:sanctum')->group(function (): void {
                 'update' => 'api.permissions.update',
                 'destroy' => 'api.permissions.destroy',
             ]);
+
+        Route::apiResource('teams', \App\Modules\Users\Controllers\TeamController::class)
+            ->names([
+                'index' => 'api.teams.index',
+                'store' => 'api.teams.store',
+                'show' => 'api.teams.show',
+                'update' => 'api.teams.update',
+                'destroy' => 'api.teams.destroy',
+            ]);
     });
 
     // ── User Management ──────────────────────────────────────────────────────

@@ -82,6 +82,7 @@ class UpdateUserRequest extends FormRequest
             'designation' => ['sometimes', 'nullable', 'string', 'max:100'],
             'emergency_contact_name' => ['sometimes', 'nullable', 'string', 'max:100'],
             'emergency_contact_phone' => ['sometimes', 'nullable', 'string', 'regex:/^\d{10}$/'],
+            'team_id' => ['sometimes', 'nullable', 'integer', 'exists:teams,id'],
         ];
     }
 

@@ -81,6 +81,7 @@ class RoleController extends Controller implements HasMiddleware
         $role = Role::create([
             'name' => $request->validated('name'),
             'guard_name' => $request->validated('guard_name', 'web'),
+            'team_id' => null, // Force global role creation regardless of active session team context
         ]);
 
         if ($request->filled('permissions')) {
@@ -122,6 +123,7 @@ class RoleController extends Controller implements HasMiddleware
         $role->update([
             'name' => $request->validated('name'),
             'guard_name' => $request->validated('guard_name', $role->guard_name),
+            'team_id' => null, // Force global role update regardless of active session team context
         ]);
 
         if ($request->has('permissions')) {

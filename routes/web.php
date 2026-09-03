@@ -57,6 +57,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/analytics/data', [PageController::class, 'analyticsData'])->name('analytics.data');
     Route::get('/users', [PageController::class, 'users'])->name('users');
     Route::get('/roles-permissions', [PageController::class, 'rolesPermissions'])->name('roles-permissions');
+    Route::get('/teams', [PageController::class, 'teams'])->name('teams');
 
     // HR Module
     Route::get('/departments', [PageController::class, 'departments'])->name('departments')->middleware('permission:department-view');

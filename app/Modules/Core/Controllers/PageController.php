@@ -802,7 +802,13 @@ class PageController extends Controller
 
     public function users()
     {
-        return view('users.index');
+        $teams = \App\Modules\Users\Models\Team::where('is_active', true)->get();
+        return view('users.index', compact('teams'));
+    }
+
+    public function teams()
+    {
+        return view('teams.index');
     }
 
     public function customers()

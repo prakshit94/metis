@@ -428,17 +428,17 @@
                 {{-- CRM & People Dropdown --}}
                 @canany(['user-view', 'role-view', 'department-view'])
                 <li class="nav-item">
-                    <a class="nav-link {{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments']) ? 'active' : 'collapsed' }}"
+                    <a class="nav-link {{ in_array($current, ['users', 'roles-permissions', 'teams', 'customers', 'customer-settings.index', 'departments']) ? 'active' : 'collapsed' }}"
                        href="#"
                        data-bs-toggle="collapse"
                        data-bs-target="#crmSubmenu"
-                       aria-expanded="{{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments']) ? 'true' : 'false' }}"
+                       aria-expanded="{{ in_array($current, ['users', 'roles-permissions', 'teams', 'customers', 'customer-settings.index', 'departments']) ? 'true' : 'false' }}"
                        aria-controls="crmSubmenu">
                         <i class="bi bi-people-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">CRM &amp; People</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
-                    <div class="collapse {{ in_array($current, ['users', 'roles-permissions', 'customers', 'customer-settings.index', 'departments']) ? 'show' : '' }}" id="crmSubmenu">
+                    <div class="collapse {{ in_array($current, ['users', 'roles-permissions', 'teams', 'customers', 'customer-settings.index', 'departments']) ? 'show' : '' }}" id="crmSubmenu">
                         <ul class="nav nav-submenu">
                             @role('Super Admin')
                             <li class="nav-item">
@@ -467,6 +467,14 @@
                                 <a class="nav-link {{ $current === 'roles-permissions' ? 'active' : '' }}" href="{{ route('roles-permissions') }}">
                                     <i class="bi bi-shield-lock-fill"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Roles &amp; Permissions</span>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('team-view')
+                            <li class="nav-item">
+                                <a class="nav-link {{ $current === 'teams' ? 'active' : '' }}" href="{{ route('teams') }}">
+                                    <i class="bi bi-buildings-fill"></i>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Teams (State/LOB)</span>
                                 </a>
                             </li>
                             @endcan

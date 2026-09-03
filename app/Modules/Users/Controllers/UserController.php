@@ -81,7 +81,7 @@ class UserController extends Controller implements HasMiddleware
             ->select('users.*')
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
-            ->with(['roles', 'permissions', 'department', 'manager'])
+            ->with(['allRoles', 'permissions', 'department', 'manager'])
             ->when(
                 $request->filled('search'),
                 fn ($q) => $q->where(function ($inner) use ($request): void {
@@ -131,6 +131,10 @@ class UserController extends Controller implements HasMiddleware
             $latestLogin = $latestLoginHistories[$user->id] ?? null;
             $user->last_login_at = $latestLogin ? $latestLogin->attempted_at : null;
             $user->device_type = $latestLogin ? ucfirst($latestLogin->device_type) : 'Web';
+
+            // Expose allRoles under the standard 'roles' key for frontend compatibility
+            $user->setRelation('roles', $user->allRoles);
+            $user->makeHidden('allRoles');
 
             return $user;
         });
@@ -191,6 +195,9 @@ class UserController extends Controller implements HasMiddleware
             if (in_array('Super Admin', $validated['roles']) && ! $request->user()?->hasRole('Super Admin')) {
                 return response()->json(['message' => 'You cannot assign the Super Admin role without being a Super Admin.'], 403);
             }
+            if ($request->has('team_id')) {
+                setPermissionsTeamId($request->team_id ?: null);
+            }
             $user->syncRoles($validated['roles']);
         }
 
@@ -199,7 +206,8 @@ class UserController extends Controller implements HasMiddleware
             $user->syncPermissions($validated['permissions']);
         }
 
-        $user->load(['roles', 'permissions']);
+        $user->load('allRoles');
+        $user->setRelation('roles', $user->allRoles)->makeHidden('allRoles');
 
         return response()->json([
             'message' => "User [{$user->email}] created successfully.",
@@ -215,8 +223,10 @@ class UserController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('user-view'), 403);
 
         $user = User::withTrashed()
-            ->with(['roles', 'permissions', 'department', 'manager'])
+            ->with(['allRoles', 'permissions', 'department', 'manager'])
             ->findOrFail($user);
+
+        $user->setRelation('roles', $user->allRoles)->makeHidden('allRoles');
 
         $loginHistory = $user->loginHistories()
             ->orderByDesc('attempted_at')
@@ -275,6 +285,13 @@ class UserController extends Controller implements HasMiddleware
             if (in_array('Super Admin', $validated['roles']) && ! $request->user()?->hasRole('Super Admin')) {
                 return response()->json(['message' => 'You cannot assign the Super Admin role without being a Super Admin.'], 403);
             }
+            if ($request->has('team_id')) {
+                // To cleanly move a user between teams (or to Global), we first strip existing roles
+                // across any team context so they do not stack.
+                $user->roles()->detach();
+                $user->permissions()->detach();
+                setPermissionsTeamId($request->team_id ?: null);
+            }
             $user->syncRoles($validated['roles']);
         }
 
@@ -283,7 +300,9 @@ class UserController extends Controller implements HasMiddleware
             $user->syncPermissions($validated['permissions']);
         }
 
-        $user->load(['roles', 'permissions']);
+        $user->load('allRoles');
+        $user->setRelation('roles', $user->allRoles)->makeHidden('allRoles');
+        $user->load('permissions');
 
         return response()->json([
             'message' => "User [{$user->email}] updated successfully.",
@@ -300,8 +319,10 @@ class UserController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('user-delete'), 403);
 
         $user = User::withTrashed()
-            ->with('roles')
+            ->with('allRoles')
             ->findOrFail($user);
+
+        $user->setRelation('roles', $user->allRoles)->makeHidden('allRoles');
 
         if ($user->id === 1) {
             return response()->json(['message' => 'The Master Admin cannot be deleted.'], 403);
@@ -345,8 +366,10 @@ class UserController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('user-restore'), 403);
 
         $user = User::withTrashed()
-            ->with(['roles', 'permissions', 'department', 'manager'])
+            ->with(['allRoles', 'permissions', 'department', 'manager'])
             ->findOrFail($user);
+
+        $user->setRelation('roles', $user->allRoles)->makeHidden('allRoles');
 
         if (! $user->trashed()) {
             return response()->json([
@@ -356,7 +379,9 @@ class UserController extends Controller implements HasMiddleware
         }
 
         $user->restore();
-        $user->load(['roles', 'permissions']);
+        $user->load('allRoles');
+        $user->setRelation('roles', $user->allRoles)->makeHidden('allRoles');
+        $user->load('permissions');
 
         return response()->json([
             'message' => "User [{$user->email}] restored successfully.",
@@ -372,8 +397,10 @@ class UserController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('user-permanent-delete'), 403);
 
         $user = User::withTrashed()
-            ->with('roles')
+            ->with('allRoles')
             ->findOrFail($user);
+
+        $user->setRelation('roles', $user->allRoles)->makeHidden('allRoles');
 
         if ($user->id === 1) {
             return response()->json(['message' => 'The Master Admin cannot be permanently deleted.'], 403);
@@ -453,8 +480,13 @@ class UserController extends Controller implements HasMiddleware
             return response()->json(['message' => 'You cannot assign the Super Admin role without being a Super Admin.'], 403);
         }
 
+        if ($request->has('team_id')) {
+            setPermissionsTeamId($request->team_id ?: null);
+        }
+
         $user->syncRoles($rolesToAssign);
-        $user->load('roles');
+        $user->load('allRoles');
+        $user->setRelation('roles', $user->allRoles)->makeHidden('allRoles');
 
         return response()->json([
             'message' => "Roles synced for user [{$user->email}].",

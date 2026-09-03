@@ -23,6 +23,13 @@ return Application::configure(basePath: dirname(__DIR__))
             ThrottleRequests::class.':api',
         ]);
 
+        $middleware->web(append: [
+            \App\Http\Middleware\TeamContextMiddleware::class,
+        ]);
+        $middleware->api(append: [
+            \App\Http\Middleware\TeamContextMiddleware::class,
+        ]);
+
         if (env('APP_ENV') === 'testing' || (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'testing')) {
             $middleware->validateCsrfTokens(except: ['*']);
         }

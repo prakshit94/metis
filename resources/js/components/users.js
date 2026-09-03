@@ -618,7 +618,12 @@ document.addEventListener('alpine:init', () => {
       form.form.employee_id = user.employee_id ?? '';
       form.form.photo = user.photo ?? '';
       form.form.joining_date = user.joining_date ? String(user.joining_date).split('T')[0] : '';
-      form.form.role = user.roles && user.roles.length ? user.roles[0].name : 'User';
+      // Find the first role that is explicitly scoped to a team (LOB/State).
+      // Prefer a role with pivot.team_id set over global (null) roles.
+      const lobRole = (user.roles ?? []).find(r => r.pivot && r.pivot.team_id != null);
+      const primaryRole = lobRole || (user.roles && user.roles.length ? user.roles[0] : null);
+      form.form.role = primaryRole ? primaryRole.name : 'User';
+      form.form.team_id = (lobRole && lobRole.pivot && lobRole.pivot.team_id != null) ? String(lobRole.pivot.team_id) : '';
       form.form.permissions = (user.permissions ?? []).map(p => p.name);
       form.form.is_active = user.is_active ?? true;
       form.form.address_line_1 = user.address_line_1 ?? '';
@@ -1103,6 +1108,7 @@ document.addEventListener('alpine:init', () => {
       password: '',
       password_confirmation: '',
       permissions: [],
+      team_id: '',
     },
     availablePermissions: [],
     departments: [],
@@ -1258,6 +1264,7 @@ document.addEventListener('alpine:init', () => {
         emergency_contact_phone: '',
         password: '',
         password_confirmation: '',
+        team_id: '',
       };
       this.villageSearchQuery = '';
       this.villageResults = [];
@@ -1323,6 +1330,8 @@ document.addEventListener('alpine:init', () => {
         formData.append('joining_date', this.form.joining_date ?? '');
         formData.append('is_active', this.form.is_active ? '1' : '0');
         formData.append('roles[]', this.form.role);
+        // Always send team_id, even if empty, to clear it
+        formData.append('team_id', this.form.team_id || '');
         
         if (this.form.permissions && this.form.permissions.length > 0) {
           this.form.permissions.forEach(p => formData.append('permissions[]', p));
