@@ -884,8 +884,12 @@ document.addEventListener('alpine:init', () => {
             this.loadCartTotal();
             this.syncCustomerContext();
             window.addEventListener('storage', (e) => {
-                if (e.key === 'ecommerce_create_order_cart') this.loadCart();
-                if (e.key === 'ecommerce_create_order_cart_total') this.loadCartTotal();
+                const customerId = localStorage.getItem('ecommerce_active_customer_id');
+                const cartKey = customerId ? `ecommerce_create_order_cart_${customerId}` : 'ecommerce_create_order_cart';
+                const totalKey = customerId ? `ecommerce_create_order_cart_total_${customerId}` : 'ecommerce_create_order_cart_total';
+                
+                if (e.key === cartKey || e.key === 'ecommerce_create_order_cart') this.loadCart();
+                if (e.key === totalKey || e.key === 'ecommerce_create_order_cart_total') this.loadCartTotal();
             });
             window.addEventListener('cart-updated', () => this.loadCart());
             window.addEventListener('cart-total-updated', (e) => {
@@ -898,7 +902,7 @@ document.addEventListener('alpine:init', () => {
         },
         handleCartClick() {
             if (document.querySelector('[x-data^="createOrderApp"]')) {
-                window.dispatchEvent(new CustomEvent('toggle-cart-sidebar'));
+                window.dispatchEvent(new CustomEvent('open-cart-sidebar'));
                 const btn = document.getElementById('cartMenuBtn');
                 if (btn && window.bootstrap && window.bootstrap.Dropdown) {
                     const dropdown = window.bootstrap.Dropdown.getInstance(btn);
@@ -910,19 +914,27 @@ document.addEventListener('alpine:init', () => {
         },
         syncCustomerContext() {
             const match = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
+            const urlParams = new URLSearchParams(window.location.search);
+            const customerIdParam = urlParams.get('customer_id');
             if (match && match[1]) {
                 localStorage.setItem('ecommerce_active_customer_id', match[1]);
+            } else if (customerIdParam) {
+                localStorage.setItem('ecommerce_active_customer_id', customerIdParam);
             }
         },
         loadCart() {
             try {
-                this.items = JSON.parse(localStorage.getItem('ecommerce_create_order_cart')) || [];
+                const customerId = localStorage.getItem('ecommerce_active_customer_id');
+                const cartKey = customerId ? `ecommerce_create_order_cart_${customerId}` : 'ecommerce_create_order_cart';
+                this.items = JSON.parse(localStorage.getItem(cartKey)) || [];
             } catch (e) {
                 this.items = [];
             }
         },
         loadCartTotal() {
-            this.cartGrandTotal = parseFloat(localStorage.getItem('ecommerce_create_order_cart_total')) || 0;
+            const customerId = localStorage.getItem('ecommerce_active_customer_id');
+            const totalKey = customerId ? `ecommerce_create_order_cart_total_${customerId}` : 'ecommerce_create_order_cart_total';
+            this.cartGrandTotal = parseFloat(localStorage.getItem(totalKey)) || 0;
         },
         checkoutHref() {
             const pathMatch = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
@@ -934,7 +946,9 @@ document.addEventListener('alpine:init', () => {
         },
         removeItem(index) {
             this.items.splice(index, 1);
-            localStorage.setItem('ecommerce_create_order_cart', JSON.stringify(this.items));
+            const customerId = localStorage.getItem('ecommerce_active_customer_id');
+            const cartKey = customerId ? `ecommerce_create_order_cart_${customerId}` : 'ecommerce_create_order_cart';
+            localStorage.setItem(cartKey, JSON.stringify(this.items));
             window.dispatchEvent(new CustomEvent('cart-updated'));
         }
     }));

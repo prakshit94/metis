@@ -86,7 +86,7 @@ document.addEventListener('alpine:init', () => {
     // Filters state
     searchQuery: '',
     statusFilter: [],
-    dateFilter: 'today',
+    dateFilter: '',
     productFilter: '',
     fulfillmentFilter: '',
     stateFilter: [],
@@ -781,7 +781,7 @@ document.addEventListener('alpine:init', () => {
     clearFilters() {
       this.searchQuery = '';
       this.statusFilter = [...(this.allowedFilterStatuses || [])];
-      this.dateFilter = 'today';
+      this.dateFilter = '';
       this.productFilter = '';
       this.fulfillmentFilter = '';
       this.stateFilter = [];

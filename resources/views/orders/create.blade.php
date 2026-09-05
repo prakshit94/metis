@@ -64,7 +64,7 @@
     </div>
     @endif
 
-    <div @customer-updated.window="loadAddresses()" @toggle-cart-sidebar.window="isCartSidebarOpen = !isCartSidebarOpen" class="row g-4">
+    <div @customer-updated.window="loadAddresses()" @open-cart-sidebar.window="isCartSidebarOpen = true" class="row g-4">
         <div :class="isCartSidebarOpen ? 'col-xl-8' : 'col-xl-12'" style="transition: all 0.3s ease;">
             {{-- Confirmation Details (Visible only in Confirm Mode) --}}
             <template x-if="isConfirmMode && originalOrder">
@@ -1207,11 +1207,10 @@
                             </button>
                         </div>
                         
-                        <button x-show="!isConfirmMode" type="button" @click.prevent="placeOrder()" :disabled="placing || cart.length === 0 || !partyId || !warehouseId"
+                        <button x-show="!isConfirmMode" type="button" @click.prevent="openOrderReviewModal()" :disabled="placing || cart.length === 0 || !partyId || !warehouseId"
                             class="btn btn-primary w-100 py-3 fw-bold text-uppercase shadow-sm position-relative overflow-hidden" style="letter-spacing: 1px;">
-                            <span x-show="placing" class="spinner-border spinner-border-sm me-2"></span>
-                            <i x-show="!placing" class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
-                            <span x-text="editingOrderId ? 'Update Order' : (orderStatus === 'future_order' ? 'Save Future Order' : 'Complete Order')" class="align-middle"></span>
+                            <i class="bi bi-search me-2 fs-5 align-middle"></i>
+                            <span x-text="editingOrderId ? 'Review Update' : (orderStatus === 'future_order' ? 'Review Future Order' : 'Review Order')" class="align-middle"></span>
                         </button>
                         
                         <template x-if="formErrors.length">
@@ -2036,6 +2035,256 @@
         </div>
     </div>
 
+    <!-- Order Review Modal -->
+    <div class="modal fade" id="orderReviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary bg-opacity-10 border-bottom-0 pb-3">
+                    <h5 class="modal-title fw-bold text-primary"><i class="bi bi-card-checklist me-2"></i>Review Order Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 pt-0">
+                    
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-body-tertiary rounded h-100 border shadow-sm">
+                                <h6 class="fw-bold text-body-secondary mb-3" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-person me-1"></i> Customer</h6>
+                                <div class="d-flex gap-3 align-items-center mb-3">
+                                    <div class="rounded-circle overflow-hidden shadow-sm flex-shrink-0 bg-white border" style="width: 48px; height: 48px;">
+                                        <template x-if="customerDetails?.avatar">
+                                            <img :src="'/storage/' + customerDetails.avatar" class="w-100 h-100 object-fit-cover" :alt="customerDisplayName">
+                                        </template>
+                                        <template x-if="!customerDetails?.avatar">
+                                            <img src="{{ asset('assets/images/farmersprofileimage.png') }}" class="w-100 h-100 object-fit-cover" :alt="customerDisplayName">
+                                        </template>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 mb-1 lh-1" x-text="customerDisplayName"></div>
+                                        <div class="small text-body-secondary lh-sm"><i class="bi bi-telephone me-1 text-primary"></i><span x-text="customerDetails?.phone || 'N/A'"></span></div>
+                                        <div class="small text-body-secondary lh-sm" x-show="customerDetails?.email"><i class="bi bi-envelope me-1 text-primary"></i><span x-text="customerDetails?.email"></span></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="small text-body-secondary mt-2 border-top pt-2 border-secondary border-opacity-25" 
+                                     x-show="customerDetails?.company_name || customerDetails?.gst_no || customerDetails?.calculated_outstanding > 0 || customerDetails?.credit_limit > 0 || recentOrders?.length > 0 || customerDetails?.total_complaints > 0" x-cloak>
+                                    <div x-show="customerDetails?.company_name" x-cloak><i class="bi bi-building me-1 text-primary opacity-75"></i><span x-text="customerDetails.company_name"></span></div>
+                                    <div x-show="customerDetails?.gst_no" x-cloak class="font-monospace">GST: <span x-text="customerDetails.gst_no"></span></div>
+                                    <div class="d-flex justify-content-between align-items-center mt-1" x-show="customerDetails?.calculated_outstanding > 0 || customerDetails?.credit_limit > 0" x-cloak>
+                                        <div x-show="customerDetails?.credit_limit > 0">Limit: ₹<span x-text="Number(customerDetails.credit_limit).toFixed(2)"></span></div>
+                                        <div x-show="customerDetails?.calculated_outstanding > 0" class="text-danger fw-bold">Out: ₹<span x-text="Number(customerDetails.calculated_outstanding).toFixed(2)"></span></div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <div class="text-success fw-medium" x-show="recentOrders?.length > 0" x-cloak>
+                                            <i class="bi bi-bag-check me-1"></i><span x-text="recentOrders.length"></span> Past Orders
+                                        </div>
+                                        <div class="text-warning-emphasis fw-medium" x-show="customerDetails?.total_complaints > 0" x-cloak>
+                                            <i class="bi bi-exclamation-circle me-1"></i><span x-text="customerDetails.total_complaints"></span> Complaints
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-1 d-flex gap-1 flex-wrap" x-show="customerDetails?.land_area || (customerDetails?.crops && customerDetails.crops.length > 0)" x-cloak>
+                                        <span class="badge text-bg-success-subtle text-success-emphasis border border-success border-opacity-25" x-show="customerDetails?.land_area" x-cloak>
+                                            Land: <span x-text="customerDetails.land_area"></span> <span x-text="customerDetails.land_unit"></span>
+                                        </span>
+                                        <template x-for="crop in (customerDetails?.crops || [])" :key="crop">
+                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis" x-text="crop"></span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="p-3 bg-body-tertiary rounded h-100 border shadow-sm">
+                                <h6 class="fw-bold text-body-secondary mb-2" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-geo-alt me-1"></i> Delivery To</h6>
+                                <template x-if="shippingAddressId">
+                                    <div x-data="{ addr: addresses.find(a => a.id == shippingAddressId) || {} }">
+                                        <div class="small fw-bold mb-1" x-text="addr.address_line_1"></div>
+                                        <div class="small text-body-secondary mb-1" x-show="addr.address_line_2" x-text="addr.address_line_2"></div>
+                                        <div class="small text-body-secondary mb-1" x-show="addr.village || addr.village_name" x-text="[(addr.village?.village_name || addr.village_name) ? 'Vill: '+(addr.village?.village_name || addr.village_name) : null, (addr.village?.post_so_name || addr.post_office) ? 'PO: '+(addr.village?.post_so_name || addr.post_office) : null, (addr.village?.taluka_name || addr.taluka) ? 'Ta: '+(addr.village?.taluka_name || addr.taluka) : null, (addr.village?.district_name || addr.district) ? 'Dist: '+(addr.village?.district_name || addr.district) : null].filter(Boolean).join(', ')"></div>
+                                        <div class="small text-body-secondary" x-text="[addr.city, addr.state + ' - ' + addr.pincode].filter(Boolean).join(', ')"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6 class="fw-bold text-body-secondary mb-3" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-cart me-1"></i> Order Items</h6>
+                        <div class="table-responsive border rounded shadow-sm" style="max-height: 250px; overflow-y: auto;">
+                            <table class="table table-sm table-borderless table-striped mb-0 text-center align-middle" style="font-size:12px;">
+                                <thead class="table-light border-bottom position-sticky top-0 z-1">
+                                    <tr>
+                                        <th class="text-start ps-3 py-2">Item</th>
+                                        <th class="py-2">Qty</th>
+                                        <th class="py-2">Price</th>
+                                        <th class="text-end pe-3 py-2">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="item in cart" :key="item.id">
+                                        <tr>
+                                            <td class="text-start ps-3 py-2">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="rounded border shadow-sm overflow-hidden flex-shrink-0 bg-white" style="width: 32px; height: 32px;">
+                                                        <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-contain" x-on:error="$el.src='/assets/images/product-placeholder.svg'" :alt="item.name">
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold text-body" x-text="item.name"></div>
+                                                        <div class="text-body-secondary d-flex align-items-center gap-1 mt-1" style="font-size:10px;">
+                                                            <span x-text="item.sku"></span>
+                                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-1 py-0" style="font-size:9px;" x-show="item.taxRate > 0" x-text="'GST ' + item.taxRate + '%'"></span>
+                                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-1 py-0" style="font-size:9px;" x-show="item.discountValue > 0" x-text="item.discountType === 'percent' ? item.discountValue+'% OFF' : '₹'+item.discountValue+' OFF'"></span>
+                                                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-1 py-0" style="font-size:9px;" x-show="item.is_gift">FREE GIFT</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="py-2 fw-bold" x-text="item.quantity"></td>
+                                            <td class="py-2">
+                                                <span x-show="!item.is_gift" x-text="'₹ ' + Number(item.price).toFixed(2)"></span>
+                                                <span x-show="item.is_gift" class="text-success fw-bold">₹ 0.00</span>
+                                            </td>
+                                            <td class="text-end pe-3 py-2 fw-bold">
+                                                <span x-show="!item.is_gift" x-text="'₹ ' + Number(lineTotal(item)).toFixed(2)"></span>
+                                                <span x-show="item.is_gift" class="text-success">₹ 0.00</span>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-body-tertiary rounded h-100 border shadow-sm">
+                                <h6 class="fw-bold text-body-secondary mb-2" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-info-circle me-1"></i> Order Info</h6>
+                                <div x-data="{ wh: warehouses.find(w => w.id == warehouseId) || {} }">
+                                    <div class="fw-bold fs-6 mb-1" x-text="wh.name"></div>
+                                    <div class="small text-body-secondary mb-1" x-show="wh.company_name"><i class="bi bi-building me-1 text-primary"></i><span x-text="wh.company_name"></span></div>
+                                    <div class="small text-body-secondary mb-1" x-show="wh.phone"><i class="bi bi-telephone me-1 text-primary"></i><span x-text="wh.phone"></span></div>
+                                    <div class="small text-body-secondary mb-1" x-show="wh.email"><i class="bi bi-envelope me-1 text-primary"></i><span x-text="wh.email"></span></div>
+                                    
+                                    <div class="mt-2 pt-2 border-top border-secondary border-opacity-25">
+                                        <div class="small fw-bold mb-1"><i class="bi bi-geo-alt me-1 text-primary"></i> Warehouse Address</div>
+                                        <div class="small text-body-secondary" x-text="wh.address_line_1"></div>
+                                        <div class="small text-body-secondary" x-show="wh.address_line_2" x-text="wh.address_line_2"></div>
+                                        <div class="small text-body-secondary" x-show="wh.village_name || wh.post_office || wh.taluka || wh.district" x-text="[wh.village_name ? 'Vill: '+wh.village_name : null, wh.post_office ? 'PO: '+wh.post_office : null, wh.taluka ? 'Ta: '+wh.taluka : null, wh.district ? 'Dist: '+wh.district : null].filter(Boolean).join(', ')"></div>
+                                        <div class="small text-body-secondary" x-text="[wh.city, wh.state + (wh.pincode ? ' - ' + wh.pincode : '')].filter(Boolean).join(', ')"></div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 pt-2 border-top border-secondary border-opacity-25">
+                                    <div class="d-flex justify-content-between mb-1 small"><span class="text-body-secondary">Type:</span> <span class="fw-bold text-capitalize" x-text="(orderStatus === 'future_order' ? 'Future Order' : 'Immediate').replace('_', ' ')"></span></div>
+                                    <template x-if="orderStatus === 'future_order' && futureOrderDate">
+                                        <div class="d-flex justify-content-between mb-1 small"><span class="text-body-secondary">Scheduled Date:</span> <span class="fw-bold text-primary" x-text="new Date(futureOrderDate).toLocaleDateString('en-IN')"></span></div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mt-3 mt-md-0">
+                            <div class="p-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded h-100 shadow-sm">
+                                <h6 class="fw-bold text-primary mb-3" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-receipt me-1"></i> Summary</h6>
+                                <div class="d-flex justify-content-between mb-1 small"><span class="text-body-secondary">Subtotal:</span> <span class="fw-bold" x-text="'₹ ' + Number(subtotal).toFixed(2)"></span></div>
+                                
+                                <template x-if="bogoDiscount > 0">
+                                    <div class="d-flex justify-content-between mb-1 small text-success">
+                                        <div>
+                                            <span>BOGO Savings:</span>
+                                            <div style="font-size: 9px; opacity: 0.8;" x-text="appliedBogoOfferNames"></div>
+                                        </div>
+                                        <span class="fw-bold" x-text="'- ₹ ' + Number(bogoDiscount).toFixed(2)"></span>
+                                    </div>
+                                </template>
+
+                                <template x-if="orderOfferDiscountAmount > 0">
+                                    <div class="d-flex justify-content-between mb-1 small text-success">
+                                        <div>
+                                            <span>Order Discount:</span>
+                                            <div style="font-size: 9px; opacity: 0.8;" x-text="bestOrderOffer?.name"></div>
+                                        </div>
+                                        <span class="fw-bold" x-text="'- ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
+                                    </div>
+                                </template>
+
+                                <template x-if="couponApplied && appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product'">
+                                    <div class="d-flex justify-content-between mb-1 small text-success">
+                                        <div>
+                                            <span>Coupon Savings:</span>
+                                            <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
+                                        </div>
+                                        <span class="fw-bold" x-text="'- ₹ ' + Number(couponDiscount).toFixed(2)"></span>
+                                    </div>
+                                </template>
+                                
+                                <template x-if="couponApplied && appliedCouponObj && appliedCouponObj.type === 'free_product'">
+                                    <div class="d-flex justify-content-between mb-1 small text-success">
+                                        <div>
+                                            <span>Coupon (Free Gift):</span>
+                                            <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
+                                        </div>
+                                        <span class="fw-bold">Applied</span>
+                                    </div>
+                                </template>
+
+                                <div class="d-flex justify-content-between mb-1 small">
+                                    <span class="text-body-secondary">Tax Amount (GST):</span> 
+                                    <span class="fw-bold" x-text="'₹ ' + Number(taxAmount).toFixed(2)"></span>
+                                </div>
+                                
+                                <template x-if="couponApplied && appliedCouponObj && appliedCouponObj.type === 'free_shipping'">
+                                    <div class="d-flex justify-content-between mb-1 small text-success">
+                                        <div>
+                                            <span>Shipping:</span>
+                                            <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
+                                        </div>
+                                        <span class="fw-bold">Free</span>
+                                    </div>
+                                </template>
+                                <template x-if="(!couponApplied || !appliedCouponObj || appliedCouponObj.type !== 'free_shipping') && shippingFee > 0">
+                                    <div class="d-flex justify-content-between mb-1 small"><span class="text-body-secondary">Shipping:</span> <span class="fw-bold" x-text="'₹ ' + Number(shippingFee).toFixed(2)"></span></div>
+                                </template>
+                                
+                                <div class="d-flex justify-content-between mt-2 pt-2 border-top border-primary border-opacity-25 fs-5"><span class="fw-bold text-primary">Net Total:</span> <span class="fw-bold text-primary" x-text="'₹ ' + Number(grandTotal).toFixed(2)"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer bg-body-tertiary border-top-0 pt-3 pb-3">
+                    <button type="button" class="btn btn-outline-secondary px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Go Back</button>
+                    <button type="button" @click.prevent="confirmPlaceOrder()" :disabled="placing"
+                        class="btn btn-primary px-4 fw-bold shadow-sm text-uppercase d-flex align-items-center" style="letter-spacing:1px;">
+                        <span x-show="placing" class="spinner-border spinner-border-sm me-2"></span>
+                        <i x-show="!placing" class="bi bi-check-circle-fill me-2 fs-5"></i>
+                        <span x-text="editingOrderId ? 'Confirm Update' : (orderStatus === 'future_order' ? 'Confirm Future Order' : 'Confirm Order')"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════ Order Success Modal ═══════════════════════════ -->
+    <div class="modal fade" id="orderSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow-lg text-center bg-body" style="border-radius: 24px; overflow: hidden;">
+                <div class="modal-body p-5">
+                    <div class="mb-4 position-relative d-inline-block">
+                        <div class="position-absolute top-50 start-50 translate-middle bg-success bg-opacity-10 rounded-circle" style="width: 120px; height: 120px;"></div>
+                        <i class="bi bi-check-circle-fill text-success position-relative" style="font-size: 70px; z-index: 1;"></i>
+                    </div>
+                    <h4 class="fw-bold text-body mb-2" id="orderSuccessTitle">Order Placed!</h4>
+                    <p class="text-body-secondary mb-4 small" id="orderSuccessMessage">The order has been successfully processed and the inventory has been updated.</p>
+                    <button type="button" class="btn btn-success rounded-pill px-5 py-2 fw-bold shadow-sm w-100 transition-all hover-shadow" data-bs-dismiss="modal">
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ═══════════════════════ Cancel Order Modal ═══════════════════════════ -->
     <div class="modal fade" id="cancelOrderModal" aria-labelledby="cancelOrderModalLabel">
         <div class="modal-dialog modal-dialog-centered">
@@ -2079,8 +2328,10 @@
             </div>
         </div>
     </div>
-
+        </div>
     </div>
+
+
 
 <style>
     /* Hide number input spin buttons */
@@ -2150,7 +2401,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         searching: false, productPage: 1, productLastPage: 1, productTotal: 0, productFrom: 0, productTo: 0,
         cart: [], couponCode: '', couponApplied: false, appliedCouponObj: null, appliedOfferId: null,
         placing: false, formErrors: [],
-        warehouses: @json($warehouses->map(fn($w) => ['id' => $w->id, 'name' => $w->name])),
+        warehouses: @json($warehouses->map(fn($w) => $w->toArray())),
         activeOffers: @json($offersArray),
         activeCoupons: @json($activeCoupons),
         couponInputTemp: '',
@@ -3348,6 +3599,30 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 this.placing = false;
             }
         },
+        
+        openOrderReviewModal() {
+            this.formErrors = [];
+            if (!this.partyId) { this.formErrors.push('Please select a customer.'); return; }
+            if (this.cart.length === 0) { this.formErrors.push('Cart is empty.'); return; }
+            if (!this.shippingAddressId) { this.formErrors.push('Please select a shipping address.'); return; }
+            if (!this.sameAsShipping && !this.billingAddressId) { this.formErrors.push('Please select a billing address.'); return; }
+            if (!this.warehouseId) { this.formErrors.push('Please select a warehouse.'); return; }
+            
+            const modalEl = document.getElementById('orderReviewModal');
+            if (modalEl) {
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        },
+
+        async confirmPlaceOrder() {
+            const modalEl = document.getElementById('orderReviewModal');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            }
+            await this.placeOrder();
+        },
 
         async placeOrder() {
             this.placing = true;
@@ -3359,6 +3634,11 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 this.cart = [];
                 const successMessage = this.editingOrderId ? 'Order updated successfully!' : 'Order placed successfully!';
                 window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:successMessage}}));
+                
+                document.getElementById('orderSuccessTitle').innerText = this.editingOrderId ? 'Order Updated!' : 'Order Placed!';
+                const successModal = new bootstrap.Modal(document.getElementById('orderSuccessModal'));
+                successModal.show();
+                
                 this.loadAddresses(); // Refresh the customer's recent orders list
                 this.searchProducts(); // Refresh the products list to update inventory stock
                 if (this.editingOrderId) {

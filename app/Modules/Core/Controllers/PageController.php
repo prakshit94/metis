@@ -66,13 +66,20 @@ class PageController extends Controller
         // both the order and customer base queries to that state only.
         // Global users (Super Admin / Admin / view-all-data) always get null → no restriction.
         if ($lobStateName = $user?->lob_state_name) {
-            $orderQuery->where('shipping_state', $lobStateName);
+            $orderQuery->where(function ($q) use ($lobStateName, $user) {
+                $q->where('shipping_state', $lobStateName)
+                  ->orWhere('created_by', $user->id);
+            });
             // Customers: scope by address state (via default address relationship)
-            $customerQuery->whereHas('addresses', function ($q) use ($lobStateName) {
-                $q->where('state', $lobStateName)->where('is_default', true);
+            $customerQuery->where(function ($q) use ($lobStateName, $user) {
+                $q->whereHas('addresses', function ($q) use ($lobStateName) {
+                    $q->where('state', $lobStateName)->where('is_default', true);
+                })->orWhere('created_by', $user->id);
             });
         }
 
+        $baseOrderQuery = clone $orderQuery;
+        
         $filter = $request->input('filter', 'today');
         if ($filter === 'today') {
             $orderQuery->whereDate('order_date', Carbon::today());
@@ -260,7 +267,7 @@ class PageController extends Controller
         })->toArray();
 
         // Recent Orders
-        $recentOrdersRaw = (clone $orderQuery)->with(['party', 'items.product'])
+        $recentOrdersRaw = (clone $baseOrderQuery)->with(['party', 'items.product'])
             ->whereNotIn('status', ['future_order'])
             ->latest('order_date')
             ->take(5)
@@ -296,7 +303,7 @@ class PageController extends Controller
         })->toArray();
 
         // Future Orders
-        $futureOrdersRaw = (clone $orderQuery)->with(['party', 'items.product'])
+        $futureOrdersRaw = (clone $baseOrderQuery)->with(['party', 'items.product'])
             ->where('status', 'future_order')
             ->orderBy('future_order_date', 'asc')
             ->take(5)

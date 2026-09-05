@@ -82,12 +82,6 @@ class OrderController extends Controller implements HasMiddleware
         $user = auth()->user();
         $this->applyOrderActionPermissionScope($query, $user);
 
-        // LOB/State scoping: restrict orders to the user's assigned state.
-        // Returns null for Super Admin / Admin / view-all-data users → no restriction.
-        if ($lobStateName = $user?->lob_state_name) {
-            $query->where('shipping_state', $lobStateName);
-        }
-
         if ($request->filled('search')) {
             $s = trim($request->search);
             $query->where(function ($subQuery) use ($s) {
@@ -1483,7 +1477,10 @@ class OrderController extends Controller implements HasMiddleware
 
         // LOB/State scope: restrict to the user's assigned state (null = no restriction)
         if ($lobStateName = $user->lob_state_name) {
-            $query->where('shipping_state', $lobStateName);
+            $query->where(function ($q) use ($lobStateName, $user) {
+                $q->where('shipping_state', $lobStateName)
+                  ->orWhere('created_by', $user->id);
+            });
         }
 
         $allowedStatuses = $this->allowedOrderFilterStatuses($user);
