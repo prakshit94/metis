@@ -3639,6 +3639,10 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 const successModal = new bootstrap.Modal(document.getElementById('orderSuccessModal'));
                 successModal.show();
                 
+                setTimeout(() => {
+                    successModal.hide();
+                }, 3000);
+                
                 this.loadAddresses(); // Refresh the customer's recent orders list
                 this.searchProducts(); // Refresh the products list to update inventory stock
                 if (this.editingOrderId) {
