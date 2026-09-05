@@ -66,6 +66,7 @@ function emptyForm() {
         reference_no: '',
         seed_lic_no: '',
         pesti_lic_no: '',
+        ebiller_id: '',
         address_line_1: '',
         address_line_2: '',
         village_id: '',

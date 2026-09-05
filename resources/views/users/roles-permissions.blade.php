@@ -119,17 +119,17 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search access..." x-model="searchQuery" @input="filterItems()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select x-select class="form-select form-select-sm" x-model="statusFilter" @change="filterItems()" style="width: 150px;">
+                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterItems()" style="width: 150px;">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="deleted">Deleted</option>
                         </select>
-                        <select x-select class="form-select form-select-sm" x-model="guardFilter" @change="filterItems()" style="width: 130px;">
+                        <select class="form-select form-select-sm" x-model="guardFilter" @change="filterItems()" style="width: 130px;">
                             <option value="">All Guards</option>
                             <option value="web">web</option>
                             <option value="api">api</option>
                         </select>
-                        <select x-select class="form-select form-select-sm" x-model.number="itemsPerPage" @change="filterItems()" style="width: 120px;">
+                        <select class="form-select form-select-sm" x-model.number="itemsPerPage" @change="filterItems()" style="width: 120px;">
                             <option value="10">10 / page</option>
                             <option value="15">15 / page</option>
                             <option value="20">20 / page</option>

@@ -101,6 +101,13 @@ class VillageController extends Controller implements HasMiddleware
             }
         }
 
+        // LOB/State scoping: restrict village browsing to the user's assigned state.
+        // Global users (Admin/Super Admin/view-all-data) see all states — lob_state_name returns null.
+        $lobStateName = $request->user()?->lob_state_name;
+        if ($lobStateName) {
+            $query->where('state_name', $lobStateName);
+        }
+
         // Stats calculation
         $statsQuery = clone $query;
         $counts = $statsQuery->select([
@@ -119,9 +126,14 @@ class VillageController extends Controller implements HasMiddleware
         $villages = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
 
         // Include filters lists with caching
-        $statesList = Cache::remember('geo_states', 3600, function () {
-            return Village::distinct()->pluck('state_name')->filter()->sort()->values();
-        });
+        // For LOB users, restrict the state dropdown to their own state
+        if ($lobStateName) {
+            $statesList = collect([$lobStateName]);
+        } else {
+            $statesList = Cache::remember('geo_states', 3600, function () {
+                return Village::distinct()->pluck('state_name')->filter()->sort()->values();
+            });
+        }
 
         $districtsList = $request->filled('state') ? Cache::remember('geo_districts_'.md5($request->state), 3600, function () use ($request) {
             return Village::whereIn('state_name', array_map('trim', explode(',', $request->state)))
@@ -344,13 +356,18 @@ class VillageController extends Controller implements HasMiddleware
         }
 
         $term = (string) $request->input('q');
-        $villages = Village::search($term)
+        $query = Village::search($term)
             ->with(['services' => function ($q) {
                 $q->where('is_active', true)
                   ->where('village_service_mappings.is_available', true);
-            }])
-            ->limit(30)
-            ->get();
+            }]);
+
+        // LOB/State scoping: restrict autocomplete to the user's state
+        if ($lobStateName = $request->user()?->lob_state_name) {
+            $query->where('state_name', $lobStateName);
+        }
+
+        $villages = $query->limit(30)->get();
 
         return response()->json(['data' => $villages]);
     }
@@ -495,6 +512,11 @@ class VillageController extends Controller implements HasMiddleware
             $query->whereHas('mappings', function ($q) use ($serviceId): void {
                 $q->where('service_id', $serviceId)->where('is_available', true);
             });
+        }
+
+        // LOB/State scoping: restrict export to the user's assigned state
+        if ($lobStateName = $request->user()?->lob_state_name) {
+            $query->where('state_name', $lobStateName);
         }
 
         if ($request->filled('deleted')) {

@@ -44,6 +44,7 @@
                             <th scope="col">ID</th>
                             <th scope="col">Name</th>
                             <th scope="col">Code</th>
+                            <th scope="col">State</th>
                             <th scope="col">Description</th>
                             <th scope="col">Status</th>
                             <th style="width: 120px;">Actions</th>
@@ -55,6 +56,7 @@
                                 <td x-text="team.id"></td>
                                 <td class="fw-bold" x-text="team.name"></td>
                                 <td><span class="badge bg-secondary" x-text="team.code || '—'"></span></td>
+                                <td><span class="badge bg-info text-dark" x-text="team.state_name || 'Global'"></span></td>
                                 <td x-text="team.description || '—'"></td>
                                 <td>
                                     <span class="badge px-2 py-1" :class="team.is_active ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'" x-text="team.is_active ? 'Active' : 'Inactive'"></span>
@@ -128,6 +130,16 @@
                             <input type="text" class="form-control" x-model="form.code">
                         </div>
                         <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small">State / LOB Mapping</label>
+                            <select class="form-select" x-model="form.state_name">
+                                <option value="">-- No state assigned (Global) --</option>
+                                <template x-for="state in statesList" :key="state">
+                                    <option :value="state" x-text="state"></option>
+                                </template>
+                            </select>
+                            <div class="form-text">Restricts users in this team to see data only from this state.</div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label fw-medium text-muted small">Description</label>
                             <textarea class="form-control" rows="3" x-model="form.description"></textarea>
                         </div>
@@ -165,6 +177,7 @@ document.addEventListener('alpine:init', () => {
         pageFrom: 0,
         pageTo: 0,
         totalPages: 1,
+        states: [],
         
         init() {
             this.loadTeams();
@@ -185,6 +198,12 @@ document.addEventListener('alpine:init', () => {
                 this.pageFrom = data.from || 0;
                 this.pageTo = data.to || 0;
                 this.totalPages = data.last_page;
+                this.states = data.states || [];
+                
+                const formComp = Alpine.$data(document.querySelector('[x-data="teamForm"]'));
+                if (formComp) {
+                    formComp.statesList = this.states;
+                }
             } catch (err) {
                 if (typeof showToast !== 'undefined') {
                     showToast('Failed to load teams.', 'danger');
@@ -223,6 +242,7 @@ document.addEventListener('alpine:init', () => {
                 formComp.editingTeamId = team.id;
                 formComp.form.name = team.name;
                 formComp.form.code = team.code || '';
+                formComp.form.state_name = team.state_name || '';
                 formComp.form.description = team.description || '';
                 formComp.form.is_active = !!team.is_active;
                 new bootstrap.Modal(document.getElementById('teamModal')).show();
@@ -254,16 +274,18 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('teamForm', () => ({
         editingTeamId: null,
         saving: false,
+        statesList: [],
         form: {
             name: '',
             code: '',
+            state_name: '',
             description: '',
             is_active: true
         },
 
         resetForm() {
             this.editingTeamId = null;
-            this.form = { name: '', code: '', description: '', is_active: true };
+            this.form = { name: '', code: '', state_name: '', description: '', is_active: true };
         },
 
         async saveTeam() {

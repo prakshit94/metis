@@ -351,7 +351,7 @@
                         <button type="button" @click="userFilter = 'online'" :class="userFilter === 'online' ? 'btn-primary' : 'btn-outline-secondary bg-body'" class="btn btn-sm flex-fill fw-semibold py-1 border" style="font-size: 11px;">Online</button>
                     </div>
                     <div class="d-flex gap-2">
-                        <select x-select x-model="userSort" class="form-select form-select-sm" style="font-size: 11px;">
+                        <select x-model="userSort" class="form-select form-select-sm" style="font-size: 11px;">
                             <option value="default">Default Sort</option>
                             <option value="revenue_desc">Revenue: High to Low</option>
                             <option value="revenue_asc">Revenue: Low to High</option>
@@ -441,7 +441,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold small">Privacy</label>
-                        <select x-select x-model="groupForm.privacy" class="form-select">
+                        <select x-model="groupForm.privacy" class="form-select">
                             <option value="private">Private — invite only</option>
                             <option value="public">Public — anyone can join</option>
                         </select>
@@ -540,7 +540,7 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label small fw-semibold text-muted">Privacy</label>
-                                        <select x-select x-model="groupSettingsForm.privacy" class="form-select">
+                                        <select x-model="groupSettingsForm.privacy" class="form-select">
                                             <option value="private">Private — invite only</option>
                                             <option value="public">Public — anyone can join</option>
                                         </select>

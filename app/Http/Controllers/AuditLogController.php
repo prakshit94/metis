@@ -378,7 +378,17 @@ class AuditLogController extends Controller implements HasMiddleware
             }
 
             if ($a->description === 'updated' && !empty($old) && !empty($attrs)) {
-                $changedKeys = array_keys(array_diff_assoc($attrs, $old));
+                $changedKeys = [];
+                foreach ($attrs as $key => $value) {
+                    $oldValue = $old[$key] ?? null;
+                    if (is_array($value) || is_array($oldValue)) {
+                        if (json_encode($value) !== json_encode($oldValue)) {
+                            $changedKeys[] = $key;
+                        }
+                    } elseif ((string) $value !== (string) $oldValue) {
+                        $changedKeys[] = $key;
+                    }
+                }
                 $changedKeys = array_filter($changedKeys, fn($key) => !in_array($key, ['updated_at', 'updated_by', 'created_at', 'remember_token', 'password']));
 
                 if (!empty($changedKeys)) {

@@ -72,8 +72,10 @@ class Village extends Model implements Auditable
     {
         $term = strtolower(trim($term));
 
-        return $query->where('normalized_name', 'like', "%{$term}%")
-            ->orWhere('pincode', 'like', "{$term}%");
+        return $query->where(function (Builder $q) use ($term) {
+            $q->where('normalized_name', 'like', "%{$term}%")
+              ->orWhere('pincode', 'like', "{$term}%");
+        });
     }
 
     /**

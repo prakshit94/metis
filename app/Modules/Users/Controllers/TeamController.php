@@ -10,6 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Cache;
+use App\Modules\Core\Models\Village;
 
 class TeamController extends Controller implements HasMiddleware
 {
@@ -39,10 +41,29 @@ class TeamController extends Controller implements HasMiddleware
             ->orderBy('name', 'asc');
 
         if ($perPage === 1000) {
-            return response()->json(['data' => $teams->get()]);
+            $data = $teams->get();
+            return response()->json([
+                'data' => $data,
+                'states' => $this->getStatesList()
+            ]);
         }
 
-        return response()->json($teams->paginate($perPage));
+        $paginated = $teams->paginate($perPage);
+        return response()->json([
+            'data' => $paginated->items(),
+            'current_page' => $paginated->currentPage(),
+            'last_page' => $paginated->lastPage(),
+            'per_page' => $paginated->perPage(),
+            'total' => $paginated->total(),
+            'states' => $this->getStatesList()
+        ]);
+    }
+
+    private function getStatesList()
+    {
+        return Cache::remember('geo_states', 3600, function () {
+            return Village::distinct()->pluck('state_name')->filter()->sort()->values();
+        });
     }
 
     public function store(Request $request): JsonResponse
@@ -50,6 +71,7 @@ class TeamController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:teams,name'],
             'code' => ['sometimes', 'nullable', 'string', 'max:50', 'unique:teams,code'],
+            'state_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
@@ -72,6 +94,7 @@ class TeamController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:teams,name,' . $team->id],
             'code' => ['sometimes', 'nullable', 'string', 'max:50', 'unique:teams,code,' . $team->id],
+            'state_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],
         ]);

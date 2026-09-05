@@ -341,7 +341,7 @@
             <i class="bi bi-buildings text-primary me-2 fs-4"></i>Warehouse Operations Overview
         </h2>
         <div class="flex-grow-1 border-bottom border-secondary-subtle"></div>
-        <select x-select class="form-select form-select-sm w-auto" x-model="visibleWarehouseStat" aria-label="Toggle Warehouse Visibility">
+        <select class="form-select form-select-sm w-auto" x-model="visibleWarehouseStat" aria-label="Toggle Warehouse Visibility">
             <option value="">All Warehouses</option>
             <template x-for="wh in warehousesList" :key="wh.id">
                 <option :value="wh.name" x-text="wh.name"></option>
@@ -540,7 +540,7 @@
                     
                     <!-- Date Range -->
                     @can('orders.filter_date')
-                    <select x-select class="form-select form-select-sm" 
+                    <select class="form-select form-select-sm" 
                             x-model="dateFilter" 
                             @change="filterOrders()"
                             style="width: 150px;">
@@ -554,7 +554,7 @@
                     @endcan
 
                     <!-- Items Per Page -->
-                    <select x-select class="form-select form-select-sm"
+                    <select class="form-select form-select-sm"
                             x-model.number="itemsPerPage"
                             @change="filterOrders()"
                             style="width: 120px;">
@@ -591,7 +591,7 @@
                 @can('orders.filter_product')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Product</label>
-                    <select x-select class="form-select form-select-sm" x-model="productFilter" @change="filterOrders()">
+                    <select class="form-select form-select-sm" x-model="productFilter" @change="filterOrders()">
                         <option value="">All Products</option>
                         <template x-for="product in productsList" :key="product.id">
                             <option :value="product.id" x-text="`${product.name} (${product.sku})`"></option>
@@ -604,7 +604,7 @@
                 @can('orders.filter_fulfillment')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Fulfillment Status</label>
-                    <select x-select class="form-select form-select-sm" x-model="fulfillmentFilter" @change="filterOrders()">
+                    <select class="form-select form-select-sm" x-model="fulfillmentFilter" @change="filterOrders()">
                         <option value="">All</option>
                         <option value="fulfillable">Fulfillable</option>
                         <option value="unfulfillable">Unfulfillable</option>
@@ -616,7 +616,7 @@
                 @can('orders.filter_carrier')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Carrier</label>
-                    <select x-select class="form-select form-select-sm" x-model="carrierFilter" @change="filterOrders()">
+                    <select class="form-select form-select-sm" x-model="carrierFilter" @change="filterOrders()">
                         <option value="">All Carriers</option>
                         <template x-for="carrier in carriersList" :key="carrier">
                             <option :value="carrier" x-text="carrier"></option>
@@ -629,7 +629,7 @@
                 @can('orders.filter_warehouse')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Warehouse</label>
-                    <select x-select class="form-select form-select-sm" x-model="warehouseFilter" @change="filterOrders()">
+                    <select class="form-select form-select-sm" x-model="warehouseFilter" @change="filterOrders()">
                         <option value="">All Warehouses</option>
                         <template x-for="warehouse in warehousesList" :key="warehouse.id">
                             <option :value="warehouse.id" x-text="warehouse.name"></option>
@@ -1733,7 +1733,7 @@
             <div class="modal-body pt-3">
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Select Carrier <span class="text-danger">*</span></label>
-                    <select x-select class="form-select" x-model="shipCarrierName">
+                    <select class="form-select" x-model="shipCarrierName">
                         <option value="" disabled selected>Select carrier...</option>
                         <template x-for="carrier in shipCarrierOptions" :key="carrier.name">
                             <option :value="carrier.name" x-text="carrier.priority === null ? carrier.name : `${carrier.name} (Priority: ${carrier.priority})`"></option>
@@ -1904,7 +1904,7 @@
                 <div x-show="confirmAction === 'schedule'" x-cloak x-transition>
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-body-emphasis">Reason for Reschedule <span class="text-danger">*</span></label>
-                        <select x-select class="form-select" x-model="scheduleReason">
+                        <select class="form-select" x-model="scheduleReason">
                             <option value="" disabled selected>Select a reason...</option>
                             @foreach($rescheduleReasons as $reason)
                                 <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
@@ -2005,7 +2005,7 @@
                 <div x-show="deliverAction === 'schedule'" x-cloak x-transition>
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-body-emphasis">Reason for Failure <span class="text-danger">*</span></label>
-                        <select x-select class="form-select" x-model="scheduleDeliveryReason">
+                        <select class="form-select" x-model="scheduleDeliveryReason">
                             <option value="" disabled selected>Select a reason...</option>
                             @foreach($deliveryFailureReasons as $reason)
                                 <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
@@ -2049,7 +2049,7 @@
             <div class="modal-body pt-3">
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Reason for Return <span class="text-danger">*</span></label>
-                    <select x-select class="form-select" x-model="returnReason">
+                    <select class="form-select" x-model="returnReason">
                         <option value="" disabled selected>Select a reason...</option>
                         @foreach($returnReasons as $reason)
                             <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
@@ -2117,7 +2117,7 @@
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Reason for Cancellation <span class="text-danger">*</span></label>
-                    <select x-select class="form-select" x-model="cancelReason">
+                    <select class="form-select" x-model="cancelReason">
                         <option value="" disabled selected>Select a reason...</option>
                         @foreach($cancelReasons as $reason)
                             <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>

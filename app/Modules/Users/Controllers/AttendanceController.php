@@ -338,8 +338,14 @@ class AttendanceController extends Controller implements HasMiddleware
         $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
         $filterUserId = $request->input('user_id');
 
+        // LOB scoping: resolve team member IDs once (same pattern as index)
+        $lobTeamUserIds = $isGlobalView ? null : $request->user()?->getLobTeamUserIds();
+
         $attendances = Attendance::with('user:id,name,employee_id,joining_date')
-            ->when(! $isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when(
+                ! $isGlobalView && $lobTeamUserIds !== null,
+                fn ($q) => $q->whereIn('user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
+            )
             ->when($isGlobalView && $filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
             ->when($isGlobalView && ! $filterUserId, fn ($q) => $q->where('user_id', $request->user()->id))
             ->whereYear('date', $year)
@@ -417,8 +423,14 @@ class AttendanceController extends Controller implements HasMiddleware
         $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
         $filterUserId = $request->input('user_id');
 
+        // LOB scoping: resolve team member IDs once (same pattern as index)
+        $lobTeamUserIds = $isGlobalView ? null : $request->user()?->getLobTeamUserIds();
+
         $attendances = Attendance::with('user:id,name,employee_id')
-            ->when(! $isGlobalView, fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when(
+                ! $isGlobalView && $lobTeamUserIds !== null,
+                fn ($q) => $q->whereIn('user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
+            )
             ->when($isGlobalView && $filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
             ->when($isGlobalView && ! $filterUserId, fn ($q) => $q->where('user_id', $request->user()->id))
             ->whereYear('date', $year)

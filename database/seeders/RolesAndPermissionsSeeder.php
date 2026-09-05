@@ -1020,6 +1020,38 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $this->command->info('✔ Additional users seeded successfully.');
 
+        // Seed LOB specific test users
+        $teams = [
+            1 => 'GJ',
+            2 => 'RJ',
+            3 => 'MH',
+            4 => 'MP'
+        ];
+
+        foreach ($teams as $teamId => $code) {
+            $email = strtolower($code) . '.agent@metis.test';
+            $user = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'name' => 'Test Agent ' . $code,
+                    'first_name' => 'Test',
+                    'last_name' => 'Agent ' . $code,
+                    'password' => Hash::make('password'),
+                    'is_active' => true,
+                    'email_verified_at' => now(),
+                ]
+            );
+
+            // Assign role to the specific team
+            setPermissionsTeamId($teamId);
+            if (! $user->hasRole('Agent')) {
+                $user->assignRole('Agent');
+            }
+        }
+        setPermissionsTeamId(null);
+
+        $this->command->info('✔ LOB test users seeded successfully.');
+
         // Reset cache after all changes
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 

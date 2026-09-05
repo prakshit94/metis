@@ -116,6 +116,31 @@ class UserController extends Controller implements HasMiddleware
                 fn ($q) => $q->role($request->input('role')),
             )
             ->when(
+                $request->filled('team_id'),
+                function ($q) use ($request) {
+                    $teamId = $request->input('team_id');
+                    if ($teamId === 'global') {
+                        $globalUserIds = DB::table('model_has_roles')
+                            ->whereNull('team_id')
+                            ->where('model_type', User::class)
+                            ->pluck('model_id')
+                            ->map(fn ($id) => (int) $id)
+                            ->unique()
+                            ->toArray();
+                        $q->whereIn('users.id', !empty($globalUserIds) ? $globalUserIds : [0]);
+                    } else {
+                        $teamUserIds = DB::table('model_has_roles')
+                            ->where('team_id', $teamId)
+                            ->where('model_type', User::class)
+                            ->pluck('model_id')
+                            ->map(fn ($id) => (int) $id)
+                            ->unique()
+                            ->toArray();
+                        $q->whereIn('users.id', !empty($teamUserIds) ? $teamUserIds : [0]);
+                    }
+                }
+            )
+            ->when(
                 $request->has('is_active'),
                 fn ($q) => $q->where('users.is_active', (bool) $request->input('is_active')),
             )
@@ -152,6 +177,8 @@ class UserController extends Controller implements HasMiddleware
             // Expose allRoles under the standard 'roles' key for frontend compatibility
             $user->setRelation('roles', $user->allRoles);
             $user->makeHidden('allRoles');
+            
+            $user->append('lob_state_name');
 
             return $user;
         });

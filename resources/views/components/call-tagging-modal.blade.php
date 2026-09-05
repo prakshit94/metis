@@ -35,7 +35,7 @@
                             <div class="col-md-12">
                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Primary Reason for Call *</label>
                                 <div class="d-flex align-items-center gap-2">
-                                    <select x-select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL1">
+                                    <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL1">
                                         <option value="">Select Call Category...</option>
                                         <template x-for="tag in l1Tags" :key="tag.id">
                                             <option :value="tag.id" x-text="tag.name"></option>
@@ -65,7 +65,7 @@
                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Specific Subject *</label>
                                 <div class="d-flex align-items-center gap-2">
                                     <template x-if="l2Tags.length > 0">
-                                        <select x-select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL2">
+                                        <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL2">
                                             <option value="">Select Sub Category...</option>
                                             <template x-for="tag in l2Tags" :key="tag.id">
                                                 <option :value="tag.id" x-text="tag.name"></option>
@@ -98,7 +98,7 @@
                                                 </template>
 
                                                 <template x-if="field.type === 'select'">
-                                                    <select x-select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="formData[field.name]" :required="field.is_required">
+                                                    <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="formData[field.name]" :required="field.is_required">
                                                         <option value="">Select option...</option>
                                                         <template x-for="opt in (field.options ? JSON.parse(field.options) : [])" :key="opt">
                                                             <option :value="opt" x-text="opt"></option>
@@ -199,7 +199,7 @@
                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Final Outcome / Resolution</label>
                                 <div class="d-flex align-items-center gap-2">
                                     <template x-if="l3Tags.length > 0">
-                                        <select x-select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL3">
+                                        <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL3">
                                             <option value="">Select Call Outcome...</option>
                                             <template x-for="tag in l3Tags" :key="tag.id">
                                                 <option :value="tag.id" x-text="tag.name"></option>

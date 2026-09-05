@@ -101,7 +101,7 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search Txn, Order ID, Name..." x-model="searchQuery" @input.debounce.300ms="filterPayments()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select x-select class="form-select form-select-sm" x-model="statusFilter" @change="filterPayments()" style="width: 150px;">
+                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterPayments()" style="width: 150px;">
                             <option value="">All Statuses</option>
                             <option value="pending">Pending</option>
                             <option value="authorized">Authorized</option>
@@ -425,7 +425,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-muted">Method</label>
-                                <select x-select class="form-select" x-model="editForm.payment_method" required>
+                                <select class="form-select" x-model="editForm.payment_method" required>
                                     <option value="credit_card">Credit Card</option>
                                     <option value="paypal">PayPal</option>
                                     <option value="cod">COD</option>
@@ -434,7 +434,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-muted">Status</label>
-                                <select x-select class="form-select" x-model="editForm.status" required>
+                                <select class="form-select" x-model="editForm.status" required>
                                     <option value="pending">Pending</option>
                                     <option value="authorized">Authorized</option>
                                     <option value="completed">Completed</option>

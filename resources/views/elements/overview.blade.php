@@ -39,7 +39,7 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <select x-select class="form-select" x-model="categoryFilter" @change="filterComponents()">
+                                <select class="form-select" x-model="categoryFilter" @change="filterComponents()">
                                     <option value="">All Categories</option>
                                     <option value="content">Content</option>
                                     <option value="forms">Forms</option>

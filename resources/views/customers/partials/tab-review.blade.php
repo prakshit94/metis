@@ -240,7 +240,7 @@
 
                     <div class="mb-4" style="max-width: 400px;">
                         <label class="form-label text-muted fw-bold text-uppercase ms-1" style="font-size: 9px; letter-spacing: 1px;">Select Dispatch Hub</label>
-                        <select x-select x-model="selectedWarehouseId" class="form-select bg-body-tertiary border-0 shadow-sm fw-bold px-3 py-2">
+                        <select x-model="selectedWarehouseId" class="form-select bg-body-tertiary border-0 shadow-sm fw-bold px-3 py-2">
                             @foreach($warehouses as $wh)
                                 <option value="{{ $wh->id }}">{{ $wh->name }} ({{ $wh->code }})</option>
                             @endforeach
@@ -520,7 +520,7 @@
                                             <div class="d-flex flex-column gap-3">
                                                 <div>
                                                     <label class="form-label text-muted fw-bold text-uppercase ms-1 mb-1" style="font-size: 9px; letter-spacing: 1px;">Order Type</label>
-                                                    <select x-select x-model="orderType" class="form-select form-select-lg border shadow-sm fw-semibold bg-body-tertiary fs-6">
+                                                    <select x-model="orderType" class="form-select form-select-lg border shadow-sm fw-semibold bg-body-tertiary fs-6">
                                                         <option value="sale">Regular Sale</option>
                                                         <option value="sample">Free Sample</option>
                                                         <option value="replacement">Replacement</option>

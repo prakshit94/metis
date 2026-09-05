@@ -263,6 +263,10 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        if ($teamId = $user->lob_team_id) {
+            $request->session()->put('team_id', $teamId);
+        }
+
         $response = redirect()->intended(route('dashboard'));
 
         if ($remember) {

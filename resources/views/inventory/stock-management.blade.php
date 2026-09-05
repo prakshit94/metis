@@ -159,7 +159,7 @@
                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                             </div>
                             {{-- Warehouse Filter --}}
-                            <select x-select class="form-select form-select-sm"
+                            <select class="form-select form-select-sm"
                                     x-model="warehouseFilter"
                                     @change="loadData()"
                                     style="width: 170px;">
@@ -169,7 +169,7 @@
                                 </template>
                             </select>
                             {{-- Stock Level Filter --}}
-                            <select x-select class="form-select form-select-sm"
+                            <select class="form-select form-select-sm"
                                     x-model="stockLevelFilter"
                                     @change="loadData()"
                                     style="width: 150px;">
@@ -484,7 +484,7 @@
                                             </div>
                                             <div class="col-12" x-show="!isEditing">
                                                 <label class="form-label fw-medium text-muted small">Warehouse <span class="text-danger">*</span></label>
-                                                <select x-select class="form-select" x-model="adjustForm.warehouseId" @change="fetchCurrentStock()" required>
+                                                <select class="form-select" x-model="adjustForm.warehouseId" @change="fetchCurrentStock()" required>
                                                     <option value="">Select warehouse...</option>
                                                     <template x-for="wh in warehouses" :key="wh.id">
                                                         <option :value="wh.id" x-text="wh.name"></option>

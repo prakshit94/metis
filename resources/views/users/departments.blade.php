@@ -108,12 +108,12 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search..." x-model="searchQuery" @input.debounce.300ms="filterItems()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select x-select class="form-select form-select-sm" x-model="statusFilter" @change="filterItems()" style="width: 150px;">
+                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterItems()" style="width: 150px;">
                             <option value="">All Statuses</option>
                             <option value="active">Active</option>
                             <option value="inactive">Disabled</option>
                         </select>
-                        <select x-select class="form-select form-select-sm" x-model.number="itemsPerPage" @change="filterItems()" style="width: 120px;">
+                        <select class="form-select form-select-sm" x-model.number="itemsPerPage" @change="filterItems()" style="width: 120px;">
                             <option value="10">10 / page</option>
                             <option value="15">15 / page</option>
                             <option value="20">20 / page</option>

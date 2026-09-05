@@ -29,11 +29,19 @@ class ProductController extends Controller
     {
         abort_unless($request->user()?->can('product-view'), 403);
 
+        $stockScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
         $products = Product::query()
-            ->with($this->getEagerLoads())
-            ->withSum('stocks as stocks_sum_quantity', 'quantity')
-            ->withSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
-            ->withSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+            ->with($this->getEagerLoads($request))
+            ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+            ->withSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+            ->withSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
             ->withSum('pendingOrderItems as pending_orders_qty', 'quantity')
             ->latest()
             ->get()
@@ -51,10 +59,18 @@ class ProductController extends Controller
     {
         abort_unless($request->user()?->can('product-view'), 403);
 
-        $product->load($this->getEagerLoads());
-        $product->loadSum('stocks as stocks_sum_quantity', 'quantity');
-        $product->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty');
-        $product->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty');
+        $stockScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
+        $product->load($this->getEagerLoads($request));
+        $product->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity');
+        $product->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty');
+        $product->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty');
         $product->loadSum('pendingOrderItems as pending_orders_qty', 'quantity');
 
         return response()->json([
@@ -87,12 +103,20 @@ class ProductController extends Controller
 
         $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0), 'overwrite', $extraData);
 
+        $stockScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
         return response()->json([
             'message' => 'Product created successfully.',
-            'data' => $this->transform($product->fresh($this->getEagerLoads())
-                ->loadSum('stocks as stocks_sum_quantity', 'quantity')
-                ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
-                ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+            'data' => $this->transform($product->fresh($this->getEagerLoads($request))
+                ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+                ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+                ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
                 ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
         ], 201);
     }
@@ -124,12 +148,20 @@ class ProductController extends Controller
             $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0), 'overwrite', $extraData);
         }
 
+        $stockScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
         return response()->json([
             'message' => 'Product updated successfully.',
-            'data' => $this->transform($product->fresh($this->getEagerLoads())
-                ->loadSum('stocks as stocks_sum_quantity', 'quantity')
-                ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
-                ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+            'data' => $this->transform($product->fresh($this->getEagerLoads($request))
+                ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+                ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+                ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
                 ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
         ]);
     }
@@ -282,12 +314,20 @@ class ProductController extends Controller
         $product = Product::withTrashed()->findOrFail($product);
         $product->restore();
 
+        $stockScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
         return response()->json([
             'message' => 'Product restored successfully.',
-            'data' => $this->transform($product->fresh($this->getEagerLoads())
-                ->loadSum('stocks as stocks_sum_quantity', 'quantity')
-                ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
-                ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+            'data' => $this->transform($product->fresh($this->getEagerLoads($request))
+                ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+                ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+                ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
                 ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
         ]);
     }
@@ -307,11 +347,26 @@ class ProductController extends Controller
 
     public function searchApi(Request $request): JsonResponse
     {
+        $stockScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
         $query = Product::query()
-            ->with(['category', 'brand', 'taxRate', 'uom', 'stocks' => fn ($q) => $q->with('warehouse')->withSum('pendingOrderItems as pending_qty', 'quantity')])
-            ->withSum('stocks as stocks_sum_quantity', 'quantity')
-            ->withSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
-            ->withSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+            ->with(['category', 'brand', 'taxRate', 'uom', 'stocks' => function ($q) use ($request) {
+                $q->with('warehouse')->withSum('pendingOrderItems as pending_qty', 'quantity');
+                if ($lobState = $request->user()?->lob_state_name) {
+                    $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                        $wq->where('state', $lobState);
+                    });
+                }
+            }])
+            ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+            ->withSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+            ->withSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
             ->withSum('pendingOrderItems as pending_orders_qty', 'quantity');
 
         if ($request->filled('q')) {
@@ -430,12 +485,20 @@ class ProductController extends Controller
         $clone->save();
         $clone->attributeValues()->sync($product->attributeValues->pluck('id')->all());
 
+        $stockScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
         return response()->json([
             'message' => 'Product duplicated successfully.',
-            'data' => $this->transform($clone->fresh($this->getEagerLoads())
-                ->loadSum('stocks as stocks_sum_quantity', 'quantity')
-                ->loadSum('stocks as stocks_sum_reserved_qty', 'reserved_qty')
-                ->loadSum('stocks as stocks_sum_dispatched_qty', 'dispatched_qty')
+            'data' => $this->transform($clone->fresh($this->getEagerLoads($request))
+                ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+                ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+                ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
                 ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
         ], 201);
     }
@@ -558,7 +621,7 @@ class ProductController extends Controller
 
         $filename = 'products-'.now()->format('Y-m-d-His').'.csv';
 
-        return response()->streamDownload(function () {
+        return response()->streamDownload(function () use ($request) {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, [
                 'name',
@@ -584,9 +647,17 @@ class ProductController extends Controller
                 'overselling_qty',
             ]);
 
+            $stockScope = function ($q) use ($request) {
+                if ($lobState = $request->user()?->lob_state_name) {
+                    $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                        $wq->where('state', $lobState);
+                    });
+                }
+            };
+
             Product::query()
                 ->with(['category', 'brand', 'uom', 'taxRate', 'hsnCode'])
-                ->withSum('stocks as stocks_sum_quantity', 'quantity')
+                ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
                 ->latest()
                 ->chunk(100, function ($products) use ($handle): void {
                     foreach ($products as $product) {
@@ -715,7 +786,7 @@ class ProductController extends Controller
         }
     }
 
-    private function getEagerLoads(): array
+    private function getEagerLoads(?Request $request = null): array
     {
         return [
             'category.parent',
@@ -726,7 +797,14 @@ class ProductController extends Controller
             'warehouse',
             'attributeValues.attribute',
             'supplier',
-            'stocks' => fn ($q) => $q->with('warehouse')->withSum('pendingOrderItems as pending_qty', 'quantity'),
+            'stocks' => function ($q) use ($request) {
+                $q->with('warehouse')->withSum('pendingOrderItems as pending_qty', 'quantity');
+                if ($request && $lobState = $request->user()?->lob_state_name) {
+                    $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                        $wq->where('state', $lobState);
+                    });
+                }
+            },
         ];
     }
 

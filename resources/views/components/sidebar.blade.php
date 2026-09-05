@@ -6,11 +6,20 @@
 <aside class="admin-sidebar" id="admin-sidebar">
     <div class="sidebar-content">
 
-        <div class="px-3 mb-2 mt-2 d-flex justify-content-between align-items-center">
-            <span class="text-muted small fw-bold text-uppercase text-truncate pe-2">Navigation</span>
-            <button class="btn btn-sm btn-link text-muted p-0 text-decoration-none" id="toggle-all-menus" title="Toggle all menus">
-                <i class="bi bi-arrows-expand"></i>
-            </button>
+        <div class="px-3 mb-2 mt-2 d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted small fw-bold text-uppercase text-truncate pe-2">Navigation</span>
+                <button class="btn btn-sm btn-link text-muted p-0 text-decoration-none" id="toggle-all-menus" title="Toggle all menus">
+                    <i class="bi bi-arrows-expand"></i>
+                </button>
+            </div>
+            @if(Auth::user()?->lob_state_name)
+                <div class="mt-2">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.7rem;">
+                        <i class="bi bi-geo-alt-fill me-1"></i>LOB: {{ Auth::user()->lob_state_name }}
+                    </span>
+                </div>
+            @endif
         </div>
         <script>
             document.addEventListener('DOMContentLoaded', function() {

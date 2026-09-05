@@ -17,6 +17,17 @@ class TeamContextMiddleware
     {
         if (session()->has('team_id')) {
             setPermissionsTeamId(session('team_id'));
+        } elseif ($user = $request->user()) {
+            if ($teamId = $user->lob_team_id) {
+                setPermissionsTeamId($teamId);
+                if ($request->hasSession()) {
+                    session(['team_id' => $teamId]);
+                }
+            } else {
+                setPermissionsTeamId(null);
+            }
+        } else {
+            setPermissionsTeamId(null);
         }
 
         return $next($request);

@@ -7,7 +7,7 @@
 <div class="user-management" x-data="userTable">
     <div>
 <!-- Page Header -->
-                    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
                         <div>
                             <h1 class="h3 mb-0"><i class="bi bi-people-fill text-primary me-2"></i>User Management</h1>
                             <p class="text-muted mb-0">Manage users, roles, and permissions</p>
@@ -38,71 +38,71 @@
                         <!-- User Stats Widgets -->
                         <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                             <div class="col-xl-3 col-lg-6">
-                                <div class="card stats-card">
+                                <div class="card metric-card">
                                     <div class="card-body p-3 p-lg-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
-                                                <i class="bi bi-people-fill"></i>
-                                            </div>
+                                        <div class="d-flex align-items-center justify-content-between">
                                             <div>
-                                                <p class="h6 mb-0 text-muted">Total Users</p>
+                                                <h6 class="text-muted mb-1">Total Users</h6>
                                                 <div class="h3 mb-0" aria-live="polite"><span x-text="stats.total"></span></div>
-                                                <small class="text-success-emphasis">
+                                                <small class="trend-up text-success-emphasis">
                                                     <i class="bi bi-arrow-up"></i> +12% from last month
                                                 </small>
                                             </div>
+                                            <div class="stats-icon bg-primary bg-opacity-10 text-primary">
+                                                <i class="bi bi-people-fill"></i>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-xl-3 col-lg-6">
-                                <div class="card stats-card">
+                                <div class="card metric-card">
                                     <div class="card-body p-3 p-lg-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
-                                                <i class="bi bi-person-check-fill"></i>
-                                            </div>
+                                        <div class="d-flex align-items-center justify-content-between">
                                             <div>
-                                                <p class="h6 mb-0 text-muted">Active Users</p>
+                                                <h6 class="text-muted mb-1">Active Users</h6>
                                                 <div class="h3 mb-0" aria-live="polite"><span x-text="stats.active"></span></div>
-                                                <small class="text-success-emphasis">
+                                                <small class="trend-up text-success-emphasis">
                                                     <i class="bi bi-arrow-up"></i> +8% from last week
                                                 </small>
                                             </div>
+                                            <div class="stats-icon bg-success bg-opacity-10 text-success">
+                                                <i class="bi bi-person-check-fill"></i>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-xl-3 col-lg-6">
-                                <div class="card stats-card">
+                                <div class="card metric-card">
                                     <div class="card-body p-3 p-lg-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
-                                                <i class="bi bi-person-plus-fill"></i>
-                                            </div>
+                                        <div class="d-flex align-items-center justify-content-between">
                                             <div>
-                                                <p class="h6 mb-0 text-muted">New This Month</p>
+                                                <h6 class="text-muted mb-1">New This Month</h6>
                                                 <div class="h3 mb-0" aria-live="polite"><span x-text="stats.newThisMonth"></span></div>
-                                                <small class="text-success-emphasis">
+                                                <small class="trend-up text-success-emphasis">
                                                     <i class="bi bi-arrow-up"></i> +15% growth
                                                 </small>
                                             </div>
+                                            <div class="stats-icon bg-info bg-opacity-10 text-info">
+                                                <i class="bi bi-person-plus-fill"></i>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-xl-3 col-lg-6">
-                                <div class="card stats-card">
+                                <div class="card metric-card">
                                     <div class="card-body p-3 p-lg-4">
-                                        <div class="d-flex align-items-center">
-                                            <div id="activeUserChart" style="min-height: 40px; width: 50px;"></div>
-                                            <div class="ms-3">
-                                                <p class="h6 mb-0 text-muted">Active Rate</p>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <h6 class="text-muted mb-1">Active Rate</h6>
                                                 <div class="h3 mb-0" aria-live="polite"><span x-text="`${Math.round(stats.activePercentage)}%`"></span></div>
                                                 <small class="text-muted">
                                                     <i class="bi bi-clock"></i> Last 24h
                                                 </small>
                                             </div>
+                                            <div id="activeUserChart" style="min-height: 40px; width: 50px;"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -300,7 +300,7 @@
                         </div> <!-- End Analytics Wrapper -->
 
                         <!-- Users Table -->
-                        <div class="card">
+                        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-4 bg-body-tertiary">
                             <div class="card-header">
                                 <div class="row align-items-center">
                                     <div class="col">
@@ -311,16 +311,16 @@
                                             <!-- Search -->
                                             <div class="position-relative">
                                                 <input type="search" 
-                                                       class="form-control form-control-sm" 
+                                                       class="form-control form-control-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3" 
                                                        placeholder="Search users..."
                                                        x-model="searchQuery"
                                                        @input="filterUsers()"
                                                        style="width: 200px;">
-                                                <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
+                                                <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
                                             </div>
                                             
                                             <!-- Status Filter -->
-                                                <select x-select data-no-search class="form-select form-select-sm" 
+                                                <select class="form-select form-select-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3" 
                                                     x-model="statusFilter" 
                                                     @change="filterUsers()"
                                                     style="width: 150px;">
@@ -331,7 +331,7 @@
                                             </select>
                                             
                                             <!-- Role Filter -->
-                                            <select x-select data-no-search class="form-select form-select-sm" 
+                                            <select class="form-select form-select-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3" 
                                                     x-model="roleFilter" 
                                                     @change="filterUsers()"
                                                     style="width: 150px;">
@@ -341,8 +341,22 @@
                                                 </template>
                                             </select>
                                             
+                                            <!-- LOB Filter -->
+                                            <select class="form-select form-select-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3" 
+                                                    x-model="teamFilter" 
+                                                    @change="filterUsers()"
+                                                    style="width: 150px;">
+                                                <option value="">All LOBs</option>
+                                                <option value="global">Global Context</option>
+                                                @if(isset($teams))
+                                                    @foreach($teams as $team)
+                                                        <option value="{{ $team->id }}">{{ $team->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                            
                                             <!-- Page Size -->
-                                            <select x-select data-no-search class="form-select form-select-sm"
+                                            <select class="form-select form-select-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3"
                                                     x-model.number="itemsPerPage"
                                                     @change="filterUsers()"
                                                     style="width: 120px;">
@@ -434,6 +448,7 @@
                                                     <i class="bi bi-arrow-down" x-show="sortField === 'email' && sortDirection === 'desc'" aria-hidden="true"></i>
                                                 </th>
                                                 <th scope="col">Employment</th>
+                                                <th scope="col">LOB</th>
                                                 <th scope="col">Location</th>
                                                 <th scope="col">Status</th>
                                                 <th scope="col"
@@ -492,6 +507,12 @@
                                                         <div class="d-flex flex-column gap-2 align-items-start">
                                                             <span class="badge shadow-sm" :class="roleBadgeClass(user.role)" x-text="user.roleLabel"></span>
                                                             <small class="text-muted d-flex align-items-center"><i class="bi bi-diagram-3 me-1"></i> <span x-text="user.department || '—'"></span></small>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex align-items-center text-body">
+                                                            <i class="bi bi-diagram-2 text-primary me-2"></i>
+                                                            <span x-text="user.lob_state_name || '—'"></span>
                                                         </div>
                                                     </td>
                                                     <td>
@@ -896,14 +917,14 @@
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label fw-medium text-muted small">Gender</label>
-                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.gender">
+                                            <select class="form-select form-select-sm" x-model="form.gender">
                                                 <option value="Male">Male</option>
                                                 <option value="Female">Female</option>
                                             </select>
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label fw-medium text-muted small">Blood Group</label>
-                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.blood_group">
+                                            <select class="form-select form-select-sm" x-model="form.blood_group">
                                                 <option value="">Unknown</option>
                                                 <option value="A+">A+</option>
                                                 <option value="A-">A-</option>
@@ -1078,7 +1099,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Designation</label>
-                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.designation">
+                                            <select class="form-select form-select-sm" x-model="form.designation">
                                                 <option value="">None</option>
                                                 <template x-for="desig in designations.filter(d => d.is_active)" :key="desig.id">
                                                     <option :value="desig.name" x-text="desig.name"></option>
@@ -1087,7 +1108,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Employment Type</label>
-                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.employment_type">
+                                            <select class="form-select form-select-sm" x-model="form.employment_type">
                                                 <option value="">None</option>
                                                 <template x-for="emp in employmentTypes.filter(e => e.is_active)" :key="emp.id">
                                                     <option :value="emp.name" x-text="emp.name"></option>
@@ -1096,7 +1117,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Department</label>
-                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.department_id">
+                                            <select class="form-select form-select-sm" x-model="form.department_id">
                                                 <option value="">None</option>
                                                 <template x-for="dept in departments" :key="dept.id">
                                                     <option :value="dept.id" x-text="dept.name"></option>
@@ -1105,7 +1126,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Manager</label>
-                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.manager_id">
+                                            <select class="form-select form-select-sm" x-model="form.manager_id">
                                                 <option value="">None</option>
                                                 <template x-for="mgr in managers" :key="mgr.id">
                                                     <option :value="mgr.id" x-text="mgr.name"></option>
@@ -1155,7 +1176,7 @@
                                     <div class="row g-3">
                                         <div class="col-12">
                                             <label class="form-label fw-medium text-muted small">Primary Role <span class="text-danger">*</span></label>
-                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.role" required :disabled="roles.length === 0">
+                                            <select class="form-select form-select-sm" x-model="form.role" required :disabled="roles.length === 0">
                                                 <option value="" disabled x-show="roles.length === 0">No roles available</option>
                                                 <template x-for="r in roles" :key="r.id">
                                                     <option :value="r.name" x-text="r.name"></option>
@@ -1164,7 +1185,7 @@
                                         </div>
                                         <div class="col-12 mt-2">
                                             <label class="form-label fw-medium text-muted small">Assigned Team (LOB/State)</label>
-                                            <select x-select data-no-search class="form-select form-select-sm" x-model="form.team_id">
+                                            <select class="form-select form-select-sm" x-model="form.team_id">
                                                 <option value="">Global / Master Context</option>
                                                 @if(isset($teams))
                                                     @foreach($teams as $team)

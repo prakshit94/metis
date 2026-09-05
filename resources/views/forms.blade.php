@@ -78,7 +78,7 @@
                                             <div class="col-12">
                                                 <div class="form-group">
                                                     <label class="form-label">Subject</label>
-                                                    <select x-select class="form-select" x-model="form.subject" required>
+                                                    <select class="form-select" x-model="form.subject" required>
                                                         <option value="">Choose a subject</option>
                                                         <option value="general">General Inquiry</option>
                                                         <option value="support">Technical Support</option>
@@ -483,7 +483,7 @@
                                                         </div>
                                                         <div class="col-md-6">
                                                             <label class="form-label">Gender</label>
-                                                            <select x-select class="form-select" x-model="formData.gender">
+                                                            <select class="form-select" x-model="formData.gender">
                                                                 <option value="">Select Gender</option>
                                                                 <option value="male">Male</option>
                                                                 <option value="female">Female</option>
@@ -526,7 +526,7 @@
                                                         </div>
                                                         <div class="col-md-3">
                                                             <label class="form-label">State *</label>
-                                                            <select x-select class="form-select" 
+                                                            <select class="form-select" 
                                                                 x-model="formData.state"
                                                                 :class="getFieldClass('state')"
                                                                 @blur="validateField('state')"
@@ -557,7 +557,7 @@
                                                         </div>
                                                         <div class="col-12">
                                                             <label class="form-label">Country</label>
-                                                            <select x-select class="form-select" x-model="formData.country">
+                                                            <select class="form-select" x-model="formData.country">
                                                                 <option value="US">United States</option>
                                                                 <option value="CA">Canada</option>
                                                                 <option value="MX">Mexico</option>
@@ -627,7 +627,7 @@
                                                         </div>
                                                         <div class="col-12">
                                                             <label class="form-label">Security Question</label>
-                                                            <select x-select class="form-select" x-model="formData.securityQuestion">
+                                                            <select class="form-select" x-model="formData.securityQuestion">
                                                                 <option value="">Select a security question</option>
                                                                 <option value="pet">What was the name of your first pet?</option>
                                                                 <option value="school">What elementary school did you attend?</option>

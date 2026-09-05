@@ -100,7 +100,7 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search tag..." x-model="search" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select x-select class="form-select form-select-sm" x-model="filterStatus" style="width: 150px;">
+                        <select class="form-select form-select-sm" x-model="filterStatus" style="width: 150px;">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -325,7 +325,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Status</label>
-                                    <select x-select class="form-select" x-model="form.is_active">
+                                    <select class="form-select" x-model="form.is_active">
                                         <option value="1">Active</option>
                                         <option value="0">Inactive</option>
                                     </select>
@@ -367,7 +367,7 @@
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Type</label>
-                                                <select x-select class="form-select form-select-sm bg-body" x-model="field.type">
+                                                <select class="form-select form-select-sm bg-body" x-model="field.type">
                                                     <option value="text">Text Input</option>
                                                     <option value="textarea">Textarea</option>
                                                     <option value="date">Date</option>
@@ -378,7 +378,7 @@
                                             </div>
                                             <div class="col-md-2">
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Required</label>
-                                                <select x-select class="form-select form-select-sm bg-body" x-model="field.is_required">
+                                                <select class="form-select form-select-sm bg-body" x-model="field.is_required">
                                                     <option value="1">Yes</option>
                                                     <option value="0">No</option>
                                                 </select>

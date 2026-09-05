@@ -157,9 +157,6 @@ class CustomerController extends Controller implements HasMiddleware
             $q->where('phone', $phone)
                 ->orWhere('alternatemobile', $phone);
         });
-        if (! $isGlobalView) {
-            $query->where('created_by', $user->id);
-        }
 
         $customer = $query->first();
 

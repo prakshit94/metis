@@ -98,7 +98,7 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search refunds..." x-model="searchQuery" @input.debounce.300ms="filterRefunds()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select x-select class="form-select form-select-sm" x-model="statusFilter" @change="filterRefunds()" style="width: 150px;">
+                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterRefunds()" style="width: 150px;">
                             <option value="">All Statuses</option>
                             <option value="pending">Pending</option>
                             <option value="processed">Processed</option>

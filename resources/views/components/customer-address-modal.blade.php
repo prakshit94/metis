@@ -31,7 +31,7 @@
                             <div class="row g-3">
                                 <div class="col-sm-6">
                                     <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Label *</label>
-                                    <select x-select name="label" class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="form.label" required>
+                                    <select name="label" class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="form.label" required>
                                         <option value="Home">Home</option>
                                         <option value="Shop">Shop</option>
                                         <option value="Office">Office</option>
@@ -40,7 +40,7 @@
                                 </div>
                                 <div class="col-sm-6">
                                     <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Status</label>
-                                    <select x-select name="status" class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="form.status">
+                                    <select name="status" class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="form.status">
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
                                     </select>

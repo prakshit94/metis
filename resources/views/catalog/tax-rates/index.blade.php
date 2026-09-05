@@ -91,7 +91,7 @@
                         </div>
                         
                         <!-- Status Filter -->
-                        <select x-select class="form-select form-select-sm" 
+                        <select class="form-select form-select-sm" 
                                 x-model="statusFilter" 
                                 @change="filterData()"
                                 style="width: 150px;">

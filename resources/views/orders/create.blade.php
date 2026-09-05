@@ -510,7 +510,7 @@
                                     <div class="small fw-bold text-body-secondary text-uppercase mb-1" style="font-size: 11px; letter-spacing: 1px;">Warehouse</div>
                                     <h6 class="mb-0 fw-bold">Select fulfillment warehouse</h6>
                                 </div>
-                                <select x-select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId" @change="handleWarehouseChange($event)">
+                                <select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId" @change="handleWarehouseChange($event)">
                                     @foreach($warehouses as $w)
                                     <option value="{{ $w->id }}" data-state="{{ $w->state }}">{{ $w->name }}</option>
                                     @endforeach
@@ -537,17 +537,17 @@
                                 <input type="search" class="form-control pe-5" placeholder="Search SKU, name..." x-model="productQuery" @input.debounce.350ms="searchProducts(true)">
                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-body-secondary"></i>
                             </div>
-                            <select x-select class="form-select" style="max-width:180px" x-model="warehouseId" @change="handleWarehouseChange($event)">
+                            <select class="form-select" style="max-width:180px" x-model="warehouseId" @change="handleWarehouseChange($event)">
                                 @foreach($warehouses as $w)
                                 <option value="{{ $w->id }}">{{ $w->name }}</option>
                                 @endforeach
                             </select>
-                            <select x-select class="form-select" style="max-width:140px" x-model="stockFilter" @change="searchProducts(true)">
+                            <select class="form-select" style="max-width:140px" x-model="stockFilter" @change="searchProducts(true)">
                                 <option value="available">In Stock</option>
                                 <option value="">All Stock</option>
                                 <option value="out_of_stock">Out of Stock</option>
                             </select>
-                            <select x-select class="form-select" style="max-width:160px" x-model="categoryFilter" @change="searchProducts(true)">
+                            <select class="form-select" style="max-width:160px" x-model="categoryFilter" @change="searchProducts(true)">
                                 <option value="">All Categories</option>
                                 @foreach($categories as $cat)
                                 <option value="{{ $cat->id }}">{{ $cat->name }}</option>
@@ -1183,7 +1183,7 @@
                             
                             <div x-show="confirmAction === 'schedule'" x-cloak x-transition class="mb-3">
                                 <label class="form-label fw-semibold small text-body-secondary text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Reason for Reschedule <span class="text-danger">*</span></label>
-                                <select x-select class="form-select form-select-sm mb-2" x-model="scheduleReason">
+                                <select class="form-select form-select-sm mb-2" x-model="scheduleReason">
                                     <option value="" disabled selected>Select a reason...</option>
                                     <template x-for="reason in rescheduleReasons" :key="reason.id">
                                         <option :value="reason.reason" x-text="reason.reason"></option>
@@ -2059,7 +2059,7 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Reason for Cancellation <span class="text-danger">*</span></label>
-                        <select x-select class="form-select" x-model="cancelReason">
+                        <select class="form-select" x-model="cancelReason">
                             <option value="" disabled selected>Select a reason...</option>
                             @foreach($cancelReasons ?? [] as $reason)
                                 <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>

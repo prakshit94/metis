@@ -24,7 +24,7 @@
         </ul>
         <div x-show="activeTab === 'dashboard'" x-transition.opacity.duration.300ms class="d-flex align-items-center gap-2">
             <label class="text-muted small fw-bold mb-0 text-nowrap"><i class="bi bi-calendar3 me-1"></i> Date Filter:</label>
-            <select x-select class="form-select form-select-sm fw-semibold shadow-sm border-0 bg-body-tertiary rounded-pill px-3" style="min-width: 140px; cursor: pointer;" onchange="window.location.href = '?filter=' + this.value">
+            <select class="form-select form-select-sm fw-semibold shadow-sm border-0 bg-body-tertiary rounded-pill px-3" style="min-width: 140px; cursor: pointer;" onchange="window.location.href = '?filter=' + this.value">
                 <option value="today" {{ ($filter ?? 'today') === 'today' ? 'selected' : '' }}>Today</option>
                 <option value="yesterday" {{ ($filter ?? 'today') === 'yesterday' ? 'selected' : '' }}>Yesterday</option>
                 <option value="this_week" {{ ($filter ?? 'today') === 'this_week' ? 'selected' : '' }}>This Week</option>

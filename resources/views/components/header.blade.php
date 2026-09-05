@@ -185,6 +185,7 @@
                         { name: 'API Documentation', path: '/docs/api', icon: 'bi bi-file-earmark-code-fill', group: 'Utilities & Tools' }
                         @endrole
                     ],
+                    selectedIndex: -1,
                     get filteredItems() {
                         if (!this.searchQuery) return [];
                         return this.items.filter(item => 
@@ -194,8 +195,44 @@
                     },
                     clearSearch() {
                         this.searchQuery = '';
+                        this.selectedIndex = -1;
+                    },
+                    handleKeydown(e) {
+                        const items = this.filteredItems;
+                        if (!items.length) return;
+                        
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            this.selectedIndex = this.selectedIndex < items.length - 1 ? this.selectedIndex + 1 : 0;
+                            this.$nextTick(() => this.scrollToSelected());
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : items.length - 1;
+                            this.$nextTick(() => this.scrollToSelected());
+                        } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (this.selectedIndex >= 0 && this.selectedIndex < items.length) {
+                                window.location.href = items[this.selectedIndex].path;
+                            } else if (items.length > 0) {
+                                window.location.href = items[0].path;
+                            }
+                        }
+                    },
+                    scrollToSelected() {
+                        const container = this.$refs.resultsContainer;
+                        if (!container) return;
+                        const activeItem = container.children[this.selectedIndex];
+                        if (activeItem) {
+                            const offsetBottom = activeItem.offsetTop + activeItem.offsetHeight;
+                            if (offsetBottom > container.scrollTop + container.offsetHeight) {
+                                container.scrollTop = offsetBottom - container.offsetHeight;
+                            } else if (activeItem.offsetTop < container.scrollTop) {
+                                container.scrollTop = activeItem.offsetTop;
+                            }
+                        }
                     }
-                }">
+                }"
+                x-init="$watch('searchQuery', value => { selectedIndex = -1; })">
                     <div class="position-relative d-flex align-items-center">
                         <div class="position-absolute start-0 ps-3 text-muted d-flex align-items-center" style="z-index: 10;">
                             <i class="bi bi-search fs-5 text-primary" aria-hidden="true"></i>
@@ -206,6 +243,7 @@
                                style="font-size: 14px; letter-spacing: 0.5px; padding-left: 3rem !important; padding-right: 4rem !important;"
                                placeholder="Search or jump to..."
                                x-model="searchQuery"
+                               @keydown="handleKeydown($event)"
                                @keydown.escape="clearSearch()"
                                aria-label="Search pages">
                                
@@ -219,17 +257,20 @@
                     
                     <!-- Search Results Overlay -->
                     <div x-show="searchQuery && filteredItems.length > 0" 
+                         x-ref="resultsContainer"
                          class="position-absolute bg-body border rounded shadow-lg p-2 mt-2 w-100" 
                          style="z-index: 1050; left: 0; right: 0; max-height: 350px; overflow-y: auto;"
                          x-cloak>
-                        <template x-for="item in filteredItems" :key="item.path">
+                        <template x-for="(item, index) in filteredItems" :key="item.path">
                             <a :href="item.path" 
                                class="dropdown-item py-2 px-3 rounded d-flex align-items-center gap-2"
+                               :class="{'bg-primary-subtle text-primary fw-bold': selectedIndex === index}"
                                style="font-size: 0.875rem; transition: background-color 0.15s ease;"
+                               @mouseenter="selectedIndex = index"
                                @click="clearSearch()">
                                 <i :class="item.icon" class="text-primary fs-6"></i>
                                 <span class="fw-semibold" x-text="item.name"></span>
-                                <span class="badge text-bg-secondary ms-auto" style="font-size: 0.65rem;" x-text="item.group"></span>
+                                <span class="badge ms-auto" :class="selectedIndex === index ? 'text-bg-primary' : 'text-bg-secondary'" style="font-size: 0.65rem;" x-text="item.group"></span>
                             </a>
                         </template>
                     </div>
@@ -743,7 +784,12 @@
                         </div>
                         <span class="d-none d-md-flex flex-column text-start ms-1 lh-1">
                             <span class="fw-bold text-body" style="font-size: 13px;">{{ Auth::user()?->name ?? 'User' }}</span>
-                            <span class="text-muted fw-semibold" style="font-size: 10px;">{{ Auth::user()?->roles->first()?->name ?? 'User' }}</span>
+                            <span class="text-muted fw-semibold" style="font-size: 10px;">
+                                {{ Auth::user()?->roles->first()?->name ?? 'User' }}
+                                @if(Auth::user()?->lob_state_name)
+                                    &bull; {{ Auth::user()->lob_state_name }}
+                                @endif
+                            </span>
                         </span>
                         <i class="bi bi-chevron-down text-muted ms-1 d-none d-md-inline" style="font-size: 12px;"></i>
                     </button>
@@ -757,6 +803,12 @@
                             <div style="min-width: 0;">
                                 <h6 class="mb-1 fw-bold text-body text-truncate">{{ Auth::user()?->name ?? 'User' }}</h6>
                                 <p class="mb-0 text-muted small text-truncate">{{ Auth::user()?->email ?? 'admin@example.com' }}</p>
+                                <p class="mb-0 text-primary small fw-semibold text-truncate" style="font-size: 10px;">
+                                    {{ Auth::user()?->roles->first()?->name ?? 'User' }}
+                                    @if(Auth::user()?->lob_state_name)
+                                        &bull; {{ Auth::user()->lob_state_name }}
+                                    @endif
+                                </p>
                             </div>
                         </li>
                         

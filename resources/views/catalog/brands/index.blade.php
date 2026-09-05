@@ -91,7 +91,7 @@
                         </div>
                         
                         <!-- Status Filter -->
-                        <select x-select class="form-select form-select-sm" 
+                        <select class="form-select form-select-sm" 
                                 x-model="statusFilter" 
                                 @change="filterData()"
                                 style="width: 150px;">
@@ -258,7 +258,7 @@
                                     
                                     <div class="col-12">
                                         <label class="form-label fw-medium text-muted small">Status</label>
-                                        <select x-select class="form-select" x-model="form.status">
+                                        <select class="form-select" x-model="form.status">
                                             <option value="active">Active</option>
                                             <option value="inactive">Inactive</option>
                                         </select>

@@ -294,6 +294,7 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     statusFilter: '',
     roleFilter: '',
+    teamFilter: '',
     sortField: 'name',
     sortDirection: 'asc',
     isLoading: false,
@@ -401,6 +402,7 @@ document.addEventListener('alpine:init', () => {
         if (this.statusFilter === 'inactive') params.set('is_active', '0');
         if (this.statusFilter === 'deleted') params.set('deleted', 'only');
         if (this.roleFilter) params.set('role', this.roleFilter);
+        if (this.teamFilter) params.set('team_id', this.teamFilter);
 
         const data = await apiFetch(`/api/users?${params}`);
 
@@ -476,6 +478,7 @@ document.addEventListener('alpine:init', () => {
         district: u.district,
         city: u.city,
         state: u.state,
+        lob_state_name: u.lob_state_name ?? '',
         pincode: u.pincode,
         date_of_birth: u.date_of_birth,
         gender: u.gender,

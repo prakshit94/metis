@@ -94,12 +94,12 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search offers..." x-model="search" @input.debounce.400ms="fetchOffers()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select x-select class="form-select form-select-sm" x-model="filterType" @change="fetchOffers()" style="width: 150px;">
+                        <select class="form-select form-select-sm" x-model="filterType" @change="fetchOffers()" style="width: 150px;">
                             <option value="">All Types</option>
                             <option value="order_discount">Order Discount</option>
                             <option value="bogo">BOGO</option>
                         </select>
-                        <select x-select class="form-select form-select-sm" x-model="filterStatus" @change="fetchOffers()" style="width: 150px;">
+                        <select class="form-select form-select-sm" x-model="filterStatus" @change="fetchOffers()" style="width: 150px;">
                             <option value="">All Statuses</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -341,7 +341,7 @@
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Offer Type *</label>
-                                            <select x-select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.type" style="font-size: 14px;">
+                                            <select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.type" style="font-size: 14px;">
                                                 <option value="order_discount">Order Discount</option>
                                                 <option value="bogo">Buy X Get Y (BOGO)</option>
                                                 <option value="free_product">Free Product</option>
@@ -373,7 +373,7 @@
                                     <div class="row g-4" x-show="form.type === 'order_discount' || form.type === 'category_discount'" style="display: none;">
                                         <div class="col-md-6" x-show="form.type === 'order_discount' || form.type === 'category_discount'">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Discount Type *</label>
-                                            <select x-select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.discount_type" style="font-size: 14px;">
+                                            <select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.discount_type" style="font-size: 14px;">
                                                 <option value="percentage">Percentage (%)</option>
                                                 <option value="fixed">Flat Amount (₹ )</option>
                                             </select>
@@ -505,7 +505,7 @@
                                             
                                             <div class="col-12 mt-4" x-show="form.type === 'free_product'" style="display: none;">
                                                 <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Gift Product (Free Item) *</label>
-                                                <select x-select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.product_id" style="font-size: 14px;">
+                                                <select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.product_id" style="font-size: 14px;">
                                                     <option value="">Select Free Product...</option>
                                                     <template x-for="p in allProducts" :key="p.id">
                                                         <option :value="p.id" x-text="p.name + ' (' + p.sku + ')'"></option>

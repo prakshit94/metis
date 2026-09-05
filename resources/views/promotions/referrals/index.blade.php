@@ -331,7 +331,7 @@
                                                     </div>
                                                     <div class="col-md-4">
                                                         <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Reward Type</label>
-                                                        <select x-select x-model="milestone.reward_type" :name="`milestones[${index}][reward_type]`" class="form-select fw-semibold border-secondary border-opacity-25 shadow-none" required style="font-size: 13px;">
+                                                        <select x-model="milestone.reward_type" :name="`milestones[${index}][reward_type]`" class="form-select fw-semibold border-secondary border-opacity-25 shadow-none" required style="font-size: 13px;">
                                                             <option value="wallet">Wallet Balance</option>
                                                             <option value="product">Free Product</option>
                                                             <option value="coupon">Discount Coupon</option>

@@ -18,28 +18,19 @@ class TeamSeeder extends Seeder
             [
                 'name' => 'Gujarat (GJ)',
                 'code' => 'GJ',
+                'state_name' => 'Gujarat',
                 'description' => 'State Line of Business - Gujarat',
                 'is_active' => true,
             ],
             [
                 'name' => 'Rajasthan (RJ)',
                 'code' => 'RJ',
+                'state_name' => 'Rajasthan',
                 'description' => 'State Line of Business - Rajasthan',
                 'is_active' => true,
             ],
-            [
-                'name' => 'Maharashtra (MH)',
-                'code' => 'MH',
-                'description' => 'State Line of Business - Maharashtra',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Madhya Pradesh (MP)',
-                'code' => 'MP',
-                'description' => 'State Line of Business - Madhya Pradesh',
-                'is_active' => true,
-            ],
         ];
+
 
         foreach ($teams as $teamData) {
             Team::firstOrCreate(

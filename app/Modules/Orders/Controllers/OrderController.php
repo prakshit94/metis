@@ -456,7 +456,11 @@ class OrderController extends Controller implements HasMiddleware
             return $data;
         });
 
-        $warehousesList = Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name']);
+        $warehousesList = Warehouse::where('status', 'active')
+            ->when($user?->lob_state_name, function ($query, $state) {
+                $query->where('state', $state);
+            })
+            ->orderBy('name')->get(['id', 'name']);
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -494,7 +498,11 @@ class OrderController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $warehouses = Warehouse::orderBy('name')->get();
+        $warehouses = Warehouse::orderBy('name')
+            ->when(auth()->user()?->lob_state_name, function ($query, $state) {
+                $query->where('state', $state);
+            })
+            ->get();
         $parties = Party::orderBy('firstname')->get();
         $activeOffers = Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
         $activeCoupons = Coupon::where('is_active', true)->get();
@@ -660,7 +668,11 @@ class OrderController extends Controller implements HasMiddleware
             },
         ]);
 
-        $warehouses = Warehouse::orderBy('name')->get();
+        $warehouses = Warehouse::orderBy('name')
+            ->when(auth()->user()?->lob_state_name, function ($query, $state) {
+                $query->where('state', $state);
+            })
+            ->get();
         $parties = Party::orderBy('firstname')->get();
         $categories = Category::where('is_active', true)->orderBy('name')->get();
 

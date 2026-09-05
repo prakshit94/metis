@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('reference_no')->nullable();
             $table->string('seed_lic_no')->nullable();
             $table->string('pesti_lic_no')->nullable();
+            $table->string('ebiller_id')->nullable();
             $table->string('code')->nullable()->unique();
             $table->string('address')->nullable();
             $table->string('address_line_1')->nullable();

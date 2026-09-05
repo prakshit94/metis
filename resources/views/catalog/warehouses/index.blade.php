@@ -120,7 +120,7 @@
                                    style="width:250px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select x-select class="form-select form-select-sm" x-model="statusFilter" @change="filterData()" style="width:150px;">
+                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterData()" style="width:150px;">
                             <option value="">All Statuses</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -265,8 +265,24 @@
                                 </td>
                                 <td>
                                     <div class="small d-flex align-items-start gap-2">
-                                        <i class="bi bi-geo-alt text-muted mt-1"></i>
-                                        <span class="text-wrap" style="max-width: 250px;" x-text="[item.address_line_1, item.city, item.state, item.pincode].filter(Boolean).join(', ') || '—'"></span>
+                                        <i class="bi bi-geo-alt text-muted mt-1 flex-shrink-0"></i>
+                                        <div class="text-wrap" style="max-width: 280px; line-height: 1.4;">
+                                            <div class="fw-medium text-body" x-text="[item.address_line_1, item.address_line_2].filter(Boolean).join(', ') || '—'"></div>
+                                            <div class="text-muted mt-1" style="font-size: 0.75rem;">
+                                                <template x-if="item.village_name || item.post_office || item.taluka">
+                                                    <div class="mb-1" x-text="[
+                                                        item.village_name, 
+                                                        item.post_office ? 'PO: ' + item.post_office : '', 
+                                                        item.taluka ? 'Taluka: ' + item.taluka : ''
+                                                    ].filter(Boolean).join(', ')"></div>
+                                                </template>
+                                                <div x-text="[
+                                                    item.city ? 'Dist: ' + item.city : '', 
+                                                    item.state, 
+                                                    item.pincode
+                                                ].filter(Boolean).join(', ')"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td>
@@ -363,19 +379,26 @@
             <div class="modal-content shadow-lg border-0 rounded-4">
 
                 <!-- Header -->
-                <div class="modal-header border-bottom-0 pb-0">
-                    <div class="d-flex align-items-center gap-2">
-                        <h5 class="modal-title fw-bold" id="warehousesModalLabel"
-                            x-text="isEditing ? 'Edit Warehouse' : 'Add Warehouse'"></h5>
-                        <template x-if="isEditing && form.is_default">
-                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Default</span>
-                        </template>
+                <div class="modal-header bg-body-tertiary border-bottom d-flex align-items-center justify-content-between p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
+                            <i class="bi bi-buildings fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <h4 class="mb-0 fw-bold text-body"><span x-text="isEditing ? 'Edit Warehouse' : 'Add New Warehouse'"></span></h4>
+                                <template x-if="isEditing && form.is_default">
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill">Default</span>
+                                </template>
+                            </div>
+                            <p class="mb-0 small text-muted">Manage fulfillment centre identity and contact details</p>
+                        </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
                 <!-- Body -->
-                <div class="modal-body pt-3">
+                <div class="modal-body p-4 bg-body-tertiary">
                     <form @submit.prevent="saveItem" id="warehouseForm" novalidate>
                         <div class="row g-4">
 
@@ -383,129 +406,103 @@
                             <div class="col-lg-6">
 
                                 <!-- Identity Card -->
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3" style="width:36px;height:36px;border-radius:0.5rem;font-size:0.9rem">
-                                                <i class="bi bi-building"></i>
+                                <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-3">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                                <i class="bi bi-building fs-6"></i>
                                             </div>
-                                            <h6 class="card-title mb-0 fw-bold">Warehouse Identity</h6>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Warehouse Identity</h6>
                                         </div>
 
                                         <div class="row g-3">
                                             <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">
-                                                    Warehouse Name <span class="text-danger">*</span>
-                                                </label>
-                                                <input type="text" class="form-control"
-                                                       x-model="form.name"
-                                                       placeholder="e.g. Main Warehouse, Delhi Hub"
-                                                       required>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Warehouse Name *</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.name" placeholder="e.g. Main Warehouse, Delhi Hub" required>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Code</label>
-                                                <input type="text" class="form-control font-monospace text-uppercase"
-                                                       x-model="form.code"
-                                                       placeholder="e.g. MAIN, DEL01"
-                                                       maxlength="10">
-                                                <div class="form-text">Auto-generated if blank.</div>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Code</label>
+                                                <input type="text" class="form-control form-control-sm font-monospace text-uppercase fw-semibold" style="font-size: 12px;" x-model="form.code" placeholder="e.g. MAIN, DEL01" maxlength="10">
                                             </div>
-                                            <div class="col-md-6 d-flex align-items-end mb-2">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox"
-                                                           id="wh_status"
-                                                           :checked="form.status === 'active'"
-                                                           @change="form.status = $event.target.checked ? 'active' : 'inactive'">
-                                                    <label class="form-check-label fw-medium small" for="wh_status">
-                                                        Is Active
-                                                    </label>
-                                                </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Status</label>
+                                                <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="form.status">
+                                                    <option value="active">Active</option>
+                                                    <option value="inactive">Inactive</option>
+                                                </select>
                                             </div>
                                             <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">Company / Legal Name</label>
-                                                <input type="text" class="form-control"
-                                                       x-model="form.company_name"
-                                                       placeholder="e.g. ABC Logistics Pvt Ltd">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Company / Legal Name</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.company_name" placeholder="e.g. ABC Logistics Pvt Ltd">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Contact Card -->
-                                <div class="card border-0 shadow-sm bg-body-tertiary">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="stats-icon bg-info bg-opacity-10 text-info me-3" style="width:36px;height:36px;border-radius:0.5rem;font-size:0.9rem">
-                                                <i class="bi bi-telephone"></i>
+                                <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-3 mb-lg-0">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                            <div class="bg-info bg-opacity-10 text-info rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                                <i class="bi bi-telephone fs-6"></i>
                                             </div>
-                                            <h6 class="card-title mb-0 fw-bold">Contact & Compliance</h6>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Contact & Compliance</h6>
                                         </div>
 
                                         <div class="row g-3">
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Phone Number</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text"><i class="bi bi-telephone"></i></span>
-                                                    <input type="tel" class="form-control"
-                                                           x-model="form.phone"
-                                                           placeholder="+91 98765 43210">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Phone Number</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-telephone"></i></span>
+                                                    <input type="tel" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.phone" placeholder="9876543210" maxlength="10" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Email Address</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                                                    <input type="email" class="form-control"
-                                                           x-model="form.email"
-                                                           placeholder="warehouse@example.com">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Email Address</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-envelope"></i></span>
+                                                    <input type="email" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.email" placeholder="warehouse@example.com">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Reference No.</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text"><i class="bi bi-hash"></i></span>
-                                                    <input type="text" class="form-control"
-                                                           x-model="form.reference_no"
-                                                           placeholder="e.g. WH-REF-001">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Reference No.</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-hash"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.reference_no" placeholder="e.g. WH-REF-001">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">GSTIN</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text"><i class="bi bi-card-text"></i></span>
-                                                    <input type="text" class="form-control font-monospace text-uppercase"
-                                                           x-model="form.gstin"
-                                                           placeholder="22AAAAA0000A1Z5"
-                                                           maxlength="15">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">GSTIN</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-card-text"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0 font-monospace text-uppercase fw-semibold" style="font-size: 12px;" x-model="form.gstin" placeholder="22AAAAA0000A1Z5" maxlength="15">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Seed Lic No.</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text"><i class="bi bi-card-checklist"></i></span>
-                                                    <input type="text" class="form-control"
-                                                           x-model="form.seed_lic_no"
-                                                           placeholder="GAN/FSR220001380/2022-2023">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Seed Lic No.</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-card-checklist"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.seed_lic_no" placeholder="GAN/FSR220001380/2022">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Pesti Lic No.</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text"><i class="bi bi-card-checklist"></i></span>
-                                                    <input type="text" class="form-control"
-                                                           x-model="form.pesti_lic_no"
-                                                           placeholder="GAN/FP1220002020/2022-2023">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Pesti Lic No.</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-card-checklist"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.pesti_lic_no" placeholder="GAN/FP1220002020/2022">
                                                 </div>
                                             </div>
-                                            <div class="col-12">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox"
-                                                           id="wh_default"
-                                                           x-model="form.is_default">
-                                                    <label class="form-check-label fw-medium small" for="wh_default">
-                                                        Set as <strong>Default</strong> warehouse
-                                                        <span class="text-muted">(used for all new orders)</span>
-                                                    </label>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">E-Biller ID / Reg. No</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-upc-scan"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.ebiller_id" placeholder="1211658094">
+                                                </div>
+                                            </div>
+                                            <div class="col-12 mt-3">
+                                                <div class="form-check form-switch cursor-pointer">
+                                                    <input class="form-check-input" type="checkbox" id="wh_default" x-model="form.is_default" style="cursor: pointer;">
+                                                    <label class="form-check-label fw-bold text-primary text-uppercase" for="wh_default" style="font-size: 9px; letter-spacing: 0.1em; cursor: pointer;">Set as default warehouse</label>
                                                 </div>
                                             </div>
                                         </div>
@@ -516,122 +513,106 @@
 
                             <!-- ── Column 2: Address ────────────────────── -->
                             <div class="col-lg-6">
-                                <div class="card border-0 shadow-sm bg-body-tertiary h-100">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="stats-icon bg-success bg-opacity-10 text-success me-3" style="width:36px;height:36px;border-radius:0.5rem;font-size:0.9rem">
-                                                <i class="bi bi-geo-alt"></i>
+                                <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary h-100">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                                <i class="bi bi-geo fs-6"></i>
                                             </div>
-                                            <h6 class="card-title mb-0 fw-bold">Address Details</h6>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Address Details</h6>
                                         </div>
 
                                         <div class="row g-3">
-                                            <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">Address Line 1</label>
-                                                <input type="text" class="form-control"
-                                                       x-model="form.address_line_1"
-                                                       placeholder="Building, Street, Plot No.">
+                                            <div class="col-sm-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 1</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-house"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_1" placeholder="Building, Street, Plot No.">
+                                                </div>
                                             </div>
-                                            <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">Address Line 2</label>
-                                                <input type="text" class="form-control"
-                                                       x-model="form.address_line_2"
-                                                       placeholder="Area, Landmark (optional)">
+                                            <div class="col-sm-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 2</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-signpost"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_2" placeholder="Area, Landmark (optional)">
+                                                </div>
                                             </div>
 
-                                            <!-- Village Autofill -->
                                             <div class="col-12">
-                                                <label class="form-label fw-medium text-muted small">
-                                                    <i class="bi bi-magic me-1 text-primary"></i>
-                                                    Village / Locality
-                                                    <span class="text-muted">(autofills city, state, pincode)</span>
-                                                </label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Village Search</label>
                                                 <div class="position-relative">
-                                                    <div class="input-group">
-                                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                                        <input type="text" class="form-control"
-                                                               x-model="villageSearchQuery"
-                                                               @input="onVillageInput()"
-                                                               @blur="setTimeout(() => { villageResults = [] }, 200)"
-                                                               placeholder="Type village / town (min. 3 chars)…">
-                                                        <button type="button" class="btn btn-outline-secondary"
-                                                                x-show="form.village_id"
-                                                                @click="clearVillage()"
-                                                                title="Clear">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-search"></i></span>
+                                                        <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" placeholder="Type 3 letters to search village..." 
+                                                               x-model="villageSearchQuery" @input="onVillageInput()" @blur="setTimeout(() => { villageResults = [] }, 200)">
+                                                        <button type="button" class="btn btn-outline-secondary" x-show="form.village_id" @click="clearVillage()" title="Clear">
                                                             <i class="bi bi-x-lg"></i>
                                                         </button>
                                                     </div>
-
+                                                    
                                                     <!-- Loading spinner -->
-                                                    <div class="position-absolute end-0 top-50 translate-middle-y me-5 pe-2"
-                                                         x-show="villageSearchLoading" style="z-index:10">
+                                                    <div class="position-absolute end-0 top-50 translate-middle-y me-5 pe-2" x-show="villageSearchLoading" style="z-index:10">
                                                         <div class="spinner-border spinner-border-sm text-primary"></div>
                                                     </div>
 
                                                     <!-- Dropdown results -->
-                                                    <div class="dropdown-menu w-100 shadow border-0 p-2 show mt-1"
-                                                         x-show="villageResults.length > 0"
-                                                         style="max-height:220px;overflow-y:auto;z-index:1055;border-radius:0.75rem">
+                                                    <div class="position-absolute w-100 dropdown-menu show shadow overflow-auto" style="max-height: 200px; z-index: 1060;" x-show="villageResults.length > 0">
                                                         <template x-for="v in villageResults" :key="v.id">
-                                                            <button type="button"
-                                                                    class="dropdown-item rounded-2 py-2 px-3 small"
+                                                            <button type="button" class="dropdown-item w-100 text-start py-2 px-3 border-bottom border-light-subtle"
                                                                     @mousedown.prevent="selectVillage(v)">
-                                                                <div class="fw-semibold" x-text="v.village_name"></div>
-                                                                <div class="text-muted" style="font-size:.75rem"
-                                                                     x-text="[v.taluka_name, v.district_name, v.state_name, v.pincode].filter(Boolean).join(' › ')">
+                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                    <span class="fw-bold text-primary" style="font-size: 12px;" x-text="v.village_name"></span>
+                                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis" x-text="v.pincode"></span>
+                                                                </div>
+                                                                <div class="text-muted small" style="font-size: 0.75rem; line-height: 1.4;">
+                                                                    <span x-show="v.post_so_name" x-text="'PO: ' + v.post_so_name + ' · '"></span>
+                                                                    <span x-show="v.taluka_name" x-text="'Taluka: ' + v.taluka_name + ' · '"></span>
+                                                                    <span x-show="v.district_name" x-text="'District: ' + v.district_name + ' · '"></span>
+                                                                    <span x-show="v.state_name" x-text="'State: ' + v.state_name"></span>
                                                                 </div>
                                                             </button>
                                                         </template>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                <!-- Selected village badge -->
-                                                <div class="mt-2" x-show="form.village_id">
-                                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2">
-                                                        <i class="bi bi-geo-fill me-1"></i>
-                                                        <span x-text="form.village_name"></span>
-                                                    </span>
+                                            <!-- Selected Village Details -->
+                                            <template x-if="form.village_id">
+                                                <div class="col-12 mt-2">
+                                                    <div class="card bg-body border-0 border-start border-4 border-primary shadow-sm mt-2">
+                                                        <div class="card-body p-3">
+                                                            <div class="row g-2">
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Village</label>
+                                                                    <div class="fw-semibold text-truncate text-body" style="font-size: 12px;" x-text="form.village_name || '—'"></div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Post Office</label>
+                                                                    <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.post_office || '—'"></div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Taluka</label>
+                                                                    <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.taluka || '—'"></div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">District</label>
+                                                                    <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.city || '—'"></div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">State</label>
+                                                                    <div class="text-truncate text-body" style="font-size: 12px;" x-text="form.state || '—'"></div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Pincode</label>
+                                                                    <div class="fw-bold text-body" style="font-size: 12px;" x-text="form.pincode || '—'"></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            </template>
 
-                                            <!-- Auto-filled / Editable fields -->
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Village / Locality</label>
-                                                <input type="text" class="form-control"
-                                                       x-model="form.village_name"
-                                                       placeholder="Village name">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Post Office (BO)</label>
-                                                <input type="text" class="form-control"
-                                                       x-model="form.post_office"
-                                                       placeholder="Post Office">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Taluka</label>
-                                                <input type="text" class="form-control"
-                                                       x-model="form.taluka"
-                                                       placeholder="Taluka">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">City / District</label>
-                                                <input type="text" class="form-control"
-                                                       x-model="form.city"
-                                                       placeholder="City / District">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">State</label>
-                                                <input type="text" class="form-control"
-                                                       x-model="form.state"
-                                                       placeholder="State">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-medium text-muted small">Pincode</label>
-                                                <input type="text" class="form-control font-monospace"
-                                                       x-model="form.pincode"
-                                                       placeholder="Pincode"
-                                                       maxlength="6">
-                                            </div>
+
                                         </div>
                                     </div>
                                 </div>
@@ -642,11 +623,11 @@
                 </div>{{-- end modal-body --}}
 
                 <!-- Footer -->
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" form="warehouseForm" class="btn btn-primary px-4" :disabled="saving">
-                        <span x-show="saving" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                        <span x-text="isEditing ? 'Update Warehouse' : 'Save Warehouse'"></span>
+                <div class="modal-footer border-top-0 p-4 bg-body-tertiary">
+                    <button type="button" class="btn text-muted fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="warehouseForm" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" :disabled="saving">
+                        <span x-show="saving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span x-text="isEditing ? 'Save Changes' : 'Add Warehouse'"></span>
                     </button>
                 </div>
 

@@ -94,7 +94,7 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search code..." x-model="search" @input.debounce.400ms="fetchCoupons()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select x-select class="form-select form-select-sm" x-model="filterStatus" @change="fetchCoupons()" style="width: 150px;">
+                        <select class="form-select form-select-sm" x-model="filterStatus" @change="fetchCoupons()" style="width: 150px;">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -314,7 +314,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Type *</label>
-                                            <select x-select class="form-select form-select-sm fw-semibold" x-model="form.type">
+                                            <select class="form-select form-select-sm fw-semibold" x-model="form.type">
                                                 <option value="percentage">Percentage (%)</option>
                                                 <option value="fixed">Flat Amount (₹ )</option>
                                                 <option value="free_shipping">Free Shipping</option>
@@ -346,7 +346,7 @@
                                         </div>
                                         <div class="col-md-4" x-show="form.type === 'free_product'" style="display: none;">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Free Product *</label>
-                                            <select x-select class="form-select form-select-sm fw-semibold" x-model="form.free_product_id">
+                                            <select class="form-select form-select-sm fw-semibold" x-model="form.free_product_id">
                                                 <option value="">Select Product...</option>
                                                 <template x-for="p in allProducts" :key="p.id">
                                                     <option :value="p.id" x-text="p.name + ' (' + p.sku + ')'"></option>

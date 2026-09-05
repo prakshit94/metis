@@ -62,6 +62,10 @@ class WarehouseController extends Controller implements HasMiddleware
             $query->where('status', $status);
         }
 
+        if ($lobState = $request->user()?->lob_state_name) {
+            $query->where('state', $lobState);
+        }
+
         $sortBy = $request->query('sort_by', 'id');
         $sortDir = $request->query('sort_dir', 'desc');
 
@@ -85,7 +89,7 @@ class WarehouseController extends Controller implements HasMiddleware
             'code' => 'nullable|string|max:50|unique:warehouses,code',
             'company_name' => 'nullable|string|max:255',
             'gstin' => 'nullable|string|max:20',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|digits:10',
             'address_line_1' => 'nullable|string|max:255',
             'address_line_2' => 'nullable|string|max:255',
             'village_id' => 'nullable|integer|exists:villages,id',
@@ -101,6 +105,7 @@ class WarehouseController extends Controller implements HasMiddleware
             'reference_no' => 'nullable|string|max:255',
             'seed_lic_no' => 'nullable|string|max:255',
             'pesti_lic_no' => 'nullable|string|max:255',
+            'ebiller_id' => 'nullable|string|max:255',
         ]);
 
         // Auto-generate code if not provided
@@ -121,9 +126,18 @@ class WarehouseController extends Controller implements HasMiddleware
             }
         }
 
-        // If this warehouse is set as default, unset others
+        // Enforce LOB State Scoping
+        if ($lobState = $request->user()?->lob_state_name) {
+            $validated['state'] = $lobState;
+        }
+
+        // If this warehouse is set as default, unset others in the same state
         if (! empty($validated['is_default'])) {
-            Warehouse::where('is_default', true)->update(['is_default' => false]);
+            $defaultQuery = Warehouse::where('is_default', true);
+            if (! empty($validated['state'])) {
+                $defaultQuery->where('state', $validated['state']);
+            }
+            $defaultQuery->update(['is_default' => false]);
         }
 
         $warehouse = Warehouse::create($validated);
@@ -134,8 +148,13 @@ class WarehouseController extends Controller implements HasMiddleware
         ], 201);
     }
 
-    public function show(Warehouse $model): JsonResponse
+    public function show(Request $request, Warehouse $model): JsonResponse
     {
+        if ($lobState = $request->user()?->lob_state_name) {
+            if ($model->state !== $lobState) {
+                return response()->json(['message' => 'Unauthorized access to this warehouse.'], 403);
+            }
+        }
 
         return response()->json(['data' => $model]);
     }
@@ -145,12 +164,18 @@ class WarehouseController extends Controller implements HasMiddleware
 
         $model = Warehouse::findOrFail($id);
 
+        if ($lobState = $request->user()?->lob_state_name) {
+            if ($model->state !== $lobState) {
+                return response()->json(['message' => 'Unauthorized access to this warehouse.'], 403);
+            }
+        }
+
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'code' => "sometimes|nullable|string|max:50|unique:warehouses,code,{$id}",
             'company_name' => 'sometimes|nullable|string|max:255',
             'gstin' => 'sometimes|nullable|string|max:20',
-            'phone' => 'sometimes|nullable|string|max:20',
+            'phone' => 'sometimes|nullable|string|digits:10',
             'address_line_1' => 'sometimes|nullable|string|max:255',
             'address_line_2' => 'sometimes|nullable|string|max:255',
             'village_id' => 'sometimes|nullable|integer|exists:villages,id',
@@ -166,6 +191,7 @@ class WarehouseController extends Controller implements HasMiddleware
             'reference_no' => 'sometimes|nullable|string|max:255',
             'seed_lic_no' => 'sometimes|nullable|string|max:255',
             'pesti_lic_no' => 'sometimes|nullable|string|max:255',
+            'ebiller_id' => 'sometimes|nullable|string|max:255',
         ]);
 
         // If a village is selected, fill in address details from it
@@ -181,9 +207,19 @@ class WarehouseController extends Controller implements HasMiddleware
             }
         }
 
-        // If this warehouse is being set as default, unset others
+        // Enforce LOB State Scoping
+        if ($lobState = $request->user()?->lob_state_name) {
+            $validated['state'] = $lobState;
+        }
+
+        // If this warehouse is being set as default, unset others in the same state
         if (! empty($validated['is_default'])) {
-            Warehouse::where('id', '!=', $id)->where('is_default', true)->update(['is_default' => false]);
+            $defaultQuery = Warehouse::where('id', '!=', $id)->where('is_default', true);
+            $stateToScope = $validated['state'] ?? $model->state;
+            if ($stateToScope) {
+                $defaultQuery->where('state', $stateToScope);
+            }
+            $defaultQuery->update(['is_default' => false]);
         }
 
         $model->update($validated);
@@ -194,10 +230,16 @@ class WarehouseController extends Controller implements HasMiddleware
         ]);
     }
 
-    public function destroy($id): JsonResponse
+    public function destroy(Request $request, $id): JsonResponse
     {
 
         $model = Warehouse::findOrFail($id);
+
+        if ($lobState = $request->user()?->lob_state_name) {
+            if ($model->state !== $lobState) {
+                return response()->json(['message' => 'Unauthorized access to this warehouse.'], 403);
+            }
+        }
 
         if ($model->is_default) {
             return response()->json(['message' => 'Cannot delete the default warehouse.'], 422);
