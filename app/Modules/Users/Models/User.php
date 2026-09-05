@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -28,6 +29,15 @@ class User extends Authenticatable implements Auditable
 {
     /** @use HasFactory<UserFactory> */
     use AuditableTrait, HasApiTokens, HasFactory, HasRoles, LogsActivity, Notifiable, SoftDeletes;
+
+    /**
+     * Per-model-request cache for the computed LOB team. These must remain
+     * regular PHP properties rather than Eloquent attributes: the model is
+     * saved when Laravel rotates a remember token during logout.
+     */
+    private bool $lobTeamIdCacheResolved = false;
+
+    private ?int $lobTeamIdCache = null;
 
     /**
      * The attributes that are mass assignable.
@@ -156,7 +166,7 @@ class User extends Authenticatable implements Auditable
      * the CURRENT session team_id — users scoped to a state (team_id=1,2,…) would
      * show as role-less when the admin panel session is in global (null) context.
      */
-    public function allRoles(): \Illuminate\Database\Eloquent\Relations\MorphToMany
+    public function allRoles(): MorphToMany
     {
         return $this->morphToMany(
             config('permission.models.role'),
@@ -177,20 +187,24 @@ class User extends Authenticatable implements Auditable
      */
     public function getLobTeamIdAttribute(): ?int
     {
-        if (isset($this->_lob_team_id_cache)) {
-            return $this->_lob_team_id_cache === -1 ? null : $this->_lob_team_id_cache;
+        if ($this->lobTeamIdCacheResolved) {
+            return $this->lobTeamIdCache;
         }
 
         // Global users bypass all LOB scoping
         if ($this->hasRole(['Super Admin', 'Admin']) || $this->can('view-all-data')) {
-            $this->_lob_team_id_cache = -1; // sentinel for null
+            $this->lobTeamIdCache = null;
+            $this->lobTeamIdCacheResolved = true;
+
             return null;
         }
 
         $lobRole = $this->allRoles()->whereNotNull('model_has_roles.team_id')->first();
         $teamId = $lobRole ? (int) $lobRole->pivot->team_id : null;
 
-        $this->_lob_team_id_cache = $teamId ?? -1;
+        $this->lobTeamIdCache = $teamId;
+        $this->lobTeamIdCacheResolved = true;
+
         return $teamId;
     }
 
@@ -208,6 +222,7 @@ class User extends Authenticatable implements Auditable
         }
 
         $team = Team::find($teamId);
+
         return $team?->resolved_state_name;
     }
 
@@ -217,7 +232,7 @@ class User extends Authenticatable implements Auditable
      *
      * Returns null for global users (meaning "no restriction").
      *
-     * @return int[]|null  null = no restriction (global user), [] = team has no members
+     * @return int[]|null null = no restriction (global user), [] = team has no members
      */
     public function getLobTeamUserIds(): ?array
     {
@@ -226,7 +241,7 @@ class User extends Authenticatable implements Auditable
             return null; // global — caller should not restrict
         }
 
-        return \Illuminate\Support\Facades\DB::table('model_has_roles')
+        return DB::table('model_has_roles')
             ->where('team_id', $teamId)
             ->where('model_type', static::class)
             ->pluck('model_id')
