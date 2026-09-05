@@ -415,7 +415,7 @@
                                 <!-- Table -->
                                 <div class="table-responsive" style="min-height: 350px;">
                                     <table class="table table-hover align-middle mb-0">
-                                        <thead class="table-light">
+                                        <thead class="table-active">
                                             <tr>
                                                 <th style="width: 50px;" class="ps-3">
                                                     <input type="checkbox" 
@@ -1277,7 +1277,7 @@
                         <h6 class="fw-semibold mb-2">Data Preview <span class="badge bg-secondary ms-1" x-text="parsedRows.length + ' rows found'"></span></h6>
                         <div class="table-responsive border rounded" style="max-height: 250px; overflow-y: auto;">
                             <table class="table table-sm table-hover mb-0" style="white-space: nowrap;">
-                                <thead class="table-secondary">
+                                <thead class="table-active">
                                     <tr>
                                         <template x-for="header in parsedHeaders" :key="header">
                                             <th x-text="header" class="text-truncate" style="max-width: 150px;"></th>

@@ -30,6 +30,11 @@ class TeamContextMiddleware
             setPermissionsTeamId(null);
         }
 
+        if ($user = $request->user()) {
+            $user->unsetRelation('roles');
+            $user->unsetRelation('permissions');
+        }
+
         return $next($request);
     }
 }

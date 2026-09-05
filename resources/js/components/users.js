@@ -23,6 +23,7 @@ async function apiFetch(url, options = {}) {
   }
 
   const res = await fetch(url, {
+    credentials: 'same-origin',
     headers: fetchHeaders,
     ...otherOptions,
   });
@@ -169,8 +170,18 @@ async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it'
     confirmButtonText,
     cancelButtonText: 'Cancel',
     confirmButtonColor: '#dc3545',
+    background: 'var(--bs-body-bg)',
+    color: 'var(--bs-body-color)',
     reverseButtons: true,
     focusCancel: true,
+    customClass: {
+      popup: 'bg-body text-body border shadow-sm',
+      title: 'text-body',
+      htmlContainer: 'text-body',
+      cancelButton: 'btn btn-outline-secondary',
+      confirmButton: 'btn btn-danger'
+    },
+    buttonsStyling: false
   });
 
   return result.isConfirmed;

@@ -60,7 +60,7 @@
     @if(Session::has('impersonated_by'))
     <div id="impersonation-banner" class="alert alert-warning text-center rounded-0 mb-0 d-flex justify-content-center align-items-center shadow-sm w-100" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1060; min-height: 40px;" x-data="{ initBanner() { const setH = () => document.documentElement.style.setProperty('--banner-h', this.$el.offsetHeight + 'px'); setH(); window.addEventListener('resize', setH); } }" x-init="initBanner()">
         <span class="me-3 fs-6"><i class="bi bi-box-arrow-in-right me-2"></i> You are currently impersonating <strong>{{ auth()->user()->name ?? '' }}</strong>.</span>
-        <button class="btn btn-sm btn-dark fw-bold px-3" @click="fetch('/api/security/stop-impersonate', {method:'POST', headers:{'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept':'application/json'}}).then(r=>r.json()).then(r=>{if(r.redirect) window.location.href=r.redirect;})">
+        <button class="btn btn-sm btn-dark fw-bold px-3" @click="fetch('/api/security/stop-impersonate', {method:'POST', credentials: 'same-origin', headers:{'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept':'application/json'}}).then(r=>r.json()).then(r=>{if(r.redirect) window.location.href=r.redirect;})">
             Stop Impersonating
         </button>
     </div>

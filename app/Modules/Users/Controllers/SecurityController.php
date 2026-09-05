@@ -184,11 +184,15 @@ class SecurityController extends Controller
         abort_unless($request->user()->hasRole('Super Admin'), 403, 'Only Super Admins can impersonate.');
         abort_if($user->id === $request->user()->id, 400, 'Cannot impersonate yourself.');
 
-        // Store original ID in session
-        Session::put('impersonated_by', $request->user()->id);
+        $originalId = $request->user()->id;
         
         // Log in as the target user using the web guard
         Auth::guard('web')->login($user);
+        
+        // Store original ID in session AFTER login
+        Session::put('impersonated_by', $originalId);
+        Session::forget('team_id');
+        Session::save();
 
         return response()->json(['message' => 'Impersonating ' . $user->name, 'redirect' => '/']);
     }
@@ -206,9 +210,11 @@ class SecurityController extends Controller
         $originalUser = User::find($originalUserId);
 
         Session::forget('impersonated_by');
+        Session::forget('team_id');
 
         if ($originalUser) {
             Auth::guard('web')->login($originalUser);
+            Session::save();
             return response()->json(['message' => 'Welcome back, ' . $originalUser->name, 'redirect' => '/users']);
         }
 
