@@ -169,10 +169,10 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     private function generateBarcode(): string
     {
-        // For testing we will generate a barcode in the range ET21433001XIN to ET21434000XIN
-        $prefix = 'ET21433';
-        $randomNum = str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
-        $suffix = 'XIN';
+        // For testing we will generate a barcode in the correct format: XX123456789XX
+        $prefix = 'ET';
+        $randomNum = str_pad((string) rand(1, 999999999), 9, '0', STR_PAD_LEFT);
+        $suffix = 'IN';
 
         return $prefix.$randomNum.$suffix;
     }
