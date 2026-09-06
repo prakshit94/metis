@@ -19,27 +19,75 @@ class IndiaPostProvider implements ShippingProviderInterface
     public function __construct()
     {
         static $settings = null;
-        $settings ??= SystemSetting::where('key', 'like', 'india_post_%')->pluck('value', 'key');
+        $settings ??= SystemSetting::where('key', 'india_post_offices')->pluck('value', 'key');
 
-        $this->baseUrl = $settings['india_post_base_url'] ?? config('shipping.providers.india_post.base_url');
-        $this->username = $settings['india_post_username'] ?? config('shipping.providers.india_post.username');
-        $this->password = isset($settings['india_post_password']) ? decrypt($settings['india_post_password']) : config('shipping.providers.india_post.password');
+        $offices = isset($settings['india_post_offices']) ? json_decode($settings['india_post_offices'], true) : [];
+        if (!is_array($offices)) {
+            $offices = [];
+        }
 
-        config(['shipping.providers.india_post.bulk_customer_id' => $settings['india_post_bulk_customer_id'] ?? config('shipping.providers.india_post.bulk_customer_id')]);
-        config(['shipping.providers.india_post.contracts.SP_INLAND_DOC' => $settings['india_post_contract_sp_doc'] ?? config('shipping.providers.india_post.contracts.SP_INLAND_DOC')]);
-        config(['shipping.providers.india_post.contracts.SP_INLAND_PARCEL' => $settings['india_post_contract_sp_parcel'] ?? config('shipping.providers.india_post.contracts.SP_INLAND_PARCEL')]);
-        config(['shipping.providers.india_post.contracts.BUSINESS_PARCEL' => $settings['india_post_contract_bp'] ?? config('shipping.providers.india_post.contracts.BUSINESS_PARCEL')]);
-        config(['shipping.providers.india_post.contracts.24_SPEEDPOST_DOC' => $settings['india_post_contract_24_sp_doc'] ?? config('shipping.providers.india_post.contracts.24_SPEEDPOST_DOC')]);
-        config(['shipping.providers.india_post.contracts.24_SPP_PARSPL' => $settings['india_post_contract_24_spp_parspl'] ?? config('shipping.providers.india_post.contracts.24_SPP_PARSPL')]);
-        config(['shipping.providers.india_post.contracts.48_SPEEDPOST_DOC' => $settings['india_post_contract_48_sp_doc'] ?? config('shipping.providers.india_post.contracts.48_SPEEDPOST_DOC')]);
+        $activeOffice = null;
+        // Find default or first active
+        foreach ($offices as $office) {
+            if (isset($office['is_default']) && $office['is_default'] && (isset($office['status']) && $office['status'] === 'active')) {
+                $activeOffice = $office;
+                break;
+            }
+        }
+        if (!$activeOffice) {
+            foreach ($offices as $office) {
+                if (isset($office['status']) && $office['status'] === 'active') {
+                    $activeOffice = $office;
+                    break;
+                }
+            }
+        }
+
+        if ($activeOffice) {
+            $this->baseUrl = $activeOffice['api_base_url'] ?? config('shipping.providers.india_post.base_url');
+            $this->username = $activeOffice['api_username'] ?? config('shipping.providers.india_post.username');
+            $this->password = !empty($activeOffice['api_password']) ? decrypt($activeOffice['api_password']) : config('shipping.providers.india_post.password');
+
+            config(['shipping.providers.india_post.bulk_customer_id' => $activeOffice['bulk_customer_id'] ?? config('shipping.providers.india_post.bulk_customer_id')]);
+            config(['shipping.providers.india_post.contracts.SP_INLAND_DOC' => $activeOffice['contract_sp_doc'] ?? config('shipping.providers.india_post.contracts.SP_INLAND_DOC')]);
+            config(['shipping.providers.india_post.contracts.SP_INLAND_PARCEL' => $activeOffice['contract_sp_parcel'] ?? config('shipping.providers.india_post.contracts.SP_INLAND_PARCEL')]);
+            config(['shipping.providers.india_post.contracts.BUSINESS_PARCEL' => $activeOffice['contract_bp'] ?? config('shipping.providers.india_post.contracts.BUSINESS_PARCEL')]);
+            config(['shipping.providers.india_post.contracts.24_SPEEDPOST_DOC' => $activeOffice['contract_24_sp_doc'] ?? config('shipping.providers.india_post.contracts.24_SPEEDPOST_DOC')]);
+            config(['shipping.providers.india_post.contracts.24_SPP_PARSPL' => $activeOffice['contract_24_spp_parspl'] ?? config('shipping.providers.india_post.contracts.24_SPP_PARSPL')]);
+            config(['shipping.providers.india_post.contracts.48_SPEEDPOST_DOC' => $activeOffice['contract_48_sp_doc'] ?? config('shipping.providers.india_post.contracts.48_SPEEDPOST_DOC')]);
+
+            config(['shipping.providers.india_post.pickup_dropoff_office_id' => $activeOffice['pickup_dropoff_office_id'] ?? '21260024']);
+            config(['shipping.providers.india_post.drop_off_pincode' => $activeOffice['drop_off_pincode'] ?? '600001']);
+            config(['shipping.providers.india_post.booking_office_name' => $activeOffice['booking_office_name'] ?? 'Default Booking Office']);
+            config(['shipping.providers.india_post.booking_office_pin' => $activeOffice['booking_office_pin'] ?? '600001']);
+        } else {
+            // Fallbacks
+            $this->baseUrl = config('shipping.providers.india_post.base_url');
+            $this->username = config('shipping.providers.india_post.username');
+            $this->password = config('shipping.providers.india_post.password');
+            config(['shipping.providers.india_post.pickup_dropoff_office_id' => config('shipping.providers.india_post.pickup_dropoff_office_id', '21260024')]);
+            config(['shipping.providers.india_post.drop_off_pincode' => config('shipping.providers.india_post.drop_off_pincode', '600001')]);
+            config(['shipping.providers.india_post.booking_office_name' => config('shipping.providers.india_post.booking_office_name', 'Default Booking Office')]);
+            config(['shipping.providers.india_post.booking_office_pin' => config('shipping.providers.india_post.booking_office_pin', '600001')]);
+        }
+    }
+    protected function httpClient()
+    {
+        $client = Http::withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]]);
+        
+        if (app()->environment('local', 'staging', 'testing')) {
+            $client = $client->withoutVerifying();
+        }
+        
+        return $client;
     }
 
     public function authenticate(): string
     {
         $cacheKey = 'india_post_access_token';
 
-        return Cache::remember($cacheKey, now()->addMinutes(55), function () {
-            $response = Http::withoutVerifying()->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])->post("{$this->baseUrl}/v1/access/login", [
+        $fetchToken = function () {
+            $response = $this->httpClient()->post("{$this->baseUrl}/v1/access/login", [
                 'username' => $this->username,
                 'password' => $this->password,
             ]);
@@ -49,14 +97,38 @@ class IndiaPostProvider implements ShippingProviderInterface
             }
 
             throw new \Exception('Failed to authenticate with India Post: '.$response->body());
-        });
+        };
+
+        try {
+            return Cache::remember($cacheKey, now()->addMinutes(14), $fetchToken);
+        } catch (\Throwable $e) {
+            // In case of unserialize errors or corrupted cache, clear it and retry
+            Cache::forget($cacheKey);
+            return Cache::remember($cacheKey, now()->addMinutes(14), $fetchToken);
+        }
     }
 
     public function getTariff(array $packageDetails): array
     {
         $token = $this->authenticate();
 
-        $response = Http::withoutVerifying()->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])->withToken($token)->get("{$this->baseUrl}/v1/speed-post/tariffs", $packageDetails);
+        $endpoint = '/v1/speed-post/tariffs';
+        if (isset($packageDetails['product-code'])) {
+            switch ($packageDetails['product-code']) {
+                case 'BP':
+                    $endpoint = '/v1/business-parcel-tariff/calculate';
+                    break;
+                case '24_SPEEDPOST_DOC':
+                case '48_SPEEDPOST_DOC':
+                    $endpoint = '/v1/ddd-ndd-tariff/calculate';
+                    break;
+                case '24_SPP_PARSPL':
+                    $endpoint = '/v1/parspl-tariff/calculate';
+                    break;
+            }
+        }
+
+        $response = $this->httpClient()->withToken($token)->get("{$this->baseUrl}{$endpoint}", $packageDetails);
 
         if ($response->successful() && $response->json('success')) {
             return $response->json();
@@ -70,8 +142,6 @@ class IndiaPostProvider implements ShippingProviderInterface
         $token = $this->authenticate();
         $customId = config('shipping.providers.india_post.bulk_customer_id');
 
-        // Here we map the order to India Post's expected payload format
-        // This is a simplified mapping based on the provided spec
         $totalWeightG = 0;
         $maxLength = 10;
         $maxWidth = 10;
@@ -83,47 +153,81 @@ class IndiaPostProvider implements ShippingProviderInterface
                 $totalWeightG += ($product->weight_g ?: 500) * $item->quantity;
                 $maxLength = max($maxLength, $product->length_cm ?: 10);
                 $maxWidth = max($maxWidth, $product->width_cm ?: 10);
-                // Simple box logic: we stack items up, so we sum the heights
                 $maxHeight += ($product->height_cm ?: 10) * $item->quantity;
             }
         }
+        $totalWeightG = (int) max(10, $totalWeightG);
 
-        $totalWeightG = max(10, $totalWeightG); // Ensure at least some weight
+        // Determine contract and article type based on order logic or default to SP
+        // If your order model has a 'shipping_method' or similar, you could map it here.
+        // E.g., if ($order->shipping_method === 'business_parcel') ...
+        // We'll default to SP_INLAND_PARCEL as a safe fallback
+        $articleType = 'BUSINESS_PARCEL';
+        $contractId = config('shipping.providers.india_post.contracts.BUSINESS_PARCEL');
+
+        // Dynamic Sender info from Origin Warehouse
+        $warehouse = $order->warehouse;
+        $senderName = $warehouse ? $warehouse->name : config('app.name');
+        $senderCompany = $warehouse ? ($warehouse->company_name ?: $senderName) : config('app.name');
+        $senderPhone = $warehouse && $warehouse->phone ? $warehouse->phone : '9876543210';
+        $senderPhone = preg_match('/^[0-9]{10,15}$/', $senderPhone) ? $senderPhone : '9876543210';
+        $senderAddr = $warehouse ? ($warehouse->address_line_1 ?: 'HQ Address') : 'HQ Address';
+        $senderCity = $warehouse ? ($warehouse->city ?: 'HQ City') : 'HQ City';
+        $senderPin = $warehouse ? (int) $warehouse->pincode : 110001;
+
+        // Dynamic Receiver info
+        $receiverName = trim(($order->party->firstname ?? '') . ' ' . ($order->party->lastname ?? ''));
+        if (!$receiverName) $receiverName = 'Customer';
+        
+        $receiverCompany = trim($order->party->company_name ?? '');
+        if (!$receiverCompany) $receiverCompany = $receiverName;
+        
+        $receiverPhone = $order->party->phone ?? '';
+        if (!preg_match('/^[6-9]\d{9}$/', $receiverPhone)) {
+            $receiverPhone = '9876543210'; // Fallback to avoid API crash
+        }
+        
+        $receiverAddr = $order->shipping_address_line_1 ?? 'Receiver Addr';
+        $receiverCity = $order->shipping_city ?? 'Receiver City';
+        $receiverPin = (int) ($order->shipping_pincode ?? 110001);
 
         $payload = [
             'articles' => [
                 [
-                    'bulk_customer_id' => $customId,
-                    'contract_id' => config('shipping.providers.india_post.contracts.SP_INLAND_PARCEL'),
-                    'barcode_no' => $this->generateBarcode(), // Generating a dummy barcode for testing/sandbox
+                    'bulk_customer_id' => (int) $customId,
+                    'contract_id' => (int) $contractId,
+                    'barcode_no' => $this->generateBarcode(),
                     'pickup_or_dropoff' => 'DROPOFF',
-                    'pickup_dropoff_office_id' => 21260024,
-                    'article_type' => 'SP_INLAND_PARCEL',
+                    'pickup_dropoff_office_id' => (int) config('shipping.providers.india_post.pickup_dropoff_office_id'),
+                    'article_type' => $articleType,
                     'physical_weight' => $totalWeightG,
                     'shape_of_article' => 'NROL',
-                    'length' => $maxLength,
-                    'breadth_diameter' => $maxWidth,
-                    'height' => $maxHeight,
-                    'sender_name' => 'Metis Sender',
-                    'sender_company' => 'Metis',
-                    'sender_add_line_1' => 'Sender Addr',
-                    'sender_city' => 'Sender City',
-                    'sender_pincode' => 600001,
-                    'receiver_name' => trim(($order->party->firstname ?? '') . ' ' . ($order->party->lastname ?? '')) ?: 'Receiver Name',
-                    'receiver_company' => '',
-                    'receiver_add_line_1' => $order->shipping_address_line_1 ?? 'Receiver Addr',
-                    'receiver_city' => $order->shipping_city ?? 'Receiver City',
-                    'receiver_pincode' => $order->shipping_pincode ?? 110001,
+                    'length' => (int) $maxLength,
+                    'breadth_diameter' => (int) $maxWidth,
+                    'height' => (int) $maxHeight,
+                    
+                    'sender_name' => substr($senderName, 0, 50),
+                    'sender_company' => substr($senderCompany, 0, 50),
+                    'sender_add_line_1' => substr($senderAddr, 0, 100),
+                    'sender_city' => substr($senderCity, 0, 50),
+                    'sender_pincode' => $senderPin,
+                    'sender_mobile_no' => $senderPhone,
+                    
+                    'receiver_name' => substr($receiverName, 0, 50),
+                    'receiver_company' => substr($receiverCompany, 0, 50),
+                    'receiver_add_line_1' => substr($receiverAddr, 0, 100),
+                    'receiver_city' => substr($receiverCity, 0, 50),
+                    'receiver_pincode' => $receiverPin,
+                    'receiver_mobile_no' => $receiverPhone,
+                    
                     'alt_address_flag' => 'FALSE',
                     'pickup_address_flag' => 'FALSE',
-                    'drop_off_pincode' => 600001,
-                    'sender_mobile_no' => '1234567890',
-                    'receiver_mobile_no' => $order->party->phone ?? '1234567890',
+                    'drop_off_pincode' => (int) config('shipping.providers.india_post.drop_off_pincode'),
                 ],
             ],
         ];
 
-        $response = Http::withoutVerifying()->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])->withToken($token)
+        $response = $this->httpClient()->withToken($token)
             ->post("{$this->baseUrl}/process-articles/{$customId}", $payload);
 
         if ($response->successful() && $response->json('success')) {
@@ -146,17 +250,57 @@ class IndiaPostProvider implements ShippingProviderInterface
         throw new \Exception('Failed to create shipment: '.$response->body());
     }
 
-    public function generateLabel(string $trackingNumber): string
+    public function generateLabel(Order $order, string $trackingNumber): string
     {
-        // Implementation for label generation
-        return 'label_url';
+        $token = $this->authenticate();
+
+        $warehouse = $order->warehouse;
+        $senderName = $warehouse ? $warehouse->name : config('app.name');
+        
+        $receiverName = trim(($order->party->firstname ?? '') . ' ' . ($order->party->lastname ?? ''));
+        if (!$receiverName) $receiverName = 'Customer';
+        
+        $receiverAddr = $order->shipping_address_line_1 ?? 'Receiver Addr';
+
+        $payload = [[
+            'customer_id' => (int) config('shipping.providers.india_post.bulk_customer_id'),
+            'channel_type' => 'E',
+            'user_type' => 'R',
+            'barcode_no' => $trackingNumber,
+            'service_type' => 'BP',
+            'booking_type' => 'COMMERCIAL',
+            'recipient_name' => substr($receiverName, 0, 50),
+            'recipient_addressl1' => substr($receiverAddr, 0, 100),
+            'sender_name' => substr($senderName, 0, 50),
+            'transmission_mode' => 'S',
+            'payment_mode' => 'CO',
+            'booking_office_name' => config('shipping.providers.india_post.booking_office_name'),
+            'booking_office_pin' => config('shipping.providers.india_post.booking_office_pin'),
+            'size' => 'A6',
+            'payment_status' => 'PC',
+            'identifier' => 'Domestic'
+        ]];
+
+        $response = $this->httpClient()
+            ->withToken($token)->post("{$this->baseUrl}/v1/label/create/domestic", $payload);
+
+        if ($response->successful()) {
+            // Ideally we'd store the PDF somewhere and return the URL
+            // Since this API returns a PDF directly (based on the document: "Sample Output: PDF file"), 
+            // we should save it and return a local url.
+            $filename = 'label_' . $trackingNumber . '.pdf';
+            \Illuminate\Support\Facades\Storage::put('public/labels/' . $filename, $response->body());
+            return url('storage/labels/' . $filename);
+        }
+
+        throw new \Exception('Failed to generate label: '.$response->body());
     }
 
     public function getTrackingStatus(array $trackingNumbers): array
     {
         $token = $this->authenticate();
 
-        $response = Http::withoutVerifying()->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])->withToken($token)->post("{$this->baseUrl}/v1/tracking/bulk", [
+        $response = $this->httpClient()->withToken($token)->post("{$this->baseUrl}/v1/tracking/bulk", [
             'bulk' => $trackingNumbers,
         ]);
 

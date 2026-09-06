@@ -51,6 +51,7 @@ class DatabaseSeeder extends Seeder
             // AttendanceSeeder::class,
             // LeaveSeeder::class,
             // WalletTransactionSeeder::class,
+            IndiaPostSettingsSeeder::class,
         ]);
     }
 }

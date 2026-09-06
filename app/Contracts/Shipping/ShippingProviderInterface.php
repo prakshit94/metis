@@ -28,7 +28,7 @@ interface ShippingProviderInterface
     /**
      * Generate the shipping label PDF or URL.
      */
-    public function generateLabel(string $trackingNumber): string;
+    public function generateLabel(Order $order, string $trackingNumber): string;
 
     /**
      * Get tracking status updates for given tracking numbers.

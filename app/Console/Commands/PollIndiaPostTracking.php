@@ -45,48 +45,52 @@ class PollIndiaPostTracking extends Command
         $provider = $shippingManager->driver('india_post');
 
         try {
-            // Bulk API allows up to 500 at a time, we'd chunk this in reality
-            $trackingData = $provider->getTrackingStatus($trackingNumbers);
+            // Bulk API allows up to 500 at a time
+            $chunks = array_chunk($trackingNumbers, 500);
 
-            foreach ($trackingData as $data) {
-                $trackingNumber = $data['booking_details']['article_number'];
-                $deliveryStatus = $data['del_status']['del_status'] ?? null;
-                $events = $data['tracking_details'] ?? [];
+            foreach ($chunks as $chunk) {
+                $trackingData = $provider->getTrackingStatus($chunk);
 
-                $shipment = $shipments->firstWhere('tracking_no', $trackingNumber);
-                if (! $shipment) {
-                    continue;
-                }
+                foreach ($trackingData as $data) {
+                    $trackingNumber = $data['booking_details']['article_number'];
+                    $deliveryStatus = $data['del_status']['del_status'] ?? null;
+                    $events = $data['tracking_details'] ?? [];
 
-                // Record the latest event
-                if (! empty($events)) {
-                    $latestEvent = end($events);
-                    $eventDesc = $latestEvent['event'] ?? 'Update';
-
-                    // Simple deduplication logic
-                    $exists = ShipmentTrackingEvent::where('shipment_id', $shipment->id)
-                        ->where('description', $eventDesc)
-                        ->exists();
-
-                    if (! $exists) {
-                        ShipmentTrackingEvent::create([
-                            'shipment_id' => $shipment->id,
-                            'status' => 'in_transit',
-                            'location' => $latestEvent['office'] ?? 'Unknown',
-                            'description' => $eventDesc,
-                            'tracked_at' => now(),
-                        ]);
+                    $shipment = $shipments->firstWhere('tracking_no', $trackingNumber);
+                    if (! $shipment) {
+                        continue;
                     }
-                }
 
-                // If delivered, update the status
-                if ($deliveryStatus === 'delivered' && $shipment->status !== 'delivered') {
-                    $shipment->update([
-                        'status' => 'delivered',
-                        'delivered_at' => now(),
-                    ]);
-                    $shipment->order->update(['status' => 'delivered']);
-                    $this->info("Shipment {$trackingNumber} marked as delivered.");
+                    // Record the latest event
+                    if (! empty($events)) {
+                        $latestEvent = end($events);
+                        $eventDesc = $latestEvent['event'] ?? 'Update';
+
+                        // Simple deduplication logic
+                        $exists = ShipmentTrackingEvent::where('shipment_id', $shipment->id)
+                            ->where('description', $eventDesc)
+                            ->exists();
+
+                        if (! $exists) {
+                            ShipmentTrackingEvent::create([
+                                'shipment_id' => $shipment->id,
+                                'status' => 'in_transit',
+                                'location' => $latestEvent['office'] ?? 'Unknown',
+                                'description' => $eventDesc,
+                                'tracked_at' => now(),
+                            ]);
+                        }
+                    }
+
+                    // If delivered, update the status
+                    if ($deliveryStatus === 'delivered' && $shipment->status !== 'delivered') {
+                        $shipment->update([
+                            'status' => 'delivered',
+                            'delivered_at' => now(),
+                        ]);
+                        $shipment->order->update(['status' => 'delivered']);
+                        $this->info("Shipment {$trackingNumber} marked as delivered.");
+                    }
                 }
             }
 

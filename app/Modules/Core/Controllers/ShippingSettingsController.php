@@ -13,12 +13,18 @@ class ShippingSettingsController extends Controller
      */
     public function index()
     {
-        $settings = SystemSetting::where('key', 'like', 'india_post_%')->pluck('value', 'key');
+        $settings = SystemSetting::where('key', 'india_post_offices')->pluck('value', 'key');
+        
+        // Scrub passwords before sending to frontend
+        $offices = isset($settings['india_post_offices']) ? json_decode($settings['india_post_offices'], true) : [];
+        if (is_array($offices)) {
+            foreach ($offices as &$office) {
+                $office['api_password'] = '';
+            }
+            $settings['india_post_offices'] = json_encode($offices);
+        }
 
-        // Decrypt password if it exists for the frontend (or just leave it empty for security)
-        $password = isset($settings['india_post_password']) ? Crypt::decryptString($settings['india_post_password']) : '';
-
-        return view('shipping.settings', compact('settings', 'password'));
+        return view('shipping.settings', compact('settings'));
     }
 
     /**
@@ -27,33 +33,34 @@ class ShippingSettingsController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'india_post_base_url' => 'required|url|max:255',
-            'india_post_username' => 'required|string|max:255',
-            'india_post_password' => 'nullable|string|max:255', // If empty, we don't update it
-            'india_post_bulk_customer_id' => 'required|string|max:255',
-            'india_post_contract_sp_doc' => 'nullable|string|max:255',
-            'india_post_contract_sp_parcel' => 'nullable|string|max:255',
-            'india_post_contract_bp' => 'nullable|string|max:255',
-            'india_post_contract_24_sp_doc' => 'nullable|string|max:255',
-            'india_post_contract_24_spp_parspl' => 'nullable|string|max:255',
-            'india_post_contract_48_sp_doc' => 'nullable|string|max:255',
+            'india_post_offices' => 'nullable|array',
         ]);
 
-        foreach ($validated as $key => $value) {
-            if ($key === 'india_post_password') {
-                if (! empty($value)) {
-                    SystemSetting::updateOrCreate(
-                        ['key' => $key],
-                        ['value' => Crypt::encryptString($value)]
-                    );
-                }
+        $offices = $validated['india_post_offices'] ?? [];
+        
+        // Fetch existing to retain passwords if new one is empty
+        $existingSettings = SystemSetting::where('key', 'india_post_offices')->first();
+        $existingOffices = $existingSettings ? json_decode($existingSettings->value, true) : [];
+        if (!is_array($existingOffices)) {
+            $existingOffices = [];
+        }
+        $existingOfficesMap = collect($existingOffices)->keyBy('id');
+
+        foreach ($offices as &$office) {
+            if (!empty($office['api_password'])) {
+                $office['api_password'] = Crypt::encryptString($office['api_password']);
             } else {
-                SystemSetting::updateOrCreate(
-                    ['key' => $key],
-                    ['value' => $value]
-                );
+                // Keep old password if it exists
+                if (isset($existingOfficesMap[$office['id']]['api_password'])) {
+                    $office['api_password'] = $existingOfficesMap[$office['id']]['api_password'];
+                }
             }
         }
+        
+        SystemSetting::updateOrCreate(
+            ['key' => 'india_post_offices'],
+            ['value' => json_encode($offices)]
+        );
 
         return response()->json(['success' => true, 'message' => 'India Post settings updated successfully.']);
     }

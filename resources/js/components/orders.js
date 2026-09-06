@@ -876,9 +876,15 @@ document.addEventListener('alpine:init', () => {
 
     get bulkDocumentActions() {
       const selectedOrderObjs = this.orders.filter(o => this.selectedOrders.includes(String(o.id)));
+      
+      const allowedStatuses = ['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'];
+      const canPrint = selectedOrderObjs.length > 0 && selectedOrderObjs.some(o => {
+          const status = String(o.lifecycle_status || o.status || '').toLowerCase();
+          return allowedStatuses.includes(status);
+      });
 
       return {
-        canPrint: selectedOrderObjs.length > 0,
+        canPrint: canPrint,
         canGenerateInvoices: false,
       };
     },
@@ -1454,8 +1460,22 @@ document.addEventListener('alpine:init', () => {
 
     async bulkPrint(type) {
       if (this.selectedOrders.length === 0) return;
+      const allowedStatuses = ['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'];
+      const validIds = this.orders
+          .filter(o => this.selectedOrders.includes(String(o.id)))
+          .filter(o => {
+              const status = String(o.lifecycle_status || o.status || '').toLowerCase();
+              return allowedStatuses.includes(status);
+          })
+          .map(o => String(o.id));
+
+      if (validIds.length === 0) {
+          showToast('No eligible orders selected for printing. Orders must be processing or above.', 'warning');
+          return;
+      }
+
       const params = new URLSearchParams();
-      this.selectedOrders.forEach(id => params.append('order_ids[]', id));
+      validIds.forEach(id => params.append('order_ids[]', id));
       params.append('type', type);
 
       try {

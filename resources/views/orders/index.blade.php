@@ -181,7 +181,7 @@
         <div class="card stats-card h-100">
             <div class="card-body p-3 p-lg-4">
                 <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-dark-subtle text-body-emphasis-emphasis mb-3">
+                    <div class="stats-icon text-bg-dark-subtle text-body-emphasis mb-3">
                         <i class="bi bi-box-seam"></i>
                     </div>
                     <div class="w-100" style="min-width: 0;">
@@ -362,7 +362,7 @@
                             <div class="col-lg-3 col-md-12 border-end border-secondary-subtle pe-lg-4 mb-4 mb-lg-0 pb-4 pb-lg-0">
                                 <h3 class="h5 fw-bold mb-3 text-body-emphasis" x-text="wh.name"></h3>
                                 <div class="d-flex align-items-center gap-3 mb-4">
-                                    <div class="badge text-bg-primary-subtle text-primary-emphasis-subtle py-2 px-3 fs-6 rounded-pill" x-text="`${wh.total} Orders`"></div>
+                                    <div class="badge text-bg-primary-subtle text-primary-emphasis py-2 px-3 fs-6 rounded-pill" x-text="`${wh.total} Orders`"></div>
                                 </div>
                                 <div class="p-3 bg-body-tertiary bg-opacity-50 rounded-4 border border-secondary-subtle mb-3 shadow-sm">
                                     <span class="d-block text-muted small fw-medium mb-1 text-uppercase tracking-wider">Total Value</span>
@@ -467,8 +467,8 @@
                                     @endcan
                                     @can('orders.view.cancelled')
                                     <div class="d-flex align-items-center gap-2" x-show="wh.cancelled > 0">
-                                        <div class="bg-dark rounded-circle" style="width: 8px; height: 8px;"></div>
-                                        <span class="small text-body-emphasis-emphasis fw-medium">Cancelled: <span x-text="wh.cancelled"></span></span>
+                                        <div class="bg-secondary rounded-circle" style="width: 8px; height: 8px;"></div>
+                                        <span class="small text-body-emphasis fw-medium">Cancelled: <span x-text="wh.cancelled"></span></span>
                                     </div>
                                     @endcan
                                 </div>
@@ -870,8 +870,9 @@
 
 
                     @can('orders.bulk_print')
-                    <div class="dropdown d-inline-block" x-show="bulkDocumentActions.canPrint" x-transition>
-                        <button class="btn btn-sm btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <template x-if="bulkDocumentActions.canPrint">
+                    <div class="dropdown d-inline-block" x-transition>
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-printer me-1"></i>Print
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -883,6 +884,7 @@
                             </a></li>
                         </ul>
                     </div>
+                    </template>
                     @endcan
 
                     {{-- Deselect all --}}
@@ -963,7 +965,7 @@
                                 <div class="d-flex align-items-center flex-wrap gap-1 mt-1">
                                     <small class="text-muted" x-text="'ID: ' + order.id"></small>
                                     <template x-if="order.warehouse">
-                                        <span class="badge text-bg-secondary-subtle text-secondary-emphasis-subtle ms-1" style="font-size: 0.65rem;" title="Fulfillment Warehouse">
+                                        <span class="badge text-bg-secondary-subtle text-secondary-emphasis ms-1" style="font-size: 0.65rem;" title="Fulfillment Warehouse">
                                             <i class="bi bi-building me-1"></i><span x-text="order.warehouse.name"></span>
                                         </span>
                                     </template>
@@ -1126,12 +1128,12 @@
                                         @endcan
                                         <li><hr class="dropdown-divider"></li>
                                         @can('orders.invoice_pdf')
-                                        <li><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
+                                        <li x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'].includes(order.lifecycle_status || order.status)"><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
                                             <i class="bi bi-file-pdf me-2"></i>Print Invoice
                                         </a></li>
                                         @endcan
                                         @can('orders.cod')
-                                        <li><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
+                                        <li x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'].includes(order.lifecycle_status || order.status)"><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
                                             <i class="bi bi-file-earmark-pdf me-2"></i>Print COD Receipt
                                         </a></li>
                                         @endcan
@@ -1202,7 +1204,7 @@
                                             <i class="bi bi-calendar3"></i> <span x-text="selectedOrder.orderDate ? new Date(selectedOrder.orderDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'"></span>
                                         </p>
                                         <template x-if="selectedOrder.warehouse">
-                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis-subtle" title="Fulfillment Warehouse">
+                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis" title="Fulfillment Warehouse">
                                                 <i class="bi bi-building me-1"></i><span x-text="selectedOrder.warehouse.name"></span>
                                             </span>
                                         </template>
@@ -1414,25 +1416,27 @@
                                 <!-- Document Actions -->
                                 <div class="d-flex flex-wrap gap-2 mb-4 w-100">
                                     <template x-if="selectedOrder.invoice">
-                                        <div class="d-flex flex-wrap gap-2 w-100">
+                                        <div class="d-flex flex-wrap gap-2 w-100" x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'].includes(selectedOrder.lifecycle_status || selectedOrder.status)">
                                             @can('orders.invoice_pdf')
                                             <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printInvoice(selectedOrder)">
                                                 <i class="bi bi-file-earmark-pdf me-2"></i>Print Invoice
                                             </button>
                                             @endcan
                                             @can('orders.cod')
-                                            <button class="btn btn-info text-white flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printCOD(selectedOrder)">
+                                            <button class="btn btn-info flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printCOD(selectedOrder)">
                                                 <i class="bi bi-file-earmark-pdf me-2"></i>COD Receipt
                                             </button>
                                             @endcan
                                         </div>
                                     </template>
                                     <template x-if="!selectedOrder.invoice">
-                                        @can('orders.generate_invoice')
-                                        <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="generateAndPrintInvoice(selectedOrder)">
-                                            <i class="bi bi-receipt-cutoff me-2"></i>Generate Invoice & Print
-                                        </button>
-                                        @endcan
+                                        <template x-if="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'].includes(selectedOrder.lifecycle_status || selectedOrder.status)">
+                                            @can('orders.generate_invoice')
+                                            <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="generateAndPrintInvoice(selectedOrder)">
+                                                <i class="bi bi-receipt-cutoff me-2"></i>Generate Invoice & Print
+                                            </button>
+                                            @endcan
+                                        </template>
                                     </template>
 
                                 </div>
@@ -1456,7 +1460,7 @@
                                             </template>
                                             <template x-if="selectedOrder.status === 'confirmed'">
                                                 @can('orders.processing')
-                                                <button class="btn btn-sm btn-info text-white flex-grow-1 shadow-sm fw-semibold" @click="processOrder(selectedOrder)">
+                                                <button class="btn btn-sm btn-info flex-grow-1 shadow-sm fw-semibold" @click="processOrder(selectedOrder)">
                                                     <i class="bi bi-gear me-1"></i>Process
                                                 </button>
                                                 @endcan
@@ -2193,7 +2197,7 @@
                                                         <div>
                                                             <h6 class="mb-1 text-body-emphasis" style="font-size: 0.9rem;" x-text="item.name"></h6>
                                                             <div class="d-flex align-items-center gap-2">
-                                                                <span class="badge text-bg-secondary-subtle text-secondary-emphasis-subtle font-monospace" style="font-size: 0.65rem;" x-text="item.sku"></span>
+                                                                <span class="badge text-bg-secondary-subtle text-secondary-emphasis font-monospace" style="font-size: 0.65rem;" x-text="item.sku"></span>
                                                                 <template x-if="item.isOutOfStock">
                                                                     <span class="badge bg-danger text-white ms-1" style="font-size: 0.65rem;" x-text="`Out of Stock (Have: ${item.availableStock})`"></span>
                                                                 </template>
