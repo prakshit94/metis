@@ -128,7 +128,7 @@
                             <th class="ps-3" style="width:44px;">
                                 <input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event.target.checked)" :checked="selectedOffices.length === paginatedOffices.length && paginatedOffices.length > 0">
                             </th>
-                            <th>Booking Office</th>
+                            <th>Post Office</th>
                             <th>IDs & Pincodes</th>
                             <th>Status</th>
                             <th style="width:90px;" class="text-end pe-4">Actions</th>
@@ -243,10 +243,10 @@
                                         <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-info-circle text-primary me-2"></i>Basic Information</h6>
                                         <table class="table table-sm table-borderless mb-0">
                                             <tbody>
-                                                <tr><td class="text-muted fw-bold" style="width: 200px;">Booking Office Name</td><td class="fw-medium" x-text="officeViewData.booking_office_name || '—'"></td></tr>
-                                                <tr><td class="text-muted fw-bold">Booking Pincode</td><td class="fw-medium" x-text="officeViewData.booking_office_pin || '—'"></td></tr>
-                                                <tr><td class="text-muted fw-bold">Dropoff Pincode</td><td class="fw-medium" x-text="officeViewData.drop_off_pincode || '—'"></td></tr>
-                                                <tr><td class="text-muted fw-bold">Pickup/Dropoff Office ID</td><td class="fw-medium" x-text="officeViewData.pickup_dropoff_office_id || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold" style="width: 200px;">Post Office Name</td><td class="fw-medium" x-text="officeViewData.booking_office_name || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Booking PIN Code</td><td class="fw-medium" x-text="officeViewData.booking_office_pin || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Drop-off PIN Code</td><td class="fw-medium" x-text="officeViewData.drop_off_pincode || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Facility ID (Office ID)</td><td class="fw-medium" x-text="officeViewData.pickup_dropoff_office_id || '—'"></td></tr>
                                                 <tr><td class="text-muted fw-bold">Status</td><td>
                                                     <span class="badge" :class="officeViewData.status === 'active' ? 'bg-success' : 'bg-secondary'" x-text="(officeViewData.status || '').toUpperCase()"></span>
                                                 </td></tr>
@@ -254,6 +254,22 @@
                                                     <span class="badge bg-primary" x-show="officeViewData.is_default">Yes</span>
                                                     <span class="text-muted" x-show="!officeViewData.is_default">No</span>
                                                 </td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-upc-scan text-primary me-2"></i>Tracking & Barcode Sequence</h6>
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tbody>
+                                                <tr><td class="text-muted fw-bold" style="width: 200px;">Prefix</td><td class="fw-medium text-uppercase" x-text="officeViewData.barcode_prefix || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Sequence Start</td><td class="fw-medium" x-text="officeViewData.barcode_start || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Sequence End</td><td class="fw-medium" x-text="officeViewData.barcode_end || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Current Next Sequence</td><td class="fw-medium text-primary" x-text="officeViewData.barcode_current || officeViewData.barcode_start || '—'"></td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -282,12 +298,12 @@
                                         <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-file-earmark-text text-warning me-2"></i>Contract Details</h6>
                                         <table class="table table-sm table-borderless mb-0">
                                             <tbody>
-                                                <tr><td class="text-muted fw-bold" style="width: 200px;">Speed Post Doc</td><td class="fw-medium" x-text="officeViewData.contract_sp_doc || '—'"></td></tr>
-                                                <tr><td class="text-muted fw-bold">Speed Post Parcel</td><td class="fw-medium" x-text="officeViewData.contract_sp_parcel || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold" style="width: 200px;">Speed Post (Document)</td><td class="fw-medium" x-text="officeViewData.contract_sp_doc || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Speed Post (Parcel)</td><td class="fw-medium" x-text="officeViewData.contract_sp_parcel || '—'"></td></tr>
                                                 <tr><td class="text-muted fw-bold">Business Parcel</td><td class="fw-medium" x-text="officeViewData.contract_bp || '—'"></td></tr>
-                                                <tr><td class="text-muted fw-bold">24 SpeedPost Doc</td><td class="fw-medium" x-text="officeViewData.contract_24_sp_doc || '—'"></td></tr>
-                                                <tr><td class="text-muted fw-bold">24 SPP Parcel</td><td class="fw-medium" x-text="officeViewData.contract_24_spp_parspl || '—'"></td></tr>
-                                                <tr><td class="text-muted fw-bold">48 SpeedPost Doc</td><td class="fw-medium" x-text="officeViewData.contract_48_sp_doc || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Express Parcel (Document)</td><td class="fw-medium" x-text="officeViewData.contract_24_sp_doc || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Express Parcel</td><td class="fw-medium" x-text="officeViewData.contract_24_spp_parspl || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Registered Parcel</td><td class="fw-medium" x-text="officeViewData.contract_48_sp_doc || '—'"></td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -329,19 +345,19 @@
                                         </div>
                                         <div class="row g-2">
                                             <div class="col-md-6">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Booking Office Name *</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Post Office Name *</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.booking_office_name" placeholder="e.g. Bengaluru Foreign Post" style="font-size: 12px;" required>
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Booking Pincode *</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Booking PIN Code *</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.booking_office_pin" placeholder="e.g. 560001" style="font-size: 12px;" required>
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Dropoff Pincode *</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Drop-off PIN Code *</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.drop_off_pincode" placeholder="e.g. 560001" style="font-size: 12px;" required>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Pickup/Dropoff Office ID *</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Facility ID (Office ID) *</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.pickup_dropoff_office_id" placeholder="8 digits ID" style="font-size: 12px;" required>
                                             </div>
                                             <div class="col-md-3">
@@ -356,6 +372,39 @@
                                                     <input class="form-check-input" type="checkbox" id="isDefaultCheck" x-model="officeForm.is_default">
                                                     <label class="form-check-label fw-bold text-muted text-uppercase" for="isDefaultCheck" style="font-size: 9px; letter-spacing: 0.1em;">Set as Default Office</label>
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Tracking & Barcode Card --}}
+                            <div class="col-12 position-relative">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
+                                                <i class="bi bi-upc-scan" style="font-size: 10px;"></i>
+                                            </div>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Tracking & Barcode Sequence</h6>
+                                        </div>
+                                        
+                                        <div class="row g-2">
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Prefix *</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold text-uppercase" x-model="officeForm.barcode_prefix" placeholder="e.g. EA" style="font-size: 12px;" maxlength="2" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Start Sequence *</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.barcode_start" placeholder="8 digits" style="font-size: 12px;" maxlength="8" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">End Sequence *</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.barcode_end" placeholder="8 digits" style="font-size: 12px;" maxlength="8" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Current Sequence</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold text-primary" x-model="officeForm.barcode_current" placeholder="Auto-starts from Start" style="font-size: 12px;" maxlength="8">
                                             </div>
                                         </div>
                                     </div>
@@ -416,11 +465,11 @@
                                         
                                         <div class="row g-2">
                                             <div class="col-md-6">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Speed Post Doc</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Speed Post (Document)</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_sp_doc" style="font-size: 12px;">
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Speed Post Parcel</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Speed Post (Parcel)</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_sp_parcel" style="font-size: 12px;">
                                             </div>
                                             <div class="col-md-6">
@@ -428,15 +477,15 @@
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_bp" style="font-size: 12px;">
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">24 SpeedPost Doc</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Express Parcel (Document)</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_24_sp_doc" style="font-size: 12px;">
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">24 SPP Parcel</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Express Parcel</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_24_spp_parspl" style="font-size: 12px;">
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">48 SpeedPost Doc</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Registered Parcel</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_48_sp_doc" style="font-size: 12px;">
                                             </div>
                                         </div>
@@ -495,7 +544,11 @@ document.addEventListener('alpine:init', () => {
             contract_bp: '',
             contract_24_sp_doc: '',
             contract_24_spp_parspl: '',
-            contract_48_sp_doc: ''
+            contract_48_sp_doc: '',
+            barcode_prefix: '',
+            barcode_start: '',
+            barcode_end: '',
+            barcode_current: ''
         },
         modalInstance: null,
 
@@ -609,7 +662,11 @@ document.addEventListener('alpine:init', () => {
                 contract_bp: '',
                 contract_24_sp_doc: '',
                 contract_24_spp_parspl: '',
-                contract_48_sp_doc: ''
+                contract_48_sp_doc: '',
+                barcode_prefix: '',
+                barcode_start: '',
+                barcode_end: '',
+                barcode_current: ''
             };
             this.getModal().show();
         },

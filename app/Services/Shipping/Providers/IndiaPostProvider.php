@@ -16,6 +16,8 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     protected $password;
 
+    protected $activeOfficeId;
+
     public function __construct()
     {
         static $settings = null;
@@ -44,6 +46,7 @@ class IndiaPostProvider implements ShippingProviderInterface
         }
 
         if ($activeOffice) {
+            $this->activeOfficeId = $activeOffice['id'] ?? null;
             $this->baseUrl = $activeOffice['api_base_url'] ?? config('shipping.providers.india_post.base_url');
             $this->username = $activeOffice['api_username'] ?? config('shipping.providers.india_post.username');
             $this->password = !empty($activeOffice['api_password']) ? decrypt($activeOffice['api_password'], false) : config('shipping.providers.india_post.password');
@@ -60,6 +63,11 @@ class IndiaPostProvider implements ShippingProviderInterface
             config(['shipping.providers.india_post.drop_off_pincode' => $activeOffice['drop_off_pincode'] ?? '600001']);
             config(['shipping.providers.india_post.booking_office_name' => $activeOffice['booking_office_name'] ?? 'Default Booking Office']);
             config(['shipping.providers.india_post.booking_office_pin' => $activeOffice['booking_office_pin'] ?? '600001']);
+            
+            config(['shipping.providers.india_post.barcode_prefix' => $activeOffice['barcode_prefix'] ?? 'EA']);
+            config(['shipping.providers.india_post.barcode_start' => $activeOffice['barcode_start'] ?? '10000000']);
+            config(['shipping.providers.india_post.barcode_end' => $activeOffice['barcode_end'] ?? '19999999']);
+            config(['shipping.providers.india_post.barcode_current' => $activeOffice['barcode_current'] ?? $activeOffice['barcode_start'] ?? '10000000']);
         } else {
             // Fallbacks
             $this->baseUrl = config('shipping.providers.india_post.base_url');
@@ -314,11 +322,60 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     private function generateBarcode(): string
     {
-        // For testing we will generate a barcode in the correct format: XX123456789XX
-        $prefix = 'ET';
-        $randomNum = str_pad((string) rand(1, 999999999), 9, '0', STR_PAD_LEFT);
-        $suffix = 'IN';
+        $prefix = strtoupper(config('shipping.providers.india_post.barcode_prefix', 'EA'));
+        $start = config('shipping.providers.india_post.barcode_start', '10000000');
+        $current = config('shipping.providers.india_post.barcode_current', $start);
+        $end = config('shipping.providers.india_post.barcode_end', '19999999');
 
-        return $prefix.$randomNum.$suffix;
+        if (!$current) {
+            $current = $start;
+        }
+
+        $sequence = str_pad((string) $current, 8, '0', STR_PAD_LEFT);
+
+        $weights = [8, 6, 4, 2, 3, 5, 9, 7];
+        $sum = 0;
+        for ($i = 0; $i < 8; $i++) {
+            $sum += ((int) $sequence[$i]) * $weights[$i];
+        }
+        $mod = 11 - ($sum % 11);
+        if ($mod === 10) {
+            $checkDigit = '0';
+        } elseif ($mod === 11) {
+            $checkDigit = '5';
+        } else {
+            $checkDigit = (string) $mod;
+        }
+
+        $barcode = $prefix . $sequence . $checkDigit . 'IN';
+
+        $nextSequence = (int) $current + 1;
+        if ($nextSequence > (int) $end) {
+            $nextSequence = (int) $start;
+        }
+
+        $this->updateBarcodeSequence((string) $nextSequence);
+
+        return $barcode;
+    }
+
+    private function updateBarcodeSequence(string $nextSequence): void
+    {
+        if (!$this->activeOfficeId) return;
+
+        $setting = SystemSetting::where('key', 'india_post_offices')->first();
+        if ($setting) {
+            $offices = json_decode($setting->value, true);
+            if (is_array($offices)) {
+                foreach ($offices as &$office) {
+                    if (isset($office['id']) && $office['id'] == $this->activeOfficeId) {
+                        $office['barcode_current'] = $nextSequence;
+                        break;
+                    }
+                }
+                $setting->value = json_encode($offices);
+                $setting->save();
+            }
+        }
     }
 }

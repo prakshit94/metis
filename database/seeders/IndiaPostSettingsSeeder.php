@@ -32,6 +32,10 @@ class IndiaPostSettingsSeeder extends Seeder
                 'contract_24_sp_doc' => '',
                 'contract_24_spp_parspl' => '',
                 'contract_48_sp_doc' => '',
+                'barcode_prefix' => 'EA',
+                'barcode_start' => '10000000',
+                'barcode_end' => '19999999',
+                'barcode_current' => '10000000',
             ]
         ];
 
