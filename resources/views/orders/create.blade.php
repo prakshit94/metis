@@ -2099,7 +2099,19 @@
                             <div class="p-3 bg-body-tertiary rounded h-100 border shadow-sm">
                                 <h6 class="fw-bold text-body-secondary mb-2" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-geo-alt me-1"></i> Delivery To</h6>
                                 <template x-if="shippingAddressId">
-                                    <div x-data="{ addr: addresses.find(a => a.id == shippingAddressId) || {} }">
+                                    <div x-data="{ get addr() { return addresses.find(a => String(a.id) === String(shippingAddressId)) || {} } }">
+                                        <div class="small fw-bold mb-1" x-text="addr.address_line_1"></div>
+                                        <div class="small text-body-secondary mb-1" x-show="addr.address_line_2" x-text="addr.address_line_2"></div>
+                                        <div class="small text-body-secondary mb-1" x-show="addr.village || addr.village_name" x-text="[(addr.village?.village_name || addr.village_name) ? 'Vill: '+(addr.village?.village_name || addr.village_name) : null, (addr.village?.post_so_name || addr.post_office) ? 'PO: '+(addr.village?.post_so_name || addr.post_office) : null, (addr.village?.taluka_name || addr.taluka) ? 'Ta: '+(addr.village?.taluka_name || addr.taluka) : null, (addr.village?.district_name || addr.district) ? 'Dist: '+(addr.village?.district_name || addr.district) : null].filter(Boolean).join(', ')"></div>
+                                        <div class="small text-body-secondary" x-text="[addr.city, addr.state + ' - ' + addr.pincode].filter(Boolean).join(', ')"></div>
+                                    </div>
+                                </template>
+
+                                <hr class="my-2 border-secondary opacity-25">
+                                <h6 class="fw-bold text-body-secondary mb-2 mt-2" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-receipt me-1"></i> Billing To</h6>
+                                <div class="small text-body-secondary mb-1" x-show="sameAsShipping">Same as Delivery Address</div>
+                                <template x-if="!sameAsShipping && billingAddressId">
+                                    <div x-data="{ get addr() { return addresses.find(a => String(a.id) === String(billingAddressId)) || {} } }">
                                         <div class="small fw-bold mb-1" x-text="addr.address_line_1"></div>
                                         <div class="small text-body-secondary mb-1" x-show="addr.address_line_2" x-text="addr.address_line_2"></div>
                                         <div class="small text-body-secondary mb-1" x-show="addr.village || addr.village_name" x-text="[(addr.village?.village_name || addr.village_name) ? 'Vill: '+(addr.village?.village_name || addr.village_name) : null, (addr.village?.post_so_name || addr.post_office) ? 'PO: '+(addr.village?.post_so_name || addr.post_office) : null, (addr.village?.taluka_name || addr.taluka) ? 'Ta: '+(addr.village?.taluka_name || addr.taluka) : null, (addr.village?.district_name || addr.district) ? 'Dist: '+(addr.village?.district_name || addr.district) : null].filter(Boolean).join(', ')"></div>

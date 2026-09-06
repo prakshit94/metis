@@ -441,11 +441,11 @@
 
                         <!-- Data Rows -->
                         <template x-for="v in villages" :key="v.id">
-                            <tr class="user-row" :class="{'table-active': selectedVillages.includes(v.id), 'opacity-50': v.deleted_at}">
+                            <tr class="user-row" :class="{'table-active': selectedVillages.includes(String(v.id)), 'opacity-50': v.deleted_at}">
                                 <td class="ps-3">
                                     <input type="checkbox" 
                                            class="user-select-checkbox" 
-                                           :value="v.id" :checked="selectedVillages.includes(v.id)"
+                                           :value="v.id" :checked="selectedVillages.includes(String(v.id))"
                                            @change="toggleVillage(v.id)">
                                 </td>
                                 <td>

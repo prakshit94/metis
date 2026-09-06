@@ -367,10 +367,11 @@ document.addEventListener('alpine:init', () => {
     },
 
     toggleVillage(id) {
-      if (this.selectedVillages.includes(id)) {
-        this.selectedVillages = this.selectedVillages.filter(i => i !== id);
+      const strId = String(id);
+      if (this.selectedVillages.includes(strId)) {
+        this.selectedVillages = this.selectedVillages.filter(i => i !== strId);
       } else {
-        this.selectedVillages = [...this.selectedVillages, id];
+        this.selectedVillages = [...this.selectedVillages, strId];
       }
     },
 
@@ -448,7 +449,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     get hasSelectedDeletedVillages() {
-      return this.selectedVillages.some(id => this.villages.find(v => v.id === id)?.deleted_at);
+      return this.selectedVillages.some(id => this.villages.find(v => String(v.id) === String(id))?.deleted_at);
     },
 
     async bulkAction(action) {
