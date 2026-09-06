@@ -46,7 +46,7 @@ class IndiaPostProvider implements ShippingProviderInterface
         if ($activeOffice) {
             $this->baseUrl = $activeOffice['api_base_url'] ?? config('shipping.providers.india_post.base_url');
             $this->username = $activeOffice['api_username'] ?? config('shipping.providers.india_post.username');
-            $this->password = !empty($activeOffice['api_password']) ? decrypt($activeOffice['api_password']) : config('shipping.providers.india_post.password');
+            $this->password = !empty($activeOffice['api_password']) ? decrypt($activeOffice['api_password'], false) : config('shipping.providers.india_post.password');
 
             config(['shipping.providers.india_post.bulk_customer_id' => $activeOffice['bulk_customer_id'] ?? config('shipping.providers.india_post.bulk_customer_id')]);
             config(['shipping.providers.india_post.contracts.SP_INLAND_DOC' => $activeOffice['contract_sp_doc'] ?? config('shipping.providers.india_post.contracts.SP_INLAND_DOC')]);
