@@ -156,7 +156,8 @@ class IndiaPostProvider implements ShippingProviderInterface
                 $maxHeight += ($product->height_cm ?: 10) * $item->quantity;
             }
         }
-        $totalWeightG = (int) max(10, $totalWeightG);
+        // Cap weight at 35000g (35kg) to respect India Post's maximum limit for BUSINESS_PARCEL
+        $totalWeightG = (int) min(35000, max(10, $totalWeightG));
 
         // Determine contract and article type based on order logic or default to SP
         // If your order model has a 'shipping_method' or similar, you could map it here.
