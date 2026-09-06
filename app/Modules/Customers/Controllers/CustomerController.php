@@ -78,7 +78,14 @@ class CustomerController extends Controller implements HasMiddleware
             ->when(! $isGlobalView, fn ($q) => $q->where('created_by', $user->id))
             ->when($lobStateName, function ($q) use ($lobStateName) {
                 // Filter by default address state for LOB-scoped users
-                $q->whereHas('addresses', fn ($a) => $a->where('state', $lobStateName)->where('is_default', true));
+                $q->whereExists(function ($query) use ($lobStateName) {
+                    $query->select(DB::raw(1))
+                          ->from('addresses')
+                          ->whereColumn('addresses.addressable_id', 'parties.id')
+                          ->where('addresses.addressable_type', \App\Modules\Customers\Models\Customer::class)
+                          ->where('addresses.state', $lobStateName)
+                          ->where('addresses.is_default', true);
+                });
             })
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())

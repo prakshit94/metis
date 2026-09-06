@@ -104,30 +104,27 @@ class PageController extends Controller
 
         // 1. Top Metrics
         $totalCustomers = (clone $customerQuery)->count();
-        $totalRevenue = (clone $orderQuery)->whereNotIn('status', ['cancelled'])
-            ->whereNotIn('status', ['future_order'])
-            ->whereDoesntHave('orderReturns', function ($q) {
-                $q->where('status', 'completed');
-            })->sum('net_amount');
-        $totalOrders = (clone $orderQuery)->count();
+
+        $orderStats = (clone $orderQuery)->toBase()
+            ->leftJoin(DB::raw('(SELECT DISTINCT order_id FROM order_returns WHERE status = "completed") as returns_sq'), 'orders.id', '=', 'returns_sq.order_id')
+            ->selectRaw('
+                COUNT(orders.id) as total_orders,
+                SUM(CASE WHEN orders.status NOT IN ("cancelled", "future_order") AND returns_sq.order_id IS NULL THEN orders.net_amount ELSE 0 END) as total_revenue,
+                SUM(CASE WHEN orders.status IN ("delivered", "completed") AND returns_sq.order_id IS NULL THEN 1 ELSE 0 END) as total_delivered,
+                SUM(CASE WHEN orders.status IN ("delivered", "completed") AND returns_sq.order_id IS NULL THEN orders.net_amount ELSE 0 END) as rev_delivered,
+                SUM(CASE WHEN returns_sq.order_id IS NOT NULL THEN 1 ELSE 0 END) as total_returned,
+                SUM(CASE WHEN returns_sq.order_id IS NOT NULL THEN orders.net_amount ELSE 0 END) as rev_returned
+            ')
+            ->first();
+
+        $totalOrders = (int) ($orderStats->total_orders ?? 0);
+        $totalRevenue = (float) ($orderStats->total_revenue ?? 0);
+        $totalDelivered = (int) ($orderStats->total_delivered ?? 0);
+        $revDelivered = (float) ($orderStats->rev_delivered ?? 0);
+        $totalReturned = (int) ($orderStats->total_returned ?? 0);
+        $revReturned = (float) ($orderStats->rev_returned ?? 0);
 
         $totalProducts = (int) OrderItem::whereIn('order_id', (clone $orderQuery)->select('id'))->sum('quantity');
-
-        // 1.5 Order Performance Metrics
-        $totalDelivered = (clone $orderQuery)->whereIn('status', ['delivered', 'completed'])
-            ->whereDoesntHave('orderReturns', function ($q) {
-                $q->where('status', 'completed');
-            })->count();
-        $totalReturned = (clone $orderQuery)->whereHas('orderReturns', function ($q) {
-            $q->where('status', 'completed');
-        })->count();
-        $revDelivered = (clone $orderQuery)->whereIn('status', ['delivered', 'completed'])
-            ->whereDoesntHave('orderReturns', function ($q) {
-                $q->where('status', 'completed');
-            })->sum('net_amount');
-        $revReturned = (clone $orderQuery)->whereHas('orderReturns', function ($q) {
-            $q->where('status', 'completed');
-        })->sum('net_amount');
 
         $deliveredPercent = $totalOrders > 0 ? round(($totalDelivered / $totalOrders) * 100) : 0;
         $returnedPercent = $totalOrders > 0 ? round(($totalReturned / $totalOrders) * 100) : 0;
@@ -436,29 +433,27 @@ class PageController extends Controller
             $totalPurchaseCount = $purchaseData->count ?? 0;
 
             // ── Inward / Outward Payment totals summary ───────────────────────
-            $inwardTotal = DB::table('payments')
+            $inwardTotals = DB::table('payments')
                 ->join('orders', 'payments.order_id', '=', 'orders.id')
                 ->where('orders.type', 'sale')
                 ->whereBetween('payments.payment_date', [$startStr, $endStr])
                 ->whereNull('payments.deleted_at')
-                ->selectRaw('SUM(CASE WHEN payments.status = "completed" THEN payments.amount ELSE 0 END) as completed,
-                             SUM(CASE WHEN payments.status = "pending" THEN payments.amount ELSE 0 END) as pending,
-                             COUNT(*) as count')
-                ->first();
+                ->selectRaw('payments.status, SUM(payments.amount) as amount')
+                ->groupBy('payments.status')
+                ->get();
 
-            $outwardTotal = DB::table('payments')
+            $outwardTotals = DB::table('payments')
                 ->join('orders', 'payments.order_id', '=', 'orders.id')
                 ->where('orders.type', 'purchase')
                 ->whereBetween('payments.payment_date', [$startStr, $endStr])
                 ->whereNull('payments.deleted_at')
-                ->selectRaw('SUM(CASE WHEN payments.status = "completed" THEN payments.amount ELSE 0 END) as completed,
-                             SUM(CASE WHEN payments.status = "pending" THEN payments.amount ELSE 0 END) as pending,
-                             COUNT(*) as count')
-                ->first();
+                ->selectRaw('payments.status, SUM(payments.amount) as amount')
+                ->groupBy('payments.status')
+                ->get();
 
             // ── KPI: Inward Payments & Outward Payments ───────────────────────
-            $inwardPayments = $inwardTotal->completed ?? 0;
-            $outwardPayments = $outwardTotal->completed ?? 0;
+            $inwardPayments = $inwardTotals->where('status', 'completed')->sum('amount');
+            $outwardPayments = $outwardTotals->where('status', 'completed')->sum('amount');
 
             // ── KPI: Sales Outstanding (unpaid/partial invoices on sale orders) ─
             $salesOutstandingData = DB::table('invoices')

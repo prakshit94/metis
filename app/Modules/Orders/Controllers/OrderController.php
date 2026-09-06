@@ -137,39 +137,45 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         if ($request->filled('fulfillment')) {
+            $stockSubquery = "(SELECT product_id, warehouse_id, SUM(quantity - reserved_qty) as available FROM stocks WHERE deleted_at IS NULL GROUP BY product_id, warehouse_id)";
+            
             if ($request->fulfillment === 'unfulfillable') {
                 $query->where('status', 'pending')
-                    ->whereHas('items', function ($q) {
-                        $q->whereRaw('quantity > (IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = order_items.product_id AND stocks.warehouse_id = orders.warehouse_id AND stocks.deleted_at IS NULL), 0))');
-                    });
+                    ->whereRaw("EXISTS (
+                        SELECT 1 FROM order_items 
+                        LEFT JOIN $stockSubquery s ON s.product_id = order_items.product_id AND s.warehouse_id = orders.warehouse_id
+                        WHERE order_items.order_id = orders.id 
+                        AND order_items.quantity > IFNULL(s.available, 0)
+                    )");
             } elseif ($request->fulfillment === 'fulfillable') {
-                $query->where(function ($query) {
+                $query->where(function ($query) use ($stockSubquery) {
                     $query->whereIn('status', ['confirmed', 'processing'])
-                        ->orWhere(function ($q) {
+                        ->orWhere(function ($q) use ($stockSubquery) {
                             $q->where('status', 'pending')
-                                ->whereDoesntHave('items', function ($iq) {
-                                    $iq->whereRaw('quantity > (IFNULL((SELECT SUM(quantity - reserved_qty) FROM stocks WHERE stocks.product_id = order_items.product_id AND stocks.warehouse_id = orders.warehouse_id AND stocks.deleted_at IS NULL), 0))');
-                                });
+                                ->whereRaw("NOT EXISTS (
+                                    SELECT 1 FROM order_items 
+                                    LEFT JOIN $stockSubquery s ON s.product_id = order_items.product_id AND s.warehouse_id = orders.warehouse_id
+                                    WHERE order_items.order_id = orders.id 
+                                    AND order_items.quantity > IFNULL(s.available, 0)
+                                )");
                         });
                 });
             }
         }
 
         if ($request->filled('state') || $request->filled('district') || $request->filled('taluka') || $request->filled('village')) {
-            $query->whereHas('shippingAddress.village', function ($q) use ($request) {
-                if ($request->filled('state')) {
-                    $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
-                }
-                if ($request->filled('district')) {
-                    $q->whereIn('district_name', array_map('trim', explode(',', $request->district)));
-                }
-                if ($request->filled('taluka')) {
-                    $q->whereIn('taluka_name', array_map('trim', explode(',', $request->taluka)));
-                }
-                if ($request->filled('village')) {
-                    $q->whereIn('village_name', array_map('trim', explode(',', $request->village)));
-                }
-            });
+            if ($request->filled('state')) {
+                $query->whereIn('shipping_state', array_map('trim', explode(',', $request->state)));
+            }
+            if ($request->filled('district')) {
+                $query->whereIn('shipping_district', array_map('trim', explode(',', $request->district)));
+            }
+            if ($request->filled('taluka')) {
+                $query->whereIn('shipping_taluka', array_map('trim', explode(',', $request->taluka)));
+            }
+            if ($request->filled('village')) {
+                $query->whereIn('shipping_village_name', array_map('trim', explode(',', $request->village)));
+            }
         }
 
         if ($request->filled('carrier')) {
@@ -196,130 +202,105 @@ class OrderController extends Controller implements HasMiddleware
         $statsQuery = clone $query;
         $statsVersion = Cache::get('order_stats_version', 0);
         $cacheKey = 'order_stats_'.$statsVersion.'_'.auth()->id().'_'.md5(json_encode($request->all()));
-        $counts = Cache::remember($cacheKey, 300, function () use ($statsQuery) {
+        $stats = Cache::remember($cacheKey, 300, function () use ($statsQuery) {
             $statsQuery->setEagerLoads([]);
+            $grouped = $statsQuery->select('status', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
+                ->groupBy('status')
+                ->toBase()
+                ->get();
+                
+            $returns = clone $statsQuery;
+            $returns = $returns->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                  ->from('order_returns')
+                  ->whereColumn('order_returns.order_id', 'orders.id')
+                  ->whereNotIn('order_returns.status', ['completed', 'rejected']);
+            })->select(DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))->toBase()->first();
 
-            return $statsQuery->select([
-                DB::raw('COUNT(*) as total'),
-                DB::raw('SUM(orders.net_amount) as total_amount'),
-                DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN 1 ELSE 0 END) as future_order"),
-                DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN orders.net_amount ELSE 0 END) as future_order_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN 1 ELSE 0 END) as pending"),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN orders.net_amount ELSE 0 END) as pending_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN 1 ELSE 0 END) as pending_confirmation"),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN orders.net_amount ELSE 0 END) as pending_confirmation_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN 1 ELSE 0 END) as confirmed"),
-                DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN orders.net_amount ELSE 0 END) as confirmed_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN 1 ELSE 0 END) as processing"),
-                DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN orders.net_amount ELSE 0 END) as processing_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN 1 ELSE 0 END) as ready_to_ship"),
-                DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN orders.net_amount ELSE 0 END) as ready_to_ship_amount"),
-                DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN 1 ELSE 0 END) as dispatched"),
-                DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN orders.net_amount ELSE 0 END) as dispatched_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN 1 ELSE 0 END) as delivered"),
-                DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN orders.net_amount ELSE 0 END) as delivered_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN 1 ELSE 0 END) as returned"),
-                DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN orders.net_amount ELSE 0 END) as returned_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'return_requested' THEN 1 ELSE 0 END) as return_requested"),
-                DB::raw("SUM(CASE WHEN orders.status = 'return_requested' THEN orders.net_amount ELSE 0 END) as return_requested_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled"),
-                DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN orders.net_amount ELSE 0 END) as cancelled_amount"),
-            ])->toBase()->first();
+            return [
+                'total' => (int) $grouped->sum('total'),
+                'total_amount' => (float) $grouped->sum('amount'),
+                'future_order' => (int) $grouped->where('status', 'future_order')->sum('total'),
+                'future_order_amount' => (float) $grouped->where('status', 'future_order')->sum('amount'),
+                'pending' => (int) $grouped->where('status', 'pending')->sum('total'),
+                'pending_amount' => (float) $grouped->where('status', 'pending')->sum('amount'),
+                'pending_confirmation' => (int) $grouped->where('status', 'pending_confirmation')->sum('total'),
+                'pending_confirmation_amount' => (float) $grouped->where('status', 'pending_confirmation')->sum('amount'),
+                'confirmed' => (int) $grouped->where('status', 'confirmed')->sum('total'),
+                'confirmed_amount' => (float) $grouped->where('status', 'confirmed')->sum('amount'),
+                'processing' => (int) $grouped->where('status', 'processing')->sum('total'),
+                'processing_amount' => (float) $grouped->where('status', 'processing')->sum('amount'),
+                'ready_to_ship' => (int) $grouped->where('status', 'ready_to_ship')->sum('total'),
+                'ready_to_ship_amount' => (float) $grouped->where('status', 'ready_to_ship')->sum('amount'),
+                'dispatched' => (int) $grouped->whereIn('status', ['dispatched', 'shipped'])->sum('total'),
+                'dispatched_amount' => (float) $grouped->whereIn('status', ['dispatched', 'shipped'])->sum('amount'),
+                'delivered' => (int) $grouped->where('status', 'delivered')->sum('total'),
+                'delivered_amount' => (float) $grouped->where('status', 'delivered')->sum('amount'),
+                'returned' => (int) $grouped->where('status', 'returned')->sum('total'),
+                'returned_amount' => (float) $grouped->where('status', 'returned')->sum('amount'),
+                'return_requested' => (int) ($returns->total ?? 0),
+                'return_requested_amount' => (float) ($returns->amount ?? 0),
+                'cancelled' => (int) $grouped->where('status', 'cancelled')->sum('total'),
+                'cancelled_amount' => (float) $grouped->where('status', 'cancelled')->sum('amount'),
+            ];
         });
-
-        $stats = [
-            'total' => (int) ($counts->total ?? 0),
-            'total_amount' => (float) ($counts->total_amount ?? 0),
-            'future_order' => (int) ($counts->future_order ?? 0),
-            'future_order_amount' => (float) ($counts->future_order_amount ?? 0),
-            'pending' => (int) ($counts->pending ?? 0),
-            'pending_amount' => (float) ($counts->pending_amount ?? 0),
-            'pending_confirmation' => (int) ($counts->pending_confirmation ?? 0),
-            'pending_confirmation_amount' => (float) ($counts->pending_confirmation_amount ?? 0),
-            'confirmed' => (int) ($counts->confirmed ?? 0),
-            'confirmed_amount' => (float) ($counts->confirmed_amount ?? 0),
-            'processing' => (int) ($counts->processing ?? 0),
-            'processing_amount' => (float) ($counts->processing_amount ?? 0),
-            'ready_to_ship' => (int) ($counts->ready_to_ship ?? 0),
-            'ready_to_ship_amount' => (float) ($counts->ready_to_ship_amount ?? 0),
-            'dispatched' => (int) ($counts->dispatched ?? 0),
-            'dispatched_amount' => (float) ($counts->dispatched_amount ?? 0),
-            'delivered' => (int) ($counts->delivered ?? 0),
-            'delivered_amount' => (float) ($counts->delivered_amount ?? 0),
-            'returned' => (int) ($counts->returned ?? 0),
-            'returned_amount' => (float) ($counts->returned_amount ?? 0),
-            'return_requested' => (int) ($counts->return_requested ?? 0),
-            'return_requested_amount' => (float) ($counts->return_requested_amount ?? 0),
-            'cancelled' => (int) ($counts->cancelled ?? 0),
-            'cancelled_amount' => (float) ($counts->cancelled_amount ?? 0),
-        ];
 
         // Warehouse Stats Query (Cached)
         $warehouseStatsQuery = clone $query;
         $warehouseStatsCacheKey = 'order_warehouse_stats_'.$statsVersion.'_'.auth()->id().'_'.md5(json_encode($request->all()));
         $warehouseStats = Cache::remember($warehouseStatsCacheKey, 300, function () use ($warehouseStatsQuery) {
-            // Remove with() eager loading to avoid issues with groupBy
             $warehouseStatsQuery->setEagerLoads([]);
-            $stats = $warehouseStatsQuery->select([
-                'warehouse_id',
-                DB::raw('COUNT(orders.id) as total'),
-                DB::raw('SUM(orders.net_amount) as total_amount'),
-                DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN 1 ELSE 0 END) as future_order"),
-                DB::raw("SUM(CASE WHEN orders.status = 'future_order' THEN orders.net_amount ELSE 0 END) as future_order_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN 1 ELSE 0 END) as pending"),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending' THEN orders.net_amount ELSE 0 END) as pending_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN 1 ELSE 0 END) as pending_confirmation"),
-                DB::raw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN orders.net_amount ELSE 0 END) as pending_confirmation_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN 1 ELSE 0 END) as confirmed"),
-                DB::raw("SUM(CASE WHEN orders.status = 'confirmed' THEN orders.net_amount ELSE 0 END) as confirmed_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN 1 ELSE 0 END) as processing"),
-                DB::raw("SUM(CASE WHEN orders.status = 'processing' THEN orders.net_amount ELSE 0 END) as processing_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN 1 ELSE 0 END) as ready_to_ship"),
-                DB::raw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN orders.net_amount ELSE 0 END) as ready_to_ship_amount"),
-                DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN 1 ELSE 0 END) as dispatched"),
-                DB::raw("SUM(CASE WHEN orders.status IN ('dispatched', 'shipped') THEN orders.net_amount ELSE 0 END) as dispatched_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN 1 ELSE 0 END) as delivered"),
-                DB::raw("SUM(CASE WHEN orders.status = 'delivered' THEN orders.net_amount ELSE 0 END) as delivered_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled"),
-                DB::raw("SUM(CASE WHEN orders.status = 'cancelled' THEN orders.net_amount ELSE 0 END) as cancelled_amount"),
-                DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN 1 ELSE 0 END) as returned"),
-                DB::raw("SUM(CASE WHEN orders.status = 'returned' THEN orders.net_amount ELSE 0 END) as returned_amount"),
-                DB::raw("SUM(CASE WHEN EXISTS(SELECT 1 FROM order_returns WHERE order_returns.order_id = orders.id AND order_returns.status NOT IN ('completed', 'rejected')) THEN 1 ELSE 0 END) as return_requested"),
-                DB::raw("SUM(CASE WHEN EXISTS(SELECT 1 FROM order_returns WHERE order_returns.order_id = orders.id AND order_returns.status NOT IN ('completed', 'rejected')) THEN orders.net_amount ELSE 0 END) as return_requested_amount"),
-            ])
-                ->groupBy('warehouse_id')
+            $grouped = $warehouseStatsQuery->select('warehouse_id', 'status', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
+                ->groupBy('warehouse_id', 'status')
                 ->toBase()
                 ->get();
+                
+            $returnsQuery = clone $warehouseStatsQuery;
+            $returnsGrouped = $returnsQuery->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                  ->from('order_returns')
+                  ->whereColumn('order_returns.order_id', 'orders.id')
+                  ->whereNotIn('order_returns.status', ['completed', 'rejected']);
+            })->select('warehouse_id', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
+              ->groupBy('warehouse_id')
+              ->toBase()
+              ->get()
+              ->keyBy('warehouse_id');
 
             $warehouses = Warehouse::pluck('name', 'id')->toArray();
+            
+            $warehouseIds = $grouped->pluck('warehouse_id')->merge($returnsGrouped->keys())->unique();
 
-            return $stats->map(function ($item) use ($warehouses) {
+            return $warehouseIds->map(function ($warehouseId) use ($warehouses, $grouped, $returnsGrouped) {
+                $whGroup = $grouped->where('warehouse_id', $warehouseId);
+                $retGrp = $returnsGrouped->get($warehouseId);
+                
                 return [
-                    'name' => $warehouses[$item->warehouse_id] ?? 'Unassigned',
-                    'total' => (int) $item->total,
-                    'total_amount' => (float) $item->total_amount,
-                    'pending' => (int) $item->pending,
-                    'pending_amount' => (float) $item->pending_amount,
-                    'pending_confirmation' => (int) $item->pending_confirmation,
-                    'pending_confirmation_amount' => (float) $item->pending_confirmation_amount,
-                    'confirmed' => (int) $item->confirmed,
-                    'confirmed_amount' => (float) $item->confirmed_amount,
-                    'processing' => (int) $item->processing,
-                    'processing_amount' => (float) $item->processing_amount,
-                    'ready_to_ship' => (int) $item->ready_to_ship,
-                    'ready_to_ship_amount' => (float) $item->ready_to_ship_amount,
-                    'dispatched' => (int) $item->dispatched,
-                    'dispatched_amount' => (float) $item->dispatched_amount,
-                    'delivered' => (int) $item->delivered,
-                    'delivered_amount' => (float) $item->delivered_amount,
-                    'cancelled' => (int) $item->cancelled,
-                    'cancelled_amount' => (float) $item->cancelled_amount,
-                    'returned' => (int) $item->returned,
-                    'returned_amount' => (float) $item->returned_amount,
-                    'return_requested' => (int) $item->return_requested,
-                    'return_requested_amount' => (float) $item->return_requested_amount,
+                    'name' => $warehouses[$warehouseId] ?? 'Unassigned',
+                    'total' => (int) $whGroup->sum('total'),
+                    'total_amount' => (float) $whGroup->sum('amount'),
+                    'pending' => (int) $whGroup->where('status', 'pending')->sum('total'),
+                    'pending_amount' => (float) $whGroup->where('status', 'pending')->sum('amount'),
+                    'pending_confirmation' => (int) $whGroup->where('status', 'pending_confirmation')->sum('total'),
+                    'pending_confirmation_amount' => (float) $whGroup->where('status', 'pending_confirmation')->sum('amount'),
+                    'confirmed' => (int) $whGroup->where('status', 'confirmed')->sum('total'),
+                    'confirmed_amount' => (float) $whGroup->where('status', 'confirmed')->sum('amount'),
+                    'processing' => (int) $whGroup->where('status', 'processing')->sum('total'),
+                    'processing_amount' => (float) $whGroup->where('status', 'processing')->sum('amount'),
+                    'ready_to_ship' => (int) $whGroup->where('status', 'ready_to_ship')->sum('total'),
+                    'ready_to_ship_amount' => (float) $whGroup->where('status', 'ready_to_ship')->sum('amount'),
+                    'dispatched' => (int) $whGroup->whereIn('status', ['dispatched', 'shipped'])->sum('total'),
+                    'dispatched_amount' => (float) $whGroup->whereIn('status', ['dispatched', 'shipped'])->sum('amount'),
+                    'delivered' => (int) $whGroup->where('status', 'delivered')->sum('total'),
+                    'delivered_amount' => (float) $whGroup->where('status', 'delivered')->sum('amount'),
+                    'cancelled' => (int) $whGroup->where('status', 'cancelled')->sum('total'),
+                    'cancelled_amount' => (float) $whGroup->where('status', 'cancelled')->sum('amount'),
+                    'returned' => (int) $whGroup->where('status', 'returned')->sum('total'),
+                    'returned_amount' => (float) $whGroup->where('status', 'returned')->sum('amount'),
+                    'return_requested' => (int) ($retGrp->total ?? 0),
+                    'return_requested_amount' => (float) ($retGrp->amount ?? 0),
                 ];
-            });
+            })->values();
         });
 
         $sortField = $request->input('sort_field', 'id');

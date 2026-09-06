@@ -87,6 +87,8 @@ return new class extends Migration
             // Optimization for high data load
             $table->index('created_at');
             $table->index(['status', 'created_at']);
+            $table->index('order_date');
+            $table->index('shipping_state');
         });
 
         Schema::create('order_items', function (Blueprint $table) {
