@@ -284,10 +284,14 @@ class VillageController extends Controller implements HasMiddleware
         }
 
         \Illuminate\Support\Facades\Log::info("SYNC DEBUG:", [
-            'pincodesToSync' => $pincodesToSync,
+            'pincodesToSync' => count($pincodesToSync),
             'null_office_id' => Village::whereNull('office_id')->count(),
             'empty_office_type' => Village::where('office_type_code', '')->count(),
             'invalid_count' => Village::whereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR'])->count(),
+            'total_villages' => Village::count(),
+            'trashed_villages' => Village::onlyTrashed()->count(),
+            'total_unfiltered' => Village::withoutGlobalScopes()->count(),
+            'sample_villages' => Village::limit(5)->get(['id', 'pincode', 'office_id', 'office_type_code'])->toArray(),
         ]);
 
         $syncedCount = 0;
