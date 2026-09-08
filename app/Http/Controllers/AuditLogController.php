@@ -203,10 +203,17 @@ class AuditLogController extends Controller implements HasMiddleware
         );
 
         $user = auth()->user();
-        $activities = Activity::with(['causer', 'subject'])->latest()->limit(15)->get();
+        $activities = Activity::with(['causer', 'subject'])->latest()->limit(50)->get();
         $readIds = $user ? $user->readActivities()->whereIn('activity_id', $activities->pluck('id'))->pluck('activity_id')->toArray() : [];
 
-        $unreadCount = $activities->whereNotIn('id', $readIds)->count();
+        $unreadCount = 0;
+        if ($user) {
+            $unreadCount = Activity::whereNotIn('id', function($query) use ($user) {
+                $query->select('activity_id')
+                      ->from('user_read_activities')
+                      ->where('user_id', $user->id);
+            })->count();
+        }
 
         return response()->json([
             'count' => $unreadCount,

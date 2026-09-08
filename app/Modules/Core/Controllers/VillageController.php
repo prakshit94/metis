@@ -411,6 +411,9 @@ class VillageController extends Controller implements HasMiddleware
             }
         }
 
+        \Illuminate\Support\Facades\Cache::forget('syncing_indiapost_pincodes');
+        \Illuminate\Support\Facades\Cache::forget('syncing_indiapost_pincodes_query');
+
         return response()->json([
             'success' => true,
             'message' => "Synced $syncedCount offices from India Post.",

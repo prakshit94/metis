@@ -428,6 +428,7 @@
                             <th>District</th>
                             <th>State</th>
                             <th>Office Info</th>
+                            <th>Timestamps</th>
                             <th>Mapped Services</th>
                             <th style="width: 80px;"></th>
                         </tr>
@@ -463,6 +464,7 @@
                                     <div>
                                         <span class="fw-semibold text-body" x-text="v.village_name"></span>
                                         <span class="badge bg-danger-subtle text-danger ms-1 small" x-show="v.deleted_at">Deleted</span>
+                                        <div class="text-muted small" x-show="v.normalized_name" x-text="'Norm: ' + v.normalized_name"></div>
                                     </div>
                                 </td>
                                 <td x-text="v.pincode"></td>
@@ -475,6 +477,12 @@
                                         <span x-show="v.office_type_code" class="badge bg-secondary w-auto align-self-start" x-text="v.office_type_code"></span>
                                         <span x-show="v.delivery_office_flag" class="badge bg-info text-dark w-auto align-self-start">Delivery</span>
                                         <span x-show="!v.office_type_code && !v.delivery_office_flag" class="text-muted small">—</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="small text-muted" style="white-space:nowrap;">
+                                        <div><i class="bi bi-calendar-plus me-1"></i><span x-text="v.created_at ? new Date(v.created_at).toLocaleString('en-IN', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'"></span></div>
+                                        <div><i class="bi bi-pencil-square me-1"></i><span x-text="v.updated_at ? new Date(v.updated_at).toLocaleString('en-IN', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'"></span></div>
                                     </div>
                                 </td>
                                 <td>
@@ -536,6 +544,9 @@
                 <nav>
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
+                            <a class="page-link" href="#" @click.prevent="goToPage(1)"><i class="bi bi-chevron-double-left"></i></a>
+                        </li>
+                        <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
                             <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">Previous</a>
                         </li>
                         <template x-for="(page, index) in visiblePages" :key="`${page}-${index}`">
@@ -545,6 +556,9 @@
                         </template>
                         <li class="page-item" :class="{ 'disabled': currentPage === totalPages }">
                             <a class="page-link" href="#" @click.prevent="goToPage(currentPage + 1)">Next</a>
+                        </li>
+                        <li class="page-item" :class="{ 'disabled': currentPage === totalPages }">
+                            <a class="page-link" href="#" @click.prevent="goToPage(totalPages)"><i class="bi bi-chevron-double-right"></i></a>
                         </li>
                     </ul>
                 </nav>

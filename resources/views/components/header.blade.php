@@ -439,7 +439,7 @@
                 @endif
 
 @php
-    $initialActivities = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->latest()->limit(10)->get()->map(function($a) {
+    $initialActivities = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->latest()->limit(50)->get()->map(function($a) {
         return [
             'id' => $a->id,
             'formatted_description' => \App\Http\Controllers\AuditLogController::formatActivityDescription($a),
@@ -449,7 +449,14 @@
             'is_read' => auth()->check() ? in_array($a->id, auth()->user()->readActivities()->pluck('activity_id')->toArray()) : false,
         ];
     });
-    $initialUnreadCount = $initialActivities->where('is_read', false)->count();
+    $initialUnreadCount = 0;
+    if (auth()->check()) {
+        $initialUnreadCount = \Spatie\Activitylog\Models\Activity::whereNotIn('id', function($query) {
+            $query->select('activity_id')
+                  ->from('user_read_activities')
+                  ->where('user_id', auth()->id());
+        })->count();
+    }
 
     // -- Alerts Logic --
     $systemAlerts = collect();
