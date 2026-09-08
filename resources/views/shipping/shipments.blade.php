@@ -497,24 +497,31 @@
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2 mb-2">
-                                        <div class="bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                                        <div class="bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
                                             <i class="bi bi-truck" style="font-size: 0.9rem;"></i>
                                         </div>
                                         <div class="fw-bold text-body-emphasis" style="font-size: 0.85rem;" x-text="item.carrier_name || '-'"></div>
                                     </div>
-                                    <template x-if="item.actual_weight_g || item.shipping_cost">
-                                        <div class="d-flex flex-column gap-1 mb-2 text-muted small lh-sm">
-                                            <template x-if="item.actual_weight_g">
-                                                <span><i class="bi bi-box-seam me-1"></i> <span x-text="(item.actual_weight_g / 1000).toFixed(2) + ' kg'"></span><template x-if="item.length_cm"> (<span x-text="item.length_cm + 'x' + item.width_cm + 'x' + item.height_cm + 'cm'"></span>)</template></span>
-                                            </template>
-                                            <template x-if="item.shipping_cost">
-                                                <span><i class="bi bi-currency-rupee me-1"></i> Cost: <span x-text="item.shipping_cost"></span></span>
-                                            </template>
-                                            <template x-if="item.article_type || (item.provider_response && item.provider_response.article_type)">
-                                                <span><i class="bi bi-tag me-1"></i> Type: <span x-text="item.article_type || item.provider_response.article_type"></span></span>
-                                            </template>
-                                        </div>
-                                    </template>
+                                    <div class="d-flex flex-wrap gap-2 mb-2">
+                                        <template x-if="item.article_type || (item.provider_response && item.provider_response.article_type)">
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis fw-medium border border-secondary-subtle shadow-sm">
+                                                <i class="bi bi-tag-fill me-1 opacity-75"></i><span x-text="item.article_type || item.provider_response.article_type"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="item.actual_weight_g">
+                                            <span class="badge bg-info-subtle text-info-emphasis fw-medium border border-info-subtle shadow-sm">
+                                                <i class="bi bi-box-seam me-1"></i><span x-text="(item.actual_weight_g / 1000).toFixed(2) + ' kg'"></span>
+                                                <template x-if="item.length_cm">
+                                                    <span class="ms-1 opacity-75 fw-normal" x-text="'(' + item.length_cm + 'x' + item.width_cm + 'x' + item.height_cm + 'cm)'"></span>
+                                                </template>
+                                            </span>
+                                        </template>
+                                        <template x-if="item.shipping_cost">
+                                            <span class="badge bg-success-subtle text-success-emphasis fw-bold border border-success-subtle shadow-sm" style="font-size: 0.8rem;">
+                                                <i class="bi bi-currency-rupee"></i><span x-text="item.shipping_cost"></span>
+                                            </span>
+                                        </template>
+                                    </div>
                                     <template x-if="item.service && item.service.providers?.length">
                                         <div class="d-flex flex-column gap-1 border-top pt-2 border-secondary-subtle">
                                             <span class="small text-muted fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px; text-transform: uppercase;">Support Persons</span>
