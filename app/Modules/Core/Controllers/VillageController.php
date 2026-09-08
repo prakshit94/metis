@@ -276,13 +276,23 @@ class VillageController extends Controller implements HasMiddleware
         if ($pincode) {
             $pincodesToSync[] = $pincode;
         } else {
-            $pincodesToSync = Village::select('pincode')->distinct()->pluck('pincode')->toArray();
+            $pincodesToSync = Village::whereNull('office_type_code')->select('pincode')->distinct()->pluck('pincode')->toArray();
         }
 
         $syncedCount = 0;
         $errors = [];
+        $startTime = time();
 
         foreach ($pincodesToSync as $code) {
+            // Stop processing after 20 seconds to prevent the 30s max execution time fatal error in PHP
+            if (time() - $startTime > 20) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Synced $syncedCount offices from India Post. (Sync is large, stopped to prevent timeout. Please click Sync again to continue.)",
+                    'errors' => $errors
+                ]);
+            }
+
             try {
                 if (method_exists($indiaPostProvider, 'getPincodeDetails')) {
                     $details = $indiaPostProvider->getPincodeDetails((string)$code);
@@ -308,15 +318,20 @@ class VillageController extends Controller implements HasMiddleware
                     }
                 }
                 
+                $hasValidData = false;
                 if (is_array($details) && count($details) > 0) {
                     foreach ($details as $office) {
+                        // Ensure we are dealing with an array, not a boolean/string from an error JSON object like {"status": 404}
+                        if (!is_array($office)) continue;
+
+                        $hasValidData = true;
                         $villageName = !empty($office['village_name']) && $office['village_name'] !== 'Choose an option' 
                             ? $office['village_name'] 
-                            : $office['office_name'];
+                            : ($office['office_name'] ?? 'Unknown');
                             
                         Village::updateOrCreate(
                             [
-                                'pincode' => $office['pincode'],
+                                'pincode' => $office['pincode'] ?? $code,
                                 'office_id' => $office['office_id'] ?? null,
                             ],
                             [
@@ -333,6 +348,12 @@ class VillageController extends Controller implements HasMiddleware
                         $syncedCount++;
                     }
                 }
+
+                // Mark pincodes that returned no valid offices so we don't retry them infinitely
+                if (!$hasValidData) {
+                    Village::where('pincode', $code)->whereNull('office_type_code')->update(['office_type_code' => 'INVALID']);
+                }
+
             } catch (\Exception $e) {
                 Log::error("Failed to sync India Post pincode {$code}: " . $e->getMessage());
                 $errors[] = $code;
