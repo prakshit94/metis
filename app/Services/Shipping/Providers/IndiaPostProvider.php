@@ -20,8 +20,7 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     public function __construct()
     {
-        static $settings = null;
-        $settings ??= SystemSetting::where('key', 'india_post_offices')->pluck('value', 'key');
+        $settings = SystemSetting::where('key', 'india_post_offices')->pluck('value', 'key');
 
         $offices = isset($settings['india_post_offices']) ? json_decode($settings['india_post_offices'], true) : [];
         if (!is_array($offices)) {
@@ -430,6 +429,7 @@ class IndiaPostProvider implements ShippingProviderInterface
         }
 
         $this->updateBarcodeSequence((string) $nextSequence);
+        config(['shipping.providers.india_post.barcode_current' => (string) $nextSequence]);
 
         return $barcode;
     }
