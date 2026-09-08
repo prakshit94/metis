@@ -276,7 +276,9 @@ class VillageController extends Controller implements HasMiddleware
         if ($pincode) {
             $pincodesToSync[] = $pincode;
         } else {
-            $pincodesToSync = Village::whereNull('office_type_code')->select('pincode')->distinct()->pluck('pincode')->toArray();
+            $pincodesToSync = Village::whereNull('office_type_code')
+                ->orWhere('office_type_code', 'INVALID')
+                ->select('pincode')->distinct()->pluck('pincode')->toArray();
         }
 
         $syncedCount = 0;
@@ -301,13 +303,11 @@ class VillageController extends Controller implements HasMiddleware
                     $token = $indiaPostProvider->authenticate();
                     $settings = \App\Models\SystemSetting::where('key', 'like', 'india_post_%')->pluck('value', 'key');
                     $baseUrl = $settings['india_post_base_url'] ?? config('shipping.providers.india_post.base_url');
-                    $baseUrl = str_replace('beextcustomer', 'bemasterdata', $baseUrl);
                     
                     $response = \Illuminate\Support\Facades\Http::withToken($token)
                         ->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])
-                        ->get("{$baseUrl}/v1/offices/limited-details", [
+                        ->get("{$baseUrl}/v1/pincode-search", [
                             'pincode' => (string)$code,
-                            'limit' => 50,
                             'office-type' => 'post',
                         ]);
                         
@@ -351,7 +351,11 @@ class VillageController extends Controller implements HasMiddleware
 
                 // Mark pincodes that returned no valid offices so we don't retry them infinitely
                 if (!$hasValidData) {
-                    Village::where('pincode', $code)->whereNull('office_type_code')->update(['office_type_code' => 'INVALID']);
+                    Village::where('pincode', $code)
+                           ->where(function($q) {
+                               $q->whereNull('office_type_code')->orWhere('office_type_code', 'INVALID');
+                           })
+                           ->update(['office_type_code' => 'FAILED']);
                 }
 
             } catch (\Exception $e) {
