@@ -233,8 +233,8 @@ class IndiaPostProvider implements ShippingProviderInterface
         $payload = [
             'articles' => [
                 [
-                    'bulk_customer_id' => (int) $customId,
-                    'contract_id' => (int) $contractId,
+                    'bulk_customer_id' => (string) $customId,
+                    'contract_id' => (string) $contractId,
                     'barcode_no' => $this->generateBarcode(),
                     'pickup_or_dropoff' => 'DROPOFF',
                     'pickup_dropoff_office_id' => (int) config('shipping.providers.india_post.pickup_dropoff_office_id'),
