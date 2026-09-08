@@ -31,7 +31,7 @@ class AuditLogController extends Controller implements HasMiddleware
         // We will pass the data as JSON if it's an AJAX request (for Alpine) or standard Blade.
 
         if ($request->wantsJson()) {
-            $query = Audit::with('user')->latest();
+            $query = Audit::with(['user', 'auditable'])->latest();
 
             if ($request->filled('search')) {
                 $search = $request->search;

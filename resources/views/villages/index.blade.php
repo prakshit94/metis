@@ -787,4 +787,8 @@
 
 @push('scripts')
 <!-- Loaded via main.js or separate scripts -->
+<script>
+    window.backendSyncing = @json(\Illuminate\Support\Facades\Cache::has('syncing_indiapost_pincodes'));
+    window.backendSyncQuery = @json(\Illuminate\Support\Facades\Cache::get('syncing_indiapost_pincodes_query', 'ALL'));
+</script>
 @endpush

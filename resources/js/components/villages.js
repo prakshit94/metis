@@ -227,6 +227,11 @@ document.addEventListener('alpine:init', () => {
       this.loadServicesOptions();
       this.loadVillages();
       window.addEventListener('village-updated', () => this.loadVillages());
+      
+      if (window.backendSyncing) {
+          if (window.backendSyncQuery !== 'ALL') this.searchQuery = window.backendSyncQuery;
+          setTimeout(() => this.syncPincodes(), 500);
+      }
     },
 
     async loadServicesOptions() {
@@ -608,6 +613,8 @@ document.addEventListener('alpine:init', () => {
             const res = await apiFetch(url, { method: 'POST' });
             
             if (this.stopSyncing) {
+                // Send stop command to backend
+                await apiFetch('/api/villages/sync-indiapost?action=stop', { method: 'POST' });
                 showToast('Sync stopped by user.', 'info');
                 break;
             }

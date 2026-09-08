@@ -81,7 +81,7 @@ class IndiaPostProvider implements ShippingProviderInterface
     }
     protected function httpClient()
     {
-        $client = Http::withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]]);
+        $client = Http::withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])->timeout(30);
         
         if (app()->environment('local', 'staging', 'testing')) {
             $client = $client->withoutVerifying();
@@ -115,14 +115,39 @@ class IndiaPostProvider implements ShippingProviderInterface
             return Cache::remember($cacheKey, now()->addMinutes(14), $fetchToken);
         }
     }
+    protected function apiRequest(string $method, string $url, array $data = [], array $options = [])
+    {
+        $token = $this->authenticate();
+        $client = $this->httpClient()->withToken($token);
+
+        if (isset($options['file_path'])) {
+            $client->attach('file', file_get_contents($options['file_path']), basename($options['file_path']));
+        }
+
+        $response = $method === 'get' ? $client->get($url, $data) : $client->post($url, $data);
+
+        // Auto-refresh token if expired (401 Unauthorized)
+        if ($response->status() === 401 || $response->status() === 403) {
+            \Illuminate\Support\Facades\Cache::forget('india_post_access_token');
+            $token = $this->authenticate();
+            $client = $this->httpClient()->withToken($token);
+            
+            if (isset($options['file_path'])) {
+                $client->attach('file', file_get_contents($options['file_path']), basename($options['file_path']));
+            }
+            
+            $response = $method === 'get' ? $client->get($url, $data) : $client->post($url, $data);
+        }
+
+        return $response;
+    }
+
 
     public function getPincodeDetails(string $pincode, string $officeType = 'post'): array
     {
-        $token = $this->authenticate();
-
         $baseUrl = str_replace('beextcustomer', 'bemasterdata', $this->baseUrl);
 
-        $response = $this->httpClient()->withToken($token)->get("{$baseUrl}/v1/offices/limited-details", [
+        $response = $this->apiRequest('get', "{$baseUrl}/v1/offices/limited-details", [
             'pincode' => $pincode,
             'limit' => 50,
             'office-type' => $officeType,
@@ -169,7 +194,6 @@ class IndiaPostProvider implements ShippingProviderInterface
         // Prevent N+1 issues when gathering details
         $order->loadMissing(['items.product', 'warehouse', 'party']);
 
-        $token = $this->authenticate();
         $customId = config('shipping.providers.india_post.bulk_customer_id');
 
         $totalWeightG = 0;
@@ -269,8 +293,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             ],
         ];
 
-        $response = $this->httpClient()->withToken($token)
-            ->post("{$this->baseUrl}/process-articles/{$customId}", $payload);
+        $response = $this->apiRequest('post', "{$this->baseUrl}/process-articles/{$customId}", $payload);
 
         if ($response->successful() && $response->json('success')) {
             $validArticles = $response->json('valid_articles');
@@ -294,7 +317,6 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     public function createShipmentBatch(string $filePath): array
     {
-        $token = $this->authenticate();
         $customId = config('shipping.providers.india_post.bulk_customer_id');
 
         $response = $this->httpClient()->withToken($token)

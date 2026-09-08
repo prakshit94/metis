@@ -270,7 +270,15 @@ class VillageController extends Controller implements HasMiddleware
      */
     public function syncIndiaPostPincodes(Request $request, IndiaPostProvider $indiaPostProvider): JsonResponse
     {
+        if ($request->input('action') === 'stop') {
+            \Illuminate\Support\Facades\Cache::forget('syncing_indiapost_pincodes');
+            \Illuminate\Support\Facades\Cache::forget('syncing_indiapost_pincodes_query');
+            return response()->json(['success' => true, 'message' => 'Sync stopped successfully.']);
+        }
+
         $pincode = $request->input('pincode');
+        \Illuminate\Support\Facades\Cache::put('syncing_indiapost_pincodes', true, now()->addMinutes(15));
+        \Illuminate\Support\Facades\Cache::put('syncing_indiapost_pincodes_query', $pincode ?: 'ALL', now()->addMinutes(15));
         
         $pincodesToSync = [];
         if ($pincode) {
