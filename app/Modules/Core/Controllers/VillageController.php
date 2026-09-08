@@ -284,7 +284,29 @@ class VillageController extends Controller implements HasMiddleware
 
         foreach ($pincodesToSync as $code) {
             try {
-                $details = $indiaPostProvider->getPincodeDetails((string)$code);
+                if (method_exists($indiaPostProvider, 'getPincodeDetails')) {
+                    $details = $indiaPostProvider->getPincodeDetails((string)$code);
+                } else {
+                    // Fallback for production deployment caches (OPcache/workers) where the new method isn't loaded into memory yet
+                    $token = $indiaPostProvider->authenticate();
+                    $settings = \App\Models\SystemSetting::where('key', 'like', 'india_post_%')->pluck('value', 'key');
+                    $baseUrl = $settings['india_post_base_url'] ?? config('shipping.providers.india_post.base_url');
+                    $baseUrl = str_replace('beextcustomer', 'bemasterdata', $baseUrl);
+                    
+                    $response = \Illuminate\Support\Facades\Http::withToken($token)
+                        ->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])
+                        ->get("{$baseUrl}/v1/offices/limited-details", [
+                            'pincode' => (string)$code,
+                            'limit' => 50,
+                            'office-type' => 'post',
+                        ]);
+                        
+                    if ($response->successful()) {
+                        $details = $response->json();
+                    } else {
+                        throw new \Exception('Failed to fetch pincode details: '.$response->body());
+                    }
+                }
                 
                 if (is_array($details) && count($details) > 0) {
                     foreach ($details as $office) {
