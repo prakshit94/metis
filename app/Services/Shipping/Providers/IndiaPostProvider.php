@@ -166,6 +166,9 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     public function createShipment(Order $order): array
     {
+        // Prevent N+1 issues when gathering details
+        $order->loadMissing(['items.product', 'warehouse', 'party']);
+
         $token = $this->authenticate();
         $customId = config('shipping.providers.india_post.bulk_customer_id');
 
