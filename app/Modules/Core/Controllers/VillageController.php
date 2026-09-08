@@ -277,7 +277,7 @@ class VillageController extends Controller implements HasMiddleware
             $pincodesToSync[] = $pincode;
         } else {
             $pincodesToSync = Village::whereNull('office_type_code')
-                ->orWhere('office_type_code', 'INVALID')
+                ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR'])
                 ->select('pincode')->distinct()->pluck('pincode')->toArray();
         }
 
@@ -359,7 +359,12 @@ class VillageController extends Controller implements HasMiddleware
                 }
 
             } catch (\Exception $e) {
-                Log::error("Failed to sync India Post pincode {$code}: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error("Failed to sync India Post pincode {$code}: " . $e->getMessage());
+                Village::where('pincode', $code)
+                       ->where(function($q) {
+                           $q->whereNull('office_type_code')->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR']);
+                       })
+                       ->update(['office_type_code' => 'API_ERROR']);
                 $errors[] = $code;
                 
                 // If it's a connection/authentication error (like IP not whitelisted or timeout), 
