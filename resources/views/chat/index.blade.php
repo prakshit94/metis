@@ -447,7 +447,10 @@
                         </select>
                     </div>
                     <div class="mb-1">
-                        <label class="form-label fw-bold small text-uppercase text-muted">Add Members</label>
+                        <div class="d-flex justify-content-between align-items-end mb-2">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-0">Add Members</label>
+                            <button type="button" class="btn btn-sm btn-link text-decoration-none p-0" @click="groupForm.member_ids.length === filteredGroupUsers.length ? groupForm.member_ids = [] : groupForm.member_ids = filteredGroupUsers.map(u => u.id)" x-text="groupForm.member_ids.length === filteredGroupUsers.length && filteredGroupUsers.length > 0 ? 'Deselect All' : 'Select All'"></button>
+                        </div>
                         <input x-model="groupCreateSearch" type="search" class="form-control form-control-sm mb-2" placeholder="Search users...">
                         <div class="border rounded p-2 overflow-y-auto" style="max-height: 180px;">
                             <template x-for="user in filteredGroupUsers" :key="user.id">

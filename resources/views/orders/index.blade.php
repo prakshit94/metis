@@ -999,7 +999,7 @@
                             <td class="fw-medium small" x-text="`₹ ${order.total}`"></td>
                             <td>
                                 <span class="badge small" 
-                                      :class="`text-bg-${getStatusTheme(order.status)}`"
+                                      :class="`bg-${getStatusTheme(order.status)}-subtle text-${getStatusTheme(order.status)}-emphasis border border-${getStatusTheme(order.status)}-subtle`"
                                       x-text="order.statusLabel"></span>
                                 <template x-if="order.status === 'pending_confirmation' && order.scheduledConfirmDate">
                                     <div class="mt-1" style="font-size: 0.7rem;">

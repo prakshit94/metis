@@ -84,7 +84,7 @@
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
-                                        <h6 class="text-muted mb-1">Total Customers</h6>
+                                        <h6 class="text-muted mb-1">New Customers</h6>
                                         <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()">{{ number_format($totalCustomers) }}</span></div>
                                         <small class="trend-up">
                                             <i class="bi bi-arrow-up"></i> +12.5% from last month
@@ -136,13 +136,17 @@
                         </div>
                     </div>
 
-                    <div class="col-xl-3 col-lg-6" x-data="statsCounter({{ $totalProducts }}, 5)">
+                    <div class="col-xl-3 col-lg-6">
                         <div class="card metric-card bounce">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
-                                        <h6 class="text-muted mb-1">Total Products</h6>
-                                        <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()">{{ number_format($totalProducts) }}</span></div>
+                                        <h6 class="text-muted mb-1">Variants / Qty Sold</h6>
+                                        <div class="h3 mb-0" aria-live="polite">
+                                            <span x-data="statsCounter({{ $totalVariants }}, 5)" x-text="value.toLocaleString()">{{ number_format($totalVariants) }}</span>
+                                            <span class="text-muted fs-5 fw-normal mx-1">/</span>
+                                            <span x-data="statsCounter({{ $totalProducts }}, 5)" x-text="value.toLocaleString()">{{ number_format($totalProducts) }}</span>
+                                        </div>
                                         <small class="trend-up">
                                             <i class="bi bi-arrow-up"></i> +5.4% from last month
                                         </small>

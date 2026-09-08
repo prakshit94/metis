@@ -137,6 +137,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     // Order Returns
     Route::get('returns', [OrderReturnController::class, 'index'])->name('returns.index');
     Route::post('orders/{order}/returns', [OrderReturnController::class, 'store'])->name('orders.returns.store');
+    Route::post('returns/{return}/approve', [OrderReturnController::class, 'approve'])->name('returns.approve');
+    Route::post('returns/{return}/cancel', [OrderReturnController::class, 'cancel'])->name('returns.cancel');
 
     // Order Complaints
     Route::get('complaints', [OrderComplaintController::class, 'index'])->name('complaints.index');

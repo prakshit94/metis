@@ -217,11 +217,73 @@ class OrderReturnController extends Controller implements HasMiddleware
         return response()->json(['return' => $return]);
     }
 
+    public function approve(OrderReturn $return)
+    {
+        abort_unless(auth()->user()->can('orders.return'), 403);
+
+        if ($return->status !== 'pending') {
+            return response()->json(['message' => 'Only pending returns can be approved.'], 422);
+        }
+
+        $return->update(['status' => 'approved']);
+
+        return response()->json(['success' => true, 'message' => 'Return approved successfully.']);
+    }
+
+    public function cancel(OrderReturn $return)
+    {
+        abort_unless(auth()->user()->can('orders.return'), 403);
+
+        if ($return->status !== 'pending') {
+            return response()->json(['message' => 'Only pending returns can be cancelled.'], 422);
+        }
+
+        \DB::transaction(function () use ($return) {
+            $order = $return->order;
+            
+            // Find the previous status from status logs
+            $logs = $order->statusLogs()->orderBy('id', 'desc')->get();
+            $prevLog = $logs->firstWhere('status', '!=', 'return_requested');
+            $targetStatus = $prevLog ? $prevLog->status : 'delivered'; // Fallback to delivered
+
+            $wasInTransit = in_array($targetStatus, \App\Modules\Orders\Models\Order::inTransitStatuses(), true);
+            
+            if ($wasInTransit && $order->warehouse_id) {
+                foreach ($return->items as $item) {
+                    $stock = \App\Modules\Inventory\Models\Stock::where('product_id', $item->product_id)
+                        ->where('warehouse_id', $order->warehouse_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($stock) {
+                        $stock->dispatched_qty = (float) $stock->dispatched_qty + (float) $item->requested_qty;
+                        $stock->save();
+                    }
+                }
+            }
+            $return->items()->delete();
+            $return->delete();
+
+            $order->update([
+                'status' => $targetStatus,
+                'updated_by' => auth()->id(),
+            ]);
+            
+            $order->statusLogs()->create([
+                'status' => $targetStatus,
+                'notes' => 'Return request cancelled. Reverted to previous status.',
+                'changed_by' => auth()->id(),
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Return cancelled successfully.']);
+    }
+
     public function processQc(Request $request, OrderReturn $return, InventoryService $inventoryService)
     {
         // Guard: only allow QC on returns that have not already been completed or rejected
-        if (! in_array($return->status, ['pending', 'received', 'qc_in_progress'])) {
-            return response()->json(['message' => 'Cannot process QC on a return that is already completed or rejected.'], 422);
+        if (! in_array($return->status, ['approved', 'received', 'qc_in_progress'])) {
+            return response()->json(['message' => 'Cannot process QC on a return that is not approved, received, or already in QC.'], 422);
         }
 
         $validated = $request->validate([

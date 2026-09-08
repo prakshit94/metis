@@ -1453,10 +1453,38 @@ class OrderController extends Controller implements HasMiddleware
             });
         } elseif ($targetStatus === 'processing' && $order->status === 'ready_to_ship') {
             $inventoryService->revertOrderToProcessing($order);
-        } elseif ($targetStatus === 'ready_to_ship' && in_array($order->status, Order::inTransitStatuses(), true)) {
+        } elseif ($targetStatus === 'ready_to_ship' && in_array($order->status, \App\Modules\Orders\Models\Order::inTransitStatuses(), true)) {
             $inventoryService->revertOrderToProcessing($order);
         } elseif ($targetStatus === 'dispatched' && $order->status === 'delivered') {
             $inventoryService->revertDeliveredToDispatched($order);
+        } elseif ($order->status === 'return_requested') {
+            \DB::transaction(function () use ($order, $targetStatus) {
+                $pendingReturn = $order->orderReturns()->where('status', 'pending')->latest()->first();
+                if ($pendingReturn) {
+                    $wasInTransit = in_array($targetStatus, \App\Modules\Orders\Models\Order::inTransitStatuses(), true);
+                    
+                    if ($wasInTransit && $order->warehouse_id) {
+                        foreach ($pendingReturn->items as $item) {
+                            $stock = \App\Modules\Inventory\Models\Stock::where('product_id', $item->product_id)
+                                ->where('warehouse_id', $order->warehouse_id)
+                                ->lockForUpdate()
+                                ->first();
+
+                            if ($stock) {
+                                $stock->dispatched_qty = (float) $stock->dispatched_qty + (float) $item->requested_qty;
+                                $stock->save();
+                            }
+                        }
+                    }
+                    $pendingReturn->items()->delete();
+                    $pendingReturn->delete();
+                }
+
+                $order->update([
+                    'status' => $targetStatus,
+                    'updated_by' => auth()->id(),
+                ]);
+            });
         }
 
         if ($request->wantsJson() || $request->ajax()) {

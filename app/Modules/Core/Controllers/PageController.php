@@ -124,7 +124,12 @@ class PageController extends Controller
         $totalReturned = (int) ($orderStats->total_returned ?? 0);
         $revReturned = (float) ($orderStats->rev_returned ?? 0);
 
-        $totalProducts = (int) OrderItem::whereIn('order_id', (clone $orderQuery)->select('id'))->sum('quantity');
+        $totalProducts = (int) OrderItem::whereIn('order_id', (clone $orderQuery)->where('type', 'sale')->whereNotIn('status', ['cancelled', 'returned'])->select('id'))->sum('quantity');
+
+        $totalVariantsObj = OrderItem::whereIn('order_id', (clone $orderQuery)->where('type', 'sale')->whereNotIn('status', ['cancelled', 'returned'])->select('id'))
+            ->selectRaw('COUNT(DISTINCT CONCAT(product_id, "-", COALESCE(product_variant_id, 0))) as count')
+            ->first();
+        $totalVariants = $totalVariantsObj ? (int) $totalVariantsObj->count : 0;
 
         $deliveredPercent = $totalOrders > 0 ? round(($totalDelivered / $totalOrders) * 100) : 0;
         $returnedPercent = $totalOrders > 0 ? round(($totalReturned / $totalOrders) * 100) : 0;
@@ -281,8 +286,14 @@ class PageController extends Controller
 
             $itemsList = $order->items->map(function ($item) {
                 $name = $item->product ? $item->product->name : 'Unknown Product';
-
-                return $item->quantity.'x '.$name;
+                $variantStr = '';
+                if ($item->product_variant_id) {
+                    $variantName = DB::table('product_attribute_values')->where('id', $item->product_variant_id)->value('value');
+                    if ($variantName) {
+                        $variantStr = ' (' . $variantName . ')';
+                    }
+                }
+                return $name . $variantStr . ' - Qty: ' . (float)$item->quantity;
             })->implode(', ');
 
             return [
@@ -311,8 +322,14 @@ class PageController extends Controller
 
             $itemsList = $order->items->map(function ($item) {
                 $name = $item->product ? $item->product->name : 'Unknown Product';
-
-                return $item->quantity.'x '.$name;
+                $variantStr = '';
+                if ($item->product_variant_id) {
+                    $variantName = DB::table('product_attribute_values')->where('id', $item->product_variant_id)->value('value');
+                    if ($variantName) {
+                        $variantStr = ' (' . $variantName . ')';
+                    }
+                }
+                return $name . $variantStr . ' - Qty: ' . (float)$item->quantity;
             })->implode(', ');
 
             return [
@@ -347,6 +364,7 @@ class PageController extends Controller
                     'totalCustomers' => $totalCustomers,
                     'totalRevenue' => $totalRevenue,
                     'totalOrders' => $totalOrders,
+                    'totalVariants' => $totalVariants,
                     'totalProducts' => $totalProducts,
                     'totalDelivered' => $totalDelivered,
                     'totalReturned' => $totalReturned,
@@ -366,6 +384,7 @@ class PageController extends Controller
             'totalCustomers',
             'totalRevenue',
             'totalOrders',
+            'totalVariants',
             'totalProducts',
             'totalDelivered',
             'totalReturned',
@@ -736,8 +755,8 @@ class PageController extends Controller
                     'salesInvoiceDue' => $salesInvoiceDue,
                 ],
                 'payments' => [
-                    'inward' => $inwardTotal,
-                    'outward' => $outwardTotal,
+                    'inward' => $inwardPayments,
+                    'outward' => $outwardPayments,
                 ],
             ]);
 

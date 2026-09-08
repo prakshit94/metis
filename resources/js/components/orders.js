@@ -764,18 +764,18 @@ document.addEventListener('alpine:init', () => {
 
     getStatusTheme(status) {
       const themes = {
-        future_order: 'info',
-        pending: 'warning',
+        future_order: 'secondary',
+        pending: 'secondary',
         pending_confirmation: 'warning',
         confirmed: 'info',
         processing: 'primary',
         ready_to_ship: 'dark',
-        dispatched: 'secondary',
-        shipped: 'secondary',
+        dispatched: 'info',
+        shipped: 'primary',
         delivered: 'success',
         cancelled: 'danger',
         return_requested: 'warning',
-        returned: 'secondary'
+        returned: 'danger'
       };
       return themes[status] || 'secondary';
     },
@@ -1264,6 +1264,13 @@ document.addEventListener('alpine:init', () => {
         case 'shipped': options = { ready_to_ship: 'Ready to Ship' }; break;
         case 'delivered': options = { dispatched: 'Dispatched' }; break;
         case 'cancelled': options = { pending: 'Pending' }; break;
+        case 'return_requested':
+          const logs = order.raw.status_logs || [];
+          const prevLog = logs.find(l => l.status !== 'return_requested');
+          const prevStatus = prevLog ? prevLog.status : 'delivered';
+          const statusName = prevStatus.charAt(0).toUpperCase() + prevStatus.slice(1).replace(/_/g, ' ');
+          options = { [prevStatus]: statusName };
+          break;
         default:
           showToast('Cannot revert from this status.', 'warning');
           return;

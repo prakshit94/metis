@@ -110,7 +110,17 @@
                         <strong x-text="selectedReturns.length"></strong> return(s) selected
                     </span>
                     <div class="d-flex gap-2 flex-wrap">
-                        <button class="btn btn-sm btn-primary" @click="openBulkQcModal()" :disabled="isSubmitting">
+                        <template x-if="bulkAvailableActions && bulkAvailableActions.approve">
+                            <button class="btn btn-sm btn-success" @click="bulkApprove()" :disabled="isSubmitting">
+                                <i class="bi bi-check-circle me-1"></i>Approve
+                            </button>
+                        </template>
+                        <template x-if="bulkAvailableActions && bulkAvailableActions.cancel">
+                            <button class="btn btn-sm btn-danger" @click="bulkCancel()" :disabled="isSubmitting">
+                                <i class="bi bi-x-circle me-1"></i>Cancel
+                            </button>
+                        </template>
+                        <button class="btn btn-sm btn-primary" @click="openBulkQcModal()" :disabled="isSubmitting || (bulkAvailableActions && !bulkAvailableActions.qc)">
                             <i class="bi bi-clipboard2-check me-1"></i>Process Bulk QC
                         </button>
                         <button class="btn btn-sm btn-outline-secondary" @click="selectedReturns = []"><i class="bi bi-x-lg"></i></button>
@@ -182,6 +192,20 @@
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <template x-if="ret.status === 'pending'">
+                                                <li>
+                                                    <a class="dropdown-item" href="#" @click.prevent="approveReturn(ret)">
+                                                        <i class="bi bi-check-circle me-2 text-success"></i>Approve Return
+                                                    </a>
+                                                </li>
+                                            </template>
+                                            <template x-if="ret.status === 'pending'">
+                                                <li>
+                                                    <a class="dropdown-item text-danger" href="#" @click.prevent="cancelReturn(ret)">
+                                                        <i class="bi bi-x-circle me-2"></i>Cancel Return
+                                                    </a>
+                                                </li>
+                                            </template>
                                             <li>
                                                 <a class="dropdown-item" href="#" @click.prevent="viewReturnDetails(ret)">
                                                     <i class="bi bi-clipboard2-check me-2 text-primary"></i>Inspect QC
@@ -454,7 +478,7 @@
                         <button type="button" class="btn btn-outline-secondary" @click="closeQcModal()">
                             <i class="bi bi-x-lg me-1"></i>Close
                         </button>
-                        <template x-if="selectedReturn && selectedReturn.status === 'pending'">
+                        <template x-if="selectedReturn && ['approved', 'qc_in_progress', 'received'].includes(selectedReturn.status)">
                             <button type="button"
                                     class="btn btn-primary"
                                     @click="processQc()"

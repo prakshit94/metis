@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs';
 import { Modal } from 'bootstrap';
+import Swal from 'sweetalert2';
 
 // ─── CSRF helper ─────────────────────────────────────────────────────────────
 function getCsrfToken() {
@@ -153,6 +154,66 @@ document.addEventListener('alpine:init', () => {
         .finally(() => { this.isLoading = false; });
     },
 
+    // ─── Approvals & Cancellations ───────────────────────────────────────────
+
+    async approveReturn(ret) {
+      const confirmed = await Swal.fire({
+        title: 'Approve Return?',
+        text: `Are you sure you want to approve return ${ret.return_no}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, approve it',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-4 shadow-lg border-0 bg-body',
+          title: 'fs-4 fw-bold text-body-emphasis',
+          htmlContainer: 'text-body text-start'
+        },
+        buttonsStyling: false
+      });
+
+      if (!confirmed.isConfirmed) return;
+      
+      try {
+        const res = await apiFetch(`/returns/${ret.id}/approve`, { method: 'POST' });
+        showToast(res.message || 'Return approved.');
+        this.loadReturns();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
+    async cancelReturn(ret) {
+      const confirmed = await Swal.fire({
+        title: 'Cancel Return?',
+        text: `Are you sure you want to cancel return ${ret.return_no}? This will revert the order to its previous status.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, cancel it',
+        cancelButtonText: 'No, keep it',
+        customClass: {
+          confirmButton: 'btn btn-danger me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-4 shadow-lg border-0 bg-body',
+          title: 'fs-4 fw-bold text-body-emphasis',
+          htmlContainer: 'text-body text-start'
+        },
+        buttonsStyling: false
+      });
+
+      if (!confirmed.isConfirmed) return;
+
+      try {
+        const res = await apiFetch(`/returns/${ret.id}/cancel`, { method: 'POST' });
+        showToast(res.message || 'Return cancelled.');
+        this.loadReturns();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
     // ─── Mapping ──────────────────────────────────────────────────────────────
 
     mapReturn(r) {
@@ -281,16 +342,110 @@ document.addEventListener('alpine:init', () => {
       return this.returns.length > 0 && this.returns.every(r => this.selectedReturns.includes(String(r.id)));
     },
 
+    get bulkAvailableActions() {
+      const selected = this.returns.filter(r => this.selectedReturns.includes(String(r.id)));
+      return {
+        approve: selected.some(r => r.status === 'pending'),
+        cancel: selected.some(r => r.status === 'pending'),
+        qc: selected.some(r => ['approved', 'qc_in_progress', 'received'].includes(r.status))
+      };
+    },
+
+    async bulkApprove() {
+      const pending = this.returns.filter(r => this.selectedReturns.includes(String(r.id)) && r.status === 'pending');
+      if (!pending.length) return;
+
+      const confirmed = await Swal.fire({
+        title: 'Bulk Approve Returns?',
+        text: `Are you sure you want to approve ${pending.length} return(s)?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, approve',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-4 shadow-lg border-0 bg-body',
+          title: 'fs-4 fw-bold text-body-emphasis',
+          htmlContainer: 'text-body text-start'
+        },
+        buttonsStyling: false
+      });
+      if (!confirmed.isConfirmed) return;
+
+      this.isSubmitting = true;
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const ret of pending) {
+        try {
+          await apiFetch(`/returns/${ret.id}/approve`, { method: 'POST' });
+          successCount++;
+        } catch {
+          failCount++;
+        }
+      }
+
+      this.isSubmitting = false;
+      this.selectedReturns = [];
+      this.selectedReturnsMap = {};
+      if (successCount) showToast(`${successCount} return(s) approved.`);
+      if (failCount) showToast(`${failCount} return(s) failed.`, 'warning');
+      this.loadReturns();
+    },
+
+    async bulkCancel() {
+      const pending = this.returns.filter(r => this.selectedReturns.includes(String(r.id)) && r.status === 'pending');
+      if (!pending.length) return;
+
+      const confirmed = await Swal.fire({
+        title: 'Bulk Cancel Returns?',
+        text: `Are you sure you want to cancel ${pending.length} return(s)? This will revert the orders to their previous status.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, cancel them',
+        cancelButtonText: 'No, keep them',
+        customClass: {
+          confirmButton: 'btn btn-danger me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-4 shadow-lg border-0 bg-body',
+          title: 'fs-4 fw-bold text-body-emphasis',
+          htmlContainer: 'text-body text-start'
+        },
+        buttonsStyling: false
+      });
+      if (!confirmed.isConfirmed) return;
+
+      this.isSubmitting = true;
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const ret of pending) {
+        try {
+          await apiFetch(`/returns/${ret.id}/cancel`, { method: 'POST' });
+          successCount++;
+        } catch {
+          failCount++;
+        }
+      }
+
+      this.isSubmitting = false;
+      this.selectedReturns = [];
+      this.selectedReturnsMap = {};
+      if (successCount) showToast(`${successCount} return(s) cancelled.`);
+      if (failCount) showToast(`${failCount} return(s) failed.`, 'warning');
+      this.loadReturns();
+    },
+
     /**
-     * Bulk approve: loop each selected pending return and call QC with
+     * Bulk approve (legacy name bulkUpdateStatus): loop each selected pending return and call QC with
      * restocked = requested (100 % good), damaged = 0.
      */
     async bulkUpdateStatus(action) {
       if (!this.selectedReturns.length) return;
 
-      const pendingReturns = this.selectedReturns
-        .map(id => this.selectedReturnsMap[id])
-        .filter(r => r && r.status === 'pending');
+      const pendingReturns = this.returns
+        .filter(r => this.selectedReturns.includes(String(r.id)) && r.status === 'pending');
 
       if (!pendingReturns.length) {
         showToast('No pending returns selected.', 'warning');
@@ -451,12 +606,11 @@ document.addEventListener('alpine:init', () => {
     // ─── Bulk QC Inspect Modal ────────────────────────────────────────────────
     openBulkQcModal() {
       // Find selected pending returns
-      this.selectedReturnsForBulk = this.selectedReturns
-        .map(id => this.selectedReturnsMap[id])
-        .filter(r => r && r.status === 'pending');
+      this.selectedReturnsForBulk = this.returns
+        .filter(r => this.selectedReturns.includes(String(r.id)) && ['approved', 'qc_in_progress', 'received'].includes(r.status));
 
       if (!this.selectedReturnsForBulk.length) {
-        showToast('No pending returns selected.', 'warning');
+        showToast('No approved returns selected.', 'warning');
         return;
       }
 
