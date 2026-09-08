@@ -283,17 +283,6 @@ class VillageController extends Controller implements HasMiddleware
             })->select('pincode')->distinct()->pluck('pincode')->toArray();
         }
 
-        \Illuminate\Support\Facades\Log::info("SYNC DEBUG:", [
-            'pincodesToSync' => count($pincodesToSync),
-            'null_office_id' => Village::whereNull('office_id')->count(),
-            'empty_office_type' => Village::where('office_type_code', '')->count(),
-            'invalid_count' => Village::whereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR'])->count(),
-            'total_villages' => Village::count(),
-            'trashed_villages' => Village::onlyTrashed()->count(),
-            'total_unfiltered' => Village::withoutGlobalScopes()->count(),
-            'sample_villages' => Village::limit(5)->get(['id', 'pincode', 'office_id', 'office_type_code'])->toArray(),
-        ]);
-
         $syncedCount = 0;
         $errors = [];
         $startTime = time();
@@ -344,22 +333,40 @@ class VillageController extends Controller implements HasMiddleware
                             ? $office['village_name'] 
                             : ($office['office_name'] ?? 'Unknown');
                             
-                        Village::updateOrCreate(
-                            [
-                                'pincode' => $office['pincode'] ?? $code,
-                                'office_id' => $office['office_id'] ?? null,
-                            ],
-                            [
-                                'village_name' => $villageName,
-                                'post_so_name' => $office['office_name'] ?? null,
-                                'taluka_name' => $office['taluk_name'] ?? null,
-                                'district_name' => $office['city_name'] ?? null,
-                                'state_name' => $office['state_name'] ?? null,
-                                'office_type_code' => $office['office_type_code'] ?? null,
-                                'delivery_office_flag' => $office['delivery_office_flag'] ?? false,
-                                'is_rolled_out' => $office['is_rolled_out'] ?? false,
-                            ]
-                        );
+                        $existingVillage = Village::where('pincode', $code)
+                            ->where('office_id', $office['office_id'] ?? null)
+                            ->first();
+
+                        if (!$existingVillage) {
+                            // Find an un-synced record for this pincode to take over, preventing orphaned duplicates
+                            $existingVillage = Village::where('pincode', $code)
+                                ->where(function($q) {
+                                    $q->whereNull('office_id')
+                                      ->orWhereNull('office_type_code')
+                                      ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR', '']);
+                                })
+                                ->first();
+                        }
+
+                        $updateData = [
+                            'village_name' => $villageName,
+                            'post_so_name' => $office['office_name'] ?? null,
+                            'taluka_name' => $office['taluk_name'] ?? null,
+                            'district_name' => $office['city_name'] ?? null,
+                            'state_name' => $office['state_name'] ?? null,
+                            'office_type_code' => $office['office_type_code'] ?? null,
+                            'delivery_office_flag' => $office['delivery_office_flag'] ?? false,
+                            'is_rolled_out' => $office['is_rolled_out'] ?? false,
+                        ];
+
+                        if ($existingVillage) {
+                            $updateData['office_id'] = $office['office_id'] ?? null;
+                            $existingVillage->update($updateData);
+                        } else {
+                            $updateData['pincode'] = $office['pincode'] ?? $code;
+                            $updateData['office_id'] = $office['office_id'] ?? null;
+                            Village::create($updateData);
+                        }
                         $syncedCount++;
                     }
                 }
