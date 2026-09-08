@@ -451,11 +451,9 @@
     });
     $initialUnreadCount = 0;
     if (auth()->check()) {
-        $initialUnreadCount = \Spatie\Activitylog\Models\Activity::whereNotIn('id', function($query) {
-            $query->select('activity_id')
-                  ->from('user_read_activities')
-                  ->where('user_id', auth()->id());
-        })->count();
+        $recentIds = \Spatie\Activitylog\Models\Activity::latest('id')->limit(500)->pluck('id');
+        $readIdsForCount = auth()->user()->readActivities()->whereIn('activity_id', $recentIds)->pluck('activity_id');
+        $initialUnreadCount = $recentIds->diff($readIdsForCount)->count();
     }
 
     // -- Alerts Logic --

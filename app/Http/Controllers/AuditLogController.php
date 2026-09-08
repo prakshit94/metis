@@ -208,11 +208,10 @@ class AuditLogController extends Controller implements HasMiddleware
 
         $unreadCount = 0;
         if ($user) {
-            $unreadCount = Activity::whereNotIn('id', function($query) use ($user) {
-                $query->select('activity_id')
-                      ->from('user_read_activities')
-                      ->where('user_id', $user->id);
-            })->count();
+            // Guarantee constant time performance by limiting the evaluation boundary to the 500 most recent activities
+            $recentIds = Activity::latest('id')->limit(500)->pluck('id');
+            $readIdsForCount = $user->readActivities()->whereIn('activity_id', $recentIds)->pluck('activity_id');
+            $unreadCount = $recentIds->diff($readIdsForCount)->count();
         }
 
         return response()->json([
@@ -241,8 +240,13 @@ class AuditLogController extends Controller implements HasMiddleware
         }
 
         if ($id === 'all') {
-            $activityIds = Activity::latest()->limit(50)->pluck('id');
-            $user->readActivities()->syncWithoutDetaching($activityIds);
+            Activity::whereNotIn('id', function($query) use ($user) {
+                $query->select('activity_id')
+                      ->from('user_read_activities')
+                      ->where('user_id', $user->id);
+            })->chunk(1000, function ($activities) use ($user) {
+                $user->readActivities()->syncWithoutDetaching($activities->pluck('id'));
+            });
         } else {
             $user->readActivities()->syncWithoutDetaching([$id]);
         }
