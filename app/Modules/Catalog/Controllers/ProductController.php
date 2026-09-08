@@ -480,6 +480,7 @@ class ProductController extends Controller
                 'tax_rate' => (float) ($p->taxRate?->rate ?? 0),
                 'tax_label' => $p->taxRate?->name,
                 'min_stock_level' => $p->min_stock_level ?? 0,
+                'weight_g' => (float) $p->weight_g,
                 'is_sku_enabled' => (bool) $p->is_sku_enabled,
                 'default_discount' => (float) ($p->default_discount ?? 0),
                 'default_discount_type' => $p->default_discount_type ?? 'percent',

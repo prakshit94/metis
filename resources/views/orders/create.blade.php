@@ -871,7 +871,10 @@
                                                 <span class="badge text-bg-success-subtle text-success-emphasis border-opacity-25 px-2 py-1" style="font-size: 0.6rem; line-height: 1;"><i class="bi bi-gift-fill me-1"></i>Free</span>
                                             </template>
                                         </div>
-                                        <div class="font-monospace text-body-secondary" style="font-size: 11px;" x-text="item.sku"></div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="font-monospace text-body-secondary" style="font-size: 11px;" x-text="item.sku"></div>
+                                            <span x-show="item._product && item._product.weight_g" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;" x-text="(parseFloat(item._product.weight_g) * parseInt(item.quantity || 1)) + 'g'"></span>
+                                        </div>
                                     </div>
                                     <template x-if="!item.is_gift">
                                         <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-outline-secondary text-body-secondary hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">
@@ -952,7 +955,10 @@
                                                         <span class="badge text-bg-success-subtle text-success-emphasis border-opacity-25 px-2 py-1" style="font-size: 0.6rem; line-height: 1;"><i class="bi bi-gift-fill me-1"></i>Free</span>
                                                     </template>
                                                 </div>
-                                                <div class="font-monospace text-body-secondary text-truncate" style="font-size: 11px;" x-text="item.sku"></div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="font-monospace text-body-secondary text-truncate" style="font-size: 11px;" x-text="item.sku"></div>
+                                                    <span x-show="item._product && item._product.weight_g" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;" x-text="(parseFloat(item._product.weight_g) * parseInt(item.quantity || 1)) + 'g'"></span>
+                                                </div>
                                             </div>
                                             <template x-if="!item.is_gift">
                                                 <button type="button" @click.prevent="cart.splice(idx,1)" class="btn btn-sm btn-outline-secondary text-body-secondary hover-danger rounded-3 p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;" title="Remove">

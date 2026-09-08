@@ -1026,6 +1026,17 @@
                                         </div>
                                     </div>
                                 </template>
+                                <template x-if="order.status === 'return_requested' && order.orderReturn">
+                                    <div class="mt-1" style="font-size: 0.7rem;">
+                                        <div class="text-warning-emphasis fw-semibold" title="Return Reason">
+                                            <i class="bi bi-arrow-return-left me-1"></i>
+                                            <span x-text="order.orderReturn.reason"></span>
+                                        </div>
+                                        <div class="text-muted mt-1" style="max-width: 150px;" x-show="order.orderReturn.notes" :title="order.orderReturn.notes">
+                                            <i class="bi bi-info-circle me-1"></i><span x-text="order.orderReturn.notes"></span>
+                                        </div>
+                                    </div>
+                                </template>
                             </td>
                             <td>
                                 <template x-if="!order.isDraft">

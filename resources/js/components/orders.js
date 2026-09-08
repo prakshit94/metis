@@ -670,6 +670,13 @@ document.addEventListener('alpine:init', () => {
           reschedule_reason: shipment.reschedule_reason || null,
           events: Array.isArray(shipment.events) ? shipment.events : [],
         } : null,
+        orderReturn: (o.order_returns && o.order_returns.length) ? {
+          reason: o.order_returns[o.order_returns.length - 1].reason || 'N/A',
+          notes: o.order_returns[o.order_returns.length - 1].notes || '',
+        } : (o.orderReturns && o.orderReturns.length ? {
+          reason: o.orderReturns[o.orderReturns.length - 1].reason || 'N/A',
+          notes: o.orderReturns[o.orderReturns.length - 1].notes || '',
+        } : null),
         payments: payments.map(payment => ({
           id: payment.id,
           no: payment.payment_no || 'N/A',

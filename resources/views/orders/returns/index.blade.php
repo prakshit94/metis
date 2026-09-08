@@ -161,6 +161,9 @@
                                 <td>
                                     <span class="badge bg-secondary bg-opacity-25 text-body small text-capitalize"
                                           x-text="(ret.reason||'N/A').replace(/_/g,' ')"></span>
+                                    <div class="text-muted mt-1" style="max-width: 150px; font-size: 0.7rem;" x-show="ret.notes" :title="ret.notes">
+                                        <i class="bi bi-info-circle me-1"></i><span x-text="ret.notes"></span>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge bg-primary bg-opacity-10 text-primary">
