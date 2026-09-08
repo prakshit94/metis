@@ -120,8 +120,11 @@ class IndiaPostProvider implements ShippingProviderInterface
     {
         $token = $this->authenticate();
 
-        $response = $this->httpClient()->withToken($token)->get("{$this->baseUrl}/v1/pincode-search", [
+        $baseUrl = str_replace('beextcustomer', 'bemasterdata', $this->baseUrl);
+
+        $response = $this->httpClient()->withToken($token)->get("{$baseUrl}/v1/offices/limited-details", [
             'pincode' => $pincode,
+            'limit' => 50,
             'office-type' => $officeType,
         ]);
 

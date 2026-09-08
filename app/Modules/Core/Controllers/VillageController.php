@@ -276,9 +276,11 @@ class VillageController extends Controller implements HasMiddleware
         if ($pincode) {
             $pincodesToSync[] = $pincode;
         } else {
-            $pincodesToSync = Village::whereNull('office_type_code')
-                ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR'])
-                ->select('pincode')->distinct()->pluck('pincode')->toArray();
+            $pincodesToSync = Village::where(function($q) {
+                $q->whereNull('office_id')
+                  ->orWhereNull('office_type_code')
+                  ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR', '']);
+            })->select('pincode')->distinct()->pluck('pincode')->toArray();
         }
 
         $syncedCount = 0;
@@ -303,11 +305,13 @@ class VillageController extends Controller implements HasMiddleware
                     $token = $indiaPostProvider->authenticate();
                     $settings = \App\Models\SystemSetting::where('key', 'like', 'india_post_%')->pluck('value', 'key');
                     $baseUrl = $settings['india_post_base_url'] ?? config('shipping.providers.india_post.base_url');
+                    $baseUrl = str_replace('beextcustomer', 'bemasterdata', $baseUrl);
                     
                     $response = \Illuminate\Support\Facades\Http::withToken($token)
                         ->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])
-                        ->get("{$baseUrl}/v1/pincode-search", [
+                        ->get("{$baseUrl}/v1/offices/limited-details", [
                             'pincode' => (string)$code,
+                            'limit' => 50,
                             'office-type' => 'post',
                         ]);
                         
