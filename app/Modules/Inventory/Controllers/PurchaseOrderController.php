@@ -32,6 +32,11 @@ class PurchaseOrderController extends Controller implements HasMiddleware
         if ($request->wantsJson()) {
             $query = PurchaseOrder::with(['supplier', 'warehouse', 'items', 'items.product', 'approver'])->latest();
 
+            if ($lobState = $request->user()?->lob_state_name) {
+                $query->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
             if ($request->has('trashed')) {
                 if ($request->query('trashed') === 'only') {
                     $query->onlyTrashed();
@@ -59,14 +64,26 @@ class PurchaseOrderController extends Controller implements HasMiddleware
         }
 
         // Stats for cards
+        $poQuery = PurchaseOrder::query();
+        if ($lobState = $request->user()?->lob_state_name) {
+            $poQuery->whereHas('warehouse', function ($wq) use ($lobState) {
+                $wq->where('state', $lobState);
+            });
+        }
+
         $stats = [
-            'total' => PurchaseOrder::count(),
-            'pending' => PurchaseOrder::where('status', 'pending')->count(),
-            'completed' => PurchaseOrder::where('status', 'received')->count(),
+            'total' => (clone $poQuery)->count(),
+            'pending' => (clone $poQuery)->where('status', 'pending')->count(),
+            'completed' => (clone $poQuery)->where('status', 'received')->count(),
         ];
 
         $suppliers = Supplier::select('id', 'company_name', 'firstname', 'lastname')->get();
-        $warehouses = Warehouse::select('id', 'name')->where('is_active', true)->get();
+        $warehouses = Warehouse::select('id', 'name')
+            ->where('is_active', true)
+            ->when($request->user()?->lob_state_name, function ($query, $state) {
+                $query->where('state', $state);
+            })
+            ->get();
         $products = Product::with('taxRate:id,rate')
             ->select('id', 'name', 'sku', 'image_path', 'supplier_id', 'purchase_price', 'tax_rate_id', 'default_discount')
             ->where('is_active', true)->get();
@@ -79,7 +96,18 @@ class PurchaseOrderController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
-            'warehouse_id' => 'required|exists:warehouses,id',
+            'warehouse_id' => [
+                'required',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                }
+            ],
             'expected_delivery_date' => 'nullable|date',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',

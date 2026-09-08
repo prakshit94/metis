@@ -598,7 +598,6 @@ document.addEventListener('alpine:init', () => {
         hsn_code_id: String(product.hsn_code_id ?? ''),
         default_warehouse_id: String(product.warehouse_id ?? ''),
         barcode: product.barcode ?? '',
-        weight: product.weight ?? '',
         weight_g: product.weight_g ?? '',
         length_cm: product.length_cm ?? '',
         width_cm: product.width_cm ?? '',
@@ -709,6 +708,32 @@ document.addEventListener('alpine:init', () => {
 
       const title = document.querySelector('#productModal .modal-title');
       if (title) title.textContent = `Edit ${product.name}`;
+
+      getModal('#productModal')?.show();
+    },
+
+    cloneProduct(product) {
+      const form = this._getProductForm();
+      if (!form) return;
+
+      form.editingProductId = null;
+      
+      const mapped = this._mapProductForForm(product);
+      
+      mapped.name = mapped.name + ' (Copy)';
+      mapped.sku = mapped.sku + '-COPY'; // User will likely change this
+      mapped.default_warehouse_id = ''; // Force warehouse selection
+      mapped.stock = '0';
+      mapped.warehouse_allow_overselling = null;
+      mapped.warehouse_overselling_qty = null;
+      mapped.warehouse_is_sku_enabled = null;
+      
+      form.form = mapped;
+      form.originalProduct = null;
+      form.form.imageFile = null;
+
+      const title = document.querySelector('#productModal .modal-title');
+      if (title) title.textContent = `Clone ${product.name} (Select Warehouse)`;
 
       getModal('#productModal')?.show();
     },
@@ -1081,7 +1106,6 @@ document.addEventListener('alpine:init', () => {
       hsn_code_id: '',
       default_warehouse_id: '',
       barcode: '',
-      weight: '',
       weight_g: '',
       length_cm: '',
       width_cm: '',
@@ -1125,7 +1149,6 @@ document.addEventListener('alpine:init', () => {
         hsn_code_id: '',
         default_warehouse_id: '',
         barcode: '',
-        weight: '',
         weight_g: '',
         length_cm: '',
         width_cm: '',
@@ -1216,10 +1239,10 @@ document.addEventListener('alpine:init', () => {
 
       if (!this.form.name || !this.form.sku || !this.form.category_id ||
           this.form.selling_price_inc_gst === '' || this.form.purchase_price === '' ||
-          this.form.stock === '' || !this.form.status || 
+          !this.form.status || 
           !this.form.tax_rate_id || !this.form.hsn_code_id || 
-          !this.form.uom_id || !this.form.weight) {
-        showToast('Please fill in all required fields (Name, SKU, Category, Purchase Price, Selling Price, Stock, Status, Tax Rate, HSN Code, UOM, Weight/Volume).', 'warning');
+          !this.form.uom_id || this.form.weight_g === '' || this.form.weight_g === null) {
+        showToast('Please fill in all required fields (Name, SKU, Category, Purchase Price, Selling Price, Status, Tax Rate, HSN Code, UOM, Weight(g)).', 'warning');
         return;
       }
 
@@ -1234,7 +1257,6 @@ document.addEventListener('alpine:init', () => {
       if (this.form.hsn_code_id) formData.append('hsn_code_id', String(this.form.hsn_code_id));
       if (this.form.default_warehouse_id) formData.append('default_warehouse_id', String(this.form.default_warehouse_id));
       if (this.form.barcode) formData.append('barcode', String(this.form.barcode).trim());
-      if (this.form.weight) formData.append('weight', String(this.form.weight).trim());
       if (this.form.weight_g !== '' && this.form.weight_g !== null) formData.append('weight_g', String(this.form.weight_g).trim());
       if (this.form.length_cm !== '' && this.form.length_cm !== null) formData.append('length_cm', String(this.form.length_cm).trim());
       if (this.form.width_cm !== '' && this.form.width_cm !== null) formData.append('width_cm', String(this.form.width_cm).trim());

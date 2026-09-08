@@ -297,7 +297,7 @@
                                 </div>
 
                                 <!-- Table -->
-                                <div class="table-responsive">
+                                <div class="table-responsive" style="overflow: visible; position: relative; z-index: 10;">
                                     <table class="table table-hover mb-0">
                                         <thead>
                                             <tr>
@@ -422,6 +422,11 @@
                                                                 </a></li>
                                                                 @endcan
 
+                                                                @can('product-create')
+                                                                <li><a class="dropdown-item" href="#" @click.prevent="cloneProduct(product)">
+                                                                    <i class="bi bi-copy me-2"></i>Clone
+                                                                </a></li>
+                                                                @endcan
 
                                                                 @can('product-delete')
                                                                 <li><hr class="dropdown-divider"></li>
@@ -666,15 +671,7 @@
                                     </h5>
                                     
                                     <div class="row g-4 mb-5">
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Stock Quantity <span class="text-danger">*</span></label>
-                                            <input type="number" class="form-control form-control-lg" x-model="form.stock" min="0" required placeholder="0">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Min Stock Level</label>
-                                            <input type="number" class="form-control form-control-lg" x-model="form.min_stock_level" min="0" placeholder="0">
-                                        </div>
-                                        
+
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Unit (UOM) <span class="text-danger">*</span></label>
                                             <select class="form-select" x-model="form.uom_id" required>
@@ -685,9 +682,10 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Weight / Volume <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" x-model="form.weight" required placeholder="e.g. 1kg, 500ml">
+                                            <label class="form-label fw-medium text-muted small">Reorder Level (Min Stock)</label>
+                                            <input type="number" class="form-control" x-model="form.min_stock_level" min="0" placeholder="0">
                                         </div>
+
                                         
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Default Warehouse</label>
@@ -833,9 +831,9 @@
                                     
                                     <div class="row g-4">
                                         <div class="col-md-3 col-sm-6">
-                                            <label class="form-label fw-medium text-muted small">Weight (g)</label>
+                                            <label class="form-label fw-medium text-muted small">Weight (g) <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <input type="number" step="0.01" class="form-control" x-model="form.weight_g" placeholder="0">
+                                                <input type="number" step="0.01" class="form-control" x-model="form.weight_g" required placeholder="0">
                                                 <span class="input-group-text bg-body-secondary">g</span>
                                             </div>
                                         </div>
@@ -947,7 +945,6 @@
                                 <table class="table table-sm table-borderless small mb-0 text-muted">
                                     <tbody>
                                         <tr x-show="product && product.barcode"><th class="ps-0" style="width:100px;">Barcode</th><td x-text="product ? product.barcode : ''"></td></tr>
-                                        <tr x-show="product && product.weight"><th class="ps-0">Weight</th><td x-text="product ? product.weight : ''"></td></tr>
                                         <tr x-show="product && (product.weight_g || product.length_cm || product.width_cm || product.height_cm)">
                                             <th class="ps-0">Dimensions</th>
                                             <td style="font-size: 11px;">

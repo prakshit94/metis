@@ -1422,6 +1422,11 @@
                                                 <i class="bi bi-file-earmark-pdf me-2"></i>Print Invoice
                                             </button>
                                             @endcan
+                                            <template x-if="selectedOrder.shipments && selectedOrder.shipments.length > 0 && selectedOrder.shipments[0].tracking_no">
+                                                <a :href="`/orders/${selectedOrder.id}/shipping-label`" target="_blank" class="btn btn-secondary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow">
+                                                    <i class="bi bi-tag-fill me-2"></i>Shipping Label
+                                                </a>
+                                            </template>
                                             @can('orders.cod')
                                             <button class="btn btn-info flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printCOD(selectedOrder)">
                                                 <i class="bi bi-file-earmark-pdf me-2"></i>COD Receipt

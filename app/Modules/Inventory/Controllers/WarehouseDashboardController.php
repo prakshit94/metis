@@ -41,7 +41,11 @@ class WarehouseDashboardController extends Controller
         $shrinkageValue = $this->analyticsService->getShrinkageValue($warehouseId, $dateRange);
         $lowStockAlerts = $this->analyticsService->getLowStockAlerts($warehouseId);
 
-        $warehouses = Warehouse::active()->get();
+        $warehouses = Warehouse::active()
+            ->when($request->user()?->lob_state_name, function ($query, $state) {
+                $query->where('state', $state);
+            })
+            ->get();
 
         $pipeline = $this->analyticsService->getFulfillmentPipeline($warehouseId, $dateRange);
 

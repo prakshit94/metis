@@ -608,7 +608,7 @@
                                                     </div>
                                                     <div class="d-flex align-items-center gap-1 mt-1">
                                                         <span class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;" x-text="p.sku"></span>
-                                                        <span x-show="p.weight" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;" x-text="p.weight"></span>
+                                                        <span x-show="p.weight_g" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;" x-text="p.weight_g + 'g'"></span>
                                                     </div>
                                                     <div class="text-body-tertiary text-truncate mt-1" style="font-size: 10px;" x-show="p.description" :title="p.description" x-text="p.description"></div>
                                                 </div>
@@ -708,7 +708,7 @@
                                                         </div>
                                                         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                                                             <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis border border-secondary border-opacity-25" style="font-size: 10px; padding: 0.25em 0.5em;" x-text="'SKU: ' + p.sku"></span>
-                                                            <span x-show="p.weight" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;" x-text="p.weight"></span>
+                                                            <span x-show="p.weight_g" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;" x-text="p.weight_g + 'g'"></span>
                                                             <span class="badge" 
                                                                   :class="{
                                                                       'bg-success': ['published', 'active'].includes(p.status),
@@ -1862,7 +1862,7 @@
                                 <div class="table-responsive">
                                     <table class="table table-sm table-borderless small mb-0 text-body-secondary">
                                         <tbody>
-                                            <tr x-show="selectedProductForModal && selectedProductForModal.weight"><th class="ps-0" style="width:100px;">Weight</th><td x-text="selectedProductForModal ? selectedProductForModal.weight : ''"></td></tr>
+                                            <tr x-show="selectedProductForModal && selectedProductForModal.weight_g"><th class="ps-0" style="width:100px;">Weight</th><td x-text="selectedProductForModal ? selectedProductForModal.weight_g + 'g' : ''"></td></tr>
                                             <tr x-show="selectedProductForModal && selectedProductForModal.uom"><th class="ps-0">UOM</th><td x-text="selectedProductForModal ? selectedProductForModal.uom : ''"></td></tr>
                                             <tr x-show="selectedProductForModal && selectedProductForModal.grade"><th class="ps-0">Grade</th><td x-text="selectedProductForModal ? selectedProductForModal.grade : ''"></td></tr>
                                         </tbody>

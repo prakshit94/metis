@@ -37,12 +37,20 @@ class ProductController extends Controller
             }
         };
 
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
         $products = Product::query()
             ->with($this->getEagerLoads($request))
             ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
             ->withSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
             ->withSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
-            ->withSum('pendingOrderItems as pending_orders_qty', 'quantity')
+            ->withSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')
             ->latest()
             ->get()
             ->map(fn (Product $product) => $this->transform($product))
@@ -51,7 +59,7 @@ class ProductController extends Controller
         return response()->json([
             'data' => $products,
             'stats' => $this->stats($products),
-            'options' => $this->catalogOptions(),
+            'options' => $this->catalogOptions($request),
         ]);
     }
 
@@ -67,15 +75,23 @@ class ProductController extends Controller
             }
         };
 
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
         $product->load($this->getEagerLoads($request));
         $product->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity');
         $product->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty');
         $product->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty');
-        $product->loadSum('pendingOrderItems as pending_orders_qty', 'quantity');
+        $product->loadSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity');
 
         return response()->json([
             'data' => $this->transform($product),
-            'options' => $this->catalogOptions(),
+            'options' => $this->catalogOptions($request),
         ]);
     }
 
@@ -89,19 +105,14 @@ class ProductController extends Controller
         $this->fillProduct($product, $data, $request);
         $product->save();
         $this->syncAttributes($product, $data['attributes'] ?? []);
+        
+        $this->syncStockConfig($product, [
+            'allow_overselling' => $request->input('warehouse_allow_overselling'),
+            'overselling_qty' => $request->input('warehouse_overselling_qty'),
+            'is_sku_enabled' => $request->input('warehouse_is_sku_enabled'),
+        ]);
 
-        $extraData = [];
-        if ($request->has('warehouse_allow_overselling')) {
-            $extraData['allow_overselling'] = $request->input('warehouse_allow_overselling');
-        }
-        if ($request->has('warehouse_overselling_qty')) {
-            $extraData['overselling_qty'] = $request->input('warehouse_overselling_qty');
-        }
-        if ($request->has('warehouse_is_sku_enabled')) {
-            $extraData['is_sku_enabled'] = $request->input('warehouse_is_sku_enabled');
-        }
 
-        $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0), 'overwrite', $extraData);
 
         $stockScope = function ($q) use ($request) {
             if ($lobState = $request->user()?->lob_state_name) {
@@ -133,20 +144,13 @@ class ProductController extends Controller
             $this->syncAttributes($product, $data['attributes']);
         }
 
-        // Only sync stock if stock value was explicitly submitted
-        if (array_key_exists('stock', $data) || array_key_exists('stock_quantity', $data) || $request->has('warehouse_allow_overselling') || $request->has('warehouse_overselling_qty') || $request->has('warehouse_is_sku_enabled')) {
-            $extraData = [];
-            if ($request->has('warehouse_allow_overselling')) {
-                $extraData['allow_overselling'] = $request->input('warehouse_allow_overselling');
-            }
-            if ($request->has('warehouse_overselling_qty')) {
-                $extraData['overselling_qty'] = $request->input('warehouse_overselling_qty');
-            }
-            if ($request->has('warehouse_is_sku_enabled')) {
-                $extraData['is_sku_enabled'] = $request->input('warehouse_is_sku_enabled');
-            }
-            $this->syncStock($product, (int) ($data['stock'] ?? $data['stock_quantity'] ?? 0), 'overwrite', $extraData);
-        }
+        $this->syncStockConfig($product, [
+            'allow_overselling' => $request->input('warehouse_allow_overselling'),
+            'overselling_qty' => $request->input('warehouse_overselling_qty'),
+            'is_sku_enabled' => $request->input('warehouse_is_sku_enabled'),
+        ]);
+
+
 
         $stockScope = function ($q) use ($request) {
             if ($lobState = $request->user()?->lob_state_name) {
@@ -222,7 +226,19 @@ class ProductController extends Controller
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'exists:products,id'],
-            'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
+            'warehouse_id' => [
+                'nullable',
+                'integer',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                }
+            ],
         ]);
 
         if (!empty($data['warehouse_id'])) {
@@ -268,7 +284,19 @@ class ProductController extends Controller
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'exists:products,id'],
-            'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
+            'warehouse_id' => [
+                'nullable',
+                'integer',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                }
+            ],
         ]);
 
         if (!empty($data['warehouse_id'])) {
@@ -355,6 +383,14 @@ class ProductController extends Controller
             }
         };
 
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
         $query = Product::query()
             ->with(['category', 'brand', 'taxRate', 'uom', 'stocks' => function ($q) use ($request) {
                 $q->with('warehouse')->withSum('pendingOrderItems as pending_qty', 'quantity');
@@ -367,7 +403,7 @@ class ProductController extends Controller
             ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
             ->withSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
             ->withSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
-            ->withSum('pendingOrderItems as pending_orders_qty', 'quantity');
+            ->withSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity');
 
         if ($request->filled('q')) {
             $q = $request->q;
@@ -376,6 +412,8 @@ class ProductController extends Controller
                     ->orWhere('sku', 'like', "%{$q}%");
             });
         }
+
+        $query->where('status', '!=', 'draft');
 
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
@@ -442,7 +480,6 @@ class ProductController extends Controller
                 'tax_rate' => (float) ($p->taxRate?->rate ?? 0),
                 'tax_label' => $p->taxRate?->name,
                 'min_stock_level' => $p->min_stock_level ?? 0,
-                'weight' => $p->weight,
                 'is_sku_enabled' => (bool) $p->is_sku_enabled,
                 'default_discount' => (float) ($p->default_discount ?? 0),
                 'default_discount_type' => $p->default_discount_type ?? 'percent',
@@ -493,13 +530,21 @@ class ProductController extends Controller
             }
         };
 
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
         return response()->json([
             'message' => 'Product duplicated successfully.',
             'data' => $this->transform($clone->fresh($this->getEagerLoads($request))
                 ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
                 ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
                 ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
-                ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
+                ->loadSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')),
         ], 201);
     }
 
@@ -557,7 +602,7 @@ class ProductController extends Controller
                 'hsn_code_id' => $this->resolveId($record['hsn_code_id'] ?? null),
                 'default_warehouse_id' => $this->resolveId($record['default_warehouse_id'] ?? null),
                 'barcode' => $this->nullableString($record['barcode'] ?? null),
-                'weight' => $this->nullableString($record['weight'] ?? null),
+                'weight_g' => (float) ($record['weight_g'] ?? $record['weight'] ?? 0),
                 'purchase_price' => (float) ($record['purchase_price'] ?? 0),
                 'mrp' => (float) ($record['mrp'] ?? 0),
                 'selling_price' => (float) ($record['selling_price'] ?? $record['price'] ?? 0),
@@ -700,11 +745,22 @@ class ProductController extends Controller
             'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
             'uom_id' => ['required', 'integer', 'exists:units_of_measure,id'],
             'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
-            'default_warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
+            'default_warehouse_id' => [
+                'nullable',
+                'integer',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                }
+            ],
             'tax_rate_id' => ['required', 'integer', 'exists:tax_rates,id'],
             'hsn_code_id' => ['required', 'integer', 'exists:hsn_codes,id'],
             'barcode' => ['nullable', 'string', 'max:255'],
-            'weight' => ['required', 'string', 'max:255'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'mrp' => ['nullable', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
@@ -726,7 +782,7 @@ class ProductController extends Controller
             'default_discount' => ['nullable', 'numeric', 'min:0'],
             'default_discount_type' => ['nullable', 'in:percent,flat'],
             'grade' => ['nullable', 'in:A,B,C,D'],
-            'weight_g' => ['nullable', 'numeric', 'min:0'],
+            'weight_g' => ['required', 'numeric', 'min:0'],
             'length_cm' => ['nullable', 'numeric', 'min:0'],
             'width_cm' => ['nullable', 'numeric', 'min:0'],
             'height_cm' => ['nullable', 'numeric', 'min:0'],
@@ -752,8 +808,7 @@ class ProductController extends Controller
         $product->tax_rate_id = $this->resolveId($data['tax_rate_id'] ?? null);
         $product->hsn_code_id = $this->resolveId($data['hsn_code_id'] ?? null);
         $product->barcode = $this->nullableString($data['barcode'] ?? null);
-        $product->weight = $this->nullableString($data['weight'] ?? null);
-        $product->weight_g = isset($data['weight_g']) ? (float) $data['weight_g'] : null;
+        $product->weight_g = isset($data['weight_g']) ? (float) $data['weight_g'] : 0;
         $product->length_cm = isset($data['length_cm']) ? (float) $data['length_cm'] : null;
         $product->width_cm = isset($data['width_cm']) ? (float) $data['width_cm'] : null;
         $product->height_cm = isset($data['height_cm']) ? (float) $data['height_cm'] : null;
@@ -878,7 +933,6 @@ class ProductController extends Controller
             'warehouse' => $product->warehouse?->name,
             'warehouse_data' => $product->warehouse,
             'barcode' => $product->barcode,
-            'weight' => $product->weight,
             'weight_g' => $product->weight_g,
             'length_cm' => $product->length_cm,
             'width_cm' => $product->width_cm,
@@ -935,7 +989,7 @@ class ProductController extends Controller
         ];
     }
 
-    private function catalogOptions(): array
+    private function catalogOptions(?Request $request = null): array
     {
         return [
             'categories' => Category::query()
@@ -958,7 +1012,11 @@ class ProductController extends Controller
             'uoms' => UnitOfMeasure::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'short_name'])->values(),
             'taxRates' => TaxRate::query()->where('status', 'active')->orderBy('rate')->get(['id', 'name', 'rate'])->values(),
             'hsnCodes' => HsnCode::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'description'])->values(),
-            'warehouses' => Warehouse::query()->orderBy('name')->get(['id', 'name'])->values(),
+            'warehouses' => Warehouse::query()
+                ->when($request?->user()?->lob_state_name, function ($query, $state) {
+                    $query->where('state', $state);
+                })
+                ->orderBy('name')->get(['id', 'name'])->values(),
             'attributes' => ProductAttribute::query()
                 ->where('status', 'active')
                 ->with(['values' => fn ($query) => $query->where('status', 'active')->orderBy('value')])
@@ -984,6 +1042,58 @@ class ProductController extends Controller
         ];
     }
 
+    private function syncStockConfig(Product $product, array $extraData = []): void
+    {
+        $warehouseId = $product->default_warehouse_id;
+
+        if (! $warehouseId) {
+            $warehouseId = Warehouse::query()
+                ->when(request()?->user()?->lob_state_name, function ($query, $state) {
+                    $query->where('state', $state);
+                })
+                ->value('id');
+            if ($warehouseId) {
+                $product->default_warehouse_id = $warehouseId;
+                $product->saveQuietly();
+            }
+        }
+
+        if (! $warehouseId) {
+            return;
+        }
+
+        $stock = Stock::withTrashed()->firstOrNew([
+            'product_id' => $product->id,
+            'warehouse_id' => $warehouseId,
+        ]);
+        
+        $dirty = false;
+
+        if (array_key_exists('allow_overselling', $extraData)) {
+            $stock->allow_overselling = $extraData['allow_overselling'] !== null ? filter_var($extraData['allow_overselling'], FILTER_VALIDATE_BOOL) : null;
+            $dirty = true;
+        }
+        if (array_key_exists('overselling_qty', $extraData)) {
+            $stock->overselling_qty = $extraData['overselling_qty'] !== null ? (int) $extraData['overselling_qty'] : null;
+            $dirty = true;
+        }
+        if (array_key_exists('is_sku_enabled', $extraData)) {
+            $stock->is_sku_enabled = $extraData['is_sku_enabled'] !== null ? filter_var($extraData['is_sku_enabled'], FILTER_VALIDATE_BOOL) : null;
+            $dirty = true;
+        }
+
+        if ($dirty || !$stock->exists) {
+            $stock->quantity = $stock->quantity ?? 0;
+            $stock->reserved_qty = $stock->reserved_qty ?? 0;
+            $stock->dispatched_qty = $stock->dispatched_qty ?? 0;
+            $stock->committed_qty = $stock->committed_qty ?? 0;
+            $stock->in_transit_qty = $stock->in_transit_qty ?? 0;
+            $stock->status = 'active';
+            $stock->deleted_at = null;
+            $stock->save();
+        }
+    }
+
     private function syncAttributes(Product $product, ?array $attributeIds): void
     {
         if ($attributeIds === null) {
@@ -1004,7 +1114,11 @@ class ProductController extends Controller
 
         // If no warehouse is assigned, try to use the first available warehouse
         if (! $warehouseId) {
-            $warehouseId = Warehouse::query()->value('id');
+            $warehouseId = Warehouse::query()
+                ->when(request()?->user()?->lob_state_name, function ($query, $state) {
+                    $query->where('state', $state);
+                })
+                ->value('id');
             if ($warehouseId) {
                 $product->default_warehouse_id = $warehouseId;
                 $product->saveQuietly();

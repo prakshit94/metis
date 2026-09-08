@@ -1087,6 +1087,28 @@ class OrderController extends Controller implements HasMiddleware
         return $pdf->download("invoice-{$invoice->invoice_no}.pdf");
     }
 
+    public function downloadShippingLabel(string $id)
+    {
+        $order = Order::with(['shipments'])->findOrFail($id);
+        $shipment = $order->shipments->first();
+
+        if (!$shipment || !$shipment->tracking_no) {
+            return back()->with('error', 'No shipping tracking number found for this order.');
+        }
+
+        try {
+            $shippingManager = app(\App\Services\Shipping\ShippingManager::class);
+            // Defaulting to india_post for now or fetch by carrier name
+            // (Assuming India Post here per user requirement)
+            $provider = $shippingManager->driver('india_post');
+            
+            $url = $provider->generateLabel($order, $shipment->tracking_no);
+            return redirect($url);
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
     public function generateInvoice(string $id, InvoiceService $invoiceService)
     {
         $order = Order::findOrFail($id);

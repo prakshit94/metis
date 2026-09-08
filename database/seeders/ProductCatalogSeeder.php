@@ -432,7 +432,7 @@ class ProductCatalogSeeder extends Seeder
                     'application_instructions' => $example['application_instructions'] ?? null,
                     'grade' => $example['grade'],
                     'barcode' => $example['barcode'] ?? null,
-                    'weight' => $example['weight'] ?? null,
+                    'weight_g' => isset($example['weight']) ? (float) filter_var($example['weight'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION) * (str_contains(strtolower($example['weight']), 'kg') ? 1000 : (str_contains(strtolower($example['weight']), 'l') ? 1000 : 1)) : rand(100, 2000),
                     'image_path' => null,
                     'default_discount' => 0,
                     'default_discount_type' => 'percent',

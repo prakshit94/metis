@@ -41,7 +41,11 @@ class StockManagementController extends Controller implements HasMiddleware
             ->withSum('returnedOrderItems as returned_qty', 'received_qty')
             ->withSum('returnRequestedOrderItems as return_requested_qty', 'requested_qty')
             ->whereHas('product')
-            ->whereHas('warehouse');
+            ->whereHas('warehouse', function ($wq) use ($request) {
+                if ($lobState = $request->user()?->lob_state_name) {
+                    $wq->where('state', $lobState);
+                }
+            });
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -90,7 +94,11 @@ class StockManagementController extends Controller implements HasMiddleware
             return $stock;
         });
 
-        $statsBaseQuery = Stock::query()->whereHas('product')->whereHas('warehouse');
+        $statsBaseQuery = Stock::query()->whereHas('product')->whereHas('warehouse', function ($wq) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $wq->where('state', $lobState);
+            }
+        });
 
         if ($search = $request->query('search')) {
             $statsBaseQuery->where(function ($q) use ($search) {
@@ -134,7 +142,18 @@ class StockManagementController extends Controller implements HasMiddleware
 
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
-            'warehouse_id' => 'required|exists:warehouses,id',
+            'warehouse_id' => [
+                'required',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                }
+            ],
             'quantity' => 'required|numeric|min:0',
             'damaged_qty' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:500',
@@ -169,7 +188,18 @@ class StockManagementController extends Controller implements HasMiddleware
 
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'warehouse_id' => 'required|exists:warehouses,id',
+            'warehouse_id' => [
+                'required',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                }
+            ],
         ]);
 
         $stock = $this->inventoryService->getStock(
@@ -185,11 +215,14 @@ class StockManagementController extends Controller implements HasMiddleware
     /**
      * Get warehouse options for filtering.
      */
-    public function warehouseOptions(): JsonResponse
+    public function warehouseOptions(Request $request): JsonResponse
     {
         $this->authorize('product-view');
 
         $warehouses = Warehouse::where('status', 'active')
+            ->when($request->user()?->lob_state_name, function ($query, $state) {
+                $query->where('state', $state);
+            })
             ->orderBy('name')
             ->get(['id', 'name', 'code']);
 

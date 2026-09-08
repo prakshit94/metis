@@ -37,6 +37,18 @@ class StockTransferController extends Controller implements HasMiddleware
             ->with(['fromWarehouse:id,name,code', 'toWarehouse:id,name,code'])
             ->withCount('items');
 
+        if ($lobState = $request->user()?->lob_state_name) {
+            $query->where(function ($q) use ($lobState) {
+                $q->whereHas('fromWarehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                })->orWhereHas('toWarehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            });
+        }
+        
+        $statsQuery = clone $query;
+
         if ($search = $request->query('search')) {
             $query->where('transfer_no', 'like', "%{$search}%");
         }
@@ -57,10 +69,10 @@ class StockTransferController extends Controller implements HasMiddleware
         $paginator = $query->paginate($perPage);
 
         $stats = [
-            'total' => StockTransfer::count(),
-            'draft' => StockTransfer::where('status', 'draft')->count(),
-            'pending' => StockTransfer::where('status', 'sent')->count(),
-            'received' => StockTransfer::where('status', 'received')->count(),
+            'total' => (clone $statsQuery)->count(),
+            'draft' => (clone $statsQuery)->where('status', 'draft')->count(),
+            'pending' => (clone $statsQuery)->where('status', 'sent')->count(),
+            'received' => (clone $statsQuery)->where('status', 'received')->count(),
         ];
 
         return response()->json([
@@ -78,8 +90,31 @@ class StockTransferController extends Controller implements HasMiddleware
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'from_warehouse_id' => 'required|exists:warehouses,id',
-            'to_warehouse_id' => 'required|exists:warehouses,id|different:from_warehouse_id',
+            'from_warehouse_id' => [
+                'required',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = \App\Modules\Catalog\Models\Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized origin warehouse.');
+                        }
+                    }
+                }
+            ],
+            'to_warehouse_id' => [
+                'required',
+                'exists:warehouses,id',
+                'different:from_warehouse_id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = \App\Modules\Catalog\Models\Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized destination warehouse.');
+                        }
+                    }
+                }
+            ],
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
@@ -286,8 +321,13 @@ class StockTransferController extends Controller implements HasMiddleware
     public function options(): JsonResponse
     {
         return response()->json([
-            'warehouses' => Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name', 'code', 'is_default']),
-            'products' => Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']),
+            'warehouses' => \App\Modules\Catalog\Models\Warehouse::where('status', 'active')
+                ->when(request()?->user()?->lob_state_name, function ($query, $state) {
+                    $query->where('state', $state);
+                })
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'is_default']),
+            'products' => \App\Modules\Catalog\Models\Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']),
         ]);
     }
 }

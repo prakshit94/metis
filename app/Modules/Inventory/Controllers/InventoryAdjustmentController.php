@@ -36,7 +36,12 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
 
         $query = InventoryAdjustment::query()
             ->with(['warehouse:id,name,code'])
-            ->withCount('items');
+            ->withCount('items')
+            ->whereHas('warehouse', function ($wq) use ($request) {
+                if ($lobState = $request->user()?->lob_state_name) {
+                    $wq->where('state', $lobState);
+                }
+            });
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -89,7 +94,18 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
         $this->authorize('product-create');
 
         $validated = $request->validate([
-            'warehouse_id' => 'required|exists:warehouses,id',
+            'warehouse_id' => [
+                'required',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                }
+            ],
             'reason' => 'required|string|max:255',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
@@ -142,7 +158,18 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
         }
 
         $validated = $request->validate([
-            'warehouse_id' => 'required|exists:warehouses,id',
+            'warehouse_id' => [
+                'required',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                }
+            ],
             'reason' => 'required|string|max:255',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
@@ -302,12 +329,16 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
     /**
      * Get warehouse and product options for the adjustment form.
      */
-    public function options(): JsonResponse
+    public function options(Request $request): JsonResponse
     {
         $this->authorize('product-view');
 
         return response()->json([
-            'warehouses' => Warehouse::where('status', 'active')->orderBy('name')->get(['id', 'name', 'code']),
+            'warehouses' => Warehouse::where('status', 'active')
+                ->when($request->user()?->lob_state_name, function ($query, $state) {
+                    $query->where('state', $state);
+                })
+                ->orderBy('name')->get(['id', 'name', 'code']),
             'products' => Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']),
         ]);
     }
