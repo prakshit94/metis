@@ -63,7 +63,7 @@
 
                                 <div class="col-12">
                                     <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Village Search</label>
-                                    <div class="position-relative" style="z-index: 1050;">
+                                    <div class="position-relative" style="z-index: 1050;" :style="villageResults.length > 0 ? 'padding-bottom: 210px;' : ''">
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-search"></i></span>
                                             <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" placeholder="Type 3 letters to search village..." 
