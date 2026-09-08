@@ -314,6 +314,16 @@ class VillageController extends Controller implements HasMiddleware
             } catch (\Exception $e) {
                 Log::error("Failed to sync India Post pincode {$code}: " . $e->getMessage());
                 $errors[] = $code;
+                
+                // If it's a connection/authentication error (like IP not whitelisted or timeout), 
+                // abort the entire bulk sync immediately to prevent hanging
+                if ($e instanceof \Illuminate\Http\Client\ConnectionException || str_contains($e->getMessage(), 'cURL') || str_contains($e->getMessage(), 'authenticate') || str_contains($e->getMessage(), 'timeout')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'India Post API Connection Failed. Please check IP whitelisting. (' . $e->getMessage() . ')',
+                        'errors' => $errors
+                    ], 500);
+                }
             }
         }
 
