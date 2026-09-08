@@ -1125,7 +1125,12 @@
                             <hr class="border-secondary opacity-10 my-3">
 
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bold text-uppercase tracking-widest text-body" style="font-size: 14px;">Grand Total</span>
+                                <div>
+                                    <span class="fw-bold text-uppercase tracking-widest text-body d-block" style="font-size: 14px;">Grand Total</span>
+                                    <div class="text-body-secondary mt-1" style="font-size: 11px;" x-show="totalWeight > 0">
+                                        <span>Est. Weight: <span class="fw-bold" :class="totalWeight > 35000 ? 'text-danger' : ''" x-text="(totalWeight / 1000).toFixed(2) + ' kg'"></span></span>
+                                    </div>
+                                </div>
                                 <span class="fw-black text-primary fs-3" x-text="'₹ ' + Number(grandTotal).toFixed(2)"></span>
                             </div>
 
@@ -2259,7 +2264,15 @@
                                     <div class="d-flex justify-content-between mb-1 small"><span class="text-body-secondary">Shipping:</span> <span class="fw-bold" x-text="'₹ ' + Number(shippingFee).toFixed(2)"></span></div>
                                 </template>
                                 
-                                <div class="d-flex justify-content-between mt-2 pt-2 border-top border-primary border-opacity-25 fs-5"><span class="fw-bold text-primary">Net Total:</span> <span class="fw-bold text-primary" x-text="'₹ ' + Number(grandTotal).toFixed(2)"></span></div>
+                                <div class="d-flex justify-content-between mt-2 pt-2 border-top border-primary border-opacity-25 fs-5">
+                                    <div>
+                                        <span class="fw-bold text-primary d-block">Net Total:</span>
+                                        <div class="text-body-secondary mt-1" style="font-size: 11px;" x-show="totalWeight > 0">
+                                            <span>Est. Weight: <span class="fw-bold" :class="totalWeight > 35000 ? 'text-danger' : ''" x-text="(totalWeight / 1000).toFixed(2) + ' kg'"></span></span>
+                                        </div>
+                                    </div>
+                                    <span class="fw-bold text-primary" x-text="'₹ ' + Number(grandTotal).toFixed(2)"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3221,6 +3234,12 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         },
 
         get subtotal() { return this.cart.reduce((t,i) => t + this.lineTotal(i), 0); },
+        get totalWeight() { 
+            return this.cart.reduce((t, i) => {
+                let w = (i._product && i._product.weight_g) ? parseFloat(i._product.weight_g) : 500;
+                return t + (w * parseInt(i.quantity || 1));
+            }, 0); 
+        },
         itemBogoDiscount(item) {
             if (item.is_gift) return 0; // Skip gifts
             const match = this.getBogoMatch(item.id);
@@ -3644,8 +3663,6 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 
                 localStorage.removeItem(`ecommerce_create_order_cart_${this.partyId}`);
                 this.cart = [];
-                const successMessage = this.editingOrderId ? 'Order updated successfully!' : 'Order placed successfully!';
-                window.dispatchEvent(new CustomEvent('notify',{detail:{type:'success',message:successMessage}}));
                 
                 document.getElementById('orderSuccessTitle').innerText = this.editingOrderId ? 'Order Updated!' : 'Order Placed!';
                 const successModal = new bootstrap.Modal(document.getElementById('orderSuccessModal'));

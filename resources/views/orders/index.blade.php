@@ -1401,7 +1401,20 @@
                                                     <span class="text-body-emphasis fw-bold" x-text="`₹ ${formatCurrency(selectedOrder.taxTotal)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="text-body-emphasis fw-bolder fs-5">Grand Total</span>
+                                                    <div>
+                                                        <span class="text-body-emphasis fw-bolder fs-5 d-block">Grand Total</span>
+                                                        <span class="text-muted d-block mt-1" style="font-size: 11px;" x-show="selectedOrder && selectedOrder.items" x-data="{
+                                                            get totalW() {
+                                                                if (!selectedOrder || !selectedOrder.items) return 0;
+                                                                return selectedOrder.items.reduce((acc, item) => {
+                                                                    let w = (item.product && item.product.weight_g) ? parseFloat(item.product.weight_g) : 500;
+                                                                    return acc + (w * item.quantity);
+                                                                }, 0);
+                                                            }
+                                                        }">
+                                                            Est. Weight: <span class="fw-bold" :class="totalW > 35000 ? 'text-danger' : ''" x-text="(totalW / 1000).toFixed(2) + ' kg'"></span>
+                                                        </span>
+                                                    </div>
                                                     <span class="text-primary fw-bolder fs-4" x-text="`₹ ${formatCurrency(selectedOrder.total)}`"></span>
                                                 </div>
                                             </div>
