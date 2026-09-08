@@ -25,6 +25,7 @@ return new class extends Migration
             $table->decimal('length_cm', 8, 2)->nullable();
             $table->decimal('width_cm', 8, 2)->nullable();
             $table->decimal('height_cm', 8, 2)->nullable();
+            $table->string('article_type')->nullable();
             $table->decimal('shipping_cost', 10, 2)->nullable();
             $table->json('provider_response')->nullable();
             $table->timestamps();

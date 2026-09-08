@@ -502,6 +502,19 @@
                                         </div>
                                         <div class="fw-bold text-body-emphasis" style="font-size: 0.85rem;" x-text="item.carrier_name || '-'"></div>
                                     </div>
+                                    <template x-if="item.actual_weight_g || item.shipping_cost">
+                                        <div class="d-flex flex-column gap-1 mb-2 text-muted small lh-sm">
+                                            <template x-if="item.actual_weight_g">
+                                                <span><i class="bi bi-box-seam me-1"></i> <span x-text="(item.actual_weight_g / 1000).toFixed(2) + ' kg'"></span><template x-if="item.length_cm"> (<span x-text="item.length_cm + 'x' + item.width_cm + 'x' + item.height_cm + 'cm'"></span>)</template></span>
+                                            </template>
+                                            <template x-if="item.shipping_cost">
+                                                <span><i class="bi bi-currency-rupee me-1"></i> Cost: <span x-text="item.shipping_cost"></span></span>
+                                            </template>
+                                            <template x-if="item.article_type || (item.provider_response && item.provider_response.article_type)">
+                                                <span><i class="bi bi-tag me-1"></i> Type: <span x-text="item.article_type || item.provider_response.article_type"></span></span>
+                                            </template>
+                                        </div>
+                                    </template>
                                     <template x-if="item.service && item.service.providers?.length">
                                         <div class="d-flex flex-column gap-1 border-top pt-2 border-secondary-subtle">
                                             <span class="small text-muted fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px; text-transform: uppercase;">Support Persons</span>
@@ -724,6 +737,25 @@
                             <div class="card-body">
                                 <h6 class="fw-bold mb-3">Shipment Summary</h6>
                                 <div class="row g-3">
+                                    <div class="col-md-6" x-show="selectedShipment.actual_weight_g">
+                                        <div class="text-muted small">Weight & Dimensions</div>
+                                        <div class="fw-semibold">
+                                            <span x-text="(selectedShipment.actual_weight_g / 1000).toFixed(2) + ' kg'"></span>
+                                            <template x-if="selectedShipment.length_cm">
+                                                <span> (<span x-text="selectedShipment.length_cm + 'x' + selectedShipment.width_cm + 'x' + selectedShipment.height_cm + ' cm'"></span>)</span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" x-show="selectedShipment.shipping_cost">
+                                        <div class="text-muted small">Shipping Cost</div>
+                                        <div class="fw-semibold text-success">
+                                            <i class="bi bi-currency-rupee"></i> <span x-text="selectedShipment.shipping_cost"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" x-show="selectedShipment.article_type || (selectedShipment.provider_response && selectedShipment.provider_response.article_type)">
+                                        <div class="text-muted small">Article Type</div>
+                                        <div class="fw-semibold" x-text="selectedShipment.article_type || selectedShipment.provider_response.article_type"></div>
+                                    </div>
                                     <div class="col-md-6" x-show="selectedShipment.delivery_attempts > 0">
                                         <div class="text-muted small">Delivery Attempts</div>
                                         <div class="fw-semibold text-danger" x-text="selectedShipment.delivery_attempts"></div>

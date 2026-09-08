@@ -30,6 +30,7 @@ class Shipment extends Model implements Auditable
         'length_cm',
         'width_cm',
         'height_cm',
+        'article_type',
         'shipping_cost',
         'provider_response',
     ];

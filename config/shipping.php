@@ -9,6 +9,7 @@ return [
             'username' => env('INDIA_POST_USERNAME', '9999999999'),
             'password' => env('INDIA_POST_PASSWORD', 'Dop@1234'),
             'bulk_customer_id' => env('INDIA_POST_BULK_CUSTOMER_ID', '3000064781'),
+            'pickup_dropoff_office_id' => env('INDIA_POST_PICKUP_OFFICE_ID', '21260024'),
 
             // Default contract IDs for different services
             'contracts' => [

@@ -784,7 +784,8 @@ export default () => {
             const headers = [
                 'ID', 'Shipment No', 'Order No', 'Carrier', 'Service Providers',
                 'Tracking No', 'Status', 'Delivery Attempts', 'Next Follow-up Date',
-                'Reschedule Reason', 'Delivered By', 'Shipped At', 'Delivered At', 'Created At'
+                'Reschedule Reason', 'Delivered By', 'Shipped At', 'Delivered At', 'Created At',
+                'Weight (g)', 'Dimensions (cm)', 'Shipping Cost'
             ];
             const csvRows = [headers.join(',')];
 
@@ -804,7 +805,10 @@ export default () => {
                     `"${(item.delivered_by || '').replace(/"/g, '""')}"`,
                     formatDate(item.shipped_at),
                     formatDate(item.delivered_at),
-                    formatDate(item.created_at)
+                    formatDate(item.created_at),
+                    item.actual_weight_g || '',
+                    item.length_cm ? `${item.length_cm}x${item.width_cm}x${item.height_cm}` : '',
+                    item.shipping_cost || ''
                 ];
                 csvRows.push(values.join(','));
             });

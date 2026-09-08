@@ -303,6 +303,7 @@ class IndiaPostProvider implements ShippingProviderInterface
 
             return [
                 'tracking_number' => $validArticles[0]['barcode_no'],
+                'article_type' => $articleType,
                 'provider_response' => $response->json(),
                 'actual_weight_g' => $totalWeightG,
                 'length_cm' => $maxLength,
