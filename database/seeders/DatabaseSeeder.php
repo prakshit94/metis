@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             WarehouseSeeder::class,
             ProductSeeder::class,
             StockSeeder::class,
-            VillageSeeder::class,
+            //VillageSeeder::class,
             PartyDataSeeder::class,
             ServiceSeeder::class,
             ReturnReasonsSeeder::class,

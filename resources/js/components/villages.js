@@ -101,6 +101,7 @@ document.addEventListener('alpine:init', () => {
     
     // Import state
     syncing: false,
+    stopSyncing: false,
     importing: false,
     importRows: [],
     importFile: null,
@@ -595,6 +596,7 @@ document.addEventListener('alpine:init', () => {
     async syncPincodes() {
       try {
         this.syncing = true;
+        this.stopSyncing = false;
         
         let url = '/api/villages/sync-indiapost';
         if (this.searchQuery && /^\d+$/.test(this.searchQuery)) {
@@ -602,8 +604,14 @@ document.addEventListener('alpine:init', () => {
         }
 
         let isFinished = false;
-        while (!isFinished) {
+        while (!isFinished && !this.stopSyncing) {
             const res = await apiFetch(url, { method: 'POST' });
+            
+            if (this.stopSyncing) {
+                showToast('Sync stopped by user.', 'info');
+                break;
+            }
+            
             if (res.message && res.message.includes('stopped to prevent timeout')) {
                 showToast('Syncing batch... please wait', 'info');
                 // Small pause to prevent hammering the server
@@ -619,6 +627,7 @@ document.addEventListener('alpine:init', () => {
         showToast(err.message || 'Failed to sync pincodes.', 'danger');
       } finally {
         this.syncing = false;
+        this.stopSyncing = false;
       }
     },
 

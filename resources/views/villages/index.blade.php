@@ -30,9 +30,16 @@
                     </a></li>
                 </ul>
             </div>
-            <button type="button" class="btn btn-outline-info" @click="syncPincodes()" :disabled="syncing">
-                <i class="bi bi-arrow-repeat me-2" :class="{'fa-spin': syncing}"></i><span x-text="syncing ? 'Syncing...' : 'Sync India Post'"></span>
-            </button>
+            <template x-if="!syncing">
+                <button type="button" class="btn btn-outline-info" @click="syncPincodes()">
+                    <i class="bi bi-arrow-repeat me-2"></i><span>Sync India Post</span>
+                </button>
+            </template>
+            <template x-if="syncing">
+                <button type="button" class="btn btn-danger" @click="stopSyncing = true" :disabled="stopSyncing">
+                    <i class="bi bi-stop-circle me-2" :class="{'fa-spin': stopSyncing}"></i><span x-text="stopSyncing ? 'Stopping...' : 'Stop Syncing'"></span>
+                </button>
+            </template>
             <button type="button" class="btn btn-primary" @click="openCreateVillage()">
                 <i class="bi bi-plus-circle me-2"></i>Add Village
             </button>
