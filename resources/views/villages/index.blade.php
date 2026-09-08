@@ -30,6 +30,9 @@
                     </a></li>
                 </ul>
             </div>
+            <button type="button" class="btn btn-outline-info" @click="syncPincodes()" :disabled="syncing">
+                <i class="bi bi-arrow-repeat me-2" :class="{'fa-spin': syncing}"></i><span x-text="syncing ? 'Syncing...' : 'Sync India Post'"></span>
+            </button>
             <button type="button" class="btn btn-primary" @click="openCreateVillage()">
                 <i class="bi bi-plus-circle me-2"></i>Add Village
             </button>
@@ -417,6 +420,7 @@
                             <th>Taluka</th>
                             <th>District</th>
                             <th>State</th>
+                            <th>Office Info</th>
                             <th>Mapped Services</th>
                             <th style="width: 80px;"></th>
                         </tr>
@@ -424,7 +428,7 @@
                     <tbody>
                         <!-- Loading State -->
                         <tr x-show="isLoading">
-                            <td colspan="9" class="text-center py-5">
+                            <td colspan="10" class="text-center py-5">
                                 <div class="spinner-border text-primary" role="status"></div>
                                 <p class="mt-2 text-muted mb-0">Loading villages...</p>
                             </td>
@@ -432,7 +436,7 @@
 
                         <!-- Empty State -->
                         <tr x-show="!isLoading && villages.length === 0">
-                            <td colspan="9" class="text-center py-5">
+                            <td colspan="10" class="text-center py-5">
                                 <i class="bi bi-geo-alt text-muted display-4"></i>
                                 <p class="mt-2 fw-semibold mb-1">No villages found</p>
                                 <p class="text-muted small mb-0">Upload a CSV or add a village manually.</p>
@@ -459,6 +463,13 @@
                                 <td x-text="v.taluka_name || '—'"></td>
                                 <td x-text="v.district_name || '—'"></td>
                                 <td x-text="v.state_name || '—'"></td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span x-show="v.office_type_code" class="badge bg-secondary w-auto align-self-start" x-text="v.office_type_code"></span>
+                                        <span x-show="v.delivery_office_flag" class="badge bg-info text-dark w-auto align-self-start">Delivery</span>
+                                        <span x-show="!v.office_type_code && !v.delivery_office_flag" class="text-muted small">—</span>
+                                    </div>
+                                </td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1">
                                         <template x-for="(map, index) in v.active_mappings" :key="map.id">
@@ -567,6 +578,26 @@
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">State</label>
                             <input type="text" class="form-control" x-model="form.state_name" placeholder="e.g. Maharashtra">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Office ID</label>
+                            <input type="text" class="form-control" x-model="form.office_id" placeholder="e.g. 1234">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Office Type</label>
+                            <input type="text" class="form-control" x-model="form.office_type_code" placeholder="e.g. PO">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="deliveryOfficeFlag" x-model="form.delivery_office_flag">
+                                <label class="form-check-label" for="deliveryOfficeFlag">Delivery Office</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="isRolledOut" x-model="form.is_rolled_out">
+                                <label class="form-check-label" for="isRolledOut">Rolled Out</label>
+                            </div>
                         </div>
                     </div>
                 </div>

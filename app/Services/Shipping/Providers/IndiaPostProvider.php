@@ -116,6 +116,26 @@ class IndiaPostProvider implements ShippingProviderInterface
         }
     }
 
+    public function getPincodeDetails(string $pincode, string $officeType = 'post'): array
+    {
+        $token = $this->authenticate();
+
+        // The endpoint from the documentation uses bemasterdata instead of beextcustomer
+        $baseUrl = str_replace('beextcustomer', 'bemasterdata', $this->baseUrl);
+
+        $response = $this->httpClient()->withToken($token)->get("{$baseUrl}/v1/offices/limited-details", [
+            'pincode' => $pincode,
+            'limit' => 50,
+            'office-type' => $officeType,
+        ]);
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        throw new \Exception('Failed to fetch pincode details: '.$response->body());
+    }
+
     public function getTariff(array $packageDetails): array
     {
         $token = $this->authenticate();
@@ -167,19 +187,27 @@ class IndiaPostProvider implements ShippingProviderInterface
         // Cap weight at 35000g (35kg) to respect India Post's maximum limit for BUSINESS_PARCEL
         $totalWeightG = (int) min(35000, max(10, $totalWeightG));
 
-        // Determine contract and article type based on order logic or default to SP
-        // If your order model has a 'shipping_method' or similar, you could map it here.
-        // E.g., if ($order->shipping_method === 'business_parcel') ...
-        // We'll default to SP_INLAND_PARCEL as a safe fallback
-        $articleType = 'BUSINESS_PARCEL';
+        // Determine contract and article type based on order logic or default to BP
+        $articleType = 'BP';
         $contractId = config('shipping.providers.india_post.contracts.BUSINESS_PARCEL');
+
+        // Shape of article
+        $shape = 'NROL';
+        if (in_array($articleType, ['SP', 'SP_INLAND_DOC', '24_SPEEDPOST_DOC', '48_SPEEDPOST_DOC'])) {
+            $shape = 'DOC';
+        }
+
+        $otp = 'FALSE';
+        if ($articleType === '24_SPP_PARSPL') {
+            $otp = 'TRUE';
+        }
 
         // Dynamic Sender info from Origin Warehouse
         $warehouse = $order->warehouse;
         $senderName = $warehouse ? $warehouse->name : config('app.name');
         $senderCompany = $warehouse ? ($warehouse->company_name ?: $senderName) : config('app.name');
         $senderPhone = $warehouse && $warehouse->phone ? $warehouse->phone : '9876543210';
-        $senderPhone = preg_match('/^[0-9]{10,15}$/', $senderPhone) ? $senderPhone : '9876543210';
+        $senderPhone = preg_match('/^[6-9][0-9]{9}$/', $senderPhone) ? $senderPhone : '9876543210';
         $senderAddr = $warehouse ? ($warehouse->address_line_1 ?: 'HQ Address') : 'HQ Address';
         $senderCity = $warehouse ? ($warehouse->city ?: 'HQ City') : 'HQ City';
         $senderPin = $warehouse ? (int) $warehouse->pincode : 110001;
@@ -192,7 +220,7 @@ class IndiaPostProvider implements ShippingProviderInterface
         if (!$receiverCompany) $receiverCompany = $receiverName;
         
         $receiverPhone = $order->party->phone ?? '';
-        if (!preg_match('/^[6-9]\d{9}$/', $receiverPhone)) {
+        if (!preg_match('/^[6-9][0-9]{9}$/', $receiverPhone)) {
             $receiverPhone = '9876543210'; // Fallback to avoid API crash
         }
         
@@ -210,28 +238,31 @@ class IndiaPostProvider implements ShippingProviderInterface
                     'pickup_dropoff_office_id' => (int) config('shipping.providers.india_post.pickup_dropoff_office_id'),
                     'article_type' => $articleType,
                     'physical_weight' => $totalWeightG,
-                    'shape_of_article' => 'NROL',
+                    'shape_of_article' => $shape,
                     'length' => (int) $maxLength,
                     'breadth_diameter' => (int) $maxWidth,
                     'height' => (int) $maxHeight,
                     
-                    'sender_name' => substr($senderName, 0, 50),
-                    'sender_company' => substr($senderCompany, 0, 50),
-                    'sender_add_line_1' => substr($senderAddr, 0, 100),
-                    'sender_city' => substr($senderCity, 0, 50),
+                    'sender_name' => substr($senderName, 0, 80),
+                    'sender_company' => substr($senderCompany, 0, 80),
+                    'sender_add_line_1' => substr($senderAddr, 0, 80),
+                    'sender_city' => substr($senderCity, 0, 80),
                     'sender_pincode' => $senderPin,
                     'sender_mobile_no' => $senderPhone,
                     
-                    'receiver_name' => substr($receiverName, 0, 50),
-                    'receiver_company' => substr($receiverCompany, 0, 50),
-                    'receiver_add_line_1' => substr($receiverAddr, 0, 100),
-                    'receiver_city' => substr($receiverCity, 0, 50),
+                    'receiver_name' => substr($receiverName, 0, 80),
+                    'receiver_company' => substr($receiverCompany, 0, 80),
+                    'receiver_add_line_1' => substr($receiverAddr, 0, 80),
+                    'receiver_city' => substr($receiverCity, 0, 80),
                     'receiver_pincode' => $receiverPin,
                     'receiver_mobile_no' => $receiverPhone,
                     
                     'alt_address_flag' => 'FALSE',
                     'pickup_address_flag' => 'FALSE',
                     'drop_off_pincode' => (int) config('shipping.providers.india_post.drop_off_pincode'),
+                    'ack' => 'FALSE',
+                    'reg' => 'FALSE',
+                    'otp' => $otp,
                 ],
             ],
         ];
@@ -259,6 +290,22 @@ class IndiaPostProvider implements ShippingProviderInterface
         throw new \Exception('Failed to create shipment: '.$response->body());
     }
 
+    public function createShipmentBatch(string $filePath): array
+    {
+        $token = $this->authenticate();
+        $customId = config('shipping.providers.india_post.bulk_customer_id');
+
+        $response = $this->httpClient()->withToken($token)
+            ->attach('file', file_get_contents($filePath), basename($filePath))
+            ->post("{$this->baseUrl}/process-articles-file/{$customId}");
+
+        if ($response->successful() && $response->json('success')) {
+            return $response->json();
+        }
+
+        throw new \Exception('Failed to process shipment file: '.$response->body());
+    }
+
     public function generateLabel(Order $order, string $trackingNumber): string
     {
         $token = $this->authenticate();
@@ -276,11 +323,14 @@ class IndiaPostProvider implements ShippingProviderInterface
             'channel_type' => 'E',
             'user_type' => 'R',
             'barcode_no' => $trackingNumber,
-            'service_type' => 'BP',
+            'service_type' => 'BP', // Could be dynamic
             'booking_type' => 'COMMERCIAL',
-            'recipient_name' => substr($receiverName, 0, 50),
-            'recipient_addressl1' => substr($receiverAddr, 0, 100),
-            'sender_name' => substr($senderName, 0, 50),
+            'physical_weight' => 500, // Dummy fallback, ideally fetched from order items
+            'insurance_flag' => false,
+            'insurance_value' => 0,
+            'recipient_name' => substr($receiverName, 0, 80),
+            'recipient_addressl1' => substr($receiverAddr, 0, 80),
+            'sender_name' => substr($senderName, 0, 80),
             'transmission_mode' => 'S',
             'payment_mode' => 'CO',
             'booking_office_name' => config('shipping.providers.india_post.booking_office_name'),

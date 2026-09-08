@@ -29,6 +29,10 @@ class Village extends Model implements Auditable
         'taluka_name',
         'district_name',
         'state_name',
+        'office_id',
+        'office_type_code',
+        'delivery_office_flag',
+        'is_rolled_out',
     ];
 
     /**

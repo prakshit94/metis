@@ -14,6 +14,8 @@ use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
+use App\Services\Shipping\Providers\IndiaPostProvider;
+use Illuminate\Support\Facades\Log;
 
 class VillageController extends Controller implements HasMiddleware
 {
@@ -178,6 +180,10 @@ class VillageController extends Controller implements HasMiddleware
             'taluka_name' => ['nullable', 'string', 'max:255'],
             'district_name' => ['nullable', 'string', 'max:255'],
             'state_name' => ['nullable', 'string', 'max:255'],
+            'office_id' => ['nullable', 'string', 'max:255'],
+            'office_type_code' => ['nullable', 'string', 'max:255'],
+            'delivery_office_flag' => ['nullable', 'boolean'],
+            'is_rolled_out' => ['nullable', 'boolean'],
         ]);
 
         $village = Village::create($validated);
@@ -210,6 +216,10 @@ class VillageController extends Controller implements HasMiddleware
             'taluka_name' => ['nullable', 'string', 'max:255'],
             'district_name' => ['nullable', 'string', 'max:255'],
             'state_name' => ['nullable', 'string', 'max:255'],
+            'office_id' => ['nullable', 'string', 'max:255'],
+            'office_type_code' => ['nullable', 'string', 'max:255'],
+            'delivery_office_flag' => ['nullable', 'boolean'],
+            'is_rolled_out' => ['nullable', 'boolean'],
         ]);
 
         $village->update($validated);
@@ -258,6 +268,62 @@ class VillageController extends Controller implements HasMiddleware
     /**
      * Bulk actions for villages (delete, service-update).
      */
+    public function syncIndiaPostPincodes(Request $request, IndiaPostProvider $indiaPostProvider): JsonResponse
+    {
+        $pincode = $request->input('pincode');
+        
+        $pincodesToSync = [];
+        if ($pincode) {
+            $pincodesToSync[] = $pincode;
+        } else {
+            $pincodesToSync = Village::select('pincode')->distinct()->pluck('pincode')->toArray();
+        }
+
+        $syncedCount = 0;
+        $errors = [];
+
+        foreach ($pincodesToSync as $code) {
+            try {
+                $details = $indiaPostProvider->getPincodeDetails((string)$code);
+                
+                if (is_array($details) && count($details) > 0) {
+                    foreach ($details as $office) {
+                        $villageName = !empty($office['village_name']) && $office['village_name'] !== 'Choose an option' 
+                            ? $office['village_name'] 
+                            : $office['office_name'];
+                            
+                        Village::updateOrCreate(
+                            [
+                                'pincode' => $office['pincode'],
+                                'office_id' => $office['office_id'] ?? null,
+                            ],
+                            [
+                                'village_name' => $villageName,
+                                'post_so_name' => $office['office_name'] ?? null,
+                                'taluka_name' => $office['taluk_name'] ?? null,
+                                'district_name' => $office['city_name'] ?? null,
+                                'state_name' => $office['state_name'] ?? null,
+                                'office_type_code' => $office['office_type_code'] ?? null,
+                                'delivery_office_flag' => $office['delivery_office_flag'] ?? false,
+                                'is_rolled_out' => $office['is_rolled_out'] ?? false,
+                            ]
+                        );
+                        $syncedCount++;
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to sync India Post pincode {$code}: " . $e->getMessage());
+                $errors[] = $code;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Synced $syncedCount offices from India Post.",
+            'errors' => $errors
+        ]);
+    }
+
     public function bulkAction(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -431,6 +497,10 @@ class VillageController extends Controller implements HasMiddleware
                             'taluka_name' => ($row[3] ?? null) === '#N/A' ? null : ($row[3] ?? null),
                             'district_name' => ($row[4] ?? null) === '#N/A' ? null : ($row[4] ?? null),
                             'state_name' => ($row[5] ?? null) === '#N/A' ? null : ($row[5] ?? null),
+                            'office_id' => ($row[6] ?? null) === '#N/A' ? null : ($row[6] ?? null),
+                            'office_type_code' => ($row[7] ?? null) === '#N/A' ? null : ($row[7] ?? null),
+                            'delivery_office_flag' => strtolower((string)($row[8] ?? '')) === 'yes' || strtolower((string)($row[8] ?? '')) === 'true' || ($row[8] ?? null) == 1,
+                            'is_rolled_out' => strtolower((string)($row[9] ?? '')) === 'yes' || strtolower((string)($row[9] ?? '')) === 'true' || ($row[9] ?? null) == 1,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ];
@@ -454,8 +524,8 @@ class VillageController extends Controller implements HasMiddleware
     {
         return response()->streamDownload(function () {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['village_name', 'pincode', 'post_so_name', 'taluka_name', 'district_name', 'state_name']);
-            fputcsv($out, ['Kawatha', '440001', 'Nagpur SO', 'Kamptee', 'Nagpur', 'Maharashtra']);
+            fputcsv($out, ['village_name', 'pincode', 'post_so_name', 'taluka_name', 'district_name', 'state_name', 'office_id', 'office_type_code', 'delivery_office_flag', 'is_rolled_out']);
+            fputcsv($out, ['Kawatha', '440001', 'Nagpur SO', 'Kamptee', 'Nagpur', 'Maharashtra', '1234', 'PO', 'Yes', 'Yes']);
             fclose($out);
         }, 'villages-import-template.csv', [
             'Content-Type' => 'text/csv',
@@ -565,6 +635,10 @@ class VillageController extends Controller implements HasMiddleware
                 'Taluka',
                 'District',
                 'State',
+                'Office ID',
+                'Office Type',
+                'Delivery Office',
+                'Rolled Out',
                 'Mapped Services',
                 'Available Services Count',
                 'Status',
@@ -588,6 +662,10 @@ class VillageController extends Controller implements HasMiddleware
                     $village->taluka_name,
                     $village->district_name,
                     $village->state_name,
+                    $village->office_id ?: '—',
+                    $village->office_type_code ?: '—',
+                    $village->delivery_office_flag ? 'Yes' : 'No',
+                    $village->is_rolled_out ? 'Yes' : 'No',
                     $serviceNames ?: 'None',
                     $availableMappings->count(),
                     $village->trashed() ? 'Deleted' : 'Active',

@@ -410,6 +410,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     ])->only(['store', 'update', 'destroy']);
 
     // Villages API Routes
+    Route::post('/villages/sync-indiapost', [VillageController::class, 'syncIndiaPostPincodes'])->name('api.villages.sync-indiapost');
     Route::post('/villages/bulk-action', [VillageController::class, 'bulkAction'])->name('api.villages.bulk');
     Route::get('/villages/services-options', [VillageController::class, 'servicesOptions'])->name('api.villages.services-options');
     Route::get('/villages/search', [VillageController::class, 'search'])->name('api.villages.search');

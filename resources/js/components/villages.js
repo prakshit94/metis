@@ -100,6 +100,7 @@ document.addEventListener('alpine:init', () => {
     itemsPerPage: 15,
     
     // Import state
+    syncing: false,
     importing: false,
     importRows: [],
     importFile: null,
@@ -591,6 +592,25 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    async syncPincodes() {
+      try {
+        this.syncing = true;
+        
+        let url = '/api/villages/sync-indiapost';
+        if (this.searchQuery && /^\d+$/.test(this.searchQuery)) {
+            url += '?pincode=' + this.searchQuery;
+        }
+
+        const res = await apiFetch(url, { method: 'POST' });
+        showToast(res.message || 'Synced successfully.', 'success');
+        this.fetchVillages();
+      } catch (err) {
+        showToast(err.message || 'Failed to sync pincodes.', 'danger');
+      } finally {
+        this.syncing = false;
+      }
+    },
+
     // ─── Import Methods ──────────────────────────────────────────────────────
     async handleImportFileSelect(event) {
       const file = event.target.files[0];
@@ -668,6 +688,10 @@ document.addEventListener('alpine:init', () => {
       taluka_name: '',
       district_name: '',
       state_name: '',
+      office_id: '',
+      office_type_code: '',
+      delivery_office_flag: false,
+      is_rolled_out: false,
     },
 
     loadVillage(v) {
@@ -679,6 +703,10 @@ document.addEventListener('alpine:init', () => {
         taluka_name: v.taluka_name ?? '',
         district_name: v.district_name ?? '',
         state_name: v.state_name ?? '',
+        office_id: v.office_id ?? '',
+        office_type_code: v.office_type_code ?? '',
+        delivery_office_flag: !!v.delivery_office_flag,
+        is_rolled_out: !!v.is_rolled_out,
       };
     },
 
@@ -691,6 +719,10 @@ document.addEventListener('alpine:init', () => {
         taluka_name: '',
         district_name: '',
         state_name: '',
+        office_id: '',
+        office_type_code: '',
+        delivery_office_flag: false,
+        is_rolled_out: false,
       };
     },
 

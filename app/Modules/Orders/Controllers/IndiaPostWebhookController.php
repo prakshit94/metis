@@ -18,80 +18,88 @@ class IndiaPostWebhookController extends Controller
 
         Log::info('India Post Webhook Received:', $payload);
 
-        // Validate payload
-        if (! isset($payload['article_number']) || ! isset($payload['event_code'])) {
-            return response()->json(['error' => 'Invalid payload'], 400);
-        }
-
-        $trackingNumber = $payload['article_number'];
-        $eventCode = $payload['event_code'];
-        $eventDescription = $payload['event_description'] ?? '';
-        $eventDate = $payload['event_date'] ?? null;
-        $eventTime = $payload['event_time'] ?? null;
-
-        $location = $payload['event_office_name'] ?? 'Unknown Location';
-
-        $shipment = Shipment::where('tracking_no', $trackingNumber)
-            ->where('carrier_name', 'India Post')
-            ->first();
-
-        if (! $shipment) {
-            Log::warning("Shipment not found for tracking number: {$trackingNumber}");
-
-            return response()->json(['error' => 'Shipment not found'], 404);
-        }
-
-        // Map India Post Event Code to our internal statuses if needed
-        $statusMap = [
-            'ITEM_DELIVERED' => 'delivered',
-            'BAG_CLOSE' => 'in_transit',
-            'ITEM_BOOK' => 'in_transit',
-            // add more mappings as per India Post documentation
-        ];
-
-        $newStatus = $statusMap[$eventCode] ?? 'in_transit';
-
-        // Only update if it's progressing logically (simplified)
-        if ($newStatus === 'delivered' && $shipment->status !== 'delivered') {
-            // In a real app we would call InventoryService->deliverOrder($shipment->order)
-            // But for the webhook we will just mark shipment as delivered for now
-            $shipment->update([
-                'status' => 'delivered',
-                'delivered_at' => now(),
-            ]);
-
-            // Optionally update order status
-            $shipment->order->update(['status' => 'delivered']);
-        } elseif ($newStatus === 'in_transit' && $shipment->status === 'pending') {
-            $shipment->update([
-                'status' => 'in_transit',
-                'shipped_at' => now(),
-            ]);
-
-            if ($shipment->order->status === 'ready_to_ship') {
-                $shipment->order->update(['status' => 'dispatched']);
+        $articles = $payload['articles'] ?? [];
+        if (empty($articles)) {
+            if (isset($payload['article_number'])) {
+                $articles = [$payload];
+            } else {
+                return response()->json(['error' => 'Invalid payload'], 400);
             }
         }
 
-        // Save tracking event
-        $timestamp = null;
-        if ($eventDate && $eventTime) {
-            try {
-                $timestamp = Carbon::parse($eventDate.' '.$eventTime);
-            } catch (\Exception $e) {
+        foreach ($articles as $articleData) {
+            $trackingNumber = $articleData['article_number'] ?? $articleData['articleId'] ?? null;
+            $eventCode = $articleData['event_code'] ?? $articleData['evntCode'] ?? null;
+            
+            if (!$trackingNumber || !$eventCode) {
+                continue;
+            }
+
+            $eventDescription = $articleData['event_description'] ?? $articleData['evntDesc'] ?? '';
+            $eventDate = $articleData['event_date'] ?? $articleData['evntDate'] ?? null;
+            $eventTime = $articleData['event_time'] ?? $articleData['evntTime'] ?? null;
+            $location = $articleData['event_office_name'] ?? $articleData['officeName'] ?? 'Unknown Location';
+
+            $shipment = Shipment::where('tracking_no', $trackingNumber)
+                ->where('carrier_name', 'India Post')
+                ->first();
+
+            if (! $shipment) {
+                Log::warning("Shipment not found for tracking number: {$trackingNumber}");
+                continue;
+            }
+
+            // Map India Post Event Code to our internal statuses
+            $statusMap = [
+                'ITEM_DELIVERED' => 'delivered',
+                'DELIVERED' => 'delivered',
+                'BAG_CLOSE' => 'in_transit',
+                'ITEM_BOOK' => 'in_transit',
+                // add more mappings as per India Post documentation
+            ];
+
+            $newStatus = $statusMap[$eventCode] ?? 'in_transit';
+
+            // Only update if it's progressing logically (simplified)
+            if ($newStatus === 'delivered' && $shipment->status !== 'delivered') {
+                $shipment->update([
+                    'status' => 'delivered',
+                    'delivered_at' => now(),
+                ]);
+
+                // Optionally update order status
+                $shipment->order->update(['status' => 'delivered']);
+            } elseif ($newStatus === 'in_transit' && $shipment->status === 'pending') {
+                $shipment->update([
+                    'status' => 'in_transit',
+                    'shipped_at' => now(),
+                ]);
+
+                if ($shipment->order->status === 'ready_to_ship') {
+                    $shipment->order->update(['status' => 'dispatched']);
+                }
+            }
+
+            // Save tracking event
+            $timestamp = null;
+            if ($eventDate && $eventTime) {
+                try {
+                    $timestamp = Carbon::parse($eventDate.' '.$eventTime);
+                } catch (\Exception $e) {
+                    $timestamp = now();
+                }
+            } else {
                 $timestamp = now();
             }
-        } else {
-            $timestamp = now();
-        }
 
-        ShipmentTrackingEvent::create([
-            'shipment_id' => $shipment->id,
-            'status' => $newStatus,
-            'location' => $location,
-            'description' => $eventDescription,
-            'tracked_at' => $timestamp,
-        ]);
+            ShipmentTrackingEvent::create([
+                'shipment_id' => $shipment->id,
+                'status' => $newStatus,
+                'location' => $location,
+                'description' => $eventDescription,
+                'tracked_at' => $timestamp,
+            ]);
+        }
 
         return response()->json(['success' => true]);
     }

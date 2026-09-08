@@ -17,6 +17,10 @@ return new class extends Migration
             $table->string('taluka_name')->nullable();
             $table->string('district_name')->nullable()->index();
             $table->string('state_name')->nullable();
+            $table->string('office_id')->nullable();
+            $table->string('office_type_code')->nullable();
+            $table->boolean('delivery_office_flag')->default(false);
+            $table->boolean('is_rolled_out')->default(false);
             $table->timestamps();
             $table->softDeletes();
 
