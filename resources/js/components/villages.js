@@ -622,7 +622,7 @@ document.addEventListener('alpine:init', () => {
             }
         }
         
-        this.fetchVillages();
+        this.loadVillages();
       } catch (err) {
         showToast(err.message || 'Failed to sync pincodes.', 'danger');
       } finally {
