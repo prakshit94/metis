@@ -323,9 +323,11 @@ class VillageController extends Controller implements HasMiddleware
                 }
                 
                 $hasValidData = false;
-                if (is_array($details) && count($details) > 0) {
-                    foreach ($details as $office) {
-                        // Ensure we are dealing with an array, not a boolean/string from an error JSON object like {"status": 404}
+                $officesList = isset($details['data']) && is_array($details['data']) ? $details['data'] : $details;
+                
+                if (is_array($officesList) && count($officesList) > 0) {
+                    foreach ($officesList as $office) {
+                        // Ensure we are dealing with an array, not a boolean/string from an error JSON object
                         if (!is_array($office)) continue;
 
                         $hasValidData = true;
