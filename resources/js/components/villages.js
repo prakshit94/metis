@@ -601,8 +601,19 @@ document.addEventListener('alpine:init', () => {
             url += '?pincode=' + this.searchQuery;
         }
 
-        const res = await apiFetch(url, { method: 'POST' });
-        showToast(res.message || 'Synced successfully.', 'success');
+        let isFinished = false;
+        while (!isFinished) {
+            const res = await apiFetch(url, { method: 'POST' });
+            if (res.message && res.message.includes('stopped to prevent timeout')) {
+                showToast('Syncing batch... please wait', 'info');
+                // Small pause to prevent hammering the server
+                await new Promise(r => setTimeout(r, 1000));
+            } else {
+                showToast(res.message || 'Synced successfully.', 'success');
+                isFinished = true;
+            }
+        }
+        
         this.fetchVillages();
       } catch (err) {
         showToast(err.message || 'Failed to sync pincodes.', 'danger');
