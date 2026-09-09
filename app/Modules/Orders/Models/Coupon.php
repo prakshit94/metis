@@ -77,7 +77,7 @@ class Coupon extends Model implements Auditable
 
     public function freeProduct()
     {
-        return $this->belongsTo(App\Modules\Catalog\Models\Product::class, "free_product_id");
+        return $this->belongsTo(\App\Modules\Catalog\Models\Product::class, "free_product_id");
     }
 
     public function creator()

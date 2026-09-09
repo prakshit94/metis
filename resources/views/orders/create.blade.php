@@ -3688,8 +3688,25 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
             this.formErrors = [];
             if (!this.partyId) { this.formErrors.push('Please select a customer.'); return; }
             if (this.cart.length === 0) { this.formErrors.push('Cart is empty.'); return; }
-            if (!this.shippingAddressId) { this.formErrors.push('Please select a shipping address.'); return; }
-            if (!this.sameAsShipping && !this.billingAddressId) { this.formErrors.push('Please select a billing address.'); return; }
+            if (!this.shippingAddressId) { 
+                this.formErrors.push('Please select a shipping address.'); return; 
+            } else {
+                const shippingAddress = this.addresses.find(a => String(a.id) === String(this.shippingAddressId));
+                if (shippingAddress && (!shippingAddress.address_line_1 || !shippingAddress.address_line_1.trim())) {
+                    this.formErrors.push('Shipping address is missing Address Line 1.'); return;
+                }
+            }
+            
+            if (!this.sameAsShipping) {
+                if (!this.billingAddressId) { 
+                    this.formErrors.push('Please select a billing address.'); return; 
+                } else {
+                    const billingAddress = this.addresses.find(a => String(a.id) === String(this.billingAddressId));
+                    if (billingAddress && (!billingAddress.address_line_1 || !billingAddress.address_line_1.trim())) {
+                        this.formErrors.push('Billing address is missing Address Line 1.'); return;
+                    }
+                }
+            }
             if (!this.warehouseId) { this.formErrors.push('Please select a warehouse.'); return; }
             
             const modalEl = document.getElementById('orderReviewModal');

@@ -514,7 +514,7 @@ function couponsModule() {
                 const params = new URLSearchParams({ search: this.search, status: this.filterStatus, per_page: 15, page: this.page });
                 const res = await fetch(`/api/promotions/coupons?${params}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
                 const json = await res.json();
-                const d = json.data;
+                const d = json.data || {};
                 this.coupons = d.data || [];
                 this.total = d.total || 0; this.from = d.from || 0; this.to = d.to || 0; this.lastPage = d.last_page || 1;
                 this.stats.total = this.total;
