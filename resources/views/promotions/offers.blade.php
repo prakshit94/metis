@@ -180,10 +180,10 @@
                                 <td>
                                     <div class="fw-bold text-body-emphasis">
                                         <template x-if="o.type === 'bogo'">
-                                            <span>Buy <span class="text-info" x-text="o.buy_qty"></span> Get <span class="text-info" x-text="o.get_qty"></span> Free</span>
+                                            <span>Buy <span class="text-info" x-text="o.buy_qty"></span> Get <span class="text-info" x-text="o.get_qty"></span> Free <span class="text-muted fs-7" x-text="o.product ? '(' + o.product.name + ')' : ''"></span></span>
                                         </template>
                                         <template x-if="o.type === 'free_product'">
-                                            <span>Buy <span class="text-success" x-text="o.buy_qty"></span> Get <span class="text-success" x-text="o.get_qty"></span> Free Item</span>
+                                            <span>Buy <span class="text-success" x-text="o.buy_qty"></span> Get <span class="text-success" x-text="o.get_qty"></span> Free <span class="text-muted fs-7" x-text="o.product ? '(' + o.product.name + ')' : 'Item'"></span></span>
                                         </template>
                                         <template x-if="o.type === 'order_discount' || o.type === 'category_discount'">
                                             <span x-text="o.discount_type === 'percentage' ? parseFloat(o.value).toFixed(2) + '%' : '₹ ' + parseFloat(o.value).toFixed(2)"></span>
@@ -447,10 +447,55 @@
                                         <h6 class="mb-0 fw-bolder text-uppercase text-body" style="font-size: 11px; letter-spacing: 1.5px;">Targeting & Scope</h6>
                                     </div>
                                     <div class="row g-4">
-                                        <div class="col-12" x-show="form.type !== 'order_discount'" style="display: none;">
-                                            <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Applicable Category IDs (Comma Separated)</label>
-                                            <input type="text" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.applicable_categories" placeholder="e.g. 1,2,3" style="font-size: 14px;">
-                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">Enter Category IDs that trigger the offer.</small>
+                                        <div class="col-12" @click.away="showCategoriesDropdown = false" x-show="form.type !== 'order_discount'" style="display: none;">
+                                            <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Applicable Categories</label>
+                                            
+                                            <div class="position-relative">
+                                                <div class="form-control form-control-lg d-flex flex-wrap align-items-center gap-2 bg-body border border-secondary border-opacity-25 shadow-none cursor-pointer rounded-3 px-3 py-2" style="min-height: 48px; cursor: text;" @click="showCategoriesDropdown = true; $refs.categorySearch.focus()">
+                                                    
+                                                    <!-- Selected Chips -->
+                                                    <template x-for="cId in form.applicable_categories" :key="cId">
+                                                        <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 d-flex align-items-center gap-2 rounded-pill px-3 py-2 shadow-sm transition-all">
+                                                            <span x-text="(allCategories.find(c => c.id == cId) || {}).name || 'Unknown Category'" style="font-size: 12px; font-weight: 600;"></span>
+                                                            <i class="bi bi-x-circle-fill cursor-pointer opacity-75 custom-hover-opacity" @click.stop="form.applicable_categories = form.applicable_categories.filter(id => id != cId)" style="font-size: 14px;"></i>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Any Category Chip -->
+                                                    <template x-if="form.applicable_categories.length === 0">
+                                                        <div class="badge bg-secondary bg-opacity-10 text-secondary d-flex align-items-center gap-2 rounded-pill px-3 py-2 border border-secondary border-opacity-25">
+                                                            <i class="bi bi-globe2"></i>
+                                                            <span style="font-size: 12px; font-weight: 600;">Any Category (Global)</span>
+                                                        </div>
+                                                    </template>
+
+                                                    <div class="flex-grow-1" style="min-width: 150px;">
+                                                        <input x-ref="categorySearch" type="text" x-model="categorySearch" @focus="showCategoriesDropdown = true" placeholder="Search to add..." class="border-0 w-100 outline-none bg-transparent fw-semibold text-body" style="font-size: 14px; outline: none !important; box-shadow: none;">
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Dropdown List -->
+                                                <div x-show="showCategoriesDropdown" x-transition.opacity.duration.200ms class="position-absolute w-100 bg-body border border-secondary border-opacity-25 rounded-4 shadow-sm mt-2 overflow-auto" style="max-height: 350px; z-index: 1050; top: 100%; left: 0; display: none;">
+                                                    <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.applicable_categories = []">
+                                                        <div class="form-check m-0 d-flex align-items-center w-100">
+                                                            <input type="checkbox" :checked="form.applicable_categories.length === 0" class="form-check-input border-secondary border-opacity-50 bg-body-tertiary me-3" style="cursor: pointer; transform: scale(1.2);">
+                                                            <span class="text-muted fw-bold" style="font-size: 13px;">Any Category (Global)</span>
+                                                        </div>
+                                                    </div>
+                                                    <hr class="dropdown-divider my-0 border-secondary border-opacity-25">
+                                                    <template x-for="c in allCategories.filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase()))" :key="c.id">
+                                                        <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.applicable_categories.includes(c.id) ? form.applicable_categories = form.applicable_categories.filter(id => id != c.id) : form.applicable_categories.push(c.id)">
+                                                            <div class="form-check m-0 d-flex align-items-center w-100">
+                                                                <input type="checkbox" :checked="form.applicable_categories.includes(c.id)" class="form-check-input border-secondary border-opacity-50 bg-body-tertiary me-3" style="cursor: pointer; transform: scale(1.2);">
+                                                                <div>
+                                                                    <div style="font-size: 13px; font-weight: 600;" class="text-body" x-text="c.name"></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">Select categories that trigger the offer.</small>
                                         </div>
                                         <div class="col-12" @click.away="showProductsDropdown = false" x-show="form.type !== 'order_discount'">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" x-text="form.type === 'free_product' ? 'Required Products (Trigger)' : 'Applicable Products'"></label>
@@ -586,11 +631,14 @@
 @push('scripts')
 <script>
 const INITIAL_PRODUCTS = @json($products ?? []);
+const INITIAL_CATEGORIES = @json($categories ?? []);
 
 function offersModule() {
     return {
         allProducts: INITIAL_PRODUCTS || [],
+        allCategories: INITIAL_CATEGORIES || [],
         showProductsDropdown: false, productSearch: '',
+        showCategoriesDropdown: false, categorySearch: '',
         offers: [], loading: false, saving: false,
         search: '', filterType: '', filterStatus: '', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0,

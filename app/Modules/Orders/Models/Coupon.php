@@ -75,6 +75,11 @@ class Coupon extends Model implements Auditable
         'cashback_fixed' => 'decimal:2',
     ];
 
+    public function freeProduct()
+    {
+        return $this->belongsTo(App\Modules\Catalog\Models\Product::class, "free_product_id");
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');

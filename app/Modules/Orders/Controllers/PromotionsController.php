@@ -35,22 +35,24 @@ class PromotionsController extends Controller implements HasMiddleware
     public function coupons()
     {
         $products = Product::where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku']);
+        $categories = \App\Modules\Catalog\Models\Category::orderBy('name')->get(['id', 'name']);
 
-        return view('promotions.coupons', compact('products'));
+        return view('promotions.coupons', compact('products', 'categories'));
     }
 
     public function offers()
     {
         $products = Product::where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku']);
+        $categories = \App\Modules\Catalog\Models\Category::orderBy('name')->get(['id', 'name']);
 
-        return view('promotions.offers', compact('products'));
+        return view('promotions.offers', compact('products', 'categories'));
     }
 
     // ─── Coupons JSON API ─────────────────────────────────────────────────────
 
     public function couponsIndex(Request $request): JsonResponse
     {
-        $query = Coupon::with(['creator', 'updater'])->latest();
+        $query = Coupon::with(['creator', 'updater', 'freeProduct'])->latest();
 
         if ($request->filled('search')) {
             $s = $request->search;

@@ -1803,15 +1803,20 @@
                                     <div class="card border-2 rounded-4 transition-all hover-shadow cursor-pointer" :class="(couponApplied && couponCode === c.code) ? 'border-success bg-success bg-opacity-10' : 'border-secondary border-opacity-10 bg-body-tertiary'" @click="applyCoupon(c.code)">
                                         <div class="card-body p-3 d-flex align-items-center justify-content-between gap-3">
                                             <div class="d-flex align-items-center gap-3">
-                                                <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center d-flex flex-column justify-content-center align-items-center" style="min-width: 90px; height: 90px;">
+                                                <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center d-flex flex-column justify-content-center align-items-center" style="min-width: 90px; height: 90px;" x-show="c.type !== 'free_product'">
                                                     <h5 class="fw-black text-body-emphasis mb-1" x-text="c.type === 'percentage' ? parseFloat(c.value) + '%' : '₹ ' + parseFloat(c.value)"></h5>
                                                     <span class="badge text-bg-primary-subtle text-primary-emphasis w-100">OFF</span>
+                                                </div>
+                                                <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center d-flex flex-column justify-content-center align-items-center" style="min-width: 90px; height: 90px;" x-show="c.type === 'free_product'">
+                                                    <i class="bi bi-gift-fill fs-3 text-primary mb-1"></i>
+                                                    <span class="badge text-bg-primary-subtle text-primary-emphasis w-100">GIFT</span>
                                                 </div>
                                                 <div class="ps-2">
                                                     <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                                                         <code class="fw-black text-body-emphasis fs-6 d-block" x-text="c.code"></code>
                                                     </div>
                                                     <div class="pe-3 ps-2 border-start border-2 border-secondary border-opacity-25">
+                                                        <p class="mb-1 fw-medium small text-primary" x-show="c.type === 'free_product'" x-text="(() => { let cp = products.find(p => String(p.id) === String(c.free_product_id)); return 'Free Gift: ' + (cp ? cp.name : 'Special Item'); })()"></p>
                                                         <p class="mb-1 small text-body-secondary" x-show="c.min_spend > 0" x-text="'Min. Spend: ₹ ' + Number(c.min_spend).toFixed(2)"></p>
                                                         <p class="mb-1 small text-body-secondary" x-show="c.max_discount > 0" x-text="'Max Discount: ₹ ' + Number(c.max_discount).toFixed(2)"></p>
                                                         <p class="mb-1 small text-body-secondary" x-show="c.usage_limit > 0" x-text="'Remaining Uses: ' + Math.max(0, c.usage_limit - c.used_count)"></p>
@@ -2718,38 +2723,80 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     if (cats && cats.length > 0 && (cats.includes(p.category_id) || cats.includes(String(p.category_id)))) match = true;
                     
                     if (match) {
+                        let reward = o.product_name ? ` (${o.product_name})` : '';
                         promos.push({
                             title: o.name, 
                             icon: 'bi-gift-fill', 
                             color: 'info', 
-                            tooltip: `Buy ${o.buy_qty} Get ${o.get_qty} Free.<br>Min Spend: ₹${o.min_spend || 0}`
+                            tooltip: `Buy ${o.buy_qty} Get ${o.get_qty} Free${reward}.<br>Min Spend: ₹${o.min_spend || 0}`
                         });
                     }
                 }
-                if (o.type === 'free_product' && String(o.product_id) === String(p.id)) {
-                    promos.push({
-                        title: o.name, 
-                        icon: 'bi-gift', 
-                        color: 'success', 
-                        tooltip: `Get ${o.get_qty} Free.<br>Min Spend: ₹${o.min_spend || 0}`
-                    });
+                if (o.type === 'free_product') {
+                    let apps = o.applicable_products;
+                    if (typeof apps === 'string') { try { apps = JSON.parse(apps); } catch(e) { apps = null; } }
+                    let cats = o.applicable_categories;
+                    if (typeof cats === 'string') { try { cats = JSON.parse(cats); } catch(e) { cats = null; } }
+                    
+                    let match = false;
+                    if ((!apps || apps.length === 0) && (!cats || cats.length === 0)) match = true;
+                    if (apps && apps.length > 0 && (apps.includes(p.id) || apps.includes(String(p.id)))) match = true;
+                    if (cats && cats.length > 0 && (cats.includes(p.category_id) || cats.includes(String(p.category_id)))) match = true;
+                    
+                    if (match) {
+                        let reward = o.product_name && o.product_name !== 'Any Product' ? ` (${o.product_name})` : '';
+                        promos.push({
+                            title: o.name, 
+                            icon: 'bi-gift', 
+                            color: 'success', 
+                            tooltip: `Buy ${o.buy_qty || 1} Get ${o.get_qty} Free Gift${reward}.<br>Min Spend: ₹${o.min_spend || 0}`
+                        });
+                    }
                 }
-                if (o.type === 'category_discount' && o.applicable_categories && o.applicable_categories.includes(String(p.category_id))) {
+                if (o.type === 'category_discount') {
+                    let cats = o.applicable_categories;
+                    if (typeof cats === 'string') { try { cats = JSON.parse(cats); } catch(e) { cats = null; } }
+                    if (cats && cats.length > 0 && (cats.includes(p.category_id) || cats.includes(String(p.category_id)))) {
+                        promos.push({
+                            title: o.name, 
+                            icon: 'bi-tags', 
+                            color: 'primary', 
+                            tooltip: `Category Discount: ${o.discount_type === 'percentage' ? o.value+'%' : '₹'+o.value} OFF.<br>Min Spend: ₹${o.min_spend || 0}`
+                        });
+                    }
+                }
+                
+                if (o.type === 'order_discount' && o.product_id && String(o.product_id) === String(p.id)) {
                     promos.push({
-                        title: o.name, 
-                        icon: 'bi-tags', 
-                        color: 'primary', 
-                        tooltip: `Category Discount: ${o.discount_type === 'percentage' ? o.value+'%' : '₹'+o.value} OFF.<br>Min Spend: ₹${o.min_spend || 0}`
+                        title: o.name,
+                        icon: 'bi-tag-fill',
+                        color: 'primary',
+                        tooltip: `Product Discount: ${o.discount_type === 'percentage' ? o.value+'%' : '₹'+o.value} OFF.<br>Min Spend: ₹${o.min_spend || 0}`
                     });
                 }
             });
             this.activeCoupons.forEach(c => {
-                if (c.type === 'free_product' && String(c.product_id) === String(p.id)) {
+                let apps = c.applicable_products;
+                if (typeof apps === 'string') { try { apps = JSON.parse(apps); } catch(e) { apps = null; } }
+                let cats = c.applicable_categories;
+                if (typeof cats === 'string') { try { cats = JSON.parse(cats); } catch(e) { cats = null; } }
+                
+                let match = false;
+                if (apps && apps.length > 0 && (apps.includes(p.id) || apps.includes(String(p.id)))) match = true;
+                if (cats && cats.length > 0 && (cats.includes(p.category_id) || cats.includes(String(p.category_id)))) match = true;
+                
+                if (match) {
+                    let reward = '';
+                    if (c.type === 'free_product' && c.free_product_id) {
+                        let cp = this.products.find(prod => String(prod.id) === String(c.free_product_id));
+                        if (cp) reward = ` (${cp.name})`;
+                    }
+                    let desc = c.type === 'free_product' ? `Free Gift${reward} with Coupon` : `${c.type === 'percentage' ? parseFloat(c.value)+'%' : '₹'+parseFloat(c.value)} OFF`;
                     promos.push({
                         title: `Coupon: ${c.code}`, 
                         icon: 'bi-ticket-perforated', 
                         color: 'warning', 
-                        tooltip: `Free Gift with Coupon.<br>Min Spend: ₹${c.min_spend || 0}`
+                        tooltip: `${desc}.<br>Min Spend: ₹${c.min_spend || 0}`
                     });
                 }
             });

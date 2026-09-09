@@ -408,7 +408,7 @@
                                 </div>
                             </template>
                             <div x-show="items.length > 0" x-cloak>
-                                <template x-for="(item, idx) in items" :key="item.id">
+                                <template x-for="(item, idx) in items" :key="idx">
                                     <div class="d-flex align-items-center px-3 py-3 border-bottom position-relative hover-bg-secondary transition-all">
                                         <div class="bg-body-secondary border rounded-3 d-flex align-items-center justify-content-center overflow-hidden me-3 flex-shrink-0" style="width: 48px; height: 48px;">
                                             <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-cover" alt="Product" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
@@ -419,7 +419,9 @@
                                         </div>
                                         <div class="text-end ms-2">
                                             <h6 class="mb-1 fw-black text-success" x-text="'₹ ' + (item.quantity * parseFloat(item.price)).toFixed(2)"></h6>
-                                            <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" style="font-size: 11px;" @click="removeItem(idx)">Remove</button>
+                                            <template x-if="!item.is_gift">
+                                                <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" style="font-size: 11px;" @click="removeItem(idx)">Remove</button>
+                                            </template>
                                         </div>
                                     </div>
                                 </template>
@@ -954,7 +956,17 @@ document.addEventListener('alpine:init', () => {
             const customerId = localStorage.getItem('ecommerce_active_customer_id');
             const cartKey = customerId ? `ecommerce_create_order_cart_${customerId}` : 'ecommerce_create_order_cart';
             localStorage.setItem(cartKey, JSON.stringify(this.items));
+            
+            let total = 0;
+            this.items.forEach(item => {
+                total += (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
+            });
+            const totalKey = customerId ? `ecommerce_create_order_cart_total_${customerId}` : 'ecommerce_create_order_cart_total';
+            localStorage.setItem(totalKey, total.toString());
+            this.cartGrandTotal = total;
+            
             window.dispatchEvent(new CustomEvent('cart-updated'));
+            window.dispatchEvent(new CustomEvent('cart-total-updated', { detail: total }));
         }
     }));
 

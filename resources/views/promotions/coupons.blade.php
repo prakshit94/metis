@@ -179,7 +179,7 @@
                                             <span class="text-success"><i class="bi bi-truck me-1"></i>Free</span>
                                         </template>
                                         <template x-if="c.type === 'free_product'">
-                                            <span class="text-warning"><i class="bi bi-gift me-1"></i>Gift</span>
+                                            <span class="text-warning"><i class="bi bi-gift me-1"></i>Gift <span class="text-muted fs-7 fw-normal" x-text="c.free_product ? '(' + c.free_product.name + ')' : ''"></span></span>
                                         </template>
                                     </span>
                                 </td>
