@@ -411,7 +411,7 @@
                                 <template x-for="(item, idx) in items" :key="idx">
                                     <div class="d-flex align-items-center px-3 py-3 border-bottom position-relative hover-bg-secondary transition-all">
                                         <div class="bg-body-secondary border rounded-3 d-flex align-items-center justify-content-center overflow-hidden me-3 flex-shrink-0" style="width: 48px; height: 48px;">
-                                            <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-cover" alt="Product" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                            <img :src="item.image_url || '{{ asset('assets/images/product-placeholder.svg') }}'" class="w-100 h-100 object-fit-cover" alt="Product" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                         </div>
                                         <div class="flex-grow-1" style="min-width: 0;">
                                             <h6 class="mb-1 fw-bold text-body text-truncate fs-6" x-text="item.name"></h6>
@@ -642,7 +642,7 @@
                                     <h6 class="m-0 fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Notifications / Activity</h6>
                                     <button type="button" @click="markAsRead('all')" class="btn btn-sm btn-link text-white-50 text-decoration-none p-0 mt-1" style="font-size: 10px;">Mark all as read</button>
                                 </div>
-                                <span class="badge bg-body text-primary rounded-pill fw-bold" style="font-size: 10px;"><span x-text="count"></span> Recent</span>
+                                <span class="badge bg-body text-primary rounded-pill fw-bold" style="font-size: 10px;"><span x-text="totalCount"></span> Recent</span>
                             </div>
                             <ul class="nav nav-tabs nav-tabs-custom border-bottom-0" role="tablist">
                                 <li class="nav-item" role="presentation">
@@ -683,7 +683,7 @@
                                             </template>
                                             
                                             <template x-if="activity.causer_photo">
-                                                <img :src="activity.causer_photo" class="rounded-circle flex-shrink-0 object-fit-cover ms-2" :class="!activity.is_read ? 'border border-2 border-primary border-opacity-25' : ''" alt="User" width="40" height="40" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                <img :src="activity.causer_photo" class="rounded-circle flex-shrink-0 object-fit-cover ms-2" :class="!activity.is_read ? 'border border-2 border-primary border-opacity-25' : ''" alt="User" width="40" height="40" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                             </template>
                                             <template x-if="!activity.causer_photo">
                                                 <div class="text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2" :class="!activity.is_read ? 'bg-primary bg-opacity-25 border border-2 border-primary border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary'" style="width: 40px; height: 40px;">
@@ -716,26 +716,33 @@
                                 @else
                                 <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
                                     @foreach($unreadMessages as $msg)
-                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all bg-primary bg-opacity-10 position-relative" href="/chat">
-                                        <div class="position-absolute top-50 start-0 translate-middle-y bg-primary rounded-circle ms-2 shadow-sm" style="width: 8px; height: 8px;"></div>
-                                        <div class="bg-primary bg-opacity-25 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2 border border-2 border-primary border-opacity-25" style="width: 40px; height: 40px;">
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all" href="{{ route('chat.index') }}"
+                                       :class="!messagesRead ? 'bg-primary bg-opacity-10 position-relative' : 'hover-bg-secondary opacity-75'">
+                                        <template x-if="!messagesRead">
+                                            <div class="position-absolute top-50 start-0 translate-middle-y bg-primary rounded-circle ms-2 shadow-sm" style="width: 8px; height: 8px;"></div>
+                                        </template>
+                                        <div class="text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2"
+                                             :class="!messagesRead ? 'bg-primary bg-opacity-25 border border-2 border-primary border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary'" style="width: 40px; height: 40px;">
                                             <i class="bi bi-person-fill fs-5"></i>
                                         </div>
                                         <div class="flex-grow-1">
                                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <h6 class="mb-0 fw-bold text-primary fs-13">{{ $msg->sender_name }}</h6>
-                                                <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
+                                                <h6 class="mb-0 fs-13" :class="!messagesRead ? 'fw-bold text-primary' : 'fw-semibold text-body'">{{ $msg->sender_name }}</h6>
+                                                <template x-if="!messagesRead">
+                                                    <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
+                                                </template>
                                             </div>
-                                            <p class="mb-1 text-body fw-bold fs-13">{{ $msg->snippet }}</p>
+                                            <p class="mb-1 fs-13" :class="!messagesRead ? 'text-body fw-bold' : 'text-muted'">{{ $msg->snippet }}</p>
                                             @if($msg->time_ago)
-                                            <p class="mb-0 text-primary text-opacity-75 small fw-semibold"><i class="bi bi-clock me-1"></i> {{ $msg->time_ago }}</p>
+                                            <p class="mb-0 small" :class="!messagesRead ? 'text-primary text-opacity-75 fw-semibold' : 'text-muted'"><i class="bi bi-clock me-1"></i> {{ $msg->time_ago }}</p>
                                             @endif
                                         </div>
                                     </a>
                                     @endforeach
                                 </div>
-                                <div class="p-2 text-center bg-body-secondary bg-opacity-50 rounded-bottom-4">
-                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All Messages <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                <div class="p-2 bg-body-secondary bg-opacity-50 rounded-bottom-4 d-flex align-items-center justify-content-between px-3">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0">View All Messages <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                    <button type="button" @click="markAsRead('messages')" x-show="!messagesRead" class="btn btn-sm btn-link text-muted text-decoration-none p-0 fw-semibold" style="font-size: 11px;"><i class="bi bi-check2-all me-1"></i>Mark read</button>
                                 </div>
                                 @endif
                             </div>
@@ -750,24 +757,33 @@
                                 @else
                                 <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
                                     @foreach($systemAlerts as $alert)
-                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap hover-bg-secondary transition-all" href="{{ $alert->link }}">
-                                        <div class="bg-{{ $alert->type }} bg-opacity-10 text-{{ $alert->type }} rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2 border border-2 border-{{ $alert->type }} border-opacity-25" style="width: 40px; height: 40px;">
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all" href="{{ $alert->link }}"
+                                       :class="!alertsRead ? 'bg-{{ $alert->type }} bg-opacity-10 position-relative' : 'hover-bg-secondary opacity-75'">
+                                        <template x-if="!alertsRead">
+                                            <div class="position-absolute top-50 start-0 translate-middle-y bg-{{ $alert->type }} rounded-circle ms-2 shadow-sm" style="width: 8px; height: 8px;"></div>
+                                        </template>
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2"
+                                             :class="!alertsRead ? 'bg-{{ $alert->type }} bg-opacity-25 text-{{ $alert->type }} border border-2 border-{{ $alert->type }} border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary'" style="width: 40px; height: 40px;">
                                             <i class="bi {{ $alert->icon }} fs-5"></i>
                                         </div>
                                         <div class="flex-grow-1">
                                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <h6 class="mb-0 fw-bold text-{{ $alert->type }} fs-13">{{ $alert->title }}</h6>
+                                                <h6 class="mb-0 fs-13" :class="!alertsRead ? 'fw-bold text-{{ $alert->type }}' : 'fw-semibold text-body'">{{ $alert->title }}</h6>
+                                                <template x-if="!alertsRead">
+                                                    <span class="badge bg-{{ $alert->type }} rounded-pill shadow-sm" style="font-size: 9px;">New</span>
+                                                </template>
                                             </div>
-                                            <p class="mb-1 text-body fs-13">{!! $alert->message !!}</p>
+                                            <p class="mb-1 fs-13" :class="!alertsRead ? 'text-body fw-bold' : 'text-muted'">{!! $alert->message !!}</p>
                                             @if($alert->time_ago)
-                                            <p class="mb-0 text-muted small"><i class="bi bi-clock me-1"></i> {{ $alert->time_ago }}</p>
+                                            <p class="mb-0 small" :class="!alertsRead ? 'text-{{ $alert->type }} text-opacity-75 fw-semibold' : 'text-muted'"><i class="bi bi-clock me-1"></i> {{ $alert->time_ago }}</p>
                                             @endif
                                         </div>
                                     </a>
                                     @endforeach
                                 </div>
-                                <div class="p-2 text-center bg-body-secondary bg-opacity-50 rounded-bottom-4">
-                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All Alerts <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                <div class="p-2 bg-body-secondary bg-opacity-50 rounded-bottom-4 d-flex align-items-center justify-content-between px-3">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0">View All Alerts <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                    <button type="button" @click="markAsRead('alerts')" x-show="!alertsRead" class="btn btn-sm btn-link text-muted text-decoration-none p-0 fw-semibold" style="font-size: 11px;"><i class="bi bi-check2-all me-1"></i>Mark read</button>
                                 </div>
                                 @endif
                             </div>
@@ -973,19 +989,37 @@ document.addEventListener('alpine:init', () => {
 
 
     window.notificationApp = function(initialActivities, initialCount, otherAlertsCount) {
+        // Build a localStorage key scoped to this user + the current alert snapshot count.
+        // When the count changes (new alerts arrive), the key changes → dismissed state resets.
+        const userId = document.querySelector('meta[name="user-name"]')?.getAttribute('content') || 'guest';
+        const alertsKey    = `metis_alerts_dismissed_${userId}_${otherAlertsCount}`;
+        const messagesKey  = `metis_messages_dismissed_${userId}_${otherAlertsCount}`;
+
         return {
             activities: initialActivities || [],
             count: initialCount || 0,
             otherCount: otherAlertsCount || 0,
+
+            // Restore persisted dismissed state from localStorage on init
+            alertsRead:   localStorage.getItem(alertsKey)   === '1',
+            messagesRead: localStorage.getItem(messagesKey) === '1',
+
             get totalCount() {
-                return this.count + this.otherCount;
+                // If alerts have been dismissed client-side, remove their contribution from badge
+                const effectiveOther = (this.alertsRead && this.messagesRead) ? 0
+                    : this.alertsRead ? this.otherCount - Math.max(0, {{ $systemAlerts->count() }})
+                    : this.messagesRead ? this.otherCount - Math.max(0, {{ $unreadMessages->count() }})
+                    : this.otherCount;
+                return this.count + Math.max(0, effectiveOther);
             },
+
             init() {
                 // Periodically fetch updates every 3 seconds for instant-like feel
                 setInterval(() => {
                     this.fetchActivities();
                 }, 3000);
             },
+
             fetchActivities() {
                 fetch('/api/activities/recent', {
                     headers: { 
@@ -1004,11 +1038,52 @@ document.addEventListener('alpine:init', () => {
                 })
                 .catch(err => console.error('Failed to fetch activities', err));
             },
+
             markAsRead(id) {
                 if (id === 'all') {
+                    // Mark all activities read in UI
                     this.activities.forEach(a => a.is_read = true);
                     this.count = 0;
+                    this.otherCount = 0;
+                    this.alertsRead = true;
+                    this.messagesRead = true;
+
+                    // Persist dismissed state so it survives page refresh
+                    localStorage.setItem(alertsKey, '1');
+                    localStorage.setItem(messagesKey, '1');
+
+                } else if (id === 'alerts') {
+                    // Mark only alerts as read (Alerts tab "Mark all as read")
+                    this.alertsRead = true;
+                    this.otherCount = Math.max(0, this.otherCount - {{ $systemAlerts->count() }});
+
+                    // Persist so it survives refresh
+                    localStorage.setItem(alertsKey, '1');
+
+                    // No API call needed — these are dynamic system alerts, not DB-stored notifications
+                    return;
+
+                } else if (id === 'messages') {
+                    // Mark only messages as read (Messages tab "Mark all as read")
+                    this.messagesRead = true;
+                    this.otherCount = Math.max(0, this.otherCount - {{ $unreadMessages->count() }});
+
+                    // Persist so it survives refresh
+                    localStorage.setItem(messagesKey, '1');
+
+                    // Call the messages read API if it exists
+                    fetch('/api/chat/messages/read-all', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    }).catch(() => {});
+                    return;
+
                 } else {
+                    // Mark single activity as read
                     const activity = this.activities.find(a => a.id === id);
                     if (activity && !activity.is_read) {
                         activity.is_read = true;
@@ -1016,6 +1091,7 @@ document.addEventListener('alpine:init', () => {
                     }
                 }
                 
+                // POST to API for activity read tracking
                 fetch(`/api/activities/${id}/read`, {
                     method: 'POST',
                     headers: {

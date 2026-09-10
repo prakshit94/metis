@@ -39,7 +39,7 @@
     <meta name="theme-color" content="#6366f1">
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
 
     <!-- Vite Assets -->
     {{-- Apply saved theme immediately to prevent flash --}}
@@ -201,7 +201,5 @@
             }
         });
     </script>
-    
-    @stack('scripts')
 </body>
 </html>

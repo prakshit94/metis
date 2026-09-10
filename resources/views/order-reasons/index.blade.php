@@ -309,12 +309,12 @@
     </div>
 
     <!-- Add / Edit Modal -->
-    <div class="modal fade" id="reasonModal">
+    <div class="modal fade" id="reasonModal" tabindex="-1" aria-labelledby="reasonModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <form @submit.prevent="saveReason()">
                     <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
-                        <h5 class="modal-title fw-bold" x-text="editingId ? 'Edit Reason' : 'Add New Reason'"></h5>
+                        <h5 class="modal-title fw-bold" id="reasonModalLabel" x-text="editingId ? 'Edit Reason' : 'Add New Reason'"></h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4">

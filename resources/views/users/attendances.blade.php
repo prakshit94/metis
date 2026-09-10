@@ -171,7 +171,7 @@
                            x-model="searchQuery" @keyup.debounce.300ms="filterItems()">
                 </div>
                 
-                <input type="date" class="form-select form-select-sm" x-model="dateFilter" @change="filterItems()" style="max-width: 150px;" x-show="currentView === 'list'">
+                <input type="date" class="form-control form-control-sm" x-model="dateFilter" @change="filterItems()" style="max-width: 150px;" x-show="currentView === 'list'">
                 
                 <select class="form-select form-select-sm" x-model="statusFilter" @change="filterItems()" style="max-width: 150px;">
                     <option value="">All Statuses</option>
@@ -434,7 +434,7 @@
     </div>
 </div>
 
-<div class="modal fade" id="attendanceModal" aria-labelledby="attendanceModalLabel" aria-hidden="true">
+<div class="modal fade" id="attendanceModal" tabindex="-1" aria-labelledby="attendanceModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" x-data="attendanceForm({{ auth()->id() }})">
         <form class="modal-content shadow" @submit.prevent="saveItem()">
             <div class="modal-header bg-body-tertiary">
@@ -499,7 +499,7 @@
 </div>
 @endsection
 
-<div class="modal fade" id="leaveModal" aria-labelledby="leaveModalLabel">
+<div class="modal fade" id="leaveModal" tabindex="-1" aria-labelledby="leaveModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" x-data="leaveForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">

@@ -474,7 +474,7 @@
     </div>
 </div>
 
-<div class="modal fade" id="accessViewModal" aria-labelledby="accessViewModalLabel">
+<div class="modal fade" id="accessViewModal" tabindex="-1" aria-labelledby="accessViewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" x-data="accessProfile">
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header border-bottom-0 pb-0">
@@ -612,7 +612,7 @@
     </div>
 </div>
 
-<div class="modal fade" id="accessImportModal" aria-labelledby="accessImportModalLabel">
+<div class="modal fade" id="accessImportModal" tabindex="-1" aria-labelledby="accessImportModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" x-data="accessImportForm">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-bottom-0 pb-4">

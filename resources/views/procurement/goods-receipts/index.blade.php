@@ -269,7 +269,7 @@
 <!-- ═══════════════════════ Modals ══════════════════════════════════════ -->
 
 <!-- GRN Receive Goods Modal -->
-    <div class="modal fade" id="receiveGoodsModal" aria-labelledby="receiveGoodsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="receiveGoodsModal" tabindex="-1" aria-labelledby="receiveGoodsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <form @submit.prevent="submitReceiveForm" autocomplete="off">

@@ -268,7 +268,7 @@
     </div>
 
     <!-- Add / Edit Modal -->
-    <div class="modal fade" id="itemModal">
+    <div class="modal fade" id="itemModal" tabindex="-1" aria-labelledby="itemModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <form @submit.prevent="saveItem()">
@@ -304,7 +304,7 @@
     </div>
 
     <!-- Confirmation Modal -->
-    <div class="modal fade" id="confirmModal" aria-hidden="true">
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-body p-4 text-center">

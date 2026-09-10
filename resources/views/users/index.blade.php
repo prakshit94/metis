@@ -655,7 +655,7 @@
     </div> <!-- End showAnalytics wrapper -->
 
 {{-- ═══════════════════════ Add / Edit User Modal ═══════════════════════════ --}}
-<div class="modal fade" id="userModal" aria-labelledby="userModalLabel" :class="{ 'view-mode-active': isViewMode }" x-data="userForm">
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true" :class="{ 'view-mode-active': isViewMode }" x-data="userForm" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0" x-show="!isViewMode">
@@ -1241,7 +1241,7 @@
 
 
 {{-- ═══════════════════════ Import Users Modal ═══════════════════════════════ --}}
-<div class="modal fade" id="importModal" aria-labelledby="importModalLabel">
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" x-data="importForm">
         <div class="modal-content">
             <div class="modal-header">

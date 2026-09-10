@@ -168,10 +168,10 @@
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
                                         <template x-if="item.image">
-                                            <img :src="`/storage/${item.image}`" class="rounded object-cover border" style="width: 32px; height: 32px;" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                            <img :src="`/storage/${item.image}`" class="rounded object-cover border" style="width: 32px; height: 32px;" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                         </template>
                                         <template x-if="!item.image">
-                                            <img src="/assets/images/product-placeholder.svg" class="rounded object-cover border" style="width: 32px; height: 32px;" alt="No image">
+                                            <img src="{{ asset('assets/images/product-placeholder.svg') }}" class="rounded object-cover border" style="width: 32px; height: 32px;" alt="No image">
                                         </template>
                                         <div class="fw-semibold text-body-emphasis" x-text="item.name"></div>
                                     </div>
@@ -243,7 +243,7 @@
     </div>
 
     <!-- Form Modal -->
-    <div class="modal fade" id="categoriesModal">
+    <div class="modal fade" id="categoriesModal" tabindex="-1" aria-labelledby="categoriesModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -314,7 +314,7 @@
                                                 </template>
                                                 <template x-if="!imagePreview && !form.image">
                                                     <div class="position-relative d-inline-block">
-                                                        <img src="/assets/images/product-placeholder.svg" alt="Preview Placeholder" class="rounded border shadow-sm opacity-50" style="width: 80px; height: 80px; object-fit: cover;">
+                                                        <img src="{{ asset('assets/images/product-placeholder.svg') }}" alt="Preview Placeholder" class="rounded border shadow-sm opacity-50" style="width: 80px; height: 80px; object-fit: cover;">
                                                         <i class="bi bi-cloud-arrow-up fs-4 text-muted position-absolute top-50 start-50 translate-middle"></i>
                                                     </div>
                                                 </template>

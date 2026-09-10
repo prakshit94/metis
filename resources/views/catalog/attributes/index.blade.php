@@ -260,7 +260,7 @@
 
     <!-- Form Modal -->
     <!-- Form Modal -->
-    <div class="modal fade" id="attributesModal">
+    <div class="modal fade" id="attributesModal" tabindex="-1" aria-labelledby="attributesModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -328,7 +328,7 @@
     </div>
 
     <!-- Values Modal -->
-    <div class="modal fade" id="valuesModal">
+    <div class="modal fade" id="valuesModal" tabindex="-1" aria-labelledby="valuesModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">

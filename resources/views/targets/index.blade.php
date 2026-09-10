@@ -10,7 +10,7 @@
             <h1 class="h3 mb-0"><i class="bi bi-award-fill text-primary me-2"></i>Targets &amp; Achievements</h1>
             <p class="text-muted mb-0">Manage performance metrics across Users, Teams, and Departments</p>
         </div>
-        <div class="d-flex gap-2 flex-wrap">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
             <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                 <i class="bi bi-upload me-2"></i>Import
             </button>
@@ -30,7 +30,7 @@
             </div>
 
             {{-- Recalculate button: syncs achieved_amount from live order/payment/invoice data --}}
-            <form method="POST" action="{{ route('targets.recalculate') }}" id="recalculate-form">
+            <form method="POST" action="{{ route('targets.recalculate') }}" id="recalculate-form" class="m-0">
                 @csrf
                 {{-- Pass active filters so only the currently-viewed targets are recalculated --}}
                 <input type="hidden" name="metric_type" value="{{ request('metric_type') }}">
@@ -153,7 +153,7 @@
                         $selectedPeriod = request('period_type', 'daily');
                         $selectedMonth = request('month', $currentMonth);
                     @endphp
-                    <form method="GET" action="{{ route('targets.index') }}" class="d-flex flex-wrap gap-2 justify-content-end" x-ref="searchForm" @submit.prevent="filterTable($refs.searchForm)" x-data="{ searchPeriodType: '{{ $selectedPeriod }}' }">
+                    <form method="GET" action="{{ route('targets.index') }}" class="d-flex flex-wrap gap-2 justify-content-end align-items-center" x-ref="searchForm" @submit.prevent="filterTable($refs.searchForm)" x-data="{ searchPeriodType: '{{ $selectedPeriod }}' }">
                         @php
                             $searchQuery = request('search');
                             $selectedSearches = is_array($searchQuery) ? $searchQuery : ($searchQuery ? [$searchQuery] : []);
@@ -411,7 +411,7 @@
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-light border shadow-sm dropdown-toggle rounded-3 px-2 py-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
+                                        <button class="btn btn-sm btn-light border shadow-sm rounded-3 px-2 py-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2">
@@ -477,7 +477,7 @@
     </div>
 
     {{-- Modal --}}
-    <div class="modal fade" id="targetModal" tabindex="-1">
+    <div class="modal fade" id="targetModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden bg-body">
                 
@@ -678,7 +678,7 @@
     </div>
 
     {{-- Import Modal --}}
-    <div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden bg-body">
                 

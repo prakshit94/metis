@@ -348,7 +348,7 @@
     </div>
 
     <!-- Create PO Modal -->
-    <div class="modal fade" id="createPoModal" aria-labelledby="createPoModalLabel" aria-hidden="true">
+    <div class="modal fade" id="createPoModal" tabindex="-1" aria-labelledby="createPoModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
@@ -576,7 +576,7 @@
     </div>
 
     <!-- GRN Receive Goods Modal -->
-    <div class="modal fade" id="receiveGoodsModal" aria-labelledby="receiveGoodsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="receiveGoodsModal" tabindex="-1" aria-labelledby="receiveGoodsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <form @submit.prevent="submitReceiveForm" autocomplete="off">
@@ -700,7 +700,7 @@
     </div>
 
     <!-- Reject PO Modal -->
-    <div class="modal fade" id="rejectPoModal" aria-labelledby="rejectPoModalLabel" aria-hidden="true">
+    <div class="modal fade" id="rejectPoModal" tabindex="-1" aria-labelledby="rejectPoModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
@@ -728,7 +728,7 @@
     </div>
 
     <!-- Approve PO Modal -->
-    <div class="modal fade" id="approvePoModal" aria-labelledby="approvePoModalLabel" aria-hidden="true">
+    <div class="modal fade" id="approvePoModal" tabindex="-1" aria-labelledby="approvePoModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
@@ -752,7 +752,7 @@
     </div>
 
     <!-- View PO Modal -->
-    <div class="modal fade" id="viewPoModal" aria-labelledby="viewPoModalLabel" aria-hidden="true">
+    <div class="modal fade" id="viewPoModal" tabindex="-1" aria-labelledby="viewPoModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
@@ -1004,7 +1004,7 @@
 
 
     <!-- Upload Invoice Modal -->
-    <div class="modal fade" id="uploadInvoiceModal" aria-labelledby="uploadInvoiceModalLabel" aria-hidden="true">
+    <div class="modal fade" id="uploadInvoiceModal" tabindex="-1" aria-labelledby="uploadInvoiceModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
@@ -1031,7 +1031,7 @@
     </div>
 
     <!-- Delete PO Modal -->
-    <div class="modal fade" id="deletePoModal" aria-labelledby="deletePoModalLabel" aria-hidden="true">
+    <div class="modal fade" id="deletePoModal" tabindex="-1" aria-labelledby="deletePoModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
@@ -1055,7 +1055,7 @@
     </div>
 
     <!-- Restore PO Modal -->
-    <div class="modal fade" id="restorePoModal" aria-labelledby="restorePoModalLabel" aria-hidden="true">
+    <div class="modal fade" id="restorePoModal" tabindex="-1" aria-labelledby="restorePoModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">

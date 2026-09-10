@@ -250,7 +250,7 @@
 
 
     <!-- View Details Modal -->
-    <div class="modal fade" id="viewOfficeModal" tabindex="-1">
+    <div class="modal fade" id="viewOfficeModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
@@ -328,7 +328,7 @@
     </div>
 
     <!-- Office Modal Matching PO Create Form UI -->
-    <div class="modal fade" id="officeModal" tabindex="-1">
+    <div class="modal fade" id="officeModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
@@ -484,7 +484,7 @@
     </div>
 
     <!-- AWB Usage Logs Modal -->
-    <div class="modal fade" id="awbLogsModal" tabindex="-1">
+    <div class="modal fade" id="awbLogsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
@@ -566,7 +566,7 @@
     </div>
     
     <!-- Manage Ranges Modal -->
-    <div class="modal fade" id="manageRangesModal" tabindex="-1">
+    <div class="modal fade" id="manageRangesModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">

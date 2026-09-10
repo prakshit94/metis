@@ -237,7 +237,7 @@
     </div>
 
     <!-- Create Modal Glossy Style -->
-    <div class="modal fade" id="createProgramModal">
+    <div class="modal fade" id="createProgramModal" tabindex="-1" aria-labelledby="createProgramModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg rounded-4 bg-body">
                 

@@ -425,7 +425,7 @@
 </style>
 
 <!-- Add / Edit Modal -->
-<div class="modal fade" id="itemModal">
+<div class="modal fade" id="itemModal" tabindex="-1" aria-labelledby="itemModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" :class="{ 'modal-lg': window.Alpine.$data(document.querySelector('[x-data^=\'organizationTable\']')).activeTab === 'departments' }">
         <div class="modal-content border-0 shadow-lg rounded-4" x-data="itemForm">
             <form @submit.prevent="saveItem()">
@@ -509,7 +509,7 @@
 </div>
 
 <!-- View Department Modal -->
-<div class="modal fade" id="viewDepartmentModal">
+<div class="modal fade" id="viewDepartmentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl" x-data="viewDepartmentData">
         <div class="modal-content border-0 shadow rounded-4">
             <div class="modal-header bg-body-tertiary border-bottom-0 pb-3 pt-4 px-4">
@@ -557,7 +557,7 @@
                                                 <div class="small text-muted" x-text="department.manager ? (department.manager.designation || 'Manager') : ''"></div>
                                             </div>
                                         </div>
-                                        <div x-show="!department.manager" class="text-muted small font-italic">No manager assigned</div>
+                                        <div x-show="!department.manager" class="text-muted small fst-italic">No manager assigned</div>
                                     </div>
                                 </div>
                             </div>

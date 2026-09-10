@@ -255,7 +255,7 @@
     </div>{{-- /card --}}
 
     {{-- ═══════════════════ QC Inspect Modal (inside x-data scope) ═══════════════════ --}}
-    <div class="modal fade" id="qcInspectModal" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="qcInspectModalLabel" aria-hidden="true">
+    <div class="modal fade" id="qcInspectModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="qcInspectModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content shadow-lg border-0 rounded-4">
                 <div class="d-flex flex-column h-100 bg-body rounded-4 overflow-hidden">
@@ -356,7 +356,7 @@
                                                     <td class="ps-3" style="width:48px;">
                                                         <div class="rounded border bg-body d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width:40px;height:40px;">
                                                             <template x-if="item.image_url">
-                                                                <img :src="item.image_url" class="w-100 h-100" style="object-fit:cover;" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                                <img :src="item.image_url" class="w-100 h-100" style="object-fit:cover;" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                                             </template>
                                                             <template x-if="!item.image_url">
                                                                 <i class="bi bi-box-seam text-muted"></i>
@@ -447,7 +447,7 @@
                                                     <td class="ps-3">
                                                         <div class="rounded border bg-body d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width:40px;height:40px;">
                                                             <template x-if="item.image_url">
-                                                                <img :src="item.image_url" class="w-100 h-100" style="object-fit:cover;" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                                <img :src="item.image_url" class="w-100 h-100" style="object-fit:cover;" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                                             </template>
                                                             <template x-if="!item.image_url">
                                                                 <i class="bi bi-box-seam text-muted"></i>
@@ -496,7 +496,7 @@
     </div>{{-- /qcInspectModal --}}
 
     {{-- bulkQcModal --}}
-    <div class="modal fade" id="bulkQcModal" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="bulkQcModalLabel" aria-hidden="true">
+    <div class="modal fade" id="bulkQcModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="bulkQcModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content shadow-lg border-0 rounded-4">
                 <div class="d-flex flex-column h-100 bg-body rounded-4 overflow-hidden">
@@ -571,7 +571,7 @@
                                             <td class="ps-3" style="width:48px;">
                                                 <div class="rounded border bg-body d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width:40px;height:40px;">
                                                     <template x-if="item.image_url">
-                                                        <img :src="item.image_url" class="w-100 h-100" style="object-fit:cover;" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                        <img :src="item.image_url" class="w-100 h-100" style="object-fit:cover;" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                                     </template>
                                                     <template x-if="!item.image_url">
                                                         <i class="bi bi-box-seam text-muted"></i>

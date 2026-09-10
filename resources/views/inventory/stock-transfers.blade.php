@@ -303,7 +303,7 @@
     </div>
 
     {{-- ── Transfer Form Modal ─────────────────────────────────── --}}
-    <div class="modal fade" id="transferModal">
+    <div class="modal fade" id="transferModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">

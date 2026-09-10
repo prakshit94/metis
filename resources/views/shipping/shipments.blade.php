@@ -628,7 +628,7 @@
     </div>
 
     <!-- Update Status Modal -->
-    <div class="modal fade" id="statusModal">
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -729,7 +729,7 @@
     </div>
 
     <!-- Tracking History Modal -->
-    <div class="modal fade" id="trackingModal">
+    <div class="modal fade" id="trackingModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -859,7 +859,7 @@
     </div>
 
     <!-- Add Custom Event Modal -->
-    <div class="modal fade" id="addEventModal">
+    <div class="modal fade" id="addEventModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -893,7 +893,7 @@
         </div>
     </div>
     <!-- Return Order Modal -->
-    <div class="modal fade" id="returnOrderModal">
+    <div class="modal fade" id="returnOrderModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header border-bottom-0 pt-4 pb-2 px-4">

@@ -1,4 +1,4 @@
-<div class="modal fade" id="addCustomerModal" aria-labelledby="addCustomerModalLabel" aria-hidden="true" 
+<div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel" aria-hidden="true" 
      x-data="addCustomerApp()" 
      @open-add-customer-modal.window="openModal($event.detail)">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -129,7 +129,7 @@
                             <div class="card mb-3 mb-lg-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 20;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
-                                        <div class="bg-indigo text-indigo bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; color: #6610f2;">
+                                        <div class="bg-indigo text-indigo bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; color: var(--bs-purple);">
                                             <i class="bi bi-telephone fs-6"></i>
                                         </div>
                                         <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Contact Channels</h6>
@@ -184,7 +184,7 @@
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 1</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-house"></i></span>
-                                                <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_1">
+                                                <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_1" placeholder="House / Flat / Plot No.">
                                             </div>
                                         </div>
                                         <div class="col-sm-6">
@@ -196,12 +196,51 @@
                                         </div>
                             
                                         <div class="col-12 position-relative" @click.away="villageResults = []">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Village Search</label>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-search"></i></span>
-                                                <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" placeholder="Type 3 letters to search village..." 
-                                                       x-model="villageSearchQuery" @input.debounce.300ms="searchVillages()">
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">
+                                                Village Search <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group input-group-sm"
+                                                 :class="!isEdit && !form.village_name && villageSearchQuery.length === 0 ? '' : (!isEdit && !form.village_name ? 'is-invalid-group' : '')">
+                                                <span class="input-group-text bg-body text-muted border-end-0"
+                                                      :class="!isEdit && !form.village_name && villageSearchQuery.length > 2 ? 'border-danger' : ''">
+                                                    <i class="bi bi-search"></i>
+                                                </span>
+                                                <input type="text"
+                                                       class="form-control border-start-0 ps-0 fw-semibold"
+                                                       :class="!isEdit && !form.village_name && villageSearchQuery.length > 2 ? 'border-danger border-start-0' : ''"
+                                                       style="font-size: 12px;"
+                                                       placeholder="Type 3 letters to search village..."
+                                                       x-model="villageSearchQuery"
+                                                       @input.debounce.300ms="searchVillages()"
+                                                       aria-required="true">
                                             </div>
+
+                                            {{-- Hidden input that drives native browser required validation --}}
+                                            {{-- Browser won't submit if this is empty and required --}}
+                                            <input type="text"
+                                                   class="position-absolute opacity-0 pe-none"
+                                                   style="width:1px;height:1px;top:0;left:0;pointer-events:none;"
+                                                   tabindex="-1"
+                                                   aria-hidden="true"
+                                                   :value="form.village_name"
+                                                   :required="!isEdit"
+                                                   title="Please search and select a village from the list.">
+
+                                            {{-- Inline error hint when typed but not selected --}}
+                                            <div x-show="!isEdit && !form.village_name && villageSearchQuery.length > 2"
+                                                 x-cloak
+                                                 class="text-danger fw-semibold mt-1"
+                                                 style="font-size: 10px;">
+                                                <i class="bi bi-exclamation-circle me-1"></i>Please select a village from the dropdown results.
+                                            </div>
+
+                                            {{-- Helper text when nothing typed yet --}}
+                                            <div x-show="!isEdit && !form.village_name && villageSearchQuery.length === 0"
+                                                 class="text-muted mt-1"
+                                                 style="font-size: 10px;">
+                                                <i class="bi bi-info-circle me-1"></i>Required — type at least 3 letters to search.
+                                            </div>
+
                                             <div class="position-absolute w-100 bg-body border rounded shadow-lg mt-1 overflow-auto" style="max-height: 200px; z-index: 1060;" x-show="villageResults.length > 0">
                                                 <template x-for="v in villageResults" :key="v.id">
                                                     <button type="button" class="dropdown-item w-100 text-start py-2 px-3 border-bottom custom-hover-bg" @click="selectVillage(v)">
@@ -342,7 +381,7 @@
                             <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 20;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
-                                        <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; color: #ffc107;">
+                                        <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; color: var(--bs-warning);">
                                             <i class="bi bi-brightness-high fs-6"></i>
                                         </div>
                                         <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Agriculture Profile</h6>
@@ -366,7 +405,7 @@
                                                     <span class="text-muted" style="font-size: 12px;">Select...</span>
                                                 </template>
                                                 <template x-for="type in selectedIrrigation" :key="type">
-                                                    <div class="badge bg-warning bg-opacity-10 text-warning d-flex align-items-center gap-1" style="color: #d39e00 !important;">
+                                                    <div class="badge bg-warning bg-opacity-10 text-warning d-flex align-items-center gap-1" style="color: var(--bs-warning-text-emphasis) !important;">
                                                         <span x-text="type" style="font-size: 10px;"></span>
                                                         <i class="bi bi-x cursor-pointer" @click.stop="toggleIrrigation(type)" style="font-size: 12px;"></i>
                                                         <input type="hidden" name="irrigation_type[]" :value="type">

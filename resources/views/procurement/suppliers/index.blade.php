@@ -261,7 +261,7 @@
 
     <!-- Modals -->
     {{-- ═══════════════════════ Add / Edit Supplier Modal ═══════════════════════════ --}}
-    <div class="modal fade" id="supplierModal" tabindex="-1" aria-labelledby="supplierModalLabel" aria-hidden="true" :class="{ 'view-mode-active': isViewMode }">
+    <div class="modal fade" id="supplierModal" tabindex="-1" aria-labelledby="supplierModalLabel" aria-hidden="true" :class="{ 'view-mode-active': isViewMode }" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header border-bottom-0 pb-0" x-show="!isViewMode">

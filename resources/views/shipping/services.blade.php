@@ -281,7 +281,7 @@
     </div>
 
     <!-- Form Modal -->
-    <div class="modal fade" id="servicesModal">
+    <div class="modal fade" id="servicesModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
@@ -362,7 +362,7 @@
         </div>
     </div>
     <!-- Bulk Assign Provider Modal -->
-    <div class="modal fade" id="bulkAssignModal">
+    <div class="modal fade" id="bulkAssignModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">

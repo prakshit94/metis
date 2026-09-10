@@ -414,8 +414,6 @@
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Shipments &amp; Tracking</span>
                                 </a>
                             </li>
-                            @endcan
-                            @can('shipping-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'shipping.services' ? 'active' : '' }}" href="{{ route('shipping.services') }}">
                                     <i class="bi bi-gear-wide-connected"></i>

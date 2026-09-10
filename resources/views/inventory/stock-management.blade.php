@@ -417,7 +417,7 @@
     </div> {{-- End stock management container --}}
 
     {{-- ── Set Stock Modal ─────────────────────────────────────── --}}
-    <div class="modal fade" id="adjustStockModal">
+    <div class="modal fade" id="adjustStockModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">

@@ -291,7 +291,7 @@
     </div>
 
     {{-- ── Adjustment Form Modal ───────────────────────────────── --}}
-    <div class="modal fade" id="adjustmentModal">
+    <div class="modal fade" id="adjustmentModal" tabindex="-1" aria-labelledby="adjustmentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">

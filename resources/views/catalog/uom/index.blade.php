@@ -230,11 +230,11 @@
     </div>
 
     <!-- Form Modal -->
-    <div class="modal fade" id="uomModal">
+    <div class="modal fade" id="uomModal" tabindex="-1" aria-labelledby="uomModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold" x-text="isEditing ? 'Edit Unit of Measure' : 'Add Unit of Measure'"></h5>
+                    <h5 class="modal-title fw-bold" id="uomModalLabel" x-text="isEditing ? 'Edit Unit of Measure' : 'Add Unit of Measure'"></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body pt-3">

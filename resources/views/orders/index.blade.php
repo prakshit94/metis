@@ -1348,12 +1348,12 @@
                                                     <tr class="border-bottom">
                                                         <td class="ps-4 py-3">
                                                             <div class="d-flex align-items-center gap-3">
-                                                                <img :src="item.image || '/assets/images/product-placeholder.svg'"
+                                                                <img :src="item.image || '{{ asset('assets/images/product-placeholder.svg') }}'"
                                                                      class="rounded-3 shadow-sm object-fit-cover"
                                                                      width="48"
                                                                      height="48"
                                                                      :alt="item.name"
-                                                                     x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                                                     x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                                                 <div>
                                                                     <p class="fw-bold text-body-emphasis mb-0" x-text="item.name"></p>
                                                                     <p class="text-muted small mb-0 font-monospace" style="font-size: 0.75rem;" x-text="item.sku || 'No SKU'"></p>
@@ -1754,7 +1754,7 @@
 </div>
 
 <!-- ═══════════════════════ Create Shipment Modal ═══════════════════════════ -->
-<div class="modal fade" id="createShipmentModal" aria-labelledby="createShipmentModalLabel">
+<div class="modal fade" id="createShipmentModal" tabindex="-1" aria-labelledby="createShipmentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
@@ -1800,7 +1800,7 @@
 </div>
 
 <!-- ═══════════════════════ CSV Import Preview Modal ═══════════════════════════ -->
-<div class="modal fade" id="importPreviewModal" aria-labelledby="importPreviewModalLabel" data-bs-backdrop="static">
+<div class="modal fade" id="importPreviewModal" tabindex="-1" aria-labelledby="importPreviewModalLabel" data-bs-backdrop="static" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
@@ -1868,7 +1868,7 @@
 
 
 <!-- ═══════════════════════ Confirm Order Modal ═══════════════════════════ -->
-<div class="modal fade" id="confirmOrderModal" aria-labelledby="confirmOrderModalLabel">
+<div class="modal fade" id="confirmOrderModal" tabindex="-1" aria-labelledby="confirmOrderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
@@ -1968,7 +1968,7 @@
 </div>
 
 <!-- ═══════════════════════ Deliver Order Modal ═══════════════════════════ -->
-<div class="modal fade" id="deliverOrderModal" aria-labelledby="deliverOrderModalLabel">
+<div class="modal fade" id="deliverOrderModal" tabindex="-1" aria-labelledby="deliverOrderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
@@ -2070,7 +2070,7 @@
 </div>
 
 <!-- ═══════════════════════ Initiate Return Modal ═══════════════════════════ -->
-<div class="modal fade" id="initiateReturnModal" aria-labelledby="initiateReturnModalLabel">
+<div class="modal fade" id="initiateReturnModal" tabindex="-1" aria-labelledby="initiateReturnModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
@@ -2128,7 +2128,7 @@
     </div>
 </div>
 <!-- ═══════════════════════ Cancel Order Modal ═══════════════════════════ -->
-<div class="modal fade" id="cancelOrderModal" aria-labelledby="cancelOrderModalLabel">
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
@@ -2172,7 +2172,7 @@
 </div>
 
     <!-- Items Breakdown Modal -->
-    <div class="modal fade" id="orderItemsModal" aria-labelledby="orderItemsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="orderItemsModal" tabindex="-1" aria-labelledby="orderItemsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
                 <template x-if="selectedItemsOrder">

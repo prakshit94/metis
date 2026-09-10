@@ -494,7 +494,7 @@
 @endsection
 
 @push('modals')
-<div class="modal fade" id="iconDemoModal">
+<div class="modal fade" id="iconDemoModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
