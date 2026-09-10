@@ -156,7 +156,7 @@ br {
                {{ ucfirst($invoice->order->payment_method ?? 'Cash') }}<br>
                @if(strtolower($invoice->order->payment_method ?? '') === 'cod')
                <strong>To Collect:</strong>
-               ₹ {{ number_format($invoice->net_amount, 2) }}<br>
+               ₹ {{ number_format($invoice->net_amount, 0) }}<br>
                @endif
                @if($invoice->order?->shipments && $shipment = $invoice->order->shipments->first())
                <br>
@@ -498,7 +498,7 @@ $totalIGST = 0;
          Grand Total
       </td>
       <td class="text-right">
-         {{ number_format($invoice->net_amount, 2) }}
+         {{ number_format($invoice->net_amount, 0) }}
       </td>
    </tr>
 </table>

@@ -13,9 +13,10 @@ class IndiaPostSettingsSeeder extends Seeder
      */
     public function run(): void
     {
+        $officeId = (string) time();
         $defaultOffice = [
             [
-                'id' => (string) time(),
+                'id' => $officeId,
                 'pickup_dropoff_office_id' => '21260024',
                 'drop_off_pincode' => '600001',
                 'booking_office_name' => 'Default Booking Office',
@@ -32,10 +33,6 @@ class IndiaPostSettingsSeeder extends Seeder
                 'contract_24_sp_doc' => '41469430',
                 'contract_24_spp_parspl' => '41918281',
                 'contract_48_sp_doc' => '41471113',
-                'barcode_prefix' => 'EA',
-                'barcode_start' => '10000000',
-                'barcode_end' => '19999999',
-                'barcode_current' => '10000000',
             ]
         ];
 
@@ -43,7 +40,18 @@ class IndiaPostSettingsSeeder extends Seeder
             ['key' => 'india_post_offices'],
             ['value' => json_encode($defaultOffice)]
         );
-        
-        $this->command->info('India Post default office settings seeded successfully!');
+
+        // Seed a default active barcode range for this office
+        \App\Models\IndiaPostBarcodeRange::updateOrCreate(
+            ['office_id' => $officeId, 'prefix' => 'EA'],
+            [
+                'start_sequence' => 10000000,
+                'end_sequence' => 19999999,
+                'current_sequence' => 10000000,
+                'status' => 'active'
+            ]
+        );
+
+        $this->command->info('India Post default office and barcode range seeded successfully!');
     }
 }

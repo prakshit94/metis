@@ -690,7 +690,7 @@ class OrderService
             $totalDiscount = $subtotal;
         }
 
-        $grandTotal = max(0.0, $subtotal - $totalDiscount + $taxAmount);
+        $grandTotal = round(max(0.0, $subtotal - $totalDiscount + $taxAmount));
 
         return [
             'items' => $items,

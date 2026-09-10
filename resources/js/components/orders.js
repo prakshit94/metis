@@ -1395,13 +1395,15 @@ document.addEventListener('alpine:init', () => {
           html: `
             <div class="text-start">
               <label class="form-label fw-bold">Carrier Name <span class="text-danger">*</span></label>
-              <select id="swal-carrier" class="form-select mb-3">
+              <select id="swal-carrier" class="form-select mb-3" onchange="const t = document.getElementById('swal-tracking-label'); const i = document.getElementById('swal-tracking-info'); if(this.value === 'India Post') { t.innerHTML = '(Optional)'; i.style.display = 'block'; } else { t.innerHTML = '<span class=\\'text-danger\\'>*</span>'; i.style.display = 'none'; }">
                 <option value="" disabled selected>Select Carrier</option>
                 ${(this.carriersList || []).map(c => `<option value="${c}">${c}</option>`).join('')}
               </select>
-              <label class="form-label fw-bold">Tracking Number (Base) <span class="text-danger">*</span></label>
+              <label class="form-label fw-bold">Tracking Number <span id="swal-tracking-label" class="text-danger">*</span></label>
               <input type="text" id="swal-tracking" class="form-control" placeholder="Enter tracking details">
-              <small class="text-muted mt-1 d-block">This tracking number will be applied to all selected orders. You can update them individually later if needed.</small>
+              <div id="swal-tracking-info" class="form-text mt-2 text-info" style="display: none;">
+                <i class="bi bi-info-circle-fill me-1"></i> Leave blank to automatically generate Tracking IDs via India Post API.
+              </div>
             </div>
           `,
           icon: 'question',
@@ -1423,7 +1425,7 @@ document.addEventListener('alpine:init', () => {
               Swal.showValidationMessage('Please select a carrier');
               return false;
             }
-            if (!tNo) {
+            if (cName !== 'India Post' && !tNo) {
               Swal.showValidationMessage('Please enter a tracking number');
               return false;
             }

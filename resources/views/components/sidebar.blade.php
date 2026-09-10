@@ -91,6 +91,13 @@
                 </li>
                 @endcan
 
+                <li class="nav-item">
+                    <a class="nav-link {{ $current === 'targets.index' ? 'active' : '' }}" href="{{ route('targets.index') }}">
+                        <i class="bi bi-award-fill"></i>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Targets & Achv.</span>
+                    </a>
+                </li>
+
                 {{-- ── COMMERCE & SALES ─────────────────────────── --}}
                 @canany(['product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view', 'orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view', 'complaints.view', 'coupon-view', 'promotions-view'])
                 <li class="nav-item sidebar-section-label mt-3">

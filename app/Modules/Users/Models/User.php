@@ -387,4 +387,9 @@ class User extends Authenticatable implements Auditable
 
         return 'desktop';
     }
+
+    public function targets(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(\App\Models\Target::class, 'targetable');
+    }
 }

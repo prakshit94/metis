@@ -144,7 +144,7 @@ td {
                   <strong>Dated:</strong> {{ $invoice->invoice_date ? $invoice->invoice_date->format('d-m-Y') : 'N/A' }}<br>
                   <strong>Payment Mode:</strong> {{ ucfirst($invoice->order->payment_method ?? 'Cash') }}<br>
                   @if(strtolower($invoice->order->payment_method ?? '') === 'cod')
-                  <strong>To Collect:</strong> ₹ {{ number_format($invoice->net_amount, 2) }}<br>
+                  <strong>To Collect:</strong> ₹ {{ number_format($invoice->net_amount, 0) }}<br>
                   @endif
                   @if($invoice->order?->shipments && $shipment = $invoice->order->shipments->first())
                   <br>
@@ -448,7 +448,7 @@ $totalIGST = 0;
 
     <tr class="grand-total">
         <td colspan="8" class="text-right">Grand Total</td>
-        <td class="text-right">{{ number_format($invoice->net_amount, 2) }}</td>
+        <td class="text-right">{{ number_format($invoice->net_amount, 0) }}</td>
     </tr>
 </table>
          <br>

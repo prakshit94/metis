@@ -76,6 +76,13 @@ Route::post('/auth/login', [AuthController::class, 'login'])
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/shipping/settings', [ShippingSettingsController::class, 'store'])->name('api.shipping.settings.store')->middleware('permission:settings-edit|shipping-view');
+    Route::get('/shipping/awb-logs/{officeId}', [ShippingSettingsController::class, 'awbLogs'])->name('api.shipping.awb-logs')->middleware('permission:shipping-view');
+    Route::get('/shipping/offices/{officeId}/ranges', [ShippingSettingsController::class, 'getRanges'])->name('api.shipping.ranges.index')->middleware('permission:shipping-view');
+    Route::post('/shipping/offices/{officeId}/ranges', [ShippingSettingsController::class, 'storeRange'])->name('api.shipping.ranges.store')->middleware('permission:settings-edit|shipping-view');
+    Route::post('/shipping/ranges/{rangeId}/activate', [ShippingSettingsController::class, 'activateRange'])->name('api.shipping.ranges.activate')->middleware('permission:settings-edit|shipping-view');
+    Route::put('/shipping/ranges/{rangeId}', [ShippingSettingsController::class, 'updateRange'])->name('api.shipping.ranges.update')->middleware('permission:settings-edit|shipping-view');
+    Route::delete('/shipping/ranges/{rangeId}', [ShippingSettingsController::class, 'deleteRange'])->name('api.shipping.ranges.destroy')->middleware('permission:settings-edit|shipping-view');
+
 
     // ── Auth & Token Management ──────────────────────────────────────────────
     Route::prefix('auth')->name('api.auth.')->group(function (): void {

@@ -3493,7 +3493,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                     shipping = 0;
                 }
             }
-            return Math.max(0, this.subtotal - this.totalDiscount + this.taxAmount + shipping); 
+            return Math.round(Math.max(0, this.subtotal - this.totalDiscount + this.taxAmount + shipping)); 
         },
 
         async applyCoupon(codeToApply = null) {

@@ -277,4 +277,19 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs.index')->middleware('role:Super Admin');
     Route::delete('/admin/audit-logs/clear', [AuditLogController::class, 'clearAll'])->name('admin.audit-logs.clear')->middleware('role:Super Admin');
     Route::delete('/admin/audit-logs/destroy', [AuditLogController::class, 'destroy'])->name('admin.audit-logs.destroy')->middleware('role:Super Admin');
+
+    // Targets & Achievements
+    Route::get('/targets', [\App\Http\Controllers\TargetController::class, 'index'])->name('targets.index');
+    Route::get('/targets/create', [\App\Http\Controllers\TargetController::class, 'create'])->name('targets.create');
+    Route::post('/targets', [\App\Http\Controllers\TargetController::class, 'store'])->name('targets.store');
+    // Static routes MUST be declared before parameterized {target} routes to avoid wildcard capture
+    Route::get('/targets/import', [\App\Http\Controllers\TargetController::class, 'importForm'])->name('targets.import');
+    Route::get('/targets/import-template', [\App\Http\Controllers\TargetController::class, 'importTemplate'])->name('targets.import.template');
+    Route::post('/targets/import', [\App\Http\Controllers\TargetController::class, 'import'])->name('targets.import.process');
+    Route::get('/targets/export', [\App\Http\Controllers\TargetController::class, 'export'])->name('targets.export');
+    Route::post('/targets/recalculate', [\App\Http\Controllers\TargetController::class, 'recalculate'])->name('targets.recalculate');
+    Route::get('/targets/{target}/edit', [\App\Http\Controllers\TargetController::class, 'edit'])->name('targets.edit');
+    Route::put('/targets/{target}', [\App\Http\Controllers\TargetController::class, 'update'])->name('targets.update');
+    Route::delete('/targets/{target}', [\App\Http\Controllers\TargetController::class, 'destroy'])->name('targets.destroy');
 });
+

@@ -258,7 +258,7 @@ class IndiaPostProvider implements ShippingProviderInterface
                 [
                     'bulk_customer_id' => (string) $customId,
                     'contract_id' => (string) $contractId,
-                    'barcode_no' => $this->generateBarcode(),
+                    'barcode_no' => $this->generateBarcode($order->id),
                     'pickup_or_dropoff' => 'DROPOFF',
                     'pickup_dropoff_office_id' => (int) config('shipping.providers.india_post.pickup_dropoff_office_id'),
                     'article_type' => $articleType,
@@ -394,12 +394,28 @@ class IndiaPostProvider implements ShippingProviderInterface
         throw new \Exception('Failed to get tracking status: '.$response->body());
     }
 
-    private function generateBarcode(): string
+    private function generateBarcode(?int $orderId = null): string
     {
-        $prefix = strtoupper(config('shipping.providers.india_post.barcode_prefix', 'EA'));
-        $start = config('shipping.providers.india_post.barcode_start', '10000000');
-        $current = config('shipping.providers.india_post.barcode_current', $start);
-        $end = config('shipping.providers.india_post.barcode_end', '19999999');
+        $officeId = $this->activeOfficeId ?: 'default';
+        $range = \App\Models\IndiaPostBarcodeRange::where('office_id', $officeId)
+            ->where('status', 'active')
+            ->orderBy('id', 'asc')
+            ->first();
+
+        if (!$range) {
+            // Fallback for backwards compatibility or missing setup
+            $prefix = strtoupper(config('shipping.providers.india_post.barcode_prefix', 'EA'));
+            $start = (int) config('shipping.providers.india_post.barcode_start', '10000000');
+            $current = (int) config('shipping.providers.india_post.barcode_current', $start);
+            $end = (int) config('shipping.providers.india_post.barcode_end', '19999999');
+            $rangeId = null;
+        } else {
+            $prefix = strtoupper($range->prefix);
+            $start = $range->start_sequence;
+            $current = $range->current_sequence;
+            $end = $range->end_sequence;
+            $rangeId = $range->id;
+        }
 
         if (!$current) {
             $current = $start;
@@ -424,12 +440,46 @@ class IndiaPostProvider implements ShippingProviderInterface
         $barcode = $prefix . $sequence . $checkDigit . 'IN';
 
         $nextSequence = (int) $current + 1;
-        if ($nextSequence > (int) $end) {
-            $nextSequence = (int) $start;
+        
+        if ($range) {
+            if ($nextSequence > $end) {
+                $range->status = 'exhausted';
+                $range->current_sequence = $end; // Max it out
+                $range->save();
+                
+                // Activate next queued range if available
+                $nextRange = \App\Models\IndiaPostBarcodeRange::where('office_id', $officeId)
+                    ->where('status', 'queued')
+                    ->orderBy('id', 'asc')
+                    ->first();
+                if ($nextRange) {
+                    $nextRange->status = 'active';
+                    $nextRange->save();
+                }
+            } else {
+                $range->current_sequence = $nextSequence;
+                $range->save();
+            }
+        } else {
+            // Legacy config update
+            if ($nextSequence > (int) $end) {
+                $nextSequence = (int) $start;
+            }
+            $this->updateBarcodeSequence((string) $nextSequence);
+            config(['shipping.providers.india_post.barcode_current' => (string) $nextSequence]);
         }
 
-        $this->updateBarcodeSequence((string) $nextSequence);
-        config(['shipping.providers.india_post.barcode_current' => (string) $nextSequence]);
+        try {
+            \App\Models\IndiaPostAwbTracking::create([
+                'range_id' => $rangeId,
+                'office_id' => $officeId,
+                'barcode' => $barcode,
+                'order_id' => $orderId,
+                'status' => 'used',
+            ]);
+        } catch (\Exception $e) {
+            // Silently fail if DB is unavailable so we don't break shipment flow
+        }
 
         return $barcode;
     }

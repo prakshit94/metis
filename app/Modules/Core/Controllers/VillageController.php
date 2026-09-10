@@ -22,10 +22,11 @@ class VillageController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:village-view', only: ['index', 'show', 'servicesOptions']),
-            new Middleware('permission:village-create', only: ['store', 'import']),
-            new Middleware('permission:village-edit', only: ['update', 'bulkAction']),
+            new Middleware('permission:village-view', only: ['index', 'show', 'servicesOptions', 'search']),
+            new Middleware('permission:village-create', only: ['store', 'import', 'importTemplate']),
+            new Middleware('permission:village-edit', only: ['update', 'bulkAction', 'syncIndiaPostPincodes']),
             new Middleware('permission:village-delete', only: ['destroy']),
+            new Middleware('permission:village-export', only: ['export', 'exportSelected']),
         ];
     }
 
@@ -287,7 +288,7 @@ class VillageController extends Controller implements HasMiddleware
             $pincodesToSync = Village::where(function($q) {
                 $q->whereNull('office_id')
                   ->orWhereNull('office_type_code')
-                  ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR', '']);
+                  ->orWhereIn('office_type_code', ['INVALID', '']);
             })->select('pincode')->distinct()->pluck('pincode')->toArray();
         }
 

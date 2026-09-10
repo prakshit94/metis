@@ -31,6 +31,6 @@ class DepartmentSeeder extends Seeder
             ]);
         }, $departments);
 
-        DB::table('departments')->insert($insertData);
+        DB::table('departments')->insertOrIgnore($insertData);
     }
 }

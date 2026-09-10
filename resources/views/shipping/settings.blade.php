@@ -130,6 +130,7 @@
                             </th>
                             <th>Post Office</th>
                             <th>IDs & Pincodes</th>
+                            <th>Active Range</th>
                             <th>Status</th>
                             <th style="width:90px;" class="text-end pe-4">Actions</th>
                         </tr>
@@ -137,7 +138,7 @@
                     <tbody>
                         <template x-if="paginatedOffices.length === 0">
                             <tr>
-                                <td colspan="5" class="text-center py-5 text-muted">
+                                <td colspan="6" class="text-center py-5 text-muted">
                                     <i class="bi bi-inbox fs-2 d-block mb-2"></i>
                                     No offices found matching your criteria.
                                 </td>
@@ -166,6 +167,18 @@
                                     </div>
                                 </td>
                                 <td>
+                                    <template x-if="office.awb_stats && office.awb_stats.prefix">
+                                        <div>
+                                            <div class="fw-bold text-uppercase" x-text="office.awb_stats.prefix"></div>
+                                            <div class="small text-muted mt-1 font-monospace" x-text="office.awb_stats.start_sequence + ' - ' + office.awb_stats.end_sequence"></div>
+                                            <div class="small text-primary fw-medium mt-1 font-monospace" x-text="'Curr: ' + office.awb_stats.current_sequence"></div>
+                                        </div>
+                                    </template>
+                                    <template x-if="!office.awb_stats || !office.awb_stats.prefix">
+                                        <div class="text-muted small fst-italic">No active range</div>
+                                    </template>
+                                </td>
+                                <td>
                                     <span class="badge" 
                                           :class="office.status === 'active' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'"
                                           x-text="(office.status || 'unknown').toUpperCase()"></span>
@@ -179,6 +192,16 @@
                                             <li>
                                                 <a class="dropdown-item fw-medium" href="#" @click.prevent="viewOffice(office)">
                                                     <i class="bi bi-eye me-2 text-info"></i> View Details
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item fw-medium" href="#" @click.prevent="viewAwbLogs(office)">
+                                                    <i class="bi bi-list-check me-2 text-warning"></i> AWB Tracking Logs
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item fw-medium" href="#" @click.prevent="manageRanges(office)">
+                                                    <i class="bi bi-upc-scan me-2 text-success"></i> Manage Barcode Ranges
                                                 </a>
                                             </li>
                                             <li>
@@ -260,21 +283,6 @@
                                 </div>
                             </div>
 
-                            <div class="col-12">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
-                                    <div class="card-body p-3">
-                                        <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-upc-scan text-primary me-2"></i>Tracking & Barcode Sequence</h6>
-                                        <table class="table table-sm table-borderless mb-0">
-                                            <tbody>
-                                                <tr><td class="text-muted fw-bold" style="width: 200px;">Prefix</td><td class="fw-medium text-uppercase" x-text="officeViewData.barcode_prefix || '—'"></td></tr>
-                                                <tr><td class="text-muted fw-bold">Sequence Start</td><td class="fw-medium" x-text="officeViewData.barcode_start || '—'"></td></tr>
-                                                <tr><td class="text-muted fw-bold">Sequence End</td><td class="fw-medium" x-text="officeViewData.barcode_end || '—'"></td></tr>
-                                                <tr><td class="text-muted fw-bold">Current Next Sequence</td><td class="fw-medium text-primary" x-text="officeViewData.barcode_current || officeViewData.barcode_start || '—'"></td></tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
 
                             <div class="col-12">
                                 <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
@@ -378,38 +386,6 @@
                                 </div>
                             </div>
 
-                            {{-- Tracking & Barcode Card --}}
-                            <div class="col-12 position-relative">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom">
-                                            <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
-                                                <i class="bi bi-upc-scan" style="font-size: 10px;"></i>
-                                            </div>
-                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Tracking & Barcode Sequence</h6>
-                                        </div>
-                                        
-                                        <div class="row g-2">
-                                            <div class="col-md-3">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Prefix *</label>
-                                                <input type="text" class="form-control form-control-sm fw-semibold text-uppercase" x-model="officeForm.barcode_prefix" placeholder="e.g. EA" style="font-size: 12px;" maxlength="2" required>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Start Sequence *</label>
-                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.barcode_start" placeholder="8 digits" style="font-size: 12px;" maxlength="8" required>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">End Sequence *</label>
-                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.barcode_end" placeholder="8 digits" style="font-size: 12px;" maxlength="8" required>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Current Sequence</label>
-                                                <input type="text" class="form-control form-control-sm fw-semibold text-primary" x-model="officeForm.barcode_current" placeholder="Auto-starts from Start" style="font-size: 12px;" maxlength="8">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
 
                             {{-- API Credentials Card --}}
                             <div class="col-12 position-relative">
@@ -506,6 +482,226 @@
             </div>
         </div>
     </div>
+
+    <!-- AWB Usage Logs Modal -->
+    <div class="modal fade" id="awbLogsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
+                    <h5 class="modal-title fw-bold">AWB Usage & Tracking Logs</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3 bg-body-tertiary">
+                    <template x-if="activeAwbOffice">
+                        <div class="row g-3">
+                            <div class="col-12 mb-3">
+                                <div class="card bg-primary bg-opacity-10 border-primary border-opacity-25 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="row text-center">
+                                            <div class="col-md-4 border-end border-primary border-opacity-25">
+                                                <h6 class="text-primary text-uppercase fw-bold" style="font-size:11px; letter-spacing:1px;">Total Capacity</h6>
+                                                <h3 class="mb-0 text-primary" x-text="activeAwbOffice.awb_stats?.total?.toLocaleString() || 0"></h3>
+                                            </div>
+                                            <div class="col-md-4 border-end border-primary border-opacity-25">
+                                                <h6 class="text-success text-uppercase fw-bold" style="font-size:11px; letter-spacing:1px;">AWBs Used</h6>
+                                                <h3 class="mb-0 text-success" x-text="activeAwbOffice.awb_stats?.used?.toLocaleString() || 0"></h3>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <h6 class="text-warning text-uppercase fw-bold" style="font-size:11px; letter-spacing:1px;">Remaining</h6>
+                                                <h3 class="mb-0 text-warning" x-text="activeAwbOffice.awb_stats?.remaining?.toLocaleString() || 0"></h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <h6 class="mb-2 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Usage History</h6>
+                                <div class="table-responsive bg-body rounded shadow-sm border">
+                                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Barcode (AWB)</th>
+                                                <th>Order ID</th>
+                                                <th>Status</th>
+                                                <th>Generated At</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr x-show="loadingAwbLogs">
+                                                <td colspan="4" class="text-center py-4 text-muted">
+                                                    <span class="spinner-border spinner-border-sm me-2"></span> Loading logs...
+                                                </td>
+                                            </tr>
+                                            <tr x-show="!loadingAwbLogs && awbLogs.length === 0">
+                                                <td colspan="4" class="text-center py-4 text-muted">
+                                                    <i class="bi bi-inbox fs-4 d-block mb-2"></i> No tracking IDs have been used yet.
+                                                </td>
+                                            </tr>
+                                            <template x-for="log in awbLogs" :key="log.id">
+                                                <tr>
+                                                    <td class="fw-medium text-primary"><i class="bi bi-upc-scan me-2 text-muted"></i><span x-text="log.barcode"></span></td>
+                                                    <td>
+                                                        <span x-show="log.order_id" x-text="'#' + log.order_id"></span>
+                                                        <span x-show="!log.order_id" class="text-muted fst-italic">Unknown</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-success-subtle text-success text-uppercase" style="font-size: 10px;" x-text="log.status"></span>
+                                                    </td>
+                                                    <td class="text-muted small" x-text="new Date(log.created_at).toLocaleString()"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="modal-footer border-top-0 pt-3 bg-body-tertiary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Manage Ranges Modal -->
+    <div class="modal fade" id="manageRangesModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
+                    <h5 class="modal-title fw-bold">Manage Barcode Ranges</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3 bg-body-tertiary">
+                    <template x-if="activeRangeOffice">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">
+                                            <i class="bi bi-pencil-square text-primary me-2" x-show="isEditingRange"></i>
+                                            <i class="bi bi-plus-circle text-primary me-2" x-show="!isEditingRange"></i>
+                                            <span x-text="isEditingRange ? 'Edit Range' : 'Add New Range'"></span>
+                                        </h6>
+                                        <form @submit.prevent="saveNewRange()" class="row g-2 align-items-end">
+                                            <div class="col-md-2">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Prefix *</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold text-uppercase" x-model="newRangeForm.prefix" placeholder="e.g. EA" style="font-size: 12px;" maxlength="2" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Start Sequence *</label>
+                                                <input type="number" class="form-control form-control-sm fw-semibold" x-model="newRangeForm.start_sequence" placeholder="8 digits" style="font-size: 12px;" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">End Sequence *</label>
+                                                <input type="number" class="form-control form-control-sm fw-semibold" x-model="newRangeForm.end_sequence" placeholder="8 digits" style="font-size: 12px;" required>
+                                            </div>
+                                            <div class="col-md-4 d-flex gap-2">
+                                                <button type="submit" class="btn btn-primary btn-sm flex-grow-1" style="height: 31px;" :disabled="savingRange">
+                                                    <span x-show="!savingRange" x-text="isEditingRange ? 'Save Changes' : 'Add Range'"></span>
+                                                    <span x-show="savingRange"><span class="spinner-border spinner-border-sm me-1"></span>Saving...</span>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" style="height: 31px;" x-show="isEditingRange" @click="cancelEditRange()">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-clock-history text-info me-2"></i>Range History</h6>
+                                <div class="table-responsive bg-body rounded shadow-sm border">
+                                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Prefix</th>
+                                                <th>Start</th>
+                                                <th>End</th>
+                                                <th>Current</th>
+                                                <th>Usage</th>
+                                                <th>Status</th>
+                                                <th>Timestamps</th>
+                                                <th class="text-end">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr x-show="loadingRanges">
+                                                <td colspan="8" class="text-center py-4 text-muted">
+                                                    <span class="spinner-border spinner-border-sm me-2"></span> Loading ranges...
+                                                </td>
+                                            </tr>
+                                            <tr x-show="!loadingRanges && officeRanges.length === 0">
+                                                <td colspan="8" class="text-center py-4 text-muted">
+                                                    <i class="bi bi-inbox fs-4 d-block mb-2"></i> No ranges have been added yet.
+                                                </td>
+                                            </tr>
+                                            <template x-for="r in officeRanges" :key="r.id">
+                                                <tr>
+                                                    <td class="fw-bold text-uppercase" x-text="r.prefix"></td>
+                                                    <td class="font-monospace" x-text="r.start_sequence"></td>
+                                                    <td class="font-monospace" x-text="r.end_sequence"></td>
+                                                    <td class="font-monospace text-primary fw-medium" x-text="r.current_sequence"></td>
+                                                    <td class="small" style="font-size: 11px;">
+                                                        <div><span class="text-muted">Total:</span> <span class="fw-bold text-body" x-text="Math.max(0, r.end_sequence - r.start_sequence + 1).toLocaleString('en-IN')"></span></div>
+                                                        <div><span class="text-muted">Used:</span> <span class="fw-bold text-info" x-text="Math.max(0, r.current_sequence - r.start_sequence).toLocaleString('en-IN')"></span></div>
+                                                        <div><span class="text-muted">Left:</span> <span class="fw-bold text-success" x-text="Math.max(0, r.end_sequence - r.current_sequence + 1).toLocaleString('en-IN')"></span></div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge" 
+                                                              :class="{
+                                                                  'bg-success-subtle text-success': r.status === 'active' && !r.deleted_at,
+                                                                  'bg-warning-subtle text-warning': r.status === 'queued' && !r.deleted_at,
+                                                                  'bg-secondary-subtle text-secondary': r.status === 'exhausted' && !r.deleted_at,
+                                                                  'bg-danger-subtle text-danger': !!r.deleted_at
+                                                              }"
+                                                              x-text="r.deleted_at ? 'DELETED' : r.status.toUpperCase()"></span>
+                                                    </td>
+                                                    <td class="text-muted" style="font-size: 11px;">
+                                                        <div><span class="fw-bold">Added:</span> <span x-text="new Date(r.created_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })"></span></div>
+                                                        <div><span class="fw-bold">Updated:</span> <span x-text="new Date(r.updated_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })"></span></div>
+                                                        <div x-show="r.deleted_at" class="text-danger"><span class="fw-bold">Deleted:</span> <span x-text="r.deleted_at ? new Date(r.deleted_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''"></span></div>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <div class="d-flex gap-1 justify-content-end">
+                                                            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 11px;" 
+                                                                    x-show="r.status !== 'active' && r.status !== 'exhausted' && r.current_sequence <= r.end_sequence && !r.deleted_at" 
+                                                                    @click="activateRange(r.id)">
+                                                                Set Active
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 11px;" 
+                                                                    x-show="!r.deleted_at" 
+                                                                    @click="startEditRange(r)">
+                                                                <i class="bi bi-pencil-square"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 11px;"  
+                                                                    x-show="r.status !== 'active' && !r.deleted_at" 
+                                                                    @click="deleteRange(r.id)">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="modal-footer border-top-0 pt-3 bg-body-tertiary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Alpine JS Logic -->
@@ -527,6 +723,10 @@ document.addEventListener('alpine:init', () => {
         isEditing: false,
         officeViewData: null,
         viewModalInstance: null,
+        activeAwbOffice: null,
+        awbLogsModalInstance: null,
+        awbLogs: [],
+        loadingAwbLogs: false,
         officeForm: {
             id: '',
             pickup_dropoff_office_id: '',
@@ -544,11 +744,20 @@ document.addEventListener('alpine:init', () => {
             contract_bp: '',
             contract_24_sp_doc: '',
             contract_24_spp_parspl: '',
-            contract_48_sp_doc: '',
-            barcode_prefix: '',
-            barcode_start: '',
-            barcode_end: '',
-            barcode_current: ''
+            contract_48_sp_doc: ''
+        },
+        
+        activeRangeOffice: null,
+        manageRangesModalInstance: null,
+        officeRanges: [],
+        loadingRanges: false,
+        savingRange: false,
+        isEditingRange: false,
+        editingRangeId: null,
+        newRangeForm: {
+            prefix: '',
+            start_sequence: '',
+            end_sequence: ''
         },
         modalInstance: null,
 
@@ -563,6 +772,13 @@ document.addEventListener('alpine:init', () => {
             if (!Array.isArray(this.form.india_post_offices)) {
                 this.form.india_post_offices = [];
             }
+            
+            this.$watch('searchQuery', () => {
+                this.currentPage = 1;
+            });
+            this.$watch('statusFilter', () => {
+                this.currentPage = 1;
+            });
         },
 
         get filteredOffices() {
@@ -641,6 +857,151 @@ document.addEventListener('alpine:init', () => {
             }
             return this.modalInstance;
         },
+        getAwbLogsModal() {
+            if (!this.awbLogsModalInstance) {
+                this.awbLogsModalInstance = new bootstrap.Modal(document.getElementById('awbLogsModal'));
+            }
+            return this.awbLogsModalInstance;
+        },
+        async viewAwbLogs(office) {
+            this.activeAwbOffice = office;
+            this.awbLogs = [];
+            this.loadingAwbLogs = true;
+            this.getAwbLogsModal().show();
+            
+            try {
+                const res = await fetch(`/api/shipping/awb-logs/${office.id}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.awbLogs = data.logs.data;
+                }
+            } catch (error) {
+                console.error('Failed to load logs', error);
+            } finally {
+                this.loadingAwbLogs = false;
+            }
+        },
+
+        getManageRangesModal() {
+            if (!this.manageRangesModalInstance) {
+                this.manageRangesModalInstance = new bootstrap.Modal(document.getElementById('manageRangesModal'));
+            }
+            return this.manageRangesModalInstance;
+        },
+        async manageRanges(office) {
+            this.activeRangeOffice = office;
+            this.officeRanges = [];
+            this.cancelEditRange();
+            this.loadingRanges = true;
+            this.getManageRangesModal().show();
+            
+            await this.fetchRanges(office.id);
+        },
+        startEditRange(range) {
+            this.isEditingRange = true;
+            this.editingRangeId = range.id;
+            this.newRangeForm = {
+                prefix: range.prefix,
+                start_sequence: range.start_sequence,
+                end_sequence: range.end_sequence
+            };
+        },
+        cancelEditRange() {
+            this.isEditingRange = false;
+            this.editingRangeId = null;
+            this.newRangeForm = { prefix: 'EA', start_sequence: '', end_sequence: '' };
+        },
+        async fetchRanges(officeId) {
+            this.loadingRanges = true;
+            try {
+                const res = await fetch(`/api/shipping/offices/${officeId}/ranges`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.officeRanges = data.ranges;
+                }
+            } catch (error) {
+                console.error('Failed to load ranges', error);
+            } finally {
+                this.loadingRanges = false;
+            }
+        },
+        async saveNewRange() {
+            this.savingRange = true;
+            try {
+                let url = `/api/shipping/offices/${this.activeRangeOffice.id}/ranges`;
+                let method = 'POST';
+                if (this.isEditingRange) {
+                    url = `/api/shipping/ranges/${this.editingRangeId}`;
+                    method = 'PUT';
+                }
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(this.newRangeForm)
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to save range.');
+                
+                this.showToast(this.isEditingRange ? 'Barcode range updated successfully.' : 'Barcode range added successfully.', 'success');
+                this.cancelEditRange();
+                await this.fetchRanges(this.activeRangeOffice.id);
+            } catch (error) {
+                this.showToast(error.message, 'danger');
+            } finally {
+                this.savingRange = false;
+            }
+        },
+        async activateRange(rangeId) {
+            try {
+                const response = await fetch(`/api/shipping/ranges/${rangeId}/activate`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to activate range.');
+                
+                this.showToast('Range activated successfully.', 'success');
+                await this.fetchRanges(this.activeRangeOffice.id);
+            } catch (error) {
+                this.showToast(error.message, 'danger');
+            }
+        },
+        async deleteRange(rangeId) {
+            if (!confirm('Are you sure you want to delete this range?')) return;
+            
+            try {
+                const response = await fetch(`/api/shipping/ranges/${rangeId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to delete range.');
+                
+                this.showToast('Range deleted successfully.', 'success');
+                await this.fetchRanges(this.activeRangeOffice.id);
+            } catch (error) {
+                this.showToast(error.message, 'danger');
+            }
+        },
 
         openOfficeModal() {
             this.isEditing = false;
@@ -662,11 +1023,7 @@ document.addEventListener('alpine:init', () => {
                 contract_bp: '',
                 contract_24_sp_doc: '',
                 contract_24_spp_parspl: '',
-                contract_48_sp_doc: '',
-                barcode_prefix: '',
-                barcode_start: '',
-                barcode_end: '',
-                barcode_current: ''
+                contract_48_sp_doc: ''
             };
             this.getModal().show();
         },
@@ -695,6 +1052,8 @@ document.addEventListener('alpine:init', () => {
             if (this.officeForm.is_default) {
                 this.form.india_post_offices.forEach(o => o.is_default = false);
             }
+            
+            // Remove stats calculation from here since ranges are managed in DB now
             
             if (this.isEditing) {
                 const index = this.form.india_post_offices.findIndex(o => o.id === this.officeForm.id);

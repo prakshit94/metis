@@ -52,6 +52,11 @@ class DatabaseSeeder extends Seeder
             // LeaveSeeder::class,
             // WalletTransactionSeeder::class,
             IndiaPostSettingsSeeder::class,
+
+            // Newly added missing seeders
+            DepartmentSeeder::class,
+            //TargetSeeder::class,
+            ProductCatalogSeeder::class,
         ]);
     }
 }

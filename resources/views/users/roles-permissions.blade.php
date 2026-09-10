@@ -172,7 +172,7 @@
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                    <thead class="table-active">
                         <tr>
                             <th style="width: 50px;" class="ps-3">
                                 <input type="checkbox"
@@ -214,13 +214,13 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td><span class="badge bg-secondary" x-text="item.guard_name"></span></td>
+                                <td><span class="badge text-bg-secondary" x-text="item.guard_name"></span></td>
                                 <td x-show="activeTab === 'roles'">
                                     <div class="d-flex flex-column gap-1">
-                                        <span class="badge bg-info align-self-start" x-text="`${item.permissions_count || 0} permissions`"></span>
+                                        <span class="badge text-bg-info align-self-start" x-text="`${item.permissions_count || 0} permissions`"></span>
                                         <div class="d-flex flex-wrap gap-1" x-show="item.permissionGroups.length > 0">
                                             <template x-for="group in item.permissionGroups.slice(0, 4)" :key="`${item.id}-${group.key}`">
-                                                <span class="badge text-bg-body-tertiary border">
+                                                <span class="badge bg-body-tertiary text-body border">
                                                     <i class="bi me-1" :class="`bi-${group.icon}`"></i>
                                                     <span x-text="group.label"></span>
                                                     <span class="text-muted" x-text="`(${group.items.length})`"></span>
@@ -231,10 +231,10 @@
                                     </div>
                                 </td>
                                 <td x-show="activeTab === 'permissions'">
-                                    <span class="badge bg-info" x-text="`${item.roles_count || 0} roles`"></span>
+                                    <span class="badge text-bg-info" x-text="`${item.roles_count || 0} roles`"></span>
                                 </td>
                                 <td>
-                                    <span class="badge" :class="item.isDeleted ? 'bg-danger' : 'bg-success'" x-text="item.isDeleted ? 'deleted' : 'active'"></span>
+                                    <span class="badge" :class="item.isDeleted ? 'text-bg-danger' : 'text-bg-success'" x-text="item.isDeleted ? 'deleted' : 'active'"></span>
                                 </td>
                                 <td x-text="item.updatedAt"></td>
                                 <td>
@@ -372,7 +372,7 @@
                                     <div class="permissions-container mt-3">
                                         <div class="table-responsive border rounded" x-show="groupedPermissions.length > 0">
                                             <table class="table table-hover mb-0 align-middle">
-                                                <thead class="table-light">
+                                                <thead class="table-active">
                                                     <tr>
                                                         <th scope="col" style="width: 250px;" class="py-3 ps-4 text-nowrap border-0">Module / Feature</th>
                                                         <th scope="col" style="width: 120px;" class="text-center py-3 text-nowrap border-0">Select All</th>
@@ -403,7 +403,7 @@
                                                             </td>
                                                             <td class="py-3 pe-3">
                                                                 <template x-for="(subGroup, index) in group.subGroups" :key="index">
-                                                                    <div :class="index > 0 ? 'mt-3 pt-3 border-top border-light-subtle' : ''">
+                                                                    <div :class="index > 0 ? 'mt-3 pt-3 border-top border-secondary-subtle' : ''">
                                                                         <h6 class="fw-semibold text-muted small mb-2 text-uppercase" style="letter-spacing: 0.05em;" x-text="subGroup.label" x-show="group.subGroups.length > 1 || subGroup.label !== group.label"></h6>
                                                                         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3 w-100 m-0">
                                                                             <template x-for="permission in subGroup.items" :key="permission.id">
@@ -483,7 +483,7 @@
                         <i class="bi bi-shield-check me-2 text-primary"></i>Access Details
                     </h5>
                     <template x-if="item && item.isDeleted">
-                        <span class="badge bg-danger">Deleted</span>
+                        <span class="badge text-bg-danger">Deleted</span>
                     </template>
                     <template x-if="item && !item.isDeleted">
                         <span class="badge bg-success-subtle text-success">Active</span>
@@ -553,7 +553,7 @@
                                                     </div>
                                                     <div class="mt-3">
                                                         <template x-for="(subGroup, index) in group.subGroups" :key="index">
-                                                            <div :class="index > 0 ? 'mt-2 pt-2 border-top border-light-subtle' : ''">
+                                                            <div :class="index > 0 ? 'mt-2 pt-2 border-top border-secondary-subtle' : ''">
                                                                 <h6 class="fw-semibold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.05em;" x-text="subGroup.label" x-show="group.subGroups.length > 1 || subGroup.label !== group.label"></h6>
                                                                 <div class="d-flex flex-wrap gap-1">
                                                                     <template x-for="entry in subGroup.items" :key="entry.id">
@@ -615,14 +615,14 @@
 <div class="modal fade" id="accessImportModal" aria-labelledby="accessImportModalLabel">
     <div class="modal-dialog modal-dialog-centered" x-data="accessImportForm">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary bg-gradient text-white border-bottom-0 pb-4">
+            <div class="modal-header border-bottom-0 pb-4">
                 <h5 class="modal-title d-flex align-items-center" id="accessImportModalLabel">
                     <i class="bi bi-upload me-2 fs-4"></i>
                     <span>Import Access Records</span>
                 </h5>
                 <button type="button" class="btn-close btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body position-relative" style="margin-top: -15px; border-radius: 12px 12px 0 0; background: var(--bs-body-bg);">
+            <div class="modal-body position-relative bg-body" style="margin-top: -15px; border-radius: 12px 12px 0 0;">
                 <div class="alert alert-info mb-3">
                     <i class="bi bi-info-circle me-2"></i>
                     <strong>CSV Format:</strong> type, name, guard_name, permissions<br>

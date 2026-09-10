@@ -187,7 +187,7 @@
                                             <!-- Search -->
                                             <div class="position-relative">
                                                 <input type="search" 
-                                                       class="form-control form-control-sm" 
+                                                       class="form-control form-control-sm shadow-none border-secondary border-opacity-25" 
                                                        placeholder="Search products..."
                                                        x-model="searchQuery"
                                                        @input="filterProducts()"
@@ -196,7 +196,7 @@
                                             </div>
                                             
                                             <!-- Category Filter -->
-                                            <select class="form-select form-select-sm" 
+                                            <select class="form-select form-select-sm shadow-none border-secondary border-opacity-25" 
                                                     x-model="categoryFilter" 
                                                     @change="filterProducts()"
                                                     style="width: 150px;">
@@ -212,7 +212,7 @@
                                             </select>
                                             
                                             <!-- Warehouse Filter -->
-                                            <select class="form-select form-select-sm" 
+                                            <select class="form-select form-select-sm shadow-none border-secondary border-opacity-25" 
                                                     x-model="warehouseFilter" 
                                                     @change="filterProducts()"
                                                     style="width: 150px;">
@@ -225,7 +225,7 @@
                                             </select>
                                             
                                             <!-- Stock Filter -->
-                                            <select class="form-select form-select-sm" 
+                                            <select class="form-select form-select-sm shadow-none border-secondary border-opacity-25" 
                                                     x-model="stockFilter" 
                                                     @change="filterProducts()"
                                                     style="width: 150px;">
@@ -236,7 +236,7 @@
                                             </select>
 
                                             <!-- Items Per Page -->
-                                            <select class="form-select form-select-sm"
+                                            <select class="form-select form-select-sm shadow-none border-secondary border-opacity-25"
                                                     x-model.number="itemsPerPage"
                                                     @change="filterProducts()"
                                                     style="width: 120px;">
@@ -303,7 +303,7 @@
                                             <tr>
                                                 <th style="width: 40px;">
                                                     <input type="checkbox" 
-                                                           class="form-check-input" 
+                                                           class="form-check-input border-secondary border-opacity-25 shadow-none" 
                                                            @change="$event.isTrusted && toggleAll($event.target.checked)"
                                                            :checked="selectedProducts.length === filteredProducts.length && filteredProducts.length > 0">
                                                 </th>
@@ -326,7 +326,7 @@
                                                 <tr :class="{'opacity-50': getEffectiveStock(product) <= 0}">
                                                     <td>
                                                         <input type="checkbox" 
-                                                               class="form-check-input" 
+                                                               class="form-check-input border-secondary border-opacity-25 shadow-none" 
                                                                :value="product.id"
                                                                :checked="selectedProducts.includes(product.id)"
                                                                @change="toggleProduct(product.id)">
@@ -365,8 +365,8 @@
                                                     <td class="align-middle">
                                                         <div class="d-flex flex-column gap-2">
                                                             <div class="d-flex align-items-center gap-2">
-                                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="product.mrp && Number(product.mrp) > (Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100)))" x-text="'₹' + Number(product.mrp).toFixed(2)"></span>
-                                                                <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 13px;" x-text="'₹' + (Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100))).toFixed(2)"></span>
+                                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="product.mrp && Number(product.mrp) > (Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100)))" x-text="'₹' + Math.round(Number(product.mrp)).toFixed(0)"></span>
+                                                                <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 13px;" x-text="'₹' + Math.round(Number(product.price) * (1 + (Number(product.tax_rate || 0) / 100))).toFixed(0)"></span>
                                                             </div>
                                                             <div class="p-2 bg-body-tertiary rounded border shadow-sm w-100" style="min-width: 160px; max-width: 200px;">
                                                                 <div class="d-flex justify-content-between align-items-center mb-1 border-bottom border-secondary border-opacity-10 pb-1">
@@ -479,8 +479,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body pt-3">
-                    <form @submit.prevent="saveProduct()">
-                                                <div class="d-flex flex-column flex-md-row border-top" x-data="{ activeTab: 'general' }">
+                    <form @submit.prevent="saveProduct($event)">
+                                                <div class="d-flex flex-column flex-md-row border-top">
                             <!-- Sidebar Tabs -->
                             <div class="bg-body-tertiary border-end p-3" style="min-width: 240px;">
                                 <div class="nav flex-column nav-pills gap-1" role="tablist" aria-orientation="vertical">
@@ -534,11 +534,11 @@
                                     <div class="row g-4 mb-5">
                                         <div class="col-12">
                                             <label class="form-label fw-medium text-muted small">Product Name <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" x-model="form.name" required placeholder="e.g. Wireless Noise Cancelling Headphones">
+                                            <input type="text" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.name" required placeholder="e.g. Wireless Noise Cancelling Headphones">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Category <span class="text-danger">*</span></label>
-                                            <select class="form-select" x-model="form.category_id" required>
+                                            <select class="form-select shadow-none border-secondary border-opacity-25" x-model="form.category_id" required>
                                                 <option value="">Select Category</option>
                                                 <template x-for="category in options.categories" :key="category.id">
                                                     <optgroup :label="category.name">
@@ -552,7 +552,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Brand</label>
-                                            <select class="form-select" x-model="form.brand_id">
+                                            <select class="form-select shadow-none border-secondary border-opacity-25" x-model="form.brand_id">
                                                 <option value="">No Brand</option>
                                                 <template x-for="brand in options.brands" :key="brand.id">
                                                     <option :value="String(brand.id)" x-text="brand.name"></option>
@@ -561,11 +561,11 @@
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label fw-medium text-muted small">Product Description</label>
-                                            <textarea class="form-control" x-model="form.description" rows="3" placeholder="Enter detailed product description..."></textarea>
+                                            <textarea class="form-control shadow-none border-secondary border-opacity-25" x-model="form.description" rows="3" placeholder="Enter detailed product description..."></textarea>
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label fw-medium text-muted small">Application Instructions</label>
-                                            <textarea class="form-control" x-model="form.application_instructions" rows="2" placeholder="Enter instructions for use/application..."></textarea>
+                                            <textarea class="form-control shadow-none border-secondary border-opacity-25" x-model="form.application_instructions" rows="2" placeholder="Enter instructions for use/application..."></textarea>
                                         </div>
                                     </div>
                                     
@@ -575,12 +575,12 @@
                                     
                                     <div class="row g-4">
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">SKU <span class="text-danger">*</span></label>
+                                            <label class="form-label fw-medium text-muted small">SKU <span class="text-danger" x-show="form.is_sku_enabled">*</span></label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control" x-model="form.sku" :disabled="!form.is_sku_enabled" :required="form.is_sku_enabled" placeholder="SKU Code">
-                                                <div class="input-group-text bg-body-secondary border-start-0">
+                                                <input type="text" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.sku" :disabled="!form.is_sku_enabled" :required="form.is_sku_enabled" placeholder="SKU Code">
+                                                <div class="input-group-text bg-body-secondary border-start-0 border-secondary border-opacity-25">
                                                     <div class="form-check form-switch m-0">
-                                                        <input class="form-check-input" type="checkbox" role="switch" x-model="form.is_sku_enabled" id="skuEnabledToggle">
+                                                        <input class="form-check-input border-secondary border-opacity-25 shadow-none" type="checkbox" role="switch" :checked="!form.is_sku_enabled" @change="form.is_sku_enabled = !$event.target.checked" id="skuEnabledToggle">
                                                         <label class="form-check-label small fw-medium ms-1" for="skuEnabledToggle" style="margin-top: 2px;">Auto</label>
                                                     </div>
                                                 </div>
@@ -589,8 +589,8 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Barcode / UPC</label>
                                             <div class="input-group">
-                                                <span class="input-group-text bg-body-secondary"><i class="bi bi-upc-scan"></i></span>
-                                                <input type="text" class="form-control" x-model="form.barcode" placeholder="Scan or enter barcode">
+                                                <span class="input-group-text bg-body-secondary border-secondary border-opacity-25"><i class="bi bi-upc-scan"></i></span>
+                                                <input type="text" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.barcode" placeholder="Scan or enter barcode">
                                             </div>
                                         </div>
                                     </div>
@@ -606,30 +606,30 @@
                                         <div class="col-md-4">
                                             <label class="form-label fw-medium text-muted small">Purchase Price <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <span class="input-group-text bg-body-secondary">₹</span>
-                                                <input type="number" class="form-control" x-model="form.purchase_price" step="0.01" min="0" required placeholder="0.00">
+                                                <span class="input-group-text bg-body-secondary border-secondary border-opacity-25">₹</span>
+                                                <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.purchase_price" step="1" min="0" required placeholder="0">
                                             </div>
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label fw-medium text-muted small">MRP</label>
+                                            <label class="form-label fw-medium text-muted small">MRP <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <span class="input-group-text bg-body-secondary">₹</span>
-                                                <input type="number" class="form-control" x-model="form.mrp" step="0.01" min="0" placeholder="0.00">
+                                                <span class="input-group-text bg-body-secondary border-end-0 text-muted px-2 border-secondary border-opacity-25" style="font-size: 0.8rem;">₹</span>
+                                                <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.mrp" step="1" min="0" required placeholder="0">
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label fw-medium text-muted small">Selling Price (Inc. GST) <span class="text-danger">*</span></label>
                                             <div class="input-group mb-1">
-                                                <span class="input-group-text bg-body-secondary">₹</span>
-                                                <input type="number" class="form-control" x-model="form.selling_price_inc_gst" step="0.01" min="0" required placeholder="0.00">
+                                                <span class="input-group-text bg-body-secondary border-secondary border-opacity-25">₹</span>
+                                                <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.selling_price_inc_gst" step="1" min="0" required placeholder="0">
                                             </div>
                                             <small class="text-muted fw-medium" x-show="form.selling_price_inc_gst && form.tax_rate_id" x-cloak>
-                                                Base (Excl): ₹<span x-text="baseSellingPriceExcludingTax.toFixed(2)"></span>
+                                                Base (Excl): ₹<span x-text="Math.round(baseSellingPriceExcludingTax).toFixed(0)"></span>
                                             </small>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Tax Rate <span class="text-danger">*</span></label>
-                                            <select class="form-select" x-model="form.tax_rate_id" required>
+                                            <select class="form-select shadow-none border-secondary border-opacity-25" x-model="form.tax_rate_id" required>
                                                 <option value="">No Tax</option>
                                                 <template x-for="rate in options.taxRates" :key="rate.id">
                                                     <option :value="String(rate.id)" x-text="rate.name + ' (' + rate.rate + '%)'"></option>
@@ -638,7 +638,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">HSN Code <span class="text-danger">*</span></label>
-                                            <select class="form-select" x-model="form.hsn_code_id" required>
+                                            <select class="form-select shadow-none border-secondary border-opacity-25" x-model="form.hsn_code_id" required>
                                                 <option value="">No HSN</option>
                                                 <template x-for="hsn in options.hsnCodes" :key="hsn.id">
                                                     <option :value="String(hsn.id)" x-text="hsn.code + (hsn.description ? ' - ' + hsn.description : '')"></option>
@@ -652,11 +652,11 @@
                                         
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Default Discount Amount</label>
-                                            <input type="number" class="form-control" x-model="form.default_discount" step="0.01" min="0" placeholder="0.00">
+                                            <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.default_discount" step="1" min="0" placeholder="0">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Discount Type</label>
-                                            <select class="form-select" x-model="form.default_discount_type">
+                                            <select class="form-select shadow-none border-secondary border-opacity-25" x-model="form.default_discount_type">
                                                 <option value="percent">Percent (%)</option>
                                                 <option value="flat">Flat (₹)</option>
                                             </select>
@@ -674,7 +674,7 @@
 
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Unit (UOM) <span class="text-danger">*</span></label>
-                                            <select class="form-select" x-model="form.uom_id" required>
+                                            <select class="form-select shadow-none border-secondary border-opacity-25" x-model="form.uom_id" required>
                                                 <option value="">Select Unit</option>
                                                 <template x-for="uom in options.uoms" :key="uom.id">
                                                     <option :value="String(uom.id)" x-text="uom.name + (uom.short_name ? ' (' + uom.short_name + ')' : '')"></option>
@@ -682,15 +682,14 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Reorder Level (Min Stock)</label>
-                                            <input type="number" class="form-control" x-model="form.min_stock_level" min="0" placeholder="0">
+                                            <label class="form-label fw-medium text-muted small">Reorder Level (Min Stock) <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.min_stock_level" min="0" required placeholder="0">
                                         </div>
 
                                         
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Default Warehouse</label>
-                                            <select class="form-select" x-model="form.default_warehouse_id">
-                                                <option value="">No Default</option>
+                                            <label class="form-label fw-medium text-muted small">Default Warehouse <span class="text-danger">*</span></label>
+                                            <select class="form-select shadow-none border-secondary border-opacity-25" x-model="form.default_warehouse_id" required>
                                                 <template x-for="warehouse in options.warehouses" :key="warehouse.id">
                                                     <option :value="String(warehouse.id)" x-text="warehouse.name"></option>
                                                 </template>
@@ -698,7 +697,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Supplier</label>
-                                            <select class="form-select" x-model="form.supplier_id">
+                                            <select class="form-select shadow-none border-secondary border-opacity-25" x-model="form.supplier_id">
                                                 <option value="">Select Supplier</option>
                                                 <template x-for="supplier in options.suppliers" :key="supplier.id">
                                                     <option :value="String(supplier.id)" x-text="supplier.company_name ? supplier.company_name : (supplier.firstname + ' ' + (supplier.lastname || ''))"></option>
@@ -716,15 +715,15 @@
                                             <div class="p-3 border rounded bg-body-secondary h-100">
                                                 <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between mb-3">
                                                     <label class="form-check-label fw-medium" for="manageStockToggle">Manage stock</label>
-                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.manage_stock" id="manageStockToggle">
+                                                    <input class="form-check-input m-0 border-secondary border-opacity-25 shadow-none" type="checkbox" role="switch" x-model="form.manage_stock" id="manageStockToggle">
                                                 </div>
                                                 <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between mb-3">
                                                     <label class="form-check-label fw-medium" for="batchTrackingToggle">Batch tracking</label>
-                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.batch_tracking" id="batchTrackingToggle">
+                                                    <input class="form-check-input m-0 border-secondary border-opacity-25 shadow-none" type="checkbox" role="switch" x-model="form.batch_tracking" id="batchTrackingToggle">
                                                 </div>
                                                 <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
                                                     <label class="form-check-label fw-medium" for="expiryTrackingToggle">Expiry tracking</label>
-                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.expiry_tracking" id="expiryTrackingToggle">
+                                                    <input class="form-check-input m-0 border-secondary border-opacity-25 shadow-none" type="checkbox" role="switch" x-model="form.expiry_tracking" id="expiryTrackingToggle">
                                                 </div>
                                             </div>
                                         </div>
@@ -733,12 +732,12 @@
                                             <div class="p-3 border rounded bg-body-secondary h-100">
                                                 <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between mb-3">
                                                     <label class="form-check-label fw-medium" for="allowOversellToggle">Allow global overselling</label>
-                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.allow_overselling" id="allowOversellToggle">
+                                                    <input class="form-check-input m-0 border-secondary border-opacity-25 shadow-none" type="checkbox" role="switch" x-model="form.allow_overselling" id="allowOversellToggle">
                                                 </div>
                                                 
                                                 <div x-show="form.allow_overselling" x-transition>
                                                     <label class="form-label fw-medium text-muted small">Global Overselling Limit</label>
-                                                    <input type="number" class="form-control" x-model="form.overselling_qty" min="0" placeholder="0">
+                                                    <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.overselling_qty" min="0" placeholder="0">
                                                 </div>
                                             </div>
                                         </div>
@@ -752,7 +751,7 @@
                                                         </label>
                                                         <div class="fw-normal text-muted mt-1" style="font-size: 0.8rem;">Set specific rules for the selected warehouse.</div>
                                                     </div>
-                                                    <input class="form-check-input m-0" type="checkbox" role="switch" id="warehouseOversellToggle"
+                                                    <input class="form-check-input m-0 border-secondary border-opacity-25 shadow-none" type="checkbox" role="switch" id="warehouseOversellToggle"
                                                            :checked="form.warehouse_allow_overselling !== null || form.warehouse_is_sku_enabled !== null"
                                                            @change="form.warehouse_allow_overselling = $event.target.checked ? false : null; form.warehouse_overselling_qty = $event.target.checked ? 0 : null; form.warehouse_is_sku_enabled = $event.target.checked ? form.is_sku_enabled : null;">
                                                 </div>
@@ -760,17 +759,17 @@
                                                     <div class="col-md-6">
                                                         <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between h-100">
                                                             <label class="form-check-label fw-medium" for="whAllowOversellToggle">Allow Overselling Here</label>
-                                                            <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.warehouse_allow_overselling" id="whAllowOversellToggle">
+                                                            <input class="form-check-input m-0 border-secondary border-opacity-25 shadow-none" type="checkbox" role="switch" x-model="form.warehouse_allow_overselling" id="whAllowOversellToggle">
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6" x-show="form.warehouse_allow_overselling" x-transition>
                                                         <label class="form-label fw-medium text-muted small">Warehouse Limit Qty</label>
-                                                        <input type="number" class="form-control" x-model="form.warehouse_overselling_qty" min="0" placeholder="0">
+                                                        <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.warehouse_overselling_qty" min="0" placeholder="0">
                                                     </div>
                                                     <div class="col-12 mt-3 pt-3 border-top border-warning border-opacity-25" x-show="form.warehouse_allow_overselling !== null || form.warehouse_is_sku_enabled !== null" x-transition>
                                                         <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between h-100">
                                                             <label class="form-check-label fw-medium" for="whSkuToggle">Enable SKU Here</label>
-                                                            <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.warehouse_is_sku_enabled" id="whSkuToggle">
+                                                            <input class="form-check-input m-0 border-secondary border-opacity-25 shadow-none" type="checkbox" role="switch" x-model="form.warehouse_is_sku_enabled" id="whSkuToggle">
                                                         </div>
                                                     </div>
                                                 </div>
@@ -788,7 +787,7 @@
                                     <div class="row g-4 mb-5">
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Product Status <span class="text-danger">*</span></label>
-                                            <select class="form-select form-select-lg" x-model="form.status" required>
+                                            <select class="form-select form-select-lg shadow-none border-secondary border-opacity-25" x-model="form.status" required>
                                                 <option value="">Select Status</option>
                                                 <template x-for="status in options.statusList" :key="status.value">
                                                     <option :value="status.value" x-text="status.label"></option>
@@ -797,7 +796,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Grade</label>
-                                            <select class="form-select form-select-lg" x-model="form.grade">
+                                            <select class="form-select form-select-lg shadow-none border-secondary border-opacity-25" x-model="form.grade">
                                                 <option value="">No Grade</option>
                                                 <option value="A">A</option>
                                                 <option value="B">B</option>
@@ -819,7 +818,7 @@
                                                         </div>
                                                     </template>
                                                 </div>
-                                                <input type="file" class="form-control" style="max-width: 300px;" accept="image/*" @change="handleImageUpload($event)">
+                                                <input type="file" class="form-control shadow-none border-secondary border-opacity-25" style="max-width: 300px;" accept="image/*" @change="handleImageUpload($event)">
                                                 <small class="text-muted mt-2 d-block">Recommended size: 800x800px (Max 5MB)</small>
                                             </div>
                                         </div>
@@ -833,29 +832,29 @@
                                         <div class="col-md-3 col-sm-6">
                                             <label class="form-label fw-medium text-muted small">Weight (g) <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <input type="number" step="0.01" class="form-control" x-model="form.weight_g" required placeholder="0">
-                                                <span class="input-group-text bg-body-secondary">g</span>
+                                                <input type="number" step="0.01" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.weight_g" required placeholder="0">
+                                                <span class="input-group-text bg-body-secondary border-secondary border-opacity-25">g</span>
                                             </div>
                                         </div>
                                         <div class="col-md-3 col-sm-6">
-                                            <label class="form-label fw-medium text-muted small">Length (cm)</label>
+                                            <label class="form-label fw-medium text-muted small">Length (cm) <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <input type="number" step="0.01" class="form-control" x-model="form.length_cm" placeholder="0">
-                                                <span class="input-group-text bg-body-secondary">cm</span>
+                                                <input type="number" step="0.01" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.length_cm" required placeholder="0">
+                                                <span class="input-group-text bg-body-secondary border-secondary border-opacity-25">cm</span>
                                             </div>
                                         </div>
                                         <div class="col-md-3 col-sm-6">
-                                            <label class="form-label fw-medium text-muted small">Width (cm)</label>
+                                            <label class="form-label fw-medium text-muted small">Width (cm) <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <input type="number" step="0.01" class="form-control" x-model="form.width_cm" placeholder="0">
-                                                <span class="input-group-text bg-body-secondary">cm</span>
+                                                <input type="number" step="0.01" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.width_cm" required placeholder="0">
+                                                <span class="input-group-text bg-body-secondary border-secondary border-opacity-25">cm</span>
                                             </div>
                                         </div>
                                         <div class="col-md-3 col-sm-6">
-                                            <label class="form-label fw-medium text-muted small">Height (cm)</label>
+                                            <label class="form-label fw-medium text-muted small">Height (cm) <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <input type="number" step="0.01" class="form-control" x-model="form.height_cm" placeholder="0">
-                                                <span class="input-group-text bg-body-secondary">cm</span>
+                                                <input type="number" step="0.01" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.height_cm" required placeholder="0">
+                                                <span class="input-group-text bg-body-secondary border-secondary border-opacity-25">cm</span>
                                             </div>
                                         </div>
                                     </div>
@@ -975,14 +974,14 @@
                                     <div class="@if(auth()->user()?->hasRole('Super Admin')) col-4 border-end @else col-12 @endif border-secondary border-opacity-25">
                                         <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Selling Price (Inc. GST)</label>
                                         <div class="d-flex align-items-center flex-wrap gap-2">
-                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="product && product.mrp > ((product.selling_price || product.price) * (1 + (product.tax_rate || 0) / 100))" x-text="product ? 'MRP: ₹' + parseFloat(product.mrp||0).toFixed(2) : ''"></span>
-                                            <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 16px;" x-text="product ? '₹ ' + (parseFloat(product.selling_price || product.price || 0) * (1 + (parseFloat(product.tax_rate || 0) / 100))).toFixed(2) : ''"></span>
+                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="product && product.mrp > ((product.selling_price || product.price) * (1 + (product.tax_rate || 0) / 100))" x-text="product ? 'MRP: ₹' + Math.round(parseFloat(product.mrp||0)).toFixed(0) : ''"></span>
+                                            <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 16px;" x-text="product ? '₹ ' + Math.round(parseFloat(product.selling_price || product.price || 0) * (1 + (parseFloat(product.tax_rate || 0) / 100))).toFixed(0) : ''"></span>
                                         </div>
                                     </div>
                                     @if(auth()->user()?->hasRole('Super Admin'))
                                     <div class="col-4 border-end border-secondary border-opacity-25 ps-3">
                                         <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Purchase Price</label>
-                                        <div class="fw-bold text-body-emphasis" style="font-size:14px;" x-text="product ? '₹ ' + parseFloat(product.purchase_price||0).toFixed(2) : ''"></div>
+                                        <div class="fw-bold text-body-emphasis" style="font-size:14px;" x-text="product ? '₹ ' + Math.round(parseFloat(product.purchase_price||0)).toFixed(0) : ''"></div>
                                     </div>
                                     <div class="col-4 ps-3">
                                         <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Profit Margin</label>
@@ -1334,17 +1333,17 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Upload CSV File</label>
-                        <input id="productImportFile" type="file" class="form-control" accept=".csv">
+                        <input id="productImportFile" type="file" class="form-control shadow-none border-secondary border-opacity-25" accept=".csv">
                         <div class="form-text">Upload a CSV file with columns: name, sku, category_id or category, brand_id, uom_id, tax_rate_id, hsn_code_id, purchase_price, mrp, selling_price, stock, status</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label d-block">Import Mode</label>
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="importMode" id="modeOverwrite" value="overwrite" x-model="table.importMode">
+                            <input class="form-check-input border-secondary border-opacity-25 shadow-none" type="radio" name="importMode" id="modeOverwrite" value="overwrite" x-model="table.importMode">
                             <label class="form-check-label" for="modeOverwrite">Overwrite Stock</label>
                         </div>
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="importMode" id="modeIncrement" value="increment" x-model="table.importMode">
+                            <input class="form-check-input border-secondary border-opacity-25 shadow-none" type="radio" name="importMode" id="modeIncrement" value="increment" x-model="table.importMode">
                             <label class="form-check-label" for="modeIncrement">Increment Stock</label>
                         </div>
                         <div class="form-text">Choose whether to replace existing stock quantities or add to them.</div>

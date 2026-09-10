@@ -116,7 +116,7 @@
                             <hr class="my-3 border-light-subtle">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="h6 mb-0 text-uppercase fw-bold">Grand Total</span>
-                                <span class="h3 mb-0 fw-bold text-primary">₹ {{ number_format($order->net_amount, 2) }}</span>
+                                <span class="h3 mb-0 fw-bold text-primary">₹ {{ number_format($order->net_amount, 0) }}</span>
                             </div>
                         </div>
                     </div>

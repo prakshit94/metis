@@ -602,8 +602,8 @@ document.addEventListener('alpine:init', () => {
         length_cm: product.length_cm ?? '',
         width_cm: product.width_cm ?? '',
         height_cm: product.height_cm ?? '',
-        purchase_price: String(product.purchase_price ?? ''),
-        mrp: String(product.mrp ?? ''),
+        purchase_price: product.purchase_price ? String(Math.round(parseFloat(product.purchase_price))) : '',
+        mrp: product.mrp ? String(Math.round(parseFloat(product.mrp))) : '',
         selling_price_inc_gst: (() => {
           let basePrice = parseFloat(product.selling_price ?? product.price ?? 0);
           let rateId = String(product.tax_rate_id ?? '');
@@ -612,7 +612,7 @@ document.addEventListener('alpine:init', () => {
             let taxObj = Alpine.store('productTable').options.taxRates.find(r => String(r.id) === rateId);
             if (taxObj) rate = parseFloat(taxObj.rate) || 0;
           }
-          return String((basePrice + (basePrice * rate / 100)).toFixed(2));
+          return String(Math.round(basePrice + (basePrice * rate / 100)));
         })(),
         selling_price: String(product.selling_price ?? product.price ?? ''),
         stock: String(product.stock_quantity ?? product.stock ?? ''),
@@ -1134,8 +1134,10 @@ document.addEventListener('alpine:init', () => {
       warehouse_allow_overselling: null,
       warehouse_overselling_qty: null,
     },
+    activeTab: 'general',
 
     resetForm() {
+      this.activeTab = 'general';
       this.editingProductId = null;
       this.originalProduct = null;
       this.form = {
@@ -1227,9 +1229,30 @@ document.addEventListener('alpine:init', () => {
       this.form.imageFile = file;
     },
 
-    async saveProduct() {
+    async saveProduct(event) {
       const table = Alpine.store('productTable');
       if (!table) return;
+
+      if (event && event.target && typeof event.target.reportValidity === 'function') {
+        const firstInvalid = event.target.querySelector(':invalid');
+        if (firstInvalid) {
+          const tabPane = firstInvalid.closest('[x-show]');
+          if (tabPane) {
+            const showAttr = tabPane.getAttribute('x-show');
+            const tabMatch = showAttr ? showAttr.match(/activeTab === '([^']+)'/) : null;
+            if (tabMatch && tabMatch[1] && this.activeTab !== tabMatch[1]) {
+              this.activeTab = tabMatch[1];
+              setTimeout(() => {
+                event.target.reportValidity();
+              }, 100);
+              return;
+            }
+          }
+          if (!event.target.reportValidity()) {
+            return;
+          }
+        }
+      }
 
       if (!this.form.is_sku_enabled && !this.form.sku) {
         const prefix = this.form.name ? String(this.form.name).substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'PROD' : 'PROD';
@@ -1239,10 +1262,15 @@ document.addEventListener('alpine:init', () => {
 
       if (!this.form.name || !this.form.sku || !this.form.category_id ||
           this.form.selling_price_inc_gst === '' || this.form.purchase_price === '' ||
-          !this.form.status || 
+          this.form.mrp === '' || this.form.mrp === null ||
+          !this.form.status || !this.form.default_warehouse_id ||
           !this.form.tax_rate_id || !this.form.hsn_code_id || 
-          !this.form.uom_id || this.form.weight_g === '' || this.form.weight_g === null) {
-        showToast('Please fill in all required fields (Name, SKU, Category, Purchase Price, Selling Price, Status, Tax Rate, HSN Code, UOM, Weight(g)).', 'warning');
+          !this.form.uom_id || this.form.weight_g === '' || this.form.weight_g === null ||
+          this.form.min_stock_level === '' || this.form.min_stock_level === null ||
+          this.form.length_cm === '' || this.form.length_cm === null ||
+          this.form.width_cm === '' || this.form.width_cm === null ||
+          this.form.height_cm === '' || this.form.height_cm === null) {
+        showToast('Please fill in all required fields (Name, SKU, Category, Prices, Tax, HSN, UOM, Warehouse, Dimensions, Min Stock, Status).', 'warning');
         return;
       }
 

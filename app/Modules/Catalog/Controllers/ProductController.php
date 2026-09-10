@@ -747,7 +747,7 @@ class ProductController extends Controller
             'uom_id' => ['required', 'integer', 'exists:units_of_measure,id'],
             'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
             'default_warehouse_id' => [
-                'nullable',
+                'required',
                 'integer',
                 'exists:warehouses,id',
                 function ($attribute, $value, $fail) use ($request) {
@@ -763,12 +763,12 @@ class ProductController extends Controller
             'hsn_code_id' => ['required', 'integer', 'exists:hsn_codes,id'],
             'barcode' => ['nullable', 'string', 'max:255'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
-            'mrp' => ['nullable', 'numeric', 'min:0'],
+            'mrp' => ['required', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
             // stock / stock_quantity are accepted interchangeably
             'stock' => ['nullable', 'integer', 'min:0'],
             'stock_quantity' => ['nullable', 'integer', 'min:0'],
-            'min_stock_level' => ['nullable', 'integer', 'min:0'],
+            'min_stock_level' => ['required', 'integer', 'min:0'],
             'status' => ['required', 'in:active,draft,out_of_stock,published,pending'],
             'allow_overselling' => ['nullable', 'boolean'],
             'manage_stock' => ['nullable', 'boolean'],
@@ -784,9 +784,9 @@ class ProductController extends Controller
             'default_discount_type' => ['nullable', 'in:percent,flat'],
             'grade' => ['nullable', 'in:A,B,C,D'],
             'weight_g' => ['required', 'numeric', 'min:0'],
-            'length_cm' => ['nullable', 'numeric', 'min:0'],
-            'width_cm' => ['nullable', 'numeric', 'min:0'],
-            'height_cm' => ['nullable', 'numeric', 'min:0'],
+            'length_cm' => ['required', 'numeric', 'min:0'],
+            'width_cm' => ['required', 'numeric', 'min:0'],
+            'height_cm' => ['required', 'numeric', 'min:0'],
             'warehouse_allow_overselling' => ['nullable', 'boolean'],
             'warehouse_overselling_qty' => ['nullable', 'integer', 'min:0'],
         ]);

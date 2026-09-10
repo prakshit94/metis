@@ -32,4 +32,13 @@ class EventServiceProvider extends ServiceProvider
     {
         return false;
     }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        \App\Modules\Orders\Models\Order::observe(\App\Modules\Orders\Observers\OrderObserver::class);
+        \App\Modules\Orders\Models\Payment::observe(\App\Modules\Orders\Observers\PaymentObserver::class);
+        \App\Modules\Orders\Models\Invoice::observe(\App\Modules\Orders\Observers\InvoiceObserver::class);
+    }
 }
