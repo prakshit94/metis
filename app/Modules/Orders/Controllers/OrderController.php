@@ -99,14 +99,13 @@ class OrderController extends Controller implements HasMiddleware
             $requestedStatuses = array_filter(array_map('trim', explode(',', $request->status)));
             $hasFutureOrder = in_array('future_order', $requestedStatuses, true);
             $hasPending = in_array('pending', $requestedStatuses, true);
+            $hasUnfulfillable = in_array('unfulfillable', $requestedStatuses, true);
+            $hasDeliveryAttempted = in_array('delivery_attempted', $requestedStatuses, true);
+            $hasDispatched = in_array('dispatched', $requestedStatuses, true);
 
-            $realStatuses = array_values(array_filter($requestedStatuses, fn ($s) => ! in_array($s, ['future_order', 'pending'])));
-            if (in_array('dispatched', $realStatuses, true)) {
-                $realStatuses[] = 'shipped';
-                $realStatuses = array_values(array_unique($realStatuses));
-            }
+            $realStatuses = array_values(array_filter($requestedStatuses, fn ($s) => ! in_array($s, ['future_order', 'pending', 'unfulfillable', 'delivery_attempted', 'dispatched'])));
 
-            $query->where(function ($q) use ($hasFutureOrder, $hasPending, $realStatuses) {
+            $query->where(function ($q) use ($hasFutureOrder, $hasPending, $hasUnfulfillable, $realStatuses, $hasDispatched, $hasDeliveryAttempted) {
                 $first = true;
 
                 if ($hasFutureOrder) {
@@ -116,7 +115,57 @@ class OrderController extends Controller implements HasMiddleware
 
                 if ($hasPending) {
                     $method = $first ? 'where' : 'orWhere';
-                    $q->$method('status', 'pending');
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                           ->whereDoesntHave('items', function ($itemQuery) {
+                               $itemQuery->leftJoin('stocks', function ($join) {
+                                   $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                               })->where(function ($sub) {
+                                   $sub->whereNull('stocks.id')
+                                       ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                               });
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasUnfulfillable) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                           ->whereHas('items', function ($itemQuery) {
+                               $itemQuery->leftJoin('stocks', function ($join) {
+                                   $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                               })->where(function ($sub) {
+                                   $sub->whereNull('stocks.id')
+                                       ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                               });
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDispatched) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched', 'shipped'])
+                           ->whereDoesntHave('shipments', function ($ssq) {
+                               $ssq->where('delivery_attempts', '>', 0);
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDeliveryAttempted) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched', 'shipped'])
+                           ->whereHas('shipments', function ($ssq) {
+                               $ssq->where('delivery_attempts', '>', 0);
+                           });
+                    });
                     $first = false;
                 }
 
@@ -217,13 +266,40 @@ class OrderController extends Controller implements HasMiddleware
                   ->whereNotIn('order_returns.status', ['completed', 'rejected']);
             })->select(DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))->toBase()->first();
 
+            $deliveryAttempted = clone $statsQuery;
+            $deliveryAttempted = $deliveryAttempted->whereIn('status', ['dispatched', 'shipped'])
+                ->whereExists(function ($q) {
+                    $q->select(DB::raw(1))
+                      ->from('shipments')
+                      ->whereColumn('shipments.order_id', 'orders.id')
+                      ->where('shipments.delivery_attempts', '>', 0);
+                })->select(DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))->toBase()->first();
+
+            $unfulfillable = clone $statsQuery;
+            $unfulfillable = $unfulfillable->where('status', 'pending')
+                ->whereExists(function ($q) {
+                    $q->select(DB::raw(1))
+                      ->from('order_items')
+                      ->leftJoin('stocks', function ($join) {
+                          $join->on('order_items.product_id', '=', 'stocks.product_id')
+                               ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                      })
+                      ->whereColumn('order_items.order_id', 'orders.id')
+                      ->where(function ($sub) {
+                          $sub->whereNull('stocks.id')
+                              ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                      });
+                })->select(DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))->toBase()->first();
+
             return [
                 'total' => (int) $grouped->sum('total'),
                 'total_amount' => (float) $grouped->sum('amount'),
                 'future_order' => (int) $grouped->where('status', 'future_order')->sum('total'),
                 'future_order_amount' => (float) $grouped->where('status', 'future_order')->sum('amount'),
-                'pending' => (int) $grouped->where('status', 'pending')->sum('total'),
-                'pending_amount' => (float) $grouped->where('status', 'pending')->sum('amount'),
+                'pending' => (int) $grouped->where('status', 'pending')->sum('total') - (int) ($unfulfillable->total ?? 0),
+                'pending_amount' => (float) $grouped->where('status', 'pending')->sum('amount') - (float) ($unfulfillable->amount ?? 0),
+                'unfulfillable' => (int) ($unfulfillable->total ?? 0),
+                'unfulfillable_amount' => (float) ($unfulfillable->amount ?? 0),
                 'pending_confirmation' => (int) $grouped->where('status', 'pending_confirmation')->sum('total'),
                 'pending_confirmation_amount' => (float) $grouped->where('status', 'pending_confirmation')->sum('amount'),
                 'confirmed' => (int) $grouped->where('status', 'confirmed')->sum('total'),
@@ -232,8 +308,10 @@ class OrderController extends Controller implements HasMiddleware
                 'processing_amount' => (float) $grouped->where('status', 'processing')->sum('amount'),
                 'ready_to_ship' => (int) $grouped->where('status', 'ready_to_ship')->sum('total'),
                 'ready_to_ship_amount' => (float) $grouped->where('status', 'ready_to_ship')->sum('amount'),
-                'dispatched' => (int) $grouped->whereIn('status', ['dispatched', 'shipped'])->sum('total'),
-                'dispatched_amount' => (float) $grouped->whereIn('status', ['dispatched', 'shipped'])->sum('amount'),
+                'dispatched' => (int) $grouped->whereIn('status', ['dispatched', 'shipped'])->sum('total') - (int) ($deliveryAttempted->total ?? 0),
+                'dispatched_amount' => (float) $grouped->whereIn('status', ['dispatched', 'shipped'])->sum('amount') - (float) ($deliveryAttempted->amount ?? 0),
+                'delivery_attempted' => (int) ($deliveryAttempted->total ?? 0),
+                'delivery_attempted_amount' => (float) ($deliveryAttempted->amount ?? 0),
                 'delivered' => (int) $grouped->where('status', 'delivered')->sum('total'),
                 'delivered_amount' => (float) $grouped->where('status', 'delivered')->sum('amount'),
                 'returned' => (int) $grouped->where('status', 'returned')->sum('total'),
@@ -1542,7 +1620,7 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view-all-data')) {
-            return ['future_order', 'pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'return_requested', 'returned', 'cancelled'];
+            return ['future_order', 'pending', 'unfulfillable', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivery_attempted', 'delivered', 'return_requested', 'returned', 'cancelled'];
         }
 
         $statuses = [];
@@ -1552,6 +1630,7 @@ class OrderController extends Controller implements HasMiddleware
         }
         if ($user->can('orders.view.pending')) {
             $statuses[] = 'pending';
+            $statuses[] = 'unfulfillable';
             $statuses[] = 'pending_confirmation';
         }
         if ($user->can('orders.view.confirmed')) {
@@ -1565,6 +1644,7 @@ class OrderController extends Controller implements HasMiddleware
         }
         if ($user->can('orders.view.dispatched')) {
             $statuses[] = 'dispatched';
+            $statuses[] = 'delivery_attempted';
         }
         if ($user->can('orders.view.delivered')) {
             $statuses[] = 'delivered';
@@ -1579,7 +1659,7 @@ class OrderController extends Controller implements HasMiddleware
             $statuses[] = 'cancelled';
         }
 
-        $orderedStatuses = ['future_order', 'pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'return_requested', 'returned', 'cancelled'];
+        $orderedStatuses = ['future_order', 'pending', 'unfulfillable', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivery_attempted', 'delivered', 'return_requested', 'returned', 'cancelled'];
 
         if ($user->can('view_all_order') && empty($statuses)) {
             return $orderedStatuses;

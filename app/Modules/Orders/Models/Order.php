@@ -103,6 +103,20 @@ class Order extends Model implements Auditable
             }
         }
 
+        if (in_array($this->status, ['dispatched', 'shipped'])) {
+            $latestShipment = $this->relationLoaded('shipments') 
+                ? $this->shipments->sortByDesc('id')->first()
+                : $this->shipments()->latest('id')->first();
+
+            if ($latestShipment && $latestShipment->delivery_attempts > 0) {
+                return 'delivery_attempted';
+            }
+        }
+
+        if ($this->status === 'pending' && isset($this->is_unfulfillable) && $this->is_unfulfillable) {
+            return 'unfulfillable';
+        }
+
         return $this->status === 'shipped' ? 'dispatched' : $this->status;
     }
 

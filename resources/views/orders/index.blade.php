@@ -17,12 +17,12 @@
 ">
     <div x-data="{ showAnalytics: localStorage.getItem('orders_show_analytics') === 'true' }" x-init="$watch('showAnalytics', val => localStorage.setItem('orders_show_analytics', val))">
 <!-- Page Header -->
-<div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 mb-lg-5 mb-xl-6 gap-3">
     <div>
-        <h1 class="h3 mb-0">Order Management</h1>
+        <h1 class="h3 mb-0 fw-bold">Order Management</h1>
         <p class="text-muted mb-0">Track orders, manage fulfillment, and analyze sales</p>
     </div>
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex flex-wrap align-items-center gap-2">
         <!-- Analytics Toggle -->
         <div class="form-check form-switch m-0 cursor-pointer d-flex align-items-center gap-2">
             <input class="form-check-input m-0" type="checkbox" role="switch" id="ordersAnalyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
@@ -68,242 +68,243 @@
     <input type="file" name="file" id="import-file" accept=".csv,.txt" @change="handleImportFileSelect($event)">
 </form>
 
-<!-- Order Stats Widgets -->
-<div class="row row-cols-1 row-cols-md-2 row-cols-xl-6 g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-primary-subtle text-primary-emphasis mb-3">
-                        <i class="bi bi-bag-check"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted" title="Total Orders">Total Orders</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="(stats.total || 0) - (stats.future_order || 0)"></span></div>
-                        <small class="text-muted d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency((stats.revenue || 0) - (stats.future_order_amount || 0))"></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @can('orders.view.future_order')
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3">
-                        <i class="bi bi-calendar-event"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted" title="Future Order">Future Order</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.future_order"></span></div>
-                        <small class="text-info d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.future_order_amount)"></small>
+<!-- Order Stats Widgets & Analytics -->
+<div x-show="showAnalytics" x-transition.opacity.duration.300ms x-cloak>
+    <!-- Order Stats Scrollable Row -->
+    <div class="d-flex flex-nowrap overflow-x-auto gap-3 pb-3 mb-4 hide-scrollbar" style="scrollbar-width: thin;">
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-primary-subtle text-primary-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-bag-check fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Total Orders">Total Orders</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="(stats.total || 0) - (stats.future_order || 0)"></span></div>
+                            <small class="text-muted d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency((stats.revenue || 0) - (stats.future_order_amount || 0))"></small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    @endcan
-    @can('orders.view.pending_confirmation')
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3">
-                        <i class="bi bi-hourglass-split"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted"  title="Pending Confirmation">Pending Confirmation</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.pending_confirmation"></span></div>
-                        <small class="text-warning d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.pending_confirmation_amount)"></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endcan
-    @can('orders.view.pending')
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3">
-                        <i class="bi bi-clock"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted" title="Pending">Pending</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.pending"></span></div>
-                        <small class="text-warning d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.pending_amount)"></small>
+        @can('orders.view.future_order')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-calendar-event fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Future Order">Future Order</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.future_order"></span></div>
+                            <small class="text-info d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.future_order_amount)"></small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    @endcan
-    @can('orders.view.confirmed')
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3">
-                        <i class="bi bi-check-circle"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted" title="Confirmed">Confirmed</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.confirmed"></span></div>
-                        <small class="text-info d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.confirmed_amount)"></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endcan
-    @can('orders.view.processing')
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis mb-3">
-                        <i class="bi bi-gear"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted" title="Processing">Processing</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.processing"></span></div>
-                        <small class="text-secondary d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.processing_amount)"></small>
+        @endcan
+        @can('orders.view.pending_confirmation')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-hourglass-split fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Pending Confirmation">Pending Confirmation</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.pending_confirmation"></span></div>
+                            <small class="text-warning d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.pending_confirmation_amount)"></small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    @endcan
-    @can('orders.view.ready_to_ship')
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-dark-subtle text-body-emphasis mb-3">
-                        <i class="bi bi-box-seam"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted" title="Ready to Ship">Ready to Ship</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.ready_to_ship"></span></div>
-                        <small class="text-body-emphasis d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.ready_to_ship_amount)"></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endcan
-    @can('orders.view.dispatched')
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3">
-                        <i class="bi bi-truck"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted" title="Dispatched">Dispatched</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.dispatched"></span></div>
-                        <small class="text-info d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.dispatched_amount)"></small>
+        @endcan
+        @can('orders.view.pending')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-clock fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Pending">Pending</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.pending"></span></div>
+                            <small class="text-warning d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.pending_amount)"></small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    @endcan
-    @can('orders.view.delivered')
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-success-subtle text-success-emphasis mb-3">
-                        <i class="bi bi-currency-rupee"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted" title="Delivered">Delivered</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.delivered"></span></div>
-                        <small class="text-success-emphasis d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.delivered_amount)"></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endcan
-    @can('orders.view.cancelled')
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-danger-subtle text-danger-emphasis mb-3">
-                        <i class="bi bi-x-circle"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted" title="Cancelled">Cancelled</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.cancelled"></span></div>
-                        <small class="text-danger d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.cancelled_amount)"></small>
+        @endcan
+        @can('orders.view.confirmed')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-check-circle fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Confirmed">Confirmed</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.confirmed"></span></div>
+                            <small class="text-info d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.confirmed_amount)"></small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    @endcan
-    @can('orders.view.return_requested')
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3">
-                        <i class="bi bi-arrow-return-left"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted"  title="Return Requested">Return Requested</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.return_requested"></span></div>
-                        <small class="text-warning d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.return_requested_amount)"></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endcan
-    @can('orders.view.returned')
-    <div class="col">
-        <div class="card stats-card h-100">
-            <div class="card-body p-3 p-lg-4">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis mb-3">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </div>
-                    <div class="w-100" style="min-width: 0;">
-                        <p class="h6 mb-0 text-muted" title="Returned">Returned</p>
-                        <div class="h3 mb-0" aria-live="polite"><span x-text="stats.returned"></span></div>
-                        <small class="text-secondary d-block text-wrap" style="word-break: break-all;" x-text="'Value: ' + formatCurrency(stats.returned_amount)"></small>
+        @endcan
+        @can('orders.view.processing')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-gear fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Processing">Processing</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.processing"></span></div>
+                            <small class="text-secondary d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.processing_amount)"></small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+        @endcan
+        @can('orders.view.ready_to_ship')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-dark-subtle text-body-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-box-seam fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Ready to Ship">Ready to Ship</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.ready_to_ship"></span></div>
+                            <small class="text-body-emphasis d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.ready_to_ship_amount)"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcan
+        @can('orders.view.dispatched')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-truck fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Dispatched">Dispatched</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.dispatched"></span></div>
+                            <small class="text-info d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.dispatched_amount)"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcan
+        @can('orders.view.delivered')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-success-subtle text-success-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-currency-rupee fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Delivered">Delivered</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.delivered"></span></div>
+                            <small class="text-success-emphasis d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.delivered_amount)"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcan
+        @can('orders.view.cancelled')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-danger-subtle text-danger-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-x-circle fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Cancelled">Cancelled</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.cancelled"></span></div>
+                            <small class="text-danger d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.cancelled_amount)"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcan
+        @can('orders.view.return_requested')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-arrow-return-left fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Return Requested">Return Requested</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.return_requested"></span></div>
+                            <small class="text-warning d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.return_requested_amount)"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcan
+        @can('orders.view.returned')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-arrow-counterclockwise fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Returned">Returned</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.returned"></span></div>
+                            <small class="text-secondary d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.returned_amount)"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcan
     </div>
-    @endcan
-</div>
 
 <!-- Charts Row -->
-<div x-show="showAnalytics" x-transition.opacity.duration.300ms>
 <div class="row g-4 g-lg-5 mb-5 mb-lg-5 mb-xl-6">
     <!-- Order Trends Chart -->
     <div class="col-lg-8">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h2 class="h5 card-title mb-0">Order Trends</h2>
-                <div class="btn-group btn-group-sm" role="group">
+        <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card-header bg-transparent border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                <h2 class="h5 card-title mb-0 fw-bold">Order Trends</h2>
+                <div class="btn-group btn-group-sm shadow-sm" role="group">
                     <input type="radio" class="btn-check" name="trendsPeriod" id="trends7d" autocomplete="off" checked>
-                    <label class="btn btn-outline-secondary" for="trends7d">7D</label>
+                    <label class="btn btn-outline-secondary px-3" for="trends7d">7D</label>
                     <input type="radio" class="btn-check" name="trendsPeriod" id="trends30d" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="trends30d">30D</label>
+                    <label class="btn btn-outline-secondary px-3" for="trends30d">30D</label>
                     <input type="radio" class="btn-check" name="trendsPeriod" id="trends90d" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="trends90d">90D</label>
+                    <label class="btn btn-outline-secondary px-3" for="trends90d">90D</label>
                 </div>
             </div>
-            <div class="card-body p-3 p-lg-4">
+            <div class="card-body p-4">
                 <div id="orderTrendsChart" style="height: 300px;"></div>
             </div>
         </div>
@@ -311,11 +312,11 @@
 
     <!-- Order Status Distribution -->
     <div class="col-lg-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <h2 class="h5 card-title mb-0">Order Status</h2>
+        <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card-header bg-transparent border-bottom-0 pt-4 px-4">
+                <h2 class="h5 card-title mb-0 fw-bold">Order Status</h2>
             </div>
-            <div class="card-body p-3 p-lg-4">
+            <div class="card-body p-4">
                 <div id="statusChart" style="height: 200px;"></div>
                 <div class="mt-3">
                     <template x-for="status in statusStats" :key="status.name">
@@ -1004,29 +1005,32 @@
                                 <span class="badge small" 
                                       :class="`bg-${getStatusTheme(order.status)}-subtle text-${getStatusTheme(order.status)}-emphasis border border-${getStatusTheme(order.status)}-subtle`"
                                       x-text="order.statusLabel"></span>
-                                <template x-if="order.status === 'pending_confirmation' && order.scheduledConfirmDate">
-                                    <div class="mt-1" style="font-size: 0.7rem;">
-                                        <div class="text-primary fw-semibold" title="Scheduled Confirmation Date">
-                                            <i class="bi bi-calendar-event me-1"></i>
-                                            <span x-text="new Date(order.scheduledConfirmDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit', hour12: true })"></span>
-                                        </div>
-                                        <div class="text-muted mt-1" x-show="order.confirmAttempts > 0">
-                                            <i class="bi bi-arrow-repeat me-1"></i>Attempts: <span class="fw-bold" x-text="order.confirmAttempts"></span>
-                                        </div>
+                                <template x-if="order.status === 'pending_confirmation' && (order.scheduledConfirmDate || order.confirmAttempts > 0)">
+                                    <div class="mt-2 d-flex align-items-center" style="font-size: 0.75rem;">
+                                        <template x-if="order.confirmAttempts > 0">
+                                            <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25 rounded-pill me-2" title="Confirmation Attempts">
+                                                <i class="bi bi-arrow-repeat me-1"></i><span x-text="order.confirmAttempts"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="order.scheduledConfirmDate">
+                                            <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer" 
+                                               :title="'Scheduled: ' + new Date(order.scheduledConfirmDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit', hour12: true })"
+                                            ></i>
+                                        </template>
                                     </div>
                                 </template>
-                                <template x-if="order.shipment?.next_followup_date && (order.status === 'dispatched' || order.status === 'shipped')">
-                                    <div class="mt-1" style="font-size: 0.7rem;">
-                                        <div class="text-warning-emphasis fw-semibold" title="Scheduled Delivery Date">
-                                            <i class="bi bi-calendar-event me-1 text-warning"></i>
-                                            <span x-text="new Date(order.shipment.next_followup_date).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit', hour12: true })"></span>
-                                        </div>
-                                        <div class="text-muted mt-1" x-show="order.shipment.delivery_attempts > 0">
-                                            <i class="bi bi-arrow-repeat me-1 text-danger"></i>Attempts: <span class="fw-bold text-danger" x-text="order.shipment.delivery_attempts"></span>
-                                        </div>
-                                        <div class="text-muted mt-1" style="max-width: 150px;" x-show="order.shipment.reschedule_reason" :title="order.shipment.reschedule_reason">
-                                            <i class="bi bi-info-circle me-1"></i><span x-text="order.shipment.reschedule_reason"></span>
-                                        </div>
+                                <template x-if="(order.shipment?.next_followup_date || order.shipment?.delivery_attempts > 0) && (order.status === 'dispatched' || order.status === 'shipped' || order.status === 'delivery_attempted')">
+                                    <div class="mt-2 d-flex align-items-center" style="font-size: 0.75rem;">
+                                        <template x-if="order.shipment?.delivery_attempts > 0">
+                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill me-2" title="Delivery Attempts">
+                                                <i class="bi bi-arrow-repeat me-1"></i><span x-text="order.shipment.delivery_attempts"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="order.shipment?.reschedule_reason || order.shipment?.next_followup_date">
+                                            <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer" 
+                                               :title="(order.shipment?.next_followup_date ? 'Scheduled: ' + new Date(order.shipment.next_followup_date).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit', hour12: true }) + '\n' : '') + (order.shipment?.reschedule_reason ? 'Reason: ' + order.shipment.reschedule_reason : '')"
+                                            ></i>
+                                        </template>
                                     </div>
                                 </template>
                                 <template x-if="order.status === 'return_requested' && order.orderReturn">
@@ -1081,7 +1085,7 @@
                                         </template>
                                         
                                         <!-- Context Actions -->
-                                        <template x-if="order.status === 'pending' || order.status === 'pending_confirmation'">
+                                        <template x-if="order.status === 'pending' || order.status === 'unfulfillable' || order.status === 'pending_confirmation'">
                                             @can('orders.confirm')
                                             <li><a class="dropdown-item" href="#" @click.prevent="confirmOrder(order)">
                                                 <i class="bi bi-check-circle me-2"></i>Confirm Order
@@ -1109,7 +1113,7 @@
                                             </a></li>
                                             @endcan
                                         </template>
-                                        <template x-if="order.status === 'dispatched' || order.status === 'shipped'">
+                                        <template x-if="order.status === 'dispatched' || order.status === 'shipped' || order.status === 'delivery_attempted'">
                                             @can('orders.deliver')
                                             <li><a class="dropdown-item" href="#" @click.prevent="deliverOrder(order)">
                                                 <i class="bi bi-check2-all me-2"></i>Deliver
@@ -1123,7 +1127,7 @@
                                             </a></li>
                                             @endcan
                                         </template>
-                                        <template x-if="['pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'].includes(order.status)">
+                                        <template x-if="['pending', 'unfulfillable', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'].includes(order.status)">
                                             @can('orders.cancel')
                                             <li><a class="dropdown-item text-danger" href="#" @click.prevent="cancelOrder(order)">
                                                 <i class="bi bi-x-circle me-2"></i>Cancel Order
@@ -1137,12 +1141,12 @@
                                         @endcan
                                         <li><hr class="dropdown-divider"></li>
                                         @can('orders.invoice_pdf')
-                                        <li x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'].includes(order.lifecycle_status || order.status)"><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
+                                        <li x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'delivery_attempted'].includes(order.lifecycle_status || order.status)"><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
                                             <i class="bi bi-file-pdf me-2"></i>Print Invoice
                                         </a></li>
                                         @endcan
                                         @can('orders.cod')
-                                        <li x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'].includes(order.lifecycle_status || order.status)"><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
+                                        <li x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'delivery_attempted'].includes(order.lifecycle_status || order.status)"><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
                                             <i class="bi bi-file-earmark-pdf me-2"></i>Print COD Receipt
                                         </a></li>
                                         @endcan
@@ -1438,7 +1442,7 @@
                                 <!-- Document Actions -->
                                 <div class="d-flex flex-wrap gap-2 mb-4 w-100">
                                     <template x-if="selectedOrder.invoice">
-                                        <div class="d-flex flex-wrap gap-2 w-100" x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'].includes(selectedOrder.lifecycle_status || selectedOrder.status)">
+                                        <div class="d-flex flex-wrap gap-2 w-100" x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'delivery_attempted'].includes(selectedOrder.lifecycle_status || selectedOrder.status)">
                                             @can('orders.invoice_pdf')
                                             <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printInvoice(selectedOrder)">
                                                 <i class="bi bi-file-earmark-pdf me-2"></i>Print Invoice
@@ -1457,7 +1461,7 @@
                                         </div>
                                     </template>
                                     <template x-if="!selectedOrder.invoice">
-                                        <template x-if="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'].includes(selectedOrder.lifecycle_status || selectedOrder.status)">
+                                        <template x-if="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'delivery_attempted'].includes(selectedOrder.lifecycle_status || selectedOrder.status)">
                                             @can('orders.generate_invoice')
                                             <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="generateAndPrintInvoice(selectedOrder)">
                                                 <i class="bi bi-receipt-cutoff me-2"></i>Generate Invoice & Print
@@ -1478,7 +1482,7 @@
                                             <button class="btn btn-sm btn-outline-secondary flex-grow-1 shadow-sm fw-semibold border-secondary border-opacity-25" @click="editOrder(selectedOrder)">
                                                 <i class="bi bi-pencil-square me-1"></i>Edit
                                             </button>
-                                            <template x-if="['pending', 'pending_confirmation'].includes(selectedOrder.status)">
+                                            <template x-if="['pending', 'unfulfillable', 'pending_confirmation'].includes(selectedOrder.status)">
                                                 @can('orders.confirm')
                                                 <button class="btn btn-sm btn-primary flex-grow-1 shadow-sm fw-semibold" @click="confirmOrder(selectedOrder)">
                                                     <i class="bi bi-check-circle me-1"></i>Confirm
@@ -1506,7 +1510,7 @@
                                                 </button>
                                                 @endcan
                                             </template>
-                                            <template x-if="selectedOrder.status === 'dispatched' || selectedOrder.status === 'shipped'">
+                                            <template x-if="selectedOrder.status === 'dispatched' || selectedOrder.status === 'shipped' || selectedOrder.status === 'delivery_attempted'">
                                                 @can('orders.deliver')
                                                 <button class="btn btn-sm btn-success flex-grow-1 shadow-sm fw-semibold" @click="deliverOrder(selectedOrder)">
                                                     <i class="bi bi-check2-all me-1"></i>Deliver
@@ -1520,7 +1524,7 @@
                                                 </button>
                                                 @endcan
                                             </template>
-                                            <template x-if="['pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'].includes(selectedOrder.status)">
+                                            <template x-if="['pending', 'unfulfillable', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'].includes(selectedOrder.status)">
                                                 @can('orders.cancel')
                                                 <button class="btn btn-sm btn-outline-danger flex-grow-1 shadow-sm fw-semibold" @click="cancelOrder(selectedOrder)">
                                                     <i class="bi bi-x-circle me-1"></i>Cancel
