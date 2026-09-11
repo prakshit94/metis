@@ -682,12 +682,12 @@
                         {{-- Table View --}}
                         <div class="table-responsive" x-show="viewMode === 'table'">
                             <table class="table table-hover mb-0">
-                                <thead>
+                                <thead class="table-light">
                                     <tr>
-                                        <th>Product Details</th>
-                                        <th style="min-width: 150px;">Pricing & Offers</th>
-                                        <th style="min-width: 150px;">Inventory</th>
-                                        <th style="width: 140px;" class="text-end pe-4">Order Action</th>
+                                        <th scope="col">Product Details</th>
+                                        <th scope="col" style="min-width: 150px;">Pricing & Offers</th>
+                                        <th scope="col" style="min-width: 150px;">Inventory</th>
+                                        <th scope="col" style="width: 140px;" class="text-end pe-4">Order Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -823,16 +823,33 @@
                         </div>
                     </div>
                     {{-- Pagination --}}
-                    <div class="d-flex justify-content-between align-items-center px-3 pb-3 border-top pt-3" x-show="productTotal > 0">
-                        <small class="text-body-secondary"><span x-text="productFrom"></span>–<span x-text="productTo"></span> of <span x-text="productTotal"></span></small>
-                        <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex justify-content-between align-items-center p-3 border-top" x-show="productTotal > 0">
+                        <div class="text-muted small">
+                            Showing <span x-text="productFrom"></span> to 
+                            <span x-text="productTo"></span> of 
+                            <span x-text="productTotal"></span> results
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
                             <button type="button" class="btn btn-primary btn-sm" x-show="cart.length > 0 && !isCartSidebarOpen" @click="isCartSidebarOpen = true" x-cloak>
                                 <i class="bi bi-cart-check"></i> View Cart & Checkout (<span x-text="cart.length"></span>)
                             </button>
-                            <div class="d-flex gap-1">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" @click="productPage--; searchProducts()" :disabled="productPage <= 1"><i class="bi bi-chevron-left"></i></button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" @click="productPage++; searchProducts()" :disabled="productPage >= productLastPage"><i class="bi bi-chevron-right"></i></button>
-                            </div>
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    <li class="page-item" :class="{ 'disabled': productPage <= 1 }">
+                                        <a class="page-link" href="#" @click.prevent="if(productPage > 1) { productPage--; searchProducts(); }">Previous</a>
+                                    </li>
+                                    
+                                    <template x-for="(page, index) in productVisiblePages" :key="`prod-page-${index}`">
+                                        <li class="page-item" :class="{ 'active': page === productPage, 'disabled': page === '...' }">
+                                            <a class="page-link" href="#" @click.prevent="if(page !== '...') { productPage = page; searchProducts(); }" x-text="page"></a>
+                                        </li>
+                                    </template>
+
+                                    <li class="page-item" :class="{ 'disabled': productPage >= productLastPage }">
+                                        <a class="page-link" href="#" @click.prevent="if(productPage < productLastPage) { productPage++; searchProducts(); }">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
                         </div>
                     </div>
                 </div>
@@ -3198,6 +3215,27 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 this.productTotal = json.total||0; this.productFrom = json.from||0; this.productTo = json.to||0; this.productLastPage = json.last_page||1;
             } catch(e) { window.dispatchEvent(new CustomEvent('notify',{detail:{type:'error',message:'Failed to load products'}})); }
             finally { this.searching = false; }
+        },
+
+        get productVisiblePages() {
+            let pages = [];
+            if (!this.productLastPage || this.productLastPage <= 1) return [1];
+            
+            let start = Math.max(1, this.productPage - 1);
+            let end = Math.min(this.productLastPage, this.productPage + 1);
+            
+            if (start > 1) {
+                pages.push(1);
+                if (start > 2) pages.push('...');
+            }
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+            if (end < this.productLastPage) {
+                if (end < this.productLastPage - 1) pages.push('...');
+                pages.push(this.productLastPage);
+            }
+            return pages;
         },
 
         async evaluateFreeProducts() {

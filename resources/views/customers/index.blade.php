@@ -289,8 +289,9 @@
                             <th @click="sort('company')" style="cursor: pointer;" class="border-0">
                                 Company <i class="bi" :class="getSortIcon('company')"></i>
                             </th>
+                            <th class="border-0">Agriculture</th>
                             <th @click="sort('phone')" style="cursor: pointer;" class="border-0">
-                                Phone <i class="bi" :class="getSortIcon('phone')"></i>
+                                Phone(s) <i class="bi" :class="getSortIcon('phone')"></i>
                             </th>
                             <th @click="sort('email')" style="cursor: pointer;" class="border-0">
                                 Email <i class="bi" :class="getSortIcon('email')"></i>
@@ -353,7 +354,19 @@
                                 </td>
                                 <td><span class="font-monospace text-muted" x-text="c.party_code || '—'"></span></td>
                                 <td><span class="text-body-secondary" x-text="c.company_name || '—'"></span></td>
-                                <td><span class="fw-medium text-body text-nowrap" x-text="c.phone || '—'"></span></td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="small text-muted text-nowrap"><i class="bi bi-geo-alt me-1"></i><span x-text="(c.land_area ? c.land_area + ' ' + (c.land_unit || '') : '—')"></span></span>
+                                        <span class="small text-muted text-nowrap" x-show="c.cropsList && c.cropsList.length" x-cloak><i class="bi bi-flower1 me-1"></i><span x-text="c.cropsList.join(', ')"></span></span>
+                                        <span class="small text-muted text-nowrap" x-show="c.irrigationList && c.irrigationList.length" x-cloak><i class="bi bi-droplet me-1"></i><span x-text="c.irrigationList.join(', ')"></span></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="fw-medium text-body text-nowrap"><i class="bi bi-telephone text-muted me-1 small"></i><span x-text="c.phone || '—'"></span></span>
+                                        <span class="small text-muted text-nowrap" x-show="c.alternatemobile" x-cloak><i class="bi bi-phone me-1"></i><span x-text="c.alternatemobile"></span></span>
+                                    </div>
+                                </td>
                                 <td><span class="small text-muted" x-text="c.email || '—'"></span></td>
                                 <td>
                                     <span class="fw-bold" :class="Number(c.calculated_outstanding !== undefined ? c.calculated_outstanding : c.outstanding_balance) > 0 ? 'text-danger' : 'text-success'" x-text="Number(c.calculated_outstanding !== undefined ? c.calculated_outstanding : c.outstanding_balance).toLocaleString('en-IN', {style: 'currency', currency: 'INR'})"></span>

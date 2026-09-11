@@ -512,7 +512,7 @@
                                                                 <input type="number" step="0.01" min="0" class="form-control form-control-sm fw-semibold" x-model="item.discount_amount" style="font-size: 12px;">
                                                             </td>
                                                             <td class="text-end fw-bold text-primary" style="font-size: 13px;">
-                                                                ₹<span x-text="(((item.quantity || 0) * (item.unit_price || 0)) * (1 + (item.tax_rate || 0) / 100) - (item.discount_amount || 0)).toFixed(2)"></span>
+                                                                ₹<span x-text="(Math.max(0, (item.quantity || 0) * (item.unit_price || 0) - (item.discount_amount || 0)) * (1 + (item.tax_rate || 0) / 100)).toFixed(2)"></span>
                                                             </td>
                                                             <td class="text-center">
                                                                 <button type="button" class="btn btn-sm btn-link text-danger" @click="removeLineItem(index)" x-show="createForm.items.length > 1" title="Remove Item">
@@ -539,7 +539,7 @@
                                                     <tr>
                                                         <td colspan="5" class="text-end text-muted small py-1 border-0">Total Tax:</td>
                                                         <td colspan="2" class="text-end py-1 border-0 fw-medium">
-                                                            ₹<span x-text="createForm.items.reduce((sum, item) => sum + (((item.quantity || 0) * (item.unit_price || 0)) * ((item.tax_rate || 0) / 100)), 0).toFixed(2)"></span>
+                                                            ₹<span x-text="createForm.items.reduce((sum, item) => sum + (Math.max(0, (item.quantity || 0) * (item.unit_price || 0) - (item.discount_amount || 0)) * ((item.tax_rate || 0) / 100)), 0).toFixed(2)"></span>
                                                         </td>
                                                     </tr>
                                                     <tr>
@@ -551,7 +551,7 @@
                                                     <tr>
                                                         <td colspan="5" class="text-end fw-bold py-2">Grand Total:</td>
                                                         <td colspan="2" class="text-end fw-bold text-primary fs-6 py-2">
-                                                            ₹<span x-text="createForm.items.reduce((sum, item) => sum + (((item.quantity || 0) * (item.unit_price || 0)) * (1 + (item.tax_rate || 0) / 100) - (item.discount_amount || 0)), 0).toFixed(2)"></span>
+                                                            ₹<span x-text="createForm.items.reduce((sum, item) => sum + (Math.max(0, (item.quantity || 0) * (item.unit_price || 0) - (item.discount_amount || 0)) * (1 + (item.tax_rate || 0) / 100)), 0).toFixed(2)"></span>
                                                         </td>
                                                     </tr>
                                                 </tfoot>

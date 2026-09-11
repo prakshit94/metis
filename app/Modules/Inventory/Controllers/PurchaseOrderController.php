@@ -142,8 +142,9 @@ class PurchaseOrderController extends Controller implements HasMiddleware
                 $discountAmount = isset($item['discount_amount']) ? (float) $item['discount_amount'] : 0.0;
 
                 $totalPrice = $item['quantity'] * $item['unit_price']; // gross
-                $taxAmount = ($totalPrice * $taxRate) / 100;
-                $netAmount = ($totalPrice + $taxAmount) - $discountAmount;
+                $taxableAmount = max(0, $totalPrice - $discountAmount);
+                $taxAmount = ($taxableAmount * $taxRate) / 100;
+                $netAmount = $taxableAmount + $taxAmount;
 
                 $totalAmount += $totalPrice;
                 $poTaxAmount += $taxAmount;

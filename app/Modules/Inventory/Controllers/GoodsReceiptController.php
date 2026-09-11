@@ -186,9 +186,13 @@ class GoodsReceiptController extends Controller implements HasMiddleware
                     }
                 }
 
-                // Check if PO item is fully received (only accepted_qty counts towards fulfillment)
-                if ($poItem->received_qty < $poItem->quantity) {
+            }
+
+            $allFullyReceived = true;
+            foreach ($po->items as $item) {
+                if ($item->received_qty < $item->quantity) {
                     $allFullyReceived = false;
+                    break;
                 }
             }
 
