@@ -128,8 +128,115 @@
 
             <div id="customer-workspace" class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2 text-primary"></i>Customer Workspace</h5>
+                    <div class="d-flex align-items-center gap-3">
+                        <template x-if="customerDetails">
+                            <div class="d-flex align-items-center gap-4 flex-wrap">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 48px; height: 48px;">
+                                        <template x-if="customerDetails.avatar">
+                                            <img :src="'/storage/' + customerDetails.avatar" class="w-100 h-100 object-fit-cover" :alt="customerDisplayName">
+                                        </template>
+                                        <template x-if="!customerDetails.avatar">
+                                            <img src="{{ asset('assets/images/farmersprofileimage.png') }}" class="w-100 h-100 object-fit-cover" :alt="customerDisplayName">
+                                        </template>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1 fw-bold" x-text="customerDisplayName"></h5>
+                                        <div class="small text-body-secondary d-flex align-items-center gap-2">
+                                            <span class="cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.party_code).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.party_code"></span><i class="bi opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span>
+                                            <span class="badge text-bg-success-subtle text-success-emphasis" x-text="customerDetails.status || 'Active'"></span>
+                                            <span class="badge text-bg-info-subtle text-info-emphasis" x-show="customerDetails.kyc_completed">KYC Verified</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Referral Stats in Header -->
+                                <div class="d-flex gap-3 align-items-start border-start ps-3 ms-1 border-secondary border-opacity-25" x-show="customerDetails.referral_code || customerDetails?.referrer || customerDetails?.total_farmers_referred > 0" x-cloak>
+                                    <!-- Referral Code -->
+                                    <div x-show="customerDetails.referral_code" style="min-width: 110px;">
+                                        <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referral Code</span>
+                                        <div class="d-flex align-items-center gap-2 mt-1" x-data="{ copied: false }">
+                                            <span class="fw-bold text-primary font-monospace bg-primary bg-opacity-10 px-2 py-1 rounded d-flex align-items-center gap-1" 
+                                                  style="letter-spacing: 1px; font-size: 11px; cursor: pointer; transition: all 0.2s;" 
+                                                  title="Click to copy"
+                                                  @click="navigator.clipboard.writeText(customerDetails.referral_code).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
+                                                <span x-text="customerDetails.referral_code"></span>
+                                                <i class="bi" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i>
+                                            </span>
+                                            <span x-show="copied" x-transition class="text-success fw-bold" style="font-size: 9px;" x-cloak>Copied!</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Referrer Details -->
+                                    <div x-show="customerDetails?.referrer" class="border-start ps-3 border-secondary border-opacity-25" style="min-width: 140px;">
+                                        <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referred By</span>
+                                        <div class="d-flex flex-column mt-1">
+                                            <span class="fw-bold text-body-emphasis lh-1" style="font-size: 11px;" x-text="(customerDetails?.referrer?.firstname || '') + ' ' + (customerDetails?.referrer?.lastname || '')"></span>
+                                            <span class="text-body-secondary mt-1 lh-1 cursor-pointer" title="Click to copy" style="font-size: 10px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails?.referrer?.phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><i class="bi me-1" :class="copied ? 'bi-check-lg text-success' : 'bi-telephone text-primary opacity-75'" style="font-size: 9px;"></i><span x-text="customerDetails?.referrer?.phone"></span></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Downline Stats -->
+                                    <div x-data="{ showReferralsList: false }" x-show="customerDetails?.total_farmers_referred > 0" class="border-start ps-3 border-secondary border-opacity-25 position-relative" style="min-width: 130px;">
+                                        <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referred Network</span>
+                                        <button type="button" @click="showReferralsList = !showReferralsList" class="btn btn-sm btn-outline-success border-0 text-start p-0 d-flex align-items-center gap-1 mt-1">
+                                            <span class="fw-bold" style="font-size: 11px;"><i class="bi bi-people me-1"></i><span x-text="customerDetails?.total_farmers_referred || 0"></span> Farmers</span>
+                                            <i class="bi" :class="showReferralsList ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 10px;"></i>
+                                        </button>
+                                        
+                                        <!-- Absolute Dropdown -->
+                                        <div x-show="showReferralsList" @click.away="showReferralsList = false" class="position-absolute shadow-lg rounded bg-body border border-success border-opacity-25 z-3 p-1 mt-2" style="width: 250px; left: 0; max-height: 200px; overflow-y: auto;" x-cloak>
+                                            <template x-for="(ref, index) in customerDetails.referrals" :key="ref.id">
+                                                <div class="d-flex flex-column py-2 px-2 border-bottom border-success border-opacity-10 bg-success bg-opacity-10 rounded mb-1">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="text-success-emphasis fw-bold text-truncate" style="font-size: 10px; max-width: 65%;">
+                                                            <span class="text-success opacity-75 me-1" x-text="(index + 1) + '.'"></span><span x-text="(ref.firstname || '') + ' ' + (ref.lastname || '')"></span>
+                                                        </span>
+                                                        <span class="text-body-secondary cursor-pointer" title="Click to copy" style="font-size: 10px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(ref.phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><i class="bi me-1" :class="copied ? 'bi-check-lg text-success' : 'bi-telephone text-success opacity-50'" style="font-size: 8px;"></i><span x-text="ref.phone"></span></span>
+                                                    </div>
+                                                    <div class="mt-1" style="padding-left: 12px;" x-show="ref.addresses && ref.addresses.length > 0 && ref.addresses[0].village">
+                                                        <span class="text-body-secondary d-flex align-items-center gap-1 text-truncate" style="font-size: 9px; max-width: 100%;">
+                                                            <i class="bi bi-geo-alt-fill text-success opacity-50" style="font-size: 8px;"></i>
+                                                            <span x-text="[ref.addresses[0]?.village?.village_name, ref.addresses[0]?.village?.taluka_name, ref.addresses[0]?.village?.district_name].filter(Boolean).join(', ')"></span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Complaints Stats in Header -->
+                                <div class="d-flex gap-3 align-items-start border-start ps-3 border-secondary border-opacity-25" x-show="customerDetails.total_complaints > 0" x-cloak>
+                                    <div style="min-width: 110px;">
+                                        <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Complaints</span>
+                                        <div class="d-flex align-items-center gap-1 mt-1">
+                                            <span class="badge text-bg-warning-subtle border border-warning text-warning-emphasis shadow-sm" style="font-size: 10px;">
+                                                <i class="bi bi-exclamation-circle me-1"></i> Total: <span x-text="customerDetails.total_complaints"></span>
+                                            </span>
+                                            <template x-if="customerDetails.active_complaints > 0">
+                                                <span class="badge bg-danger shadow-sm" style="font-size: 10px;">
+                                                    <i class="bi bi-activity me-1"></i> Active: <span x-text="customerDetails.active_complaints"></span>
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex flex-column align-items-start gap-2 border-start ps-3 border-secondary border-opacity-25" x-show="customerDetails.created_at || customerDetails.updated_at" x-cloak>
+                                    <div x-show="customerDetails.created_at" class="badge text-bg-primary-subtle text-primary-emphasis fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
+                                        <i class="bi bi-clock-history me-1"></i> Since: <span x-text="new Date(customerDetails.created_at).toLocaleDateString()"></span> 
+                                        (<span x-text="customerDetails.created_at ? Math.max(0, Math.floor((new Date() - new Date(customerDetails.created_at)) / 86400000)) : 0"></span> days)
+                                    </div>
+                                    <div x-show="customerDetails.updated_at" class="badge text-bg-secondary-subtle text-secondary-emphasis fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
+                                        <i class="bi bi-activity me-1"></i> Active: <span x-text="customerDetails.updated_at ? Math.max(0, Math.floor((new Date() - new Date(customerDetails.updated_at)) / 86400000)) : 0"></span> days ago
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="!customerDetails">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2 text-primary"></i>Customer Workspace</h5>
+                        </template>
                     </div>
                     <div class="d-flex align-items-center gap-3" x-show="customerDetails" x-cloak>
                         <div class="form-check form-switch cursor-pointer ms-2 mb-0 d-flex align-items-center" title="Toggle Workspace">
@@ -147,105 +254,7 @@
                     <div class="card border shadow-sm mb-4" x-show="customerDetails" x-cloak>
 
                         <div class="card-body p-3">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div class="d-flex align-items-start gap-4 flex-wrap">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 48px; height: 48px;">
-                                            <template x-if="customerDetails.avatar">
-                                                <img :src="'/storage/' + customerDetails.avatar" class="w-100 h-100 object-fit-cover" :alt="customerDisplayName">
-                                            </template>
-                                            <template x-if="!customerDetails.avatar">
-                                                <img src="{{ asset('assets/images/farmersprofileimage.png') }}" class="w-100 h-100 object-fit-cover" :alt="customerDisplayName">
-                                            </template>
-                                        </div>
-                                        <div>
-                                            <h5 class="mb-1 fw-bold" x-text="customerDisplayName"></h5>
-                                            <div class="small text-body-secondary d-flex align-items-center gap-2">
-                                                <span x-text="customerDetails.party_code"></span>
-                                                <span class="badge text-bg-success-subtle text-success-emphasis" x-text="customerDetails.status || 'Active'"></span>
-                                                <span class="badge text-bg-info-subtle text-info-emphasis" x-show="customerDetails.kyc_completed">KYC Verified</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Referral Stats in Header -->
-                                    <div class="d-flex gap-3 align-items-start border-start ps-3 ms-1 border-secondary border-opacity-25" x-show="customerDetails.referral_code || customerDetails?.referrer || customerDetails?.total_farmers_referred > 0" x-cloak>
-                                        <!-- Referral Code -->
-                                        <div x-show="customerDetails.referral_code" style="min-width: 110px;">
-                                            <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referral Code</span>
-                                            <div class="d-flex align-items-center gap-2 mt-1">
-                                                <span class="fw-bold text-primary font-monospace bg-primary bg-opacity-10 px-2 py-1 rounded" style="letter-spacing: 1px; font-size: 11px;" x-text="customerDetails.referral_code"></span>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Referrer Details -->
-                                        <div x-show="customerDetails?.referrer" class="border-start ps-3 border-secondary border-opacity-25" style="min-width: 140px;">
-                                            <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referred By</span>
-                                            <div class="d-flex flex-column mt-1">
-                                                <span class="fw-bold text-body-emphasis lh-1" style="font-size: 11px;" x-text="(customerDetails?.referrer?.firstname || '') + ' ' + (customerDetails?.referrer?.lastname || '')"></span>
-                                                <span class="text-body-secondary mt-1 lh-1" style="font-size: 10px;"><i class="bi bi-telephone text-primary opacity-75 me-1" style="font-size: 9px;"></i><span x-text="customerDetails?.referrer?.phone"></span></span>
-                                            </div>
-                                        </div>
 
-                                        <!-- Downline Stats -->
-                                        <div x-data="{ showReferralsList: false }" x-show="customerDetails?.total_farmers_referred > 0" class="border-start ps-3 border-secondary border-opacity-25 position-relative" style="min-width: 130px;">
-                                            <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referred Network</span>
-                                            <button type="button" @click="showReferralsList = !showReferralsList" class="btn btn-sm btn-outline-success border-0 text-start p-0 d-flex align-items-center gap-1 mt-1">
-                                                <span class="fw-bold" style="font-size: 11px;"><i class="bi bi-people me-1"></i><span x-text="customerDetails?.total_farmers_referred || 0"></span> Farmers</span>
-                                                <i class="bi" :class="showReferralsList ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 10px;"></i>
-                                            </button>
-                                            
-                                            <!-- Absolute Dropdown -->
-                                            <div x-show="showReferralsList" @click.away="showReferralsList = false" class="position-absolute shadow-lg rounded bg-body border border-success border-opacity-25 z-3 p-1 mt-2" style="width: 250px; left: 0; max-height: 200px; overflow-y: auto;" x-cloak>
-                                                <template x-for="(ref, index) in customerDetails.referrals" :key="ref.id">
-                                                    <div class="d-flex flex-column py-2 px-2 border-bottom border-success border-opacity-10 bg-success bg-opacity-10 rounded mb-1">
-                                                        <div class="d-flex justify-content-between align-items-center">
-                                                            <span class="text-success-emphasis fw-bold text-truncate" style="font-size: 10px; max-width: 65%;">
-                                                                <span class="text-success opacity-75 me-1" x-text="(index + 1) + '.'"></span><span x-text="(ref.firstname || '') + ' ' + (ref.lastname || '')"></span>
-                                                            </span>
-                                                            <span class="text-body-secondary" style="font-size: 10px;"><i class="bi bi-telephone text-success opacity-50 me-1" style="font-size: 8px;"></i><span x-text="ref.phone"></span></span>
-                                                        </div>
-                                                        <div class="mt-1" style="padding-left: 12px;" x-show="ref.addresses && ref.addresses.length > 0 && ref.addresses[0].village">
-                                                            <span class="text-body-secondary d-flex align-items-center gap-1 text-truncate" style="font-size: 9px; max-width: 100%;">
-                                                                <i class="bi bi-geo-alt-fill text-success opacity-50" style="font-size: 8px;"></i>
-                                                                <span x-text="[ref.addresses[0]?.village?.village_name, ref.addresses[0]?.village?.taluka_name, ref.addresses[0]?.village?.district_name].filter(Boolean).join(', ')"></span>
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Complaints Stats in Header -->
-                                    <div class="d-flex gap-3 align-items-start border-start ps-3 border-secondary border-opacity-25" x-show="customerDetails.total_complaints > 0" x-cloak>
-                                        <div style="min-width: 110px;">
-                                            <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Complaints</span>
-                                            <div class="d-flex align-items-center gap-1 mt-1">
-                                                <span class="badge text-bg-warning-subtle border border-warning text-warning-emphasis shadow-sm" style="font-size: 10px;">
-                                                    <i class="bi bi-exclamation-circle me-1"></i> Total: <span x-text="customerDetails.total_complaints"></span>
-                                                </span>
-                                                <template x-if="customerDetails.active_complaints > 0">
-                                                    <span class="badge bg-danger shadow-sm" style="font-size: 10px;">
-                                                        <i class="bi bi-activity me-1"></i> Active: <span x-text="customerDetails.active_complaints"></span>
-                                                    </span>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="d-flex flex-column align-items-end gap-2">
-                                    <div x-show="customerDetails.created_at" class="badge text-bg-primary-subtle text-primary-emphasis fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
-                                        <i class="bi bi-clock-history me-1"></i> Since: <span x-text="new Date(customerDetails.created_at).toLocaleDateString()"></span> 
-                                        (<span x-text="customerDetails.created_at ? Math.max(0, Math.floor((new Date() - new Date(customerDetails.created_at)) / 86400000)) : 0"></span> days)
-                                    </div>
-                                    <div x-show="customerDetails.updated_at" class="badge text-bg-secondary-subtle text-secondary-emphasis fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
-                                        <i class="bi bi-activity me-1"></i> Active: <span x-text="customerDetails.updated_at ? Math.max(0, Math.floor((new Date() - new Date(customerDetails.updated_at)) / 86400000)) : 0"></span> days ago
-                                    </div>
-                                </div>
-                            </div>
-                            
                             <div class="row g-3 small mt-2">
                                 <!-- Contact Profile -->
                                 <div class="col-md-6 col-lg-3">
@@ -255,10 +264,10 @@
                                                 <i class="bi bi-person-lines-fill text-primary me-2"></i>
                                                 <h6 class="fw-bold text-primary mb-0" style="text-transform: uppercase; font-size: 11px;">Contact</h6>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.phone"><span class="text-body-secondary small">Phone</span><span class="fw-bold text-body-emphasis" style="font-size: 11px;"><i class="bi bi-telephone text-primary me-1" style="font-size: 9px;"></i><span x-text="customerDetails.phone"></span></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.alternatemobile"><span class="text-body-secondary small">Alt Phone</span><span class="fw-medium text-body-emphasis" style="font-size: 11px;" x-text="customerDetails.alternatemobile"></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.email"><span class="text-body-secondary small">Email</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block text-end" style="max-width: 130px; font-size: 11px;" :title="customerDetails.email"><span x-text="customerDetails.email"></span></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.relative_name"><span class="text-body-secondary small">Relative</span><span class="fw-medium text-body-emphasis text-end" style="font-size: 11px;" x-text="customerDetails.relative_name + ' (' + customerDetails.relative_phone + ')'"></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.phone"><span class="text-body-secondary small">Phone</span><span class="fw-bold text-body-emphasis cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><i class="bi me-1" :class="copied ? 'bi-check-lg text-success' : 'bi-telephone text-primary'" style="font-size: 9px;"></i><span x-text="customerDetails.phone"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.alternatemobile"><span class="text-body-secondary small">Alt Phone</span><span class="fw-medium text-body-emphasis cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.alternatemobile).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.alternatemobile"></span><i class="bi ms-1" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.email"><span class="text-body-secondary small">Email</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block text-end cursor-pointer" style="max-width: 130px; font-size: 11px;" :title="customerDetails.email" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.email).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.email"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.relative_name"><span class="text-body-secondary small">Relative</span><span class="fw-medium text-body-emphasis text-end cursor-pointer" title="Click to copy phone" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.relative_phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.relative_name + ' (' + customerDetails.relative_phone + ')'"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -271,10 +280,10 @@
                                                 <i class="bi bi-building text-info me-2"></i>
                                                 <h6 class="fw-bold text-info mb-0" style="text-transform: uppercase; font-size: 11px;">Business & Identity</h6>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.company_name"><span class="text-body-secondary small">Company</span><span class="fw-bold text-body-emphasis text-truncate ms-2" style="font-size: 11px;" x-text="customerDetails.company_name"></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.company_name"><span class="text-body-secondary small">Company</span><span class="fw-bold text-body-emphasis text-truncate ms-2 cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.company_name).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.company_name"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
                                             <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.category"><span class="text-body-secondary small">Category</span><span class="fw-medium text-body-emphasis text-capitalize"><span class="badge bg-info text-body-emphasis bg-opacity-25" style="font-size: 9px;" x-text="customerDetails.category"></span></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.gst_no"><span class="text-body-secondary small">GST No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" style="font-size: 11px;" x-text="customerDetails.gst_no"></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.pan_no"><span class="text-body-secondary small">PAN No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace" style="font-size: 11px;" x-text="customerDetails.pan_no"></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.gst_no"><span class="text-body-secondary small">GST No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.gst_no).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.gst_no"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.pan_no"><span class="text-body-secondary small">PAN No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.pan_no).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.pan_no"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
                                             <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.aadhaar_last4"><span class="text-body-secondary small">Aadhaar</span><span class="fw-medium text-body-emphasis font-monospace" style="font-size: 11px;" x-text="'**' + customerDetails.aadhaar_last4"></span></div>
                                             <div class="text-center mt-2" x-show="!customerDetails.company_name && !customerDetails.gst_no && !customerDetails.pan_no && !customerDetails.category && !customerDetails.aadhaar_last4"><span class="text-body-secondary fst-italic small" style="font-size: 10px;">No business details</span></div>
                                         </div>
@@ -369,9 +378,11 @@
                             </div>
                         </div>
                     </div>
+                </div>
+                
+                <div class="card-body p-4 p-lg-4" :class="{'border-top': showCustomerWorkspace}" x-show="partyId" x-cloak>
                     {{-- Addresses Section --}}
-                    {{-- Addresses Section --}}
-                    <div id="addresses-section" x-show="partyId" x-cloak class="mt-4 pt-4 border-top transition-all">
+                    <div id="addresses-section" class="transition-all">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Shipping Addresses</h6>
                             @can('customeraddress-create')
@@ -392,11 +403,18 @@
                                                             <span class="badge bg-secondary me-1" x-text="addr.label || 'Address'"></span>
                                                             <span x-show="addr.is_default" class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Default</span>
                                                         </div>
-                                                        @can('customeraddress-edit')
-                                                        <button type="button" class="btn btn-sm btn-outline-secondary border rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 12px; right: 12px; width: 28px; height: 28px; z-index: 20;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
-                                                            <i class="bi bi-pencil text-primary" style="font-size: 12px;"></i>
-                                                        </button>
-                                                        @endcan
+                                                        <div class="position-absolute d-flex gap-2" style="top: 12px; right: 12px; z-index: 20;">
+                                                            @can('customeraddress-edit')
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary border rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
+                                                                <i class="bi bi-pencil text-primary" style="font-size: 12px;"></i>
+                                                            </button>
+                                                            @endcan
+                                                            @can('customeraddress-delete')
+                                                            <button type="button" class="btn btn-sm btn-outline-danger border rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" @click.stop.prevent="confirmDeleteAddress(addr.id)">
+                                                                <i class="bi bi-trash" style="font-size: 12px;"></i>
+                                                            </button>
+                                                            @endcan
+                                                        </div>
                                                     </div>
                                                     <p class="mb-1 small fw-bold" x-text="addr.address_line_1"></p>
                                                     <p class="mb-1 small text-body-secondary" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
@@ -458,11 +476,18 @@
                                                             <span class="badge bg-secondary me-1" x-text="addr.label || 'Address'"></span>
                                                             <span x-show="addr.is_default" class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Default</span>
                                                         </div>
-                                                        @can('customeraddress-edit')
-                                                        <button type="button" class="btn btn-sm btn-outline-secondary border rounded-circle shadow-sm position-absolute d-flex align-items-center justify-content-center" style="top: 12px; right: 12px; width: 28px; height: 28px; z-index: 20;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
-                                                            <i class="bi bi-pencil text-primary" style="font-size: 12px;"></i>
-                                                        </button>
-                                                        @endcan
+                                                        <div class="position-absolute d-flex gap-2" style="top: 12px; right: 12px; z-index: 20;">
+                                                            @can('customeraddress-edit')
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary border rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" @click.stop.prevent="$dispatch('open-address-modal', {customerId: partyId, address: addr})">
+                                                                <i class="bi bi-pencil text-primary" style="font-size: 12px;"></i>
+                                                            </button>
+                                                            @endcan
+                                                            @can('customeraddress-delete')
+                                                            <button type="button" class="btn btn-sm btn-outline-danger border rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" @click.stop.prevent="confirmDeleteAddress(addr.id)">
+                                                                <i class="bi bi-trash" style="font-size: 12px;"></i>
+                                                            </button>
+                                                            @endcan
+                                                        </div>
                                                     </div>
                                                     <p class="mb-1 small fw-bold" x-text="addr.address_line_1"></p>
                                                     <p class="mb-1 small text-body-secondary" x-show="addr.address_line_2" x-text="addr.address_line_2"></p>
@@ -503,23 +528,8 @@
                         </div>
                     </div>
 
-                    <div class="card shadow-sm border-0 mt-4">
-                        <div class="card-body p-3 p-lg-4">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                                <div>
-                                    <div class="small fw-bold text-body-secondary text-uppercase mb-1" style="font-size: 11px; letter-spacing: 1px;">Warehouse</div>
-                                    <h6 class="mb-0 fw-bold">Select fulfillment warehouse</h6>
-                                </div>
-                                <select class="form-select fw-bold" style="max-width: 260px;" x-model="warehouseId" @change="handleWarehouseChange($event)">
-                                    @foreach($warehouses as $w)
-                                    <option value="{{ $w->id }}" data-state="{{ $w->state }}">{{ $w->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
+
             </div>
 
             {{-- Product Search Card --}}
@@ -2364,10 +2374,26 @@
             </div>
         </div>
     </div>
+    <!-- Delete Address Confirmation Modal -->
+    <div class="modal fade" id="deleteAddressModal" tabindex="-1" aria-labelledby="deleteAddressModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-body p-4 text-center">
+                    <div class="text-danger mb-3">
+                        <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Delete Address?</h5>
+                    <p class="small text-muted mb-4">Are you sure you want to delete this address? This action cannot be undone.</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger rounded-pill px-4" @click="executeDeleteAddress()">Delete</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-
-
+        </div>
+    </div>
 
 <style>
     /* Hide number input spin buttons */
@@ -2424,7 +2450,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
     return {
         activeTab: 'customer',
         viewMode: 'table',
-        showCustomerWorkspace: true,
+        showCustomerWorkspace: false,
         isCartSidebarOpen: false, useWalletBalance: false,
         partyId: new URLSearchParams(window.location.search).get('customer_id') || '', defaultWarehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', warehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', previousWarehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale', shippingFee: 0,
         orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
@@ -2801,6 +2827,45 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 }
             });
             return promos;
+        },
+
+        addressToDelete: null,
+        
+        confirmDeleteAddress(addressId) {
+            this.addressToDelete = addressId;
+            const modal = new bootstrap.Modal(document.getElementById('deleteAddressModal'));
+            modal.show();
+        },
+        
+        async executeDeleteAddress() {
+            if (!this.addressToDelete) return;
+            const addressId = this.addressToDelete;
+            this.addressToDelete = null;
+            
+            const modalEl = document.getElementById('deleteAddressModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) {
+                modal.hide();
+            }
+            
+            try {
+                const response = await fetch(`/api/customers/${this.partyId}/addresses/${addressId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                if (response.ok) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Address deleted successfully' }}));
+                    this.loadAddresses();
+                } else {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Failed to delete address' }}));
+                }
+            } catch (e) {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Network error occurred' }}));
+            }
         },
 
         async loadAddresses() {

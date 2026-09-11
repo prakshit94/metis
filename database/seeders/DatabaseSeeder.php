@@ -56,7 +56,7 @@ class DatabaseSeeder extends Seeder
             // Newly added missing seeders
             DepartmentSeeder::class,
             //TargetSeeder::class,
-            ProductCatalogSeeder::class,
+            // ProductCatalogSeeder::class,
         ]);
     }
 }

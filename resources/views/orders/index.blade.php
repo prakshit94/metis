@@ -961,7 +961,10 @@
                                        x-model="selectedOrders">
                             </td>
                             <td>
-                                <div class="fw-medium" x-text="order.orderNumber"></div>
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <a href="#" class="fw-bold text-decoration-none text-primary" @click.prevent="viewOrder(order)" x-text="order.orderNumber"></a>
+                                    <i class="bi opacity-50 cursor-pointer text-primary-hover" x-data="{ copied: false }" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.85em;" title="Copy" @click="navigator.clipboard.writeText(order.orderNumber).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"></i>
+                                </div>
                                 <div class="d-flex align-items-center flex-wrap gap-1 mt-1">
                                     <small class="text-muted" x-text="'ID: ' + order.id"></small>
                                     <template x-if="order.warehouse">
@@ -980,7 +983,7 @@
                                          :alt="order.createdBy.name">
                                     <div>
                                         <div class="fw-medium small" x-text="order.createdBy.name"></div>
-                                        <small class="text-muted" x-text="order.createdBy.email"></small>
+                                        <small class="text-muted cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(order.createdBy.email).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="order.createdBy.email"></span><i class="bi opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.8em;"></i></small>
                                     </div>
                                 </div>
                             </td>
@@ -1069,11 +1072,6 @@
                                         <i class="bi bi-three-dots"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        @can('orders.view')
-                                        <li><a class="dropdown-item" href="#" @click.prevent="viewOrder(order)">
-                                            <i class="bi bi-eye me-2"></i>View Details
-                                        </a></li>
-                                        @endcan
                                         <template x-if="!['cancelled', 'delivered', 'returned'].includes(order.status)">
                                             @can('orders.edit')
                                             <li><a class="dropdown-item" href="#" @click.prevent="editOrder(order)">
@@ -1208,7 +1206,7 @@
                                 </div>
                                 <div>
                                     <h4 class="modal-title fw-bolder mb-1" id="orderDetailModalLabel" style="letter-spacing: -0.5px;">
-                                        Order <span class="text-primary" x-text="selectedOrder.orderNumber"></span>
+                                        Order <span class="text-primary cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.orderNumber).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.orderNumber"></span><i class="bi opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.6em;"></i></span>
                                     </h4>
                                     <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
                                         <p class="text-muted small mb-0 d-flex align-items-center gap-2">
@@ -1289,22 +1287,22 @@
                                                     <img :src="selectedOrder.customer.avatar" class="rounded-circle shadow-sm" width="48" height="48" alt="Customer">
                                                     <div>
                                                         <h6 class="fw-bold mb-1" x-text="selectedOrder.customer.name"></h6>
-                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-envelope"></i> <span x-text="selectedOrder.customer.email"></span></p>
-                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone"></i> <span x-text="selectedOrder.customer.phone || 'N/A'"></span></p>
+                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-envelope"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.email).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.email"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.phone || 'N/A'"></span><template x-if="selectedOrder.customer.phone"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></template></span></p>
                                                         <template x-if="selectedOrder.customer.secondaryPhone">
-                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone-plus"></i> <span x-text="selectedOrder.customer.secondaryPhone"></span></p>
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone-plus"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.secondaryPhone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.secondaryPhone"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
                                                         </template>
                                                         <template x-if="selectedOrder.customer.relativeName">
-                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-people"></i> <span x-text="selectedOrder.customer.relativeName"></span> <span x-show="selectedOrder.customer.relativePhone" x-text="`(${selectedOrder.customer.relativePhone})`"></span></p>
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-people"></i> <span x-text="selectedOrder.customer.relativeName"></span> <span x-show="selectedOrder.customer.relativePhone" class="cursor-pointer ms-1" title="Click to copy phone" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.relativePhone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="`(${selectedOrder.customer.relativePhone})`"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
                                                         </template>
                                                         <template x-if="selectedOrder.customer.company">
-                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-building"></i> <span x-text="selectedOrder.customer.company"></span></p>
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-building"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.company).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.company"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
                                                         </template>
                                                         <template x-if="selectedOrder.customer.pan">
-                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-card-text"></i> PAN: <span x-text="selectedOrder.customer.pan"></span></p>
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-card-text"></i> PAN: <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.pan).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.pan"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
                                                         </template>
                                                         <template x-if="selectedOrder.customer.gstin">
-                                                            <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i class="bi bi-receipt"></i> GSTIN: <span x-text="selectedOrder.customer.gstin"></span></p>
+                                                            <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i class="bi bi-receipt"></i> GSTIN: <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.gstin).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.gstin"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
                                                         </template>
                                                     </div>
                                                 </div>
@@ -1312,11 +1310,11 @@
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <p class="fw-bold small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Shipping Address</p>
-                                                    <p class="small mb-0 text-body-emphasis" x-text="selectedOrder.shippingAddress ? selectedOrder.shippingAddress.formatted : 'N/A'"></p>
+                                                    <p class="small mb-0 text-body-emphasis cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="if(selectedOrder.shippingAddress) { navigator.clipboard.writeText(selectedOrder.shippingAddress.formatted).then(() => { copied = true; setTimeout(() => copied = false, 2000) }) }"><span x-text="selectedOrder.shippingAddress ? selectedOrder.shippingAddress.formatted : 'N/A'"></span><template x-if="selectedOrder.shippingAddress"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.9em;"></i></template></p>
                                                 </div>
                                                 <div>
                                                     <p class="fw-bold small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Billing Address</p>
-                                                    <p class="small mb-0 text-body-emphasis" x-text="selectedOrder.billingAddress ? selectedOrder.billingAddress.formatted : 'N/A'"></p>
+                                                    <p class="small mb-0 text-body-emphasis cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="if(selectedOrder.billingAddress) { navigator.clipboard.writeText(selectedOrder.billingAddress.formatted).then(() => { copied = true; setTimeout(() => copied = false, 2000) }) }"><span x-text="selectedOrder.billingAddress ? selectedOrder.billingAddress.formatted : 'N/A'"></span><template x-if="selectedOrder.billingAddress"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.9em;"></i></template></p>
                                                 </div>
                                             </div>
                                         </div>
