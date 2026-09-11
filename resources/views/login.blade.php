@@ -114,7 +114,7 @@
                                id="rememberMe"
                                name="remember"
                                value="1"
-                               {{ old('remember') ? 'checked' : '' }}
+                               {{ old('remember', request()->cookie('remembered_email') ? true : false) ? 'checked' : '' }}
                                x-model="remember"
                                style="width: 1.25em; height: 1.25em; cursor: pointer;">
                         <label class="form-check-label fw-medium text-secondary" for="rememberMe" style="cursor: pointer;">
@@ -175,7 +175,7 @@
             isSubmitting: false,
 
             // Sign-in state
-            remember: {{ old('remember') ? 'true' : 'false' }},
+            remember: {{ old('remember', request()->cookie('remembered_email') ? true : false) ? 'true' : 'false' }},
 
             // Reset spinner if server returned a validation error
             init() {

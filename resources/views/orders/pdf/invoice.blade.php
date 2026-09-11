@@ -156,7 +156,7 @@ br {
                {{ ucfirst($invoice->order->payment_method ?? 'Cash') }}<br>
                @if(strtolower($invoice->order->payment_method ?? '') === 'cod')
                <strong>To Collect:</strong>
-               ₹ {{ number_format($invoice->net_amount, 0) }}<br>
+               Rs. {{ number_format($invoice->net_amount, 0) }}<br>
                @endif
                @if($invoice->order?->shipments && $shipment = $invoice->order->shipments->first())
                <br>

@@ -778,7 +778,7 @@ class OrderController extends Controller implements HasMiddleware
         return response()->json(['success' => true, 'message' => 'Order marked as ready to ship.']);
     }
 
-    public function dispatch(string $id, InventoryService $inventoryService)
+    public function dispatch(string $id, InventoryService $inventoryService, InvoiceService $invoiceService)
     {
         $order = Order::findOrFail($id);
         if ($order->status !== 'ready_to_ship') {
@@ -788,6 +788,10 @@ class OrderController extends Controller implements HasMiddleware
         $shipment = $order->shipments()->first();
         if (! $shipment || ! $shipment->carrier_name || ! $shipment->tracking_no) {
             return response()->json(['error' => 'Order cannot be dispatched without valid carrier and tracking details.'], 400);
+        }
+
+        if (! $order->invoice) {
+            $invoiceService->generateForOrder($order);
         }
 
         try {
@@ -944,7 +948,7 @@ class OrderController extends Controller implements HasMiddleware
         return view('orders.receipt', compact('order'));
     }
 
-    public function bulkStatus(Request $request, InventoryService $inventoryService, OrderService $orderService)
+    public function bulkStatus(Request $request, InventoryService $inventoryService, OrderService $orderService, InvoiceService $invoiceService)
     {
         $validated = $request->validate([
             'order_ids' => 'required|array|min:1',
@@ -960,7 +964,7 @@ class OrderController extends Controller implements HasMiddleware
         $skipped = 0;
         $errors = [];
 
-        DB::transaction(function () use ($ids, $targetStatus, $validated, $inventoryService, $orderService, &$count, &$skipped, &$errors) {
+        DB::transaction(function () use ($ids, $targetStatus, $validated, $inventoryService, $orderService, $invoiceService, &$count, &$skipped, &$errors) {
             $orders = Order::whereIn('id', $ids)->lockForUpdate()->get();
 
             foreach ($orders as $order) {
@@ -1003,6 +1007,9 @@ class OrderController extends Controller implements HasMiddleware
                         }
                     } elseif ($targetStatus === 'dispatched') {
                         if ($order->status === 'ready_to_ship') {
+                            if (! $order->invoice) {
+                                $invoiceService->generateForOrder($order);
+                            }
                             $inventoryService->dispatchOrder($order);
                             $order->statusLogs()->create([
                                 'status' => 'dispatched',

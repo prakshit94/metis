@@ -107,7 +107,7 @@
                     Pincode: {{ optional($order->shippingAddress ?? $order->billingAddress)->pincode ?? '-' }}
                 </div>
                 <div class="col right big">
-                    COD Amount: ₹ {{ number_format($order->net_amount, 0) }}
+                    COD Amount: Rs. {{ number_format($order->net_amount, 0) }}
                 </div>
             </div>
         </div>
@@ -149,7 +149,7 @@
             <div class="muted">
                 <strong>Weight:</strong> {{ $shipment->actual_weight_g ?? '-' }} g | 
                 <strong>Dimensions:</strong> {{ $shipment->length_cm ?? '-' }}x{{ $shipment->width_cm ?? '-' }}x{{ $shipment->height_cm ?? '-' }} cm | 
-                <strong>Tariff:</strong> ₹{{ $shipment->shipping_cost ?? '-' }}
+                <strong>Tariff:</strong> Rs. {{ $shipment->shipping_cost ?? '-' }}
             </div>
         </div>
         <div class="divider"></div>
