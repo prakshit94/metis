@@ -4416,7 +4416,7 @@
             },
             "time": "2024-09-18T08:09:33+00:00",
             "type": "library",
-            "installation-source": "source",
+            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "Picqer\\Barcode\\": "src"
