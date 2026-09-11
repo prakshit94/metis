@@ -22,17 +22,21 @@
                     <div class="position-absolute fs-3 fw-bold text-body-emphasis">{{ $fulfillment['fulfillment_rate'] }}%</div>
                 </div>
                 <div class="row w-100 text-center mt-3">
-                    <div class="col-4 border-end border-opacity-25">
+                    <div class="col-3 border-end border-opacity-25">
                         <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 10px;">Total</div>
-                        <div class="fs-5 fw-bold">{{ number_format($fulfillment['total']) }}</div>
+                        <div class="fs-5 fw-bold" style="font-size: 1rem !important;">{{ number_format($fulfillment['total']) }}</div>
                     </div>
-                    <div class="col-4 border-end border-opacity-25">
+                    <div class="col-3 border-end border-opacity-25">
                         <div class="text-success small fw-bold text-uppercase mb-1" style="font-size: 10px;">Delivered</div>
-                        <div class="fs-5 fw-bold">{{ number_format($fulfillment['delivered']) }}</div>
+                        <div class="fs-5 fw-bold" style="font-size: 1rem !important;">{{ number_format($fulfillment['delivered']) }}</div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3 border-end border-opacity-25">
+                        <div class="text-secondary small fw-bold text-uppercase mb-1" style="font-size: 10px;">Returned</div>
+                        <div class="fs-5 fw-bold text-secondary-emphasis" style="font-size: 1rem !important;">{{ number_format($fulfillment['returned'] ?? 0) }}</div>
+                    </div>
+                    <div class="col-3">
                         <div class="text-danger small fw-bold text-uppercase mb-1" style="font-size: 10px;">Cancelled</div>
-                        <div class="fs-5 fw-bold">{{ number_format($fulfillment['cancelled']) }}</div>
+                        <div class="fs-5 fw-bold" style="font-size: 1rem !important;">{{ number_format($fulfillment['cancelled']) }}</div>
                     </div>
                 </div>
             </div>

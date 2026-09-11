@@ -3,12 +3,13 @@
     $totalValue = 0;
     $deliveredOrders = $pipeline['delivered']['count'];
     
-    foreach(['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'] as $status) {
+    foreach(['future_order', 'pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned', 'cancelled'] as $status) {
         $totalOrders += $pipeline[$status]['count'];
         $totalValue += $pipeline[$status]['amount'];
     }
     
-    $deliveryRate = $totalOrders > 0 ? round(($deliveredOrders / $totalOrders) * 100) : 0;
+    $validOrders = $totalOrders - $pipeline['cancelled']['count'];
+    $deliveryRate = $validOrders > 0 ? round((($pipeline['delivered']['count'] + $pipeline['returned']['count']) / $validOrders) * 100) : 0;
 
     $selectedWarehouseName = 'All Warehouses';
     if ($warehouseId) {
@@ -117,7 +118,17 @@
                 </div>
                 
                 <!-- Non-Lifecycle Statuses -->
-                <div class="d-flex gap-4 mt-4 ps-1">
+                <div class="d-flex gap-4 mt-4 ps-1 flex-wrap">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bg-info rounded-circle" style="width: 8px; height: 8px;"></div>
+                        <span class="small text-info-emphasis fw-medium">Future Order: <span>{{ $pipeline['future_order']['count'] }}</span> (₹{{ number_format($pipeline['future_order']['amount']) }})</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bg-warning rounded-circle" style="width: 8px; height: 8px;"></div>
+                        <span class="small text-warning-emphasis fw-medium">Pending Confirmation: <span>{{ $pipeline['pending_confirmation']['count'] }}</span> (₹{{ number_format($pipeline['pending_confirmation']['amount']) }})</span>
+                    </div>
+
                     <div class="d-flex align-items-center gap-2">
                         <div class="bg-secondary rounded-circle" style="width: 8px; height: 8px;"></div>
                         <span class="small text-secondary-emphasis fw-medium">Returned: <span>{{ $pipeline['returned']['count'] }}</span> (₹{{ number_format($pipeline['returned']['amount']) }})</span>

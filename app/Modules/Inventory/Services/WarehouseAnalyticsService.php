@@ -24,6 +24,7 @@ class WarehouseAnalyticsService
     public function getExecutiveKPIs(?int $warehouseId, string $dateRange): array
     {
         $dateStart = $this->getDateStart($dateRange);
+        $dateEnd = $this->getDateEnd($dateRange);
 
         $ordersQuery = Order::query();
         $returnsQuery = OrderReturn::query();
@@ -44,6 +45,13 @@ class WarehouseAnalyticsService
             $returnsQuery->where('created_at', '>=', $dateStart);
             $transfersQuery->where('created_at', '>=', $dateStart);
             $posQuery->where('created_at', '>=', $dateStart);
+        }
+        
+        if ($dateEnd) {
+            $ordersQuery->where('created_at', '<=', $dateEnd);
+            $returnsQuery->where('created_at', '<=', $dateEnd);
+            $transfersQuery->where('created_at', '<=', $dateEnd);
+            $posQuery->where('created_at', '<=', $dateEnd);
         }
 
         return [
@@ -83,6 +91,14 @@ class WarehouseAnalyticsService
                             $q->where('order_no', 'like', "%{$search}%");
                         } elseif ($type === PurchaseOrder::class) {
                             $q->where('po_number', 'like', "%{$search}%");
+                        } elseif ($type === InventoryAdjustment::class || $type === StockTransfer::class) {
+                            $q->where('reference_no', 'like', "%{$search}%");
+                        } elseif ($type === GoodsReceipt::class) {
+                            $q->where('grn_number', 'like', "%{$search}%");
+                        } elseif ($type === OrderReturn::class) {
+                            $q->where('return_no', 'like', "%{$search}%");
+                        } else {
+                            $q->where('id', 'like', "%{$search}%");
                         }
                     });
             });
@@ -130,6 +146,7 @@ class WarehouseAnalyticsService
     public function getShrinkageValue(?int $warehouseId, string $dateRange): float
     {
         $dateStart = $this->getDateStart($dateRange);
+        $dateEnd = $this->getDateEnd($dateRange);
 
         $query = DB::table('inventory_adjustment_items')
             ->join('inventory_adjustments', 'inventory_adjustment_items.adjustment_id', '=', 'inventory_adjustments.id')
@@ -143,6 +160,9 @@ class WarehouseAnalyticsService
         }
         if ($dateStart) {
             $query->where('inventory_adjustments.created_at', '>=', $dateStart);
+        }
+        if ($dateEnd) {
+            $query->where('inventory_adjustments.created_at', '<=', $dateEnd);
         }
 
         return (float) $query->sum(DB::raw('inventory_adjustment_items.difference * COALESCE(products.purchase_price, products.selling_price, 0)'));
@@ -171,6 +191,7 @@ class WarehouseAnalyticsService
     public function getFulfillmentPerformance(?int $warehouseId, string $dateRange): array
     {
         $dateStart = $this->getDateStart($dateRange);
+        $dateEnd = $this->getDateEnd($dateRange);
 
         $query = Order::query();
         if ($warehouseId) {
@@ -179,17 +200,23 @@ class WarehouseAnalyticsService
         if ($dateStart) {
             $query->where('created_at', '>=', $dateStart);
         }
+        if ($dateEnd) {
+            $query->where('created_at', '<=', $dateEnd);
+        }
 
         $total = $query->count();
-        $delivered = (clone $query)->whereIn('status', ['delivered', 'completed'])->count();
+        $delivered = (clone $query)->whereIn('status', ['delivered', 'completed', 'returned'])->count();
         $cancelled = (clone $query)->where('status', 'cancelled')->count();
+        $returned = (clone $query)->where('status', 'returned')->count();
 
-        $rate = $total > 0 ? round(($delivered / $total) * 100, 1) : 0;
+        $validTotal = $total - $cancelled;
+        $rate = $validTotal > 0 ? round(($delivered / $validTotal) * 100, 1) : 0;
 
         return [
             'total' => $total,
             'delivered' => $delivered,
             'cancelled' => $cancelled,
+            'returned' => $returned,
             'fulfillment_rate' => $rate,
         ];
     }
@@ -217,6 +244,7 @@ class WarehouseAnalyticsService
     public function getFulfillmentPipeline(?int $warehouseId, string $dateRange): array
     {
         $dateStart = $this->getDateStart($dateRange);
+        $dateEnd = $this->getDateEnd($dateRange);
 
         $query = Order::query();
         if ($warehouseId) {
@@ -225,13 +253,18 @@ class WarehouseAnalyticsService
         if ($dateStart) {
             $query->where('created_at', '>=', $dateStart);
         }
+        if ($dateEnd) {
+            $query->where('created_at', '<=', $dateEnd);
+        }
 
         $aggregates = $query->selectRaw('status, COUNT(*) as count, SUM(net_amount) as amount')
             ->groupBy('status')
             ->get();
 
         $pipeline = [
+            'future_order' => ['count' => 0, 'amount' => 0],
             'pending' => ['count' => 0, 'amount' => 0],
+            'pending_confirmation' => ['count' => 0, 'amount' => 0],
             'confirmed' => ['count' => 0, 'amount' => 0],
             'processing' => ['count' => 0, 'amount' => 0],
             'ready_to_ship' => ['count' => 0, 'amount' => 0],
@@ -257,6 +290,10 @@ class WarehouseAnalyticsService
         if ($dateStart) {
             $returnsReqQuery->where('created_at', '>=', $dateStart);
         }
+        if ($dateEnd) {
+            $returnsReqQuery->where('created_at', '<=', $dateEnd);
+        }
+        
         $returnsRequested = $returnsReqQuery->whereIn('status', ['requested', 'in_transit'])->get(['refund_amount']);
         $pipeline['returns_requested'] = [
             'count' => $returnsRequested->count(),
@@ -274,6 +311,15 @@ class WarehouseAnalyticsService
             'this_week' => Carbon::now()->startOfWeek(),
             'this_month' => Carbon::now()->startOfMonth(),
             'prev_month' => Carbon::now()->subMonth()->startOfMonth(),
+            default => null,
+        };
+    }
+
+    private function getDateEnd(string $dateRange): ?Carbon
+    {
+        return match ($dateRange) {
+            'yesterday' => Carbon::yesterday()->endOfDay(),
+            'prev_month' => Carbon::now()->subMonth()->endOfMonth(),
             default => null,
         };
     }
