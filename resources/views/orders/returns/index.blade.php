@@ -120,9 +120,11 @@
                                 <i class="bi bi-x-circle me-1"></i>Cancel
                             </button>
                         </template>
-                        <button class="btn btn-sm btn-primary" @click="openBulkQcModal()" :disabled="isSubmitting || (bulkAvailableActions && !bulkAvailableActions.qc)">
-                            <i class="bi bi-clipboard2-check me-1"></i>Process Bulk QC
-                        </button>
+                        <template x-if="bulkAvailableActions && bulkAvailableActions.qc">
+                            <button class="btn btn-sm btn-primary" @click="openBulkQcModal()" :disabled="isSubmitting">
+                                <i class="bi bi-clipboard2-check me-1"></i>Process Bulk QC
+                            </button>
+                        </template>
                         <button class="btn btn-sm btn-outline-secondary" @click="selectedReturns = []"><i class="bi bi-x-lg"></i></button>
                     </div>
                 </div>
@@ -206,11 +208,20 @@
                                                     </a>
                                                 </li>
                                             </template>
-                                            <li>
-                                                <a class="dropdown-item" href="#" @click.prevent="viewReturnDetails(ret)">
-                                                    <i class="bi bi-clipboard2-check me-2 text-primary"></i>Inspect QC
-                                                </a>
-                                            </li>
+                                            <template x-if="['approved', 'qc_in_progress', 'received'].includes(ret.status)">
+                                                <li>
+                                                    <a class="dropdown-item" href="#" @click.prevent="viewReturnDetails(ret)">
+                                                        <i class="bi bi-clipboard2-check me-2 text-primary"></i>Inspect QC
+                                                    </a>
+                                                </li>
+                                            </template>
+                                            <template x-if="!['approved', 'qc_in_progress', 'received'].includes(ret.status)">
+                                                <li>
+                                                    <a class="dropdown-item" href="#" @click.prevent="viewReturnDetails(ret)">
+                                                        <i class="bi bi-eye me-2 text-secondary"></i>View Details
+                                                    </a>
+                                                </li>
+                                            </template>
                                         </ul>
                                     </div>
                                 </td>
@@ -309,8 +320,8 @@
                             </div>
                         </div>
 
-                        {{-- QC Items Table (only if pending) --}}
-                        <template x-if="selectedReturn && selectedReturn.status === 'pending'">
+                        {{-- QC Items Table --}}
+                        <template x-if="selectedReturn && ['approved', 'qc_in_progress', 'received'].includes(selectedReturn.status)">
                             <div>
                                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                                     <h6 class="fw-bold mb-0">
@@ -424,8 +435,8 @@
                             </div>
                         </template>
 
-                        {{-- Already processed view --}}
-                        <template x-if="selectedReturn && selectedReturn.status !== 'pending'">
+                        {{-- Already processed or pending view --}}
+                        <template x-if="selectedReturn && !['approved', 'qc_in_progress', 'received'].includes(selectedReturn.status)">
                             <div>
                                 <h6 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-muted"></i>QC Results</h6>
                                 <div class="table-responsive rounded-3 border">
