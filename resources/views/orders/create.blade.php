@@ -1317,6 +1317,40 @@
                                         
                                         <div class="col-12 col-lg-3 mb-3 mb-lg-0">
                                             <span class="badge rounded-pill px-3 py-1.5" :class="`bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                            <template x-if="(order.status === 'return_requested' || order.status === 'returned' || order.lifecycle_status === 'return_requested' || order.lifecycle_status === 'returned') && getOrderReturn(order)">
+                                                <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer" 
+                                                       data-bs-toggle="tooltip"
+                                                       :title="(getOrderReturn(order).reason ? 'Reason: ' + getOrderReturn(order).reason : '') + (getOrderReturn(order).notes ? '\nNotes: ' + getOrderReturn(order).notes : '')"
+                                                    ></i>
+                                                </div>
+                                            </template>
+                                            <template x-if="['cancelled', 'confirmed', 'processing', 'ready_to_ship', 'delivered', 'returned'].includes(order.status) && (order.status_logs || []).find(l => l.status === order.status && l.notes)">
+                                                <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer" 
+                                                       data-bs-toggle="tooltip"
+                                                       :title="(order.status_logs.find(l => l.status === order.status && l.notes).notes)"
+                                                    ></i>
+                                                </div>
+                                            </template>
+                                            <template x-if="order.status === 'pending_confirmation' && (order.scheduled_confirmation_date || order.confirmation_attempts > 0)">
+                                                <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer"
+                                                       data-bs-toggle="tooltip"
+                                                       :title="(order.scheduled_confirmation_date ? 'Scheduled: ' + new Date(order.scheduled_confirmation_date).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit', hour12: true }) + '\n' : '') + (order.confirmation_attempts ? 'Attempts: ' + order.confirmation_attempts : '')"
+                                                    ></i>
+                                                </div>
+                                            </template>
+                                            <template x-if="['dispatched', 'shipped', 'delivery_attempted'].includes(order.status) && (order.shipments || []).length > 0">
+                                                <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
+                                                    <template x-if="order.shipments[order.shipments.length - 1].reschedule_reason || order.shipments[order.shipments.length - 1].next_followup_date || order.shipments[order.shipments.length - 1].delivery_attempts > 0">
+                                                        <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer"
+                                                           data-bs-toggle="tooltip"
+                                                           :title="(order.shipments[order.shipments.length - 1].next_followup_date ? 'Scheduled: ' + new Date(order.shipments[order.shipments.length - 1].next_followup_date).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit', hour12: true }) + '\n' : '') + (order.shipments[order.shipments.length - 1].reschedule_reason ? 'Reason: ' + order.shipments[order.shipments.length - 1].reschedule_reason + '\n' : '') + (order.shipments[order.shipments.length - 1].delivery_attempts ? 'Attempts: ' + order.shipments[order.shipments.length - 1].delivery_attempts : '')"
+                                                        ></i>
+                                                    </template>
+                                                </div>
+                                            </template>
                                         </div>
                                         
                                         <div class="col-12 col-lg-3 text-lg-end pe-lg-4 d-flex align-items-center justify-content-between justify-content-lg-end">
@@ -3881,6 +3915,13 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 returned: 'danger'
             };
             return themes[String(status).toLowerCase()] || 'secondary';
+        },
+
+        getOrderReturn(order) {
+            if (!order) return null;
+            const returns = order.order_returns || order.orderReturns || [];
+            if (!returns.length) return null;
+            return returns[returns.length - 1];
         }
     };
 }

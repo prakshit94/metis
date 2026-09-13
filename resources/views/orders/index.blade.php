@@ -994,7 +994,9 @@
                                         <i class="bi bi-box-seam text-secondary me-1"></i>
                                         <span x-text="order.itemCount + ' item' + (order.itemCount > 1 ? 's' : '')"></span>
                                         <template x-if="order.isUnfulfillable">
-                                            <span class="badge bg-danger ms-1" style="font-size: 0.65rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Unfulfillable</span>
+                                            <span class="badge bg-danger ms-1 cursor-pointer" style="font-size: 0.65rem;" data-bs-toggle="tooltip" :title="'Insufficient stock for: ' + (order.items || []).filter(i => i.isOutOfStock).map(i => i.name).join(', ')">
+                                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Unfulfillable
+                                            </span>
                                         </template>
                                     </div>
                                     <small class="text-muted d-block mt-1" style="max-width: 200px;" x-text="order.items.length > 0 ? order.items[0].name + (order.itemCount > 1 ? ' +' + (order.itemCount - 1) + ' more' : '') : '—'"></small>
@@ -1006,9 +1008,9 @@
                                       :class="`bg-${getStatusTheme(order.status)}-subtle text-${getStatusTheme(order.status)}-emphasis border border-${getStatusTheme(order.status)}-subtle`"
                                       x-text="order.statusLabel"></span>
                                 <template x-if="order.status === 'pending_confirmation' && (order.scheduledConfirmDate || order.confirmAttempts > 0)">
-                                    <div class="mt-2 d-flex align-items-center" style="font-size: 0.75rem;">
+                                    <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
                                         <template x-if="order.confirmAttempts > 0">
-                                            <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25 rounded-pill me-2" title="Confirmation Attempts">
+                                            <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25 rounded-pill me-1" title="Confirmation Attempts">
                                                 <i class="bi bi-arrow-repeat me-1"></i><span x-text="order.confirmAttempts"></span>
                                             </span>
                                         </template>
@@ -1020,9 +1022,9 @@
                                     </div>
                                 </template>
                                 <template x-if="(order.shipment?.next_followup_date || order.shipment?.delivery_attempts > 0) && (order.status === 'dispatched' || order.status === 'shipped' || order.status === 'delivery_attempted')">
-                                    <div class="mt-2 d-flex align-items-center" style="font-size: 0.75rem;">
+                                    <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
                                         <template x-if="order.shipment?.delivery_attempts > 0">
-                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill me-2" title="Delivery Attempts">
+                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill me-1" title="Delivery Attempts">
                                                 <i class="bi bi-arrow-repeat me-1"></i><span x-text="order.shipment.delivery_attempts"></span>
                                             </span>
                                         </template>
@@ -1034,14 +1036,21 @@
                                     </div>
                                 </template>
                                 <template x-if="order.status === 'return_requested' && order.orderReturn">
-                                    <div class="mt-1" style="font-size: 0.7rem;">
-                                        <div class="text-warning-emphasis fw-semibold" title="Return Reason">
-                                            <i class="bi bi-arrow-return-left me-1"></i>
-                                            <span x-text="order.orderReturn.reason"></span>
-                                        </div>
-                                        <div class="text-muted mt-1" style="max-width: 150px;" x-show="order.orderReturn.notes" :title="order.orderReturn.notes">
-                                            <i class="bi bi-info-circle me-1"></i><span x-text="order.orderReturn.notes"></span>
-                                        </div>
+                                    <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
+                                        <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer" 
+                                           data-bs-toggle="tooltip"
+                                           :title="(order.orderReturn.reason ? 'Reason: ' + order.orderReturn.reason : '') + (order.orderReturn.notes ? '\nNotes: ' + order.orderReturn.notes : '')"
+                                        ></i>
+                                    </div>
+                                </template>
+                                <template x-if="['cancelled', 'confirmed', 'processing', 'ready_to_ship', 'delivered', 'returned'].includes(order.status)">
+                                    <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
+                                        <template x-if="(order.original?.status_logs || []).find(l => l.status === order.status && l.notes)">
+                                            <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer" 
+                                               data-bs-toggle="tooltip"
+                                               :title="(order.original.status_logs.find(l => l.status === order.status && l.notes).notes)"
+                                            ></i>
+                                        </template>
                                     </div>
                                 </template>
                             </td>
@@ -2109,7 +2118,7 @@
                                     <tr>
                                         <td x-text="item.name"></td>
                                         <td>
-                                            <input type="number" class="form-control form-control-sm" x-model.number="item.requested_qty" min="0" :max="item.max_qty">
+                                            <input type="number" class="form-control form-control-sm bg-light text-muted" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly>
                                             <div class="form-text mt-0" style="font-size: 0.7rem;">Max: <span x-text="item.max_qty"></span></div>
                                         </td>
                                     </tr>
@@ -2194,7 +2203,9 @@
                                     <p class="text-muted mb-0 small">
                                         Order #<span class="fw-medium text-body" x-text="selectedItemsOrder.orderNumber"></span>
                                         <template x-if="selectedItemsOrder.isUnfulfillable">
-                                            <span class="badge bg-danger ms-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Unfulfillable</span>
+                                            <span class="badge bg-danger ms-2 cursor-pointer" data-bs-toggle="tooltip" :title="'Insufficient stock for: ' + (selectedItemsOrder.items || []).filter(i => i.isOutOfStock).map(i => i.name).join(', ')">
+                                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Unfulfillable
+                                            </span>
                                         </template>
                                     </p>
                                 </div>

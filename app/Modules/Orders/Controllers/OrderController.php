@@ -590,6 +590,9 @@ class OrderController extends Controller implements HasMiddleware
                         'billingAddress:id,party_id,label,address_line_1,address_line_2,village_id,village_name,post_office,taluka,district,city,state,pincode',
                         'appliedOffer:id,name,discount_type,value',
                         'creator:id,first_name,last_name,name',
+                        'orderReturns',
+                        'statusLogs',
+                        'shipments',
                     ]);
                 },
             ])->withCount([

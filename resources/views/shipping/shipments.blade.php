@@ -704,7 +704,7 @@
                                                 <tr>
                                                     <td class="px-3" x-text="item.name"></td>
                                                     <td class="px-3">
-                                                        <input type="number" class="form-control form-control-sm" x-model.number="item.requested_qty" min="0" :max="item.max_qty">
+                                                        <input type="number" class="form-control form-control-sm bg-light text-muted" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly>
                                                         <div class="form-text mt-1 text-muted" style="font-size: 0.75rem;">Max: <span x-text="item.max_qty"></span></div>
                                                     </td>
                                                 </tr>
@@ -933,7 +933,7 @@
                                             <tr>
                                                 <td class="px-3" x-text="item.name"></td>
                                                 <td class="px-3">
-                                                    <input type="number" class="form-control form-control-sm" x-model.number="item.requested_qty" min="0" :max="item.max_qty">
+                                                    <input type="number" class="form-control form-control-sm bg-light text-muted" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly>
                                                     <div class="form-text mt-1 text-muted" style="font-size: 0.75rem;">Max available: <span x-text="item.max_qty"></span></div>
                                                 </td>
                                             </tr>

@@ -1272,7 +1272,7 @@ document.addEventListener('alpine:init', () => {
         case 'delivered': options = { dispatched: 'Dispatched' }; break;
         case 'cancelled': options = { pending: 'Pending' }; break;
         case 'return_requested':
-          const logs = order.raw.status_logs || [];
+          const logs = order.original.status_logs || [];
           const prevLog = logs.find(l => l.status !== 'return_requested');
           const prevStatus = prevLog ? prevLog.status : 'delivered';
           const statusName = prevStatus.charAt(0).toUpperCase() + prevStatus.slice(1).replace(/_/g, ' ');
