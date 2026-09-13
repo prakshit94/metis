@@ -757,7 +757,8 @@
             </div>
             <div class="modal-body pt-3">
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle-fill me-2"></i>Please review the first 5 records of your CSV below before confirming.
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    Showing all <strong x-text="importRows.length"></strong> record(s) from your CSV. Review below then click <strong>Confirm Import</strong> to proceed.
                 </div>
                 <div class="table-responsive" style="max-height: 400px;">
                     <table class="table table-striped table-hover table-sm small align-middle mb-0">

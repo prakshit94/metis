@@ -629,17 +629,20 @@ class VillageController extends Controller implements HasMiddleware
             $handle = fopen($path, 'r');
             if ($handle) {
                 $header = fgetcsv($handle);
-                for ($i = 0; $i < 5; $i++) {
-                    if (($line = fgetcsv($handle)) !== false) {
-                        $rows[] = array_combine(array_slice(array_pad($header, count($line), ''), 0, count($line)), $line);
-                    }
+                // Read ALL rows — the old code was hardcoded to 5 which only
+                // showed a partial preview regardless of the file size.
+                while (($line = fgetcsv($handle)) !== false) {
+                    $rows[] = array_combine(
+                        array_slice(array_pad($header, count($line), ''), 0, count($line)),
+                        $line
+                    );
                 }
                 fclose($handle);
             }
 
             return response()->json([
                 'preview' => true,
-                'rows' => $rows,
+                'rows'    => $rows,
             ]);
         }
 
