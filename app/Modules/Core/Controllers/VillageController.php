@@ -271,87 +271,140 @@ class VillageController extends Controller implements HasMiddleware
      */
     public function syncIndiaPostPincodes(Request $request, IndiaPostProvider $indiaPostProvider): JsonResponse
     {
+        // ── Stop action: write a dedicated stop flag so the running batch loop can
+        //    detect it on every pincode iteration, regardless of timing.
         if ($request->input('action') === 'stop') {
-            \Illuminate\Support\Facades\Cache::forget('syncing_indiapost_pincodes');
-            \Illuminate\Support\Facades\Cache::forget('syncing_indiapost_pincodes_query');
-            return response()->json(['success' => true, 'message' => 'Sync stopped successfully.']);
+            Cache::put('stop_indiapost_sync', true, now()->addMinutes(2));
+            Cache::forget('syncing_indiapost_pincodes');
+            Cache::forget('syncing_indiapost_pincodes_query');
+            return response()->json([
+                'success'  => true,
+                'finished' => true,
+                'stopped'  => true,
+                'message'  => 'Stop signal sent. Sync will halt after the current pincode.',
+            ]);
+        }
+
+        // Honour a queued stop before starting a new batch
+        if (Cache::get('stop_indiapost_sync')) {
+            Cache::forget('stop_indiapost_sync');
+            Cache::forget('syncing_indiapost_pincodes');
+            Cache::forget('syncing_indiapost_pincodes_query');
+            return response()->json([
+                'success'  => true,
+                'finished' => true,
+                'stopped'  => true,
+                'message'  => 'Sync was stopped.',
+                'errors'   => [],
+            ]);
         }
 
         $pincode = $request->input('pincode');
-        \Illuminate\Support\Facades\Cache::put('syncing_indiapost_pincodes', true, now()->addMinutes(15));
-        \Illuminate\Support\Facades\Cache::put('syncing_indiapost_pincodes_query', $pincode ?: 'ALL', now()->addMinutes(15));
-        
+
+        // Mark sync as running (TTL refreshed each batch so stale flags expire automatically)
+        Cache::put('syncing_indiapost_pincodes', true, now()->addMinutes(15));
+        Cache::put('syncing_indiapost_pincodes_query', $pincode ?: 'ALL', now()->addMinutes(15));
+
         $pincodesToSync = [];
         if ($pincode) {
             $pincodesToSync[] = $pincode;
         } else {
-            $pincodesToSync = Village::where(function($q) {
+            $pincodesToSync = Village::where(function ($q) {
                 $q->whereNull('office_id')
                   ->orWhereNull('office_type_code')
                   ->orWhereIn('office_type_code', ['INVALID', '']);
             })->select('pincode')->distinct()->pluck('pincode')->toArray();
         }
 
+        // Nothing left to sync — clear flags and return done immediately
+        if (empty($pincodesToSync)) {
+            Cache::forget('syncing_indiapost_pincodes');
+            Cache::forget('syncing_indiapost_pincodes_query');
+            return response()->json([
+                'success'  => true,
+                'finished' => true,
+                'message'  => 'All pincodes are already synced. Nothing to do.',
+                'errors'   => [],
+            ]);
+        }
+
         $syncedCount = 0;
-        $errors = [];
-        $startTime = time();
+        $errors      = [];
+        $startTime   = time();
 
         foreach ($pincodesToSync as $code) {
-            // Stop processing after 20 seconds to prevent the 30s max execution time fatal error in PHP
+            // ── Per-iteration stop check (reads the flag written by a parallel stop request)
+            if (Cache::get('stop_indiapost_sync')) {
+                Cache::forget('stop_indiapost_sync');
+                Cache::forget('syncing_indiapost_pincodes');
+                Cache::forget('syncing_indiapost_pincodes_query');
+                return response()->json([
+                    'success'  => true,
+                    'finished' => true,
+                    'stopped'  => true,
+                    'message'  => "Sync stopped. Processed {$syncedCount} offices before stopping.",
+                    'errors'   => $errors,
+                ]);
+            }
+
+            // ── 20-second batch timeout: return finished:false so the client sends
+            //    the next batch automatically. Do NOT clear running flags here.
             if (time() - $startTime > 20) {
                 return response()->json([
-                    'success' => true,
-                    'message' => "Synced $syncedCount offices from India Post. (Sync is large, stopped to prevent timeout. Please click Sync again to continue.)",
-                    'errors' => $errors
+                    'success'  => true,
+                    'finished' => false,
+                    'message'  => "Synced {$syncedCount} offices in this batch. Continuing next batch...",
+                    'errors'   => $errors,
                 ]);
             }
 
             try {
                 if (method_exists($indiaPostProvider, 'getPincodeDetails')) {
-                    $details = $indiaPostProvider->getPincodeDetails((string)$code);
+                    $details = $indiaPostProvider->getPincodeDetails((string) $code);
                 } else {
-                    // Fallback for production deployment caches (OPcache/workers) where the new method isn't loaded into memory yet
-                    $token = $indiaPostProvider->authenticate();
+                    // Fallback for OPcache/workers where the new method is not yet loaded
+                    $token    = $indiaPostProvider->authenticate();
                     $settings = \App\Models\SystemSetting::where('key', 'like', 'india_post_%')->pluck('value', 'key');
-                    $baseUrl = $settings['india_post_base_url'] ?? config('shipping.providers.india_post.base_url');
-                    $baseUrl = str_replace('beextcustomer', 'bemasterdata', $baseUrl);
-                    
+                    $baseUrl  = $settings['india_post_base_url'] ?? config('shipping.providers.india_post.base_url');
+                    $baseUrl  = str_replace('beextcustomer', 'bemasterdata', $baseUrl);
+
                     $response = \Illuminate\Support\Facades\Http::withToken($token)
                         ->withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])
                         ->get("{$baseUrl}/v1/offices/limited-details", [
-                            'pincode' => (string)$code,
-                            'limit' => 50,
+                            'pincode'     => (string) $code,
+                            'limit'       => 50,
                             'office-type' => 'post',
                         ]);
-                        
+
                     if ($response->successful()) {
                         $details = $response->json();
                     } else {
-                        throw new \Exception('Failed to fetch pincode details: '.$response->body());
+                        throw new \Exception('Failed to fetch pincode details: ' . $response->body());
                     }
                 }
-                
+
                 $hasValidData = false;
-                $officesList = isset($details['data']) && is_array($details['data']) ? $details['data'] : $details;
-                
+                $officesList  = isset($details['data']) && is_array($details['data']) ? $details['data'] : $details;
+
                 if (is_array($officesList) && count($officesList) > 0) {
                     foreach ($officesList as $office) {
-                        // Ensure we are dealing with an array, not a boolean/string from an error JSON object
-                        if (!is_array($office)) continue;
+                        if (! is_array($office)) {
+                            continue;
+                        }
 
                         $hasValidData = true;
-                        $villageName = !empty($office['village_name']) && $office['village_name'] !== 'Choose an option' 
-                            ? $office['village_name'] 
+                        $villageName  = ! empty($office['village_name']) && $office['village_name'] !== 'Choose an option'
+                            ? $office['village_name']
                             : ($office['office_name'] ?? 'Unknown');
-                            
+
                         $existingVillage = Village::where('pincode', $code)
                             ->where('office_id', $office['office_id'] ?? null)
                             ->first();
 
-                        if (!$existingVillage) {
-                            // Find an un-synced record for this pincode to take over, preventing orphaned duplicates
+                        if (! $existingVillage) {
+                            // Adopt an un-synced stub record to avoid orphaned duplicates
                             $existingVillage = Village::where('pincode', $code)
-                                ->where(function($q) {
+                                ->where(function ($q) {
                                     $q->whereNull('office_id')
                                       ->orWhereNull('office_type_code')
                                       ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR', '']);
@@ -360,65 +413,86 @@ class VillageController extends Controller implements HasMiddleware
                         }
 
                         $updateData = [
-                            'village_name' => $villageName,
-                            'post_so_name' => $office['office_name'] ?? null,
-                            'taluka_name' => $office['taluk_name'] ?? null,
-                            'district_name' => $office['city_name'] ?? null,
-                            'state_name' => $office['state_name'] ?? null,
-                            'office_type_code' => $office['office_type_code'] ?? null,
+                            'village_name'         => $villageName,
+                            'post_so_name'         => $office['office_name'] ?? null,
+                            'taluka_name'          => $office['taluk_name'] ?? null,
+                            'district_name'        => $office['city_name'] ?? null,
+                            'state_name'           => $office['state_name'] ?? null,
+                            'office_type_code'     => $office['office_type_code'] ?? null,
                             'delivery_office_flag' => $office['delivery_office_flag'] ?? false,
-                            'is_rolled_out' => $office['is_rolled_out'] ?? false,
+                            'is_rolled_out'        => $office['is_rolled_out'] ?? false,
                         ];
 
                         if ($existingVillage) {
                             $updateData['office_id'] = $office['office_id'] ?? null;
                             $existingVillage->update($updateData);
                         } else {
-                            $updateData['pincode'] = $office['pincode'] ?? $code;
+                            $updateData['pincode']   = $office['pincode'] ?? $code;
                             $updateData['office_id'] = $office['office_id'] ?? null;
                             Village::create($updateData);
                         }
+
                         $syncedCount++;
                     }
                 }
 
-                // Mark pincodes that returned no valid offices so we don't retry them infinitely
-                if (!$hasValidData) {
+                // Mark pincodes with no valid offices so they are never retried
+                if (! $hasValidData) {
                     Village::where('pincode', $code)
-                           ->where(function($q) {
-                               $q->whereNull('office_type_code')->orWhere('office_type_code', 'INVALID');
+                           ->where(function ($q) {
+                               $q->whereNull('office_type_code')
+                                 ->orWhere('office_type_code', 'INVALID');
                            })
                            ->update(['office_type_code' => 'FAILED']);
                 }
-
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Failed to sync India Post pincode {$code}: " . $e->getMessage());
+                Log::error("Failed to sync India Post pincode {$code}: " . $e->getMessage());
+
                 Village::where('pincode', $code)
-                       ->where(function($q) {
-                           $q->whereNull('office_type_code')->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR']);
+                       ->where(function ($q) {
+                           $q->whereNull('office_type_code')
+                             ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR']);
                        })
                        ->update(['office_type_code' => 'API_ERROR']);
+
                 $errors[] = $code;
-                
-                // If it's a connection/authentication error (like IP not whitelisted or timeout), 
-                // abort the entire bulk sync immediately to prevent hanging
-                if ($e instanceof \Illuminate\Http\Client\ConnectionException || str_contains($e->getMessage(), 'cURL') || str_contains($e->getMessage(), 'authenticate') || str_contains($e->getMessage(), 'timeout')) {
+
+                // Fatal network/auth errors: clear ALL flags so page reload does not
+                // auto-restart the loop — the user must click Sync manually again.
+                if (
+                    $e instanceof \Illuminate\Http\Client\ConnectionException
+                    || str_contains($e->getMessage(), 'cURL')
+                    || str_contains($e->getMessage(), 'authenticate')
+                    || str_contains($e->getMessage(), 'timeout')
+                ) {
+                    Cache::forget('syncing_indiapost_pincodes');
+                    Cache::forget('syncing_indiapost_pincodes_query');
+                    Cache::forget('stop_indiapost_sync');
+
                     return response()->json([
-                        'success' => false,
-                        'message' => 'India Post API Connection Failed. Please check IP whitelisting. (' . $e->getMessage() . ')',
-                        'errors' => $errors
+                        'success'  => false,
+                        'finished' => true,
+                        'message'  => 'India Post API connection failed. Please check IP whitelisting. (' . $e->getMessage() . ')',
+                        'errors'   => $errors,
                     ], 500);
                 }
             }
         }
 
-        \Illuminate\Support\Facades\Cache::forget('syncing_indiapost_pincodes');
-        \Illuminate\Support\Facades\Cache::forget('syncing_indiapost_pincodes_query');
+        // ── All pincodes processed — clear all running/stop flags
+        Cache::forget('syncing_indiapost_pincodes');
+        Cache::forget('syncing_indiapost_pincodes_query');
+        Cache::forget('stop_indiapost_sync');
+
+        $errorSuffix = count($errors) > 0
+            ? ' Errors on ' . count($errors) . ' pincode(s): ' . implode(', ', $errors)
+            : '';
 
         return response()->json([
-            'success' => true,
-            'message' => "Synced $syncedCount offices from India Post.",
-            'errors' => $errors
+            'success'  => true,
+            'finished' => true,
+            'message'  => "Sync complete. Synced {$syncedCount} offices from India Post.{$errorSuffix}",
+            'errors'   => $errors,
         ]);
     }
 

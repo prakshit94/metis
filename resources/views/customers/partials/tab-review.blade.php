@@ -320,8 +320,8 @@
                             </tr>
                         </thead>
                         <tbody class="border-top-0">
-                            <template x-for="(item, index) in cart" :key="item.id">
-                                <tr>
+                            <template x-for="(item, index) in cart" :key="item.id + '_' + (item.is_gift ? item.gift_source : 'paid')">
+                                <tr :class="item.is_gift ? 'bg-success bg-opacity-10' : ''">
                                     <td class="px-4 py-3">
                                         <div class="d-flex align-items-center gap-3">
                                             <div class="bg-body-tertiary border rounded-3 d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width: 48px; height: 48px;">
@@ -336,10 +336,11 @@
                                                 <p class="mb-0 fw-bold text-body-emphasis" x-text="item.name"></p>
                                                 <div class="d-flex align-items-center gap-2 mt-1">
                                                     <span class="font-monospace fw-bold text-primary text-uppercase" style="font-size: 10px; letter-spacing: -0.5px;" x-text="item.sku"></span>
-                                                    <span class="text-muted">|</span>
-                                                    <span class="text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Brand Ref: {{ $customer->brand ?? 'N/A' }}</span>
+                                                    <template x-if="item.is_gift">
+                                                        <span class="badge bg-success border border-success px-1 py-0" style="font-size:9px;">FREE GIFT</span>
+                                                    </template>
                                                 </div>
-                                                <template x-if="item.discountValue > 0">
+                                                <template x-if="item.discountValue > 0 && !item.is_gift">
                                                     <div class="d-flex align-items-center gap-2 mt-1">
                                                         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 9px;"
                                                             x-text="(item.discountType === 'flat' ? '₹ ' : '') + Number(item.discountValue).toFixed(item.discountValue % 1 === 0 ? 0 : 2) + (item.discountType === 'flat' ? ' off' : '% off')">
@@ -355,28 +356,37 @@
                                         </div>
                                     </td>
                                     <td class="px-4 py-3 text-center">
-                                        <div class="input-group input-group-sm bg-body-tertiary rounded-3 p-1 mx-auto" style="width: 100px;">
-                                            <button type="button" @click.prevent="updateCartQty(index, -1)"
-                                                class="btn btn-sm btn-white border-0 fw-bold text-body-emphasis w-25 p-0">
-                                                <i class="bi bi-dash"></i>
+                                        <template x-if="!item.is_gift">
+                                            <div class="input-group input-group-sm bg-body-tertiary rounded-3 p-1 mx-auto" style="width: 100px;">
+                                                <button type="button" @click.prevent="updateCartQty(index, -1)"
+                                                    class="btn btn-sm btn-white border-0 fw-bold text-body-emphasis w-25 p-0">
+                                                    <i class="bi bi-dash"></i>
+                                                </button>
+                                                <span class="form-control bg-transparent border-0 text-center fw-bold text-body-emphasis px-1" x-text="item.quantity"></span>
+                                                <button type="button" @click.prevent="updateCartQty(index, 1)"
+                                                    class="btn btn-sm btn-white border-0 fw-bold text-body-emphasis w-25 p-0">
+                                                    <i class="bi bi-plus"></i>
+                                                </button>
+                                            </div>
+                                        </template>
+                                        <template x-if="item.is_gift">
+                                            <span class="fw-bold text-success fs-6" x-text="item.quantity"></span>
+                                        </template>
+                                    </td>
+                                    <td class="px-4 py-3 text-end">
+                                        <span x-show="!item.is_gift" class="text-muted fw-bold" style="font-size: 12px;" x-text="'₹ ' + Number(item.price).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                        <span x-show="item.is_gift" class="text-success fw-bold" style="font-size: 12px;">₹ 0.00</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-end">
+                                        <span x-show="!item.is_gift" class="fw-bold text-body-emphasis fs-6" x-text="'₹ ' + Number(itemLineTotal(item)).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                        <span x-show="item.is_gift" class="fw-bold text-success fs-6">₹ 0.00</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-end">
+                                        <template x-if="!item.is_gift">
+                                            <button type="button" @click.prevent="removeFromCart(index)" class="btn btn-sm btn-link text-danger p-0 shadow-none">
+                                                <i class="bi bi-trash fs-6"></i>
                                             </button>
-                                            <span class="form-control bg-transparent border-0 text-center fw-bold text-body-emphasis px-1" x-text="item.quantity"></span>
-                                            <button type="button" @click.prevent="updateCartQty(index, 1)"
-                                                class="btn btn-sm btn-white border-0 fw-bold text-body-emphasis w-25 p-0">
-                                                <i class="bi bi-plus"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3 text-end">
-                                        <span class="text-muted fw-bold" style="font-size: 12px;" x-text="'₹ ' + Number(item.price).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
-                                    </td>
-                                    <td class="px-4 py-3 text-end">
-                                        <span class="fw-bold text-body-emphasis fs-6" x-text="'₹ ' + Number(itemLineTotal(item)).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
-                                    </td>
-                                    <td class="px-4 py-3 text-end">
-                                        <button type="button" @click.prevent="removeFromCart(index)" class="btn btn-sm btn-link text-danger p-0 shadow-none">
-                                            <i class="bi bi-trash fs-6"></i>
-                                        </button>
+                                        </template>
                                     </td>
                                 </tr>
                             </template>
@@ -542,10 +552,10 @@
                                                         <p class="mb-0 text-muted fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 1px;">Draft order for a later date</p>
                                                     </div>
                                                 </div>
-                                                <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" id="isDraftSwitch" x-model="isDraft">
+                                                <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" id="isDraftSwitch" :checked="orderStatus === 'future_order'" @change="orderStatus = $event.target.checked ? 'future_order' : 'pending'">
                                             </div>
                                             
-                                            <div x-show="isDraft" x-collapse>
+                                            <div x-show="orderStatus === 'future_order'" x-collapse>
                                                 <div class="pt-3 mt-3 border-top">
                                                     <label class="form-label text-muted fw-bold text-uppercase d-flex align-items-center gap-2 ms-1" style="font-size: 9px; letter-spacing: 1px;">
                                                         <i class="bi bi-calendar-event text-primary"></i> Follow-up Date <span class="text-danger">*</span>
@@ -559,14 +569,14 @@
                                         <button type="button" @click="placeOrder" :disabled="placing"
                                             class="btn btn-lg w-100 rounded-pill fw-bold text-uppercase d-flex align-items-center justify-content-center gap-2 shadow text-white transition-all position-relative overflow-hidden"
                                             style="font-size: 13px; letter-spacing: 2px;"
-                                            :class="editingOrderId ? 'btn-warning text-body-emphasis' : (isDraft ? 'btn-primary bg-gradient' : 'btn-success bg-gradient')">
+                                            :class="editingOrderId ? 'btn-warning text-body-emphasis' : (orderStatus === 'future_order' ? 'btn-primary bg-gradient' : 'btn-success bg-gradient')">
                                             
                                             {{-- Loading Spinner --}}
                                             <div class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-25" x-show="placing" x-cloak>
                                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                             </div>
                                             
-                                            <span x-show="!editingOrderId" x-text="isDraft ? 'Create Future Order' : 'Place Order Now'"></span>
+                                            <span x-show="!editingOrderId" x-text="orderStatus === 'future_order' ? 'Create Future Order' : 'Place Order Now'"></span>
                                             <span x-show="editingOrderId">Update Existing Order</span>
                                             <i class="bi bi-lightning-charge-fill" x-show="!placing"></i>
                                         </button>

@@ -227,10 +227,38 @@ document.addEventListener('alpine:init', () => {
       this.loadServicesOptions();
       this.loadVillages();
       window.addEventListener('village-updated', () => this.loadVillages());
-      
+
+      // A previous sync was in progress when the page last loaded. Ask the user
+      // whether to resume — never auto-resume silently, to prevent an infinite
+      // restart loop when the cache flag is stale (e.g. after a server crash or
+      // browser close mid-sync).
       if (window.backendSyncing) {
-          if (window.backendSyncQuery !== 'ALL') this.searchQuery = window.backendSyncQuery;
-          setTimeout(() => this.syncPincodes(), 500);
+        const query = window.backendSyncQuery && window.backendSyncQuery !== 'ALL'
+          ? ` for pincode ${window.backendSyncQuery}`
+          : '';
+        Swal.fire({
+          title: 'Resume Sync?',
+          text: `A previous India Post sync${query} was interrupted. Would you like to resume it?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, resume',
+          cancelButtonText: 'No, stop it',
+          confirmButtonColor: '#0d6efd',
+          reverseButtons: true,
+        }).then(result => {
+          if (result.isConfirmed) {
+            if (window.backendSyncQuery && window.backendSyncQuery !== 'ALL') {
+              this.searchQuery = window.backendSyncQuery;
+            }
+            this.syncPincodes();
+          } else {
+            // User chose not to resume — send a stop signal to clear the cache flag
+            apiFetch('/api/villages/sync-indiapost', {
+              method : 'POST',
+              body   : JSON.stringify({ action: 'stop' }),
+            }).catch(() => {});
+          }
+        });
       }
     },
 
@@ -599,42 +627,90 @@ document.addEventListener('alpine:init', () => {
     },
 
     async syncPincodes() {
-      try {
-        this.syncing = true;
-        this.stopSyncing = false;
-        
-        let url = '/api/villages/sync-indiapost';
-        if (this.searchQuery && /^\d+$/.test(this.searchQuery)) {
-            url += '?pincode=' + this.searchQuery;
-        }
+      // Prevent launching a second concurrent sync
+      if (this.syncing) return;
 
-        let isFinished = false;
-        while (!isFinished && !this.stopSyncing) {
-            const res = await apiFetch(url, { method: 'POST' });
-            
-            if (this.stopSyncing) {
-                // Send stop command to backend
-                await apiFetch('/api/villages/sync-indiapost?action=stop', { method: 'POST' });
-                showToast('Sync stopped by user.', 'info');
-                break;
+      this.syncing      = true;
+      this.stopSyncing  = false;
+      this._syncAbort   = null; // will hold the current AbortController
+
+      let url = '/api/villages/sync-indiapost';
+      if (this.searchQuery && /^\d+$/.test(this.searchQuery)) {
+        url += '?pincode=' + this.searchQuery;
+      }
+
+      let abortController = new AbortController();
+      this._syncAbort     = abortController;
+      let batchCount      = 0;
+
+      try {
+        while (true) {
+          // ── If user clicked Stop, send the stop signal BEFORE the next fetch
+          if (this.stopSyncing) {
+            try {
+              await apiFetch('/api/villages/sync-indiapost', {
+                method : 'POST',
+                body   : JSON.stringify({ action: 'stop' }),
+              });
+            } catch (_) { /* best effort */ }
+            showToast('Sync stopped by user.', 'info');
+            break;
+          }
+
+          // Fresh AbortController for every batch request so the blade Stop
+          // button always has a reference to abort the current in-flight fetch.
+          abortController = new AbortController();
+          this._syncAbort = abortController;
+
+          let res;
+          try {
+            res = await apiFetch(url, {
+              method : 'POST',
+              signal : abortController.signal,
+            });
+          } catch (fetchErr) {
+            // AbortError = user clicked Stop while the request was in-flight
+            if (fetchErr.name === 'AbortError' || this.stopSyncing) {
+              try {
+                await apiFetch('/api/villages/sync-indiapost', {
+                  method : 'POST',
+                  body   : JSON.stringify({ action: 'stop' }),
+                });
+              } catch (_) { /* best effort */ }
+              showToast('Sync stopped by user.', 'info');
+              break;
             }
-            
-            if (res.message && res.message.includes('stopped to prevent timeout')) {
-                showToast('Syncing batch... please wait', 'info');
-                // Small pause to prevent hammering the server
-                await new Promise(r => setTimeout(r, 1000));
-            } else {
-                showToast(res.message || 'Synced successfully.', 'success');
-                isFinished = true;
-            }
+            throw fetchErr; // re-throw real network errors
+          }
+
+          batchCount++;
+
+          // Server confirmed the stop flag was detected mid-batch
+          if (res.stopped) {
+            showToast(res.message || 'Sync stopped.', 'info');
+            break;
+          }
+
+          // finished:true — full sync is done (or fatal error)
+          if (res.finished) {
+            showToast(res.message || 'Sync complete.', res.success ? 'success' : 'danger');
+            break;
+          }
+
+          // finished:false — batch done but more pincodes remain, loop again
+          showToast(`Batch ${batchCount}: ${res.message}`, 'info');
+
+          // Brief pause between batches to avoid hammering the server
+          await new Promise(r => setTimeout(r, 800));
         }
-        
-        this.loadVillages();
       } catch (err) {
         showToast(err.message || 'Failed to sync pincodes.', 'danger');
       } finally {
-        this.syncing = false;
+        abortController.abort(); // cancel any lingering signal
+        this._syncAbort  = null;
+        this.syncing     = false;
         this.stopSyncing = false;
+        this.loadVillages();
       }
     },
 

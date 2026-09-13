@@ -232,6 +232,92 @@
     notify(type, message) {
         window.dispatchEvent(new CustomEvent('notify', { detail: { type, message } }));
     },
+    async evaluateFreeProducts() {
+        let expectedGifts = [];
+        
+        if (this.cart.some(item => !item.is_gift)) {
+            const fpOffers = this.activeOffers.filter(o => o.type === 'free_product' && o.product_id);
+            fpOffers.forEach(o => {
+                if (this.subtotal >= (parseFloat(o.min_spend)||0)) {
+                    const apps = typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : o.applicable_products;
+                    const cats = typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : o.applicable_categories;
+                    
+                    let triggerQty = 0;
+                    if ((apps && apps.length > 0) || (cats && cats.length > 0)) {
+                        this.cart.forEach(item => {
+                            if (item.is_gift) return;
+                            if (apps && apps.length > 0 && (apps.includes(item.id) || apps.includes(String(item.id)))) {
+                                triggerQty += parseInt(item.quantity) || 0;
+                            } else if (cats && cats.length > 0 && (cats.includes(item.category_id) || cats.includes(String(item.category_id)))) {
+                                triggerQty += parseInt(item.quantity) || 0;
+                            }
+                        });
+                        
+                        if (triggerQty > 0) {
+                            const buyQty = parseInt(o.buy_qty) || 1;
+                            const cycles = Math.floor(triggerQty / buyQty);
+                            if (cycles > 0) {
+                                expectedGifts.push({ product_id: o.product_id, qty: cycles * (parseInt(o.get_qty) || 1), source: 'offer_' + o.id });
+                            }
+                        }
+                    } else {
+                        expectedGifts.push({ product_id: o.product_id, qty: parseInt(o.get_qty)||1, source: 'offer_' + o.id });
+                    }
+                }
+            });
+            if (this.couponApplied && this.appliedCouponObj && this.appliedCouponObj.type === 'free_product' && this.appliedCouponObj.free_product_id) {
+                if (this.subtotal >= (parseFloat(this.appliedCouponObj.min_spend)||0)) {
+                    expectedGifts.push({ product_id: this.appliedCouponObj.free_product_id, qty: parseInt(this.appliedCouponObj.free_qty)||1, source: 'coupon_' + this.appliedCouponObj.code });
+                }
+            }
+        }
+        const validSources = expectedGifts.map(g => g.source);
+        let cleanedCart = this.cart.filter(item => !item.is_gift || validSources.includes(item.gift_source));
+        for (const gift of expectedGifts) {
+            const existing = cleanedCart.find(i => i.is_gift && i.gift_source === gift.source);
+            if (existing) {
+                if (existing.quantity !== gift.qty) existing.quantity = gift.qty;
+            } else {
+                const productObj = this.productSearchResults.find(p => p.id === gift.product_id);
+                if (productObj) {
+                    cleanedCart.push({
+                        id: productObj.id, name: productObj.name, sku: productObj.sku, price: productObj.selling_price, image_url: productObj.image_url,
+                        quantity: gift.qty, available: 999, taxRate: 0, discountValue: productObj.selling_price, discountType: 'amount', category_id: productObj.category_id, is_gift: true, gift_source: gift.source
+                    });
+                }
+            }
+        }
+        if (JSON.stringify(cleanedCart) !== JSON.stringify(this.cart)) {
+            this.cart = cleanedCart;
+        }
+    },
+    getBogoMatch(id) {
+        return this.activeBogoOffers.find(o => Number(o.product_id) === Number(id));
+    },
+    calculateAutoBogoQty(id, newQty, delta) {
+        const match = this.getBogoMatch(id);
+        if (!match) return newQty;
+        
+        const buyQty = parseInt(match.buy_qty)||1;
+        const getQty = parseInt(match.get_qty)||1;
+        const cycle = buyQty + getQty;
+        
+        if (delta > 0) {
+            let completeCycles = Math.floor(newQty / cycle);
+            let remainder = newQty % cycle;
+            if (remainder >= buyQty) {
+                return (completeCycles * cycle) + buyQty + getQty;
+            }
+        } else if (delta < 0) {
+            let completeCycles = Math.floor(newQty / cycle);
+            let remainder = newQty % cycle;
+            if (remainder >= buyQty) {
+                return (completeCycles * cycle) + buyQty - 1;
+            }
+        }
+        return newQty;
+    },
+    
     addToCartWithOptions(product) {
         const qty = parseInt(product._qty) || 1;
         const discValue = parseFloat(product._disc) || 0;
@@ -262,19 +348,22 @@
                 id: product.id,
                 name: product.name,
                 sku: product.sku,
-                price: product.selling_price,
+                price: product.selling_price || 0,
                 image_url: product.image_url,
                 quantity: qty,
-                available: product.available_stock,
+                available: product.available_stock || 999,
                 taxRate: parseFloat(product.tax_rate) || 0,
                 discountType: discType,
                 discountValue: discValue,
+                category_id: product.category_id || null,
+                is_gift: false
             });
             this.notify('success', `Added ${product.name} to cart`);
         }
         
         product._qty = 1;
         product._disc = 0;
+        this.evaluateFreeProducts();
     },
     addToCart(product) {
         this.addToCartWithOptions({
@@ -284,22 +373,38 @@
             _discType: 'percent'
         });
     },
+    addByBarcode(product) {
+        if (!product) return;
+        this.addToCartWithOptions({
+            ...product,
+            _qty: 1,
+            _disc: product.default_discount || 0,
+            _discType: product.default_discount_type || 'flat'
+        });
+    },
     updateCartQty(index, delta) {
         const item = this.cart[index];
         if (!item) return;
+        if (item.is_gift) return; // Skip updating gift items manually
         const newQty = item.quantity + delta;
         if (newQty <= 0) {
             this.removeFromCart(index);
-        } else if (newQty <= item.available || item.available === 999) {
-            item.quantity = newQty;
         } else {
-            this.notify('warning', 'Cannot exceed available stock');
+            const finalQty = this.calculateAutoBogoQty(item.id, newQty, delta);
+            if (item.available !== 999 && finalQty > item.available) {
+                this.notify('error', 'Cannot add more, stock limit reached!');
+                item.quantity = item.available;
+            } else {
+                item.quantity = finalQty;
+            }
+            this.evaluateFreeProducts();
         }
     },
     removeFromCart(index) {
         const item = this.cart[index];
         this.cart.splice(index, 1);
         if (item) this.notify('info', `Removed ${item.name} from cart`);
+        this.evaluateFreeProducts();
     },
     isCartOpen: false,
     couponCode: '',
@@ -334,22 +439,7 @@
         return this.itemLineTotal(item) * ((parseFloat(item.taxRate) || 0) / 100);
     },
     get bogoDiscountTotal() {
-        const bogos = this.activeBogoOffers.sort((a,b)=>(b.priority - a.priority) || (a.id - b.id));
-        return this.cart.reduce((t,item)=>{
-            const match = bogos.find(o=> Number(o.product_id)===Number(item.id)) || bogos.find(o=> !o.product_id);
-            if(!match) return t;
-            
-            if ((parseFloat(match.min_spend) || 0) > this.subtotal) return t;
-
-            const buyQty = parseInt(match.buy_qty)||1;
-            const getQty = parseInt(match.get_qty)||1;
-            const cycle = buyQty + getQty;
-            const qty = parseInt(item.quantity)||0;
-            if(qty<cycle) return t;
-            const free = Math.floor(qty/cycle)*getQty;
-            const eff = qty>0 ? this.itemLineTotal(item)/qty : 0;
-            return t + Math.min(eff*free, this.itemLineTotal(item));
-        },0);
+        return 0; // Handled via evaluateFreeProducts
     },
     get appliedBogoIds() {
         const bogos = this.activeBogoOffers.sort((a,b)=>(b.priority - a.priority) || (a.id - b.id));
@@ -562,7 +652,9 @@
                 unit_price: item.price, 
                 discount_amount: parseFloat(disc.toFixed(2)), 
                 tax_amount: parseFloat(tax.toFixed(2)), 
-                total_amount: parseFloat(this.itemLineTotal(item).toFixed(2)) 
+                total_amount: parseFloat(this.itemLineTotal(item).toFixed(2)),
+                is_gift: item.is_gift ? 1 : 0,
+                gift_source: item.gift_source || null
             };
         });
     },

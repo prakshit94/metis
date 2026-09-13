@@ -36,8 +36,8 @@
                 </button>
             </template>
             <template x-if="syncing">
-                <button type="button" class="btn btn-danger" @click="stopSyncing = true" :disabled="stopSyncing">
-                    <i class="bi bi-stop-circle me-2" :class="{'fa-spin': stopSyncing}"></i><span x-text="stopSyncing ? 'Stopping...' : 'Stop Syncing'"></span>
+                <button type="button" class="btn btn-danger" @click="stopSyncing = true; _syncAbort && _syncAbort.abort()" :disabled="stopSyncing">
+                    <i class="bi bi-stop-circle me-2" :class="{'bi-spin': stopSyncing}"></i><span x-text="stopSyncing ? 'Stopping...' : 'Stop Syncing'"></span>
                 </button>
             </template>
             <button type="button" class="btn btn-primary" @click="openCreateVillage()">

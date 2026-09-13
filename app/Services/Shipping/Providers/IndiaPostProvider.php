@@ -318,6 +318,7 @@ class IndiaPostProvider implements ShippingProviderInterface
     public function createShipmentBatch(string $filePath): array
     {
         $customId = config('shipping.providers.india_post.bulk_customer_id');
+        $token    = $this->authenticate(); // was undefined — caused PHP warning
 
         $response = $this->httpClient()->withToken($token)
             ->attach('file', file_get_contents($filePath), basename($filePath))
