@@ -1085,7 +1085,7 @@
                                         <i class="bi bi-three-dots"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        <template x-if="!['cancelled', 'delivered', 'returned', 'dispatched', 'shipped'].includes(order.status)">
+                                        <template x-if="!['cancelled', 'delivered', 'returned', 'return_requested', 'dispatched', 'shipped', 'delivery_attempted'].includes(order.status)">
                                             @can('orders.edit')
                                             <li><a class="dropdown-item" href="#" @click.prevent="editOrder(order)">
                                                 <i class="bi bi-pencil-square me-2"></i>Edit Order
@@ -1488,7 +1488,7 @@
                                             <i class="bi bi-lightning-charge me-1"></i> Order Actions
                                         </h6>
                                         <div class="d-flex flex-wrap gap-2">
-                                            <template x-if="!['cancelled', 'delivered', 'returned', 'dispatched', 'shipped'].includes(selectedOrder.status)">
+                                            <template x-if="!['cancelled', 'delivered', 'returned', 'return_requested', 'dispatched', 'shipped', 'delivery_attempted'].includes(selectedOrder.status)">
                                                 <button class="btn btn-sm btn-outline-secondary flex-grow-1 shadow-sm fw-semibold border-secondary border-opacity-25" @click="editOrder(selectedOrder)">
                                                     <i class="bi bi-pencil-square me-1"></i>Edit
                                                 </button>

@@ -1488,12 +1488,12 @@
                                                         </a>
                                                         @endcan
                                                         @can('orders.edit')
-                                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'shipped', 'dispatched'].includes(order.status || order.lifecycle_status)">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-pencil-square me-1"></i> Edit Order
                                                         </button>
                                                         @endcan
                                                         @can('orders.cancel')
-                                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(order.id, order.order_no || order.order_number)" x-show="!['delivered', 'cancelled', 'returned'].includes(order.status || order.lifecycle_status)">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(order.id, order.order_no || order.order_number)" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-x-circle me-1"></i> Cancel Order
                                                         </button>
                                                         @endcan
@@ -1613,12 +1613,12 @@
                                                         </a>
                                                         @endcan
                                                         @can('orders.edit')
-                                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'shipped', 'dispatched'].includes(order.status || order.lifecycle_status)">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-pencil-square me-1"></i> Edit Order
                                                         </button>
                                                         @endcan
                                                         @can('orders.cancel')
-                                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(order.id, order.order_no || order.order_number)" x-show="!['delivered', 'cancelled', 'returned'].includes(order.status || order.lifecycle_status)">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(order.id, order.order_no || order.order_number)" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(order.status || order.lifecycle_status)">
                                                             <i class="bi bi-x-circle me-1"></i> Cancel Order
                                                         </button>
                                                         @endcan
