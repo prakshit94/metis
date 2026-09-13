@@ -756,10 +756,20 @@
                 <button type="button" class="btn-close" @click="cancelImport()"></button>
             </div>
             <div class="modal-body pt-3">
-                <div class="alert alert-info">
+                <div class="alert alert-info mb-2">
                     <i class="bi bi-info-circle-fill me-2"></i>
-                    Showing all <strong x-text="importRows.length"></strong> record(s) from your CSV. Review below then click <strong>Confirm Import</strong> to proceed.
+                    Showing <strong x-text="importRows.length"></strong>
+                    <template x-if="importTruncated">
+                        <span> of <strong x-text="importTotal"></strong> total</span>
+                    </template>
+                    record(s) from your CSV. Review below then click <strong>Confirm Import</strong> to proceed.
                 </div>
+                <template x-if="importTruncated">
+                    <div class="alert alert-warning py-2 mb-2">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Your file has <strong x-text="importTotal"></strong> rows — only the first 1,000 are shown here for preview. <strong>All rows will be imported</strong> when you confirm.
+                    </div>
+                </template>
                 <div class="table-responsive" style="max-height: 400px;">
                     <table class="table table-striped table-hover table-sm small align-middle mb-0">
                         <thead class="table-light sticky-top">

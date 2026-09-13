@@ -107,11 +107,11 @@ class IndiaPostProvider implements ShippingProviderInterface
         };
 
         try {
-            return Cache::remember($cacheKey, now()->addMinutes(14), $fetchToken);
+            return Cache::remember($cacheKey, now()->addMinutes(13), $fetchToken);
         } catch (\Throwable $e) {
             // In case of unserialize errors or corrupted cache, clear it and retry
             Cache::forget($cacheKey);
-            return Cache::remember($cacheKey, now()->addMinutes(14), $fetchToken);
+            return Cache::remember($cacheKey, now()->addMinutes(13), $fetchToken);
         }
     }
     protected function apiRequest(string $method, string $url, array $data = [], array $options = [])

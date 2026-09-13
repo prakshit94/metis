@@ -105,6 +105,8 @@ document.addEventListener('alpine:init', () => {
     importing: false,
     importRows: [],
     importFile: null,
+    importTotal: 0,
+    importTruncated: false,
 
     // Filters
     searchQuery: '',
@@ -731,8 +733,10 @@ document.addEventListener('alpine:init', () => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Preview failed');
         if (data.preview) {
-          this.importRows = data.rows || [];
-          this.importFile = file;
+          this.importRows      = data.rows      || [];
+          this.importTotal     = data.total     ?? this.importRows.length;
+          this.importTruncated = data.truncated  ?? false;
+          this.importFile      = file;
           getModal('#importPreviewModal')?.show();
         } else {
           showToast(data.message || 'Unexpected response.', 'warning');
@@ -746,8 +750,10 @@ document.addEventListener('alpine:init', () => {
     },
 
     cancelImport() {
-      this.importRows = [];
-      this.importFile = null;
+      this.importRows      = [];
+      this.importFile      = null;
+      this.importTotal     = 0;
+      this.importTruncated = false;
       getModal('#importPreviewModal')?.hide();
     },
 

@@ -457,24 +457,25 @@ class VillageController extends Controller implements HasMiddleware
 
                 $errors[] = $code;
 
-                // Fatal network/auth errors: clear ALL flags so page reload does not
-                // auto-restart the loop — the user must click Sync manually again.
+                // Network or Auth errors
                 if (
                     $e instanceof \Illuminate\Http\Client\ConnectionException
-                    || str_contains($e->getMessage(), 'cURL')
-                    || str_contains($e->getMessage(), 'authenticate')
-                    || str_contains($e->getMessage(), 'timeout')
+                    || str_contains(strtolower($e->getMessage()), 'curl')
+                    || str_contains(strtolower($e->getMessage()), 'authenticate')
+                    || str_contains(strtolower($e->getMessage()), 'unauthorized')
+                    || str_contains(strtolower($e->getMessage()), 'timeout')
                 ) {
-                    Cache::forget('syncing_indiapost_pincodes');
-                    Cache::forget('syncing_indiapost_pincodes_query');
-                    Cache::forget('stop_indiapost_sync');
+                    Cache::forget('india_post_access_token'); // Clear token to force re-auth next time
 
+                    // Instead of aborting with a 500 error, we tell the frontend to
+                    // automatically continue to the next batch. The broken token is cleared,
+                    // so the next batch will fetch a fresh one without user interaction.
                     return response()->json([
-                        'success'  => false,
-                        'finished' => true,
-                        'message'  => 'India Post API connection failed. Please check IP whitelisting. (' . $e->getMessage() . ')',
+                        'success'  => true,
+                        'finished' => false,
+                        'message'  => 'Auth/Network timeout. Re-authenticating and continuing automatically...',
                         'errors'   => $errors,
-                    ], 500);
+                    ]);
                 }
             }
         }
@@ -625,24 +626,37 @@ class VillageController extends Controller implements HasMiddleware
 
         // Check if just previewing
         if ($request->input('preview')) {
-            $rows = [];
+            $rows      = [];
+            $totalRows = 0;
+            // Cap the number of rows sent in the JSON response to prevent PHP
+            // memory exhaustion on very large CSVs. 1000 rows is more than
+            // enough for a meaningful preview; the actual import processes every row.
+            $previewLimit = 1000;
+
             $handle = fopen($path, 'r');
             if ($handle) {
                 $header = fgetcsv($handle);
-                // Read ALL rows — the old code was hardcoded to 5 which only
-                // showed a partial preview regardless of the file size.
                 while (($line = fgetcsv($handle)) !== false) {
-                    $rows[] = array_combine(
-                        array_slice(array_pad($header, count($line), ''), 0, count($line)),
-                        $line
-                    );
+                    // Skip completely blank lines (common at end of CSV exports)
+                    if (count(array_filter($line, fn ($v) => trim($v) !== '')) === 0) {
+                        continue;
+                    }
+                    $totalRows++;
+                    if (count($rows) < $previewLimit) {
+                        $rows[] = array_combine(
+                            array_slice(array_pad($header, count($line), ''), 0, count($line)),
+                            $line
+                        );
+                    }
                 }
                 fclose($handle);
             }
 
             return response()->json([
-                'preview' => true,
-                'rows'    => $rows,
+                'preview'   => true,
+                'rows'      => $rows,
+                'total'     => $totalRows,
+                'truncated' => $totalRows > $previewLimit,
             ]);
         }
 
