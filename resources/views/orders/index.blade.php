@@ -1129,7 +1129,7 @@
                                             </a></li>
                                             @endcan
                                         </template>
-                                        <template x-if="['delivered', 'dispatched', 'shipped'].includes(order.status)">
+                                        <template x-if="['dispatched', 'shipped', 'delivery_attempted'].includes(order.status)">
                                             @can('orders.return')
                                             <li><a class="dropdown-item text-warning" href="#" @click.prevent="returnOrder(order)">
                                                 <i class="bi bi-arrow-return-left me-2"></i>Return Order
@@ -1528,7 +1528,7 @@
                                                 </button>
                                                 @endcan
                                             </template>
-                                            <template x-if="['delivered', 'dispatched', 'shipped'].includes(selectedOrder.status)">
+                                            <template x-if="['dispatched', 'shipped', 'delivery_attempted'].includes(selectedOrder.status)">
                                                 @can('orders.return')
                                                 <button class="btn btn-sm btn-outline-warning flex-grow-1 shadow-sm fw-semibold" @click="returnOrder(selectedOrder)">
                                                     <i class="bi bi-arrow-return-left me-1"></i>Return
