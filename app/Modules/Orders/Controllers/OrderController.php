@@ -712,6 +712,10 @@ class OrderController extends Controller implements HasMiddleware
 
     public function edit(Order $order)
     {
+        if (in_array($order->status, ['dispatched', 'shipped', 'cancelled', 'delivered', 'returned'])) {
+            return redirect()->route('orders')->with('error', 'Orders in this status cannot be edited.');
+        }
+
         $order->load(['party', 'warehouse', 'items.product', 'shippingAddress', 'billingAddress', 'appliedOffer']);
 
         $order->party->loadCount([
@@ -1291,6 +1295,13 @@ class OrderController extends Controller implements HasMiddleware
 
     public function update(UpdateOrderRequest $request, Order $order, OrderService $orderService)
     {
+        if (in_array($order->status, ['dispatched', 'shipped', 'cancelled', 'delivered', 'returned'])) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Orders in this status cannot be edited.'], 403);
+            }
+            return redirect()->route('orders')->with('error', 'Orders in this status cannot be edited.');
+        }
+
         $validated = $request->validated();
 
         $updated = $orderService->updateCustomerOrder($order, $validated);

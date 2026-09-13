@@ -167,7 +167,7 @@ export class DashboardManager {
         this.data.orders.cancelled
       ],
       labels: ['Completed', 'Processing', 'Pending', 'Cancelled'],
-      colors: ['#10b981', '#6366f1', '#f59e0b', '#ef4444'],
+      colors: ['#198754', '#0d6efd', '#6c757d', '#dc3545'], // Match success, primary, secondary, danger from orders page
       legend: { position: 'bottom' },
       dataLabels: { enabled: false },
       plotOptions: { pie: { donut: { size: '60%' } } }

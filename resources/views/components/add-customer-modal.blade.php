@@ -85,9 +85,9 @@
                                         <div class="col-sm-4">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Referral Code</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-person-heart"></i></span>
-                                                <input type="text" name="referred_by_code" x-model="form.referred_by_code" @input.debounce.500ms="checkReferralCode" class="form-control border-start-0 ps-0 fw-semibold text-uppercase font-monospace" style="font-size: 12px;" placeholder="Optional">
-                                                <span class="input-group-text bg-body border-start-0" x-show="form.referred_by_code && isValidatingReferral === false" x-cloak>
+                                                <span class="input-group-text bg-body text-muted border-end-0" :class="{'bg-light': isEdit}"><i class="bi bi-person-heart"></i></span>
+                                                <input type="text" name="referred_by_code" x-model="form.referred_by_code" :readonly="isEdit" @input.debounce.500ms="checkReferralCode" class="form-control border-start-0 ps-0 fw-semibold text-uppercase font-monospace" :class="{'bg-light text-muted': isEdit}" style="font-size: 12px;" placeholder="Optional">
+                                                <span class="input-group-text bg-body border-start-0" x-show="form.referred_by_code && isValidatingReferral === false" :class="{'bg-light': isEdit}" x-cloak>
                                                     <i class="bi bi-check-circle-fill text-success" x-show="referralValid"></i>
                                                     <i class="bi bi-x-circle-fill text-danger" x-show="!referralValid && form.referred_by_code.length > 0"></i>
                                                 </span>

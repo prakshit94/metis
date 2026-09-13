@@ -1316,7 +1316,7 @@
                                         </div>
                                         
                                         <div class="col-12 col-lg-3 mb-3 mb-lg-0">
-                                            <span class="badge rounded-pill px-3 py-1.5" :class="`text-bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                            <span class="badge rounded-pill px-3 py-1.5" :class="`bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
                                         </div>
                                         
                                         <div class="col-12 col-lg-3 text-lg-end pe-lg-4 d-flex align-items-center justify-content-between justify-content-lg-end">
@@ -1509,7 +1509,7 @@
                                                 <div class="small text-body-secondary mt-1" x-show="order.creator" x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
                                             </td>
                                             <td class="py-2">
-                                                <span class="badge rounded-pill px-2" :class="`text-bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                                <span class="badge rounded-pill px-2" :class="`bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
                                             </td>
                                             <td class="py-2 text-body-secondary">
                                                 <span x-text="order.warehouse?.name ? order.warehouse.name : 'N/A'"></span>
@@ -3865,20 +3865,22 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
         getStatusTheme(status) {
             if (!status) return 'secondary';
             const themes = {
-                future_order: 'info',
-                pending: 'warning',
+                future_order: 'secondary',
+                pending: 'secondary',
+                unfulfillable: 'danger',
                 pending_confirmation: 'warning',
-                confirmed: 'primary',
+                confirmed: 'info',
                 processing: 'primary',
-                ready_to_ship: 'primary',
-                dispatched: 'primary',
+                ready_to_ship: 'dark',
+                dispatched: 'info',
+                delivery_attempted: 'danger',
                 shipped: 'primary',
                 delivered: 'success',
                 cancelled: 'danger',
                 return_requested: 'warning',
-                returned: 'secondary'
+                returned: 'danger'
             };
-            return themes[status.toLowerCase()] || 'secondary';
+            return themes[String(status).toLowerCase()] || 'secondary';
         }
     };
 }

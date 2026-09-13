@@ -276,11 +276,14 @@ class PageController extends Controller
             ->get();
 
         $recentOrders = $recentOrdersRaw->map(function ($order) {
-            $statusClass = match ($order->lifecycleStatus()) {
+            $statusClass = match (strtolower($order->status)) {
+                'future_order', 'pending' => 'bg-secondary',
+                'unfulfillable', 'delivery_attempted', 'cancelled', 'returned' => 'bg-danger',
+                'pending_confirmation', 'return_requested' => 'bg-warning',
+                'confirmed', 'dispatched' => 'bg-info',
+                'processing', 'shipped' => 'bg-primary',
+                'ready_to_ship' => 'bg-dark',
                 'delivered', 'completed' => 'bg-success',
-                'pending', 'confirmed' => 'bg-warning',
-                'dispatched', 'shipped', 'ready_to_ship', 'processing' => 'bg-info',
-                'cancelled', 'returned' => 'bg-danger',
                 default => 'bg-secondary',
             };
 
@@ -318,7 +321,7 @@ class PageController extends Controller
             ->get();
 
         $futureOrders = $futureOrdersRaw->map(function ($order) {
-            $statusClass = 'bg-primary';
+            $statusClass = 'bg-secondary';
 
             $itemsList = $order->items->map(function ($item) {
                 $name = $item->product ? $item->product->name : 'Unknown Product';
