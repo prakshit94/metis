@@ -269,7 +269,7 @@ class PageController extends Controller
         })->toArray();
 
         // Recent Orders
-        $recentOrdersRaw = (clone $baseOrderQuery)->with(['party', 'items.product'])
+        $recentOrdersRaw = (clone $baseOrderQuery)->with(['party', 'items.product', 'statusLogs', 'shipments', 'orderReturns'])
             ->whereNotIn('status', ['future_order'])
             ->latest('order_date')
             ->take(5)
@@ -299,6 +299,30 @@ class PageController extends Controller
                 return $name . $variantStr . ' - Qty: ' . (float)$item->quantity;
             })->implode(', ');
 
+                        $statusTooltip = null;
+            if (in_array($order->status, ['cancelled', 'confirmed', 'processing', 'ready_to_ship', 'delivered', 'returned'])) {
+                $log = $order->statusLogs->where('status', $order->status)->whereNotNull('notes')->first();
+                if ($log) $statusTooltip = $log->notes;
+            } elseif ($order->status === 'pending_confirmation') {
+                $tooltip = [];
+                if ($order->scheduled_confirmation_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($order->scheduled_confirmation_date)->format('d M, h:i A');
+                if ($order->confirmation_attempts > 0) $tooltip[] = 'Attempts: ' . $order->confirmation_attempts;
+                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+            } elseif (in_array($order->status, ['dispatched', 'shipped', 'delivery_attempted']) && $order->shipments->isNotEmpty()) {
+                $lastShipment = $order->shipments->last();
+                $tooltip = [];
+                if ($lastShipment->next_followup_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($lastShipment->next_followup_date)->format('d M, h:i A');
+                if ($lastShipment->reschedule_reason) $tooltip[] = 'Reason: ' . $lastShipment->reschedule_reason;
+                if ($lastShipment->delivery_attempts > 0) $tooltip[] = 'Attempts: ' . $lastShipment->delivery_attempts;
+                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+            } elseif ($order->status === 'return_requested' && $order->orderReturns->isNotEmpty()) {
+                $lastReturn = $order->orderReturns->last();
+                $tooltip = [];
+                if ($lastReturn->reason) $tooltip[] = 'Reason: ' . $lastReturn->reason;
+                if ($lastReturn->notes) $tooltip[] = 'Notes: ' . $lastReturn->notes;
+                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+            }
+
             return [
                 'id'       => $order->order_no,
                 'customer' => $order->party ? $order->party->name : 'Unknown',
@@ -308,13 +332,14 @@ class PageController extends Controller
                 'status'   => [
                     'text'  => $order->statusLabel(),
                     'class' => $statusClass,
+                    'tooltip' => $statusTooltip,
                 ],
                 'date'     => $order->order_date ? $order->order_date->format('M d, Y h:i A') : 'N/A',
             ];
         })->toArray();
 
         // Future Orders
-        $futureOrdersRaw = (clone $baseOrderQuery)->with(['party', 'items.product'])
+        $futureOrdersRaw = (clone $baseOrderQuery)->with(['party', 'items.product', 'statusLogs', 'shipments', 'orderReturns'])
             ->where('status', 'future_order')
             ->orderBy('future_order_date', 'asc')
             ->take(5)
@@ -334,6 +359,30 @@ class PageController extends Controller
                 }
                 return $name . $variantStr . ' - Qty: ' . (float)$item->quantity;
             })->implode(', ');
+
+                        $statusTooltip = null;
+            if (in_array($order->status, ['cancelled', 'confirmed', 'processing', 'ready_to_ship', 'delivered', 'returned'])) {
+                $log = $order->statusLogs->where('status', $order->status)->whereNotNull('notes')->first();
+                if ($log) $statusTooltip = $log->notes;
+            } elseif ($order->status === 'pending_confirmation') {
+                $tooltip = [];
+                if ($order->scheduled_confirmation_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($order->scheduled_confirmation_date)->format('d M, h:i A');
+                if ($order->confirmation_attempts > 0) $tooltip[] = 'Attempts: ' . $order->confirmation_attempts;
+                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+            } elseif (in_array($order->status, ['dispatched', 'shipped', 'delivery_attempted']) && $order->shipments->isNotEmpty()) {
+                $lastShipment = $order->shipments->last();
+                $tooltip = [];
+                if ($lastShipment->next_followup_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($lastShipment->next_followup_date)->format('d M, h:i A');
+                if ($lastShipment->reschedule_reason) $tooltip[] = 'Reason: ' . $lastShipment->reschedule_reason;
+                if ($lastShipment->delivery_attempts > 0) $tooltip[] = 'Attempts: ' . $lastShipment->delivery_attempts;
+                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+            } elseif ($order->status === 'return_requested' && $order->orderReturns->isNotEmpty()) {
+                $lastReturn = $order->orderReturns->last();
+                $tooltip = [];
+                if ($lastReturn->reason) $tooltip[] = 'Reason: ' . $lastReturn->reason;
+                if ($lastReturn->notes) $tooltip[] = 'Notes: ' . $lastReturn->notes;
+                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+            }
 
             return [
                 'id'            => $order->order_no,

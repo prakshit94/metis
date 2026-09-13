@@ -295,6 +295,14 @@ export class DashboardManager {
       badge.className = `badge ${order.status.class}`;
       badge.textContent = order.status.text;
       statusCell.appendChild(badge);
+      
+      if (order.status.tooltip) {
+          const icon = document.createElement('i');
+          icon.className = 'bi bi-info-circle-fill text-muted fs-6 cursor-pointer ms-2 d-inline-block align-middle';
+          icon.setAttribute('data-bs-toggle', 'tooltip');
+          icon.setAttribute('title', order.status.tooltip);
+          statusCell.appendChild(icon);
+      }
 
       const dateCell = document.createElement('td');
       dateCell.textContent = order.date;
@@ -350,6 +358,14 @@ export class DashboardManager {
       badge.className = `badge ${order.status.class}`;
       badge.textContent = order.status.text;
       statusCell.appendChild(badge);
+      
+      if (order.status.tooltip) {
+          const icon = document.createElement('i');
+          icon.className = 'bi bi-info-circle-fill text-muted fs-6 cursor-pointer ms-2 d-inline-block align-middle';
+          icon.setAttribute('data-bs-toggle', 'tooltip');
+          icon.setAttribute('title', order.status.tooltip);
+          statusCell.appendChild(icon);
+      }
 
       const dateCell = document.createElement('td');
       const placedDiv = document.createElement('div');
