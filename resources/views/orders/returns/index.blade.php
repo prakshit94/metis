@@ -548,10 +548,10 @@
                                 <i class="bi bi-list-check me-2 text-primary"></i>Aggregated Products QC
                             </h6>
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-success" @click="markBulkAllGood()">
+                                <button type="button" class="btn btn-sm btn-outline-success" @click="bulkMarkAllGood()">
                                     <i class="bi bi-check2-all me-1"></i>All Good
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" @click="markBulkAllDamaged()">
+                                <button type="button" class="btn btn-sm btn-outline-danger" @click="bulkMarkAllDamaged()">
                                     <i class="bi bi-exclamation-triangle me-1"></i>All Damaged
                                 </button>
                             </div>
