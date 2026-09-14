@@ -1483,7 +1483,7 @@
                                                     </div>
                                                     <div class="d-flex justify-content-end gap-2 p-3 bg-body-tertiary border-top">
                                                         @can('complaints.create')
-                                                        <button type="button" x-show="(order.status || order.lifecycle_status) !== 'cancelled'" @click="$dispatch('open-complaint-modal', { order_no: order.order_no || order.order_number || '', customer_id: order.party_id || '' })" class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
+                                                        <button type="button" x-show="['dispatched', 'shipped', 'delivered', 'returned', 'return_requested', 'delivery_attempted'].includes(order.status || order.lifecycle_status)" @click="$dispatch('open-complaint-modal', { order_no: order.order_no || order.order_number || '', customer_id: order.party_id || '' })" class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
     <i class="bi bi-headset me-1"></i> Raise Complaint
     <span x-show="order.complaints_count > 0" x-cloak class="badge bg-warning text-dark border border-warning border-opacity-75 ms-1" x-text="order.complaints_count"></span>
 </button>
@@ -1608,7 +1608,7 @@
                                                     </div>
                                                     <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
                                                         @can('complaints.create')
-                                                        <button type="button" x-show="(order.status || order.lifecycle_status) !== 'cancelled'" @click="$dispatch('open-complaint-modal', { order_no: order.order_no || order.order_number || '', customer_id: order.party_id || '' })" class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
+                                                        <button type="button" x-show="['dispatched', 'shipped', 'delivered', 'returned', 'return_requested', 'delivery_attempted'].includes(order.status || order.lifecycle_status)" @click="$dispatch('open-complaint-modal', { order_no: order.order_no || order.order_number || '', customer_id: order.party_id || '' })" class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
     <i class="bi bi-headset me-1"></i> Raise Complaint
     <span x-show="order.complaints_count > 0" x-cloak class="badge bg-warning text-dark border border-warning border-opacity-75 ms-1" x-text="order.complaints_count"></span>
 </button>

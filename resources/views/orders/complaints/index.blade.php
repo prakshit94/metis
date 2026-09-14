@@ -22,7 +22,7 @@
 
     {{-- Stats Cards --}}
     <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-xl col-lg-4 col-md-6">
             <div class="card stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
@@ -35,7 +35,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-xl col-lg-4 col-md-6">
             <div class="card stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
@@ -48,7 +48,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-xl col-lg-4 col-md-6">
             <div class="card stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
@@ -61,7 +61,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-xl col-lg-4 col-md-6">
             <div class="card stats-card h-100">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
@@ -69,6 +69,19 @@
                         <div>
                             <p class="mb-1 small text-muted">Resolved</p>
                             <div class="h4 mb-0 fw-bold text-success" x-text="stats.resolved || '—'"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-lg-4 col-md-6">
+            <div class="card stats-card h-100">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stats-icon bg-secondary bg-opacity-10 text-secondary fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-x-circle"></i></div>
+                        <div>
+                            <p class="mb-1 small text-muted">Closed</p>
+                            <div class="h4 mb-0 fw-bold text-secondary" x-text="stats.closed || '—'"></div>
                         </div>
                     </div>
                 </div>
