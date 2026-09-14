@@ -230,8 +230,13 @@ class OrderController extends Controller implements HasMiddleware
         if ($request->filled('carrier')) {
             $carriers = array_filter(array_map('trim', explode(',', $request->carrier)));
             if (! empty($carriers)) {
-                $query->whereHas('shipments', function ($q) use ($carriers) {
-                    $q->whereIn('carrier_name', $carriers);
+                $query->where(function ($q) use ($carriers) {
+                    $q->whereHas('shipments', function ($sq) use ($carriers) {
+                        $sq->whereIn('carrier_name', $carriers);
+                    })->orWhereHas('shippingAddress.village.services', function ($sq) use ($carriers) {
+                        $sq->whereIn('name', $carriers)
+                           ->where('village_service_mappings.is_available', true);
+                    });
                 });
             }
         }
