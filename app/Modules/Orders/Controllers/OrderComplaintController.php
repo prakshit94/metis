@@ -18,7 +18,7 @@ class OrderComplaintController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:complaints.view', only: ['index', 'stats', 'bulkExport', 'exportSelected']),
+            new Middleware('permission:complaints.view', only: ['index', 'show', 'stats', 'bulkExport', 'exportSelected']),
             new Middleware('permission:complaints.create', only: ['store']),
             new Middleware('permission:complaints.edit', only: ['update', 'bulkAction']),
             new Middleware('permission:complaints.delete', only: ['destroy']),
@@ -107,6 +107,24 @@ class OrderComplaintController extends Controller implements HasMiddleware
         return view('orders.complaints.index');
     }
 
+    private function checkAccess(OrderComplaint $complaint): void
+    {
+        if (! auth()->user()->hasPermissionTo('complaints.view-all') && $complaint->assigned_to !== auth()->id()) {
+            abort(403, 'Unauthorized access to this complaint.');
+        }
+    }
+
+    public function show(Request $request, OrderComplaint $complaint): JsonResponse
+    {
+        $this->checkAccess($complaint);
+
+        $complaint->load(['order', 'customer', 'assignee', 'creator', 'statusLogs.user', 'replies.user', 'audits.user', 'audits.auditable']);
+
+        return response()->json([
+            'data' => $complaint,
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -117,10 +135,37 @@ class OrderComplaintController extends Controller implements HasMiddleware
             'priority' => ['required', 'string', 'in:low,medium,high,urgent'],
             'subject' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
+            'product_ids' => ['nullable', 'array'],
+            'product_ids.*' => ['integer'],
         ]);
 
         $order = Order::where('order_no', $validated['order_no'])->firstOrFail();
         $validated['order_id'] = $order->id;
+
+        if (!empty($validated['product_ids'])) {
+            $existingComplaints = OrderComplaint::where('order_id', $order->id)->whereNotNull('product_ids')->get();
+            $existingProductIds = [];
+            foreach ($existingComplaints as $c) {
+                if (is_array($c->product_ids)) {
+                    $existingProductIds = array_merge($existingProductIds, $c->product_ids);
+                }
+            }
+            $overlap = array_intersect($validated['product_ids'], $existingProductIds);
+            if (!empty($overlap)) {
+                return response()->json([
+                    'message' => 'A complaint has already been raised for one or more of the selected products.'
+                ], 422);
+            }
+        } else {
+            $existingComplaints = OrderComplaint::where('order_id', $order->id)->get();
+            foreach ($existingComplaints as $c) {
+                if (empty($c->product_ids)) {
+                    return response()->json([
+                        'message' => 'An entire order complaint has already been raised for this order.'
+                    ], 422);
+                }
+            }
+        }
 
         if (empty($validated['customer_id'])) {
             $validated['customer_id'] = $order->party_id ?? null;
@@ -139,6 +184,14 @@ class OrderComplaintController extends Controller implements HasMiddleware
             'changed_by' => auth()->id(),
         ]);
 
+        if ($complaint->assigned_to) {
+            $complaint->statusLogs()->create([
+                'status' => 'open',
+                'notes' => 'Assigned to user ID: '.$complaint->assigned_to,
+                'changed_by' => auth()->id(),
+            ]);
+        }
+
         $order->statusLogs()->create([
             'status' => $order->lifecycle_status,
             'notes' => 'Complaint logged: '.$complaint->subject.' (Priority: '.$complaint->priority.')',
@@ -153,13 +206,12 @@ class OrderComplaintController extends Controller implements HasMiddleware
 
     public function update(Request $request, OrderComplaint $complaint): JsonResponse
     {
+        $this->checkAccess($complaint);
+
         $validated = $request->validate([
             'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
-            'category' => ['sometimes', 'string', 'max:255'],
             'priority' => ['sometimes', 'string', 'in:low,medium,high,urgent'],
             'status' => ['sometimes', 'string', 'in:open,in_progress,resolved,closed'],
-            'subject' => ['sometimes', 'string', 'max:255'],
-            'description' => ['sometimes', 'string'],
             'resolution_notes' => ['nullable', 'string'],
         ]);
 
@@ -182,11 +234,13 @@ class OrderComplaintController extends Controller implements HasMiddleware
                 'changed_by' => auth()->id(),
             ]);
 
-            $complaint->order->statusLogs()->create([
-                'status' => $complaint->order->lifecycle_status,
-                'notes' => 'Complaint updated to: '.$complaint->status,
-                'changed_by' => auth()->id(),
-            ]);
+            if ($complaint->order) {
+                $complaint->order->statusLogs()->create([
+                    'status' => $complaint->order->lifecycle_status,
+                    'notes' => 'Complaint updated to: '.$complaint->status,
+                    'changed_by' => auth()->id(),
+                ]);
+            }
         }
 
         if ($complaint->wasChanged('assigned_to')) {
@@ -213,6 +267,7 @@ class OrderComplaintController extends Controller implements HasMiddleware
 
     public function destroy(Request $request, OrderComplaint $complaint): JsonResponse
     {
+        $this->checkAccess($complaint);
         $complaint->delete();
 
         return response()->json([
@@ -223,6 +278,7 @@ class OrderComplaintController extends Controller implements HasMiddleware
     public function restore(int $id): JsonResponse
     {
         $complaint = OrderComplaint::withTrashed()->findOrFail($id);
+        $this->checkAccess($complaint);
         $complaint->restore();
 
         return response()->json([
@@ -234,6 +290,7 @@ class OrderComplaintController extends Controller implements HasMiddleware
     public function forceDelete(int $id): JsonResponse
     {
         $complaint = OrderComplaint::withTrashed()->findOrFail($id);
+        $this->checkAccess($complaint);
         $complaint->forceDelete();
 
         return response()->json([
@@ -273,6 +330,17 @@ class OrderComplaintController extends Controller implements HasMiddleware
         ]);
 
         $ids = $validated['ids'];
+
+        if (! auth()->user()->hasPermissionTo('complaints.view-all')) {
+            $validIdsCount = OrderComplaint::whereIn('id', $ids)->where('assigned_to', auth()->id())->count();
+            if ($validIdsCount !== count($ids)) {
+                abort(403, 'Unauthorized access to one or more selected complaints.');
+            }
+        }
+
+        if ($validated['action'] === 'delete' && ! auth()->user()->hasPermissionTo('complaints.delete')) {
+            abort(403, 'You do not have permission to delete complaints.');
+        }
 
         switch ($validated['action']) {
             case 'delete':
@@ -353,6 +421,8 @@ class OrderComplaintController extends Controller implements HasMiddleware
 
     public function reply(Request $request, OrderComplaint $complaint): JsonResponse
     {
+        $this->checkAccess($complaint);
+
         $validated = $request->validate([
             'message' => ['required', 'string'],
         ]);
@@ -361,6 +431,24 @@ class OrderComplaintController extends Controller implements HasMiddleware
             'user_id' => auth()->id(),
             'message' => $validated['message'],
         ]);
+
+        if ($complaint->status === 'open') {
+            $complaint->update(['status' => 'in_progress']);
+            
+            $complaint->statusLogs()->create([
+                'status' => 'in_progress',
+                'notes' => 'Status automatically changed to in_progress after first reply.',
+                'changed_by' => auth()->id(),
+            ]);
+
+            if ($complaint->order) {
+                $complaint->order->statusLogs()->create([
+                    'status' => $complaint->order->lifecycle_status,
+                    'notes' => 'Complaint updated to: in_progress',
+                    'changed_by' => auth()->id(),
+                ]);
+            }
+        }
 
         return response()->json([
             'message' => 'Reply posted successfully.',
@@ -375,7 +463,18 @@ class OrderComplaintController extends Controller implements HasMiddleware
             'ids.*' => ['integer', 'exists:order_complaints,id'],
         ]);
 
-        $complaints = OrderComplaint::with(['order', 'customer', 'assignee'])->whereIn('id', $validated['ids'])->get();
+        $query = OrderComplaint::with(['order', 'customer', 'assignee'])->whereIn('id', $validated['ids']);
+
+        if (! auth()->user()->hasPermissionTo('complaints.view-all')) {
+            $query->where('assigned_to', auth()->id());
+        }
+
+        $complaints = $query->get();
+
+        // Ensure user hasn't tried to export IDs they don't have access to
+        if ($complaints->count() !== count($validated['ids'])) {
+            abort(403, 'Unauthorized access to one or more selected complaints.');
+        }
 
         $filename = 'complaints_export_'.now()->format('Ymd_His').'.csv';
 

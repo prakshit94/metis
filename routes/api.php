@@ -253,6 +253,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::prefix('complaints')->name('api.complaints.')->group(function (): void {
         Route::get('/stats', [OrderComplaintController::class, 'stats'])->name('stats');
         Route::get('/', [OrderComplaintController::class, 'index'])->name('index');
+        Route::get('/{complaint}', [OrderComplaintController::class, 'show'])->name('show');
         Route::post('/', [OrderComplaintController::class, 'store'])->name('store');
         Route::put('/{complaint}', [OrderComplaintController::class, 'update'])->name('update');
         Route::post('/{complaint}/reply', [OrderComplaintController::class, 'reply'])->name('reply');

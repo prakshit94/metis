@@ -35,10 +35,12 @@ class OrderComplaint extends Model implements Auditable
         'resolved_at',
         'created_by',
         'updated_by',
+        'product_ids',
     ];
 
     protected $casts = [
         'resolved_at' => 'datetime',
+        'product_ids' => 'array',
     ];
 
     protected static function booted()

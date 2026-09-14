@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('order_id')->constrained('orders')->cascadeOnDelete();
             $table->foreignId('customer_id')->nullable()->constrained('parties')->nullOnDelete();
             $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
+            $table->json('product_ids')->nullable();
             $table->string('complaint_number')->unique();
             $table->string('category')->index();
             $table->string('priority')->default('medium')->index();

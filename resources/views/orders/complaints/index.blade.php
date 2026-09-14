@@ -322,6 +322,49 @@
                         <!-- Left Column: Form & Actions -->
                         <div class="col-lg-6 d-flex flex-column border-end bg-body-tertiary h-100 pvm-left">
                             <div class="p-4">
+                                <!-- Past Complaints (Moved to top of Left Column) -->
+                                <template x-if="!isEditing && selectedOrderDetails && selectedOrderDetails.existing_complaints && selectedOrderDetails.existing_complaints.length > 0">
+                                    <div class="mb-4">
+                                        <h6 class="fw-bold mb-3 text-warning-emphasis d-flex align-items-center gap-2" style="font-size: 0.85rem;">
+                                            <i class="bi bi-exclamation-triangle"></i> Existing Complaints
+                                        </h6>
+                                        <div class="d-flex flex-column gap-3">
+                                            <template x-for="c in selectedOrderDetails.existing_complaints" :key="c.id">
+                                                <div class="card border-0 shadow-sm rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                                                    <div class="card-body p-3">
+                                                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-warning border-opacity-25">
+                                                            <a href="#" @click.prevent="viewComplaint(c)" class="fw-bold text-body-emphasis text-decoration-none d-flex align-items-center gap-2" style="font-size:0.85rem;" title="View Complaint">
+                                                                <i class="bi bi-headset text-warning"></i> <span x-text="c.complaint_number"></span>
+                                                            </a>
+                                                            <div class="d-flex gap-1">
+                                                                <span class="badge bg-warning text-dark px-2" style="font-size:0.65rem;" x-text="c.status.replace(/_/g, ' ').toUpperCase()"></span>
+                                                                <span class="badge" :class="getPriorityClass(c.priority)" style="font-size:0.65rem;" x-text="c.priority.toUpperCase()"></span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mb-2">
+                                                            <p class="fw-bold text-body-emphasis mb-1 lh-sm" style="font-size:0.8rem;" x-text="c.subject"></p>
+                                                            <p class="text-secondary lh-sm mb-0" style="font-size:0.75rem;" x-text="c.description"></p>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-warning border-opacity-25">
+                                                            <div class="text-muted" style="font-size: 0.65rem;">
+                                                                <i class="bi bi-tag"></i> <span x-text="c.category.replace(/_/g, ' ').toUpperCase()"></span>
+                                                            </div>
+                                                            <div class="text-muted" style="font-size: 0.65rem;">
+                                                                <i class="bi bi-clock"></i> <span x-text="formatDateTime(c.created_at)"></span>
+                                                            </div>
+                                                        </div>
+                                                        <template x-if="c.resolution_notes">
+                                                            <div class="mt-2 bg-body-tertiary p-2 rounded text-muted fst-italic" style="font-size: 0.7rem;">
+                                                                <strong>Resolution:</strong> <span x-text="c.resolution_notes"></span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
                                 <!-- Order Search (Create Mode Only) -->
                                 <div x-show="!isEditing" class="mb-4">
                                     <label class="form-label fw-bold text-body-emphasis mb-2 small text-uppercase"><i class="bi bi-search me-2 text-primary"></i>Lookup Order</label>
@@ -360,12 +403,12 @@
                                         </h6>
                                         <div class="row g-3">
                                             <div class="col-12">
-                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Subject <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm bg-body-secondary border-0" x-model="form.subject" required placeholder="Brief summary">
+                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Subject <span class="text-danger" x-show="!isEditing">*</span></label>
+                                                <input type="text" class="form-control form-control-sm bg-body-secondary border-0" x-model="form.subject" required placeholder="Brief summary" :disabled="isEditing">
                                             </div>
                                             <div class="col-12">
-                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Description <span class="text-danger">*</span></label>
-                                                <textarea class="form-control form-control-sm bg-body-secondary border-0" rows="3" x-model="form.description" required placeholder="Detailed information..."></textarea>
+                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Description <span class="text-danger" x-show="!isEditing">*</span></label>
+                                                <textarea class="form-control form-control-sm bg-body-secondary border-0" rows="3" x-model="form.description" required placeholder="Detailed information..." :disabled="isEditing"></textarea>
                                             </div>
                                             
                                             <div class="col-6" x-show="!selectedOrderDetails && !isEditing">
@@ -378,8 +421,8 @@
                                             </div>
 
                                             <div class="col-4">
-                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Category <span class="text-danger">*</span></label>
-                                                <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.category" required>
+                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Category <span class="text-danger" x-show="!isEditing">*</span></label>
+                                                <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.category" required :disabled="isEditing">
                                                     <option value="other">Other</option>
                                                     <option value="delivery_delay">Delay</option>
                                                     <option value="damaged_item">Damaged</option>
@@ -391,7 +434,7 @@
                                             </div>
                                             <div class="col-4">
                                                 <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Priority <span class="text-danger">*</span></label>
-                                                <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.priority" required>
+                                                <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.priority" required :disabled="isClosed">
                                                     <option value="low">Low</option>
                                                     <option value="medium">Medium</option>
                                                     <option value="high">High</option>
@@ -400,7 +443,7 @@
                                             </div>
                                             <div class="col-4">
                                                 <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Assignee</label>
-                                                <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.assigned_to">
+                                                <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.assigned_to" :disabled="isClosed">
                                                     <option value="">Unassigned</option>
                                                     <template x-for="user in assignableUsers" :key="user.id">
                                                         <option :value="user.id" x-text="user.name"></option>
@@ -411,29 +454,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Update Status & Resolution (Edit Mode) -->
-                                <template x-if="isEditing">
-                                    <div class="card border-0 shadow-sm rounded-4 mb-4 border border-success border-opacity-25 bg-success bg-opacity-10">
-                                        <div class="card-body p-3">
-                                            <h6 class="fw-bold mb-2 text-success d-flex align-items-center gap-2" style="font-size:0.9rem;">
-                                                <i class="bi bi-shield-check"></i> Status & Resolution
-                                            </h6>
-                                            <div class="row g-2 align-items-start">
-                                                <div class="col-4">
-                                                    <select class="form-select form-select-sm bg-body border-0 shadow-sm text-body-emphasis fw-bold" x-model="form.status" required>
-                                                        <option value="open">Open</option>
-                                                        <option value="in_progress">In Progress</option>
-                                                        <option value="resolved">Resolved</option>
-                                                        <option value="closed">Closed</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-8">
-                                                    <textarea class="form-control form-control-sm border-0 bg-body shadow-sm" rows="1" x-model="form.resolution_notes" placeholder="Add resolution note..."></textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
+
 
                                 <!-- Activity & Communication Feed -->
                                 <template x-if="isEditing">
@@ -506,7 +527,7 @@
                                                 </template>
                                             </div>
                                             <!-- Reply Input Area -->
-                                            <div class="p-2 bg-body rounded-bottom-4">
+                                            <div class="p-2 bg-body rounded-bottom-4" x-show="!isClosed">
                                                 <div class="input-group input-group-sm shadow-sm">
                                                     <input type="text" class="form-control border-0 bg-body-tertiary" x-model="replyMessage" placeholder="Type a reply..." @keydown.enter.prevent="postReply">
                                                     <button type="button" class="btn btn-primary" @click="postReply" :disabled="!replyMessage.trim() || isReplying">
@@ -514,6 +535,10 @@
                                                         <span x-show="isReplying" class="spinner-border spinner-border-sm"></span>
                                                     </button>
                                                 </div>
+                                            </div>
+                                            <!-- Closed Message -->
+                                            <div class="p-2 bg-secondary bg-opacity-10 text-center rounded-bottom-4 text-muted border-top" x-show="isClosed" style="font-size: 0.8rem;">
+                                                <i class="bi bi-lock me-1"></i> This complaint is closed and cannot be updated.
                                             </div>
                                         </div>
                                     </div>
@@ -595,28 +620,51 @@
                                     <!-- Order Items -->
                                     <div class="card border-0 shadow-sm rounded-4 mb-3 overflow-hidden">
                                         <div class="card-header bg-body border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
-                                            <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2" style="font-size:0.85rem;">
-                                                <i class="bi bi-box-seam text-primary"></i> Order Items
-                                            </h6>
-                                            <span class="badge text-bg-primary-subtle text-primary-emphasis rounded-pill" style="font-size:0.7rem;" x-text="`${selectedOrderDetails.itemCount} Items`"></span>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <h6 class="fw-bold mb-0 text-body-emphasis" style="font-size: 0.85rem;">
+                                                    <i class="bi bi-box-seam me-1 text-primary"></i> Order Items
+                                                </h6>
+                                                <span class="badge bg-primary rounded-pill" x-text="selectedOrderDetails.itemCount"></span>
+                                            </div>
+                                            <div class="form-check form-switch m-0" x-show="!isEditing">
+                                                <input class="form-check-input border-secondary" type="checkbox" role="switch" id="entireOrderSwitch" x-model="form.is_entire_order" @change="if(form.is_entire_order) form.product_ids = []" :disabled="hasEntireOrderComplaint">
+                                                <label class="form-check-label fw-bold text-muted" style="font-size: 0.7rem;" for="entireOrderSwitch">
+                                                    Entire Order Complaint <span x-show="hasEntireOrderComplaint" class="text-danger ms-1">(Already Raised)</span>
+                                                </label>
+                                            </div>
+                                            <div x-show="isEditing && form.is_entire_order">
+                                                <span class="badge bg-secondary bg-opacity-10 text-body border border-secondary border-opacity-25">Entire Order</span>
+                                            </div>
                                         </div>
                                         <div class="table-responsive">
                                             <table class="table table-borderless table-sm align-middle mb-0 text-nowrap" style="font-size:0.75rem;">
                                                 <thead class="bg-body-tertiary">
                                                     <tr>
-                                                        <th class="fw-semibold text-muted py-2 ps-3">Product</th>
+                                                        <th class="py-2 ps-3" style="width:40px;" title="Link products to complaint">
+                                                            <i class="bi bi-link-45deg text-muted"></i>
+                                                        </th>
+                                                        <th class="fw-semibold text-muted py-2">Product</th>
                                                         <th class="fw-semibold text-muted py-2 text-center">Qty</th>
                                                         <th class="fw-semibold text-muted py-2 text-end pe-3">Total</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody>
+                                                <tbody :class="{ 'opacity-50 pointer-events-none': form.is_entire_order }">
                                                     <template x-for="(item, idx) in selectedOrderDetails.items" :key="idx">
-                                                        <tr class="border-bottom">
+                                                        <tr class="border-bottom" :class="{ 
+                                                            'bg-danger bg-opacity-10': form.product_ids.includes(String(item.id)),
+                                                            'bg-warning bg-opacity-10 opacity-75': alreadyComplainedProductIds.includes(String(item.id)) && !form.product_ids.includes(String(item.id))
+                                                        }">
                                                             <td class="ps-3 py-2">
+                                                                <input type="checkbox" class="form-check-input border-secondary" :value="String(item.id)" x-model="form.product_ids" :disabled="isEditing || alreadyComplainedProductIds.includes(String(item.id)) || form.is_entire_order" :title="alreadyComplainedProductIds.includes(String(item.id)) ? 'Complaint already raised for this item' : ''">
+                                                            </td>
+                                                            <td class="py-2">
                                                                 <div class="d-flex align-items-center gap-2">
                                                                     <img :src="item.image || '{{ asset('assets/images/product-placeholder.svg') }}'" class="rounded-2 shadow-sm object-fit-cover" width="32" height="32" :alt="item.name" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                                                     <div class="text-wrap" style="max-width: 150px;">
-                                                                        <p class="fw-bold text-body-emphasis mb-0 lh-sm" x-text="item.name"></p>
+                                                                        <div class="d-flex align-items-center gap-2">
+                                                                            <p class="fw-bold text-body-emphasis mb-0 lh-sm" x-text="item.name"></p>
+                                                                            <span x-show="alreadyComplainedProductIds.includes(String(item.id))" class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25" style="font-size: 0.6rem;">Complained</span>
+                                                                        </div>
                                                                         <p class="text-muted mb-0 font-monospace" style="font-size: 0.65rem;" x-text="item.sku || 'No SKU'"></p>
                                                                     </div>
                                                                 </div>
@@ -678,26 +726,49 @@
                                             </template>
                                         </div>
                                     </template>
+
+
                                 </div>
                             </template>
                         </div>
                     </div>
                 </div>
                 
-                <div class="modal-footer bg-body-tertiary border-top py-3 px-4">
-                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
-                    @can('complaints.create')
-                    <button type="submit" class="btn btn-primary px-4 fw-semibold" x-show="!isEditing" :disabled="isSubmitting">
-                        <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-1"></span>
-                        Save Complaint
-                    </button>
-                    @endcan
-                    @can('complaints.edit')
-                    <button type="submit" class="btn btn-primary" x-show="isEditing" :disabled="isSubmitting">
-                        <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-1"></span>
-                        Update
-                    </button>
-                    @endcan
+                <div class="modal-footer bg-body-tertiary border-top py-3 px-4 d-flex justify-content-between align-items-center">
+                    
+                    <!-- Update Status & Resolution (Moved to Footer) -->
+                    <template x-if="isEditing">
+                        <div class="d-flex align-items-center gap-3 flex-grow-1 me-4 border border-success border-opacity-25 bg-success bg-opacity-10 rounded-3 px-3 py-2 shadow-sm">
+                            <h6 class="fw-bold mb-0 text-success d-flex align-items-center gap-2" style="font-size:0.85rem; white-space: nowrap;">
+                                <i class="bi bi-shield-check"></i> Status & Resolution
+                            </h6>
+                            <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                <select class="form-select form-select-sm bg-body border-0 shadow-sm text-body-emphasis fw-bold" style="width: 140px;" x-model="form.status" @change="form.resolution_notes = ''" required :disabled="isClosed">
+                                    <template x-for="opt in availableStatuses" :key="opt.value">
+                                        <option :value="opt.value" x-text="opt.label"></option>
+                                    </template>
+                                </select>
+                                <input type="text" class="form-control form-control-sm border-0 bg-body shadow-sm flex-grow-1" x-model="form.resolution_notes" placeholder="Add resolution note..." :disabled="isClosed">
+                            </div>
+                        </div>
+                    </template>
+                    <div x-show="!isEditing" class="flex-grow-1"></div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                        @can('complaints.create')
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold" x-show="!isEditing" :disabled="isSubmitting">
+                            <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-1"></span>
+                            Save Complaint
+                        </button>
+                        @endcan
+                        @can('complaints.edit')
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold" x-show="isEditing && !isClosed" :disabled="isSubmitting">
+                            <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-1"></span>
+                            Update
+                        </button>
+                        @endcan
+                    </div>
                 </div>
                 </form>
             </div>
@@ -729,7 +800,7 @@
             form: {
                 id: null, order_no: '', customer_id: '', category: 'other',
                 priority: 'medium', subject: '', description: '',
-                status: 'open', resolution_notes: ''
+                status: 'open', resolution_notes: '', product_ids: []
             },
             replyMessage: '',
             isReplying: false,
@@ -804,6 +875,37 @@
                 return range;
             },
 
+            get alreadyComplainedProductIds() {
+                if (!this.selectedOrderDetails || !this.selectedOrderDetails.existing_complaints) return [];
+                const ids = [];
+                this.selectedOrderDetails.existing_complaints.forEach(c => {
+                    if (c.product_ids && Array.isArray(c.product_ids)) {
+                        ids.push(...c.product_ids.map(String));
+                    }
+                });
+                return ids;
+            },
+            get hasEntireOrderComplaint() {
+                if (!this.selectedOrderDetails || !this.selectedOrderDetails.existing_complaints) return false;
+                return this.selectedOrderDetails.existing_complaints.some(c => !c.product_ids || c.product_ids.length === 0);
+            },
+            get isClosed() {
+                return this.selectedComplaint?.status === 'closed';
+            },
+            get availableStatuses() {
+                const flow = ['open', 'in_progress', 'resolved', 'closed'];
+                const currentStatus = this.selectedComplaint?.status || 'open';
+                let currentIndex = flow.indexOf(currentStatus);
+                if (currentIndex === -1) currentIndex = 0;
+                
+                return flow.filter((status, index) => index >= currentIndex).map(status => {
+                    let label = status.replace(/_/g, ' ');
+                    label = label.charAt(0).toUpperCase() + label.slice(1);
+                    if (label === 'In progress') label = 'In Progress';
+                    return { value: status, label: label };
+                });
+            },
+
             // ── Lifecycle ──────────────────────────────────────────────────────
             init() {
                 this.modalInstance = new bootstrap.Modal(document.getElementById('complaintModal'));
@@ -826,10 +928,13 @@
                             subject: urlParams.get('subject') || '',
                             description: '',
                             status: 'open',
-                            resolution_notes: ''
+                            resolution_notes: '',
+                            product_ids: [],
+                            is_entire_order: true
                         };
                         this.searchQueryOrder = orderNo;
                         this.modalInstance.show();
+                        this.searchOrders();
                         window.history.replaceState({}, '', window.location.pathname);
                     });
                 }
@@ -903,7 +1008,6 @@
                 this.selectedOrderDetails = null;
 
                 try {
-                    // OrderController@index returns { orders: { data: [...] }, stats: {...} }
                     const data   = await this.api(`/api/orders?search=${encodeURIComponent(this.searchQueryOrder.trim())}&limit=50`);
                     const orders = data.orders?.data ?? data.data ?? [];
 
@@ -927,13 +1031,24 @@
                 if (!orderId) return;
                 this.isSearchingOrders = true;
                 try {
-                    // OrderController@show returns { order: rawData }
                     const data = await this.api(`/api/orders/${orderId}`);
                     const raw  = data.order || data;
                     this.selectedOrderDetails = this.mapRawOrder(raw);
                     this.form.order_no    = this.selectedOrderDetails.orderNumber;
                     this.form.customer_id = raw.party_id || '';
                     this.fetchedOrders    = [];
+
+                    // Fetch existing complaints for this order
+                    try {
+                        const compData = await this.api(`/api/complaints?order_id=${orderId}&per_page=50`);
+                        // Ensure it's reactive
+                        this.selectedOrderDetails.existing_complaints = compData.complaints.data || [];
+                        if (this.hasEntireOrderComplaint && !this.isEditing) {
+                            this.form.is_entire_order = false;
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch order complaints', e);
+                    }
                 } catch (e) {
                     this.searchOrderError = 'Failed to fetch order details.';
                     console.error('selectOrder error:', e);
@@ -981,6 +1096,7 @@
                     billingAddress:  fmtAddr(o, 'billing'),
                     invoice: invoice ? { number: invoice.invoice_no || 'N/A', date: invoice.invoice_date || null, status: invoice.status || 'N/A', total: netInv, paid, due: Math.max(0, netInv - paid) } : null,
                     items: (o.items || []).map(item => ({
+                        id:    item.product_id || item.product?.id || item.id,
                         name:  item.product?.name || 'Unknown Product',
                         sku:   item.product?.sku  || '',
                         image: item.product?.image_path ? `/storage/${item.product.image_path}` : null,
@@ -1042,7 +1158,7 @@
             // ── Modal ──────────────────────────────────────────────────────────
             openCreateModal() {
                 this.isEditing = false;
-                this.form = { id: null, order_no: '', customer_id: '', assigned_to: '', category: 'other', priority: 'medium', subject: '', description: '', status: 'open', resolution_notes: '' };
+                this.form = { id: null, order_no: '', customer_id: '', assigned_to: '', category: 'other', priority: 'medium', subject: '', description: '', status: 'open', resolution_notes: '', product_ids: [], is_entire_order: true };
                 this.searchQueryOrder = ''; this.fetchedOrders = []; this.selectedOrderDetails = null; this.searchOrderError = '';
                 this.modalInstance.show();
             },
@@ -1061,6 +1177,8 @@
                     status:           cmp.status || 'open',
                     resolution_notes: cmp.resolution_notes || '',
                     complaint_number: cmp.complaint_number || '',
+                    product_ids:      (cmp.product_ids || []).map(String),
+                    is_entire_order:  !cmp.product_ids || cmp.product_ids.length === 0,
                 };
                 this.searchQueryOrder = ''; this.fetchedOrders = []; this.selectedOrderDetails = null; this.searchOrderError = '';
                 this.modalInstance.show();
@@ -1079,11 +1197,18 @@
             async saveComplaint() {
                 this.isSubmitting = true;
                 try {
+                    const payload = { ...this.form };
+                    if (this.form.is_entire_order) {
+                        payload.product_ids = [];
+                    } else {
+                        payload.product_ids = this.form.product_ids.map(Number);
+                    }
+                    
                     if (this.isEditing) {
-                        await this.api(`/api/complaints/${this.form.id}`, { method: 'PUT', body: JSON.stringify(this.form) });
+                        await this.api(`/api/complaints/${this.form.id}`, { method: 'PUT', body: JSON.stringify(payload) });
                         window.Swal.fire('Updated', 'Complaint updated successfully.', 'success');
                     } else {
-                        await this.api('/api/complaints', { method: 'POST', body: JSON.stringify(this.form) });
+                        await this.api('/api/complaints', { method: 'POST', body: JSON.stringify(payload) });
                         window.Swal.fire('Created', 'Complaint logged successfully.', 'success');
                     }
                     this.modalInstance.hide();
@@ -1108,6 +1233,20 @@
                     });
                     if (!this.selectedComplaint.replies) this.selectedComplaint.replies = [];
                     this.selectedComplaint.replies.push(res.data);
+                    
+                    if (this.selectedComplaint.status === 'open') {
+                        this.selectedComplaint.status = 'in_progress';
+                        this.form.status = 'in_progress';
+                        if (!this.selectedComplaint.status_logs) this.selectedComplaint.status_logs = [];
+                        this.selectedComplaint.status_logs.push({
+                            status: 'in_progress',
+                            notes: 'Status automatically changed to in_progress after first reply.',
+                            created_at: res.data.created_at,
+                            user: res.data.user
+                        });
+                        this.fetchComplaints(); // silently update background table
+                    }
+                    
                     this.replyMessage = '';
                 } catch (e) {
                     window.Swal.fire('Error', e.data?.message || 'Failed to post reply.', 'error');
