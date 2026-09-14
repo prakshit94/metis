@@ -1836,7 +1836,7 @@
             <div class="modal-body pt-3">
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Carrier Name <span class="text-danger">*</span></label>
-                    <select class="form-select" x-tom-select x-model="shipCarrierName">
+                    <select class="form-select" x-model="shipCarrierName">
                         <option value="" disabled selected>Select carrier...</option>
                         <template x-for="carrier in shipCarrierOptions" :key="carrier.name">
                             <option :value="carrier.name" x-text="carrier.priority === null ? carrier.name : `${carrier.name} (Priority: ${carrier.priority})`"></option>
