@@ -125,7 +125,7 @@
                                                 <input type="number" class="form-control form-control-sm bg-body-secondary border-0" x-model="form.customer_id">
                                             </div>
 
-                                            <div class="col-4">
+                                            <div class="col-6">
                                                 <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Category <span class="text-danger" x-show="!isEditing">*</span></label>
                                                 <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.category" required :disabled="isEditing">
                                                     <option value="other">Other</option>
@@ -137,7 +137,7 @@
                                                     <option value="poor_service">Service</option>
                                                 </select>
                                             </div>
-                                            <div class="col-4">
+                                            <div class="col-6">
                                                 <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Priority <span class="text-danger">*</span></label>
                                                 <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.priority" required :disabled="isClosed">
                                                     <option value="low">Low</option>
@@ -146,7 +146,7 @@
                                                     <option value="urgent">Urgent</option>
                                                 </select>
                                             </div>
-                                            <div class="col-4">
+                                            <div class="col-4 d-none">
                                                 <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Assignee</label>
                                                 <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.assigned_to" :disabled="isClosed">
                                                     <option value="">Unassigned</option>
