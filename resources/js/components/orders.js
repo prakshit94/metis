@@ -272,7 +272,41 @@ document.addEventListener('alpine:init', () => {
     },
 
     init() {
-      this.statusFilter = [...(this.allowedFilterStatuses || [])];
+      const params = new URLSearchParams(window.location.search);
+
+      if (params.has('search')) this.searchQuery = params.get('search');
+      if (params.has('status')) this.statusFilter = params.get('status').split(',').filter(Boolean);
+      else this.statusFilter = [...(this.allowedFilterStatuses || [])];
+
+      if (params.has('date')) this.dateFilter = params.get('date');
+      if (params.has('fulfillment')) this.fulfillmentFilter = params.get('fulfillment');
+      if (params.has('state')) this.stateFilter = params.get('state').split(',').filter(Boolean);
+      if (params.has('district')) this.districtFilter = params.get('district').split(',').filter(Boolean);
+      if (params.has('taluka')) this.talukaFilter = params.get('taluka').split(',').filter(Boolean);
+      if (params.has('village')) this.villageFilter = params.get('village').split(',').filter(Boolean);
+      if (params.has('from_date')) this.fromDate = params.get('from_date');
+      if (params.has('to_date')) this.toDate = params.get('to_date');
+      if (params.has('limit')) this.itemsPerPage = parseInt(params.get('limit')) || 15;
+      if (params.has('page')) this.currentPage = parseInt(params.get('page')) || 1;
+      if (params.has('sort_field')) this.sortField = params.get('sort_field');
+      if (params.has('sort_direction')) this.sortDirection = params.get('sort_direction');
+
+      // Extract x-model values for <select> elements populated via <template x-for>
+      const urlProduct = params.has('product') ? Number(params.get('product')) : '';
+      const urlCarrier = params.has('carrier') ? params.get('carrier') : '';
+      const urlWarehouse = params.has('warehouse') ? Number(params.get('warehouse')) : '';
+
+      this.productFilter = urlProduct;
+      this.carrierFilter = urlCarrier;
+      this.warehouseFilter = urlWarehouse;
+
+      // Re-apply values after DOM rendering because Alpine resets empty <select> values on init
+      setTimeout(() => {
+        if (urlProduct) this.productFilter = urlProduct;
+        if (urlCarrier) this.carrierFilter = urlCarrier;
+        if (urlWarehouse) this.warehouseFilter = urlWarehouse;
+      }, 500);
+
       this.loadOrders();
       
       this.$watch('visibleWarehouseStat', value => {
@@ -298,7 +332,6 @@ document.addEventListener('alpine:init', () => {
         }
       });
       
-      const params = new URLSearchParams(window.location.search);
       if (params.has('success')) {
         showToast(params.get('success'));
         params.delete('success');
@@ -404,6 +437,9 @@ document.addEventListener('alpine:init', () => {
       params.append('sort_field', this.sortField);
       params.append('sort_direction', this.sortDirection);
 
+      const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+      window.history.replaceState({}, '', newUrl);
+
       apiFetch(`/orders?${params.toString()}`)
         .then(data => {
           this.orders = (data.orders.data || []).map(o => this.mapOrder(o));
@@ -472,8 +508,17 @@ document.addEventListener('alpine:init', () => {
           if (data.talukas) this.talukasList = data.talukas;
           if (data.villages) this.villagesList = data.villages;
           if (data.allowed_filter_statuses) this.allowedFilterStatuses = data.allowed_filter_statuses;
-          if (data.carriers && data.carriers.length) this.carriersList = data.carriers;
-          if (data.warehousesList) this.warehousesList = data.warehousesList;
+          
+          if (data.carriers && data.carriers.length && JSON.stringify(this.carriersList) !== JSON.stringify(data.carriers)) {
+            const oldCarrier = this.carrierFilter;
+            this.carriersList = data.carriers;
+            setTimeout(() => { if (oldCarrier) this.carrierFilter = oldCarrier; }, 50);
+          }
+          if (data.warehousesList && JSON.stringify(this.warehousesList) !== JSON.stringify(data.warehousesList)) {
+            const oldWarehouse = this.warehouseFilter;
+            this.warehousesList = data.warehousesList;
+            setTimeout(() => { if (oldWarehouse) this.warehouseFilter = oldWarehouse; }, 50);
+          }
         })
         .catch(err => {
           showToast(err.message, 'danger');
@@ -1066,18 +1111,24 @@ document.addEventListener('alpine:init', () => {
       const availableCarriers = order?.availableCarrierOptions || [];
       // When this address has mapped services, show only those options in
       // priority order. Otherwise retain the complete carrier list.
-      this.shipCarrierOptions = availableCarriers.length
+      let options = availableCarriers.length
         ? availableCarriers
         : this.carriersList.map(name => ({ name, priority: null }));
 
+      if (!options.length) {
+        options = this.carriersList.map(name => ({ name, priority: null }));
+      }
+      this.shipCarrierOptions = options;
+
       // Available carriers are already sorted by priority, so always default
       // to the highest-priority (lowest number) option.
-      this.shipCarrierName = this.shipCarrierOptions[0]?.name || '';
+      const defaultCarrier = options[0]?.name || '';
       this.shipTrackingNo = '';
-      if (!this.shipCarrierOptions.length) {
-        this.shipCarrierOptions = this.carriersList.map(name => ({ name, priority: null }));
-        this.shipCarrierName = this.shipCarrierOptions[0]?.name || '';
-      }
+      
+      setTimeout(() => {
+        this.shipCarrierName = defaultCarrier;
+      }, 50);
+      
       getModal('#createShipmentModal')?.show();
     },
 

@@ -344,9 +344,9 @@
         <div class="flex-grow-1 border-bottom border-secondary-subtle"></div>
         <select class="form-select form-select-sm w-auto" x-model="visibleWarehouseStat" aria-label="Toggle Warehouse Visibility">
             <option value="">All Warehouses</option>
-            <template x-for="wh in warehousesList" :key="wh.id">
-                <option :value="wh.name" x-text="wh.name"></option>
-            </template>
+            @foreach($warehousesList as $wh)
+                <option value="{{ $wh->name }}">{{ $wh->name }}</option>
+            @endforeach
         </select>
     </div>
     
@@ -594,9 +594,9 @@
                     <label class="form-label small fw-semibold text-body-secondary">Product</label>
                     <select class="form-select form-select-sm" x-model="productFilter" @change="filterOrders()">
                         <option value="">All Products</option>
-                        <template x-for="product in productsList" :key="product.id">
-                            <option :value="product.id" x-text="`${product.name} (${product.sku})`"></option>
-                        </template>
+                        @foreach($productsList as $product)
+                            <option value="{{ $product->id }}">{{ $product->name }} ({{ $product->sku }})</option>
+                        @endforeach
                     </select>
                 </div>
                 @endcan
@@ -619,9 +619,9 @@
                     <label class="form-label small fw-semibold text-body-secondary">Carrier</label>
                     <select class="form-select form-select-sm" x-model="carrierFilter" @change="filterOrders()">
                         <option value="">All Carriers</option>
-                        <template x-for="carrier in carriersList" :key="carrier">
-                            <option :value="carrier" x-text="carrier"></option>
-                        </template>
+                        @foreach($carriersList as $carrier)
+                            <option value="{{ $carrier }}">{{ $carrier }}</option>
+                        @endforeach
                     </select>
                 </div>
                 @endcan
@@ -632,9 +632,9 @@
                     <label class="form-label small fw-semibold text-body-secondary">Warehouse</label>
                     <select class="form-select form-select-sm" x-model="warehouseFilter" @change="filterOrders()">
                         <option value="">All Warehouses</option>
-                        <template x-for="warehouse in warehousesList" :key="warehouse.id">
-                            <option :value="warehouse.id" x-text="warehouse.name"></option>
-                        </template>
+                        @foreach($warehousesList as $warehouse)
+                            <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
+                        @endforeach
                     </select>
                 </div>
                 @endcan
