@@ -9,7 +9,8 @@
     </script>
 
     <div x-data="createOrderApp(window.__INITIAL_ORDER_CUSTOMER__, window.__INITIAL_ORDER_TO_EDIT__)"
-         @call-log-added.window="if(customerDetails) { clearCartCache(); isCallLoggedOrClosed = true; window.location.href = '{{ route('dashboard') }}'; }">
+         @call-log-added.window="if(customerDetails) { clearCartCache(); isCallLoggedOrClosed = true; window.location.href = '{{ route('dashboard') }}'; }"
+         @complaint-saved.window="loadAddresses()">
     
     {{-- Page Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
@@ -1482,10 +1483,10 @@
                                                     </div>
                                                     <div class="d-flex justify-content-end gap-2 p-3 bg-body-tertiary border-top">
                                                         @can('complaints.create')
-                                                        <a :href="`{{ route('complaints.index') }}?order_no=${encodeURIComponent(order.order_no || order.order_number || '')}&customer_id=${order.party_id || ''}`"
-                                                           class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
-                                                            <i class="bi bi-headset me-1"></i> Raise Complaint
-                                                        </a>
+                                                        <button type="button" @click="$dispatch('open-complaint-modal', { order_no: order.order_no || order.order_number || '', customer_id: order.party_id || '' })" class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
+    <i class="bi bi-headset me-1"></i> Raise Complaint
+    <span x-show="order.complaints_count > 0" x-cloak class="badge bg-warning text-dark border border-warning border-opacity-75 ms-1" x-text="order.complaints_count"></span>
+</button>
                                                         @endcan
                                                         @can('orders.edit')
                                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(order.status || order.lifecycle_status)">
@@ -1607,10 +1608,10 @@
                                                     </div>
                                                     <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
                                                         @can('complaints.create')
-                                                        <a :href="`{{ route('complaints.index') }}?order_no=${encodeURIComponent(order.order_no || order.order_number || '')}&customer_id=${order.party_id || ''}`"
-                                                           class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
-                                                            <i class="bi bi-headset me-1"></i> Raise Complaint
-                                                        </a>
+                                                        <button type="button" @click="$dispatch('open-complaint-modal', { order_no: order.order_no || order.order_number || '', customer_id: order.party_id || '' })" class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
+    <i class="bi bi-headset me-1"></i> Raise Complaint
+    <span x-show="order.complaints_count > 0" x-cloak class="badge bg-warning text-dark border border-warning border-opacity-75 ms-1" x-text="order.complaints_count"></span>
+</button>
                                                         @endcan
                                                         @can('orders.edit')
                                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(order.status || order.lifecycle_status)">
@@ -3931,6 +3932,8 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
 <x-add-customer-modal />
 <x-customer-address-modal />
 <x-call-tagging-modal />
+
+<x-complaint-modal />
 
 <!-- Action Blocked Modal -->
 <div class="modal fade" id="actionBlockedModal" tabindex="-1" aria-hidden="true">

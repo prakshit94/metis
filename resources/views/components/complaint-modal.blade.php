@@ -1,0 +1,1079 @@
+<div x-data="complaintModalShared()" @open-complaint-modal.window="openSharedModal($event.detail.order_no, $event.detail.customer_id)">
+    <div class="modal fade" id="complaintModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <form @submit.prevent="saveComplaint" class="d-flex flex-column h-100 bg-body rounded-4 overflow-hidden w-100">
+                    <div class="modal-header bg-body border-bottom py-3 px-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width:45px;height:45px;">
+                            <i class="bi bi-headset fs-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold mb-0 text-body-emphasis" x-text="isEditing ? 'Edit Complaint' : 'New Complaint'"></h5>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" x-show="!isEditing">Search an order below</span>
+                                <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" x-show="isEditing" x-text="'#' + (form.complaint_number || form.id)"></span>
+                                <template x-if="isEditing && form.status">
+                                    <span class="badge rounded-pill" :class="`bg-${getStatusColor(form.status)} bg-opacity-10 text-${getStatusColor(form.status)} border border-${getStatusColor(form.status)} border-opacity-25`" x-text="getStatusLabel(form.status)"></span>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <div class="modal-body p-0 bg-body-tertiary" style="overflow: hidden;">
+                    <div class="row g-0 h-100 pvm-layout">
+                        <!-- Left Column: Form & Actions -->
+                        <div class="col-lg-6 d-flex flex-column border-end bg-body-tertiary h-100 pvm-left">
+                            <div class="p-4">
+                                <!-- Past Complaints (Moved to top of Left Column) -->
+                                <template x-if="!isEditing && selectedOrderDetails && selectedOrderDetails.existing_complaints && selectedOrderDetails.existing_complaints.length > 0">
+                                    <div class="mb-4">
+                                        <h6 class="fw-bold mb-3 text-warning-emphasis d-flex align-items-center gap-2" style="font-size: 0.85rem;">
+                                            <i class="bi bi-exclamation-triangle"></i> Existing Complaints
+                                        </h6>
+                                        <div class="d-flex flex-column gap-3">
+                                            <template x-for="c in selectedOrderDetails.existing_complaints" :key="c.id">
+                                                <div class="card border-0 shadow-sm rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                                                    <div class="card-body p-3">
+                                                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-warning border-opacity-25">
+                                                            <a href="#" @click.prevent="viewComplaint(c)" class="fw-bold text-body-emphasis text-decoration-none d-flex align-items-center gap-2" style="font-size:0.85rem;" title="View Complaint">
+                                                                <i class="bi bi-headset text-warning"></i> <span x-text="c.complaint_number"></span>
+                                                            </a>
+                                                            <div class="d-flex gap-1">
+                                                                <span class="badge bg-warning text-dark px-2" style="font-size:0.65rem;" x-text="c.status.replace(/_/g, ' ').toUpperCase()"></span>
+                                                                <span class="badge" :class="getPriorityClass(c.priority)" style="font-size:0.65rem;" x-text="c.priority.toUpperCase()"></span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mb-2">
+                                                            <p class="fw-bold text-body-emphasis mb-1 lh-sm" style="font-size:0.8rem;" x-text="c.subject"></p>
+                                                            <p class="text-secondary lh-sm mb-0" style="font-size:0.75rem;" x-text="c.description"></p>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-warning border-opacity-25">
+                                                            <div class="text-muted" style="font-size: 0.65rem;">
+                                                                <i class="bi bi-tag"></i> <span x-text="c.category.replace(/_/g, ' ').toUpperCase()"></span>
+                                                            </div>
+                                                            <div class="text-muted" style="font-size: 0.65rem;">
+                                                                <i class="bi bi-clock"></i> <span x-text="formatDateTime(c.created_at)"></span>
+                                                            </div>
+                                                        </div>
+                                                        <template x-if="c.resolution_notes">
+                                                            <div class="mt-2 bg-body-tertiary p-2 rounded text-muted fst-italic" style="font-size: 0.7rem;">
+                                                                <strong>Resolution:</strong> <span x-text="c.resolution_notes"></span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Order Search (Create Mode Only) -->
+                                <div x-show="!isEditing" class="mb-4">
+                                    <label class="form-label fw-bold text-body-emphasis mb-2 small text-uppercase"><i class="bi bi-search me-2 text-primary"></i>Lookup Order</label>
+                                    <div class="input-group input-group-sm shadow-sm rounded-3 overflow-hidden">
+                                        <input type="text" class="form-control border-0 bg-body px-3" x-model="searchQueryOrder" placeholder="Order ID or Mobile..." @keydown.enter.prevent="if(!isLookupLocked) searchOrders()" :disabled="isLookupLocked">
+                                        <button class="btn btn-primary px-3 fw-semibold" type="button" @click="searchOrders" :disabled="isSearchingOrders || isLookupLocked">
+                                            <span x-show="!isSearchingOrders">Search</span>
+                                            <span x-show="isSearchingOrders"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></span>
+                                        </button>
+                                    </div>
+                                    <div class="mt-1 text-danger small fw-medium px-1" x-show="searchOrderError" x-text="searchOrderError"></div>
+                                    
+                                    <!-- Search Results List -->
+                                    <template x-if="fetchedOrders && fetchedOrders.length > 0">
+                                        <div class="mt-2 border rounded-3 overflow-hidden shadow-sm bg-body">
+                                            <ul class="list-group list-group-flush small">
+                                                <template x-for="ord in fetchedOrders" :key="ord.id">
+                                                    <li class="list-group-item list-group-item-action py-2 cursor-pointer" @click="selectOrderForComplaint(ord.id)">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div class="fw-bold" x-text="ord.order_no"></div>
+                                                            <div class="text-muted" x-text="ord.customer?.firstname || ''"></div>
+                                                            <span class="badge" :class="getStatusTheme(ord.lifecycle_status) ? 'text-bg-' + getStatusTheme(ord.lifecycle_status) + '-subtle text-' + getStatusTheme(ord.lifecycle_status) + '-emphasis' : 'text-bg-secondary-subtle'" x-text="ord.status_label"></span>
+                                                        </div>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <!-- Complaint Details Form -->
+                                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                    <div class="card-body p-3">
+                                        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-body-emphasis border-bottom pb-2">
+                                            <i class="bi bi-pencil-square text-warning fs-6"></i> Complaint Details
+                                        </h6>
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Subject <span class="text-danger" x-show="!isEditing">*</span></label>
+                                                <input type="text" class="form-control form-control-sm bg-body-secondary border-0" x-model="form.subject" required placeholder="Brief summary" :disabled="isEditing">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Description <span class="text-danger" x-show="!isEditing">*</span></label>
+                                                <textarea class="form-control form-control-sm bg-body-secondary border-0" rows="3" x-model="form.description" required placeholder="Detailed information..." :disabled="isEditing"></textarea>
+                                            </div>
+                                            
+                                            <div class="col-6" x-show="!selectedOrderDetails && !isEditing">
+                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Order No <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control form-control-sm bg-body-secondary border-0" x-model="form.order_no" :required="!isEditing && !selectedOrderDetails" placeholder="ORD-0001">
+                                            </div>
+                                            <div class="col-6" x-show="!selectedOrderDetails && !isEditing">
+                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Cust ID</label>
+                                                <input type="number" class="form-control form-control-sm bg-body-secondary border-0" x-model="form.customer_id">
+                                            </div>
+
+                                            <div class="col-4">
+                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Category <span class="text-danger" x-show="!isEditing">*</span></label>
+                                                <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.category" required :disabled="isEditing">
+                                                    <option value="other">Other</option>
+                                                    <option value="delivery_delay">Delay</option>
+                                                    <option value="damaged_item">Damaged</option>
+                                                    <option value="missing_item">Missing</option>
+                                                    <option value="wrong_item">Wrong</option>
+                                                    <option value="payment_issue">Payment</option>
+                                                    <option value="poor_service">Service</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-4">
+                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Priority <span class="text-danger">*</span></label>
+                                                <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.priority" required :disabled="isClosed">
+                                                    <option value="low">Low</option>
+                                                    <option value="medium">Medium</option>
+                                                    <option value="high">High</option>
+                                                    <option value="urgent">Urgent</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-4">
+                                                <label class="form-label fw-semibold small text-uppercase text-muted" style="font-size: 0.7rem;">Assignee</label>
+                                                <select class="form-select form-select-sm bg-body-secondary border-0" x-model="form.assigned_to" :disabled="isClosed">
+                                                    <option value="">Unassigned</option>
+                                                    <template x-for="user in assignableUsers" :key="user.id">
+                                                        <option :value="user.id" x-text="user.name"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
+                                <!-- Activity & Communication Feed -->
+                                <template x-if="isEditing">
+                                    <div class="card border-0 shadow-sm rounded-4">
+                                        <div class="card-header bg-primary bg-opacity-10 border-bottom-0 py-2 px-3">
+                                            <h6 class="fw-bold mb-0 text-primary d-flex align-items-center gap-2" style="font-size:0.9rem;">
+                                                <i class="bi bi-chat-text"></i> Activity Feed
+                                            </h6>
+                                        </div>
+                                        <div class="card-body p-0 bg-body d-flex flex-column" style="max-height: 400px;">
+                                            <div class="p-3 bg-body-tertiary overflow-auto flex-grow-1 border-bottom" style="min-height:200px;">
+                                                <template x-if="timelineFeed && timelineFeed.length > 0">
+                                                    <div class="position-relative ms-2 ps-3 border-start border-primary border-opacity-25 border-2">
+                                                        <template x-for="(item, idx) in timelineFeed" :key="idx">
+                                                            <div class="position-relative mb-3">
+                                                                <template x-if="item._type === 'reply'">
+                                                                    <div>
+                                                                        <div class="position-absolute bg-primary rounded-circle shadow-sm" style="width: 10px; height: 10px; left: -21px; top: 8px; border: 2px solid var(--bs-body-bg);"></div>
+                                                                        <div class="card border-0 shadow-sm rounded-3 bg-primary bg-opacity-10 ms-1">
+                                                                            <div class="card-body p-2">
+                                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                                    <span class="fw-bold text-primary" style="font-size:0.75rem;" x-text="item.user ? (item.user.name || item.user.first_name) : 'Agent'"></span>
+                                                                                    <span class="text-primary opacity-75" style="font-size: 0.65rem;" x-text="formatDateTime(item.created_at)"></span>
+                                                                                </div>
+                                                                                <p class="text-body-emphasis mb-0 lh-sm" style="font-size:0.8rem;" x-show="item.message" x-html="(item.message || '').replace(/\\n/g, '<br>')"></p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </template>
+                                                                <template x-if="item._type === 'log'">
+                                                                    <div class="ms-1 d-flex flex-column opacity-75">
+                                                                        <div class="position-absolute bg-secondary rounded-circle" style="width: 8px; height: 8px; left: -20px; top: 4px; border: 1px solid var(--bs-body-bg);"></div>
+                                                                        <div class="w-100 d-flex gap-2 align-items-center mb-1" style="font-size:0.7rem;">
+                                                                            <span class="badge bg-secondary rounded-pill fw-medium py-0" x-text="item.status ? item.status.replace(/_/g, ' ').toUpperCase() : 'UPDATE'"></span>
+                                                                            <span x-text="item.user ? (item.user.name || item.user.first_name) : 'System'"></span>
+                                                                            <span class="text-muted" x-text="formatDateTime(item.created_at)"></span>
+                                                                        </div>
+                                                                        <template x-if="item.notes">
+                                                                            <div class="d-block w-100 text-muted fst-italic lh-sm" style="font-size:0.75rem;" x-text="`Note: ${item.notes}`"></div>
+                                                                        </template>
+                                                                    </div>
+                                                                </template>
+                                                                <template x-if="item._type === 'audit'">
+                                                                    <div class="ms-1 d-flex flex-column opacity-75">
+                                                                        <div class="position-absolute bg-warning rounded-circle" style="width: 8px; height: 8px; left: -20px; top: 4px; border: 1px solid var(--bs-body-bg);"></div>
+                                                                        <div class="w-100 d-flex gap-2 align-items-center mb-1" style="font-size:0.7rem;">
+                                                                            <span class="badge bg-warning rounded-pill fw-medium py-0 text-body-emphasis" x-text="item.event ? item.event.toUpperCase() : 'AUDIT'"></span>
+                                                                            <span x-text="item.user ? (item.user.name || item.user.first_name) : 'System'"></span>
+                                                                            <span class="text-muted" x-text="formatDateTime(item.created_at)"></span>
+                                                                        </div>
+                                                                        <div class="d-block w-100 text-muted lh-sm" style="font-size:0.75rem;">
+                                                                            <template x-for="(newValue, key) in item.new_values" :key="key">
+                                                                                <div class="mb-1">
+                                                                                    <span class="fw-bold text-uppercase" style="font-size:0.65rem;" x-text="key.replace(/_/g, ' ') + ': '"></span>
+                                                                                    <template x-if="item.old_values && item.old_values[key]">
+                                                                                        <span><del x-text="item.old_values[key]"></del> <i class="bi bi-arrow-right mx-1"></i></span>
+                                                                                    </template>
+                                                                                    <span class="text-body-emphasis" x-text="newValue"></span>
+                                                                                </div>
+                                                                            </template>
+                                                                        </div>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <template x-if="!timelineFeed || timelineFeed.length === 0">
+                                                    <div class="text-center p-3 text-muted" style="font-size:0.8rem;">No activity history recorded yet.</div>
+                                                </template>
+                                            </div>
+                                            <!-- Reply Input Area -->
+                                            <div class="p-2 bg-body rounded-bottom-4" x-show="!isClosed">
+                                                <div class="input-group input-group-sm shadow-sm">
+                                                    <input type="text" class="form-control border-0 bg-body-tertiary" x-model="replyMessage" placeholder="Type a reply..." @keydown.enter.prevent="postReply">
+                                                    <button type="button" class="btn btn-primary" @click="postReply" :disabled="!replyMessage.trim() || isReplying">
+                                                        <i class="bi bi-send" x-show="!isReplying"></i>
+                                                        <span x-show="isReplying" class="spinner-border spinner-border-sm"></span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <!-- Closed Message -->
+                                            <div class="p-2 bg-secondary bg-opacity-10 text-center rounded-bottom-4 text-muted border-top" x-show="isClosed" style="font-size: 0.8rem;">
+                                                <i class="bi bi-lock me-1"></i> This complaint is closed and cannot be updated.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Order Preview -->
+                        <div class="col-lg-6 h-100 bg-body pvm-right border-start">
+                            <template x-if="!selectedOrderDetails">
+                                <div class="d-flex h-100 align-items-center justify-content-center p-4">
+                                    <div class="text-center opacity-50">
+                                        <i class="bi bi-receipt fs-1 text-muted mb-2 d-block"></i>
+                                        <h6 class="fw-bold text-muted mb-0">Order Preview</h6>
+                                        <p class="small text-muted mb-0">Select an order to view its details here.</p>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="selectedOrderDetails">
+                                <div class="p-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
+                                            <i class="bi bi-receipt text-primary fs-5"></i> Order <span x-text="selectedOrderDetails.orderNumber"></span>
+                                        </h6>
+                                        <span class="badge text-bg-primary-subtle text-primary-emphasis rounded-pill" x-text="selectedOrderDetails.statusLabel"></span>
+                                    </div>
+
+                                    <!-- Mini Stats -->
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-4">
+                                            <div class="card bg-primary bg-opacity-10 border-0 rounded-3 h-100">
+                                                <div class="card-body p-2 text-center">
+                                                    <p class="small text-primary mb-0 fw-semibold text-uppercase" style="font-size: 0.6rem;">Payment</p>
+                                                    <p class="fw-bold mb-0 text-body-emphasis" style="font-size: 0.8rem;" x-text="selectedOrderDetails.paymentMethod || 'N/A'"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="card bg-info bg-opacity-10 border-0 rounded-3 h-100">
+                                                <div class="card-body p-2 text-center">
+                                                    <p class="small text-info mb-0 fw-semibold text-uppercase" style="font-size: 0.6rem;">Order Date</p>
+                                                    <p class="fw-bold mb-0 text-body-emphasis" style="font-size: 0.8rem;" x-text="selectedOrderDetails.orderDate ? formatDate(selectedOrderDetails.orderDate) : 'N/A'"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="card bg-success bg-opacity-10 border-0 rounded-3 h-100">
+                                                <div class="card-body p-2 text-center">
+                                                    <p class="small text-success mb-0 fw-semibold text-uppercase" style="font-size: 0.6rem;">Total</p>
+                                                    <p class="fw-bold mb-0 text-body-emphasis" style="font-size: 0.8rem;" x-text="`₹ ${formatCurrency(selectedOrderDetails.total)}`"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Customer Info -->
+                                    <div class="card border-0 shadow-sm rounded-4 mb-3 bg-body-tertiary">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <img :src="selectedOrderDetails.customer.avatar || '{{ asset('assets/images/default_avatar.jpeg') }}'" class="rounded-circle shadow-sm" width="32" height="32" alt="Customer" x-on:error="$el.src='{{ asset('assets/images/default_avatar.jpeg') }}'">
+                                                <div class="lh-sm">
+                                                    <h6 class="fw-bold mb-0" style="font-size: 0.85rem;" x-text="selectedOrderDetails.customer.name"></h6>
+                                                    <span class="text-muted" style="font-size: 0.75rem;" x-text="selectedOrderDetails.customer.phone || selectedOrderDetails.customer.email"></span>
+                                                </div>
+                                            </div>
+                                            <div class="row g-2 mt-1">
+                                                <div class="col-6">
+                                                    <p class="fw-bold text-muted text-uppercase mb-0" style="font-size: 0.6rem;">Shipping Address</p>
+                                                    <p class="mb-0 text-body-emphasis lh-sm" style="font-size: 0.75rem;" x-text="selectedOrderDetails.shippingAddress ? selectedOrderDetails.shippingAddress.formatted : 'N/A'"></p>
+                                                </div>
+                                                <div class="col-6">
+                                                    <p class="fw-bold text-muted text-uppercase mb-0" style="font-size: 0.6rem;">Fulfillment Center</p>
+                                                    <p class="mb-0 text-body-emphasis lh-sm" style="font-size: 0.75rem;" x-text="selectedOrderDetails.warehouse ? selectedOrderDetails.warehouse.name : 'Unassigned'"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Order Items -->
+                                    <div class="card border-0 shadow-sm rounded-4 mb-3 overflow-hidden">
+                                        <div class="card-header bg-body border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <h6 class="fw-bold mb-0 text-body-emphasis" style="font-size: 0.85rem;">
+                                                    <i class="bi bi-box-seam me-1 text-primary"></i> Order Items
+                                                </h6>
+                                                <span class="badge bg-primary rounded-pill" x-text="selectedOrderDetails.itemCount"></span>
+                                            </div>
+                                            <div class="form-check form-switch m-0" x-show="!isEditing">
+                                                <input class="form-check-input border-secondary" type="checkbox" role="switch" id="entireOrderSwitch" x-model="form.is_entire_order" @change="if(form.is_entire_order) form.product_ids = []" :disabled="hasEntireOrderComplaint">
+                                                <label class="form-check-label fw-bold text-muted" style="font-size: 0.7rem;" for="entireOrderSwitch">
+                                                    Entire Order Complaint <span x-show="hasEntireOrderComplaint" class="text-danger ms-1">(Already Raised)</span>
+                                                </label>
+                                            </div>
+                                            <div x-show="isEditing && form.is_entire_order">
+                                                <span class="badge bg-secondary bg-opacity-10 text-body border border-secondary border-opacity-25">Entire Order</span>
+                                            </div>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-borderless table-sm align-middle mb-0 text-nowrap" style="font-size:0.75rem;">
+                                                <thead class="bg-body-tertiary">
+                                                    <tr>
+                                                        <th class="py-2 ps-3" style="width:40px;" title="Link products to complaint">
+                                                            <i class="bi bi-link-45deg text-muted"></i>
+                                                        </th>
+                                                        <th class="fw-semibold text-muted py-2">Product</th>
+                                                        <th class="fw-semibold text-muted py-2 text-center">Qty</th>
+                                                        <th class="fw-semibold text-muted py-2 text-end pe-3">Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody :class="{ 'opacity-50 pointer-events-none': form.is_entire_order }">
+                                                    <template x-for="(item, idx) in selectedOrderDetails.items" :key="idx">
+                                                        <tr class="border-bottom" :class="{ 
+                                                            'bg-danger bg-opacity-10': form.product_ids.includes(String(item.id)),
+                                                            'bg-warning bg-opacity-10 opacity-75': alreadyComplainedProductIds.includes(String(item.id)) && !form.product_ids.includes(String(item.id))
+                                                        }">
+                                                            <td class="ps-3 py-2">
+                                                                <input type="checkbox" class="form-check-input border-secondary" :value="String(item.id)" x-model="form.product_ids" :disabled="isEditing || alreadyComplainedProductIds.includes(String(item.id)) || form.is_entire_order" :title="alreadyComplainedProductIds.includes(String(item.id)) ? 'Complaint already raised for this item' : ''">
+                                                            </td>
+                                                            <td class="py-2">
+                                                                <div class="d-flex align-items-center gap-2">
+                                                                    <img :src="item.image || '{{ asset('assets/images/product-placeholder.svg') }}'" class="rounded-2 shadow-sm object-fit-cover" width="32" height="32" :alt="item.name" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                                                    <div class="text-wrap" style="max-width: 150px;">
+                                                                        <div class="d-flex align-items-center gap-2">
+                                                                            <p class="fw-bold text-body-emphasis mb-0 lh-sm" x-text="item.name"></p>
+                                                                            <span x-show="alreadyComplainedProductIds.includes(String(item.id))" class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25" style="font-size: 0.6rem;">Complained</span>
+                                                                        </div>
+                                                                        <p class="text-muted mb-0 font-monospace" style="font-size: 0.65rem;" x-text="item.sku || 'No SKU'"></p>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center py-2"><span class="badge bg-secondary bg-opacity-10 text-body-emphasis" x-text="item.quantity || 0"></span></td>
+                                                            <td class="text-end pe-3 py-2 fw-bold text-primary" x-text="`₹ ${((parseFloat(item.price || 0) * parseFloat(item.quantity || 0)) - parseFloat(item.discount || 0) + parseFloat(item.tax || 0)).toFixed(2)}`"></td>
+                                                        </tr>
+                                                    </template>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Order Timeline -->
+                                    <template x-if="selectedOrderDetails.statusLogs && selectedOrderDetails.statusLogs.length > 0">
+                                        <div class="card border-0 shadow-sm rounded-4 mb-3">
+                                            <div class="card-header bg-body border-bottom py-2 px-3">
+                                                <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2" style="font-size:0.85rem;">
+                                                    <i class="bi bi-clock-history text-primary"></i> Order Timeline
+                                                </h6>
+                                            </div>
+                                            <div class="card-body p-3">
+                                                <div class="position-relative ms-2 ps-3 border-start border-2 border-secondary border-opacity-25" style="border-left-style: dashed !important;">
+                                                    <template x-for="(log, idx) in selectedOrderDetails.statusLogs" :key="idx">
+                                                        <div class="mb-3 position-relative">
+                                                            <div class="position-absolute bg-primary rounded-circle" style="width: 10px; height: 10px; left: -21px; top: 4px; border: 2px solid var(--bs-body-bg);"></div>
+                                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                <span class="badge rounded-pill fw-medium py-0" :class="`text-bg-${getStatusColor(log.status)}`" x-text="(log.status || 'UPDATE').replace(/_/g, ' ').toUpperCase()"></span>
+                                                                <span class="text-muted" style="font-size: 0.65rem;" x-text="formatDateTime(log.created_at)"></span>
+                                                            </div>
+                                                            <div class="d-flex align-items-center gap-1 mb-1">
+                                                                <i class="bi bi-person text-secondary" style="font-size: 0.7rem;"></i>
+                                                                <span class="text-body-emphasis fw-semibold" style="font-size: 0.7rem;" x-text="log.user"></span>
+                                                            </div>
+                                                            <template x-if="log.notes">
+                                                                <div class="text-muted fst-italic lh-sm bg-body-tertiary p-2 rounded-2" style="font-size:0.75rem;" x-text="log.notes"></div>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Returns Tracking -->
+                                    <template x-if="selectedOrderDetails.original && (selectedOrderDetails.original.order_returns && selectedOrderDetails.original.order_returns.length > 0 || selectedOrderDetails.original.orderReturns && selectedOrderDetails.original.orderReturns.length > 0)">
+                                        <div class="card border-0 shadow-sm rounded-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 p-3 mb-3">
+                                            <h6 class="fw-bold mb-2 text-danger d-flex align-items-center gap-2" style="font-size: 0.85rem;">
+                                                <i class="bi bi-arrow-return-left"></i> Returns & Refunds
+                                            </h6>
+                                            <template x-for="(ret, i) in (selectedOrderDetails.original.order_returns || selectedOrderDetails.original.orderReturns)" :key="ret.id || i">
+                                                <div class="d-flex justify-content-between align-items-center mb-1 pb-1 border-bottom border-danger border-opacity-10 last:border-0 last:pb-0 last:mb-0">
+                                                    <div>
+                                                        <p class="fw-bold text-body-emphasis mb-0" style="font-size:0.75rem;" x-text="ret.return_no || 'Return'"></p>
+                                                        <p class="text-secondary lh-sm mb-0" style="font-size:0.7rem;">Reason: <span x-text="ret.reason || 'N/A'"></span></p>
+                                                    </div>
+                                                    <span class="badge bg-danger" style="font-size:0.7rem;" x-text="ret.status"></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+
+
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer bg-body-tertiary border-top py-3 px-4 d-flex justify-content-between align-items-center">
+                    
+                    <!-- Update Status & Resolution (Moved to Footer) -->
+                    <template x-if="isEditing">
+                        <div class="d-flex align-items-center gap-3 flex-grow-1 me-4 border border-success border-opacity-25 bg-success bg-opacity-10 rounded-3 px-3 py-2 shadow-sm">
+                            <h6 class="fw-bold mb-0 text-success d-flex align-items-center gap-2" style="font-size:0.85rem; white-space: nowrap;">
+                                <i class="bi bi-shield-check"></i> Status & Resolution
+                            </h6>
+                            <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                <select class="form-select form-select-sm bg-body border-0 shadow-sm text-body-emphasis fw-bold" style="width: 140px;" x-model="form.status" @change="form.resolution_notes = ''" required :disabled="isClosed">
+                                    <template x-for="opt in availableStatuses" :key="opt.value">
+                                        <option :value="opt.value" x-text="opt.label"></option>
+                                    </template>
+                                </select>
+                                <input type="text" class="form-control form-control-sm border-0 bg-body shadow-sm flex-grow-1" x-model="form.resolution_notes" placeholder="Add resolution note..." :disabled="isClosed">
+                            </div>
+                        </div>
+                    </template>
+                    <div x-show="!isEditing" class="flex-grow-1"></div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                        @can('complaints.create')
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold" x-show="!isEditing" :disabled="isSubmitting">
+                            <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-1"></span>
+                            Save Complaint
+                        </button>
+                        @endcan
+                        @can('complaints.edit')
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold" x-show="isEditing && !isClosed" :disabled="isSubmitting">
+                            <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-1"></span>
+                            Update
+                        </button>
+                        @endcan
+                    </div>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('complaintModalShared', () => ({
+            complaints: [],
+            assignableUsers: [],
+            stats: { total: 0, open: 0, in_progress: 0, resolved: 0, closed: 0 },
+            isLoading: false,
+            isSubmitting: false,
+            searchQuery: '',
+            statusFilter: '',
+            priorityFilter: '',
+            sortField: 'created_at',
+            sortDirection: 'desc',
+            currentPage: 1,
+            totalPages: 1,
+            totalComplaints: 0,
+            selectedComplaints: [],
+            isEditing: false,
+            isLookupLocked: false,
+            modalInstance: null,
+            selectedComplaint: null,
+            form: {
+                id: null, order_no: '', customer_id: '', category: 'other',
+                priority: 'medium', subject: '', description: '',
+                status: 'open', resolution_notes: '', product_ids: []
+            },
+            replyMessage: '',
+            isReplying: false,
+            bulkAssignTo: '',
+            bulkPriority: '',
+
+            // --- Order Lookup Variables ---
+            searchQueryOrder: '',
+            fetchedOrders: [],
+            isSearchingOrders: false,
+            searchOrderError: '',
+            selectedOrderDetails: null,
+
+            // ── Helpers ────────────────────────────────────────────────────────
+            csrf() {
+                return document.querySelector('meta[name="csrf-token"]')?.content || '';
+            },
+            async api(url, options = {}) {
+                const method = (options.method || 'GET').toUpperCase();
+                const headers = {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrf(),
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(options.headers || {}),
+                };
+                const res = await fetch(url, { ...options, method, headers });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
+                    throw Object.assign(new Error(err.message || `HTTP ${res.status}`), { status: res.status, data: err });
+                }
+                return res.json();
+            },
+
+            // ── Computed ───────────────────────────────────────────────────────
+            get allSelected() {
+                return this.complaints.length > 0 && this.selectedComplaints.length === this.complaints.length;
+            },
+            get timelineFeed() {
+                if (!this.selectedComplaint) return [];
+                const logs = (this.selectedComplaint.status_logs || []).map(l => ({ ...l, _type: 'log', _date: new Date(l.created_at) }));
+                const replies = (this.selectedComplaint.replies || []).map(r => ({ ...r, _type: 'reply', _date: new Date(r.created_at) }));
+                
+                // Filter out 'created' events since they are redundant with status_logs, and clean up internal fields
+                const audits = (this.selectedComplaint.audits || [])
+                    .filter(a => a.event !== 'created')
+                    .map(a => {
+                        const cleanValues = (vals) => {
+                            if (!vals) return null;
+                            const copy = { ...vals };
+                            ['id', 'created_by', 'updated_by', 'created_at', 'updated_at', 'deleted_at'].forEach(k => delete copy[k]);
+                            return copy;
+                        };
+                        return { 
+                            ...a, 
+                            _type: 'audit', 
+                            _date: new Date(a.created_at),
+                            new_values: cleanValues(a.new_values),
+                            old_values: cleanValues(a.old_values)
+                        };
+                    })
+                    .filter(a => a.new_values && Object.keys(a.new_values).length > 0);
+                return [...logs, ...replies, ...audits].sort((a, b) => a._date - b._date);
+            },
+            get visiblePages() {
+                const delta = 2, range = [];
+                for (let i = Math.max(2, this.currentPage - delta); i <= Math.min(this.totalPages - 1, this.currentPage + delta); i++) range.push(i);
+                if (this.currentPage - delta > 2) range.unshift('...');
+                if (this.currentPage + delta < this.totalPages - 1) range.push('...');
+                range.unshift(1);
+                if (this.totalPages > 1) range.push(this.totalPages);
+                return range;
+            },
+
+            get alreadyComplainedProductIds() {
+                if (!this.selectedOrderDetails || !this.selectedOrderDetails.existing_complaints) return [];
+                const ids = [];
+                this.selectedOrderDetails.existing_complaints.forEach(c => {
+                    if (c.product_ids && Array.isArray(c.product_ids)) {
+                        ids.push(...c.product_ids.map(String));
+                    }
+                });
+                return ids;
+            },
+            get hasEntireOrderComplaint() {
+                if (!this.selectedOrderDetails || !this.selectedOrderDetails.existing_complaints) return false;
+                return this.selectedOrderDetails.existing_complaints.some(c => !c.product_ids || c.product_ids.length === 0);
+            },
+            get isClosed() {
+                return this.selectedComplaint?.status === 'closed';
+            },
+            get availableStatuses() {
+                const flow = ['open', 'in_progress', 'resolved', 'closed'];
+                const currentStatus = this.selectedComplaint?.status || 'open';
+                let currentIndex = flow.indexOf(currentStatus);
+                if (currentIndex === -1) currentIndex = 0;
+                
+                return flow.filter((status, index) => index >= currentIndex).map(status => {
+                    let label = status.replace(/_/g, ' ');
+                    label = label.charAt(0).toUpperCase() + label.slice(1);
+                    if (label === 'In progress') label = 'In Progress';
+                    return { value: status, label: label };
+                });
+            },
+
+            // ── Lifecycle ──────────────────────────────────────────────────────
+            
+            async init() {
+                
+                try {
+                    const data = await this.api('/api/complaints');
+                    this.assignableUsers = data.assignable_users || [];
+                } catch(e) {}
+            },
+
+
+            openSharedModal(orderNo, customerId) {
+                this.isEditing = false;
+                this.isLookupLocked = !!orderNo;
+                this.form = {
+                    id: null,
+                    order_no: orderNo,
+                    customer_id: customerId || '',
+                    category: 'other',
+                    priority: 'medium',
+                    subject: '',
+                    description: '',
+                    status: 'open',
+                    resolution_notes: '',
+                    product_ids: [],
+                    is_entire_order: true
+                };
+                this.searchQueryOrder = orderNo;
+                this.modalInstance = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('complaintModal'));
+                this.modalInstance.show();
+                if (orderNo) {
+                    this.searchOrders();
+                }
+            },
+
+                
+
+            // ── Complaints API ─────────────────────────────────────────────────
+            async fetchComplaints() {
+                this.isLoading = true;
+                try {
+                    const params = new URLSearchParams({
+                        page: this.currentPage,
+                        sort_by: this.sortField,
+                        sort_direction: this.sortDirection
+                    });
+                    if (this.searchQuery)   params.append('search',   this.searchQuery);
+                    if (this.statusFilter)  params.append('status',   this.statusFilter);
+                    if (this.priorityFilter) params.append('priority', this.priorityFilter);
+
+                    const data = await this.api(`/api/complaints?${params.toString()}`);
+                    this.complaints      = data.complaints.data;
+                    this.currentPage     = data.complaints.current_page;
+                    this.totalPages      = data.complaints.last_page;
+                    this.totalComplaints = data.complaints.total;
+                    this.stats           = data.stats;
+                    this.assignableUsers = data.assignable_users || [];
+                } catch (e) {
+                    console.error('fetchComplaints error:', e);
+                    window.Swal.fire('Error', 'Failed to load complaints', 'error');
+                }
+                this.isLoading = false;
+            },
+
+            async fetchStats() {
+                try {
+                    const data = await this.api('/api/complaints/stats');
+                    this.stats.total       = data.total;
+                    this.stats.open        = data.open;
+                    this.stats.in_progress = data.in_progress;
+                    this.stats.resolved    = data.resolved;
+                } catch (e) {
+                    console.warn('fetchStats error:', e);
+                }
+            },
+
+            filterComplaints() { this.currentPage = 1;  },
+            clearFilters() {
+                this.searchQuery = ''; this.statusFilter = ''; this.priorityFilter = '';
+                this.filterComplaints();
+            },
+            sortBy(field) {
+                if (this.sortField === field) {
+                    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.sortField = field; this.sortDirection = 'desc';
+                }
+                
+            },
+            goToPage(page) {
+                if (page >= 1 && page <= this.totalPages) { this.currentPage = page;  }
+            },
+            toggleAll(checked) {
+                this.selectedComplaints = checked ? this.complaints.map(c => String(c.id)) : [];
+            },
+
+            // ── Order Lookup ───────────────────────────────────────────────────
+            async searchOrders() {
+                if (!this.searchQueryOrder.trim()) return;
+                this.isSearchingOrders = true;
+                this.searchOrderError  = '';
+                this.fetchedOrders     = [];
+                this.selectedOrderDetails = null;
+
+                try {
+                    const data   = await this.api(`/api/orders?search=${encodeURIComponent(this.searchQueryOrder.trim())}&limit=50`);
+                    const orders = data.orders?.data ?? data.data ?? [];
+
+                    if (!orders.length) {
+                        this.searchOrderError = 'No orders found matching this query.';
+                    } else if (orders.length === 1) {
+                        await this.selectOrder(orders[0].id);
+                    } else {
+                        this.fetchedOrders = orders;
+                    }
+                } catch (e) {
+                    this.searchOrderError = e.status === 403
+                        ? 'Permission denied — you cannot search orders.'
+                        : 'Failed to search orders. Please try again.';
+                    console.error('searchOrders error:', e);
+                }
+                this.isSearchingOrders = false;
+            },
+
+            async selectOrder(orderId) {
+                if (!orderId) return;
+                this.isSearchingOrders = true;
+                try {
+                    const data = await this.api(`/api/orders/${orderId}`);
+                    const raw  = data.order || data;
+                    this.selectedOrderDetails = this.mapRawOrder(raw);
+                    this.form.order_no    = this.selectedOrderDetails.orderNumber;
+                    this.form.customer_id = raw.party_id || '';
+                    this.fetchedOrders    = [];
+
+                    // Fetch existing complaints for this order
+                    try {
+                        const compData = await this.api(`/api/complaints?order_id=${orderId}&per_page=50`);
+                        // Ensure it's reactive
+                        this.selectedOrderDetails.existing_complaints = compData.complaints.data || [];
+                        if (this.hasEntireOrderComplaint && !this.isEditing) {
+                            this.form.is_entire_order = false;
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch order complaints', e);
+                    }
+                } catch (e) {
+                    this.searchOrderError = 'Failed to fetch order details.';
+                    console.error('selectOrder error:', e);
+                }
+                this.isSearchingOrders = false;
+            },
+
+            mapRawOrder(o) {
+                if (!o) return null;
+                const fmt = v => parseFloat(v ?? 0) || 0;
+                const fmtAddr = (o, type) => {
+                    const addr = type === 'shipping' ? o.shipping_address : o.billing_address;
+                    if (!addr) return null;
+                    const parts = [addr.address_line_1, addr.address_line_2, addr.village_name, addr.taluka, addr.district, addr.city, addr.state, addr.pincode].filter(Boolean);
+                    return { formatted: parts.join(', ') || 'N/A' };
+                };
+                const invoice  = o.invoice || null;
+                const invPmts  = invoice?.payments ?? [];
+                const paid     = invPmts.filter(p => p.status === 'completed').reduce((s, p) => s + fmt(p.amount), 0);
+                const netInv   = fmt(invoice?.total_amount);
+                const allPmts  = o.payments || invPmts;
+                const lastPmt  = allPmts.slice().reverse().find(p => p.payment_method);
+                const pmtLabel = lastPmt ? lastPmt.payment_method.toUpperCase().replace(/_/g, ' ') : (invoice ? 'PENDING PAYMENT' : 'NOT RECORDED');
+
+                return {
+                    id: o.id,
+                    orderNumber: o.order_no,
+                    type: o.type || 'sale',
+                    orderDate: o.order_date,
+                    status: o.lifecycle_status || o.status,
+                    statusLabel: o.status_label || (o.lifecycle_status || o.status || '').charAt(0).toUpperCase() + (o.lifecycle_status || o.status || '').slice(1).replace(/_/g, ' '),
+                    customer: {
+                        id: o.party_id || null,
+                        name: o.party ? `${o.party.firstname || ''} ${o.party.lastname || ''}`.trim() : 'N/A',
+                        email: o.party?.email || 'N/A',
+                        avatar: o.party?.avatar || '/assets/images/default_avatar.jpeg',
+                        phone: o.party?.phone || 'N/A',
+                        company: o.party?.company_name || '',
+                    },
+                    warehouse: o.warehouse ? {
+                        name: o.warehouse.name || 'N/A',
+                        address: [o.warehouse.address_line_1, o.warehouse.city, o.warehouse.state].filter(Boolean).join(', ') || 'N/A'
+                    } : null,
+                    shippingAddress: fmtAddr(o, 'shipping'),
+                    billingAddress:  fmtAddr(o, 'billing'),
+                    invoice: invoice ? { number: invoice.invoice_no || 'N/A', date: invoice.invoice_date || null, status: invoice.status || 'N/A', total: netInv, paid, due: Math.max(0, netInv - paid) } : null,
+                    items: (o.items || []).map(item => ({
+                        id:    item.product_id || item.product?.id || item.id,
+                        name:  item.product?.name || 'Unknown Product',
+                        sku:   item.product?.sku  || '',
+                        image: item.product?.image_path ? `/storage/${item.product.image_path}` : null,
+                        quantity: item.quantity,
+                        price:    fmt(item.unit_price),
+                        discount: fmt(item.discount_amount),
+                        discountBadgeLabel: fmt(item.discount_amount) > 0 ? `-₹${fmt(item.discount_amount).toFixed(2)}` : '',
+                        tax: fmt(item.tax_amount), taxRate: item.tax_rate || 0, net: fmt(item.total_amount)
+                    })),
+                    itemCount: o.items_count || o.items?.length || 0,
+                    total:         fmt(o.net_amount),
+                    subtotal:      (o.items || []).reduce((s, i) => s + fmt(i.unit_price) * fmt(i.quantity), 0),
+                    taxTotal:      fmt(o.tax_amount),
+                    discountTotal: fmt(o.discount_amount),
+                    paymentMethod: pmtLabel,
+                    couponCode:    o.coupon_code || '',
+                    payments: (o.payments || []).map(p => ({
+                        id: p.id, amount: fmt(p.amount), method: p.payment_method || 'N/A',
+                        status: p.status || 'N/A', date: p.payment_date || null, transactionId: p.transaction_id || 'N/A'
+                    })),
+                    statusLogs: (o.status_logs || []).map(l => ({
+                        status: l.status,
+                        notes: l.notes,
+                        created_at: l.created_at,
+                        user: l.user ? (l.user.name || l.user.first_name) : 'System'
+                    })),
+                    original: o
+                };
+            },
+
+            // ── Formatters ─────────────────────────────────────────────────────
+            formatDate(str) {
+                if (!str) return '—';
+                return new Date(str).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            },
+            formatCurrency(val) {
+                return parseFloat(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            },
+            formatDateTime(dateStr) {
+                if (!dateStr) return 'N/A';
+                return new Date(dateStr).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+            },
+            getStatusColor(status) {
+                return { open: 'warning', in_progress: 'info', resolved: 'success', closed: 'secondary' }[status] || 'secondary';
+            },
+            getStatusLabel(status) { return (status || '').replace(/_/g, ' ').toUpperCase(); },
+            getPriorityClass(priority) {
+                return {
+                    low:    'bg-secondary bg-opacity-25 text-body',
+                    medium: 'bg-info bg-opacity-25 text-info',
+                    high:   'bg-warning bg-opacity-25 text-warning',
+                    urgent: 'bg-danger bg-opacity-25 text-danger'
+                }[priority] || 'bg-secondary bg-opacity-25 text-body';
+            },
+            getStatusTheme(status) {
+                return { pending:'warning', pending_confirmation:'info', confirmed:'primary', processing:'secondary', ready_to_ship:'dark', dispatched:'info', shipped:'info', delivered:'success', cancelled:'danger', returned:'danger' }[status] || 'secondary';
+            },
+
+            // ── Modal ──────────────────────────────────────────────────────────
+            openCreateModal() {
+                this.isEditing = false;
+                this.isLookupLocked = false;
+                this.form = { id: null, order_no: '', customer_id: '', assigned_to: '', category: 'other', priority: 'medium', subject: '', description: '', status: 'open', resolution_notes: '', product_ids: [], is_entire_order: true };
+                this.searchQueryOrder = ''; this.fetchedOrders = []; this.selectedOrderDetails = null; this.searchOrderError = '';
+                window.bootstrap.Modal.getOrCreateInstance(document.getElementById('complaintModal')).show();
+            },
+            async viewComplaint(cmp) {
+                this.isEditing = true;
+                this.selectedComplaint = cmp;
+                this.form = {
+                    id:               cmp.id,
+                    order_no:         cmp.order?.order_no || '',
+                    customer_id:      cmp.customer_id || '',
+                    assigned_to:      cmp.assigned_to || '',
+                    category:         cmp.category || 'other',
+                    priority:         cmp.priority || 'medium',
+                    subject:          cmp.subject || '',
+                    description:      cmp.description || '',
+                    status:           cmp.status || 'open',
+                    resolution_notes: cmp.resolution_notes || '',
+                    complaint_number: cmp.complaint_number || '',
+                    product_ids:      (cmp.product_ids || []).map(String),
+                    is_entire_order:  !cmp.product_ids || cmp.product_ids.length === 0,
+                };
+                this.searchQueryOrder = ''; this.fetchedOrders = []; this.selectedOrderDetails = null; this.searchOrderError = '';
+                window.bootstrap.Modal.getOrCreateInstance(document.getElementById('complaintModal')).show();
+
+                if (cmp.order_id || (cmp.order && cmp.order.id)) {
+                    const orderId = cmp.order_id || cmp.order.id;
+                    try {
+                        const data = await this.api(`/api/orders/${orderId}`);
+                        this.selectedOrderDetails = this.mapRawOrder(data.order || data.data || data);
+                    } catch (e) {
+                        console.error('Failed to fetch order details:', e);
+                    }
+                }
+            },
+
+            async saveComplaint() {
+                this.isSubmitting = true;
+                try {
+                    const payload = { ...this.form };
+                    if (this.form.is_entire_order) {
+                        payload.product_ids = [];
+                    } else {
+                        payload.product_ids = this.form.product_ids.map(Number);
+                    }
+                    
+                    if (this.isEditing) {
+                        await this.api(`/api/complaints/${this.form.id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                        window.Swal.fire('Updated', 'Complaint updated successfully.', 'success');
+                    } else {
+                        await this.api('/api/complaints', { method: 'POST', body: JSON.stringify(payload) });
+                        window.Swal.fire('Created', 'Complaint logged successfully.', 'success');
+                    }
+                    window.bootstrap.Modal.getOrCreateInstance(document.getElementById('complaintModal')).hide();
+                    window.dispatchEvent(new CustomEvent('complaint-saved'));
+                } catch (e) {
+                    const msg = e.data?.message
+                        || (e.data?.errors ? Object.values(e.data.errors).flat().join(' ') : null)
+                        || 'Failed to save complaint.';
+                    window.Swal.fire('Error', msg, 'error');
+                }
+                this.isSubmitting = false;
+            },
+
+            async postReply() {
+                if (!this.replyMessage.trim() || !this.selectedComplaint) return;
+                this.isReplying = true;
+                try {
+                    const res = await this.api(`/api/complaints/${this.selectedComplaint.id}/reply`, {
+                        method: 'POST',
+                        body: JSON.stringify({ message: this.replyMessage })
+                    });
+                    if (!this.selectedComplaint.replies) this.selectedComplaint.replies = [];
+                    this.selectedComplaint.replies.push(res.data);
+                    
+                    if (this.selectedComplaint.status === 'open') {
+                        this.selectedComplaint.status = 'in_progress';
+                        this.form.status = 'in_progress';
+                        if (!this.selectedComplaint.status_logs) this.selectedComplaint.status_logs = [];
+                        this.selectedComplaint.status_logs.push({
+                            status: 'in_progress',
+                            notes: 'Status automatically changed to in_progress after first reply.',
+                            created_at: res.data.created_at,
+                            user: res.data.user
+                        });
+                         // silently update background table
+                    }
+                    
+                    this.replyMessage = '';
+                } catch (e) {
+                    window.Swal.fire('Error', e.data?.message || 'Failed to post reply.', 'error');
+                }
+                this.isReplying = false;
+            },
+
+            async bulkAction(action, payload = {}) {
+                if (!this.selectedComplaints.length) return;
+                const confirmed = await window.Swal.fire({
+                    title: 'Are you sure?',
+                    text: `You are about to perform this action on ${this.selectedComplaints.length} complaint(s).`,
+                    icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, proceed!'
+                });
+                if (!confirmed.isConfirmed) return;
+                this.isSubmitting = true;
+                try {
+                    await this.api('/api/complaints/bulk-action', {
+                        method: 'POST',
+                        body: JSON.stringify({ action, ids: this.selectedComplaints, ...payload })
+                    });
+                    window.Swal.fire('Success', 'Bulk action completed.', 'success');
+                    this.selectedComplaints = [];
+                    
+                    
+                } catch (e) {
+                    window.Swal.fire('Error', e.data?.message || 'Bulk action failed.', 'error');
+                }
+                this.isSubmitting = false;
+            },
+
+            async downloadCsv(url, filename, options = {}) {
+                const method = (options.method || 'GET').toUpperCase();
+                const headers = {
+                    'Accept': 'text/csv',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrf(),
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                };
+                try {
+                    const res = await fetch(url, { ...options, method, headers });
+                    if (!res.ok) throw new Error('Download failed');
+                    const blob = await res.blob();
+                    const urlBlob = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = urlBlob;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(urlBlob);
+                } catch (e) {
+                    console.error(e);
+                    window.Swal.fire('Error', 'Failed to download export.', 'error');
+                }
+            },
+
+            async bulkExport() {
+                const params = new URLSearchParams();
+                if (this.searchQuery)   params.append('search',   this.searchQuery);
+                if (this.statusFilter)  params.append('status',   this.statusFilter);
+                if (this.priorityFilter) params.append('priority', this.priorityFilter);
+                
+                await this.downloadCsv(`/api/complaints/export?${params.toString()}`, `complaints_export_${new Date().getTime()}.csv`);
+            },
+
+            async exportSelected() {
+                if (!this.selectedComplaints.length) return;
+                await this.downloadCsv('/api/complaints/export-selected', `selected_complaints_${new Date().getTime()}.csv`, {
+                    method: 'POST',
+                    body: JSON.stringify({ ids: this.selectedComplaints })
+                });
+            }
+        }));
+    });
+</script>
+
+<style>
+    /* ── Complaint Modal — Two-Column Scrollable Layout ── */
+    #complaintModal .modal-dialog {
+        max-height: calc(100vh - 3.5rem);
+    }
+    #complaintModal .modal-content {
+        max-height: calc(100vh - 3.5rem);
+        display: flex;
+        flex-direction: column;
+    }
+    #complaintModal .modal-body {
+        flex: 1 1 auto;
+        overflow: hidden !important; /* modal body does not scroll, columns do */
+    }
+    #complaintModal .pvm-layout {
+        height: 100%;
+        min-height: 0;
+    }
+    #complaintModal .pvm-left,
+    #complaintModal .pvm-right {
+        overflow-y: auto;
+        /* vh minus header minus footer */
+        max-height: calc(100vh - 3.5rem - 70px - 70px); 
+    }
+    #complaintModal .pvm-left::-webkit-scrollbar,
+    #complaintModal .pvm-right::-webkit-scrollbar {
+        width: 5px;
+    }
+    #complaintModal .pvm-left::-webkit-scrollbar-thumb,
+    #complaintModal .pvm-right::-webkit-scrollbar-thumb {
+        background-color: rgba(var(--bs-secondary-rgb), 0.3);
+        border-radius: 4px;
+    }
+    @media (max-width: 991.98px) {
+        #complaintModal .pvm-left,
+        #complaintModal .pvm-right {
+            max-height: none;
+            overflow-y: visible;
+        }
+        #complaintModal .modal-body {
+            overflow-y: auto !important;
+        }
+    }
+    #complaintModal .min-width-0 { min-width: 0; }
+</style>
