@@ -244,7 +244,10 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         if ($request->filled('warehouse')) {
-            $query->where('warehouse_id', $request->warehouse);
+            $warehouseIds = array_filter(array_map('intval', explode(',', $request->warehouse)));
+            if (!empty($warehouseIds)) {
+                $query->whereIn('warehouse_id', $warehouseIds);
+            }
         }
 
         // Stats Query (Cached)

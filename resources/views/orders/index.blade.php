@@ -17,11 +17,7 @@
 ">
     <div x-data="{ showAnalytics: localStorage.getItem('orders_show_analytics') === 'true' }" x-init="$watch('showAnalytics', val => localStorage.setItem('orders_show_analytics', val))">
 <!-- Page Header -->
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 mb-lg-5 mb-xl-6 gap-3">
-    <div>
-        <h1 class="h3 mb-0 fw-bold">Order Management</h1>
-        <p class="text-muted mb-0">Track orders, manage fulfillment, and analyze sales</p>
-    </div>
+<div class="d-flex flex-column flex-md-row justify-content-end align-items-md-center mb-4 gap-3">
     <div class="d-flex flex-wrap align-items-center gap-2">
         <!-- Analytics Toggle -->
         <div class="form-check form-switch m-0 cursor-pointer d-flex align-items-center gap-2">
@@ -342,7 +338,7 @@
             <i class="bi bi-buildings text-primary me-2 fs-4"></i>Warehouse Operations Overview
         </h2>
         <div class="flex-grow-1 border-bottom border-secondary-subtle"></div>
-        <select class="form-select form-select-sm w-auto" x-model="visibleWarehouseStat" aria-label="Toggle Warehouse Visibility">
+        <select class="form-select form-select-sm w-auto" x-tom-select x-model="visibleWarehouseStat" aria-label="Toggle Warehouse Visibility">
             <option value="">All Warehouses</option>
             @foreach($warehousesList as $wh)
                 <option value="{{ $wh->name }}">{{ $wh->name }}</option>
@@ -487,7 +483,7 @@
     <div class="card-header">
         <div class="row align-items-center">
             <div class="col">
-                <h2 class="h5 card-title mb-0">Orders Directory</h2>
+                <h2 class="h5 card-title mb-0">All Orders</h2>
             </div>
             <div class="col-auto">
                 <div class="d-flex flex-wrap gap-2 justify-content-end">
@@ -505,15 +501,15 @@
                     <!-- Status Filter -->
                     @can('orders.filter_status')
                     <div class="position-relative" @click.away="showStatusDropdown = false" :style="showStatusDropdown ? 'z-index: 1050;' : ''">
-                        <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: pointer; width: 150px;" @click="showStatusDropdown = !showStatusDropdown">
+                        <div class="form-control form-control-sm d-flex flex-nowrap align-items-center gap-1" style="min-height: 31px; cursor: pointer; width: 150px; overflow: hidden;" @click="showStatusDropdown = !showStatusDropdown">
                             <template x-if="statusFilter.length === 0">
                                 <span class="text-body-secondary" style="font-size: 13px;">All Statuses</span>
                             </template>
                             <template x-if="statusFilter.length > 0">
-                                <div class="d-flex flex-wrap align-items-center gap-1 w-100" style="padding-right: 15px;">
+                                <div class="d-flex flex-nowrap align-items-center gap-1 w-100" style="padding-right: 15px;">
                                     <template x-for="status in statusFilter.slice(0, 1)" :key="status">
                                         <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
-                                            <span x-text="status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')" style="font-size: 11px;"></span>
+                                            <span :title="status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')" x-text="status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')" class="d-inline-block text-truncate" style="font-size: 11px; max-width: 70px; vertical-align: bottom;"></span>
                                             <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('status', status)" style="font-size: 13px;"></i>
                                         </div>
                                     </template>
@@ -542,20 +538,24 @@
                     <!-- Date Range -->
                     @can('orders.filter_date')
                     <select class="form-select form-select-sm" 
+                            x-tom-select
                             x-model="dateFilter" 
                             @change="filterOrders()"
                             style="width: 150px;">
                         <option value="">All Dates</option>
                         <option value="today">Today</option>
                         <option value="yesterday">Yesterday</option>
-                        <option value="week">This Week</option>
-                        <option value="month">This Month</option>
-                        <option value="prev_month">Previous Month</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                        <option value="this_month">This Month</option>
+                        <option value="last_month">Last Month</option>
+                        <option value="this_year">This Year</option>
                     </select>
                     @endcan
 
                     <!-- Items Per Page -->
                     <select class="form-select form-select-sm"
+                            x-tom-select
                             x-model.number="itemsPerPage"
                             @change="filterOrders()"
                             style="width: 120px;">
@@ -585,19 +585,38 @@
     </div>
 
     <!-- Collapsible Advanced Filters Drawer -->
-    <div class="collapse" id="advancedFilters">
+    <div class="collapse" id="advancedFilters" x-init="if (hasActiveAdvancedFilters()) { $el.classList.add('show'); $nextTick(() => { const btn = document.querySelector('[data-bs-target=\'#advancedFilters\']'); if(btn) btn.setAttribute('aria-expanded', 'true'); }); }">
         <div class="p-3 bg-body-tertiary border-top border-bottom border-secondary-subtle">
             <div class="row g-3">
                 <!-- Product Filter -->
                 @can('orders.filter_product')
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold text-body-secondary">Product</label>
-                    <select class="form-select form-select-sm" x-model="productFilter" @change="filterOrders()">
-                        <option value="">All Products</option>
-                        @foreach($productsList as $product)
-                            <option value="{{ $product->id }}">{{ $product->name }} ({{ $product->sku }})</option>
-                        @endforeach
-                    </select>
+                <div class="col-md-3 position-relative" @click.away="showProductDropdown = false" :style="showProductDropdown ? 'z-index: 1050;' : ''">
+                    <label class="form-label small fw-semibold text-body-secondary">
+                        Product <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="productFilter.length + ' / ' + (productsList ? productsList.length : 0)"></span>
+                    </label>
+                    <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showProductDropdown = true; $refs.productSearch.focus()">
+                        <template x-for="productId in productFilter" :key="productId">
+                            <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
+                                <span :title="(productsList.find(p => p.id === productId) || {}).name || productId" x-text="(productsList.find(p => p.id === productId) || {}).name || productId" class="d-inline-block text-truncate" style="font-size: 11px; max-width: 120px; vertical-align: bottom;"></span>
+                                <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('product', productId)" style="font-size: 13px;"></i>
+                            </div>
+                        </template>
+                        <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                            <input x-ref="productSearch" type="text" x-model="productSearch" @focus="showProductDropdown = true" placeholder="Search Products..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                        </div>
+                    </div>
+                    <div x-show="showProductDropdown && filteredProducts.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                        <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('product')">
+                            <input type="checkbox" :checked="productFilter.length > 0 && productFilter.length === (productsList ? productsList.length : 0)" class="me-2" style="cursor: pointer;">
+                            <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                        </div>
+                        <template x-for="product in filteredProducts" :key="product.id">
+                            <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('product', product.id)">
+                                <input type="checkbox" :checked="productFilter.includes(product.id)" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px;" x-text="product.name + ' (' + product.sku + ')'"></span>
+                            </div>
+                        </template>
+                    </div>
                 </div>
                 @endcan
                 
@@ -605,7 +624,7 @@
                 @can('orders.filter_fulfillment')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Fulfillment Status</label>
-                    <select class="form-select form-select-sm" x-model="fulfillmentFilter" @change="filterOrders()">
+                    <select class="form-select form-select-sm" x-tom-select x-model="fulfillmentFilter" @change="filterOrders()">
                         <option value="">All</option>
                         <option value="fulfillable">Fulfillable</option>
                         <option value="unfulfillable">Unfulfillable</option>
@@ -615,27 +634,65 @@
 
                 <!-- Carrier Filter -->
                 @can('orders.filter_carrier')
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold text-body-secondary">Carrier</label>
-                    <select class="form-select form-select-sm" x-model="carrierFilter" @change="filterOrders()">
-                        <option value="">All Carriers</option>
-                        @foreach($carriersList as $carrier)
-                            <option value="{{ $carrier }}">{{ $carrier }}</option>
-                        @endforeach
-                    </select>
+                <div class="col-md-3 position-relative" @click.away="showCarrierDropdown = false" :style="showCarrierDropdown ? 'z-index: 1050;' : ''">
+                    <label class="form-label small fw-semibold text-body-secondary">
+                        Carrier <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="carrierFilter.length + ' / ' + (carriersList ? carriersList.length : 0)"></span>
+                    </label>
+                    <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showCarrierDropdown = true; $refs.carrierSearch.focus()">
+                        <template x-for="carrier in carrierFilter" :key="carrier">
+                            <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
+                                <span :title="carrier" x-text="carrier" class="d-inline-block text-truncate" style="font-size: 11px; max-width: 120px; vertical-align: bottom;"></span>
+                                <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('carrier', carrier)" style="font-size: 13px;"></i>
+                            </div>
+                        </template>
+                        <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                            <input x-ref="carrierSearch" type="text" x-model="carrierSearch" @focus="showCarrierDropdown = true" placeholder="Search Carriers..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                        </div>
+                    </div>
+                    <div x-show="showCarrierDropdown && filteredCarriers.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                        <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('carrier')">
+                            <input type="checkbox" :checked="carrierFilter.length > 0 && carrierFilter.length === (carriersList ? carriersList.length : 0)" class="me-2" style="cursor: pointer;">
+                            <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                        </div>
+                        <template x-for="carrier in filteredCarriers" :key="carrier">
+                            <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('carrier', carrier)">
+                                <input type="checkbox" :checked="carrierFilter.includes(carrier)" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px;" x-text="carrier"></span>
+                            </div>
+                        </template>
+                    </div>
                 </div>
                 @endcan
 
                 <!-- Warehouse Filter -->
                 @can('orders.filter_warehouse')
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold text-body-secondary">Warehouse</label>
-                    <select class="form-select form-select-sm" x-model="warehouseFilter" @change="filterOrders()">
-                        <option value="">All Warehouses</option>
-                        @foreach($warehousesList as $warehouse)
-                            <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
-                        @endforeach
-                    </select>
+                <div class="col-md-3 position-relative" @click.away="showWarehouseDropdown = false" :style="showWarehouseDropdown ? 'z-index: 1050;' : ''">
+                    <label class="form-label small fw-semibold text-body-secondary">
+                        Warehouse <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="warehouseFilter.length + ' / ' + (warehousesList ? warehousesList.length : 0)"></span>
+                    </label>
+                    <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showWarehouseDropdown = true; $refs.warehouseSearch.focus()">
+                        <template x-for="warehouseId in warehouseFilter" :key="warehouseId">
+                            <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
+                                <span :title="(warehousesList.find(w => w.id === warehouseId) || {}).name || warehouseId" x-text="(warehousesList.find(w => w.id === warehouseId) || {}).name || warehouseId" class="d-inline-block text-truncate" style="font-size: 11px; max-width: 120px; vertical-align: bottom;"></span>
+                                <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('warehouse', warehouseId)" style="font-size: 13px;"></i>
+                            </div>
+                        </template>
+                        <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                            <input x-ref="warehouseSearch" type="text" x-model="warehouseSearch" @focus="showWarehouseDropdown = true" placeholder="Search Warehouses..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                        </div>
+                    </div>
+                    <div x-show="showWarehouseDropdown && filteredWarehouses.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                        <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('warehouse')">
+                            <input type="checkbox" :checked="warehouseFilter.length > 0 && warehouseFilter.length === (warehousesList ? warehousesList.length : 0)" class="me-2" style="cursor: pointer;">
+                            <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                        </div>
+                        <template x-for="warehouse in filteredWarehouses" :key="warehouse.id">
+                            <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('warehouse', warehouse.id)">
+                                <input type="checkbox" :checked="warehouseFilter.includes(warehouse.id)" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px;" x-text="warehouse.name"></span>
+                            </div>
+                        </template>
+                    </div>
                 </div>
                 @endcan
 
@@ -662,7 +719,7 @@
                     <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showStateDropdown = true; $refs.stateSearch.focus()">
                         <template x-for="state in stateFilter" :key="state">
                             <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
-                                <span x-text="state" style="font-size: 11px;"></span>
+                                <span :title="state" x-text="state" class="d-inline-block text-truncate" style="font-size: 11px; max-width: 120px; vertical-align: bottom;"></span>
                                 <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('state', state)" style="font-size: 13px;"></i>
                             </div>
                         </template>
@@ -694,7 +751,7 @@
                     <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showDistrictDropdown = true; $refs.districtSearch.focus()">
                         <template x-for="district in districtFilter" :key="district">
                             <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
-                                <span x-text="district" style="font-size: 11px;"></span>
+                                <span :title="district" x-text="district" class="d-inline-block text-truncate" style="font-size: 11px; max-width: 120px; vertical-align: bottom;"></span>
                                 <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('district', district)" style="font-size: 13px;"></i>
                             </div>
                         </template>
@@ -726,7 +783,7 @@
                     <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showTalukaDropdown = true; $refs.talukaSearch.focus()">
                         <template x-for="taluka in talukaFilter" :key="taluka">
                             <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
-                                <span x-text="taluka" style="font-size: 11px;"></span>
+                                <span :title="taluka" x-text="taluka" class="d-inline-block text-truncate" style="font-size: 11px; max-width: 120px; vertical-align: bottom;"></span>
                                 <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('taluka', taluka)" style="font-size: 13px;"></i>
                             </div>
                         </template>
@@ -758,7 +815,7 @@
                     <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showVillageDropdown = true; $refs.villageSearch.focus()">
                         <template x-for="village in villageFilter" :key="village">
                             <div class="badge text-bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-1 border border-primary-subtle">
-                                <span x-text="village" style="font-size: 11px;"></span>
+                                <span :title="village" x-text="village" class="d-inline-block text-truncate" style="font-size: 11px; max-width: 120px; vertical-align: bottom;"></span>
                                 <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('village', village)" style="font-size: 13px;"></i>
                             </div>
                         </template>
@@ -1778,8 +1835,8 @@
             </div>
             <div class="modal-body pt-3">
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Select Carrier <span class="text-danger">*</span></label>
-                    <select class="form-select" x-model="shipCarrierName">
+                    <label class="form-label fw-semibold">Carrier Name <span class="text-danger">*</span></label>
+                    <select class="form-select" x-tom-select x-model="shipCarrierName">
                         <option value="" disabled selected>Select carrier...</option>
                         <template x-for="carrier in shipCarrierOptions" :key="carrier.name">
                             <option :value="carrier.name" x-text="carrier.priority === null ? carrier.name : `${carrier.name} (Priority: ${carrier.priority})`"></option>
@@ -1950,7 +2007,7 @@
                 <div x-show="confirmAction === 'schedule'" x-cloak x-transition>
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-body-emphasis">Reason for Reschedule <span class="text-danger">*</span></label>
-                        <select class="form-select" x-model="scheduleReason">
+                        <select class="form-select" x-tom-select x-model="scheduleReason">
                             <option value="" disabled selected>Select a reason...</option>
                             @foreach($rescheduleReasons as $reason)
                                 <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
@@ -2050,8 +2107,8 @@
 
                 <div x-show="deliverAction === 'schedule'" x-cloak x-transition>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold text-body-emphasis">Reason for Failure <span class="text-danger">*</span></label>
-                        <select class="form-select" x-model="scheduleDeliveryReason">
+                        <label class="form-label fw-semibold text-body-emphasis">Reason for Failure / Reschedule <span class="text-danger">*</span></label>
+                        <select class="form-select" x-tom-select x-model="scheduleDeliveryReason">
                             <option value="" disabled selected>Select a reason...</option>
                             @foreach($deliveryFailureReasons as $reason)
                                 <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
@@ -2094,8 +2151,8 @@
             </div>
             <div class="modal-body pt-3">
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Reason for Return <span class="text-danger">*</span></label>
-                    <select class="form-select" x-model="returnReason">
+                    <label class="form-label fw-semibold text-body-emphasis">Reason for Return <span class="text-danger">*</span></label>
+                    <select class="form-select" x-tom-select x-model="returnReason">
                         <option value="" disabled selected>Select a reason...</option>
                         @foreach($returnReasons as $reason)
                             <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
@@ -2162,8 +2219,8 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Reason for Cancellation <span class="text-danger">*</span></label>
-                    <select class="form-select" x-model="cancelReason">
+                    <label class="form-label fw-semibold text-body-emphasis">Reason for Cancellation <span class="text-danger">*</span></label>
+                    <select class="form-select" x-tom-select x-model="cancelReason">
                         <option value="" disabled selected>Select a reason...</option>
                         @foreach($cancelReasons as $reason)
                             <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>

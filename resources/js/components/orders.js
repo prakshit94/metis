@@ -87,14 +87,14 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     statusFilter: [],
     dateFilter: '',
-    productFilter: '',
+    productFilter: [],
     fulfillmentFilter: '',
     stateFilter: [],
     districtFilter: [],
     talukaFilter: [],
     villageFilter: [],
-    carrierFilter: '',
-    warehouseFilter: '',
+    carrierFilter: [],
+    warehouseFilter: [],
     fromDate: '',
     toDate: '',
     sortField: 'id',
@@ -189,6 +189,28 @@ document.addEventListener('alpine:init', () => {
     talukaSearch: '',
     showVillageDropdown: false,
     villageSearch: '',
+    showProductDropdown: false,
+    productSearch: '',
+    showCarrierDropdown: false,
+    carrierSearch: '',
+    showWarehouseDropdown: false,
+    warehouseSearch: '',
+
+    get filteredProducts() {
+        let list = this.productsList || [];
+        if (!this.productSearch) return list;
+        return list.filter(p => p && p.name && p.name.toLowerCase().includes(this.productSearch.toLowerCase()));
+    },
+    get filteredCarriers() {
+        let list = this.carriersList || [];
+        if (!this.carrierSearch) return list;
+        return list.filter(c => c && c.toLowerCase().includes(this.carrierSearch.toLowerCase()));
+    },
+    get filteredWarehouses() {
+        let list = this.warehousesList || [];
+        if (!this.warehouseSearch) return list;
+        return list.filter(w => w && w.name && w.name.toLowerCase().includes(this.warehouseSearch.toLowerCase()));
+    },
 
     get filteredStates() {
         let list = Object.values(this.statesList || {});
@@ -236,6 +258,17 @@ document.addEventListener('alpine:init', () => {
         } else if (type === 'village') {
             if (this.villageFilter.includes(value)) this.villageFilter = this.villageFilter.filter(v => v !== value);
             else this.villageFilter.push(value);
+        } else if (type === 'product') {
+            // value is the product ID (number)
+            if (this.productFilter.includes(value)) this.productFilter = this.productFilter.filter(v => v !== value);
+            else this.productFilter.push(value);
+        } else if (type === 'carrier') {
+            if (this.carrierFilter.includes(value)) this.carrierFilter = this.carrierFilter.filter(v => v !== value);
+            else this.carrierFilter.push(value);
+        } else if (type === 'warehouse') {
+            // value is the warehouse ID (number)
+            if (this.warehouseFilter.includes(value)) this.warehouseFilter = this.warehouseFilter.filter(v => v !== value);
+            else this.warehouseFilter.push(value);
         }
         this.filterOrders();
     },
@@ -267,6 +300,18 @@ document.addEventListener('alpine:init', () => {
             let list = Object.values(this.villagesList || {});
             if (this.villageFilter.length === list.length) this.villageFilter = [];
             else this.villageFilter = [...list];
+        } else if (type === 'product') {
+            let list = (this.productsList || []).map(p => p.id);
+            if (this.productFilter.length === list.length) this.productFilter = [];
+            else this.productFilter = [...list];
+        } else if (type === 'carrier') {
+            let list = this.carriersList || [];
+            if (this.carrierFilter.length === list.length) this.carrierFilter = [];
+            else this.carrierFilter = [...list];
+        } else if (type === 'warehouse') {
+            let list = (this.warehousesList || []).map(w => w.id);
+            if (this.warehouseFilter.length === list.length) this.warehouseFilter = [];
+            else this.warehouseFilter = [...list];
         }
         this.filterOrders();
     },
@@ -292,9 +337,9 @@ document.addEventListener('alpine:init', () => {
       if (params.has('sort_direction')) this.sortDirection = params.get('sort_direction');
 
       // Extract x-model values for <select> elements populated via <template x-for>
-      const urlProduct = params.has('product') ? Number(params.get('product')) : '';
-      const urlCarrier = params.has('carrier') ? params.get('carrier') : '';
-      const urlWarehouse = params.has('warehouse') ? Number(params.get('warehouse')) : '';
+      const urlProduct = params.has('product') && params.get('product') ? params.get('product').split(',').map(Number) : [];
+      const urlCarrier = params.has('carrier') && params.get('carrier') ? params.get('carrier').split(',') : [];
+      const urlWarehouse = params.has('warehouse') && params.get('warehouse') ? params.get('warehouse').split(',').map(Number) : [];
 
       this.productFilter = urlProduct;
       this.carrierFilter = urlCarrier;
@@ -302,9 +347,9 @@ document.addEventListener('alpine:init', () => {
 
       // Re-apply values after DOM rendering because Alpine resets empty <select> values on init
       setTimeout(() => {
-        if (urlProduct) this.productFilter = urlProduct;
-        if (urlCarrier) this.carrierFilter = urlCarrier;
-        if (urlWarehouse) this.warehouseFilter = urlWarehouse;
+        if (urlProduct.length) this.productFilter = urlProduct;
+        if (urlCarrier.length) this.carrierFilter = urlCarrier;
+        if (urlWarehouse.length) this.warehouseFilter = urlWarehouse;
       }, 500);
 
       this.loadOrders();
@@ -384,14 +429,14 @@ document.addEventListener('alpine:init', () => {
       
       if (this.searchQuery) params.append('search', this.searchQuery);
       if (this.statusFilter.length) params.append('status', this.statusFilter.join(','));
-      if (this.productFilter) params.append('product', this.productFilter);
+      if (this.productFilter && this.productFilter.length) params.append('product', this.productFilter.join(','));
       if (this.fulfillmentFilter) params.append('fulfillment', this.fulfillmentFilter);
       if (this.stateFilter.length) params.append('state', this.stateFilter.join(','));
       if (this.districtFilter.length) params.append('district', this.districtFilter.join(','));
       if (this.talukaFilter.length) params.append('taluka', this.talukaFilter.join(','));
       if (this.villageFilter.length) params.append('village', this.villageFilter.join(','));
-      if (this.carrierFilter) params.append('carrier', this.carrierFilter);
-      if (this.warehouseFilter) params.append('warehouse', this.warehouseFilter);
+      if (this.carrierFilter && this.carrierFilter.length) params.append('carrier', this.carrierFilter.join(','));
+      if (this.warehouseFilter && this.warehouseFilter.length) params.append('warehouse', this.warehouseFilter.join(','));
       
       // Handle Date selection
       let activeFromDate = this.fromDate;
@@ -413,19 +458,27 @@ document.addEventListener('alpine:init', () => {
           const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
           activeFromDate = formatDate(yesterday);
           activeToDate = formatDate(yesterday);
-        } else if (this.dateFilter === 'week') {
+        } else if (this.dateFilter === 'week' || this.dateFilter === '7d') {
           const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
           activeFromDate = formatDate(weekAgo);
           activeToDate = formatDate(today);
-        } else if (this.dateFilter === 'month') {
+        } else if (this.dateFilter === 'month' || this.dateFilter === '30d') {
           const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
           activeFromDate = formatDate(monthAgo);
           activeToDate = formatDate(today);
-        } else if (this.dateFilter === 'prev_month') {
+        } else if (this.dateFilter === 'this_month') {
+          const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+          activeFromDate = formatDate(firstDay);
+          activeToDate = formatDate(today);
+        } else if (this.dateFilter === 'prev_month' || this.dateFilter === 'last_month') {
           const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1, 12, 0, 0);
           const lastDay = new Date(today.getFullYear(), today.getMonth(), 0, 12, 0, 0);
           activeFromDate = formatDate(firstDay);
           activeToDate = formatDate(lastDay);
+        } else if (this.dateFilter === 'this_year') {
+          const firstDay = new Date(today.getFullYear(), 0, 1, 12, 0, 0);
+          activeFromDate = formatDate(firstDay);
+          activeToDate = formatDate(today);
         }
       }
       
@@ -841,14 +894,14 @@ document.addEventListener('alpine:init', () => {
       this.searchQuery = '';
       this.statusFilter = [...(this.allowedFilterStatuses || [])];
       this.dateFilter = '';
-      this.productFilter = '';
+      this.productFilter = [];
       this.fulfillmentFilter = '';
       this.stateFilter = [];
       this.districtFilter = [];
       this.talukaFilter = [];
       this.villageFilter = [];
-      this.carrierFilter = '';
-      this.warehouseFilter = '';
+      this.carrierFilter = [];
+      this.warehouseFilter = [];
       this.fromDate = '';
       this.toDate = '';
       this.sortField = 'id';
@@ -859,10 +912,10 @@ document.addEventListener('alpine:init', () => {
 
     hasActiveAdvancedFilters() {
       return Boolean(
-        this.productFilter ||
+        (this.productFilter && this.productFilter.length > 0) ||
         this.fulfillmentFilter ||
-        this.carrierFilter ||
-        this.warehouseFilter ||
+        (this.carrierFilter && this.carrierFilter.length > 0) ||
+        (this.warehouseFilter && this.warehouseFilter.length > 0) ||
         this.fromDate ||
         this.toDate ||
         this.stateFilter.length > 0 ||
@@ -1620,13 +1673,14 @@ document.addEventListener('alpine:init', () => {
       window.open(`/orders/export?${new URLSearchParams({
         search: this.searchQuery,
         status: this.statusFilter.length ? this.statusFilter.join(',') : '',
-        product: this.productFilter,
+        product: this.productFilter ? this.productFilter.join(',') : '',
         fulfillment: this.fulfillmentFilter,
         state: this.stateFilter.join(','),
         district: this.districtFilter.join(','),
         taluka: this.talukaFilter.join(','),
         village: this.villageFilter.join(','),
-        carrier: this.carrierFilter,
+        carrier: this.carrierFilter ? this.carrierFilter.join(',') : '',
+        warehouse: this.warehouseFilter ? this.warehouseFilter.join(',') : '',
         from_date: this.fromDate,
         to_date: this.toDate
       }).toString()}`, '_blank');

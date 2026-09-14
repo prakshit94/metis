@@ -713,6 +713,63 @@ class AdminApp {
     // Expose Alpine globally BEFORE starting it so alpine:init listeners can use it
     window.Alpine = Alpine;
 
+    // Register x-tom-select directive globally
+    Alpine.directive('tom-select', (el, { expression }, { Alpine, cleanup, evaluateLater, effect }) => {
+      // Import dynamically to keep initial load small, or we can assume it's bundled if imported at top
+      import('tom-select').then(({ default: TomSelect }) => {
+        const plugins = ['dropdown_input'];
+        if (el.hasAttribute('multiple')) {
+            plugins.push('remove_button');
+        }
+        
+        const ts = new TomSelect(el, {
+          create: false,
+          plugins: plugins,
+          sortField: { field: "text", direction: "asc" }
+        });
+        
+        // Remove Bootstrap native form-select classes from the wrapper to prevent double arrows
+        if (ts.wrapper) {
+            ts.wrapper.classList.remove('form-select', 'form-select-sm', 'form-select-lg');
+        }
+
+        // Sync x-model changes from Alpine -> TomSelect
+        const modelName = el.getAttribute('x-model') || el.getAttribute('x-model.number');
+        if (modelName) {
+          const evaluate = evaluateLater(modelName);
+          effect(() => {
+            evaluate(value => {
+              let currentValue = ts.getValue();
+              let isDifferent = false;
+
+              if (Array.isArray(value)) {
+                  let stringValues = value.map(String);
+                  if (!Array.isArray(currentValue)) currentValue = currentValue ? [currentValue] : [];
+                  
+                  if (currentValue.length !== stringValues.length || !currentValue.every(v => stringValues.includes(v))) {
+                      isDifferent = true;
+                  }
+              } else {
+                  if (currentValue !== String(value) && value !== undefined && value !== null) {
+                      isDifferent = true;
+                  }
+              }
+
+              if (isDifferent) {
+                ts.setValue(value, true); // true = silent, prevents infinite loop
+              } else if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
+                  if (currentValue !== '' && currentValue.length !== 0) {
+                      ts.setValue('', true);
+                  }
+              }
+            });
+          });
+        }
+
+        cleanup(() => ts.destroy());
+      });
+    });
+
     Alpine.start();
   }
 

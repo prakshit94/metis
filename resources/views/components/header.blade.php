@@ -56,9 +56,13 @@
                         @can('reports-view')
                         { name: 'Reports', path: '{{ route('reports') }}', icon: 'bi bi-file-earmark-bar-graph-fill', group: 'Main' },
                         @endcan
+                        { name: 'Targets & Achv.', path: '{{ route('targets.index') }}', icon: 'bi bi-award-fill', group: 'Main' },
                         
                         @can('orders.view')
                         { name: 'Orders', path: '{{ route('orders') }}', icon: 'bi bi-bag-check-fill', group: 'Sales & Marketing' },
+                        @endcan
+                        @can('complaints.view')
+                        { name: 'Complaints', path: '{{ route('complaints.index') }}', icon: 'bi bi-headset', group: 'Sales & Marketing' },
                         @endcan
                         @can('coupon-view')
                         { name: 'Coupon Codes', path: '{{ route('promotions.coupons') }}', icon: 'bi bi-ticket-perforated-fill', group: 'Sales & Marketing' },
@@ -87,6 +91,7 @@
                         @can('shipping-view')
                         { name: 'Shipments & Tracking', path: '{{ route('shipping.shipments') }}', icon: 'bi bi-geo-alt-fill', group: 'Logistics & Warehouses' },
                         { name: 'Shipping Services', path: '{{ route('shipping.services') }}', icon: 'bi bi-gear-wide-connected', group: 'Logistics & Warehouses' },
+                        { name: 'Shipping Settings', path: '{{ route('shipping.settings') }}', icon: 'bi bi-sliders', group: 'Logistics & Warehouses' },
                         @endcan
                         @can('warehouse-view')
                         { name: 'Warehouses', path: '{{ route('catalog.warehouses') }}', icon: 'bi bi-buildings-fill', group: 'Logistics & Warehouses' },
@@ -102,6 +107,9 @@
                         { name: 'Adjustments', path: '{{ route('inventory.adjustments') }}', icon: 'bi bi-sliders2', group: 'Inventory & Stock' },
                         @endcan
                         
+                        @can('supplier-view')
+                        { name: 'Suppliers', path: '{{ route('procurement.suppliers.index') }}', icon: 'bi bi-truck-flatbed', group: 'Procurement' },
+                        @endcan
                         @can('purchaseorder-view')
                         { name: 'Purchase Orders', path: '{{ route('procurement.purchase-orders.index') }}', icon: 'bi bi-receipt', group: 'Procurement' },
                         @endcan
@@ -136,6 +144,9 @@
                         @endcan
                         @can('role-view')
                         { name: 'Roles & Permissions', path: '{{ route('roles-permissions') }}', icon: 'bi bi-shield-lock-fill', group: 'User & Customer Admin' },
+                        @endcan
+                        @can('team-view')
+                        { name: 'Teams (State/LOB)', path: '{{ route('teams') }}', icon: 'bi bi-buildings-fill', group: 'User & Customer Admin' },
                         @endcan
                         @role('Super Admin')
                         { name: 'Customers', path: '{{ route('customers') }}', icon: 'bi bi-person-lines-fill', group: 'User & Customer Admin' },
@@ -239,10 +250,13 @@
                         </div>
                         
                         <input type="text"
+                               x-ref="searchInput"
                                class="form-control form-control-lg bg-body-secondary bg-opacity-50 border-0 rounded-pill shadow-none fw-semibold w-100 transition-all focus-ring focus-ring-primary"
                                style="font-size: 14px; letter-spacing: 0.5px; padding-left: 3rem !important; padding-right: 4rem !important;"
                                placeholder="Search or jump to..."
                                x-model="searchQuery"
+                               @keydown.window.prevent.cmd.k="$refs.searchInput.focus()"
+                               @keydown.window.prevent.ctrl.k="$refs.searchInput.focus()"
                                @keydown="handleKeydown($event)"
                                @keydown.escape="clearSearch()"
                                aria-label="Search pages">
