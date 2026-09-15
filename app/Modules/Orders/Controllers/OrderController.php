@@ -1074,7 +1074,7 @@ class OrderController extends Controller implements HasMiddleware
             'order_ids' => 'required|array|min:1',
             'order_ids.*' => 'integer|exists:orders,id',
             'status' => 'required|string|in:pending,confirmed,processing,ready_to_ship,dispatched,delivered,cancelled,returned',
-            'carrier_name' => 'required_if:status,ready_to_ship|nullable|string|max:255',
+            'carrier_name' => 'nullable|string|max:255',
             'service_provider_id' => [
                 'nullable',
                 'integer',
@@ -1131,28 +1131,55 @@ class OrderController extends Controller implements HasMiddleware
                         }
                     } elseif ($targetStatus === 'ready_to_ship') {
                         if ($order->status === 'processing') {
-                            // Validate that the selected carrier is mapped to the order's village
-                            $order->loadMissing('shippingAddress.village.services');
+                            // Auto-assign top priority carrier if not provided
+                            $order->loadMissing('shippingAddress.village.services.providers');
+                            $assignedCarrier = $validated['carrier_name'] ?? null;
+                            $assignedProviderId = $validated['service_provider_id'] ?? null;
                             $hasCarrier = false;
-                            if ($order->shippingAddress && $order->shippingAddress->village) {
-                                foreach ($order->shippingAddress->village->services as $service) {
-                                    if ($service->name === $validated['carrier_name'] && $service->is_active && $service->pivot->is_available) {
+                            
+                            if ($order->shippingAddress && $order->shippingAddress->village && $order->shippingAddress->village->services) {
+                                $services = $order->shippingAddress->village->services->filter(function ($s) {
+                                    return $s->is_active && $s->pivot->is_available;
+                                })->sortBy(function ($s) {
+                                    return $s->pivot->priority ?? 9999;
+                                });
+                                
+                                if ($assignedCarrier) {
+                                    foreach ($services as $service) {
+                                        if ($service->name === $assignedCarrier) {
+                                            $hasCarrier = true;
+                                            $topProvider = $service->providers->sortBy(function ($p) {
+                                                return $p->pivot->priority ?? 9999;
+                                            })->first();
+                                            if (!$assignedProviderId && $topProvider) {
+                                                $assignedProviderId = $topProvider->id;
+                                            }
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    $topService = $services->first();
+                                    if ($topService) {
+                                        $assignedCarrier = $topService->name;
                                         $hasCarrier = true;
-                                        break;
+                                        $topProvider = $topService->providers->sortBy(function ($p) {
+                                            return $p->pivot->priority ?? 9999;
+                                        })->first();
+                                        $assignedProviderId = $topProvider->id ?? null;
                                     }
                                 }
                             }
                             
                             if (!$hasCarrier) {
-                                $errors[] = "Order #{$order->order_no}: No mapped service found for carrier {$validated['carrier_name']}.";
+                                $errors[] = "Order #{$order->order_no}: No mapped service found.";
                                 $skipped++;
                                 continue;
                             }
 
-                            $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no'] ?? null, $validated['service_provider_id'] ?? null);
+                            $inventoryService->readyToShipOrder($order, $assignedCarrier, $validated['tracking_no'] ?? null, $assignedProviderId);
                             $order->statusLogs()->create([
                                 'status' => 'ready_to_ship',
-                                'notes' => 'Bulk status updated to ready to ship. Carrier: '.$validated['carrier_name'].', Tracking: '.($validated['tracking_no'] ?? 'Auto-generated/None'),
+                                'notes' => 'Bulk status updated to ready to ship. Carrier: '.$assignedCarrier.', Tracking: '.($validated['tracking_no'] ?? 'Auto-generated/None'),
                                 'changed_by' => auth()->id(),
                             ]);
                             $count++;

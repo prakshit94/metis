@@ -1553,79 +1553,21 @@ document.addEventListener('alpine:init', () => {
       let serviceProviderId = null;
 
       if (status === 'ready_to_ship') {
-        let commonCarriers = null;
-        for (const orderId of this.selectedOrders) {
-            const order = this.orders.find(o => String(o.id) === String(orderId));
-            if (order) {
-                const carriers = (order.availableCarrierOptions || []).map(c => c.name);
-                if (commonCarriers === null) {
-                    commonCarriers = carriers;
-                } else {
-                    commonCarriers = commonCarriers.filter(c => carriers.includes(c));
-                }
-            }
-        }
-        commonCarriers = commonCarriers || [];
-        
-        if (commonCarriers.length === 0) {
-            Swal.fire({
-                icon: 'error',
-                title: 'No Common Service',
-                text: 'There is no common mapped service assigned for the selected orders. Please ship them individually or adjust the selection.',
-                confirmButtonText: 'Okay'
-            });
-            return;
+        const noServiceOrders = this.orders.filter(o => {
+            if (!this.selectedOrders.includes(String(o.id))) return false;
+            const carriers = o.availableCarrierOptions || [];
+            return carriers.length === 0;
+        });
+
+        if (noServiceOrders.length > 0) {
+            showToast(`Skipped ${noServiceOrders.length} order(s) because no service is mapped.`, 'warning');
+            this.selectedOrders = this.selectedOrders.filter(id => !noServiceOrders.find(u => String(u.id) === id));
+            if (this.selectedOrders.length === 0) return;
         }
 
-        const carrierProvidersMap = this.carrierProvidersMap || {};
-        
-        const result = await Swal.fire({
-          title: 'Ready to Ship (Bulk)',
-          html: `
-            <div class="text-start">
-              <label class="form-label fw-bold">Carrier Name <span class="text-danger">*</span></label>
-              <select id="swal-carrier" class="form-select mb-3" onchange="
-                const map = ${JSON.stringify(this.carrierProvidersMap || {}).replace(/"/g, '&quot;')};
-                const val = this.value;
-                const spSelect = document.getElementById('swal-service-provider');
-                const spContainer = document.getElementById('swal-sp-container');
-                const providers = map[val] || [];
-                spSelect.innerHTML = '<option value=\\'\\'>Select provider...</option>';
-                if (providers.length > 0) {
-                  spContainer.style.display = 'block';
-                  providers.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.text = p.name + ' (Priority: ' + p.priority + ')';
-                    spSelect.appendChild(opt);
-                  });
-                  spSelect.value = providers[0].id;
-                } else {
-                  spContainer.style.display = 'none';
-                }
-                const i = document.getElementById('swal-tracking-info');
-                if (val === 'India Post') {
-                  i.style.display = 'block';
-                } else {
-                  i.style.display = 'none';
-                }
-              ">
-                <option value="" disabled selected>Select Carrier</option>
-                ${commonCarriers.map(c => `<option value="${c}">${c}</option>`).join('')}
-              </select>
-              
-              <div id="swal-sp-container" class="mb-3" style="display: none;">
-                  <label class="form-label fw-bold">Service Provider</label>
-                  <select id="swal-service-provider" class="form-select"></select>
-              </div>
-
-              <label class="form-label fw-bold">Tracking Number <span class="text-muted fw-normal">(Optional)</span></label>
-              <input type="text" id="swal-tracking" class="form-control" placeholder="Enter tracking details">
-              <div id="swal-tracking-info" class="form-text mt-2 text-info" style="display: none;">
-                <i class="bi bi-info-circle-fill me-1"></i> Leave blank to automatically generate Tracking IDs via India Post API.
-              </div>
-            </div>
-          `,
+        const confirmed = await Swal.fire({
+          title: 'Bulk Ready to Ship',
+          text: `Automatically assign top priority services and mark ${this.selectedOrders.length} order(s) as Ready to Ship?`,
           icon: 'question',
           showCancelButton: true,
           confirmButtonText: 'Yes, update',
@@ -1637,23 +1579,9 @@ document.addEventListener('alpine:init', () => {
             title: 'fs-4 fw-bold text-body-emphasis',
             htmlContainer: 'text-body text-start'
           },
-          buttonsStyling: false,
-          preConfirm: () => {
-            const cName = document.getElementById('swal-carrier').value;
-            const tNo = document.getElementById('swal-tracking').value;
-            const spId = document.getElementById('swal-service-provider').value;
-            if (!cName) {
-              Swal.showValidationMessage('Please select a carrier');
-              return false;
-            }
-            return { carrierName: cName, trackingNo: tNo, serviceProviderId: spId };
-          }
+          buttonsStyling: false
         });
-
-        if (!result.isConfirmed) return;
-        carrierName = result.value.carrierName;
-        trackingNo = result.value.trackingNo;
-        serviceProviderId = result.value.serviceProviderId;
+        if (!confirmed.isConfirmed) return;
       } else {
         const confirmed = await Swal.fire({
           title: 'Bulk Update Status',
