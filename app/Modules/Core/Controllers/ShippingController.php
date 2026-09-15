@@ -33,7 +33,7 @@ class ShippingController extends Controller implements HasMiddleware
     public function shipmentsIndex(Request $request): JsonResponse
     {
 
-        $query = Shipment::with(['order.items.product', 'order.party', 'service.providers:id,name,email,phone,department_id,is_active']);
+        $query = Shipment::with(['order.items.product', 'order.party', 'order.shippingAddress', 'order.warehouse', 'service.providers:id,name,email,phone,department_id,is_active']);
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {

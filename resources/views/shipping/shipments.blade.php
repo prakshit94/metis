@@ -490,14 +490,38 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="fw-bold text-primary mb-2" x-text="item.order ? item.order.order_no : ('ORD-' + item.order_id)"></div>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="fw-bold text-primary" style="font-size: 0.9rem;" x-text="item.order ? item.order.order_no : ('ORD-' + item.order_id)"></div>
+                                        <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill" style="font-size: 0.65rem;" x-text="item.order?.items?.length ? item.order.items.length + ' Items' : '-'"></span>
+                                    </div>
+                                    
                                     <template x-if="item.order && item.order.party">
-                                        <div class="d-flex align-items-start gap-2 bg-body-tertiary p-2 rounded-3 border border-secondary-subtle">
-                                            <i class="bi bi-person-badge text-secondary mt-1" style="font-size: 0.85rem;"></i>
-                                            <div class="lh-sm">
-                                                <div class="fw-semibold text-body mb-1" style="font-size: 0.8rem;" x-text="item.order.party.name || 'Unknown Customer'"></div>
-                                                <div class="text-muted font-monospace" style="font-size: 0.75rem;"><i class="bi bi-telephone-fill me-1 opacity-50"></i><span x-text="item.order.party.phone || 'N/A'"></span></div>
+                                        <div class="bg-body-tertiary p-2 rounded-3 border border-secondary-subtle mb-2">
+                                            <div class="d-flex align-items-start gap-2 mb-1">
+                                                <i class="bi bi-person-badge text-secondary mt-1" style="font-size: 0.85rem;"></i>
+                                                <div class="lh-sm flex-grow-1">
+                                                    <div class="fw-semibold text-body mb-1" style="font-size: 0.8rem;" x-text="item.order.party.name || 'Unknown Customer'"></div>
+                                                    <div class="text-muted font-monospace" style="font-size: 0.75rem;">
+                                                        <i class="bi bi-telephone-fill me-1 opacity-50"></i><span x-text="item.order.party.phone || 'N/A'"></span>
+                                                    </div>
+                                                </div>
                                             </div>
+                                            <template x-if="item.order.shipping_address">
+                                                <div class="d-flex align-items-start gap-2 mt-2 pt-2 border-top border-secondary-subtle">
+                                                    <i class="bi bi-geo-alt text-danger opacity-75 mt-1" style="font-size: 0.8rem;"></i>
+                                                    <div class="text-muted lh-sm" style="font-size: 0.7rem;">
+                                                        <span x-text="item.order.shipping_address.city || ''"></span><span x-show="item.order.shipping_address.city && item.order.shipping_address.state">, </span>
+                                                        <span x-text="item.order.shipping_address.state || ''"></span>
+                                                        <div class="fw-semibold mt-1" x-show="item.order.shipping_address.pincode" x-text="'PIN: ' + item.order.shipping_address.pincode"></div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    
+                                    <template x-if="item.order && item.order.warehouse">
+                                        <div class="d-flex align-items-center gap-1 small text-muted" style="font-size: 0.7rem;">
+                                            <i class="bi bi-building me-1"></i><span class="fw-medium">Origin:</span> <span x-text="item.order.warehouse.name"></span>
                                         </div>
                                     </template>
                                 </td>
@@ -531,12 +555,18 @@
                                     <template x-if="item.service && item.service.providers?.length">
                                         <div class="d-flex flex-column gap-1 border-top pt-2 border-secondary-subtle">
                                             <span class="small text-muted fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px; text-transform: uppercase;">Support Persons</span>
-                                            <template x-for="provider in item.service.providers" :key="provider.id">
-                                                <div class="d-flex align-items-start gap-2 small lh-sm">
-                                                    <i class="bi bi-headset text-primary opacity-75 mt-1" style="font-size: 0.8rem;"></i>
-                                                    <div>
-                                                        <div class="fw-semibold text-primary" style="font-size: 0.8rem;" x-text="provider.name"></div>
-                                                        <div class="text-muted" style="font-size: 0.75rem;" x-text="[provider.phone, provider.department].filter(Boolean).join(' · ')"></div>
+                                            <template x-for="provider in [...item.service.providers].sort((a,b) => ((a.pivot && a.pivot.priority) ? parseInt(a.pivot.priority) : 999) - ((b.pivot && b.pivot.priority) ? parseInt(b.pivot.priority) : 999))" :key="provider.id">
+                                                <div class="d-flex align-items-start gap-2 small lh-sm p-1 rounded" :class="String(provider.id) === String(item.service_provider_id) ? 'bg-primary bg-opacity-10 border border-primary border-opacity-25' : ''">
+                                                    <i class="bi bi-person-badge opacity-75 mt-1" :class="String(provider.id) === String(item.service_provider_id) ? 'text-primary' : 'text-secondary'" style="font-size: 0.8rem;"></i>
+                                                    <div class="flex-grow-1">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div class="fw-semibold" :class="String(provider.id) === String(item.service_provider_id) ? 'text-primary' : 'text-body'" style="font-size: 0.8rem;" x-text="provider.name"></div>
+                                                            <div class="d-flex gap-1">
+                                                                <span x-show="String(provider.id) === String(item.service_provider_id)" class="badge bg-success rounded-pill" style="font-size: 0.55rem;">Assigned</span>
+                                                                <span class="badge rounded-pill" :class="String(provider.id) === String(item.service_provider_id) ? 'bg-primary' : 'bg-secondary'" style="font-size: 0.55rem;" x-text="'P' + (provider.pivot ? provider.pivot.priority : '-')"></span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-muted mt-1" style="font-size: 0.75rem;" x-text="[provider.phone, provider.department].filter(Boolean).join(' · ')"></div>
                                                     </div>
                                                 </div>
                                             </template>
