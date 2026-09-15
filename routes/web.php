@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function (): void {
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/', [PageController::class, 'dashboard'])->name('dashboard');
+    Route::get('/search', [\App\Http\Controllers\GlobalSearchController::class, 'search'])->name('global.search');
     Route::get('/analytics', [PageController::class, 'analytics'])->name('analytics');
     Route::get('/analytics/data', [PageController::class, 'analyticsData'])->name('analytics.data');
     Route::get('/users', [PageController::class, 'users'])->name('users');
