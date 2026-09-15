@@ -176,8 +176,13 @@ export default () => {
 
                 if (item.service && item.service.providers) {
                     item.service.providers.forEach(p => {
-                        if (!providerMap[c].contact_persons.find(existing => existing.id === p.id)) {
-                            providerMap[c].contact_persons.push(p);
+                        let contact = providerMap[c].contact_persons.find(existing => existing.id === p.id);
+                        if (!contact) {
+                            contact = { ...p, assigned_orders: 0 };
+                            providerMap[c].contact_persons.push(contact);
+                        }
+                        if (String(item.service_provider_id) === String(p.id)) {
+                            contact.assigned_orders++;
                         }
                     });
                 }
@@ -192,6 +197,11 @@ export default () => {
 
             const colorClasses = ['primary', 'info', 'warning', 'danger', 'success'];
             this.topProviders = Object.values(providerMap).map((p, idx) => {
+                p.contact_persons.sort((a, b) => {
+                    let pA = (a.pivot && a.pivot.priority) ? parseInt(a.pivot.priority) : 999;
+                    let pB = (b.pivot && b.pivot.priority) ? parseInt(b.pivot.priority) : 999;
+                    return pA - pB;
+                });
                 const activeTotal = p.total - p.pending;
                 const onTimeRate = activeTotal > 0 ? Math.round((p.delivered / activeTotal) * 100) : 0;
                 const exceptionRate = activeTotal > 0 ? (((p.failed + p.returned) / activeTotal) * 100).toFixed(1) : '0.0';

@@ -185,11 +185,17 @@
                                                 <div class="d-flex flex-column gap-1 mt-2 border-top pt-2 border-secondary-subtle">
                                                     <span class="small text-muted fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px; text-transform: uppercase;">Support Contacts</span>
                                                     <template x-for="contact in provider.contact_persons" :key="contact.id">
-                                                        <div class="d-flex align-items-start gap-2 small lh-sm">
-                                                            <i class="bi bi-headset text-primary opacity-75 mt-1" style="font-size: 0.8rem;"></i>
-                                                            <div>
-                                                                <div class="fw-semibold text-primary" style="font-size: 0.8rem;" x-text="contact.name"></div>
-                                                                <div class="text-muted" style="font-size: 0.75rem;" x-text="[contact.phone, contact.department].filter(Boolean).join(' · ') || 'N/A'"></div>
+                                                        <div class="d-flex align-items-start gap-2 small lh-sm p-1 rounded" :class="contact.assigned_orders > 0 ? 'bg-primary bg-opacity-10 border border-primary border-opacity-25' : ''">
+                                                            <i class="bi bi-person-badge text-primary opacity-75 mt-1" style="font-size: 0.8rem;"></i>
+                                                            <div class="flex-grow-1">
+                                                                <div class="d-flex justify-content-between align-items-center">
+                                                                    <div class="fw-semibold text-primary" style="font-size: 0.8rem;" x-text="contact.name"></div>
+                                                                    <span class="badge bg-primary rounded-pill" style="font-size: 0.6rem;" x-text="'P' + (contact.pivot ? contact.pivot.priority : '-')"></span>
+                                                                </div>
+                                                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                                                    <div class="text-muted" style="font-size: 0.75rem;" x-text="[contact.phone, contact.department].filter(Boolean).join(' · ') || 'N/A'"></div>
+                                                                    <span class="badge text-bg-secondary bg-opacity-25 text-body-secondary rounded-pill" style="font-size: 0.65rem;" title="Assigned Orders" x-text="contact.assigned_orders + ' assigned'"></span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </template>
