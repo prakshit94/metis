@@ -690,6 +690,7 @@ document.addEventListener('alpine:init', () => {
           description: service.description || '',
           priority: Number.isFinite(Number(service.pivot?.priority)) ? Number(service.pivot.priority) : 0,
           providers: (service.providers || []).map(provider => ({
+            id: provider.id,
             name: provider.name || 'N/A',
             phone: provider.phone || '',
           })),
@@ -774,6 +775,7 @@ document.addEventListener('alpine:init', () => {
           carrier: shipment.carrier_name || 'N/A',
           trackingNo: shipment.tracking_no || 'N/A',
           status: shipment.status || 'N/A',
+          serviceProviderId: shipment.service_provider_id || null,
           shippedAt: shipment.shipped_at || null,
           deliveredAt: shipment.delivered_at || null,
           delivery_attempts: shipment.delivery_attempts || 0,
@@ -1218,15 +1220,10 @@ document.addEventListener('alpine:init', () => {
       this.shipOrderId = order.id;
       this.shipOrderNo = order.orderNumber;
       const availableCarriers = order?.availableCarrierOptions || [];
-      // When this address has mapped services, show only those options in
-      // priority order. Otherwise retain the complete carrier list.
-      let options = availableCarriers.length
-        ? availableCarriers
-        : this.carriersList.map(name => ({ name, priority: null }));
+      // When this address has mapped services, show only those options in priority order.
+      // If there are no mapped services, do not fallback to all carriers.
+      let options = availableCarriers;
 
-      if (!options.length) {
-        options = this.carriersList.map(name => ({ name, priority: null }));
-      }
       this.shipCarrierOptions = options;
 
       // Available carriers are already sorted by priority, so always default
@@ -1556,6 +1553,30 @@ document.addEventListener('alpine:init', () => {
       let serviceProviderId = null;
 
       if (status === 'ready_to_ship') {
+        let commonCarriers = null;
+        for (const orderId of this.selectedOrders) {
+            const order = this.orders.find(o => String(o.id) === String(orderId));
+            if (order) {
+                const carriers = (order.availableCarrierOptions || []).map(c => c.name);
+                if (commonCarriers === null) {
+                    commonCarriers = carriers;
+                } else {
+                    commonCarriers = commonCarriers.filter(c => carriers.includes(c));
+                }
+            }
+        }
+        commonCarriers = commonCarriers || [];
+        
+        if (commonCarriers.length === 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'No Common Service',
+                text: 'There is no common mapped service assigned for the selected orders. Please ship them individually or adjust the selection.',
+                confirmButtonText: 'Okay'
+            });
+            return;
+        }
+
         const carrierProvidersMap = this.carrierProvidersMap || {};
         
         const result = await Swal.fire({
@@ -1590,7 +1611,7 @@ document.addEventListener('alpine:init', () => {
                 }
               ">
                 <option value="" disabled selected>Select Carrier</option>
-                ${(this.carriersList || []).map(c => `<option value="${c}">${c}</option>`).join('')}
+                ${commonCarriers.map(c => `<option value="${c}">${c}</option>`).join('')}
               </select>
               
               <div id="swal-sp-container" class="mb-3" style="display: none;">

@@ -91,7 +91,20 @@ class ShippingController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'carrier_name' => 'required|string|max:255',
-            'service_provider_id' => 'nullable|integer|exists:users,id',
+            'service_provider_id' => [
+                'nullable',
+                'integer',
+                'exists:users,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    $carrierName = $request->input('carrier_name');
+                    if ($carrierName && $value) {
+                        $service = \App\Modules\Catalog\Models\Service::where('name', $carrierName)->first();
+                        if (!$service || !$service->providers()->where('users.id', $value)->exists()) {
+                            $fail('The selected service provider is not assigned to the selected carrier.');
+                        }
+                    }
+                },
+            ],
             'tracking_no' => 'nullable|string|max:255',
         ]);
 

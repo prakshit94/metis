@@ -886,6 +886,13 @@
                             title="Move confirmed orders → Processing">
                         <i class="bi bi-arrow-clockwise me-1"></i>Process
                     </button>
+                    <button class="btn btn-sm btn-info"
+                            x-show="bulkAvailableActions.canReadyToShip"
+                            x-transition
+                            @click="bulkUpdateStatus('ready_to_ship')"
+                            title="Move processing orders → Ready to Ship">
+                        <i class="bi bi-truck me-1"></i>Ready to Ship
+                    </button>
                     <button class="btn btn-sm btn-warning"
                             x-show="bulkAvailableActions.canDispatch"
                             x-transition
@@ -1665,9 +1672,14 @@
                                                         <div class="mt-2 pt-2 border-top" x-show="selectedOrder.assignedService.providers.length">
                                                             <p class="small text-muted mb-1">Mapped service providers</p>
                                                             <template x-for="provider in selectedOrder.assignedService.providers" :key="`${selectedOrder.assignedService.name}-${provider.name}-${provider.phone}`">
-                                                                <div class="small text-body-emphasis">
-                                                                    <i class="bi bi-person-fill me-1"></i><span x-text="provider.name"></span>
-                                                                    <template x-if="provider.phone"><span class="text-muted ms-2"><i class="bi bi-telephone-fill me-1"></i><span x-text="provider.phone"></span></span></template>
+                                                                <div class="small d-flex align-items-center justify-content-between mb-1" :class="String(selectedOrder.shipment.serviceProviderId) === String(provider.id) ? 'text-primary fw-bold' : 'text-body-emphasis'">
+                                                                    <div>
+                                                                        <i class="bi bi-person-fill me-1"></i><span x-text="provider.name"></span>
+                                                                        <template x-if="provider.phone"><span class="text-muted ms-2 fw-normal"><i class="bi bi-telephone-fill me-1"></i><span x-text="provider.phone"></span></span></template>
+                                                                    </div>
+                                                                    <template x-if="String(selectedOrder.shipment.serviceProviderId) === String(provider.id)">
+                                                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill" style="font-size: 0.6rem;"><i class="bi bi-check-circle-fill me-1"></i>Assigned</span>
+                                                                    </template>
                                                                 </div>
                                                             </template>
                                                         </div>
@@ -1838,7 +1850,8 @@
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Carrier Name <span class="text-danger">*</span></label>
                     <select class="form-select" x-model="shipCarrierName" @change="updateDefaultServiceProvider()">
-                        <option value="" disabled selected>Select carrier...</option>
+                        <option value="" disabled selected x-show="shipCarrierOptions.length > 0">Select carrier...</option>
+                        <option value="" disabled selected x-show="shipCarrierOptions.length === 0">No Service Assigned</option>
                         <template x-for="carrier in shipCarrierOptions" :key="carrier.name">
                             <option :value="carrier.name" x-text="carrier.priority === null ? carrier.name : `${carrier.name} (Priority: ${carrier.priority})`"></option>
                         </template>

@@ -865,7 +865,20 @@ class OrderController extends Controller implements HasMiddleware
 
         $validated = $request->validate([
             'carrier_name' => 'required|string|max:255',
-            'service_provider_id' => 'nullable|integer|exists:users,id',
+            'service_provider_id' => [
+                'nullable',
+                'integer',
+                'exists:users,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    $carrierName = $request->input('carrier_name');
+                    if ($carrierName && $value) {
+                        $service = \App\Modules\Catalog\Models\Service::where('name', $carrierName)->first();
+                        if (!$service || !$service->providers()->where('users.id', $value)->exists()) {
+                            $fail('The selected service provider is not assigned to the selected carrier.');
+                        }
+                    }
+                },
+            ],
             'tracking_no' => 'nullable|string|max:255',
         ]);
 
@@ -1062,7 +1075,22 @@ class OrderController extends Controller implements HasMiddleware
             'order_ids.*' => 'integer|exists:orders,id',
             'status' => 'required|string|in:pending,confirmed,processing,ready_to_ship,dispatched,delivered,cancelled,returned',
             'carrier_name' => 'required_if:status,ready_to_ship|nullable|string|max:255',
-            'service_provider_id' => 'nullable|integer|exists:users,id',
+            'service_provider_id' => [
+                'nullable',
+                'integer',
+                'exists:users,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->input('status') === 'ready_to_ship') {
+                        $carrierName = $request->input('carrier_name');
+                        if ($carrierName && $value) {
+                            $service = \App\Modules\Catalog\Models\Service::where('name', $carrierName)->first();
+                            if (!$service || !$service->providers()->where('users.id', $value)->exists()) {
+                                $fail('The selected service provider is not assigned to the selected carrier.');
+                            }
+                        }
+                    }
+                },
+            ],
             'tracking_no' => 'nullable|string|max:255',
         ]);
 
@@ -1103,6 +1131,24 @@ class OrderController extends Controller implements HasMiddleware
                         }
                     } elseif ($targetStatus === 'ready_to_ship') {
                         if ($order->status === 'processing') {
+                            // Validate that the selected carrier is mapped to the order's village
+                            $order->loadMissing('shippingAddress.village.services');
+                            $hasCarrier = false;
+                            if ($order->shippingAddress && $order->shippingAddress->village) {
+                                foreach ($order->shippingAddress->village->services as $service) {
+                                    if ($service->name === $validated['carrier_name'] && $service->is_active && $service->pivot->is_available) {
+                                        $hasCarrier = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if (!$hasCarrier) {
+                                $errors[] = "Order #{$order->order_no}: No mapped service found for carrier {$validated['carrier_name']}.";
+                                $skipped++;
+                                continue;
+                            }
+
                             $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no'] ?? null, $validated['service_provider_id'] ?? null);
                             $order->statusLogs()->create([
                                 'status' => 'ready_to_ship',
