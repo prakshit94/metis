@@ -143,6 +143,7 @@ document.addEventListener('alpine:init', () => {
     talukasList: [],
     villagesList: [],
     carriersList: [],
+    carrierProvidersMap: {},
     warehousesList: [],
     allowedFilterStatuses: [],
     allFilterStatuses: ['future_order', 'pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'return_requested', 'returned', 'cancelled'],
@@ -153,6 +154,10 @@ document.addEventListener('alpine:init', () => {
     shipOrderNo: '',
     shipCarrierName: '',
     shipCarrierOptions: [],
+    shipServiceProviderId: '',
+    get currentServiceProviders() {
+      return this.carrierProvidersMap[this.shipCarrierName] || [];
+    },
     shipTrackingNo: '',
     importRows: [],
     importing: false,
@@ -561,6 +566,9 @@ document.addEventListener('alpine:init', () => {
           if (data.talukas) this.talukasList = data.talukas;
           if (data.villages) this.villagesList = data.villages;
           if (data.allowed_filter_statuses) this.allowedFilterStatuses = data.allowed_filter_statuses;
+          if (data.carrierProvidersMap) {
+            this.carrierProvidersMap = data.carrierProvidersMap;
+          }
           
           if (data.carriers && data.carriers.length && JSON.stringify(this.carriersList) !== JSON.stringify(data.carriers)) {
             const oldCarrier = this.carrierFilter;
@@ -1093,15 +1101,56 @@ document.addEventListener('alpine:init', () => {
         html: `
           <div class="text-start">
             <label class="form-label fw-bold">Carrier Name <span class="text-danger">*</span></label>
-            <select id="swal-edit-carrier" class="form-select mb-3">
+            <select id="swal-edit-carrier" class="form-select mb-3" onchange="
+              const map = ${JSON.stringify(this.carrierProvidersMap || {}).replace(/"/g, '&quot;')};
+              const val = this.value;
+              const spSelect = document.getElementById('swal-edit-service-provider');
+              const spContainer = document.getElementById('swal-edit-sp-container');
+              const providers = map[val] || [];
+              spSelect.innerHTML = '<option value=\\'\\'>Select provider...</option>';
+              if (providers.length > 0) {
+                spContainer.style.display = 'block';
+                providers.forEach(p => {
+                  const opt = document.createElement('option');
+                  opt.value = p.id;
+                  opt.text = p.name + ' (Priority: ' + p.priority + ')';
+                  spSelect.appendChild(opt);
+                });
+                // Try to select existing provider, else fallback to first
+                spSelect.value = '${shipment.service_provider_id || ''}' || providers[0].id;
+              } else {
+                spContainer.style.display = 'none';
+              }
+              const i = document.getElementById('swal-edit-tracking-info');
+              if (val === 'India Post') {
+                i.style.display = 'block';
+              } else {
+                i.style.display = 'none';
+              }
+            ">
               <option value="" disabled>Select Carrier</option>
               ${(this.carriersList || []).map(c => `<option value="${c}" ${c === order.shipment.carrier ? 'selected' : ''}>${c}</option>`).join('')}
             </select>
-            <label class="form-label fw-bold">Tracking Number</label>
+            
+            <div id="swal-edit-sp-container" class="mb-3" style="display: none;">
+                <label class="form-label fw-bold">Service Provider</label>
+                <select id="swal-edit-service-provider" class="form-select"></select>
+            </div>
+
+            <label class="form-label fw-bold">Tracking Number <span class="text-muted fw-normal">(Optional)</span></label>
             <input type="text" id="swal-edit-tracking" class="form-control" value="${order.shipment.trackingNo !== 'N/A' ? order.shipment.trackingNo : ''}" placeholder="Enter tracking details">
-            <small class="text-muted mt-1 d-block">For India Post, tracking number is optional.</small>
+            <div id="swal-edit-tracking-info" class="form-text mt-2 text-info" style="display: none;">
+              <i class="bi bi-info-circle-fill me-1"></i> Leave blank to automatically generate Tracking IDs via India Post API.
+            </div>
           </div>
         `,
+        didOpen: () => {
+           // trigger change manually to initialize the providers list
+           const el = document.getElementById('swal-edit-carrier');
+           if (el && el.value) {
+               el.dispatchEvent(new Event('change'));
+           }
+        },
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Save Details',
@@ -1117,27 +1166,25 @@ document.addEventListener('alpine:init', () => {
         preConfirm: () => {
           const cName = document.getElementById('swal-edit-carrier').value;
           const tNo = document.getElementById('swal-edit-tracking').value;
+          const spId = document.getElementById('swal-edit-service-provider').value;
           if (!cName) {
             Swal.showValidationMessage('Please select a carrier');
             return false;
           }
-          if (cName !== 'India Post' && (!tNo || !tNo.trim())) {
-            Swal.showValidationMessage('Tracking number is required for carriers other than India Post');
-            return false;
-          }
-          return { carrierName: cName, trackingNo: tNo };
+          return { carrierName: cName, trackingNo: tNo, serviceProviderId: spId };
         }
       });
 
       if (!result.isConfirmed) return;
-      const { carrierName, trackingNo } = result.value;
+      const { carrierName, trackingNo, serviceProviderId } = result.value;
 
       try {
         const res = await apiFetch(`/api/shipping/shipments/${shipmentId}`, {
           method: 'PATCH',
           body: JSON.stringify({
             carrier_name: carrierName,
-            tracking_no: trackingNo
+            tracking_no: trackingNo,
+            ...(typeof serviceProviderId !== 'undefined' && serviceProviderId ? { service_provider_id: serviceProviderId } : {})
           })
         });
         showToast(res.message || 'Shipping details updated.');
@@ -1154,6 +1201,15 @@ document.addEventListener('alpine:init', () => {
         }
       } catch (err) {
         showToast(err.message, 'danger');
+      }
+    },
+
+    updateDefaultServiceProvider() {
+      const providers = this.currentServiceProviders;
+      if (providers && providers.length > 0) {
+        this.shipServiceProviderId = String(providers[0].id);
+      } else {
+        this.shipServiceProviderId = '';
       }
     },
 
@@ -1180,6 +1236,7 @@ document.addEventListener('alpine:init', () => {
       
       setTimeout(() => {
         this.shipCarrierName = defaultCarrier;
+        this.updateDefaultServiceProvider();
       }, 50);
       
       getModal('#createShipmentModal')?.show();
@@ -1190,15 +1247,12 @@ document.addEventListener('alpine:init', () => {
         showToast('Please select a Carrier name.', 'warning');
         return;
       }
-      if (this.shipCarrierName !== 'India Post' && (!this.shipTrackingNo || !this.shipTrackingNo.trim())) {
-        showToast('Please enter a Tracking Number.', 'warning');
-        return;
-      }
       try {
         const res = await apiFetch(`/orders/${this.shipOrderId}/ship`, {
           method: 'POST',
           body: JSON.stringify({
             carrier_name: this.shipCarrierName,
+            service_provider_id: this.shipServiceProviderId || null,
             tracking_no: this.shipTrackingNo
           })
         });
@@ -1499,18 +1553,52 @@ document.addEventListener('alpine:init', () => {
 
       let carrierName = null;
       let trackingNo = null;
+      let serviceProviderId = null;
 
       if (status === 'ready_to_ship') {
+        const carrierProvidersMap = this.carrierProvidersMap || {};
+        
         const result = await Swal.fire({
           title: 'Ready to Ship (Bulk)',
           html: `
             <div class="text-start">
               <label class="form-label fw-bold">Carrier Name <span class="text-danger">*</span></label>
-              <select id="swal-carrier" class="form-select mb-3" onchange="const t = document.getElementById('swal-tracking-label'); const i = document.getElementById('swal-tracking-info'); if(this.value === 'India Post') { t.innerHTML = '(Optional)'; i.style.display = 'block'; } else { t.innerHTML = '<span class=\\'text-danger\\'>*</span>'; i.style.display = 'none'; }">
+              <select id="swal-carrier" class="form-select mb-3" onchange="
+                const map = ${JSON.stringify(this.carrierProvidersMap || {}).replace(/"/g, '&quot;')};
+                const val = this.value;
+                const spSelect = document.getElementById('swal-service-provider');
+                const spContainer = document.getElementById('swal-sp-container');
+                const providers = map[val] || [];
+                spSelect.innerHTML = '<option value=\\'\\'>Select provider...</option>';
+                if (providers.length > 0) {
+                  spContainer.style.display = 'block';
+                  providers.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.text = p.name + ' (Priority: ' + p.priority + ')';
+                    spSelect.appendChild(opt);
+                  });
+                  spSelect.value = providers[0].id;
+                } else {
+                  spContainer.style.display = 'none';
+                }
+                const i = document.getElementById('swal-tracking-info');
+                if (val === 'India Post') {
+                  i.style.display = 'block';
+                } else {
+                  i.style.display = 'none';
+                }
+              ">
                 <option value="" disabled selected>Select Carrier</option>
                 ${(this.carriersList || []).map(c => `<option value="${c}">${c}</option>`).join('')}
               </select>
-              <label class="form-label fw-bold">Tracking Number <span id="swal-tracking-label" class="text-danger">*</span></label>
+              
+              <div id="swal-sp-container" class="mb-3" style="display: none;">
+                  <label class="form-label fw-bold">Service Provider</label>
+                  <select id="swal-service-provider" class="form-select"></select>
+              </div>
+
+              <label class="form-label fw-bold">Tracking Number <span class="text-muted fw-normal">(Optional)</span></label>
               <input type="text" id="swal-tracking" class="form-control" placeholder="Enter tracking details">
               <div id="swal-tracking-info" class="form-text mt-2 text-info" style="display: none;">
                 <i class="bi bi-info-circle-fill me-1"></i> Leave blank to automatically generate Tracking IDs via India Post API.
@@ -1532,21 +1620,19 @@ document.addEventListener('alpine:init', () => {
           preConfirm: () => {
             const cName = document.getElementById('swal-carrier').value;
             const tNo = document.getElementById('swal-tracking').value;
+            const spId = document.getElementById('swal-service-provider').value;
             if (!cName) {
               Swal.showValidationMessage('Please select a carrier');
               return false;
             }
-            if (cName !== 'India Post' && !tNo) {
-              Swal.showValidationMessage('Please enter a tracking number');
-              return false;
-            }
-            return { carrierName: cName, trackingNo: tNo };
+            return { carrierName: cName, trackingNo: tNo, serviceProviderId: spId };
           }
         });
 
         if (!result.isConfirmed) return;
         carrierName = result.value.carrierName;
         trackingNo = result.value.trackingNo;
+        serviceProviderId = result.value.serviceProviderId;
       } else {
         const confirmed = await Swal.fire({
           title: 'Bulk Update Status',
@@ -1574,7 +1660,8 @@ document.addEventListener('alpine:init', () => {
             order_ids: this.selectedOrders,
             status: status,
             ...(carrierName ? { carrier_name: carrierName } : {}),
-            ...(trackingNo ? { tracking_no: trackingNo } : {})
+            ...(trackingNo ? { tracking_no: trackingNo } : {}),
+            ...(typeof serviceProviderId !== 'undefined' && serviceProviderId ? { service_provider_id: serviceProviderId } : {})
           })
         });
         showToast(res.message || 'Bulk status update completed.');

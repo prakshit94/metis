@@ -91,30 +91,33 @@ class ShippingController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'carrier_name' => 'required|string|max:255',
-            'tracking_no' => 'required_unless:carrier_name,India Post|nullable|string|max:255',
+            'service_provider_id' => 'nullable|integer|exists:users,id',
+            'tracking_no' => 'nullable|string|max:255',
         ]);
 
         $oldCarrier = $shipment->carrier_name;
         $oldTracking = $shipment->tracking_no;
+        $oldProviderId = $shipment->service_provider_id;
 
         $shipment->update([
             'carrier_name' => $validated['carrier_name'],
+            'service_provider_id' => $validated['service_provider_id'] ?? null,
             'tracking_no' => $validated['tracking_no'] ?? null,
         ]);
 
-        if ($oldCarrier !== $shipment->carrier_name || $oldTracking !== $shipment->tracking_no) {
+        if ($oldCarrier !== $shipment->carrier_name || $oldTracking !== $shipment->tracking_no || $oldProviderId !== $shipment->service_provider_id) {
             ShipmentTrackingEvent::create([
                 'shipment_id' => $shipment->id,
                 'event_name' => 'Shipment Details Updated',
                 'location' => 'System',
-                'description' => "Shipment details updated. Carrier: {$oldCarrier} -> {$shipment->carrier_name}. Tracking: {$oldTracking} -> ".($shipment->tracking_no ?? 'None'),
+                'description' => "Shipment details updated. Carrier: {$oldCarrier} -> {$shipment->carrier_name}. Tracking: {$oldTracking} -> ".($shipment->tracking_no ?? 'None').". Provider ID: {$oldProviderId} -> ".($shipment->service_provider_id ?? 'None'),
                 'occurred_at' => now(),
             ]);
             
             if ($shipment->order) {
                 $shipment->order->statusLogs()->create([
                     'status' => $shipment->order->status,
-                    'notes' => "Shipment details updated. Carrier: {$shipment->carrier_name}. Tracking: ".($shipment->tracking_no ?? 'None'),
+                    'notes' => "Shipment details updated. Carrier: {$shipment->carrier_name}. Tracking: ".($shipment->tracking_no ?? 'None').". Provider ID: ".($shipment->service_provider_id ?? 'None'),
                     'changed_by' => auth()->id(),
                 ]);
             }

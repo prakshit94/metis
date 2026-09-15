@@ -18,6 +18,7 @@ class Shipment extends Model implements Auditable
         'shipment_no',
         'order_id',
         'carrier_name',
+        'service_provider_id',
         'tracking_no',
         'status',
         'shipped_at',

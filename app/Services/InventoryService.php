@@ -988,9 +988,9 @@ class InventoryService
     /**
      * Mark order as ready to ship.
      */
-    public function readyToShipOrder(Order $order, ?string $carrierName = null, ?string $trackingNo = null): void
+    public function readyToShipOrder(Order $order, ?string $carrierName = null, ?string $trackingNo = null, ?int $serviceProviderId = null): void
     {
-        DB::transaction(function () use ($order, $carrierName, $trackingNo) {
+        DB::transaction(function () use ($order, $carrierName, $trackingNo, $serviceProviderId) {
             $order = Order::lockForUpdate()->findOrFail($order->id);
 
             if ($order->status !== 'processing') {
@@ -1024,6 +1024,7 @@ class InventoryService
 
             $shipment->fill([
                 'carrier_name' => $carrierName,
+                'service_provider_id' => $serviceProviderId,
                 'tracking_no' => $trackingNo,
                 'status' => 'pending',
                 'actual_weight_g' => $shipmentDataArr['actual_weight_g'] ?? null,

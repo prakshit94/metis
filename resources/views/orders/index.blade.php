@@ -11,6 +11,7 @@
     talukasList = {{ json_encode($talukasList ?? []) }};
     villagesList = {{ json_encode($villagesList ?? []) }};
     carriersList = {{ json_encode($carriersList) }};
+    carrierProvidersMap = {{ json_encode($carrierProvidersMap) }};
     warehousesList = {{ json_encode($warehousesList ?? []) }};
     allowedFilterStatuses = {{ json_encode($statusesList) }};
     init();
@@ -1836,25 +1837,34 @@
             <div class="modal-body pt-3">
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Carrier Name <span class="text-danger">*</span></label>
-                    <select class="form-select" x-model="shipCarrierName">
+                    <select class="form-select" x-model="shipCarrierName" @change="updateDefaultServiceProvider()">
                         <option value="" disabled selected>Select carrier...</option>
                         <template x-for="carrier in shipCarrierOptions" :key="carrier.name">
                             <option :value="carrier.name" x-text="carrier.priority === null ? carrier.name : `${carrier.name} (Priority: ${carrier.priority})`"></option>
                         </template>
                     </select>
                 </div>
+                
+                <div class="mb-3" x-show="currentServiceProviders.length > 0" style="display: none;">
+                    <label class="form-label fw-semibold">Service Provider</label>
+                    <select class="form-select" x-model="shipServiceProviderId">
+                        <option value="">Select provider...</option>
+                        <template x-for="provider in currentServiceProviders" :key="provider.id">
+                            <option :value="String(provider.id)" x-text="`${provider.name} (Priority: ${provider.priority})`"></option>
+                        </template>
+                    </select>
+                </div>
+
                 <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <label class="form-label fw-semibold mb-0">
-                            Tracking Number 
-                            <span class="text-danger" x-show="shipCarrierName !== 'India Post'">*</span>
-                            <span class="text-muted fw-normal" x-show="shipCarrierName === 'India Post'">(Optional)</span>
+                            Tracking Number <span class="text-muted fw-normal">(Optional)</span>
                         </label>
                         <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" @click="shipTrackingNo = 'TRK-' + Math.random().toString(36).substring(2, 12).toUpperCase()">
                             <i class="bi bi-magic me-1"></i>Generate Demo ID
                         </button>
                     </div>
-                    <input type="text" class="form-control font-monospace" x-model="shipTrackingNo" placeholder="Enter tracking number (e.g. TRK-12345678)" :required="shipCarrierName !== 'India Post'">
+                    <input type="text" class="form-control font-monospace" x-model="shipTrackingNo" placeholder="Enter tracking number (e.g. TRK-12345678)">
                     
                     <div class="form-text mt-2 text-info" x-show="shipCarrierName === 'India Post'" style="display: none;">
                         <i class="bi bi-info-circle-fill me-1"></i> Leave blank to automatically calculate and retrieve Tracking ID and shipping cost from the India Post API.

@@ -477,12 +477,23 @@ class OrderController extends Controller implements HasMiddleware
                 ->distinct()->pluck('village_name')->filter()->sort()->values();
         }) : [];
 
-        $services = Service::active()->get();
+        $services = Service::active()->with('providers')->get();
         $carriersList = $services->pluck('name')
             ->filter()
             ->unique()
             ->sort()
             ->values();
+            
+        $carrierProvidersMap = $services->mapWithKeys(function ($service) {
+            $providers = $service->providers->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'priority' => $p->pivot->priority ?? 999
+                ];
+            })->sortBy('priority')->values();
+            return [$service->name => $providers];
+        });
 
         $returnReasons = ReturnReason::where('is_active', true)->orderBy('id')->get();
         $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
@@ -534,6 +545,7 @@ class OrderController extends Controller implements HasMiddleware
                 'talukas' => $talukasList,
                 'villages' => $villagesList,
                 'carriers' => $carriersList,
+                'carrierProvidersMap' => $carrierProvidersMap,
             ]);
         }
 
@@ -548,6 +560,7 @@ class OrderController extends Controller implements HasMiddleware
             'villagesList',
             'services',
             'carriersList',
+            'carrierProvidersMap',
             'returnReasons',
             'rescheduleReasons',
             'deliveryFailureReasons',
@@ -852,14 +865,15 @@ class OrderController extends Controller implements HasMiddleware
 
         $validated = $request->validate([
             'carrier_name' => 'required|string|max:255',
-            'tracking_no' => 'required_unless:carrier_name,India Post|nullable|string|max:255',
+            'service_provider_id' => 'nullable|integer|exists:users,id',
+            'tracking_no' => 'nullable|string|max:255',
         ]);
 
         try {
-            $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no'] ?? null);
+            $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no'] ?? null, $validated['service_provider_id'] ?? null);
             $order->statusLogs()->create([
                 'status' => 'ready_to_ship',
-                'notes' => 'Order marked as ready to ship. Carrier: '.$validated['carrier_name'].', Tracking: '.($validated['tracking_no'] ?? 'Auto-generated'),
+                'notes' => 'Order marked as ready to ship. Carrier: '.$validated['carrier_name'].', Provider ID: '.($validated['service_provider_id'] ?? 'N/A').', Tracking: '.($validated['tracking_no'] ?? 'Auto-generated/None'),
                 'changed_by' => auth()->id(),
             ]);
         } catch (ValidationException $e) {
@@ -1048,7 +1062,8 @@ class OrderController extends Controller implements HasMiddleware
             'order_ids.*' => 'integer|exists:orders,id',
             'status' => 'required|string|in:pending,confirmed,processing,ready_to_ship,dispatched,delivered,cancelled,returned',
             'carrier_name' => 'required_if:status,ready_to_ship|nullable|string|max:255',
-            'tracking_no' => 'required_if:status,ready_to_ship|nullable|string|max:255',
+            'service_provider_id' => 'nullable|integer|exists:users,id',
+            'tracking_no' => 'nullable|string|max:255',
         ]);
 
         $ids = $validated['order_ids'];
@@ -1088,10 +1103,10 @@ class OrderController extends Controller implements HasMiddleware
                         }
                     } elseif ($targetStatus === 'ready_to_ship') {
                         if ($order->status === 'processing') {
-                            $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no']);
+                            $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no'] ?? null, $validated['service_provider_id'] ?? null);
                             $order->statusLogs()->create([
                                 'status' => 'ready_to_ship',
-                                'notes' => 'Bulk status updated to ready to ship. Carrier: '.$validated['carrier_name'].', Tracking: '.$validated['tracking_no'],
+                                'notes' => 'Bulk status updated to ready to ship. Carrier: '.$validated['carrier_name'].', Tracking: '.($validated['tracking_no'] ?? 'Auto-generated/None'),
                                 'changed_by' => auth()->id(),
                             ]);
                             $count++;
