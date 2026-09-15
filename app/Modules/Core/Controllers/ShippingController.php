@@ -393,10 +393,29 @@ class ShippingController extends Controller implements HasMiddleware
             'is_active' => 'required|boolean',
             'provider_user_ids' => 'nullable|array',
             'provider_user_ids.*' => 'integer|exists:users,id',
+            'provider_priorities' => 'nullable|array',
+            'provider_priorities.*' => 'nullable|integer|min:1',
         ]);
 
-        $service = Service::create(collect($validated)->except('provider_user_ids')->all());
-        $service->providers()->sync($validated['provider_user_ids'] ?? []);
+        $service = Service::create(collect($validated)->except(['provider_user_ids', 'provider_priorities'])->all());
+        
+        $syncData = [];
+        $priorities = $validated['provider_priorities'] ?? [];
+        $assignedPriorities = [];
+        
+        foreach ($validated['provider_user_ids'] ?? [] as $providerId) {
+            $pri = $priorities[$providerId] ?? 1;
+            if (in_array($pri, $assignedPriorities, true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'provider_priorities' => 'Duplicate priorities are not allowed for assigned providers.'
+                ]);
+            }
+            $assignedPriorities[] = $pri;
+            $syncData[$providerId] = ['priority' => $pri];
+        }
+        
+        $service->providers()->sync($syncData);
+        
         $service->load('providers:id,name,email,phone,department_id,is_active');
 
         return response()->json([
@@ -418,10 +437,29 @@ class ShippingController extends Controller implements HasMiddleware
             'is_active' => 'required|boolean',
             'provider_user_ids' => 'nullable|array',
             'provider_user_ids.*' => 'integer|exists:users,id',
+            'provider_priorities' => 'nullable|array',
+            'provider_priorities.*' => 'nullable|integer|min:1',
         ]);
 
-        $service->update(collect($validated)->except('provider_user_ids')->all());
-        $service->providers()->sync($validated['provider_user_ids'] ?? []);
+        $service->update(collect($validated)->except(['provider_user_ids', 'provider_priorities'])->all());
+        
+        $syncData = [];
+        $priorities = $validated['provider_priorities'] ?? [];
+        $assignedPriorities = [];
+        
+        foreach ($validated['provider_user_ids'] ?? [] as $providerId) {
+            $pri = $priorities[$providerId] ?? 1;
+            if (in_array($pri, $assignedPriorities, true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'provider_priorities' => 'Duplicate priorities are not allowed for assigned providers.'
+                ]);
+            }
+            $assignedPriorities[] = $pri;
+            $syncData[$providerId] = ['priority' => $pri];
+        }
+        
+        $service->providers()->sync($syncData);
+        
         $service->load('providers:id,name,email,phone,department_id,is_active');
 
         return response()->json([
@@ -468,6 +506,8 @@ class ShippingController extends Controller implements HasMiddleware
             'ids.*' => 'integer|exists:services,id',
             'provider_ids' => 'required_if:action,assign_provider|array|min:1',
             'provider_ids.*' => 'integer|exists:users,id',
+            'provider_priorities' => 'nullable|array',
+            'provider_priorities.*' => 'nullable|integer|min:1',
         ]);
 
         $action = $validated['action'];
@@ -481,9 +521,23 @@ class ShippingController extends Controller implements HasMiddleware
             Service::whereIn('id', $ids)->delete();
         } elseif ($action === 'assign_provider') {
             $providerIds = $validated['provider_ids'];
+            $priorities = $validated['provider_priorities'] ?? [];
+            $syncData = [];
+            $assignedPriorities = [];
+            
+            foreach ($providerIds as $providerId) {
+                $pri = $priorities[$providerId] ?? 1;
+                if (in_array($pri, $assignedPriorities, true)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'provider_priorities' => 'Duplicate priorities are not allowed for assigned providers.'
+                    ]);
+                }
+                $assignedPriorities[] = $pri;
+                $syncData[$providerId] = ['priority' => $pri];
+            }
             $services = Service::whereIn('id', $ids)->get();
             foreach ($services as $service) {
-                $service->providers()->syncWithoutDetaching($providerIds);
+                $service->providers()->syncWithoutDetaching($syncData);
             }
         }
 

@@ -212,7 +212,10 @@
                                         <div class="d-flex flex-column gap-2">
                                             <template x-for="provider in item.providers" :key="provider.id">
                                                 <div class="small">
-                                                    <div class="fw-semibold" x-text="provider.name"></div>
+                                                    <div class="fw-semibold">
+                                                        <span x-text="provider.name"></span>
+                                                        <span class="badge bg-secondary ms-1 fw-normal" style="font-size: 0.7em;" x-show="provider.pivot?.priority" x-text="'Pri: ' + provider.pivot?.priority"></span>
+                                                    </div>
                                                     <div class="text-muted" x-text="[provider.email, provider.phone, provider.department].filter(Boolean).join(' · ')"></div>
                                                 </div>
                                             </template>
@@ -326,12 +329,15 @@
                                             </div>
                                             <div style="max-height: 180px; overflow-y: auto;" class="custom-scrollbar px-1">
                                                 <template x-for="user in filteredProviderUsers" :key="user.id">
-                                                    <div class="d-flex align-items-center py-1 mb-1 border-bottom border-light cursor-pointer">
-                                                        <input type="checkbox" class="me-2" style="cursor: pointer;" :value="String(user.id)" :id="'provider_' + user.id" x-model="form.provider_user_ids">
-                                                        <label class="d-block mb-0 cursor-pointer w-100" style="cursor: pointer;" :for="'provider_' + user.id">
+                                                    <div class="d-flex align-items-center py-1 mb-1 border-bottom border-light">
+                                                        <input type="checkbox" class="me-2 cursor-pointer" :value="String(user.id)" :id="'provider_' + user.id" x-model="form.provider_user_ids" @change="handleProviderToggle($event.target.checked, String(user.id), form.provider_user_ids, form.provider_priorities)">
+                                                        <label class="d-block mb-0 cursor-pointer w-100" :for="'provider_' + user.id">
                                                             <div class="fw-medium text-body" x-text="user.name"></div>
                                                             <div class="text-muted small" style="font-size: 0.75rem;" x-text="[user.email, user.department].filter(Boolean).join(' · ')"></div>
                                                         </label>
+                                                        <div x-show="form.provider_user_ids.includes(String(user.id))" class="ms-auto" style="width: 80px;">
+                                                            <input type="number" class="form-control form-control-sm" placeholder="Priority" min="1" x-model.number="form.provider_priorities[user.id]" @input="validatePriorities(form.provider_user_ids, form.provider_priorities)">
+                                                        </div>
                                                     </div>
                                                 </template>
                                                 <div x-show="filteredProviderUsers.length === 0" class="text-muted small p-3 text-center">
@@ -339,7 +345,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Check the boxes to assign providers to this service.</div>
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Check the boxes to assign providers and set their priority (1 is highest).</div>
                                     </div>
                                     
                                     <div class="col-12 form-check ms-2 mt-3">
@@ -380,12 +386,15 @@
                                 </div>
                                 <div style="max-height: 180px; overflow-y: auto;" class="custom-scrollbar px-1">
                                     <template x-for="user in filteredProviderUsers" :key="user.id">
-                                        <div class="d-flex align-items-center py-1 mb-1 border-bottom border-light cursor-pointer">
-                                            <input type="checkbox" class="me-2" style="cursor: pointer;" :value="String(user.id)" :id="'bulk_provider_' + user.id" x-model="bulkAssignForm.provider_ids">
-                                            <label class="d-block mb-0 cursor-pointer w-100" style="cursor: pointer;" :for="'bulk_provider_' + user.id">
+                                        <div class="d-flex align-items-center py-1 mb-1 border-bottom border-light">
+                                            <input type="checkbox" class="me-2 cursor-pointer" :value="String(user.id)" :id="'bulk_provider_' + user.id" x-model="bulkAssignForm.provider_ids" @change="handleProviderToggle($event.target.checked, String(user.id), bulkAssignForm.provider_ids, bulkAssignForm.provider_priorities)">
+                                            <label class="d-block mb-0 cursor-pointer w-100" :for="'bulk_provider_' + user.id">
                                                 <div class="fw-medium text-body" x-text="user.name"></div>
                                                 <div class="text-muted small" style="font-size: 0.75rem;" x-text="[user.email, user.department].filter(Boolean).join(' · ')"></div>
                                             </label>
+                                            <div x-show="bulkAssignForm.provider_ids.includes(String(user.id))" class="ms-auto" style="width: 80px;">
+                                                <input type="number" class="form-control form-control-sm" placeholder="Priority" min="1" x-model.number="bulkAssignForm.provider_priorities[user.id]" @input="validatePriorities(bulkAssignForm.provider_ids, bulkAssignForm.provider_priorities)">
+                                            </div>
                                         </div>
                                     </template>
                                     <div x-show="filteredProviderUsers.length === 0" class="text-muted small p-3 text-center">

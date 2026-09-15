@@ -50,6 +50,7 @@ class Service extends Model implements Auditable
     public function providers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'service_provider_users')
+            ->withPivot(['priority'])
             ->withTimestamps();
     }
 

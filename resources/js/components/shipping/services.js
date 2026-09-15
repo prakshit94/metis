@@ -88,11 +88,13 @@ export default () => {
             name: '',
             description: '',
             is_active: true,
-            provider_user_ids: []
+            provider_user_ids: [],
+            provider_priorities: {}
         },
 
         bulkAssignForm: {
-            provider_ids: []
+            provider_ids: [],
+            provider_priorities: {}
         },
         bulkAssignModalInstance: null,
         providerSearch: '',
@@ -106,6 +108,40 @@ export default () => {
                 (u.department || '').toLowerCase().includes(term) ||
                 (u.phone || '').toLowerCase().includes(term)
             );
+        },
+
+        handleProviderToggle(isChecked, userId, selectedIdsArray, prioritiesObj) {
+            if (isChecked) {
+                // Determine next available priority
+                const usedPriorities = new Set();
+                selectedIdsArray.forEach(id => {
+                    if (id !== userId && prioritiesObj[id]) {
+                        usedPriorities.add(Number(prioritiesObj[id]));
+                    }
+                });
+                let nextPriority = 1;
+                while (usedPriorities.has(nextPriority)) {
+                    nextPriority++;
+                }
+                prioritiesObj[userId] = nextPriority;
+            } else {
+                delete prioritiesObj[userId];
+            }
+        },
+
+        validatePriorities(selectedIdsArray, prioritiesObj) {
+            // Find duplicates and highlight them or just show a warning
+            const seen = new Set();
+            for (const id of selectedIdsArray) {
+                const pri = Number(prioritiesObj[id]);
+                if (!pri) continue;
+                if (seen.has(pri)) {
+                    showToast('Duplicate priority detected. Please ensure all priorities are unique.', 'warning');
+                    return false; // has duplicates
+                }
+                seen.add(pri);
+            }
+            return true;
         },
 
         init() {
@@ -125,6 +161,7 @@ export default () => {
                 this.bulkAssignModalInstance = Modal.getOrCreateInstance(bulkModalEl);
                 bulkModalEl.addEventListener('hidden.bs.modal', () => {
                     this.bulkAssignForm.provider_ids = [];
+                    this.bulkAssignForm.provider_priorities = {};
                 });
             }
 
@@ -298,11 +335,13 @@ export default () => {
         openBulkAssignModal() {
             if (this.selectedItems.length === 0) return;
             this.bulkAssignForm.provider_ids = [];
+            this.bulkAssignForm.provider_priorities = {};
             this.bulkAssignModalInstance?.show();
         },
 
         async bulkAssignProvider() {
             if (this.bulkAssignForm.provider_ids.length === 0 || this.selectedItems.length === 0) return;
+            if (!this.validatePriorities(this.bulkAssignForm.provider_ids, this.bulkAssignForm.provider_priorities)) return;
             
             this.saving = true;
             try {
@@ -311,7 +350,8 @@ export default () => {
                     body: JSON.stringify({
                         action: 'assign_provider',
                         ids: this.selectedItems,
-                        provider_ids: this.bulkAssignForm.provider_ids
+                        provider_ids: this.bulkAssignForm.provider_ids,
+                        provider_priorities: this.bulkAssignForm.provider_priorities
                     })
                 });
                 
@@ -417,7 +457,8 @@ export default () => {
                 name: '',
                 description: '',
                 is_active: true,
-                provider_user_ids: []
+                provider_user_ids: [],
+                provider_priorities: {}
             };
         },
 
@@ -428,18 +469,25 @@ export default () => {
 
         editItem(item) {
             this.isEditing = true;
+            const priorities = {};
+            (item.providers || []).forEach(provider => {
+                priorities[provider.id] = provider.pivot?.priority ?? 1;
+            });
             this.form = {
                 id: item.id,
                 code: item.code,
                 name: item.name,
                 description: item.description || '',
                 is_active: !!item.is_active,
-                provider_user_ids: (item.providers || []).map(provider => String(provider.id))
+                provider_user_ids: (item.providers || []).map(provider => String(provider.id)),
+                provider_priorities: priorities
             };
             this.modalInstance?.show();
         },
 
         async saveItem() {
+            if (!this.validatePriorities(this.form.provider_user_ids, this.form.provider_priorities)) return;
+
             this.saving = true;
             try {
                 const url = this.isEditing ? `${this.apiBase}/${this.form.id}` : this.apiBase;
