@@ -2364,24 +2364,6 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════ Order Success Modal ═══════════════════════════ -->
-    <div class="modal fade" id="orderSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content border-0 shadow-lg text-center bg-body" style="border-radius: 24px; overflow: hidden;">
-                <div class="modal-body p-5">
-                    <div class="mb-4 position-relative d-inline-block">
-                        <div class="position-absolute top-50 start-50 translate-middle bg-success bg-opacity-10 rounded-circle" style="width: 120px; height: 120px;"></div>
-                        <i class="bi bi-check-circle-fill text-success position-relative" style="font-size: 70px; z-index: 1;"></i>
-                    </div>
-                    <h4 class="fw-bold text-body mb-2" id="orderSuccessTitle">Order Placed!</h4>
-                    <p class="text-body-secondary mb-4 small" id="orderSuccessMessage">The order has been successfully processed and the inventory has been updated.</p>
-                    <button type="button" class="btn btn-success rounded-pill px-5 py-2 fw-bold shadow-sm w-100 transition-all hover-shadow" data-bs-dismiss="modal">
-                        Continue
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- ═══════════════════════ Cancel Order Modal ═══════════════════════════ -->
     <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
@@ -3871,15 +3853,8 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
                 
                 localStorage.removeItem(`ecommerce_create_order_cart_${this.partyId}`);
                 this.cart = [];
-                
-                document.getElementById('orderSuccessTitle').innerText = this.editingOrderId ? 'Order Updated!' : 'Order Placed!';
-                const successModal = new bootstrap.Modal(document.getElementById('orderSuccessModal'));
-                successModal.show();
-                
-                setTimeout(() => {
-                    successModal.hide();
-                }, 3000);
-                
+                const successMsg = this.editingOrderId ? 'Order Updated!' : 'Order Placed!';
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: successMsg } }));
                 this.loadAddresses(); // Refresh the customer's recent orders list
                 this.searchProducts(); // Refresh the products list to update inventory stock
                 if (this.editingOrderId) {
