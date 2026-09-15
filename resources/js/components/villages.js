@@ -431,12 +431,12 @@ document.addEventListener('alpine:init', () => {
       getModal('#servicesModal')?.show();
     },
 
-    openBulkServiceModal() {
+    openBulkServiceModal(status = 'available') {
       const bulkModal = Alpine.$data(document.querySelector('[x-data="bulkServicesForm"]'));
       if (bulkModal) {
         bulkModal.count = this.selectedVillages.length;
         bulkModal.ids = [...this.selectedVillages];
-        bulkModal.resetForm();
+        bulkModal.resetForm(status);
       }
       getModal('#bulkServicesModal')?.show();
     },
@@ -995,12 +995,25 @@ document.addEventListener('alpine:init', () => {
     saving: false,
     services: [],
 
-    resetForm() {
-      this.serviceIds = [];
-      this.status = 'available';
+    resetForm(status = 'available') {
+      this.status = status;
       
       const table = Alpine.$data(document.querySelector('[x-data="villageTable"]'));
       this.services = table?.servicesOptions ?? [];
+      
+      if (status === 'unavailable' && table) {
+        const activeServiceIds = new Set();
+        table.villages.forEach(v => {
+          if (this.ids.includes(String(v.id))) {
+            (v.active_mappings || []).forEach(m => {
+              if (m.service_id) activeServiceIds.add(Number(m.service_id));
+            });
+          }
+        });
+        this.serviceIds = Array.from(activeServiceIds);
+      } else {
+        this.serviceIds = [];
+      }
     },
 
     async updateServices() {

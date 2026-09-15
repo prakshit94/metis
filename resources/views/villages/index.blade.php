@@ -387,8 +387,11 @@
                         <button class="btn btn-sm btn-outline-primary" @click="exportSelectedVillages()" title="Export Selected to CSV">
                             <i class="bi bi-download me-1"></i>Export CSV
                         </button>
-                        <button class="btn btn-sm btn-success" @click="openBulkServiceModal()" x-show="!hasSelectedDeletedVillages">
-                            <i class="bi bi-gear me-1"></i>Update Services
+                        <button class="btn btn-sm btn-primary" @click="openBulkServiceModal('available')" x-show="!hasSelectedDeletedVillages">
+                            <i class="bi bi-plus-circle me-1"></i>Assign Services
+                        </button>
+                        <button class="btn btn-sm btn-warning" @click="openBulkServiceModal('unavailable')" x-show="!hasSelectedDeletedVillages">
+                            <i class="bi bi-dash-circle me-1"></i>Remove Services
                         </button>
                         <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" x-show="!hasSelectedDeletedVillages">
                             <i class="bi bi-trash me-1"></i>Delete Selected
@@ -573,8 +576,8 @@
                 <h5 class="modal-title fw-bold" id="villageModalLabel" x-text="editingVillageId ? 'Edit Village' : 'Add New Village'"></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form @submit.prevent="saveVillage()">
-                <div class="modal-body pt-3">
+            <div class="modal-body pt-3">
+                <form @submit.prevent="saveVillage()">
                     <div class="row g-3">
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Village Name <span class="text-danger">*</span></label>
@@ -621,15 +624,15 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" :disabled="saving">
-                        <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
-                        <span x-text="editingVillageId ? 'Save Changes' : 'Create Village'"></span>
-                    </button>
-                </div>
-            </form>
+                    <div class="modal-footer border-top-0 pt-3 px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" :disabled="saving">
+                            <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
+                            <span x-text="editingVillageId ? 'Save Changes' : 'Create Village'"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -644,8 +647,8 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form @submit.prevent="saveServices()">
-                <div class="modal-body pt-3">
+            <div class="modal-body pt-3">
+                <form @submit.prevent="saveServices()">
                     <div class="mb-3 text-body-secondary">
                         Configure which logistics, delivery, or custom services are available in village: 
                         <strong class="text-body" x-text="villageName"></strong> (<span x-text="pincode"></span>)
@@ -686,15 +689,15 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" :disabled="saving">
-                        <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
-                        Save Configuration
-                    </button>
-                </div>
-            </form>
+                    <div class="modal-footer border-top-0 pt-3 px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" :disabled="saving">
+                            <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
+                            Save Configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -704,43 +707,35 @@
     <div class="modal-dialog modal-dialog-scrollable" x-data="bulkServicesForm">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold" id="bulkServicesModalLabel">Bulk Service Update</h5>
+                <h5 class="modal-title fw-bold" id="bulkServicesModalLabel" x-text="status === 'available' ? 'Assign Services' : 'Remove Services'"></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form @submit.prevent="updateServices()">
-                <div class="modal-body pt-3">
+            <div class="modal-body pt-3">
+                <form @submit.prevent="updateServices()">
                     <div class="alert alert-info py-2">
-                        Updating services for <strong x-text="count"></strong> selected village(s).
+                        <span x-text="status === 'available' ? 'Assigning' : 'Removing'"></span> services for <strong x-text="count"></strong> selected village(s).
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Select Services</label>
-                        <select class="form-select" multiple size="6" x-model="serviceIds" required>
+                        <label class="form-label fw-semibold">Select Services <span class="text-danger">*</span></label>
+                        <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
                             <template x-for="s in services" :key="s.id">
-                                <option :value="s.id" x-text="s.name"></option>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" :value="s.id" :id="'bulk_service_' + s.id" x-model="serviceIds">
+                                    <label class="form-check-label" :for="'bulk_service_' + s.id" x-text="s.name"></label>
+                                </div>
                             </template>
-                        </select>
-                        <div class="form-text">Hold Ctrl/Cmd to select multiple services.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Coverage Status</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="bulkStatus" id="statusAvail" value="available" x-model="status">
-                            <label class="form-check-label" for="statusAvail">Set Available</label>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="bulkStatus" id="statusUnavail" value="unavailable" x-model="status">
-                            <label class="form-check-label" for="statusUnavail">Set Unavailable</label>
-                        </div>
+                        <div class="form-text mt-1" x-text="status === 'available' ? 'Select the services to assign.' : 'Select the services to remove (active services are pre-selected).' "></div>
                     </div>
-                </div>
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" :disabled="saving">
-                        <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
-                        Apply to Selected Services
-                    </button>
-                </div>
-            </form>
+                    <div class="modal-footer border-top-0 pt-3 px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn" :class="status === 'available' ? 'btn-primary' : 'btn-warning'" :disabled="saving">
+                            <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
+                            <span x-text="status === 'available' ? 'Assign to Selected' : 'Remove from Selected'"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
