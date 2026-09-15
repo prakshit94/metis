@@ -1293,7 +1293,7 @@
                             </div>
                             <template x-for="(order, index) in historyOrders" :key="'history-' + order.id">
                                 <div class="list-group-item p-0 border-bottom">
-                                    <div @click="toggleOrderDetails(order.id)" class="d-flex flex-column flex-lg-row align-items-lg-center p-3 px-lg-0 py-lg-3 hover-bg-body transition-all" style="cursor: pointer;">
+                                    <div @click="viewOrder(order.id)" class="d-flex flex-column flex-lg-row align-items-lg-center p-3 px-lg-0 py-lg-3 hover-bg-body transition-all" style="cursor: pointer;">
                                         
                                         <div class="col-12 col-lg-3 ps-lg-4 mb-3 mb-lg-0">
                                             <div class="fw-bold text-primary mb-1">
@@ -1533,7 +1533,7 @@
                                 </thead>
                                 <template x-for="(order, index) in futureOrders" :key="'future-' + order.id">
                                     <tbody class="border-top-0 border-bottom">
-                                        <tr @click="toggleOrderDetails(order.id)" class="transition-all" style="cursor: pointer;">
+                                        <tr @click="viewOrder(order.id)" class="transition-all" style="cursor: pointer;">
                                             <td class="text-nowrap ps-4 py-2 fw-bold text-body-emphasis">
                                                 <span class="text-secondary opacity-75 me-1" x-text="(index + 1) + '.'"></span>
                                                 <span x-text="order.order_no || order.order_number || ('Order #' + order.id)"></span>
@@ -2426,7 +2426,474 @@
             </div>
         </div>
     </div>
+        
+<!-- ═══════════════════════ Order Details Modal ═══════════════════════════ -->
+<div class="modal fade order-detail-modal" id="orderDetailModal" aria-labelledby="orderDetailModalLabel" aria-hidden="true" style="z-index: 1070;">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content shadow-lg border-0 rounded-4" x-show="selectedOrder">
+            <template x-if="selectedOrder">
+                <div class="d-flex flex-column h-100 bg-body rounded-4 overflow-hidden">
+                    
+                    <!-- Header with Gradient and Status -->
+                    <div class="modal-header border-bottom-0 pb-4 pt-4 px-4 px-lg-5 bg-body-tertiary">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between w-100 gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-body-secondary text-primary p-3 rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                    <i class="bi bi-receipt fs-3"></i>
+                                </div>
+                                <div>
+                                    <h4 class="modal-title fw-bolder mb-1" id="orderDetailModalLabel" style="letter-spacing: -0.5px;">
+                                        Order <span class="text-primary cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.orderNumber).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.orderNumber"></span><i class="bi opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.6em;"></i></span>
+                                    </h4>
+                                    <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
+                                        <p class="text-muted small mb-0 d-flex align-items-center gap-2">
+                                            <i class="bi bi-calendar3"></i> <span x-text="selectedOrder.orderDate ? new Date(selectedOrder.orderDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'"></span>
+                                        </p>
+                                        <template x-if="selectedOrder.warehouse">
+                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis" title="Fulfillment Warehouse">
+                                                <i class="bi bi-building me-1"></i><span x-text="selectedOrder.warehouse.name"></span>
+                                            </span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge rounded-pill px-4 py-2 fs-6 shadow-sm" 
+                                      :class="`bg-${getStatusTheme(selectedOrder.status)}-subtle text-${getStatusTheme(selectedOrder.status)}-emphasis border border-${getStatusTheme(selectedOrder.status)}-subtle`">
+                                    <i class="bi bi-circle-fill me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
+                                    <span x-text="selectedOrder.statusLabel"></span>
+                                </span>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-body p-0" style="overflow-y: auto;">
+                        <div class="row g-0" style="min-height: 100%;">
+                            
+                            <!-- Left Column: Details & Items -->
+                            <div class="col-lg-8 p-4 p-lg-5 bg-body-tertiary">
+                                <!-- Quick Stats Row -->
+                                <div class="row g-3 mb-4">
+                                    <div class="col-sm-4">
+                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                            <div class="card-body p-3 d-flex align-items-center gap-3">
+                                                <div class="text-bg-primary-subtle text-primary-emphasis p-2 rounded-3"><i class="bi bi-credit-card fs-5"></i></div>
+                                                <div>
+                                                    <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Payment</p>
+                                                    <p class="fw-bold mb-0 text-body-emphasis" x-text="selectedOrder.paymentMethod || 'N/A'"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                            <div class="card-body p-3 d-flex align-items-center gap-3">
+                                                <div class="text-bg-success-subtle text-success-emphasis p-2 rounded-3"><i class="bi bi-tag fs-5"></i></div>
+                                                <div>
+                                                    <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Order Type</p>
+                                                    <p class="fw-bold mb-0 text-body-emphasis text-capitalize" x-text="selectedOrder.type || 'Sale'"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                            <div class="card-body p-3 d-flex align-items-center gap-3">
+                                                <div class="text-bg-info-subtle text-info-emphasis p-2 rounded-3"><i class="bi bi-person-badge fs-5"></i></div>
+                                                <div>
+                                                    <p class="small text-muted mb-0 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Created By</p>
+                                                    <p class="fw-bold mb-0 text-body-emphasis" x-text="selectedOrder.createdBy.name"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Customer Info -->
+                                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                    <div class="card-header bg-body border-bottom-0 pt-4 pb-0 px-4">
+                                        <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
+                                            <i class="bi bi-person-hearts text-danger fs-5"></i> Customer & Fulfillment
+                                        </h6>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div class="row g-4">
+                                            <div class="col-md-6 border-end-md">
+                                                <div class="d-flex align-items-start gap-3 mb-3">
+                                                    <img :src="selectedOrder.customer.avatar" class="rounded-circle shadow-sm" width="48" height="48" alt="Customer">
+                                                    <div>
+                                                        <h6 class="fw-bold mb-1" x-text="selectedOrder.customer.name"></h6>
+                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-envelope"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.email).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.email"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.phone || 'N/A'"></span><template x-if="selectedOrder.customer.phone"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></template></span></p>
+                                                        <template x-if="selectedOrder.customer.secondaryPhone">
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone-plus"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.secondaryPhone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.secondaryPhone"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                        </template>
+                                                        <template x-if="selectedOrder.customer.relativeName">
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-people"></i> <span x-text="selectedOrder.customer.relativeName"></span> <span x-show="selectedOrder.customer.relativePhone" class="cursor-pointer ms-1" title="Click to copy phone" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.relativePhone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="`(${selectedOrder.customer.relativePhone})`"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                        </template>
+                                                        <template x-if="selectedOrder.customer.company">
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-building"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.company).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.company"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                        </template>
+                                                        <template x-if="selectedOrder.customer.pan">
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-card-text"></i> PAN: <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.pan).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.pan"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                        </template>
+                                                        <template x-if="selectedOrder.customer.gstin">
+                                                            <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i class="bi bi-receipt"></i> GSTIN: <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.gstin).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.gstin"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <p class="fw-bold small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Shipping Address</p>
+                                                    <p class="small mb-0 text-body-emphasis cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="if(selectedOrder.shippingAddress) { navigator.clipboard.writeText(selectedOrder.shippingAddress.formatted).then(() => { copied = true; setTimeout(() => copied = false, 2000) }) }"><span x-text="selectedOrder.shippingAddress ? selectedOrder.shippingAddress.formatted : 'N/A'"></span><template x-if="selectedOrder.shippingAddress"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.9em;"></i></template></p>
+                                                </div>
+                                                <div>
+                                                    <p class="fw-bold small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Billing Address</p>
+                                                    <p class="small mb-0 text-body-emphasis cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="if(selectedOrder.billingAddress) { navigator.clipboard.writeText(selectedOrder.billingAddress.formatted).then(() => { copied = true; setTimeout(() => copied = false, 2000) }) }"><span x-text="selectedOrder.billingAddress ? selectedOrder.billingAddress.formatted : 'N/A'"></span><template x-if="selectedOrder.billingAddress"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.9em;"></i></template></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Order Items Table -->
+                                <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                                    <div class="card-header bg-body border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                                        <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
+                                            <i class="bi bi-box-seam text-primary fs-5"></i> Order Items
+                                        </h6>
+                                        <span class="badge text-bg-primary-subtle text-primary-emphasis rounded-pill px-3" x-text="`${selectedOrder.itemCount} Items`"></span>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-borderless table-hover align-middle mb-0 text-nowrap">
+                                            <thead class="bg-body-tertiary">
+                                                <tr>
+                                                    <th class="fw-semibold text-muted small py-3 ps-4">Product Details</th>
+                                                    <th class="fw-semibold text-muted small py-3 text-end">Price</th>
+                                                    <th class="fw-semibold text-muted small py-3 text-center">Qty</th>
+                                                    <th class="fw-semibold text-muted small py-3 text-end">Discount</th>
+                                                    <th class="fw-semibold text-muted small py-3 text-end">Tax</th>
+                                                    <th class="fw-semibold text-muted small py-3 text-end pe-4">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template x-for="(item, idx) in selectedOrder.items" :key="idx">
+                                                    <tr class="border-bottom">
+                                                        <td class="ps-4 py-3">
+                                                            <div class="d-flex align-items-center gap-3">
+                                                                <img :src="item.image || '{{ asset('assets/images/product-placeholder.svg') }}'"
+                                                                     class="rounded-3 shadow-sm object-fit-cover"
+                                                                     width="48"
+                                                                     height="48"
+                                                                     :alt="item.name"
+                                                                     x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                                                <div>
+                                                                    <p class="fw-bold text-body-emphasis mb-0" x-text="item.name"></p>
+                                                                    <p class="text-muted small mb-0 font-monospace" style="font-size: 0.75rem;" x-text="item.sku || 'No SKU'"></p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-end py-3">
+                                                            <span class="text-body-emphasis fw-medium" x-text="`₹ ${parseFloat(item.price || 0).toFixed(2)}`"></span>
+                                                        </td>
+                                                        <td class="text-center py-3">
+                                                            <span class="badge bg-secondary bg-opacity-10 text-body-emphasis px-2 py-1 rounded-3" x-text="item.quantity || 0"></span>
+                                                        </td>
+                                                        <td class="text-end py-3 small">
+                                                            <div class="text-success fw-medium mb-1" x-show="parseFloat(item.discount || 0) > 0" x-text="`-₹ ${parseFloat(item.discount || 0).toFixed(2)}`"></div>
+                                                            <template x-if="parseFloat(item.discount || 0) > 0 && item.discountBadgeLabel">
+                                                                <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-inline-flex align-items-center gap-1 px-2 py-1 rounded-3 mt-1">
+                                                                    <i class="bi bi-tag-fill"></i>
+                                                                    <span class="fw-bold" style="font-size: 11px;" x-text="item.discountBadgeLabel"></span>
+                                                                </div>
+                                                            </template>
+                                                            <div class="text-muted" x-show="!item.discount || parseFloat(item.discount) == 0">—</div>
+                                                        </td>
+                                                        <td class="text-end py-3 small">
+                                                            <div class="text-muted fw-medium" x-text="`+₹ ${parseFloat(item.tax || 0).toFixed(2)}`"></div>
+                                                            <div class="text-muted opacity-75" style="font-size: 0.7rem;" x-show="parseFloat(item.taxRate || 0) > 0" x-text="`(${parseFloat(item.taxRate).toFixed(0)}%)`"></div>
+                                                        </td>
+                                                        <td class="text-end pe-4 py-3">
+                                                            <span class="fw-bold text-primary" x-text="`₹ ${((parseFloat(item.price || 0) * parseFloat(item.quantity || 0)) - parseFloat(item.discount || 0) + parseFloat(item.tax || 0)).toFixed(2)}`"></span>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Financial Summary -->
+                                <div class="card border-0 shadow-sm rounded-4">
+                                    <div class="card-body p-4 bg-body rounded-4">
+                                        <div class="row justify-content-end">
+                                            <div class="col-md-6 col-lg-5">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span class="text-muted fw-medium">Subtotal</span>
+                                                    <span class="text-body-emphasis fw-bold" x-text="`₹ ${formatCurrency(selectedOrder.subtotal)}`"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <div>
+                                                        <span class="text-muted fw-medium">Discount</span>
+                                                        <span x-show="selectedOrder.couponCode" class="badge bg-success ms-2 rounded-pill" x-text="selectedOrder.couponCode"></span>
+                                                        <span x-show="selectedOrder.appliedOfferName" class="text-muted d-block" style="font-size: 10px;" x-text="selectedOrder.appliedOfferName"></span>
+                                                    </div>
+                                                    <span class="text-success fw-bold" x-text="`-₹ ${formatCurrency(selectedOrder.discountTotal)}`"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-3 border-bottom pb-3">
+                                                    <span class="text-muted fw-medium">Tax</span>
+                                                    <span class="text-body-emphasis fw-bold" x-text="`₹ ${formatCurrency(selectedOrder.taxTotal)}`"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <span class="text-body-emphasis fw-bolder fs-5 d-block">Grand Total</span>
+                                                        <span class="text-muted d-block mt-1" style="font-size: 11px;" x-show="selectedOrder && selectedOrder.items" x-data="{
+                                                            get totalW() {
+                                                                if (!selectedOrder || !selectedOrder.items) return 0;
+                                                                return selectedOrder.items.reduce((acc, item) => {
+                                                                    let w = (item.product && item.product.weight_g) ? parseFloat(item.product.weight_g) : 500;
+                                                                    return acc + (w * item.quantity);
+                                                                }, 0);
+                                                            }
+                                                        }">
+                                                            Est. Weight: <span class="fw-bold" :class="totalW > 35000 ? 'text-danger' : ''" x-text="(totalW / 1000).toFixed(2) + ' kg'"></span>
+                                                        </span>
+                                                    </div>
+                                                    <span class="text-primary fw-bolder fs-4" x-text="`₹ ${formatCurrency(selectedOrder.total)}`"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Right Column: Warehouse / Logistics / Timeline -->
+                            <div class="col-lg-4 p-4 p-lg-5 border-start bg-body" style="height: fit-content; align-self: flex-start;">
+                                
+                                <!-- Logistics / Warehouse -->
+                                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                    <div class="card-header bg-body border-bottom-0 pt-4 pb-2 px-4">
+                                        <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
+                                            <i class="bi bi-building text-secondary fs-5"></i> Fulfillment Center
+                                        </h6>
+                                    </div>
+                                    <div class="card-body p-4 pt-2">
+                                        <div class="p-3 bg-body-tertiary rounded-4 border">
+                                            <p class="mb-1 fw-bold text-body-emphasis" x-text="selectedOrder.warehouse ? selectedOrder.warehouse.name : 'Unassigned'"></p>
+                                            <p class="small text-muted mb-2 lh-sm" x-text="selectedOrder.warehouse ? selectedOrder.warehouse.address : 'N/A'"></p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge bg-secondary bg-opacity-10 text-body-emphasis rounded-pill fw-medium px-2 py-1"><i class="bi bi-telephone-fill me-1"></i> <span x-text="selectedOrder.warehouse ? selectedOrder.warehouse.phone : 'N/A'"></span></span>
+                                                <template x-if="selectedOrder.warehouse && selectedOrder.warehouse.gstin && selectedOrder.warehouse.gstin !== 'N/A'">
+                                                    <span class="badge text-bg-info-subtle text-info-emphasis rounded-pill fw-medium px-2 py-1"><i class="bi bi-receipt me-1"></i> <span x-text="selectedOrder.warehouse.gstin"></span></span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Shipment Tracking -->
+                                <template x-if="selectedOrder.shipment">
+                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                                        <div class="card-body p-4">
+                                            <h6 class="fw-bold mb-3 text-primary d-flex align-items-center gap-2">
+                                                <i class="bi bi-truck fs-5"></i> Shipping Details
+                                            </h6>
+                                            <template x-if="selectedOrder.shipment">
+                                                <div class="bg-body p-3 rounded-4 shadow-sm mb-3">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <p class="small text-muted mb-0 text-uppercase fw-semibold" style="font-size: 0.65rem;">Tracking Number</p>
+                                                        @can('orders.ship')
+                                                        
+                                                        @endcan
+                                                    </div>
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <p class="fw-bold text-body-emphasis font-monospace mb-0 fs-6" x-text="selectedOrder.shipment.trackingNo"></p>
+                                                        <span class="badge text-bg-info-subtle text-info-emphasis border-opacity-25 rounded-pill" x-text="selectedOrder.shipment.carrier"></span>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <template x-if="selectedOrder.assignedService">
+                                                <div class="bg-body p-3 rounded-4 shadow-sm mb-3">
+                                                    <p class="small text-muted mb-2 text-uppercase fw-semibold" style="font-size: 0.65rem;">Assigned Service</p>
+                                                    <div class="border rounded-3 p-3">
+                                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                                            <div>
+                                                                <p class="fw-bold text-body-emphasis mb-1" x-text="selectedOrder.assignedService.name"></p>
+                                                                <p class="small text-muted mb-0" x-show="selectedOrder.assignedService.code" x-text="`Code: ${selectedOrder.assignedService.code}`"></p>
+                                                                <p class="small text-secondary mb-0 mt-1" x-show="selectedOrder.assignedService.description" x-text="selectedOrder.assignedService.description"></p>
+                                                            </div>
+                                                            <span class="badge text-bg-primary-subtle text-primary-emphasis rounded-pill" x-text="`Priority ${selectedOrder.assignedService.priority}`"></span>
+                                                        </div>
+                                                        <div class="mt-2 pt-2 border-top" x-show="selectedOrder.assignedService.providers.length">
+                                                            <p class="small text-muted mb-1">Mapped service providers</p>
+                                                            <template x-for="provider in selectedOrder.assignedService.providers" :key="`${selectedOrder.assignedService.name}-${provider.name}-${provider.phone}`">
+                                                                <div class="small d-flex align-items-center justify-content-between mb-1" :class="String(selectedOrder.shipment.serviceProviderId) === String(provider.id) ? 'text-primary fw-bold' : 'text-body-emphasis'">
+                                                                    <div>
+                                                                        <i class="bi bi-person-fill me-1"></i><span x-text="provider.name"></span>
+                                                                        <template x-if="provider.phone"><span class="text-muted ms-2 fw-normal"><i class="bi bi-telephone-fill me-1"></i><span x-text="provider.phone"></span></span></template>
+                                                                    </div>
+                                                                    <template x-if="String(selectedOrder.shipment.serviceProviderId) === String(provider.id)">
+                                                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill" style="font-size: 0.6rem;"><i class="bi bi-check-circle-fill me-1"></i>Assigned</span>
+                                                                    </template>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            
+                                            <template x-if="selectedOrder.shipment.events && selectedOrder.shipment.events.length">
+                                                <div class="position-relative ms-2 ps-3 border-start border-primary border-opacity-25 border-2">
+                                                    <template x-for="(event, i) in selectedOrder.shipment.events" :key="event.id">
+                                                        <div class="position-relative mb-3">
+                                                            <div class="position-absolute bg-primary rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
+                                                            <p class="fw-bold text-body-emphasis mb-0 small" x-text="event.status"></p>
+                                                            <p class="text-muted mb-0" style="font-size: 0.75rem;" x-text="formatDateTime(event.created_at)"></p>
+                                                            <p class="text-secondary small mt-1 lh-sm" x-text="event.description || event.remark"></p>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Invoice Details -->
+                                <template x-if="selectedOrder.invoice">
+                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
+                                        <div class="card-body p-4">
+                                            <h6 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2">
+                                                <i class="bi bi-receipt fs-5"></i> Invoice Details
+                                            </h6>
+                                            <div class="bg-body p-3 rounded-4 shadow-sm">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="small text-muted">Invoice No:</span>
+                                                    <span class="fw-bold text-body-emphasis" x-text="selectedOrder.invoice.number"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="small text-muted">Date:</span>
+                                                    <span class="fw-medium small" x-text="formatDate(selectedOrder.invoice.date)"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="small text-muted">Status:</span>
+                                                    <span class="badge bg-secondary" x-text="selectedOrder.invoice.status"></span>
+                                                </div>
+                                                <hr class="my-2">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="small text-muted">Paid:</span>
+                                                    <span class="text-success fw-bold" x-text="`₹ ${selectedOrder.invoice.paid.toFixed(2)}`"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="small text-muted">Due:</span>
+                                                    <span class="text-danger fw-bold" x-text="`₹ ${selectedOrder.invoice.due.toFixed(2)}`"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Payments Tracking -->
+                                <template x-if="selectedOrder.payments && selectedOrder.payments.length > 0">
+                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-success bg-opacity-10 border border-success border-opacity-25">
+                                        <div class="card-body p-4">
+                                            <h6 class="fw-bold mb-3 text-success d-flex align-items-center gap-2">
+                                                <i class="bi bi-cash-stack fs-5"></i> Payments
+                                            </h6>
+                                            <div class="position-relative ms-2 ps-3 border-start border-success border-opacity-25 border-2">
+                                                <template x-for="(payment, i) in selectedOrder.payments" :key="payment.id">
+                                                    <div class="position-relative mb-3">
+                                                        <div class="position-absolute bg-success rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div>
+                                                                <p class="fw-bold text-body-emphasis mb-0 small" x-text="`₹ ${payment.amount}`"></p>
+                                                                <p class="text-muted mb-0" style="font-size: 0.75rem;" x-text="formatDateTime(payment.date)"></p>
+                                                                <p class="text-secondary small mt-1 lh-sm mb-0">
+                                                                    <span x-text="payment.method"></span>
+                                                                    <span x-show="payment.transactionId && payment.transactionId !== 'N/A'" x-text="` | Txn: ${payment.transactionId}`"></span>
+                                                                </p>
+                                                            </div>
+                                                            <span class="badge" 
+                                                                  :class="{
+                                                                    'bg-success': payment.status === 'completed',
+                                                                    'bg-warning': payment.status === 'pending' || payment.status === 'authorized',
+                                                                    'bg-danger': payment.status === 'failed' || payment.status === 'refunded'
+                                                                  }"
+                                                                  x-text="payment.statusLabel"></span>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Returns Tracking -->
+                                <template x-if="selectedOrder.original && (selectedOrder.original.order_returns && selectedOrder.original.order_returns.length > 0 || selectedOrder.original.orderReturns && selectedOrder.original.orderReturns.length > 0)">
+                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-danger bg-opacity-10 border border-danger border-opacity-25">
+                                        <div class="card-body p-4">
+                                            <h6 class="fw-bold mb-3 text-danger d-flex align-items-center gap-2">
+                                                <i class="bi bi-arrow-return-left fs-5"></i> Returns & Refunds
+                                            </h6>
+                                            <div class="position-relative ms-2 ps-3 border-start border-danger border-opacity-25 border-2">
+                                                <template x-for="(ret, i) in (selectedOrder.original.order_returns || selectedOrder.original.orderReturns)" :key="ret.id || i">
+                                                    <div class="position-relative mb-3">
+                                                        <div class="position-absolute bg-danger rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div>
+                                                                <p class="fw-bold text-body-emphasis mb-0 small" x-text="ret.return_no || 'Return'"></p>
+                                                                <p class="text-muted mb-0" style="font-size: 0.75rem;" x-text="formatDateTime(ret.created_at)"></p>
+                                                                <p class="text-secondary small mt-1 lh-sm mb-0">Reason: <span x-text="ret.reason || 'N/A'"></span></p>
+                                                                <p class="text-danger small fw-medium mt-1 mb-0" x-show="ret.refund_amount > 0">Refund: ₹ <span x-text="ret.refund_amount"></span></p>
+                                                            </div>
+                                                            <span class="badge bg-danger" x-text="ret.status"></span>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Order Status Timeline -->
+                                <template x-if="selectedOrder.original && selectedOrder.original.status_logs && selectedOrder.original.status_logs.length > 0">
+                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
+                                        <div class="card-body p-4">
+                                            <h6 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2">
+                                                <i class="bi bi-clock-history fs-5"></i> Order Status Timeline
+                                            </h6>
+                                            <div class="position-relative ms-2 ps-3 border-start border-secondary border-opacity-25 border-2">
+                                                <template x-for="log in selectedOrder.original.status_logs" :key="log.id">
+                                                    <div class="position-relative mb-3">
+                                                        <div class="position-absolute bg-secondary rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 5px;"></div>
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div>
+                                                                <p class="fw-bold text-body-emphasis mb-0 small text-capitalize" x-text="log.status.replace(/_/g, ' ')"></p>
+                                                                <p class="text-muted mb-0" style="font-size: 0.75rem;" x-text="formatDateTime(log.created_at)"></p>
+                                                                <p class="text-secondary small mt-1 lh-sm mb-0" x-show="log.notes" x-text="log.notes"></p>
+                                                                <p class="text-secondary opacity-75" style="font-size: 0.7rem; margin-top: 2px;" x-show="log.user">
+                                                                    <i class="bi bi-person me-1"></i><span x-text="log.user.name || (log.user.first_name + ' ' + (log.user.last_name || ''))"></span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
         </div>
+    </div>
+</div>
+</div>
     </div>
 
 <style>
@@ -2483,6 +2950,327 @@
 function createOrderApp(initialCustomer = null, initialOrder = null) {
     return {
         activeTab: 'customer',
+        selectedOrder: null,
+        formatMoney(value) {
+            const amount = Number.parseFloat(value ?? 0);
+            return Number.isFinite(amount) ? amount : 0;
+        },
+
+        formatDate(value) {
+            if (!value) return 'N/A';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
+        },
+getStatusTheme(status) {
+      const themes = {
+        future_order: 'secondary',
+        pending: 'secondary',
+        unfulfillable: 'danger',
+        pending_confirmation: 'warning',
+        confirmed: 'info',
+        processing: 'primary',
+        ready_to_ship: 'dark',
+        dispatched: 'info',
+        delivery_attempted: 'danger',
+        shipped: 'primary',
+        delivered: 'success',
+        cancelled: 'danger',
+        return_requested: 'warning',
+        returned: 'danger'
+      };
+      return themes[status] || 'secondary';
+    },
+mapOrder(o) {
+      const formatAddress = (orderObj, prefix) => {
+        const addressObj = prefix === 'shipping' ? orderObj.shipping_address : (prefix === 'billing' ? orderObj.billing_address : null);
+        
+        if (addressObj) {
+            const villageName = addressObj.village ? addressObj.village.village_name : addressObj.village_name;
+            const taluka = addressObj.village ? addressObj.village.taluka_name : addressObj.taluka;
+            const district = addressObj.village ? addressObj.village.district_name : addressObj.district;
+            const po = addressObj.village ? addressObj.village.post_so_name : addressObj.post_office;
+
+            const parts = [
+              addressObj.address_line_1,
+              addressObj.address_line_2,
+              villageName ? `Vill: ${villageName}` : null,
+              taluka ? `Ta: ${taluka}` : null,
+              district ? `Dist: ${district}` : null,
+              po ? `PO: ${po}` : null,
+              addressObj.city,
+              addressObj.state,
+              addressObj.pincode,
+            ].filter(Boolean);
+
+            return {
+              id: addressObj.id,
+              label: addressObj.label || '',
+              line1: addressObj.address_line_1 || '',
+              line2: addressObj.address_line_2 || '',
+              city: addressObj.city || '',
+              state: addressObj.state || '',
+              pincode: addressObj.pincode || '',
+              country: 'India',
+              village: {
+                name: villageName || '',
+                taluka: taluka || '',
+                district: district || '',
+                state: addressObj.state || '',
+                postOffice: po || '',
+              },
+              formatted: parts.join(', ') || 'N/A',
+              raw: addressObj,
+            };
+        }
+
+        // Fallback to old flat structure if relation is missing
+        if (!orderObj || !orderObj[`${prefix}_address_id`]) return null;
+
+        const parts = [
+          orderObj[`${prefix}_address_line_1`],
+          orderObj[`${prefix}_address_line_2`],
+          orderObj[`${prefix}_village_name`] ? `Vill: ${orderObj[`${prefix}_village_name`]}` : null,
+          orderObj[`${prefix}_taluka`] ? `Ta: ${orderObj[`${prefix}_taluka`]}` : null,
+          orderObj[`${prefix}_district`] ? `Dist: ${orderObj[`${prefix}_district`]}` : null,
+          orderObj[`${prefix}_post_office`] ? `PO: ${orderObj[`${prefix}_post_office`]}` : null,
+          orderObj[`${prefix}_city`],
+          orderObj[`${prefix}_state`],
+          orderObj[`${prefix}_pincode`],
+        ].filter(Boolean);
+
+        return {
+          id: orderObj[`${prefix}_address_id`],
+          label: '',
+          line1: orderObj[`${prefix}_address_line_1`] || '',
+          line2: orderObj[`${prefix}_address_line_2`] || '',
+          city: orderObj[`${prefix}_city`] || '',
+          state: orderObj[`${prefix}_state`] || '',
+          pincode: orderObj[`${prefix}_pincode`] || '',
+          country: 'India',
+          village: orderObj[`${prefix}_village_name`] ? {
+            name: orderObj[`${prefix}_village_name`] || '',
+            taluka: orderObj[`${prefix}_taluka`] || '',
+            district: orderObj[`${prefix}_district`] || '',
+            state: orderObj[`${prefix}_state`] || '',
+            postOffice: orderObj[`${prefix}_post_office`] || '',
+          } : null,
+          formatted: parts.join(', ') || 'N/A',
+          raw: orderObj,
+        };
+      };
+
+      const formatMoney = (value) => {
+        const amount = Number.parseFloat(value ?? 0);
+        return Number.isFinite(amount) ? amount : 0;
+      };
+
+      const shipment = Array.isArray(o.shipments) && o.shipments.length ? o.shipments[0] : null;
+      const availableServices = (o.shipping_address?.village?.services || [])
+        .filter(service => {
+          const pivot = service.pivot || {};
+          return service.is_active && (pivot.is_available === true || pivot.is_available === 1 || pivot.is_available === '1');
+        })
+        .sort((a, b) => {
+          const priorityA = Number.isFinite(Number(a.pivot?.priority)) ? Number(a.pivot.priority) : 0;
+          const priorityB = Number.isFinite(Number(b.pivot?.priority)) ? Number(b.pivot.priority) : 0;
+          return priorityA - priorityB || String(a.name).localeCompare(String(b.name));
+        })
+        .map(service => ({
+          name: service.name || 'N/A',
+          code: service.code || '',
+          description: service.description || '',
+          priority: Number.isFinite(Number(service.pivot?.priority)) ? Number(service.pivot.priority) : 0,
+          providers: (service.providers || []).map(provider => ({
+            id: provider.id,
+            name: provider.name || 'N/A',
+            phone: provider.phone || '',
+          })),
+        }));
+      const availableCarrierOptions = availableServices.map(service => ({
+        name: service.name,
+        priority: service.priority,
+      }));
+      const assignedService = shipment
+        ? availableServices.find(service =>
+          service.name.trim().toLowerCase() === String(shipment.carrier_name || '').trim().toLowerCase()
+        ) || null
+        : null;
+      const invoice = o.invoice || null;
+      const invoicePayments = invoice && Array.isArray(invoice.payments) ? invoice.payments : [];
+      const paidAmount = invoicePayments
+        .filter(payment => payment.status === 'completed')
+        .reduce((sum, payment) => sum + formatMoney(payment.amount || 0), 0);
+      const netAmount = formatMoney(invoice ? (invoice.net_amount ?? 0) : 0);
+      const payments = Array.isArray(o.payments) ? o.payments : [];
+      const latestPaymentWithMethod = [...payments, ...invoicePayments]
+        .filter(payment => String(payment.payment_method || '').trim())
+        .sort((a, b) => new Date(b.payment_date || 0) - new Date(a.payment_date || 0))[0] || null;
+      const formattedPaymentMethod = latestPaymentWithMethod
+        ? latestPaymentWithMethod.payment_method.toUpperCase().replace(/_/g, ' ')
+        : (invoice ? 'PENDING PAYMENT' : 'NOT RECORDED');
+
+      return {
+        id: o.id,
+        partyId: o.party_id || null,
+        warehouseId: o.warehouse_id || null,
+        shippingAddressId: o.shipping_address_id || null,
+        billingAddressId: o.billing_address_id || null,
+        orderNumber: o.order_no,
+        type: o.type || 'sale',
+        orderDate: o.order_date,
+        rawStatus: o.status,
+        status: o.lifecycle_status || o.status,
+        scheduledConfirmDate: o.scheduled_confirmation_date,
+        confirmAttempts: o.confirmation_attempts || 0,
+        statusLabel: o.status_label || (o.lifecycle_status || o.status || '').charAt(0).toUpperCase() + (o.lifecycle_status || o.status || '').slice(1).replace(/_/g, ' '),
+        customer: {
+          name: o.party ? `${o.party.firstname} ${o.party.lastname}` : 'N/A',
+          email: o.party ? o.party.email : 'N/A',
+          avatar: o.party && o.party.avatar ? o.party.avatar : '/assets/images/default_avatar.jpeg',
+          phone: o.party ? o.party.phone : '',
+          relativeName: o.party ? (o.party.relative_name || o.party.relative_name) : '',
+          relativePhone: o.party ? o.party.relative_phone : '',
+          company: o.party ? o.party.company_name : '',
+          pan: o.party ? o.party.pan_number : '',
+          gstin: o.party ? o.party.gstin : ''
+        },
+        warehouse: o.warehouse ? {
+          name: o.warehouse.name || o.warehouse.company_name || 'N/A',
+          phone: o.warehouse.phone || 'N/A',
+          gstin: o.warehouse.gstin || 'N/A',
+          address: [
+            o.warehouse.address_line_1,
+            o.warehouse.address_line_2,
+            o.warehouse.city,
+            o.warehouse.state,
+            o.warehouse.pincode,
+          ].filter(Boolean).join(', ') || 'N/A',
+        } : null,
+        shippingAddress: formatAddress(o, 'shipping'),
+        availableCarrierOptions,
+        assignedService,
+        billingAddress: formatAddress(o, 'billing'),
+        invoice: invoice ? {
+          number: invoice.invoice_no || 'N/A',
+          date: invoice.invoice_date || null,
+          status: invoice.status || 'N/A',
+          total: formatMoney(invoice.total_amount ?? invoice.total_amount),
+          tax: formatMoney(invoice.tax_amount ?? 0),
+          net: netAmount,
+          paid: paidAmount,
+          due: Math.max(0, netAmount - paidAmount),
+          paymentCount: invoicePayments.length,
+        } : null,
+        shipment: shipment ? {
+          no: shipment.shipment_no || 'N/A',
+          carrier: shipment.carrier_name || 'N/A',
+          trackingNo: shipment.tracking_no || 'N/A',
+          status: shipment.status || 'N/A',
+          serviceProviderId: shipment.service_provider_id || null,
+          shippedAt: shipment.shipped_at || null,
+          deliveredAt: shipment.delivered_at || null,
+          delivery_attempts: shipment.delivery_attempts || 0,
+          next_followup_date: shipment.next_followup_date || null,
+          reschedule_reason: shipment.reschedule_reason || null,
+          events: Array.isArray(shipment.events) ? shipment.events : [],
+        } : null,
+        orderReturn: (o.order_returns && o.order_returns.length) ? {
+          reason: o.order_returns[o.order_returns.length - 1].reason || 'N/A',
+          notes: o.order_returns[o.order_returns.length - 1].notes || '',
+        } : (o.orderReturns && o.orderReturns.length ? {
+          reason: o.orderReturns[o.orderReturns.length - 1].reason || 'N/A',
+          notes: o.orderReturns[o.orderReturns.length - 1].notes || '',
+        } : null),
+        payments: payments.map(payment => ({
+          id: payment.id,
+          no: payment.payment_no || 'N/A',
+          amount: formatMoney(payment.amount || 0),
+          method: payment.payment_method || 'N/A',
+          status: payment.status || 'N/A',
+          statusLabel: payment.status || 'N/A',
+          date: payment.payment_date || null,
+          transactionId: payment.transaction_id || 'N/A',
+        })),
+        items: (o.items || []).map(item => {
+          const qty = formatMoney(item.quantity) || 1;
+          const uPrice = formatMoney(item.unit_price);
+          const discAmt = formatMoney(item.discount_amount);
+          const type = item.product ? (item.product.default_discount_type || 'percent') : 'percent';
+          const baseAmount = uPrice * qty;
+          const val = item.product && formatMoney(item.product.default_discount) > 0
+            ? formatMoney(item.product.default_discount)
+            : (discAmt > 0 
+                ? (['flat', 'fixed', 'amount'].includes(type.toLowerCase()) 
+                    ? (qty > 0 ? discAmt / qty : 0) 
+                    : (baseAmount > 0 ? (discAmt / baseAmount) * 100 : 0)) 
+                : 0);
+
+          const isFlat = ['flat', 'fixed', 'amount'].includes(type.toLowerCase());
+          const displayVal = Number.isFinite(val) ? val : 0;
+          const formattedVal = displayVal % 1 === 0 ? displayVal.toFixed(0) : displayVal.toFixed(2);
+          const badgeLabel = displayVal > 0 ? (isFlat ? `₹ ${formattedVal} off` : `${formattedVal}% off`) : '';
+
+          return {
+            product_id: item.product_id || (item.product ? item.product.id : null),
+            name: item.product ? item.product.name : 'Unknown Product',
+            sku: item.product ? item.product.sku || '' : '',
+            image: item.product && item.product.image_path ? `/storage/${item.product.image_path}` : null,
+            quantity: item.quantity,
+            price: item.unit_price,
+            discount: discAmt,
+            discountType: type,
+            discountValue: displayVal,
+            discountBadgeLabel: badgeLabel,
+            tax: item.tax_amount || 0,
+            taxRate: item.tax_rate || 0,
+            net: item.total_amount || 0,
+            isOutOfStock: item.is_out_of_stock || false,
+            availableStock: item.available_stock || 0
+          };
+        }),
+        itemCount: o.items_count || (o.items ? o.items.length : 0),
+        total: formatMoney(o.net_amount),
+        subtotal: (o.items || []).reduce((sum, item) => sum + (formatMoney(item.unit_price) * formatMoney(item.quantity)), 0),
+        taxTotal: formatMoney(o.tax_amount),
+        discountTotal: Math.max(0, (o.items || []).reduce((sum, item) => sum + (formatMoney(item.unit_price) * formatMoney(item.quantity)), 0) + formatMoney(o.tax_amount) - formatMoney(o.net_amount)),
+        paymentMethod: formattedPaymentMethod,
+        couponCode: o.coupon_code || '',
+        appliedOfferName: o.applied_offer ? o.applied_offer.name : '',
+        isDraft: o.status === 'future_order',
+        futureOrderDate: o.future_order_date || null,
+        createdBy: {
+          name: o.creator ? (o.creator.name || '').trim() : 'N/A',
+          email: o.creator ? (o.creator.email || '') : '',
+          avatar: o.creator && o.creator.avatar ? o.creator.avatar : '/assets/images/default_avatar.jpeg',
+        },
+        updatedBy: o.updater ? `${o.updater.name || ''}`.trim() : 'N/A',
+        isUnfulfillable: o.is_unfulfillable || false,
+        original: o
+      };
+    },
+
+    formatCurrency(value) {
+      const amount = Number.parseFloat(value ?? 0);
+      return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
+    },
+
+    formatDateTime(value) {
+      if (!value) return 'N/A';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleString();
+    },
+        viewOrder(orderId) {
+            const order = this.historyOrders.find(o => String(o.id) === String(orderId)) || this.futureOrders.find(o => String(o.id) === String(orderId));
+            if (order) {
+                this.selectedOrder = this.mapOrder(order);
+                const modalEl = document.getElementById('orderDetailModal');
+                if (modalEl) {
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                }
+            }
+        },
+
         viewMode: 'table',
         showCustomerWorkspace: false,
         isCartSidebarOpen: false, useWalletBalance: false,
