@@ -849,6 +849,63 @@
                             </div>
                         </li>
                         
+                        @php
+                            $todayTargets = collect();
+                            if (Auth::check()) {
+                                $user = Auth::user();
+                                $todayTargets = \App\Models\Target::where('targetable_type', $user->getMorphClass())
+                                    ->where('targetable_id', $user->id)
+                                    ->where('period_type', 'daily')
+                                    ->whereDate('start_date', '<=', \Carbon\Carbon::today())
+                                    ->whereDate('end_date', '>=', \Carbon\Carbon::today())
+                                    ->get();
+                            }
+                        @endphp
+                        
+                        @if($todayTargets->isNotEmpty())
+                            <li class="px-4 py-2 border-bottom mb-2">
+                                <h6 class="mb-2 fw-bold text-uppercase text-muted" style="font-size: 10px; letter-spacing: 0.5px;">Today's Targets</h6>
+                                @foreach($todayTargets as $target)
+                                    @php
+                                        $remaining = max(0, $target->target_amount - $target->achieved_amount);
+                                        $percent = $target->target_amount > 0 ? min(100, round(($target->achieved_amount / $target->target_amount) * 100)) : 0;
+                                        $color = $percent >= 100 ? 'success' : ($percent >= 50 ? 'warning' : 'danger');
+                                        
+                                        $metricLabel = match($target->metric_type) {
+                                            'sales_revenue' => 'Sales Revenue',
+                                            'orders_count' => 'Orders',
+                                            'invoice_collection' => 'Invoice Collection',
+                                            'payment_collection' => 'Payment Collection',
+                                            'calls_made' => 'Calls Made',
+                                            default => ucwords(str_replace('_', ' ', $target->metric_type))
+                                        };
+                                        $prefix = in_array($target->metric_type, ['sales_revenue', 'invoice_collection', 'payment_collection']) ? '₹' : '';
+                                    @endphp
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small fw-semibold text-body">{{ $metricLabel }}</span>
+                                            <span class="small fw-bold text-{{ $color }}" style="font-size: 11px;">{{ $percent }}%</span>
+                                        </div>
+                                        <div class="progress rounded-pill bg-secondary bg-opacity-25" style="height: 6px;">
+                                            <div class="progress-bar rounded-pill bg-{{ $color }}" role="progressbar" style="width: {{ $percent }}%;" aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between mt-1 text-muted" style="font-size: 10px;">
+                                            <span>Achieved: <span class="fw-semibold text-body">{{ $prefix }}{{ number_format($target->achieved_amount, in_array($target->metric_type, ['sales_revenue', 'invoice_collection', 'payment_collection']) ? 2 : 0) }}</span></span>
+                                            <span>Target: <span class="fw-semibold text-body">{{ $prefix }}{{ number_format($target->target_amount, in_array($target->metric_type, ['sales_revenue', 'invoice_collection', 'payment_collection']) ? 2 : 0) }}</span></span>
+                                        </div>
+                                        @if($remaining > 0)
+                                            <div class="text-end text-muted mt-0" style="font-size: 10px;">
+                                                Remaining: <span class="fw-semibold text-danger">{{ $prefix }}{{ number_format($remaining, in_array($target->metric_type, ['sales_revenue', 'invoice_collection', 'payment_collection']) ? 2 : 0) }}</span>
+                                            </div>
+                                        @else
+                                            <div class="text-end text-success fw-bold mt-0" style="font-size: 10px;">
+                                                Target Completed! 🎉
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </li>
+                        @endif
                         <li>
                             <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
                                 <i class="bi bi-person text-muted fs-5"></i> Profile

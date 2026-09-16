@@ -23,6 +23,12 @@ class TargetsExport implements FromCollection, WithHeadings, WithMapping, WithSt
     public function collection(): \Illuminate\Support\Collection
     {
         $query = Target::with('targetable');
+        
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+            $query->where('targetable_type', $user->getMorphClass())
+                  ->where('targetable_id', $user->id);
+        }
 
         if ($this->periodType) {
             $query->where('period_type', $this->periodType);

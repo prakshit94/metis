@@ -15,6 +15,12 @@ class TargetController extends Controller
     public function index(Request $request)
     {
         $query = Target::with('targetable');
+        
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+            $query->where('targetable_type', $user->getMorphClass())
+                  ->where('targetable_id', $user->id);
+        }
 
         if ($request->filled('metric_type')) {
             $query->where('metric_type', $request->metric_type);
@@ -65,18 +71,34 @@ class TargetController extends Controller
         $perPage = $request->input('per_page', 20);
         $targets = $query->orderByDesc('start_date')->paginate($perPage);
 
+        $baseStatsQuery = Target::query();
+        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+            $baseStatsQuery->where('targetable_type', $user->getMorphClass())
+                           ->where('targetable_id', $user->id);
+        }
+
         $stats = [
-            'total' => Target::count(),
-            'active' => Target::where('status', 'active')->count(),
-            'achieved' => Target::where('status', 'achieved')->count(),
-            'failed' => Target::where('status', 'failed')->count(),
+            'total' => (clone $baseStatsQuery)->count(),
+            'active' => (clone $baseStatsQuery)->where('status', 'active')->count(),
+            'achieved' => (clone $baseStatsQuery)->where('status', 'achieved')->count(),
+            'failed' => (clone $baseStatsQuery)->where('status', 'failed')->count(),
         ];
 
-        $availableAssignees = [
-            'User' => \App\Modules\Users\Models\User::all()->map(function($u) { return ['id' => $u->id, 'name' => $u->name ?? $u->email]; }),
-            'Team' => \App\Modules\Users\Models\Team::all()->map(function($t) { return ['id' => $t->id, 'name' => $t->name]; }),
-            'Department' => \App\Modules\Users\Models\Department::all()->map(function($d) { return ['id' => $d->id, 'name' => $d->name]; }),
-        ];
+        $isGlobalViewer = $user && ($user->hasRole('Super Admin') || $user->can('target-view-all'));
+
+        if ($isGlobalViewer) {
+            $availableAssignees = [
+                'User' => \App\Modules\Users\Models\User::all()->map(function($u) { return ['id' => $u->id, 'name' => $u->name ?? $u->email]; }),
+                'Team' => \App\Modules\Users\Models\Team::all()->map(function($t) { return ['id' => $t->id, 'name' => $t->name]; }),
+                'Department' => \App\Modules\Users\Models\Department::all()->map(function($d) { return ['id' => $d->id, 'name' => $d->name]; }),
+            ];
+        } else {
+            $availableAssignees = [
+                'User' => $user ? collect([['id' => $user->id, 'name' => $user->name ?? $user->email]]) : collect(),
+                'Team' => collect(),
+                'Department' => collect(),
+            ];
+        }
 
         return view('targets.index', compact('targets', 'stats', 'availableAssignees'));
     }
@@ -117,6 +139,13 @@ class TargetController extends Controller
             $validated['targetable_type'] = \App\Modules\Users\Models\Team::class;
         } elseif ($validated['targetable_type'] === 'Department') {
             $validated['targetable_type'] = \App\Modules\Users\Models\Department::class;
+        }
+
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+            if ($validated['targetable_type'] !== $user->getMorphClass() || count($validated['targetable_ids']) !== 1 || (int) $validated['targetable_ids'][0] !== $user->id) {
+                abort(403, 'Unauthorized action. You can only assign targets to yourself.');
+            }
         }
 
         foreach ($validated['targetable_ids'] as $id) {
@@ -386,6 +415,12 @@ class TargetController extends Controller
     public function recalculate(Request $request, TargetAchievementService $service): \Illuminate\Http\RedirectResponse
     {
         $query = Target::query();
+        
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+            $query->where('targetable_type', $user->getMorphClass())
+                  ->where('targetable_id', $user->id);
+        }
 
         // Honour any active filters so the button recalculates only what the user is viewing
         if ($request->filled('metric_type')) {
@@ -411,6 +446,13 @@ class TargetController extends Controller
 
     public function update(Request $request, Target $target)
     {
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+            if ($target->targetable_type !== $user->getMorphClass() || $target->targetable_id !== $user->id) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
         $validated = $request->validate([
             'target_amount' => 'required|numeric|min:0',
             'achieved_amount' => 'nullable|numeric|min:0',
@@ -495,6 +537,13 @@ class TargetController extends Controller
 
     public function destroy(Target $target)
     {
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+            if ($target->targetable_type !== $user->getMorphClass() || $target->targetable_id !== $user->id) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+        
         $target->delete();
         return redirect()->route('targets.index')->with('success', 'Target deleted successfully.');
     }
