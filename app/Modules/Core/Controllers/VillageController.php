@@ -113,17 +113,46 @@ class VillageController extends Controller implements HasMiddleware
 
         // Stats calculation
         $statsQuery = clone $query;
-        $counts = $statsQuery->select([
+        $statsQuery->setEagerLoads([]);
+        
+        $counts = (clone $statsQuery)->select([
             DB::raw('COUNT(*) as total'),
             DB::raw('COUNT(DISTINCT pincode) as pincodes'),
             DB::raw('COUNT(DISTINCT district_name) as districts_count'),
         ])->toBase()->first();
 
+        $topDistricts = (clone $statsQuery)
+            ->select('district_name as name', DB::raw('COUNT(*) as count'))
+            ->groupBy('district_name')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->get()
+            ->map(function ($item) use ($counts) {
+                return [
+                    'name' => $item->name ?: 'Unknown',
+                    'count' => (int) $item->count,
+                    'percentage' => $counts->total > 0 ? (int) round(($item->count / $counts->total) * 100) : 0,
+                ];
+            });
+
+        $activeServices = Service::active()->get();
+        $serviceDistribution = $activeServices->map(function ($service) use ($statsQuery) {
+            $count = (clone $statsQuery)->whereHas('mappings', function ($q) use ($service) {
+                $q->where('service_id', $service->id)->where('is_available', true);
+            })->count();
+            return [
+                'name' => $service->name,
+                'count' => $count,
+            ];
+        });
+
         $stats = [
             'total' => (int) ($counts->total ?? 0),
             'pincodes' => (int) ($counts->pincodes ?? 0),
             'districts_count' => (int) ($counts->districts_count ?? 0),
-            'services' => Service::active()->count(),
+            'services' => $activeServices->count(),
+            'top_districts' => $topDistricts,
+            'service_distribution' => $serviceDistribution,
         ];
 
         $villages = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
@@ -138,24 +167,30 @@ class VillageController extends Controller implements HasMiddleware
             });
         }
 
-        $districtsList = $request->filled('state') ? Cache::remember('geo_districts_'.md5($request->state), 3600, function () use ($request) {
-            return Village::whereIn('state_name', array_map('trim', explode(',', $request->state)))
+        $targetStates = $request->filled('state') 
+            ? array_map('trim', explode(',', (string) $request->state)) 
+            : ($lobStateName ? [$lobStateName] : []);
+
+        $districtsList = !empty($targetStates) ? Cache::remember('geo_districts_'.md5(implode(',', $targetStates)), 3600, function () use ($targetStates) {
+            return Village::whereIn('state_name', $targetStates)
                 ->distinct()->pluck('district_name')->filter()->sort()->values();
         }) : [];
 
-        $talukasList = $request->filled('district') ? Cache::remember('geo_talukas_'.md5($request->state.'_'.$request->district), 3600, function () use ($request) {
-            return Village::when($request->filled('state'), function ($q) use ($request) {
-                $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
-            })->whereIn('district_name', array_map('trim', explode(',', $request->district)))
+        $targetDistricts = $request->filled('district') ? array_map('trim', explode(',', (string) $request->district)) : [];
+        $talukasList = !empty($targetDistricts) ? Cache::remember('geo_talukas_'.md5(implode(',', $targetStates).'_'.implode(',', $targetDistricts)), 3600, function () use ($targetStates, $targetDistricts) {
+            return Village::when(!empty($targetStates), function ($q) use ($targetStates) {
+                $q->whereIn('state_name', $targetStates);
+            })->whereIn('district_name', $targetDistricts)
                 ->distinct()->pluck('taluka_name')->filter()->sort()->values();
         }) : [];
 
-        $villagesList = $request->filled('taluka') ? Cache::remember('geo_villages_'.md5($request->state.'_'.$request->district.'_'.$request->taluka), 3600, function () use ($request) {
-            return Village::when($request->filled('state'), function ($q) use ($request) {
-                $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
-            })->when($request->filled('district'), function ($q) use ($request) {
-                $q->whereIn('district_name', array_map('trim', explode(',', $request->district)));
-            })->whereIn('taluka_name', array_map('trim', explode(',', $request->taluka)))
+        $targetTalukas = $request->filled('taluka') ? array_map('trim', explode(',', (string) $request->taluka)) : [];
+        $villagesList = !empty($targetTalukas) ? Cache::remember('geo_villages_'.md5(implode(',', $targetStates).'_'.implode(',', $targetDistricts).'_'.implode(',', $targetTalukas)), 3600, function () use ($targetStates, $targetDistricts, $targetTalukas) {
+            return Village::when(!empty($targetStates), function ($q) use ($targetStates) {
+                $q->whereIn('state_name', $targetStates);
+            })->when(!empty($targetDistricts), function ($q) use ($targetDistricts) {
+                $q->whereIn('district_name', $targetDistricts);
+            })->whereIn('taluka_name', $targetTalukas)
                 ->distinct()->pluck('village_name')->filter()->sort()->values();
         }) : [];
 

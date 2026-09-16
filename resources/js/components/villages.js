@@ -544,21 +544,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     get districtBreakdown() {
-      const counts = {};
-      this.villages.forEach((v) => {
-        const dist = v.district_name || 'Unknown';
-        counts[dist] = (counts[dist] || 0) + 1;
-      });
-
-      const totalInPage = this.villages.length || 1;
-      return Object.entries(counts)
-        .map(([name, count]) => ({
-          name,
-          count,
-          percentage: Math.round((count / totalInPage) * 100),
-        }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
+      return this.stats.top_districts || [];
     },
 
     initCharts(serverStats) {
@@ -570,25 +556,19 @@ document.addEventListener('alpine:init', () => {
 
     _initDistributionChart() {
       const el = document.querySelector('#serviceDistributionChart');
-      if (!el || el.hasAttribute('data-chart-initialized')) return;
+      if (!el) return;
+
+      const distribution = this.stats.service_distribution || [];
+      const categories = distribution.length > 0 ? distribution.map(d => d.name) : ['No Services'];
+      const seriesData = distribution.length > 0 ? distribution.map(d => d.count) : [0];
+
+      if (el.hasAttribute('data-chart-initialized')) {
+        this.charts.distribution.updateSeries([{ name: 'Serviceable Villages', data: seriesData }]);
+        this.charts.distribution.updateOptions({ xaxis: { categories: categories } });
+        return;
+      }
+      
       el.setAttribute('data-chart-initialized', 'true');
-
-      // Aggregate how many villages have which services active
-      const serviceCounts = {};
-      this.servicesOptions.forEach((s) => {
-        serviceCounts[s.name] = 0;
-      });
-
-      this.villages.forEach((v) => {
-        v.active_mappings.forEach((m) => {
-          if (m.service) {
-            serviceCounts[m.service.name] = (serviceCounts[m.service.name] || 0) + 1;
-          }
-        });
-      });
-
-      const seriesData = Object.values(serviceCounts);
-      const categories = Object.keys(serviceCounts);
 
       this.charts.distribution = new ApexCharts(el, {
         series: [{ name: 'Serviceable Villages', data: seriesData.length > 0 ? seriesData : [0] }],
