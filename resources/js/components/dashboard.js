@@ -292,10 +292,17 @@ export class DashboardManager {
     if (!tableBody) return;
 
     tableBody.replaceChildren();
+    let index = 0;
     for (const order of this.data.recentOrders) {
+      index++;
       const tr = document.createElement('tr');
 
       const idCell = document.createElement('td');
+      const numSpan = document.createElement('span');
+      numSpan.className = 'text-secondary opacity-75 me-2';
+      numSpan.textContent = index + '.';
+      idCell.appendChild(numSpan);
+      
       const strong = document.createElement('strong');
       strong.textContent = order.id;
       idCell.appendChild(strong);
@@ -356,10 +363,17 @@ export class DashboardManager {
       return;
     }
 
+    let index = 0;
     for (const order of this.data.futureOrders) {
+      index++;
       const tr = document.createElement('tr');
 
       const idCell = document.createElement('td');
+      const numSpan = document.createElement('span');
+      numSpan.className = 'text-secondary opacity-75 me-2';
+      numSpan.textContent = index + '.';
+      idCell.appendChild(numSpan);
+      
       const strong = document.createElement('strong');
       strong.textContent = order.id;
       idCell.appendChild(strong);
