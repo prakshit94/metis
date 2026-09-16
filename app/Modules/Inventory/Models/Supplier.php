@@ -65,7 +65,14 @@ class Supplier extends Model
                 $model->uuid = (string) Str::uuid();
             }
             if (empty($model->party_code)) {
-                $model->party_code = 'SUP-'.strtoupper(Str::random(6));
+                $lastSupplier = static::whereRaw("party_code REGEXP '^SUP-[0-9]+$'")
+                    ->orderByRaw("CAST(SUBSTRING(party_code, 5) AS UNSIGNED) DESC")
+                    ->first();
+                $nextSeq = 1;
+                if ($lastSupplier && preg_match('/^SUP-(\d+)$/', (string) $lastSupplier->party_code, $matches)) {
+                    $nextSeq = intval($matches[1]) + 1;
+                }
+                $model->party_code = 'SUP-'.str_pad((string)$nextSeq, 4, '0', STR_PAD_LEFT);
             }
         });
     }

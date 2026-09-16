@@ -674,23 +674,22 @@ document.addEventListener('alpine:init', () => {
 
         const rows = [];
 
+        const safeParseArray = (val) => {
+          if (Array.isArray(val)) return val;
+          if (!val) return [];
+          try {
+            const parsed = JSON.parse(val);
+            return Array.isArray(parsed) ? parsed : [String(parsed)];
+          } catch (e) {
+            return String(val).split(',').map(s => s.trim());
+          }
+        };
+
         list.forEach((c) => {
-          const source = Array.isArray(c.source)
-            ? c.source
-            : c.source
-              ? JSON.parse(c.source || '[]')
-              : [];
-          const tags = Array.isArray(c.tags) ? c.tags : c.tags ? JSON.parse(c.tags || '[]') : [];
-          const crops = Array.isArray(c.crops)
-            ? c.crops
-            : c.crops
-              ? JSON.parse(c.crops || '[]')
-              : [];
-          const irrig = Array.isArray(c.irrigation_type)
-            ? c.irrigation_type
-            : c.irrigation_type
-              ? JSON.parse(c.irrigation_type || '[]')
-              : [];
+          const source = safeParseArray(c.source);
+          const tags = safeParseArray(c.tags);
+          const crops = safeParseArray(c.crops);
+          const irrig = safeParseArray(c.irrigation_type);
 
           const fmt = (v) => (v ? String(v).split('T')[0] : '');
 

@@ -245,7 +245,18 @@ class CustomerController extends Controller implements HasMiddleware
 
         $validated['type'] = 'customer';
         $validated['uuid'] = Str::uuid()->toString();
-        $validated['party_code'] = $validated['party_code'] ?? 'CUST-'.strtoupper(Str::random(6));
+        if (empty($validated['party_code'])) {
+            $lastCustomer = \App\Modules\Customers\Models\Party::where('type', 'customer')
+                ->whereRaw("party_code REGEXP '^CUST-[0-9]+$'")
+                ->orderByRaw("CAST(SUBSTRING(party_code, 6) AS UNSIGNED) DESC")
+                ->first();
+            
+            $nextSeq = 1;
+            if ($lastCustomer && preg_match('/^CUST-(\d+)$/', (string) $lastCustomer->party_code, $matches)) {
+                $nextSeq = intval($matches[1]) + 1;
+            }
+            $validated['party_code'] = 'CUST-'.str_pad((string)$nextSeq, 4, '0', STR_PAD_LEFT);
+        }
         $validated['land_unit'] = $validated['land_unit'] ?? 'acre';
         $validated['credit_limit'] = $validated['credit_limit'] ?? 0.00;
         $validated['credit_days'] = $validated['credit_days'] ?? 0;
