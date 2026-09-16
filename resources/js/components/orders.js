@@ -1979,6 +1979,8 @@ document.addEventListener('alpine:init', () => {
           warehouse: this.warehouseFilter ? this.warehouseFilter.join(',') : '',
           from_date: this.fromDate,
           to_date: this.toDate,
+          sort_field: this.sortField,
+          sort_direction: this.sortDirection,
         }).toString()}`,
         '_blank'
       );
@@ -2017,6 +2019,87 @@ document.addEventListener('alpine:init', () => {
     },
 
     // ─── CSV Import Preview & Confirm ────────────────────────────────────────
+
+    importNewRows: [],
+    importNewTotal: 0,
+    importNewTruncated: false,
+    
+    async handleImportNewOrdersSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      this.importing = true;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('preview', '1');
+
+      try {
+        const res = await fetch('/orders/import-new', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+          },
+        });
+
+        const data = await res.json();
+        if (data.preview) {
+          this.importNewRows = data.preview;
+          this.importNewTotal = data.total || data.preview.length;
+          this.importNewTruncated = data.truncated || false;
+          getModal('#importNewPreviewModal')?.show();
+        } else if (!res.ok) {
+          showToast(data.error || 'Failed to parse CSV.', 'danger');
+          event.target.value = '';
+        }
+      } catch (err) {
+        showToast('Error uploading orders CSV preview.', 'danger');
+        event.target.value = '';
+      } finally {
+        this.importing = false;
+      }
+    },
+
+    async confirmImportNew() {
+      const fileInput = document.getElementById('import-new-orders-file');
+      if (!fileInput.files.length) return;
+
+      this.importing = true;
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const res = await fetch('/orders/import-new', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+          },
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message || 'Orders imported successfully.', 'success');
+          this.cancelImportNew();
+          this.loadOrders();
+        } else {
+          showToast(data.error || 'Failed to import orders.', 'danger');
+        }
+      } catch (err) {
+        showToast('Error finalizing import.', 'danger');
+      } finally {
+        this.importing = false;
+      }
+    },
+
+    cancelImportNew() {
+      const fileInput = document.getElementById('import-new-orders-file');
+      if (fileInput) fileInput.value = '';
+      this.importNewRows = [];
+      getModal('#importNewPreviewModal')?.hide();
+    },
 
     async handleImportFileSelect(event) {
       const file = event.target.files[0];

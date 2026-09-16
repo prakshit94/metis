@@ -1,0 +1,159 @@
+            $requestedStatuses = array_filter(array_map('trim', explode(',', $request->status)));
+            $hasFutureOrder = in_array('future_order', $requestedStatuses, true);
+            $hasPending = in_array('pending', $requestedStatuses, true);
+            $hasUnfulfillable = in_array('unfulfillable', $requestedStatuses, true);
+            $hasDeliveryAttempted = in_array('delivery_attempted', $requestedStatuses, true);
+            $hasDispatched = in_array('dispatched', $requestedStatuses, true);
+
+            $realStatuses = array_values(array_filter($requestedStatuses, fn ($s) => ! in_array($s, ['future_order', 'pending', 'unfulfillable', 'delivery_attempted', 'dispatched'])));
+
+            $query->where(function ($q) use ($hasFutureOrder, $hasPending, $hasUnfulfillable, $realStatuses, $hasDispatched, $hasDeliveryAttempted) {
+                $first = true;
+
+                if ($hasFutureOrder) {
+                    $q->where('status', 'future_order');
+                    $first = false;
+                }
+
+                if ($hasPending) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                           ->whereDoesntHave('items', function ($itemQuery) {
+                               $itemQuery->leftJoin('stocks', function ($join) {
+                                   $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                               })->where(function ($sub) {
+                                   $sub->whereNull('stocks.id')
+                                       ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                               });
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasUnfulfillable) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                           ->whereHas('items', function ($itemQuery) {
+                               $itemQuery->leftJoin('stocks', function ($join) {
+                                   $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                               })->where(function ($sub) {
+                                   $sub->whereNull('stocks.id')
+                                       ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                               });
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDispatched) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched', 'shipped'])
+                           ->whereDoesntHave('shipments', function ($ssq) {
+                               $ssq->where('delivery_attempts', '>', 0);
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDeliveryAttempted) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched', 'shipped'])
+                           ->whereHas('shipments', function ($ssq) {
+                               $ssq->where('delivery_attempts', '>', 0);
+                           });
+                    });
+                    $first = false;
+                }
+
+                if (! empty($realStatuses)) {
+                    $method = $first ? 'whereIn' : 'orWhereIn';
+                    $q->$method('status', $realStatuses);
+                }
+            });
+        }
+
+        if ($request->filled('product')) {
+            $productIds = array_filter(array_map('intval', explode(',', $request->product)));
+            if (! empty($productIds)) {
+                $query->whereHas('items', function ($q) use ($productIds) {
+                    $q->whereIn('product_id', $productIds);
+                });
+            }
+        }
+
+        if ($request->filled('fulfillment')) {
+            $stockSubquery = "(SELECT product_id, warehouse_id, SUM(quantity - reserved_qty) as available FROM stocks WHERE deleted_at IS NULL GROUP BY product_id, warehouse_id)";
+            
+            if ($request->fulfillment === 'unfulfillable') {
+                $query->where('status', 'pending')
+                    ->whereRaw("EXISTS (
+                        SELECT 1 FROM order_items 
+                        LEFT JOIN $stockSubquery s ON s.product_id = order_items.product_id AND s.warehouse_id = orders.warehouse_id
+                        WHERE order_items.order_id = orders.id 
+                        AND order_items.quantity > IFNULL(s.available, 0)
+                    )");
+            } elseif ($request->fulfillment === 'fulfillable') {
+                $query->where(function ($query) use ($stockSubquery) {
+                    $query->whereIn('status', ['confirmed', 'processing'])
+                        ->orWhere(function ($q) use ($stockSubquery) {
+                            $q->where('status', 'pending')
+                                ->whereRaw("NOT EXISTS (
+                                    SELECT 1 FROM order_items 
+                                    LEFT JOIN $stockSubquery s ON s.product_id = order_items.product_id AND s.warehouse_id = orders.warehouse_id
+                                    WHERE order_items.order_id = orders.id 
+                                    AND order_items.quantity > IFNULL(s.available, 0)
+                                )");
+                        });
+                });
+            }
+        }
+
+        if ($request->filled('state') || $request->filled('district') || $request->filled('taluka') || $request->filled('village')) {
+            if ($request->filled('state')) {
+                $query->whereIn('shipping_state', array_map('trim', explode(',', (string) $request->state)));
+            }
+            if ($request->filled('district')) {
+                $query->whereIn('shipping_district', array_map('trim', explode(',', (string) $request->district)));
+            }
+            if ($request->filled('taluka')) {
+                $query->whereIn('shipping_taluka', array_map('trim', explode(',', (string) $request->taluka)));
+            }
+            if ($request->filled('village')) {
+                $query->whereIn('shipping_village_name', array_map('trim', explode(',', $request->village)));
+            }
+        }
+
+        if ($request->filled('carrier')) {
+            $carriers = array_filter(array_map('trim', explode(',', $request->carrier)));
+            if (! empty($carriers)) {
+                $query->where(function ($q) use ($carriers) {
+                    $q->whereHas('shipments', function ($sq) use ($carriers) {
+                        $sq->whereIn('carrier_name', $carriers);
+                    })->orWhereHas('shippingAddress.village.services', function ($sq) use ($carriers) {
+                        $sq->whereIn('name', $carriers)
+                           ->where('village_service_mappings.is_available', true);
+                    });
+                });
+            }
+        }
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('order_date', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->whereDate('order_date', '<=', $request->to_date);
+        }
+
+        if ($request->filled('warehouse')) {
+            $warehouseIds = array_filter(array_map('intval', explode(',', $request->warehouse)));
+            if (!empty($warehouseIds)) {
+                $query->whereIn('warehouse_id', $warehouseIds);
+            }
+        }
+

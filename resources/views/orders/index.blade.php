@@ -46,11 +46,20 @@
                 <i class="bi bi-upload me-2"></i>Import
             </button>
             <ul class="dropdown-menu">
+                <li><h6 class="dropdown-header">Update Shipping Data</h6></li>
                 <li><a class="dropdown-item" href="#" @click.prevent="document.getElementById('import-file').click()">
-                    <i class="bi bi-file-earmark-arrow-up me-2"></i>Upload CSV
+                    <i class="bi bi-truck me-2"></i>Upload Shipping CSV
                 </a></li>
                 <li><a class="dropdown-item" href="{{ route('orders.import-template') }}">
-                    <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Template
+                    <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Shipping Template
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Import New Orders</h6></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="document.getElementById('import-new-orders-file').click()">
+                    <i class="bi bi-file-earmark-plus me-2"></i>Upload Orders CSV
+                </a></li>
+                <li><a class="dropdown-item" href="{{ route('orders.import-new-template') }}">
+                    <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Orders Template
                 </a></li>
             </ul>
         </div>
@@ -67,6 +76,11 @@
 <form id="import-form" action="{{ route('orders.import') }}" method="POST" enctype="multipart/form-data" class="d-none">
     @csrf
     <input type="file" name="file" id="import-file" accept=".csv,.txt" @change="handleImportFileSelect($event)">
+</form>
+
+<form id="import-new-orders-form" action="{{ route('orders.import-new') }}" method="POST" enctype="multipart/form-data" class="d-none">
+    @csrf
+    <input type="file" name="file" id="import-new-orders-file" accept=".csv,.txt" @change="handleImportNewOrdersSelect($event)">
 </form>
 
 <!-- Order Stats Widgets & Analytics -->
@@ -2354,6 +2368,65 @@
     </div>
 
     </div> <!-- End showAnalytics Main Wrapper -->
+<div class="modal fade" id="importNewPreviewModal" tabindex="-1" aria-labelledby="importNewPreviewModalLabel" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="importNewPreviewModalLabel">
+                    <i class="bi bi-file-earmark-spreadsheet me-2 text-primary"></i>New Orders Import Preview
+                </h5>
+                <button type="button" class="btn-close" @click="cancelImportNew()"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <div class="alert alert-info mb-2">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    Showing <strong x-text="importNewRows.length"></strong>
+                    <template x-if="importNewTruncated">
+                        <span> of <strong x-text="importNewTotal"></strong> total</span>
+                    </template>
+                    record(s) from your CSV. Review the full data below then click <strong>Confirm Import</strong> to proceed.
+                </div>
+                <template x-if="importNewTruncated">
+                    <div class="alert alert-warning py-2 mb-2">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Your file has <strong x-text="importNewTotal"></strong> rows — only the first 1,000 are shown here for preview. <strong>All rows will be imported</strong> when you confirm.
+                    </div>
+                </template>
+                <div class="table-responsive" style="max-height: 400px; white-space: nowrap;">
+                    <table class="table table-striped table-hover table-sm small align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <template x-for="col in Object.keys(importNewRows[0] || {})" :key="col">
+                                    <th x-text="col.replace(/_/g, ' ').toUpperCase()" class="text-nowrap px-2"></th>
+                                </template>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(row, idx) in importNewRows" :key="idx">
+                                <tr>
+                                    <template x-for="col in Object.keys(row)" :key="col">
+                                        <td x-text="row[col] !== null && row[col] !== '' ? row[col] : '-'" class="px-2"></td>
+                                    </template>
+                                </tr>
+                            </template>
+                            <tr x-show="importNewRows.length === 0">
+                                <td class="text-center text-muted py-3">No valid rows found to preview.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary" @click="cancelImportNew()" :disabled="importing">Cancel</button>
+                <button type="button" class="btn btn-primary" @click="confirmImportNew()" :disabled="importing">
+                    <span x-show="!importing"><i class="bi bi-check2-circle me-1"></i>Confirm Import</span>
+                    <span x-show="importing"><span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Importing...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </div> <!-- End Order Management Container -->
 @endsection
 

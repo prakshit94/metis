@@ -1459,7 +1459,83 @@ class OrderController extends Controller implements HasMiddleware
 
         if ($request->filled('status')) {
             $requestedStatuses = array_filter(array_map('trim', explode(',', $request->status)));
-            $query->whereIn('status', $requestedStatuses);
+            $hasFutureOrder = in_array('future_order', $requestedStatuses, true);
+            $hasPending = in_array('pending', $requestedStatuses, true);
+            $hasUnfulfillable = in_array('unfulfillable', $requestedStatuses, true);
+            $hasDeliveryAttempted = in_array('delivery_attempted', $requestedStatuses, true);
+            $hasDispatched = in_array('dispatched', $requestedStatuses, true);
+
+            $realStatuses = array_values(array_filter($requestedStatuses, fn ($s) => ! in_array($s, ['future_order', 'pending', 'unfulfillable', 'delivery_attempted', 'dispatched'])));
+
+            $query->where(function ($q) use ($hasFutureOrder, $hasPending, $hasUnfulfillable, $realStatuses, $hasDispatched, $hasDeliveryAttempted) {
+                $first = true;
+
+                if ($hasFutureOrder) {
+                    $q->where('status', 'future_order');
+                    $first = false;
+                }
+
+                if ($hasPending) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                           ->whereDoesntHave('items', function ($itemQuery) {
+                               $itemQuery->leftJoin('stocks', function ($join) {
+                                   $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                               })->where(function ($sub) {
+                                   $sub->whereNull('stocks.id')
+                                       ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                               });
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasUnfulfillable) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                           ->whereHas('items', function ($itemQuery) {
+                               $itemQuery->leftJoin('stocks', function ($join) {
+                                   $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                               })->where(function ($sub) {
+                                   $sub->whereNull('stocks.id')
+                                       ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                               });
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDispatched) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched', 'shipped'])
+                           ->whereDoesntHave('shipments', function ($ssq) {
+                               $ssq->where('delivery_attempts', '>', 0);
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDeliveryAttempted) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched', 'shipped'])
+                           ->whereHas('shipments', function ($ssq) {
+                               $ssq->where('delivery_attempts', '>', 0);
+                           });
+                    });
+                    $first = false;
+                }
+
+                if (! empty($realStatuses)) {
+                    $method = $first ? 'whereIn' : 'orWhereIn';
+                    $q->$method('status', $realStatuses);
+                }
+            });
         }
 
         if ($request->filled('product')) {
@@ -1471,7 +1547,90 @@ class OrderController extends Controller implements HasMiddleware
             }
         }
 
-        $orders = $query->orderBy('id')->get();
+        if ($request->filled('fulfillment')) {
+            $stockSubquery = "(SELECT product_id, warehouse_id, SUM(quantity - reserved_qty) as available FROM stocks WHERE deleted_at IS NULL GROUP BY product_id, warehouse_id)";
+            
+            if ($request->fulfillment === 'unfulfillable') {
+                $query->where('status', 'pending')
+                    ->whereRaw("EXISTS (
+                        SELECT 1 FROM order_items 
+                        LEFT JOIN $stockSubquery s ON s.product_id = order_items.product_id AND s.warehouse_id = orders.warehouse_id
+                        WHERE order_items.order_id = orders.id 
+                        AND order_items.quantity > IFNULL(s.available, 0)
+                    )");
+            } elseif ($request->fulfillment === 'fulfillable') {
+                $query->where(function ($query) use ($stockSubquery) {
+                    $query->whereIn('status', ['confirmed', 'processing'])
+                        ->orWhere(function ($q) use ($stockSubquery) {
+                            $q->where('status', 'pending')
+                                ->whereRaw("NOT EXISTS (
+                                    SELECT 1 FROM order_items 
+                                    LEFT JOIN $stockSubquery s ON s.product_id = order_items.product_id AND s.warehouse_id = orders.warehouse_id
+                                    WHERE order_items.order_id = orders.id 
+                                    AND order_items.quantity > IFNULL(s.available, 0)
+                                )");
+                        });
+                });
+            }
+        }
+
+        if ($request->filled('state') || $request->filled('district') || $request->filled('taluka') || $request->filled('village')) {
+            if ($request->filled('state')) {
+                $query->whereIn('shipping_state', array_map('trim', explode(',', (string) $request->state)));
+            }
+            if ($request->filled('district')) {
+                $query->whereIn('shipping_district', array_map('trim', explode(',', (string) $request->district)));
+            }
+            if ($request->filled('taluka')) {
+                $query->whereIn('shipping_taluka', array_map('trim', explode(',', (string) $request->taluka)));
+            }
+            if ($request->filled('village')) {
+                $query->whereIn('shipping_village_name', array_map('trim', explode(',', $request->village)));
+            }
+        }
+
+        if ($request->filled('carrier')) {
+            $carriers = array_filter(array_map('trim', explode(',', $request->carrier)));
+            if (! empty($carriers)) {
+                $query->where(function ($q) use ($carriers) {
+                    $q->whereHas('shipments', function ($sq) use ($carriers) {
+                        $sq->whereIn('carrier_name', $carriers);
+                    })->orWhereHas('shippingAddress.village.services', function ($sq) use ($carriers) {
+                        $sq->whereIn('name', $carriers)
+                           ->where('village_service_mappings.is_available', true);
+                    });
+                });
+            }
+        }
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('order_date', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->whereDate('order_date', '<=', $request->to_date);
+        }
+
+        if ($request->filled('warehouse')) {
+            $warehouseIds = array_filter(array_map('intval', explode(',', $request->warehouse)));
+            if (!empty($warehouseIds)) {
+                $query->whereIn('warehouse_id', $warehouseIds);
+            }
+        }
+
+
+
+        
+        $sortField = $request->input('sort_field', 'id');
+        $sortDirection = $request->input('sort_direction', 'asc');
+        
+        $allowedSorts = ['id', 'order_no', 'order_date', 'total_amount', 'net_amount', 'status'];
+        if (in_array($sortField, $allowedSorts)) {
+            $query->orderBy($sortField, $sortDirection === 'desc' ? 'desc' : 'asc');
+        } else {
+            $query->orderBy('id', 'asc');
+        }
+
+        $orders = $query->get();
 
         $filename = 'orders-export-'.now()->format('Ymd_His').'.csv';
 
@@ -1857,22 +2016,38 @@ class OrderController extends Controller implements HasMiddleware
     {
         return function () use ($orders) {
             $out = fopen('php://output', 'w');
+            
+            // Output BOM to fix UTF-8 in Excel
+            fputs($out, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
 
             fputcsv($out, [
                 'Order ID', 'Order No', 'Order Date', 'Status', 'Order Type',
                 'Order Subtotal', 'Order Tax', 'Order Discount', 'Order Total',
-                'Customer Name', 'Customer Email', 'Customer Phone',
+                'Coupon Code', 'Wallet Used', 'Cashback Earned',
+                'Customer First Name', 'Customer Middle Name', 'Customer Last Name',
+                'Company Name', 'Customer Email', 'Customer Phone', 'Alternate Mobile', 'Relative Name', 'Relative Phone', 'GST Number', 'PAN Number',
                 'Billing Address 1', 'Billing Address 2', 'Billing Village', 'Billing PO/BO', 'Billing Taluka', 'Billing District', 'Billing City', 'Billing State', 'Billing Pincode',
                 'Shipping Address 1', 'Shipping Address 2', 'Shipping Village', 'Shipping PO/BO', 'Shipping Taluka', 'Shipping District', 'Shipping City', 'Shipping State', 'Shipping Pincode',
                 'Warehouse Name', 'Carrier Name', 'Tracking No',
-                'Product Name', 'Product SKU', 'Quantity', 'Unit Price', 'Item Tax', 'Item Discount', 'Item Net',
+                'Product Name', 'Product SKU', 'Batch Number', 'Quantity', 'Unit Price', 'Item Tax Rate', 'Item Tax', 'Item Discount', 'Item Net',
             ]);
 
             foreach ($orders as $order) {
-                $shipment = $order->shipments->first();
-                $customerName = $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : '';
+                // Safely gather shipments
+                $carriers = $order->shipments->pluck('carrier_name')->filter()->implode(', ');
+                $trackings = $order->shipments->pluck('tracking_no')->filter()->implode(', ');
+
+                $customerFirstName = $order->party?->firstname ?? '';
+                $customerMiddleName = $order->party?->middlename ?? '';
+                $customerLastName = $order->party?->lastname ?? '';
+                $customerCompanyName = $order->party?->company_name ?? '';
                 $customerEmail = $order->party?->email ?? '';
                 $customerPhone = $order->party?->phone ?? '';
+                $customerAltMobile = $order->party?->alternatemobile ?? '';
+                $customerRelName = $order->party?->relative_name ?? '';
+                $customerRelPhone = $order->party?->relative_phone ?? '';
+                $customerGst = $order->party?->gst_no ?? '';
+                $customerPan = $order->party?->pan_no ?? '';
 
                 $billingAdd1 = $order->billing_address_line_1 ?? '';
                 $billingAdd2 = $order->billing_address_line_2 ?? '';
@@ -1895,32 +2070,29 @@ class OrderController extends Controller implements HasMiddleware
                 $shippingPin = $order->shipping_pincode ?? '';
 
                 $warehouseName = $order->warehouse?->name ?? '';
-                $carrierName = $shipment?->carrier_name ?? '';
-                $trackingNo = $shipment?->tracking_no ?? '';
+                
+                $commonOrderData = [
+                    $order->id, $order->order_no, $order->order_date, $order->status, $order->type,
+                    $order->total_amount, $order->tax_amount, $order->discount_amount, $order->net_amount,
+                    $order->coupon_code ?? '-', $order->wallet_amount_used, $order->cashback_earned,
+                    $customerFirstName ?: '-', $customerMiddleName ?: '-', $customerLastName ?: '-',
+                    $customerCompanyName ?: '-', $customerEmail ?: '-', $customerPhone ?: '-', $customerAltMobile ?: '-', $customerRelName ?: '-', $customerRelPhone ?: '-', $customerGst ?: '-', $customerPan ?: '-',
+                    $billingAdd1 ?: '-', $billingAdd2 ?: '-', $billingVillage ?: '-', $billingPO ?: '-', $billingTaluka ?: '-', $billingDistrict ?: '-', $billingCity ?: '-', $billingState ?: '-', $billingPin ?: '-',
+                    $shippingAdd1 ?: '-', $shippingAdd2 ?: '-', $shippingVillage ?: '-', $shippingPO ?: '-', $shippingTaluka ?: '-', $shippingDistrict ?: '-', $shippingCity ?: '-', $shippingState ?: '-', $shippingPin ?: '-',
+                    $warehouseName ?: '-', $carriers ?: '-', $trackings ?: '-',
+                ];
 
                 if ($order->items->isEmpty()) {
-                    fputcsv($out, [
-                        $order->id, $order->order_no, $order->order_date, $order->status, $order->type,
-                        $order->total_amount, $order->tax_amount, $order->discount_amount, $order->net_amount,
-                        $customerName, $customerEmail, $customerPhone,
-                        $billingAdd1, $billingAdd2, $billingVillage, $billingPO, $billingTaluka, $billingDistrict, $billingCity, $billingState, $billingPin,
-                        $shippingAdd1, $shippingAdd2, $shippingVillage, $shippingPO, $shippingTaluka, $shippingDistrict, $shippingCity, $shippingState, $shippingPin,
-                        $warehouseName, $carrierName, $trackingNo,
-                        '', '', '', '', '', '', '',
-                    ]);
+                    fputcsv($out, array_merge($commonOrderData, [
+                        '-', '-', '-', '-', '-', '-', '-', '-', '-'
+                    ]));
                 } else {
                     foreach ($order->items as $item) {
                         $productName = $item->product ? $item->product->name : 'Unknown Product';
-                        $productSku = $item->product ? $item->product->sku : '';
-                        fputcsv($out, [
-                            $order->id, $order->order_no, $order->order_date, $order->status, $order->type,
-                            $order->total_amount, $order->tax_amount, $order->discount_amount, $order->net_amount,
-                            $customerName, $customerEmail, $customerPhone,
-                            $billingAdd1, $billingAdd2, $billingVillage, $billingPO, $billingTaluka, $billingDistrict, $billingCity, $billingState, $billingPin,
-                            $shippingAdd1, $shippingAdd2, $shippingVillage, $shippingPO, $shippingTaluka, $shippingDistrict, $shippingCity, $shippingState, $shippingPin,
-                            $warehouseName, $carrierName, $trackingNo,
-                            $productName, $productSku, $item->quantity, $item->unit_price, $item->tax_amount, $item->discount_amount, $item->total_amount,
-                        ]);
+                        $productSku = $item->product ? $item->product->sku : '-';
+                        fputcsv($out, array_merge($commonOrderData, [
+                            $productName, $productSku, $item->batch_number ?: '-', $item->quantity, $item->unit_price, $item->tax_rate, $item->tax_amount, $item->discount_amount, $item->total_amount,
+                        ]));
                     }
                 }
             }
@@ -1928,4 +2100,82 @@ class OrderController extends Controller implements HasMiddleware
             fclose($out);
         };
     }
+
+    public function importNewTemplate()
+    {
+        $headers = [
+            'Order ID', 'Order No', 'Order Date', 'Status', 'Order Type',
+            'Order Subtotal', 'Order Tax', 'Order Discount', 'Order Total',
+            'Coupon Code', 'Wallet Used', 'Cashback Earned',
+            'Customer First Name', 'Customer Middle Name', 'Customer Last Name',
+            'Company Name', 'Customer Email', 'Customer Phone', 'Alternate Mobile', 'Relative Name', 'Relative Phone', 'GST Number', 'PAN Number',
+            'Billing Address 1', 'Billing Address 2', 'Billing Village', 'Billing PO/BO', 'Billing Taluka', 'Billing District', 'Billing City', 'Billing State', 'Billing Pincode',
+            'Shipping Address 1', 'Shipping Address 2', 'Shipping Village', 'Shipping PO/BO', 'Shipping Taluka', 'Shipping District', 'Shipping City', 'Shipping State', 'Shipping Pincode',
+            'Warehouse Name', 'Carrier Name', 'Tracking No',
+            'Product Name', 'Product SKU', 'Batch Number', 'Quantity', 'Unit Price', 'Item Tax Rate', 'Item Tax', 'Item Discount', 'Item Net',
+        ];
+        $sampleRecord = [
+            '-', 'NEW-ORD-001', date('Y-m-d'), 'pending', 'sale',
+            '-', '-', '-', '-',
+            '-', '-', '-',
+            'Raj', 'Kumar', 'Sharma',
+            'Sharma Farms', 'raj@example.com', '9999999999', '8888888888', 'Anita Sharma', '7777777777', '22AAAAA0000A1Z5', 'AAAAA0000A',
+            'House 12, Main Street', 'Near Temple', 'Jagatpur', 'Jagatpur B.O', 'Daskroi', 'Ahmedabad', 'Ahmedabad', 'Gujarat', '382470',
+            'House 12, Main Street', 'Near Temple', 'Jagatpur', 'Jagatpur B.O', 'Daskroi', 'Ahmedabad', 'Ahmedabad', 'Gujarat', '382470',
+            'Main Ecommerce Warehouse', '-', '-',
+            'Example Product', 'SEED-WHT-001', '-', '2', '240.00', '5.00', '-', '-', '-'
+        ];
+
+        $callback = function () use ($headers, $sampleRecord) {
+            $file = fopen('php://output', 'w');
+            // Output BOM for UTF-8 compatibility in Excel
+            fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fputcsv($file, $headers);
+            fputcsv($file, $sampleRecord);
+            fclose($file);
+        };
+        return response()->streamDownload($callback, 'orders-import-template.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    public function importNewOrders(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:10240',
+        ]);
+        
+        if ($request->boolean('preview')) {
+            try {
+                $data = \Maatwebsite\Excel\Facades\Excel::toArray(new \App\Imports\OrdersImport, $request->file('file'));
+                
+                $previewRows = [];
+                $totalRows = 0;
+                if (!empty($data) && isset($data[0])) {
+                    $validRows = array_filter($data[0], function($row) {
+                        $orderNo = $row['order_no'] ?? $row['order_reference'] ?? null;
+                        return !empty($orderNo) && trim($orderNo) !== '-';
+                    });
+                    
+                    $totalRows = count($validRows);
+                    $previewRows = array_slice($validRows, 0, 1000);
+                }
+                return response()->json([
+                    'preview' => array_values($previewRows),
+                    'total' => $totalRows,
+                    'truncated' => $totalRows > 1000
+                ]);
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Failed to parse CSV preview: ' . $e->getMessage()], 400);
+            }
+        }
+        
+        try {
+            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\OrdersImport, $request->file('file'));
+            return response()->json(['message' => 'Orders imported successfully!']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
 }
