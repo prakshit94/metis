@@ -603,7 +603,7 @@ class OrderController extends Controller implements HasMiddleware
                     $q->latest()->limit(15)->with(['agent', 'tagL1', 'tagL2', 'tagL3', 'metas']);
                 },
                 'orders' => function ($q) {
-                    $q->latest()->limit(10)->withCount('complaints')->with([
+                    $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) { $q->whereIn('status', ['open', 'in_progress']); }])->with([
                         'items.product:id,name,sku,image_path,tax_rate_id',
                         'items.product.taxRate',
                         'warehouse:id,name',
@@ -663,7 +663,7 @@ class OrderController extends Controller implements HasMiddleware
                         ]);
                     },
                     'orders' => function ($q) {
-                        $q->latest()->limit(10)->withCount('complaints')->with([
+                        $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) { $q->whereIn('status', ['open', 'in_progress']); }])->with([
                             'items.product:id,name,sku,image_path,tax_rate_id',
                             'items.product.taxRate',
                             'warehouse:id,name',
@@ -906,8 +906,12 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         $shipment = $order->shipments()->first();
-        if (! $shipment || ! $shipment->carrier_name || ! $shipment->tracking_no) {
-            return response()->json(['error' => 'Order cannot be dispatched without valid carrier and tracking details.'], 400);
+        if (! $shipment || ! $shipment->carrier_name) {
+            return response()->json(['error' => 'Order cannot be dispatched without a valid carrier.'], 400);
+        }
+
+        if (strtolower($shipment->carrier_name) === 'india post' && empty($shipment->tracking_no)) {
+            return response()->json(['error' => 'Order cannot be dispatched without valid India Post tracking details.'], 400);
         }
 
         if (! $order->invoice) {
@@ -1188,6 +1192,17 @@ class OrderController extends Controller implements HasMiddleware
                         }
                     } elseif ($targetStatus === 'dispatched') {
                         if ($order->status === 'ready_to_ship') {
+                            $shipment = $order->shipments()->first();
+                            if (! $shipment || ! $shipment->carrier_name) {
+                                $errors[] = "Order #{$order->order_no}: Cannot dispatch without a valid carrier.";
+                                $skipped++;
+                                continue;
+                            }
+                            if (strtolower($shipment->carrier_name) === 'india post' && empty($shipment->tracking_no)) {
+                                $errors[] = "Order #{$order->order_no}: Cannot dispatch without valid India Post tracking details.";
+                                $skipped++;
+                                continue;
+                            }
                             if (! $order->invoice) {
                                 $invoiceService->generateForOrder($order);
                             }

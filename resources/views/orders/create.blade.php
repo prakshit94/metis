@@ -1276,7 +1276,7 @@
                 </div>
                 <div class="text-lg-end">
                     <h5 class="mb-1 fw-bold text-body-emphasis"><i class="bi bi-layers me-2 text-primary"></i>Order Center</h5>
-                    <p class="mb-0 small text-body-secondary">Tap an order to expand its details.</p>
+                    <p class="mb-0 small text-body-secondary">Tap an order to view its details.</p>
                 </div>
             </div>
         </div>
@@ -1284,228 +1284,53 @@
             <template x-if="bottomTab === 'history'">
                 <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden">
                     <template x-if="historyOrders && historyOrders.length > 0">
-                        <div class="list-group list-group-flush border-top" style="max-height: 500px; overflow-y: auto;">
-                            <div class="list-group-item bg-body-tertiary d-none d-lg-flex text-body-secondary small fw-bold text-uppercase py-3 sticky-top" style="z-index: 1; letter-spacing: 0.5px; font-size: 0.75rem;">
-                                <div class="col-3 ps-4">Order Details</div>
-                                <div class="col-3">Logistics & Items</div>
-                                <div class="col-3">Status</div>
-                                <div class="col-3 text-end pe-5">Total Amount</div>
-                            </div>
-                            <template x-for="(order, index) in historyOrders" :key="'history-' + order.id">
-                                <div class="list-group-item p-0 border-bottom">
-                                    <div @click="viewOrder(order.id)" class="d-flex flex-column flex-lg-row align-items-lg-center p-3 px-lg-0 py-lg-3 hover-bg-body transition-all" style="cursor: pointer;">
-                                        
-                                        <div class="col-12 col-lg-3 ps-lg-4 mb-3 mb-lg-0">
-                                            <div class="fw-bold text-primary mb-1">
+                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                            <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
+                                <thead class="table-secondary sticky-top" style="z-index: 1;">
+                                    <tr>
+                                        <th scope="col" class="text-nowrap ps-4 py-2 border-bottom-0">Order #</th>
+                                        <th scope="col" class="text-nowrap py-2 border-bottom-0">Date & Time</th>
+                                        <th scope="col" class="text-nowrap py-2 border-bottom-0">Status</th>
+                                        <th scope="col" class="text-nowrap py-2 border-bottom-0">Warehouse & Items</th>
+                                        <th scope="col" class="text-nowrap text-end pe-4 py-2 border-bottom-0">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="border-top-0">
+                                    <template x-for="(order, index) in historyOrders" :key="'history-' + order.id">
+                                        <tr class="transition-all hover-bg-body-tertiary">
+                                            <td class="text-nowrap ps-4 py-2 fw-bold text-body-emphasis">
                                                 <span class="text-secondary opacity-75 me-1" x-text="(index + 1) + '.'"></span>
-                                                <span x-text="order.order_no || order.order_number || ('Order #' + order.id)"></span>
-                                            </div>
-                                            <div class="small text-body-secondary d-flex flex-wrap align-items-center gap-1">
-                                                <i class="bi bi-calendar-event opacity-75"></i> <span x-text="order.order_date ? new Date(order.order_date).toLocaleDateString() : 'No date'"></span>
-                                                <span x-show="order.order_date" class="mx-1">•</span>
-                                                <span x-show="order.order_date" x-text="new Date(order.order_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="col-12 col-lg-3 mb-3 mb-lg-0">
-                                            <div class="fw-medium text-body-secondary small mb-1">
-                                                <span class="fw-bold text-body-emphasis" x-text="(order.items ? order.items.length : 0) + ' items'"></span>
+                                                <a href="#" @click.prevent="viewOrder(order.id)" class="text-decoration-none text-primary" title="View Order Details">
+                                                    <span x-text="order.order_no || order.order_number || ('Order #' + order.id)"></span>
+                                                </a>
+                                                <i class="bi ms-2 text-secondary opacity-50" style="cursor: pointer; font-size: 0.85rem;" title="Copy Order Number" x-data="{ copied: false }" @click="navigator.clipboard.writeText(order.order_no || order.order_number || ('Order #' + order.id)).then(() => { copied = true; setTimeout(() => copied = false, 2000) })" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i>
+                                            </td>
+                                            <td class="text-nowrap py-2">
+                                                <div class="fw-medium text-body-emphasis" x-text="order.order_date ? new Date(order.order_date).toLocaleDateString() : 'No date'"></div>
+                                                <div class="small text-body-secondary" x-show="order.order_date" x-text="new Date(order.order_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></div>
+                                                <div class="small text-body-secondary mt-1" x-show="order.creator" x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
+                                            </td>
+                                            <td class="py-2">
+                                                <div class="mb-1">
+                                                    <span class="badge rounded-pill px-2" :class="`bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                                </div>
+                                                <template x-if="order.open_complaints_count > 0">
+                                                    <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle rounded-pill" style="font-size: 0.7rem;" title="Open Complaints">
+                                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                        <span x-text="order.open_complaints_count + ' Open Complaint' + (order.open_complaints_count > 1 ? 's' : '')"></span>
+                                                    </span>
+                                                </template>
+                                            </td>
+                                            <td class="py-2 text-body-secondary">
+                                                <span x-text="order.warehouse?.name ? order.warehouse.name : 'N/A'"></span>
                                                 <span class="mx-1">•</span>
-                                                <span x-text="order.warehouse?.name || 'N/A'"></span>
-                                            </div>
-                                            <div class="small text-body-secondary" x-show="order.creator"><i class="bi bi-person me-1 opacity-75"></i><span x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></span></div>
-                                        </div>
-                                        
-                                        <div class="col-12 col-lg-3 mb-3 mb-lg-0">
-                                            <span class="badge rounded-pill px-3 py-1.5" :class="`bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
-                                            <template x-if="(order.status === 'return_requested' || order.status === 'returned' || order.lifecycle_status === 'return_requested' || order.lifecycle_status === 'returned') && getOrderReturn(order)">
-                                                <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
-                                                    <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer" 
-                                                       data-bs-toggle="tooltip"
-                                                       :title="(getOrderReturn(order).reason ? 'Reason: ' + getOrderReturn(order).reason : '') + (getOrderReturn(order).notes ? '\nNotes: ' + getOrderReturn(order).notes : '')"
-                                                    ></i>
-                                                </div>
-                                            </template>
-                                            <template x-if="['cancelled', 'confirmed', 'processing', 'ready_to_ship', 'delivered', 'returned'].includes(order.status) && (order.status_logs || []).find(l => l.status === order.status && l.notes)">
-                                                <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
-                                                    <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer" 
-                                                       data-bs-toggle="tooltip"
-                                                       :title="(order.status_logs.find(l => l.status === order.status && l.notes).notes)"
-                                                    ></i>
-                                                </div>
-                                            </template>
-                                            <template x-if="order.status === 'pending_confirmation' && (order.scheduled_confirmation_date || order.confirmation_attempts > 0)">
-                                                <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
-                                                    <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer"
-                                                       data-bs-toggle="tooltip"
-                                                       :title="(order.scheduled_confirmation_date ? 'Scheduled: ' + new Date(order.scheduled_confirmation_date).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit', hour12: true }) + '\n' : '') + (order.confirmation_attempts ? 'Attempts: ' + order.confirmation_attempts : '')"
-                                                    ></i>
-                                                </div>
-                                            </template>
-                                            <template x-if="['dispatched', 'shipped', 'delivery_attempted'].includes(order.status) && (order.shipments || []).length > 0">
-                                                <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
-                                                    <template x-if="order.shipments[order.shipments.length - 1].reschedule_reason || order.shipments[order.shipments.length - 1].next_followup_date || order.shipments[order.shipments.length - 1].delivery_attempts > 0">
-                                                        <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer"
-                                                           data-bs-toggle="tooltip"
-                                                           :title="(order.shipments[order.shipments.length - 1].next_followup_date ? 'Scheduled: ' + new Date(order.shipments[order.shipments.length - 1].next_followup_date).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit', hour12: true }) + '\n' : '') + (order.shipments[order.shipments.length - 1].reschedule_reason ? 'Reason: ' + order.shipments[order.shipments.length - 1].reschedule_reason + '\n' : '') + (order.shipments[order.shipments.length - 1].delivery_attempts ? 'Attempts: ' + order.shipments[order.shipments.length - 1].delivery_attempts : '')"
-                                                        ></i>
-                                                    </template>
-                                                </div>
-                                            </template>
-                                        </div>
-                                        
-                                        <div class="col-12 col-lg-3 text-lg-end pe-lg-4 d-flex align-items-center justify-content-between justify-content-lg-end">
-                                            <span class="d-inline-block d-lg-none text-body-secondary small me-2 fw-medium">Total:</span>
-                                            <div class="d-flex align-items-center">
-                                                <div class="fw-bolder fs-6 text-body-emphasis" x-text="'₹ ' + Number(order.net_amount || 0).toFixed(2)"></div>
-                                                <i class="bi ms-3 text-body-secondary transition-all" :class="expandedOrderId === order.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div x-show="expandedOrderId === order.id" x-cloak x-collapse>
-                                        <div class="bg-body-tertiary">
-                                                <div class="p-4 border-bottom border-top border-primary border-3 border-start-0 border-end-0 border-bottom-0 shadow-inner bg-body-tertiary">
-                                                    <div class="bg-body rounded-4 border shadow-sm overflow-hidden">
-                                                        <div class="row g-0">
-                                                            <div class="col-lg-7 p-3 border-end-lg border-bottom border-bottom-lg-0 d-flex flex-column">
-                                                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start mb-3 pb-3 border-bottom border-secondary border-opacity-10">
-                                                                    <div>
-                                                                        <div class="fw-bold text-body-emphasis small text-uppercase mb-1" style="letter-spacing: 0.5px;"><i class="bi bi-clock me-1 opacity-75"></i>Order Placed</div>
-                                                                        <div class="small text-body-secondary" style="font-size: 0.75rem;" x-text="order.order_date ? new Date(order.order_date).toLocaleString() : 'No date'"></div>
-                                                                    </div>
-                                                                    <div class="mt-2 mt-md-0 text-md-end" x-show="order.creator">
-                                                                        <div class="fw-bold text-body-emphasis small text-uppercase mb-1" style="letter-spacing: 0.5px;"><i class="bi bi-person me-1 opacity-75"></i>Created By</div>
-                                                                        <div class="small text-primary fw-medium" style="font-size: 0.75rem;" x-text="(order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
-                                                                    </div>
-                                                                </div>
-                                                                
-                                                                <div class="row g-3 mt-auto">
-                                                                    <div class="col-md-6" :class="{'border-end-md border-secondary border-opacity-10': order.billing_address_line_1 && (order.billing_address_line_1 !== order.shipping_address_line_1)}">
-                                                                        <div class="d-flex align-items-center mb-1">
-                                                                            <i class="bi bi-truck text-body-secondary me-2 opacity-75"></i>
-                                                                            <div class="fw-bold text-body-emphasis" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Shipping Address</div>
-                                                                        </div>
-                                                                        <div class="small text-body-secondary lh-sm" style="font-size: 0.75rem;" x-text="[order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name ? 'Vill: '+order.shipping_village_name : null, order.shipping_post_office ? 'PO: '+order.shipping_post_office : null, order.shipping_taluka ? 'Ta: '+order.shipping_taluka : null, order.shipping_city, order.shipping_district ? 'Dist: '+order.shipping_district : null, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') || 'Not available'">
-                                                                        </div>
-                                                                    </div>
-                                                                    
-                                                                    <div class="col-md-6" x-show="order.billing_address_line_1 && (order.billing_address_line_1 !== order.shipping_address_line_1)">
-                                                                        <div class="d-flex align-items-center mb-1">
-                                                                            <i class="bi bi-receipt text-body-secondary me-2 opacity-75"></i>
-                                                                            <div class="fw-bold text-body-emphasis" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Billing Address</div>
-                                                                        </div>
-                                                                        <div class="small text-body-secondary lh-sm" style="font-size: 0.75rem;" x-text="[order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name ? 'Vill: '+order.billing_village_name : null, order.billing_post_office ? 'PO: '+order.billing_post_office : null, order.billing_taluka ? 'Ta: '+order.billing_taluka : null, order.billing_city, order.billing_district ? 'Dist: '+order.billing_district : null, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') || 'Not available'">
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            <div class="col-lg-5 p-3 bg-primary bg-opacity-10 d-flex flex-column justify-content-center">
-                                                                <div class="d-flex justify-content-between align-items-center mb-1 small">
-                                                                    <span class="text-body-secondary fw-medium" style="font-size: 0.75rem;">Subtotal</span>
-                                                                    <span class="text-body-emphasis fw-semibold" style="font-size: 0.75rem;" x-text="'₹ ' + Number(order.total_amount || 0).toFixed(2)"></span>
-                                                                </div>
-                                                                <div class="d-flex justify-content-between align-items-center mb-1 small" x-show="Number(order.tax_amount || 0) > 0">
-                                                                    <span class="text-body-secondary fw-medium" style="font-size: 0.75rem;">GST</span>
-                                                                    <span class="text-body-emphasis fw-semibold" style="font-size: 0.75rem;" x-text="'+₹ ' + Number(order.tax_amount || 0).toFixed(2)"></span>
-                                                                </div>
-                                                                <div class="d-flex justify-content-between align-items-center mb-2 small" x-show="Number(order.discount_amount || 0) > 0">
-                                                                    <span class="text-success fw-medium" style="font-size: 0.75rem;">Total Discount</span>
-                                                                    <span class="text-success fw-bold" style="font-size: 0.75rem;" x-text="'-₹ ' + Number(order.discount_amount || 0).toFixed(2)"></span>
-                                                                </div>
-                                                                
-                                                                <div class="d-flex flex-wrap gap-1 mb-2">
-                                                                    <div class="badge text-bg-primary-subtle text-primary-emphasis border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-show="order.applied_offer?.name" x-text="'Offer: ' + order.applied_offer?.name"></div>
-                                                                    <template x-for="offerName in getAppliedItemOffers(order)" :key="offerName">
-                                                                        <div class="badge text-bg-info-subtle text-info-emphasis border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-text="'Item Offer: ' + offerName"></div>
-                                                                    </template>
-                                                                    <div class="badge text-bg-success-subtle text-success-emphasis border-opacity-25 px-2 py-0" style="font-size: 0.65rem;" x-show="order.coupon_code" x-text="'Coupon: ' + order.coupon_code"></div>
-                                                                </div>
-                                                                
-                                                                <div class="pt-2 border-top border-primary border-opacity-25 d-flex justify-content-between align-items-center mt-auto">
-                                                                    <span class="fw-bold text-primary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Net Total</span>
-                                                                    <span class="fw-bolder fs-6 text-primary" x-text="'₹ ' + Number(order.net_amount || 0).toFixed(2)"></span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="border-top border-primary border-opacity-10 bg-body">
-                                                        <div class="list-group list-group-flush">
-                                                            <div class="list-group-item bg-body-tertiary d-none d-md-flex align-items-center text-body-secondary fw-bold text-uppercase py-1" style="letter-spacing: 0.5px; font-size: 0.65rem;">
-                                                                <div class="col-5 ps-2">Item Details</div>
-                                                                <div class="col-2 text-center">Qty</div>
-                                                                <div class="col-2 text-end">Price</div>
-                                                                <div class="col-3 text-end pe-2">Total</div>
-                                                            </div>
-                                                            <template x-for="(item, idx) in (order.items || [])" :key="'history-item-' + order.id + '-' + item.id">
-                                                                <div class="list-group-item d-flex flex-column flex-md-row align-items-md-center py-2 hover-bg-body transition-all">
-                                                                    <div class="col-12 col-md-5 d-flex flex-column justify-content-center mb-1 mb-md-0 ps-md-2">
-                                                                        <div class="fw-semibold text-body-emphasis mb-0" style="font-size: 0.8rem;">
-                                                                            <span class="text-secondary opacity-75 me-1" x-text="(idx + 1) + '.'"></span>
-                                                                            <span x-text="item.product?.name || item.product_name || 'Product'"></span>
-                                                                            <span x-show="Number(item.unit_price || 0) === 0 || Number(item.total_amount || 0) === 0" class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success ms-1 px-1 py-0 rounded-pill" style="font-size: 0.55rem;">Free Gift</span>
-                                                                        </div>
-                                                                        <div class="small text-body-secondary d-flex flex-wrap align-items-center gap-2 mt-0" style="font-size: 0.7rem;">
-                                                                            <span><i class="bi bi-upc-scan opacity-75"></i> <span x-text="item.product?.sku || item.sku || 'N/A'"></span></span>
-                                                                            <span class="border-start ps-2" x-show="Number(item.tax_amount || 0) > 0">
-                                                                                GST: <span class="fw-medium text-body-secondary" x-text="'₹ ' + Number(item.tax_amount || 0).toFixed(2)"></span> 
-                                                                                <span x-text="'(' + (item.tax_rate || 0) + '%)'"></span>
-                                                                            </span>
-                                                                        </div>
-                                                                        <div class="small text-info fw-medium mt-0" style="font-size: 0.65rem;" x-show="getSingleItemOffer(item)">
-                                                                            <i class="bi bi-tag-fill me-1"></i>Applied: <span x-text="getSingleItemOffer(item)"></span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-12 col-md-2 text-md-center mb-1 mb-md-0">
-                                                                        <span class="d-inline-block d-md-none text-body-secondary small me-2 fw-medium">Qty:</span>
-                                                                        <span class="badge text-bg-secondary-subtle text-secondary-emphasis border-opacity-25 px-2 py-1 rounded-pill fw-bold" style="font-size: 0.7rem;" x-text="item.quantity + 'x'"></span>
-                                                                    </div>
-                                                                    <div class="col-12 col-md-2 text-md-end mb-1 mb-md-0">
-                                                                        <span class="d-inline-block d-md-none text-body-secondary small me-2 fw-medium">Price:</span>
-                                                                        <div class="fw-medium text-body-secondary" style="font-size: 0.75rem;" x-text="'₹ ' + Number(item.unit_price || 0).toFixed(2)"></div>
-                                                                        <div x-show="Number(item.discount_amount || 0) > 0" class="text-success fw-bold d-flex align-items-center justify-content-md-end mt-0" style="font-size: 0.65rem;">
-                                                                            <i class="bi bi-tag-fill me-1 opacity-75"></i>-<span x-text="'₹ ' + Number(item.discount_amount || 0).toFixed(2)"></span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-12 col-md-3 text-md-end pe-md-2 mt-1 mt-md-0 pt-1 pt-md-0 border-top border-md-0">
-                                                                        <span class="d-inline-block d-md-none text-body-secondary small me-2 fw-medium">Total:</span>
-                                                                        <div class="fw-bolder text-body-emphasis" style="font-size: 0.85rem;" x-text="'₹ ' + Number(item.total_amount || 0).toFixed(2)"></div>
-                                                                    </div>
-                                                                </div>
-                                                            </template>
-                                                            <template x-if="!order.items || order.items.length === 0">
-                                                                <div class="list-group-item text-center text-body-secondary py-3 small">
-                                                                    No order items found.
-                                                                </div>
-                                                            </template>
-                                                        </div>
-                                                    </div>
-                                                    <div class="d-flex justify-content-end gap-2 p-3 bg-body-tertiary border-top">
-                                                        @can('complaints.create')
-                                                        <button type="button" x-show="['dispatched', 'shipped', 'delivered', 'returned', 'return_requested', 'delivery_attempted'].includes(order.status || order.lifecycle_status)" @click="$dispatch('open-complaint-modal', { order_no: order.order_no || order.order_number || '', customer_id: order.party_id || '' })" class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
-    <i class="bi bi-headset me-1"></i> Raise Complaint
-    <span x-show="order.complaints_count > 0" x-cloak class="badge bg-warning text-dark border border-warning border-opacity-75 ms-1" x-text="order.complaints_count"></span>
-</button>
-                                                        @endcan
-                                                        @can('orders.edit')
-                                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(order.status || order.lifecycle_status)">
-                                                            <i class="bi bi-pencil-square me-1"></i> Edit Order
-                                                        </button>
-                                                        @endcan
-                                                        @can('orders.cancel')
-                                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(order.id, order.order_no || order.order_number)" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(order.status || order.lifecycle_status)">
-                                                            <i class="bi bi-x-circle me-1"></i> Cancel Order
-                                                        </button>
-                                                        @endcan
-                                                    </div>
-                                                </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
+                                                <span x-text="(order.items ? order.items.length : 0) + ' items'"></span>
+                                            </td>
+                                            <td class="text-end pe-4 py-2 fw-bold text-body-emphasis" x-text="'₹ ' + Number(order.net_amount || 0).toFixed(2)"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
                         </div>
                     </template>
                     <template x-if="!historyOrders || !historyOrders.length">
@@ -1533,10 +1358,13 @@
                                 </thead>
                                 <template x-for="(order, index) in futureOrders" :key="'future-' + order.id">
                                     <tbody class="border-top-0 border-bottom">
-                                        <tr @click="viewOrder(order.id)" class="transition-all" style="cursor: pointer;">
+                                        <tr class="transition-all hover-bg-body-tertiary">
                                             <td class="text-nowrap ps-4 py-2 fw-bold text-body-emphasis">
                                                 <span class="text-secondary opacity-75 me-1" x-text="(index + 1) + '.'"></span>
-                                                <span x-text="order.order_no || order.order_number || ('Order #' + order.id)"></span>
+                                                <a href="#" @click.prevent="viewOrder(order.id)" class="text-decoration-none text-primary" title="View Order Details">
+                                                    <span x-text="order.order_no || order.order_number || ('Order #' + order.id)"></span>
+                                                </a>
+                                                <i class="bi ms-2 text-secondary opacity-50" style="cursor: pointer; font-size: 0.85rem;" title="Copy Order Number" x-data="{ copied: false }" @click="navigator.clipboard.writeText(order.order_no || order.order_number || ('Order #' + order.id)).then(() => { copied = true; setTimeout(() => copied = false, 2000) })" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i>
                                             </td>
                                             <td class="text-nowrap py-2">
                                                 <div class="fw-medium text-body-emphasis" x-text="order.future_order_date ? new Date(order.future_order_date).toLocaleDateString() : 'No future date'"></div>
@@ -1544,7 +1372,15 @@
                                                 <div class="small text-body-secondary mt-1" x-show="order.creator" x-text="'by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></div>
                                             </td>
                                             <td class="py-2">
-                                                <span class="badge rounded-pill px-2" :class="`bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                                <div class="mb-1">
+                                                    <span class="badge rounded-pill px-2" :class="`bg-${getStatusTheme(order.lifecycle_status || order.status)}-subtle text-${getStatusTheme(order.lifecycle_status || order.status)}-emphasis border border-${getStatusTheme(order.lifecycle_status || order.status)}-subtle`" x-text="order.status_label || order.lifecycle_status || order.status || 'Pending'"></span>
+                                                </div>
+                                                <template x-if="order.open_complaints_count > 0">
+                                                    <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle rounded-pill" style="font-size: 0.7rem;" title="Open Complaints">
+                                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                        <span x-text="order.open_complaints_count + ' Open Complaint' + (order.open_complaints_count > 1 ? 's' : '')"></span>
+                                                    </span>
+                                                </template>
                                             </td>
                                             <td class="py-2 text-body-secondary">
                                                 <span x-text="order.warehouse?.name ? order.warehouse.name : 'N/A'"></span>
@@ -1553,81 +1389,7 @@
                                             </td>
                                             <td class="text-end pe-4 py-2 fw-bold text-body-emphasis" x-text="'₹ ' + Number(order.net_amount || 0).toFixed(2)"></td>
                                         </tr>
-                                        <tr x-show="expandedOrderId === order.id" x-cloak>
-                                            <td colspan="5" class="p-0 border-0 bg-body-tertiary">
-                                                <div class="p-4 border-bottom border-top border-primary border-3 border-start-0 border-end-0 border-bottom-0 shadow-sm">
-                                                    <div class="row g-3 mb-4">
-                                                        <div class="col-lg-4">
-                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
-                                                                <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Order Info</div>
-                                                                <div class="small text-body-secondary mb-1"><i class="bi bi-clock me-1"></i> <span x-text="order.order_date ? new Date(order.order_date).toLocaleString() : 'No date'"></span></div>
-                                                                <div class="small text-primary fw-medium" x-show="order.creator"><i class="bi bi-person me-1"></i> <span x-text="'Created by ' + (order.creator?.first_name ? (order.creator.first_name + ' ' + (order.creator.last_name || '')) : (order.creator?.name || ''))"></span></div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-lg-4">
-                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
-                                                                <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Shipping</div>
-                                                                <div class="small text-body-secondary" x-text="[order.shipping_address_line_1, order.shipping_address_line_2, order.shipping_village_name ? 'Vill: '+order.shipping_village_name : null, order.shipping_post_office ? 'PO: '+order.shipping_post_office : null, order.shipping_taluka ? 'Ta: '+order.shipping_taluka : null, order.shipping_city, order.shipping_district ? 'Dist: '+order.shipping_district : null, order.shipping_state, order.shipping_pincode].filter(Boolean).join(', ') || 'Not available'"></div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-lg-4">
-                                                            <div class="p-3 rounded-3 bg-body border h-100 shadow-sm">
-                                                                <div class="fw-bold text-body-emphasis mb-1 small text-uppercase" style="letter-spacing: 0.5px;">Billing</div>
-                                                                <div class="small text-body-secondary" x-text="[order.billing_address_line_1, order.billing_address_line_2, order.billing_village_name ? 'Vill: '+order.billing_village_name : null, order.billing_post_office ? 'PO: '+order.billing_post_office : null, order.billing_taluka ? 'Ta: '+order.billing_taluka : null, order.billing_city, order.billing_district ? 'Dist: '+order.billing_district : null, order.billing_state, order.billing_pincode].filter(Boolean).join(', ') || 'Same as shipping'"></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="bg-body rounded-3 border overflow-hidden shadow-sm">
-                                                        <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
-                                                            <thead class="table-light">
-                                                                <tr class="text-body-secondary">
-                                                                    <th class="ps-3 py-2 fw-medium">Item</th>
-                                                                    <th class="py-2 fw-medium">SKU</th>
-                                                                    <th class="text-center py-2 fw-medium">Qty</th>
-                                                                    <th class="text-end py-2 fw-medium">Price</th>
-                                                                    <th class="text-end pe-3 py-2 fw-medium">Total</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                <template x-for="item in (order.items || [])" :key="'future-item-' + order.id + '-' + item.id">
-                                                                    <tr>
-                                                                        <td class="fw-semibold text-body-emphasis ps-3 py-2" x-text="item.product?.name || item.product_name || 'Product'"></td>
-                                                                        <td class="text-body-secondary py-2" x-text="item.product?.sku || item.sku || 'N/A'"></td>
-                                                                        <td class="text-center fw-semibold py-2" x-text="item.quantity"></td>
-                                                                        <td class="text-end text-body-secondary py-2" x-text="'₹ ' + Number(item.unit_price || 0).toFixed(2)"></td>
-                                                                        <td class="text-end fw-bold text-body-emphasis pe-3 py-2" x-text="'₹ ' + Number(item.total_amount || 0).toFixed(2)"></td>
-                                                                    </tr>
-                                                                </template>
-                                                                <template x-if="!order.items || order.items.length === 0">
-                                                                    <tr>
-                                                                        <td colspan="5" class="text-center text-body-secondary py-3">No order items found.</td>
-                                                                    </tr>
-                                                                </template>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                    <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
-                                                        @can('complaints.create')
-                                                        <button type="button" x-show="['dispatched', 'shipped', 'delivered', 'returned', 'return_requested', 'delivery_attempted'].includes(order.status || order.lifecycle_status)" @click="$dispatch('open-complaint-modal', { order_no: order.order_no || order.order_number || '', customer_id: order.party_id || '' })" class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold">
-    <i class="bi bi-headset me-1"></i> Raise Complaint
-    <span x-show="order.complaints_count > 0" x-cloak class="badge bg-warning text-dark border border-warning border-opacity-75 ms-1" x-text="order.complaints_count"></span>
-</button>
-                                                        @endcan
-                                                        @can('orders.edit')
-                                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(order.id)" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(order.status || order.lifecycle_status)">
-                                                            <i class="bi bi-pencil-square me-1"></i> Edit Order
-                                                        </button>
-                                                        @endcan
-                                                        @can('orders.cancel')
-                                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(order.id, order.order_no || order.order_number)" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(order.status || order.lifecycle_status)">
-                                                            <i class="bi bi-x-circle me-1"></i> Cancel Order
-                                                        </button>
-                                                        @endcan
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
+                                                                            </tbody>
                                 </template>
                             </table>
                         </div>
@@ -2887,6 +2649,25 @@
 
                             </div>
                         </div>
+                    </div>
+                    <div class="modal-footer bg-body-tertiary">
+                        @can('complaints.create')
+                        <button type="button" x-show="['dispatched', 'shipped', 'delivered', 'returned', 'return_requested', 'delivery_attempted'].includes(selectedOrder.original.status || selectedOrder.original.lifecycle_status)" @click="$dispatch('open-complaint-modal', { order_no: selectedOrder.original.order_no || selectedOrder.original.order_number || '', customer_id: selectedOrder.original.party_id || '' }); bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide()" class="btn btn-outline-warning rounded-pill px-4 fw-bold">
+                            <i class="bi bi-headset me-1"></i> Raise Complaint
+                            <span x-show="selectedOrder.original.complaints_count > 0" x-cloak class="badge bg-warning text-dark border border-warning border-opacity-75 ms-1" x-text="selectedOrder.original.complaints_count"></span>
+                        </button>
+                        @endcan
+                        @can('orders.edit')
+                        <button type="button" class="btn btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(selectedOrder.original.id); bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide()" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(selectedOrder.original.status || selectedOrder.original.lifecycle_status)">
+                            <i class="bi bi-pencil-square me-1"></i> Edit Order
+                        </button>
+                        @endcan
+                        @can('orders.cancel')
+                        <button type="button" class="btn btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(selectedOrder.original.id, selectedOrder.original.order_no || selectedOrder.original.order_number); bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide()" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(selectedOrder.original.status || selectedOrder.original.lifecycle_status)">
+                            <i class="bi bi-x-circle me-1"></i> Cancel Order
+                        </button>
+                        @endcan
+
                     </div>
                 </div>
             </template>
