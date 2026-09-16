@@ -45,16 +45,7 @@
                 </div>
             @endif
 
-            @if ($errors->any())
-                <div class="alert alert-danger d-flex align-items-start gap-2 mb-4 py-3 px-3 border-0 rounded-3 shadow-sm" role="alert">
-                    <i class="bi bi-exclamation-octagon-fill fs-5 mt-1"></i>
-                    <div>
-                        @foreach ($errors->all() as $error)
-                            <div class="fw-medium mb-1">{{ $error }}</div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
+
 
             {{-- ── Login Form (posts to real Laravel route) ─────────────── --}}
             <form method="POST" action="{{ route('login.submit') }}" id="loginForm" @submit="isSubmitting = true" autocomplete="off">
@@ -92,7 +83,7 @@
                                id="loginPassword"
                                name="password"
                                placeholder="••••••••"
-                               autocomplete="new-password"
+                               autocomplete="current-password"
                                required>
                         <button class="btn btn-link text-secondary text-decoration-none border-0 px-3 hover-text-primary"
                                 type="button"

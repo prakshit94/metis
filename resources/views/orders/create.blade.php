@@ -1270,9 +1270,9 @@
         <div class="card-header bg-body-tertiary border-bottom-0 p-3 p-lg-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold" :class="bottomTab === 'history' ? 'btn-primary' : 'btn-outline-secondary'" @click="bottomTab = 'history'; expandedOrderId = null">Order History</button>
-                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold" :class="bottomTab === 'future' ? 'btn-primary' : 'btn-outline-secondary'" @click="bottomTab = 'future'; expandedOrderId = null">Future Orders</button>
-                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold" :class="bottomTab === 'tags' ? 'btn-primary' : 'btn-outline-secondary'" @click="bottomTab = 'tags'; expandedOrderId = null">Tagging</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold" :class="bottomTab === 'history' ? 'btn-primary' : 'btn-outline-secondary'" @click="bottomTab = 'history'; ">Order History</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold" :class="bottomTab === 'future' ? 'btn-primary' : 'btn-outline-secondary'" @click="bottomTab = 'future'; ">Future Orders</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-4 fw-bold" :class="bottomTab === 'tags' ? 'btn-primary' : 'btn-outline-secondary'" @click="bottomTab = 'tags'; ">Tagging</button>
                 </div>
                 <div class="text-lg-end">
                     <h5 class="mb-1 fw-bold text-body-emphasis"><i class="bi bi-layers me-2 text-primary"></i>Order Center</h5>
@@ -1356,8 +1356,8 @@
                                         <th scope="col" class="text-nowrap text-end pe-4 py-2 border-bottom-0">Total</th>
                                     </tr>
                                 </thead>
-                                <template x-for="(order, index) in futureOrders" :key="'future-' + order.id">
-                                    <tbody class="border-top-0 border-bottom">
+                                <tbody class="border-top-0 border-bottom">
+                                    <template x-for="(order, index) in futureOrders" :key="'future-' + order.id">
                                         <tr class="transition-all hover-bg-body-tertiary">
                                             <td class="text-nowrap ps-4 py-2 fw-bold text-body-emphasis">
                                                 <span class="text-secondary opacity-75 me-1" x-text="(index + 1) + '.'"></span>
@@ -1389,8 +1389,8 @@
                                             </td>
                                             <td class="text-end pe-4 py-2 fw-bold text-body-emphasis" x-text="'₹ ' + Number(order.net_amount || 0).toFixed(2)"></td>
                                         </tr>
-                                                                            </tbody>
-                                </template>
+                                    </template>
+                                </tbody>
                             </table>
                         </div>
                     </template>

@@ -209,6 +209,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/chat', ChatController::class)->name('chat.index');
 
     Route::prefix('api/chat')->middleware('throttle:chat')->group(function () {
+        Route::get('/unread-count', [ConversationController::class, 'unreadCount']);
         Route::get('/conversations', [ConversationController::class, 'index']);
         Route::post('/conversations', [ConversationController::class, 'store']);
         Route::get('/conversations/{conversation}', [ConversationController::class, 'show']);

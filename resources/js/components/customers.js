@@ -201,10 +201,19 @@ document.addEventListener('alpine:init', () => {
 
         const data = await apiFetch(`/api/customers?${params.toString()}`);
 
-        this.customers = (data.data ?? []).map((c) => this._mapCustomer(c));
-        this.currentPage = data.current_page ?? 1;
-        this.totalPages = data.last_page ?? 1;
-        this.totalCustomers = data.total ?? 0;
+        this.customers = (data.data.data ?? []).map((c) => this._mapCustomer(c));
+        this.currentPage = data.data.current_page ?? 1;
+        this.totalPages = data.data.last_page ?? 1;
+        this.totalCustomers = data.data.total ?? 0;
+        
+        if (data.stats) {
+            this.serverStats = {
+                total: data.stats.total || 0,
+                active: data.stats.active || 0,
+                blacklisted: data.stats.blacklisted || 0,
+                kycPercentage: data.stats.total > 0 ? Math.round((data.stats.kyc_completed / data.stats.total) * 100) : 0,
+            };
+        }
 
         this.$nextTick(() => {
           this.initCharts();
@@ -440,17 +449,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     // Stats calculations
+    serverStats: { total: 0, active: 0, blacklisted: 0, kycPercentage: 0 },
     get stats() {
-      const active = this.customers.filter((c) => c.status === 'active').length;
-      const blacklisted = this.customers.filter((c) => c.is_blacklisted).length;
-      const kycCompleted = this.customers.filter((c) => c.kyc_completed).length;
-
-      return {
-        total: this.totalCustomers,
-        active,
-        blacklisted,
-        kycPercentage: this.customers.length > 0 ? (kycCompleted / this.customers.length) * 100 : 0,
-      };
+      return this.serverStats;
     },
 
     get cropStats() {
@@ -589,12 +590,12 @@ document.addEventListener('alpine:init', () => {
       };
 
       const first = await apiFetch(`/api/customers?${buildParams(1)}`);
-      const mapped = (first.data ?? []).map((c) => this._mapCustomer(c));
-      const lastPage = first.last_page ?? 1;
+      const mapped = (first.data?.data ?? []).map((c) => this._mapCustomer(c));
+      const lastPage = first.data?.last_page ?? 1;
 
       for (let page = 2; page <= lastPage; page++) {
         const data = await apiFetch(`/api/customers?${buildParams(page)}`);
-        mapped.push(...(data.data ?? []).map((c) => this._mapCustomer(c)));
+        mapped.push(...(data.data?.data ?? []).map((c) => this._mapCustomer(c)));
       }
       return mapped;
     },

@@ -88,4 +88,16 @@ class ConversationController extends Controller
 
         return response()->json(['message' => 'Pin preference updated.']);
     }
+
+    public function unreadCount(\Illuminate\Http\Request $request)
+    {
+        $count = \App\Models\Chat\Conversation::visibleTo($request->user())
+            ->whereHas("messages", function ($query) use ($request) {
+                $query->whereDoesntHave("reads", function ($read) use ($request) {
+                    $read->where("user_id", $request->user()->id);
+                })->where("sender_id", "!=", $request->user()->id);
+            })->count();
+
+        return response()->json(["unread" => $count]);
+    }
 }

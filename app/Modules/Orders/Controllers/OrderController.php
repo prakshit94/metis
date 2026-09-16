@@ -214,13 +214,13 @@ class OrderController extends Controller implements HasMiddleware
 
         if ($request->filled('state') || $request->filled('district') || $request->filled('taluka') || $request->filled('village')) {
             if ($request->filled('state')) {
-                $query->whereIn('shipping_state', array_map('trim', explode(',', $request->state)));
+                $query->whereIn('shipping_state', array_map('trim', explode(',', (string) $request->state)));
             }
             if ($request->filled('district')) {
-                $query->whereIn('shipping_district', array_map('trim', explode(',', $request->district)));
+                $query->whereIn('shipping_district', array_map('trim', explode(',', (string) $request->district)));
             }
             if ($request->filled('taluka')) {
-                $query->whereIn('shipping_taluka', array_map('trim', explode(',', $request->taluka)));
+                $query->whereIn('shipping_taluka', array_map('trim', explode(',', (string) $request->taluka)));
             }
             if ($request->filled('village')) {
                 $query->whereIn('shipping_village_name', array_map('trim', explode(',', $request->village)));
@@ -456,24 +456,29 @@ class OrderController extends Controller implements HasMiddleware
             });
         }
 
-        $districtsList = $request->filled('state') ? Cache::remember('geo_districts_'.md5($request->state), 3600, function () use ($request) {
-            return Village::whereIn('state_name', array_map('trim', explode(',', $request->state)))
+        $targetStates = $request->filled('state') 
+            ? array_map('trim', explode(',', (string) $request->state)) 
+            : ($lobStateName ? [$lobStateName] : []);
+
+        $districtsList = Cache::remember('geo_districts_'.md5(implode(',', $targetStates)), 3600, function () use ($targetStates) {
+            return Village::whereIn('state_name', $targetStates)
                 ->distinct()->pluck('district_name')->filter()->sort()->values();
-        }) : [];
+        });
 
-        $talukasList = $request->filled('district') ? Cache::remember('geo_talukas_'.md5($request->state.'_'.$request->district), 3600, function () use ($request) {
-            return Village::when($request->filled('state'), function ($q) use ($request) {
-                $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
-            })->whereIn('district_name', array_map('trim', explode(',', $request->district)))
-                ->distinct()->pluck('taluka_name')->filter()->sort()->values();
-        }) : [];
-
-        $villagesList = $request->filled('taluka') ? Cache::remember('geo_villages_'.md5($request->state.'_'.$request->district.'_'.$request->taluka), 3600, function () use ($request) {
-            return Village::when($request->filled('state'), function ($q) use ($request) {
-                $q->whereIn('state_name', array_map('trim', explode(',', $request->state)));
+        $talukasList = Cache::remember('geo_talukas_'.md5(implode(',', $targetStates).'_'.$request->district), 3600, function () use ($request, $targetStates) {
+            return Village::when(!empty($targetStates), function ($q) use ($targetStates) {
+                $q->whereIn('state_name', $targetStates);
             })->when($request->filled('district'), function ($q) use ($request) {
-                $q->whereIn('district_name', array_map('trim', explode(',', $request->district)));
-            })->whereIn('taluka_name', array_map('trim', explode(',', $request->taluka)))
+                $q->whereIn('district_name', array_map('trim', explode(',', (string) $request->district)));
+            })->distinct()->pluck('taluka_name')->filter()->sort()->values();
+        });
+
+        $villagesList = $request->filled('taluka') ? Cache::remember('geo_villages_'.md5(implode(',', $targetStates).'_'.$request->district.'_'.$request->taluka), 3600, function () use ($request, $targetStates) {
+            return Village::when(!empty($targetStates), function ($q) use ($targetStates) {
+                $q->whereIn('state_name', $targetStates);
+            })->when($request->filled('district'), function ($q) use ($request) {
+                $q->whereIn('district_name', array_map('trim', explode(',', (string) $request->district)));
+            })->whereIn('taluka_name', array_map('trim', explode(',', (string) $request->taluka)))
                 ->distinct()->pluck('village_name')->filter()->sort()->values();
         }) : [];
 
@@ -541,6 +546,7 @@ class OrderController extends Controller implements HasMiddleware
                 'warehouseStats' => $warehouseStats,
                 'trends' => $trendsData,
                 'allowed_filter_statuses' => $statusesList,
+                'states' => $statesList,
                 'districts' => $districtsList,
                 'talukas' => $talukasList,
                 'villages' => $villagesList,
@@ -577,7 +583,7 @@ class OrderController extends Controller implements HasMiddleware
                 $query->where('state', $state);
             })
             ->get();
-        $parties = Party::orderBy('firstname')->get();
+        
         $activeOffers = Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
         $activeCoupons = Coupon::where('is_active', true)->get();
         $categories = Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
@@ -704,7 +710,7 @@ class OrderController extends Controller implements HasMiddleware
             $initialCustomer->setAttribute('calculated_outstanding', (float) $due);
         }
 
-        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
+        return view('orders.create', compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
     }
 
     public function store(StoreOrderRequest $request, OrderService $orderService)
@@ -754,7 +760,7 @@ class OrderController extends Controller implements HasMiddleware
                 $query->where('state', $state);
             })
             ->get();
-        $parties = Party::orderBy('firstname')->get();
+        
         $categories = Category::where('is_active', true)->orderBy('name')->get();
 
         $activeOffers = Offer::active()->orderByDesc('priority')->get();
@@ -770,7 +776,7 @@ class OrderController extends Controller implements HasMiddleware
         $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
         $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
-        return view('orders.create', compact('warehouses', 'parties', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
+        return view('orders.create', compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
     }
 
     public function show(string $id)

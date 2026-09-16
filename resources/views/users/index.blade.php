@@ -511,8 +511,11 @@
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center text-body">
-                                                            <i class="bi bi-diagram-2 text-primary me-2"></i>
-                                                            <span x-text="user.lob_state_name || '—'"></span>
+                                                            <i class="bi bi-diagram-2 text-primary me-2 fs-5"></i>
+                                                            <div class="d-flex flex-column">
+                                                                <span class="fw-medium" x-text="user.lob_team_name || 'Global'"></span>
+                                                                <span class="small text-muted" style="font-size: 0.75rem;" x-show="user.lob_state_name" x-text="user.lob_state_name"></span>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td>

@@ -102,7 +102,7 @@
                         <button type="button" @click="selectConversation(conversation)"
                             class="btn text-start w-100 d-flex align-items-start gap-3 px-3 py-3 border-0 rounded-0"
                             style="border-bottom: 1px solid var(--bs-border-color) !important; transition: background 0.15s;"
-                            :class="activeConversation?.id === conversation.id ? 'bg-primary bg-opacity-10' : 'bg-transparent'">
+                            :class="activeConversation?.id == conversation.id ? 'bg-primary bg-opacity-10' : 'bg-transparent'">
                             <div class="position-relative flex-shrink-0">
                                 <img :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body" style="width: 42px; height: 42px; ">
                                 <span x-show="isOnline(conversation)"
@@ -171,9 +171,9 @@
                         <!-- Message List -->
                         <div class="flex-grow-1 overflow-y-auto p-4 bg-body-tertiary d-flex flex-column gap-3" x-ref="messageScroller">
                             <template x-for="message in messages" :key="message.id">
-                                <div class="d-flex" :class="message.sender_id === currentUserId ? 'justify-content-end' : 'justify-content-start'">
+                                <div class="d-flex" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                     <div style="max-width: 75%;">
-                                        <div class="d-flex align-items-center gap-2 mb-1 text-muted" style="font-size: 10px;" :class="message.sender_id === currentUserId ? 'justify-content-end' : 'justify-content-start'">
+                                        <div class="d-flex align-items-center gap-2 mb-1 text-muted" style="font-size: 10px;" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                             <template x-if="message.sender?.photo">
                                                 <img :src="formatAttachmentUrl(message.sender.photo)" class="rounded-circle object-fit-cover shadow-sm" style="width:16px; height:16px;">
                                             </template>
@@ -186,8 +186,8 @@
                                         </div>
                                         
                                         <div class="p-3 shadow-sm" 
-                                             :class="message.sender_id === currentUserId ? 'bg-primary text-white' : 'bg-body border text-body'"
-                                             :style="message.sender_id === currentUserId ? 'border-radius: 1rem 1rem 0 1rem;' : 'border-radius: 1rem 1rem 1rem 0;'">
+                                             :class="message.sender_id == currentUserId ? 'bg-primary text-white' : 'bg-body border text-body'"
+                                             :style="message.sender_id == currentUserId ? 'border-radius: 1rem 1rem 0 1rem;' : 'border-radius: 1rem 1rem 1rem 0;'">
                                             
                                             <template x-if="message.parent">
                                                 <button type="button" @click="scrollToMessage(message.parent_id)" class="btn btn-sm w-100 text-start border-start border-3 border-light rounded-0 ps-2 mb-2 p-0 opacity-75 d-flex align-items-center gap-2 overflow-hidden">
@@ -201,11 +201,11 @@
                                                 </button>
                                             </template>
 
-                                            <template x-if="editingMessageId !== message.id">
+                                            <template x-if="editingMessageId != message.id">
                                                 <p class="mb-0 text-break" style="white-space: pre-wrap;" x-text="message.content"></p>
                                             </template>
 
-                                            <template x-if="editingMessageId === message.id">
+                                            <template x-if="editingMessageId == message.id">
                                                 <div class="d-flex flex-column gap-2">
                                                     <textarea x-model="editingDraft" rows="2" class="form-control form-control-sm"></textarea>
                                                     <div class="d-flex justify-content-end gap-1">
@@ -237,13 +237,13 @@
                                             </template>
                                         </div>
                                         
-                                        <div class="mt-1 d-flex gap-2" :class="message.sender_id === currentUserId ? 'justify-content-end' : 'justify-content-start'">
+                                        <div class="mt-1 d-flex gap-2" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                             <button type="button" @click="setReply(message)" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">REPLY</button>
                                             @can('chat-edit')
-                                            <button type="button" @click="startEdit(message)" x-show="message.sender_id === currentUserId" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">EDIT</button>
+                                            <button type="button" @click="startEdit(message)" x-show="message.sender_id == currentUserId" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">EDIT</button>
                                             @endcan
                                             @can('chat-delete')
-                                            <button type="button" @click="deleteMessage(message)" :disabled="busyMessageId === message.id" class="btn btn-link btn-sm p-0 text-danger text-decoration-none" style="font-size: 10px;">DELETE</button>
+                                            <button type="button" @click="deleteMessage(message)" x-show="message.sender_id == currentUserId" :disabled="busyMessageId == message.id" class="btn btn-link btn-sm p-0 text-danger text-decoration-none" style="font-size: 10px;">DELETE</button>
                                             @endcan
                                         </div>
                                     </div>
@@ -364,7 +364,7 @@
                                 style="border-bottom: 1px solid var(--bs-border-color) !important; transition: background 0.15s;"
                                 onmouseover="this.style.backgroundColor='var(--bs-secondary-bg)'" 
                                 onmouseout="this.style.backgroundColor='transparent'"
-                                :disabled="startingUserId === user.id">
+                                :disabled="startingUserId == user.id">
                             <div class="position-relative flex-shrink-0 mt-1">
                                 <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px; ">
                                 <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body" style="width: 12px; height: 12px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
@@ -406,7 +406,7 @@
                                     </span>
                                 </div>
                             </div>
-                            <div x-show="startingUserId === user.id" class="spinner-border spinner-border-sm text-primary ms-auto mt-1" role="status"></div>
+                            <div x-show="startingUserId == user.id" class="spinner-border spinner-border-sm text-primary ms-auto mt-1" role="status"></div>
                         </button>
                     </template>
                     <div x-show="visibleUsers.length === 0" class="text-center p-5 text-muted">
@@ -439,13 +439,7 @@
                         <label class="form-label fw-bold small">Description</label>
                         <textarea x-model="groupForm.description" class="form-control" placeholder="What's this group about?" rows="2"></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small">Privacy</label>
-                        <select x-model="groupForm.privacy" class="form-select">
-                            <option value="private">Private — invite only</option>
-                            <option value="public">Public — anyone can join</option>
-                        </select>
-                    </div>
+                    
                     <div class="mb-1">
                         <div class="d-flex justify-content-between align-items-end mb-2">
                             <label class="form-label fw-bold small text-uppercase text-muted mb-0">Add Members</label>
@@ -541,20 +535,14 @@
                                         <label class="form-label small fw-semibold text-muted">Description</label>
                                         <textarea x-model="groupSettingsForm.description" rows="3" class="form-control" placeholder="Description"></textarea>
                                     </div>
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-semibold text-muted">Privacy</label>
-                                        <select x-model="groupSettingsForm.privacy" class="form-select">
-                                            <option value="private">Private — invite only</option>
-                                            <option value="public">Public — anyone can join</option>
-                                        </select>
-                                    </div>
+                                    
                                 </div>
                             </template>
                             <template x-if="!canManageSettings">
                                 <div class="bg-body-secondary rounded-3 p-4 mb-4 border">
                                     <h6 class="fw-bold mb-2" x-text="activeConversation?.name"></h6>
                                     <p class="small text-muted mb-3" x-text="activeConversation?.description || 'No description'"></p>
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 text-uppercase" x-text="activeConversation?.privacy"></span>
+                                    
                                 </div>
                             </template>
 
@@ -629,7 +617,7 @@
                                             </div>
                                         </div>
                                         @can('chat-edit')
-                                        <div x-show="canManageSettings && member.user_id !== currentUserId" class="dropdown">
+                                        <div x-show="canManageSettings && member.user_id != currentUserId" class="dropdown">
                                             <button class="btn btn-outline-secondary btn-sm px-2 rounded-circle border shadow-sm d-flex align-items-center justify-content-center" style="width:28px;height:28px;" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical" style="font-size:12px;"></i></button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 text-sm py-2">
                                                 <li><button type="button" @click="updateGroupMemberRole(member, member.role === 'admin' ? 'member' : 'admin')" class="dropdown-item small" x-text="member.role === 'admin' ? 'Demote to Member' : 'Make Admin'"></button></li>
@@ -712,6 +700,25 @@
             init() {
                 this.poll();
                 this.pollTimer = setInterval(() => this.poll(), this.pollInterval);
+                
+                // Keep chat open after refresh
+                this.$watch('activeConversation', (val) => {
+                    const storeKey = 'metis_chat_id_' + this.currentUserId;
+                    if (val && val.id) {
+                        localStorage.setItem(storeKey, val.id);
+                    } else {
+                        localStorage.removeItem(storeKey);
+                    }
+                });
+                
+                const storeKey = 'metis_chat_id_' + this.currentUserId;
+                const savedId = localStorage.getItem(storeKey);
+                if (savedId) {
+                    const conv = this.conversations.find(c => c.id == savedId);
+                    if (conv) {
+                        this.selectConversation(conv);
+                    }
+                }
             },
             
             get onlineUsers() {
@@ -731,7 +738,7 @@
                 } else if (this.filter === 'pinned') {
                     // pinned_at is on the member pivot, returned as is_pinned on conversation
                     filtered = filtered.filter(c => c.is_pinned ||
-                        c.active_members?.some(m => m.user_id === this.currentUserId && m.pinned_at));
+                        c.active_members?.some(m => m.user_id == this.currentUserId && m.pinned_at));
                 }
 
                 if (this.search) {
@@ -740,8 +747,8 @@
                 }
 
                 return filtered.sort((a, b) => {
-                    const aPinned = a.is_pinned || a.active_members?.some(m => m.user_id === this.currentUserId && m.pinned_at);
-                    const bPinned = b.is_pinned || b.active_members?.some(m => m.user_id === this.currentUserId && m.pinned_at);
+                    const aPinned = a.is_pinned || a.active_members?.some(m => m.user_id == this.currentUserId && m.pinned_at);
+                    const bPinned = b.is_pinned || b.active_members?.some(m => m.user_id == this.currentUserId && m.pinned_at);
                     if (aPinned !== bPinned) return bPinned ? 1 : -1;
                     return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
                 });
@@ -817,7 +824,7 @@
                     this.users = Array.isArray(usersRaw) ? usersRaw : [];
 
                     if (this.activeConversation) {
-                        const updated = this.conversations.find(c => c.id === this.activeConversation.id);
+                        const updated = this.conversations.find(c => c.id == this.activeConversation.id);
                         if (updated) this.activeConversation = updated;
 
                         const msgRes = await axios.get(`/api/chat/conversations/${this.activeConversation.id}/messages`);
@@ -828,7 +835,7 @@
                             : (paginatedData?.data || [])).slice().reverse();
                         const lastOldId = this.messages.length ? this.messages[this.messages.length - 1]?.id : null;
                         const lastNewId = newMessages.length ? newMessages[newMessages.length - 1]?.id : null;
-                        if (lastOldId !== lastNewId) {
+                        if (lastOldId != lastNewId) {
                             this.messages = newMessages;
                             this.scrollToBottom();
                         }
@@ -972,7 +979,7 @@
                     this.scrollToBottom();
 
                     // Update conversation's last message in sidebar
-                    const conv = this.conversations.find(c => c.id === this.activeConversation.id);
+                    const conv = this.conversations.find(c => c.id == this.activeConversation.id);
                     if (conv) { conv.updated_at = newMessage.created_at; conv.last_message = newMessage; }
                 } catch (e) {
                     this.errorMessage = e.response?.data?.message || 'Failed to send message.';
@@ -1013,7 +1020,7 @@
                 this.busyMessageId = message.id;
                 try {
                     await axios.delete(`/api/chat/messages/${message.id}`);
-                    this.messages = this.messages.filter(m => m.id !== message.id);
+                    this.messages = this.messages.filter(m => m.id != message.id);
                 } catch (e) {
                     this.errorMessage = 'Failed to delete message';
                 } finally {
@@ -1101,7 +1108,7 @@
                     this.activeConversation.description = updated.description || this.groupSettingsForm.description;
                     this.activeConversation.privacy = updated.privacy || this.groupSettingsForm.privacy;
                     // Sync in sidebar list
-                    const idx = this.conversations.findIndex(c => c.id === this.activeConversation.id);
+                    const idx = this.conversations.findIndex(c => c.id == this.activeConversation.id);
                     if (idx !== -1) this.conversations[idx] = { ...this.conversations[idx], ...this.groupSettingsForm };
                 } catch (e) {
                     this.errorMessage = e.response?.data?.message || 'Failed to update group.';
@@ -1115,7 +1122,7 @@
                     this.groupBusy = true;
                     try {
                         await axios.delete(`/api/chat/groups/${this.activeConversation.id}`);
-                        this.conversations = this.conversations.filter(c => c.id !== this.activeConversation.id);
+                        this.conversations = this.conversations.filter(c => c.id != this.activeConversation.id);
                         this.activeConversation = null;
                         this.closeGroupSettings();
                     } catch (e) {
@@ -1131,7 +1138,7 @@
                     this.groupBusy = true;
                     try {
                         await axios.post(`/api/chat/groups/${this.activeConversation.id}/leave`);
-                        this.conversations = this.conversations.filter(c => c.id !== this.activeConversation.id);
+                        this.conversations = this.conversations.filter(c => c.id != this.activeConversation.id);
                         this.activeConversation = null;
                         this.closeGroupSettings();
                     } catch (e) {
@@ -1161,7 +1168,7 @@
                 const userId = member.user_id ?? member.id;
                 try {
                     await axios.post(`/api/chat/groups/${this.activeConversation.id}/members/remove`, { user_id: userId });
-                    this.activeConversation.active_members = this.activeConversation.active_members.filter(m => m.id !== member.id);
+                    this.activeConversation.active_members = this.activeConversation.active_members.filter(m => m.id != member.id);
                 } catch (e) {
                     this.errorMessage = e.response?.data?.message || 'Failed to remove member.';
                 }

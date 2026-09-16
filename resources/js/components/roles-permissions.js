@@ -24,7 +24,16 @@ async function apiFetch(url, options = {}) {
 
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
-    throw new Error(validation || data?.message || data?.error || 'Request failed');
+    const message = validation || data?.message || data?.error || 'Request failed';
+    if (
+      res.status === 403 ||
+      message.toLowerCase().includes('authoriz') ||
+      message.toLowerCase().includes('forbidden')
+    ) {
+      window.location.href = '/';
+      return;
+    }
+    throw new Error(message);
   }
 
   return data;
@@ -393,6 +402,11 @@ document.addEventListener('alpine:init', () => {
         this.roles = (data.data ?? []).map((item) => this.mapItem(item));
         if (this.activeTab === 'roles') this.applyPagination(data);
       } catch (err) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('authoriz') || msg.includes('unauthorized') || msg.includes('forbidden') || msg.includes('cannot read properties of undefined')) {
+          window.location.href = '/';
+          return;
+        }
         showToast(`Failed to load roles: ${err.message}`, 'danger');
       } finally {
         this.isLoading = false;
@@ -406,6 +420,11 @@ document.addEventListener('alpine:init', () => {
         this.permissions = (data.data ?? []).map((item) => this.mapItem(item));
         if (this.activeTab === 'permissions') this.applyPagination(data);
       } catch (err) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('authoriz') || msg.includes('unauthorized') || msg.includes('forbidden') || msg.includes('cannot read properties of undefined')) {
+          window.location.href = '/';
+          return;
+        }
         showToast(`Failed to load permissions: ${err.message}`, 'danger');
       } finally {
         this.isLoading = false;

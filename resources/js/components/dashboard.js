@@ -147,6 +147,7 @@ export class DashboardManager {
         axisBorder: { show: false },
       },
       colors: ['#6366f1'],
+      colors: ['#0d6efd'],
       plotOptions: { bar: { borderRadius: 6, columnWidth: '55%' } },
       dataLabels: { enabled: false },
       grid: { borderColor: 'rgba(0,0,0,0.08)', strokeDashArray: 4 },
@@ -173,6 +174,7 @@ export class DashboardManager {
       colors: ['#198754', '#0d6efd', '#6c757d', '#dc3545'], // Match success, primary, secondary, danger from orders page
       legend: { position: 'bottom' },
       dataLabels: { enabled: false },
+      colors: ['#0d6efd'],
       plotOptions: { pie: { donut: { size: '60%' } } },
     };
 
@@ -189,6 +191,7 @@ export class DashboardManager {
       chart: { height: 280, type: 'radialBar' },
       series: [76],
       colors: ['#20E647'],
+      colors: ['#0d6efd'],
       plotOptions: {
         radialBar: {
           hollow: { margin: 0, size: '70%', background: '#293450' },
@@ -256,18 +259,13 @@ export class DashboardManager {
         formatter: (text, op) => [text, op.value],
         offsetY: -4,
       },
+      colors: ['#0d6efd'],
       plotOptions: {
         treemap: {
           enableShades: true,
           shadeIntensity: 0.5,
           reverseNegativeShade: true,
-          colorScale: {
-            ranges: [
-              { from: 0, to: 1000, color: '#CDD7B6' },
-              { from: 1001, to: 2000, color: '#A4B494' },
-              { from: 2001, to: 3000, color: '#52708E' },
-            ],
-          },
+          // Removed hardcoded light colors to match theme dynamically
         },
       },
       responsive: [

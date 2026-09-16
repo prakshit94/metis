@@ -559,6 +559,7 @@ document.addEventListener('alpine:init', () => {
         city: u.city,
         state: u.state,
         lob_state_name: u.lob_state_name ?? '',
+        lob_team_name: u.lob_team_name ?? '',
         pincode: u.pincode,
         date_of_birth: u.date_of_birth,
         gender: u.gender,

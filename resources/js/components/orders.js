@@ -691,6 +691,7 @@ document.addEventListener('alpine:init', () => {
             this.initCharts();
           }
 
+          if (data.states) this.statesList = data.states;
           if (data.districts) this.districtsList = data.districts;
           if (data.talukas) this.talukasList = data.talukas;
           if (data.villages) this.villagesList = data.villages;

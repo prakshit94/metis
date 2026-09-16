@@ -139,7 +139,32 @@ class CustomerController extends Controller implements HasMiddleware
             }
         }
 
-        return response()->json($customers);
+                $baseQuery = Customer::query()
+            ->when(! $isGlobalView, fn ($q) => $q->where('created_by', $user->id))
+            ->when($lobStateName, function ($q) use ($lobStateName) {
+                $q->whereExists(function ($query) use ($lobStateName) {
+                    $query->select(DB::raw(1))
+                          ->from('addresses')
+                          ->whereColumn('addresses.addressable_id', 'parties.id')
+                          ->where('addresses.addressable_type', \App\Modules\Customers\Models\Customer::class)
+                          ->where('addresses.state', $lobStateName)
+                          ->where('addresses.is_default', true);
+                });
+            })
+            ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
+            ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed());
+
+        $stats = [
+            'total' => (clone $baseQuery)->count(),
+            'active' => (clone $baseQuery)->where('status', 'active')->count(),
+            'blacklisted' => (clone $baseQuery)->where('is_blacklisted', true)->count(),
+            'kyc_completed' => (clone $baseQuery)->where('kyc_completed', true)->count(),
+        ];
+
+        return response()->json([
+            'data' => $customers,
+            'stats' => $stats
+        ]);
     }
 
     /**

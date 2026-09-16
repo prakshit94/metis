@@ -20,6 +20,10 @@
 <!-- Page Header -->
 <div class="d-flex flex-column flex-md-row justify-content-end align-items-md-center mb-4 gap-3">
     <div class="d-flex flex-wrap align-items-center gap-2">
+        <!-- Refresh Button -->
+        <button type="button" class="btn btn-outline-primary shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data">
+            <i class="bi bi-arrow-clockwise icon-hover"></i>
+        </button>
         <!-- Analytics Toggle -->
         <div class="form-check form-switch m-0 cursor-pointer d-flex align-items-center gap-2">
             <input class="form-check-input m-0" type="checkbox" role="switch" id="ordersAnalyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
@@ -70,7 +74,7 @@
     <!-- Order Stats Scrollable Row -->
     <div class="d-flex flex-nowrap overflow-x-auto gap-3 pb-3 mb-4 hide-scrollbar" style="scrollbar-width: thin;">
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-primary-subtle text-primary-emphasis mb-3 rounded-3 p-2">
@@ -87,7 +91,7 @@
         </div>
         @can('orders.view.future_order')
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3 rounded-3 p-2">
@@ -105,7 +109,7 @@
         @endcan
         @can('orders.view.pending_confirmation')
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3 rounded-3 p-2">
@@ -123,7 +127,7 @@
         @endcan
         @can('orders.view.pending')
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3 rounded-3 p-2">
@@ -141,7 +145,7 @@
         @endcan
         @can('orders.view.confirmed')
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3 rounded-3 p-2">
@@ -159,7 +163,7 @@
         @endcan
         @can('orders.view.processing')
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-secondary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis mb-3 rounded-3 p-2">
@@ -177,7 +181,7 @@
         @endcan
         @can('orders.view.ready_to_ship')
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-dark">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-dark-subtle text-body-emphasis mb-3 rounded-3 p-2">
@@ -195,7 +199,7 @@
         @endcan
         @can('orders.view.dispatched')
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-info-subtle text-info-emphasis mb-3 rounded-3 p-2">
@@ -213,7 +217,7 @@
         @endcan
         @can('orders.view.delivered')
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-success-subtle text-success-emphasis mb-3 rounded-3 p-2">
@@ -231,7 +235,7 @@
         @endcan
         @can('orders.view.cancelled')
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-danger">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-danger-subtle text-danger-emphasis mb-3 rounded-3 p-2">
@@ -249,7 +253,7 @@
         @endcan
         @can('orders.view.return_requested')
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3 rounded-3 p-2">
@@ -267,7 +271,7 @@
         @endcan
         @can('orders.view.returned')
         <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm border-0 rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-secondary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-column align-items-start">
                         <div class="stats-icon text-bg-secondary-subtle text-secondary-emphasis mb-3 rounded-3 p-2">

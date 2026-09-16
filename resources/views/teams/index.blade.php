@@ -78,13 +78,13 @@
                             </tr>
                         </template>
                         <tr x-show="isLoading" style="display: none;">
-                            <td colspan="6" class="text-center py-5">
+                            <td colspan="7" class="text-center py-5">
                                 <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                                 <span class="text-muted">Loading teams...</span>
                             </td>
                         </tr>
                         <tr x-show="!isLoading && teams.length === 0" style="display: none;">
-                            <td colspan="6" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="bi bi-buildings fs-1 d-block mb-2"></i>
                                 <p class="mb-0">No teams found.</p>
                             </td>
@@ -191,6 +191,15 @@ document.addEventListener('alpine:init', () => {
 
                 const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
                 const data = await res.json();
+                
+                if (!res.ok) {
+                    const errorMsg = data?.message || data?.error || 'Failed to load teams.';
+                    if (res.status === 403 || errorMsg.toLowerCase().includes('authoriz') || errorMsg.toLowerCase().includes('forbidden')) {
+                        window.location.href = '/';
+                        return;
+                    }
+                    throw new Error(errorMsg);
+                }
                 
                 this.teams = data.data;
                 this.totalTeams = data.total;

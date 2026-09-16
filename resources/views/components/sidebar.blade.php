@@ -49,12 +49,40 @@
         <nav class="sidebar-nav">
             <ul class="nav flex-column gap-1">
 
+                @php
+    $unreadChatCount = 0;
+    if (auth()->check() && config('chat.enabled')) {
+        $unreadChatCount = \App\Models\Chat\Conversation::visibleTo(auth()->user())
+            ->whereHas('messages', function ($query) {
+                $query->whereDoesntHave('reads', function ($read) {
+                    $read->where('user_id', auth()->id());
+                })->where('sender_id', '!=', auth()->id());
+            })->count();
+    }
+@endphp
+
                 {{-- ── COMMUNICATION (Visible to all) ──────────────── --}}
                 @can('chat-view')
-                <li class="nav-item">
+                <li class="nav-item" x-data="{ 
+                        unread: {{ $unreadChatCount }}, 
+                        init() { 
+                            // Poll every 15 seconds
+                            setInterval(() => this.fetchUnread(), 15000); 
+                        }, 
+                        async fetchUnread() { 
+                            try { 
+                                const res = await fetch('/api/chat/unread-count'); 
+                                if (res.ok) {
+                                    const data = await res.json(); 
+                                    this.unread = data.unread || 0; 
+                                }
+                            } catch(e){} 
+                        } 
+                    }">
                     <a class="nav-link {{ $current === 'chat.index' ? 'active' : '' }}" href="{{ route('chat.index') }}">
                         <i class="bi bi-chat-text-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">Team Chat</span>
+                        <span x-show="unread > 0" x-cloak class="badge rounded-pill bg-danger shadow-sm ms-2" style="font-size: 0.65rem;" x-text="unread"></span>
                     </a>
                 </li>
                 @endcan

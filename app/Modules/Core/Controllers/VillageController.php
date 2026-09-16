@@ -209,18 +209,20 @@ class VillageController extends Controller implements HasMiddleware
             ? array_map('trim', explode(',', (string) $request->state)) 
             : ($lobStateName ? [$lobStateName] : []);
 
-        $districtsList = !empty($targetStates) ? Cache::remember('geo_districts_'.md5(implode(',', $targetStates)), 3600, function () use ($targetStates) {
-            return Village::whereIn('state_name', $targetStates)
-                ->distinct()->pluck('district_name')->filter()->sort()->values();
-        }) : [];
-
-        $targetDistricts = $request->filled('district') ? array_map('trim', explode(',', (string) $request->district)) : [];
-        $talukasList = !empty($targetDistricts) ? Cache::remember('geo_talukas_'.md5(implode(',', $targetStates).'_'.implode(',', $targetDistricts)), 3600, function () use ($targetStates, $targetDistricts) {
+        $districtsList = Cache::remember('geo_districts_'.md5(implode(',', $targetStates)), 3600, function () use ($targetStates) {
             return Village::when(!empty($targetStates), function ($q) use ($targetStates) {
                 $q->whereIn('state_name', $targetStates);
-            })->whereIn('district_name', $targetDistricts)
-                ->distinct()->pluck('taluka_name')->filter()->sort()->values();
-        }) : [];
+            })->distinct()->pluck('district_name')->filter()->sort()->values();
+        });
+
+        $targetDistricts = $request->filled('district') ? array_map('trim', explode(',', (string) $request->district)) : [];
+        $talukasList = Cache::remember('geo_talukas_'.md5(implode(',', $targetStates).'_'.implode(',', $targetDistricts)), 3600, function () use ($targetStates, $targetDistricts) {
+            return Village::when(!empty($targetStates), function ($q) use ($targetStates) {
+                $q->whereIn('state_name', $targetStates);
+            })->when(!empty($targetDistricts), function ($q) use ($targetDistricts) {
+                $q->whereIn('district_name', $targetDistricts);
+            })->distinct()->pluck('taluka_name')->filter()->sort()->values();
+        });
 
         $targetTalukas = $request->filled('taluka') ? array_map('trim', explode(',', (string) $request->taluka)) : [];
         $villagesList = !empty($targetTalukas) ? Cache::remember('geo_villages_'.md5(implode(',', $targetStates).'_'.implode(',', $targetDistricts).'_'.implode(',', $targetTalukas)), 3600, function () use ($targetStates, $targetDistricts, $targetTalukas) {
