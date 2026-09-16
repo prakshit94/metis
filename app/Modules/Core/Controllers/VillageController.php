@@ -146,6 +146,41 @@ class VillageController extends Controller implements HasMiddleware
             ];
         });
 
+        $stateDistribution = (clone $statsQuery)
+            ->select('state_name as name', DB::raw('COUNT(*) as count'))
+            ->groupBy('state_name')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->name ?: 'Unknown',
+                    'count' => (int) $item->count,
+                ];
+            });
+
+        $deliveryDistribution = (clone $statsQuery)
+            ->select('delivery_office_flag as name', DB::raw('COUNT(*) as count'))
+            ->groupBy('delivery_office_flag')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->name ? 'Delivery' : 'Non-Delivery',
+                    'count' => (int) $item->count,
+                ];
+            });
+
+        $officeTypeDistribution = (clone $statsQuery)
+            ->select('office_type_code as name', DB::raw('COUNT(*) as count'))
+            ->groupBy('office_type_code')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->name ?: 'Unknown',
+                    'count' => (int) $item->count,
+                ];
+            });
+
         $stats = [
             'total' => (int) ($counts->total ?? 0),
             'pincodes' => (int) ($counts->pincodes ?? 0),
@@ -153,6 +188,9 @@ class VillageController extends Controller implements HasMiddleware
             'services' => $activeServices->count(),
             'top_districts' => $topDistricts,
             'service_distribution' => $serviceDistribution,
+            'state_distribution' => $stateDistribution,
+            'delivery_distribution' => $deliveryDistribution,
+            'office_type_distribution' => $officeTypeDistribution,
         ];
 
         $villages = $query->orderBy($sortBy, $sortDir)->paginate($perPage);

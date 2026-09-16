@@ -31,6 +31,9 @@
                 <option value="this_month" {{ ($filter ?? 'today') === 'this_month' ? 'selected' : '' }}>This Month</option>
                 <option value="prev_month" {{ ($filter ?? 'today') === 'prev_month' ? 'selected' : '' }}>Previous Month</option>
             </select>
+            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 ms-1 shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data">
+                <i class="bi bi-arrow-clockwise icon-hover"></i>
+            </button>
             <div class="form-check form-switch m-0 ms-2 cursor-pointer d-flex align-items-center gap-2">
                 <input class="form-check-input m-0" type="checkbox" role="switch" id="analyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
                 <label class="form-check-label small fw-bold text-muted mb-0 ms-1" for="analyticsToggle" style="cursor: pointer; padding-top: 2px;">Analytics</label>
@@ -80,7 +83,7 @@
                 <!-- Stats Cards with Alpine.js -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <div class="col-xl-3 col-lg-6" x-data="statsCounter({{ $totalCustomers }}, 5)">
-                        <div class="card metric-card visitors">
+                        <div class="card metric-card visitors h-100 border-start border-4 border-primary">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
@@ -99,7 +102,7 @@
                     </div>
 
                     <div class="col-xl-3 col-lg-6" x-data="statsCounter({{ $totalRevenue }}, 5)">
-                        <div class="card metric-card revenue">
+                        <div class="card metric-card revenue h-100 border-start border-4 border-success">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
@@ -118,7 +121,7 @@
                     </div>
 
                     <div class="col-xl-3 col-lg-6" x-data="statsCounter({{ $totalOrders }}, 5)">
-                        <div class="card metric-card conversion">
+                        <div class="card metric-card conversion h-100 border-start border-4 border-warning">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
@@ -137,7 +140,7 @@
                     </div>
 
                     <div class="col-xl-3 col-lg-6">
-                        <div class="card metric-card bounce">
+                        <div class="card metric-card bounce h-100 border-start border-4 border-info">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>

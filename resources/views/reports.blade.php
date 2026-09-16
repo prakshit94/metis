@@ -10,12 +10,82 @@
         <h1 class="h3 mb-0 fw-bold">Reports & Analytics</h1>
         <p class="text-muted mb-0">Generate insights and export business data</p>
     </div>
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data">
+            <i class="bi bi-arrow-clockwise icon-hover"></i>
+        </button>
+    </div>
 </div>
 
 <!-- Reports Management Container -->
 <div class="reports-page" x-data="reportsComponent">
+
+    <!-- KPI Widgets -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-primary">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-file-earmark-text fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Available Reports</p>
+                            <div class="h4 mb-0 fw-bold">16</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-success">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-cloud-download fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Export Status</p>
+                            <div class="h4 mb-0 fw-bold text-success">Online</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-server fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Server Load</p>
+                            <div class="h4 mb-0 fw-bold">Normal</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-info bg-opacity-10 text-info me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-clock-history fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Last Refresh</p>
+                            <div class="h4 mb-0 fw-bold">Just Now</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Advanced Report Generation -->
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-body-tertiary">
+    <div class="card shadow-sm rounded-4 overflow-hidden mb-4 bg-body-tertiary border-start border-4 border-primary">
         <div class="card-body p-4 p-lg-5 position-relative">
             <!-- Background Icon Decoration -->
             <div class="position-absolute end-0 bottom-0 opacity-10 me-4 mb-n4" style="pointer-events: none;">

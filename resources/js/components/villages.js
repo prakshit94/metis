@@ -552,6 +552,82 @@ document.addEventListener('alpine:init', () => {
         this.stats = serverStats;
       }
       this._initDistributionChart();
+      this._initAnalyticsCharts();
+    },
+
+    _initAnalyticsCharts() {
+      // 1. State Distribution (Donut)
+      const elState = document.querySelector('#stateDistributionChart');
+      if (elState) {
+        const stateData = this.stats.state_distribution || [];
+        const series = stateData.length ? stateData.map(d => d.count) : [0];
+        const labels = stateData.length ? stateData.map(d => d.name) : ['No Data'];
+        
+        if (elState.hasAttribute('data-chart-initialized')) {
+          this.charts.stateChart.updateSeries(series);
+          this.charts.stateChart.updateOptions({ labels });
+        } else {
+          elState.setAttribute('data-chart-initialized', 'true');
+          this.charts.stateChart = new ApexCharts(elState, {
+            series: series,
+            labels: labels,
+            chart: { type: 'donut', height: 250 },
+            colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+            dataLabels: { enabled: false },
+            legend: { position: 'bottom' }
+          });
+          this.charts.stateChart.render();
+        }
+      }
+
+      // 2. Delivery vs Non-Delivery (Pie)
+      const elDelivery = document.querySelector('#deliveryDistributionChart');
+      if (elDelivery) {
+        const delData = this.stats.delivery_distribution || [];
+        const series = delData.length ? delData.map(d => d.count) : [0];
+        const labels = delData.length ? delData.map(d => d.name) : ['No Data'];
+
+        if (elDelivery.hasAttribute('data-chart-initialized')) {
+          this.charts.deliveryChart.updateSeries(series);
+          this.charts.deliveryChart.updateOptions({ labels });
+        } else {
+          elDelivery.setAttribute('data-chart-initialized', 'true');
+          this.charts.deliveryChart = new ApexCharts(elDelivery, {
+            series: series,
+            labels: labels,
+            chart: { type: 'pie', height: 250 },
+            colors: ['#10b981', '#64748b'],
+            dataLabels: { enabled: true },
+            legend: { position: 'bottom' }
+          });
+          this.charts.deliveryChart.render();
+        }
+      }
+
+      // 3. Office Type (Bar)
+      const elOffice = document.querySelector('#officeTypeChart');
+      if (elOffice) {
+        const offData = this.stats.office_type_distribution || [];
+        const series = offData.length ? offData.map(d => d.count) : [0];
+        const categories = offData.length ? offData.map(d => d.name) : ['No Data'];
+
+        if (elOffice.hasAttribute('data-chart-initialized')) {
+          this.charts.officeChart.updateSeries([{ name: 'Villages', data: series }]);
+          this.charts.officeChart.updateOptions({ xaxis: { categories } });
+        } else {
+          elOffice.setAttribute('data-chart-initialized', 'true');
+          this.charts.officeChart = new ApexCharts(elOffice, {
+            series: [{ name: 'Villages', data: series }],
+            chart: { type: 'bar', height: 250, toolbar: { show: false } },
+            colors: ['#8b5cf6'],
+            plotOptions: { bar: { borderRadius: 4, distributed: true } },
+            xaxis: { categories, labels: { style: { colors: '#64748b' } } },
+            legend: { show: false },
+            grid: { show: false }
+          });
+          this.charts.officeChart.render();
+        }
+      }
     },
 
     _initDistributionChart() {

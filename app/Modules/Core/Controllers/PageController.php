@@ -1026,6 +1026,9 @@ class PageController extends Controller
     private function exportSalesOverview($dateFrom, $dateTo)
     {
         $query = Order::query()->with(['party', 'creator', 'updater', 'warehouse', 'items.product']);
+        if ($lobStateName = auth()->user()?->lob_state_name) {
+            $query->where('shipping_state', $lobStateName);
+        }
 
         if ($dateFrom) {
             $query->where('order_date', '>=', Carbon::parse($dateFrom)->startOfDay());

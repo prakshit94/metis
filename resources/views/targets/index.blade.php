@@ -11,6 +11,9 @@
             <p class="text-muted mb-0">Manage performance metrics across Users, Teams, and Departments</p>
         </div>
         <div class="d-flex gap-2 flex-wrap align-items-center">
+            <button type="button" class="btn btn-outline-primary shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data">
+                <i class="bi bi-arrow-clockwise icon-hover"></i>
+            </button>
             <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                 <i class="bi bi-upload me-2"></i>Import
             </button>
@@ -76,7 +79,7 @@
     <!-- Stats Row -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
@@ -91,7 +94,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
@@ -106,7 +109,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
@@ -121,7 +124,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-danger">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-danger bg-opacity-10 text-danger me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">

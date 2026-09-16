@@ -40,6 +40,9 @@
                     <i class="bi bi-stop-circle me-2" :class="{'bi-spin': stopSyncing}"></i><span x-text="stopSyncing ? 'Stopping...' : 'Stop Syncing'"></span>
                 </button>
             </template>
+            <button type="button" class="btn btn-outline-primary btn-sm px-3" @click="loadVillages()" :disabled="isLoading" data-bs-toggle="tooltip" title="Refresh data">
+                <i class="bi bi-arrow-clockwise icon-hover" :class="{'bi-spin': isLoading}"></i>
+            </button>
             <button type="button" class="btn btn-primary" @click="openCreateVillage()">
                 <i class="bi bi-plus-circle me-2"></i>Add Village
             </button>
@@ -55,7 +58,7 @@
     <!-- Stats Widgets -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -73,7 +76,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card h-100 border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
@@ -91,7 +94,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card h-100 border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
@@ -109,7 +112,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
@@ -123,6 +126,40 @@
                             </small>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Analytics Row -->
+    <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h2 class="h5 card-title mb-0">State-wise Distribution</h2>
+                </div>
+                <div class="card-body p-3 p-lg-4">
+                    <div id="stateDistributionChart" style="width: 100%; min-height: 250px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h2 class="h5 card-title mb-0">Delivery vs Non-Delivery</h2>
+                </div>
+                <div class="card-body p-3 p-lg-4">
+                    <div id="deliveryDistributionChart" style="width: 100%; min-height: 250px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h2 class="h5 card-title mb-0">Office Type Distribution</h2>
+                </div>
+                <div class="card-body p-3 p-lg-4">
+                    <div id="officeTypeChart" style="width: 100%; min-height: 250px;"></div>
                 </div>
             </div>
         </div>
