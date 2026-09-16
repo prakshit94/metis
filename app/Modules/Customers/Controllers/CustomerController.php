@@ -623,10 +623,22 @@ class CustomerController extends Controller implements HasMiddleware
                 'address_id' => [
                     'required',
                     Rule::exists('party_addresses', 'id')->where('party_id', $customer->id),
+                    function ($attribute, $value, $fail) {
+                        $address = \App\Modules\Customers\Models\PartyAddress::find($value);
+                        if ($address && empty($address->village_id)) {
+                            $fail('The selected shipping address has an invalid or missing village. Please update the address to link it to our village database before placing the order.');
+                        }
+                    },
                 ],
                 'billing_address_id' => [
                     'nullable',
                     Rule::exists('party_addresses', 'id')->where('party_id', $customer->id),
+                    function ($attribute, $value, $fail) {
+                        $address = \App\Modules\Customers\Models\PartyAddress::find($value);
+                        if ($address && empty($address->village_id)) {
+                            $fail('The selected billing address has an invalid or missing village. Please update the address to link it to our village database before placing the order.');
+                        }
+                    },
                 ],
                 'status' => 'nullable|string|in:pending,future_order',
                 'future_order_date' => 'required_if:status,future_order|nullable|date_format:Y-m-d',

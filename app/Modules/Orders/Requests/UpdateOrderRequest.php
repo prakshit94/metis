@@ -26,8 +26,26 @@ class UpdateOrderRequest extends FormRequest
             'type' => 'required|string|in:sale,purchase',
             'party_id' => 'required|exists:parties,id',
             'warehouse_id' => 'required|exists:warehouses,id',
-            'shipping_address_id' => 'required|exists:party_addresses,id',
-            'billing_address_id' => 'required|exists:party_addresses,id',
+            'shipping_address_id' => [
+                'required',
+                'exists:party_addresses,id',
+                function ($attribute, $value, $fail) {
+                    $address = \App\Modules\Customers\Models\PartyAddress::find($value);
+                    if ($address && empty($address->village_id)) {
+                        $fail('The selected shipping address has an invalid or missing village. Please update the address to link it to our village database before placing the order.');
+                    }
+                },
+            ],
+            'billing_address_id' => [
+                'required',
+                'exists:party_addresses,id',
+                function ($attribute, $value, $fail) {
+                    $address = \App\Modules\Customers\Models\PartyAddress::find($value);
+                    if ($address && empty($address->village_id)) {
+                        $fail('The selected billing address has an invalid or missing village. Please update the address to link it to our village database before placing the order.');
+                    }
+                },
+            ],
             'order_date' => 'required|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
