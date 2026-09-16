@@ -10,7 +10,7 @@ async function apiFetch(url, options = {}) {
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'X-CSRF-TOKEN': getCsrfToken(),
       ...(headers || {}),
     },
@@ -23,7 +23,14 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
-    if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
+    if (
+      res.status === 403 ||
+      message.toLowerCase().includes('authoriz') ||
+      message.toLowerCase().includes('forbidden')
+    ) {
+      window.location.href = '/';
+      return;
+    }
     throw new Error(message);
   }
 
@@ -36,9 +43,9 @@ function showToast(message, type = 'success') {
 
   const iconMap = {
     success: 'bi-check-circle-fill',
-    danger:  'bi-x-circle-fill',
+    danger: 'bi-x-circle-fill',
     warning: 'bi-exclamation-triangle-fill',
-    info:    'bi-info-circle-fill',
+    info: 'bi-info-circle-fill',
   };
 
   const el = document.createElement('div');
@@ -104,7 +111,7 @@ document.addEventListener('alpine:init', () => {
       params.append('sort_direction', this.sortDirection);
 
       apiFetch(`/refunds?${params.toString()}`)
-        .then(data => {
+        .then((data) => {
           this.refunds = data.refunds?.data || [];
           this.currentPage = data.refunds?.current_page || 1;
           this.totalPages = data.refunds?.last_page || 1;
@@ -114,18 +121,21 @@ document.addEventListener('alpine:init', () => {
             this.stats = { ...this.stats, ...data.stats };
           }
         })
-        .catch(err => showToast(err.message, 'danger'))
-        .finally(() => { this.isLoading = false; });
+        .catch((err) => showToast(err.message, 'danger'))
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
     filterRefunds() {
       this.currentPage = 1;
-      
+
       this.loadRefunds();
     },
 
     sortBy(field) {
-      this.sortDirection = (this.sortField === field && this.sortDirection === 'asc') ? 'desc' : 'asc';
+      this.sortDirection =
+        this.sortField === field && this.sortDirection === 'asc' ? 'desc' : 'asc';
       this.sortField = field;
       this.currentPage = 1;
       this.loadRefunds();
@@ -156,14 +166,14 @@ document.addEventListener('alpine:init', () => {
 
     toggleAll(checked) {
       if (checked) {
-        this.refunds.forEach(item => {
+        this.refunds.forEach((item) => {
           if (!this.selectedRefunds.includes(String(item.id))) {
             this.selectedRefunds.push(String(item.id));
           }
         });
       } else {
-        const currentIds = this.refunds.map(item => String(item.id));
-        this.selectedRefunds = this.selectedRefunds.filter(id => !currentIds.includes(id));
+        const currentIds = this.refunds.map((item) => String(item.id));
+        this.selectedRefunds = this.selectedRefunds.filter((id) => !currentIds.includes(id));
       }
     },
 
@@ -176,8 +186,8 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           body: JSON.stringify({
             ids: this.selectedRefunds,
-            status: status
-          })
+            status: status,
+          }),
         });
         showToast(res.message || 'Status updated successfully.');
         this.selectedRefunds = [];
@@ -196,8 +206,8 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           body: JSON.stringify({
             ids: [id],
-            status: status
-          })
+            status: status,
+          }),
         });
         showToast(res.message || 'Refund status updated.');
         this.loadRefunds();
@@ -217,13 +227,17 @@ document.addEventListener('alpine:init', () => {
 
     formatCurrency(value) {
       const n = Number.parseFloat(value ?? 0);
-      return Number.isFinite(n) ? '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '₹0.00';
+      return Number.isFinite(n)
+        ? '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : '₹0.00';
     },
 
     formatDate(value) {
       if (!value) return 'N/A';
       const d = new Date(value);
-      return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    }
+      return Number.isNaN(d.getTime())
+        ? 'N/A'
+        : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    },
   }));
 });

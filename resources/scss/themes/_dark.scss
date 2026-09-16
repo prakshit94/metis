@@ -2,13 +2,13 @@
 // Dark Theme Styles - PREMIUM GLASSMORPHISM
 // ==========================================================================
 
-[data-bs-theme="dark"] {
+[data-bs-theme='dark'] {
   // Base colors
   --bs-body-bg: #1a1a2e;
   --bs-body-color: #f8fafc;
   --bs-border-color: rgba(255, 255, 255, 0.1);
   --bs-border-color-translucent: rgba(255, 255, 255, 0.05);
-  
+
   // Custom dark theme colors & variables
   --bs-primary: #6366f1;
   --bs-primary-rgb: 99, 102, 241;
@@ -33,23 +33,23 @@
       border-bottom: 1px solid var(--bs-border-color);
     }
   }
-  
+
   // Admin Sidebar
   .admin-sidebar {
     background-color: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-right: 1px solid var(--bs-border-color);
-    
+
     .sidebar-nav {
       .nav-link {
         color: rgba(255, 255, 255, 0.7);
-        
+
         &:hover {
           background-color: rgba(255, 255, 255, 0.05);
           color: #fff;
         }
-        
+
         &.active {
           background-color: rgba(99, 102, 241, 0.15);
           color: #6366f1;
@@ -58,32 +58,34 @@
       }
     }
   }
-  
+
   // Global Cards
   .card {
     background-color: rgba(30, 41, 59, 0.5);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--bs-border-color);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
     .card-header {
       background-color: rgba(255, 255, 255, 0.02);
       border-bottom: 1px solid var(--bs-border-color);
     }
-    
+
     .card-footer {
       background-color: rgba(255, 255, 255, 0.02);
       border-top: 1px solid var(--bs-border-color);
     }
   }
-  
+
   // Stats Cards (Dashboard, Analytics, etc.)
   .stats-card {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     transition: all 0.3s ease;
-    
+
     &:hover {
       background: rgba(255, 255, 255, 0.06);
       transform: translateY(-2px);
@@ -93,12 +95,27 @@
     .stats-icon {
       background-color: rgba(255, 255, 255, 0.05) !important;
       color: rgba(255, 255, 255, 0.8) !important;
-      
-      &.bg-primary { background-color: rgba(99, 102, 241, 0.2) !important; color: #818cf8 !important; }
-      &.bg-success { background-color: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; }
-      &.bg-warning { background-color: rgba(245, 158, 11, 0.2) !important; color: #fbbf24 !important; }
-      &.bg-danger  { background-color: rgba(239, 68, 68, 0.2) !important; color: #f87171 !important; }
-      &.bg-info    { background-color: rgba(6, 182, 212, 0.2) !important; color: #22d3ee !important; }
+
+      &.bg-primary {
+        background-color: rgba(99, 102, 241, 0.2) !important;
+        color: #818cf8 !important;
+      }
+      &.bg-success {
+        background-color: rgba(16, 185, 129, 0.2) !important;
+        color: #34d399 !important;
+      }
+      &.bg-warning {
+        background-color: rgba(245, 158, 11, 0.2) !important;
+        color: #fbbf24 !important;
+      }
+      &.bg-danger {
+        background-color: rgba(239, 68, 68, 0.2) !important;
+        color: #f87171 !important;
+      }
+      &.bg-info {
+        background-color: rgba(6, 182, 212, 0.2) !important;
+        color: #22d3ee !important;
+      }
     }
   }
 
@@ -107,12 +124,13 @@
     color: var(--bs-body-color);
     --bs-table-bg: transparent;
     --bs-table-hover-bg: rgba(255, 255, 255, 0.03);
-    
-    th, td {
+
+    th,
+    td {
       border-color: var(--bs-border-color-translucent);
       background-color: transparent !important;
     }
-    
+
     thead th {
       color: rgba(255, 255, 255, 0.6);
       font-weight: 600;
@@ -121,25 +139,26 @@
       font-size: 0.75rem;
     }
   }
-  
+
   // Forms and Inputs
-  .form-control, .form-select {
+  .form-control,
+  .form-select {
     background-color: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--bs-border-color);
     color: var(--bs-body-color);
-    
+
     &:focus {
       background-color: rgba(0, 0, 0, 0.3);
       border-color: var(--bs-primary);
       box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25);
       color: #fff;
     }
-    
+
     &::placeholder {
       color: rgba(255, 255, 255, 0.4);
     }
   }
-  
+
   .input-group-text {
     background-color: rgba(255, 255, 255, 0.05);
     border-color: var(--bs-border-color);
@@ -152,10 +171,10 @@
     backdrop-filter: blur(12px);
     border: 1px solid var(--bs-border-color);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-    
+
     .dropdown-item {
       color: rgba(255, 255, 255, 0.8);
-      
+
       &:hover {
         background-color: rgba(255, 255, 255, 0.05);
         color: #fff;
@@ -168,8 +187,9 @@
     background-color: rgba(30, 41, 59, 0.9);
     backdrop-filter: blur(16px);
     border: 1px solid var(--bs-border-color);
-    
-    .modal-header, .modal-footer {
+
+    .modal-header,
+    .modal-footer {
       border-color: var(--bs-border-color-translucent);
     }
   }
@@ -180,19 +200,19 @@
       background-color: rgba(255, 255, 255, 0.05);
       border-color: var(--bs-border-color);
       color: rgba(255, 255, 255, 0.8);
-      
+
       &:hover {
         background-color: rgba(255, 255, 255, 0.1);
         color: #fff;
       }
     }
-    
+
     .page-item.active .page-link {
       background-color: var(--bs-primary);
       border-color: var(--bs-primary);
       color: #fff;
     }
-    
+
     .page-item.disabled .page-link {
       background-color: transparent;
       color: rgba(255, 255, 255, 0.3);
@@ -205,17 +225,17 @@
     background-color: rgba(255, 255, 255, 0.1);
     color: #fff;
     border-color: transparent;
-    
+
     &:hover {
       background-color: rgba(255, 255, 255, 0.2);
       color: #fff;
     }
   }
-  
+
   .btn-outline-secondary {
     color: rgba(255, 255, 255, 0.7);
     border-color: rgba(255, 255, 255, 0.2);
-    
+
     &:hover {
       background-color: rgba(255, 255, 255, 0.1);
       color: #fff;
@@ -226,10 +246,20 @@
   .bg-body-tertiary {
     background-color: rgba(255, 255, 255, 0.02) !important;
   }
-  
-  .border { border-color: var(--bs-border-color) !important; }
-  .border-top { border-top-color: var(--bs-border-color) !important; }
-  .border-bottom { border-bottom-color: var(--bs-border-color) !important; }
-  .border-start { border-left-color: var(--bs-border-color) !important; }
-  .border-end { border-right-color: var(--bs-border-color) !important; }
+
+  .border {
+    border-color: var(--bs-border-color) !important;
+  }
+  .border-top {
+    border-top-color: var(--bs-border-color) !important;
+  }
+  .border-bottom {
+    border-bottom-color: var(--bs-border-color) !important;
+  }
+  .border-start {
+    border-left-color: var(--bs-border-color) !important;
+  }
+  .border-end {
+    border-right-color: var(--bs-border-color) !important;
+  }
 }

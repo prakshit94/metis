@@ -236,7 +236,7 @@
       }
 
       &::after {
-        content: "+";
+        content: '+';
         position: absolute;
         right: 1.5rem;
         top: 50%;
@@ -247,7 +247,7 @@
       }
 
       &.active::after {
-        content: "−";
+        content: '−';
         transform: translateY(-50%) rotate(180deg);
       }
     }
@@ -325,7 +325,8 @@
           margin-bottom: 1rem;
         }
 
-        ul, ol {
+        ul,
+        ol {
           margin-bottom: 1rem;
           padding-left: 1.5rem;
 

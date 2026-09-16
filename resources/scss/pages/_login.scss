@@ -12,7 +12,7 @@
 
   // Subtle animated background
   &::before {
-    content: "";
+    content: '';
     position: fixed;
     inset: 0;
     background:
@@ -37,7 +37,7 @@
   padding: 2.5rem;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
 
-  [data-bs-theme="dark"] & {
+  [data-bs-theme='dark'] & {
     background: rgba(15, 23, 42, 0.95);
     border-color: rgba(255, 255, 255, 0.1);
   }
@@ -96,7 +96,9 @@
   color: var(--bs-body-color);
   font-size: 0.875rem;
   font-weight: 500;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
   cursor: pointer;
 
   &:hover {
@@ -104,7 +106,8 @@
     border-color: var(--bs-primary-border-subtle);
   }
 
-  img, i {
+  img,
+  i {
     width: 18px;
     height: 18px;
     font-size: 18px;
@@ -216,8 +219,12 @@
     background: var(--bs-border-color);
   }
 
-  &::before { left: 0; }
-  &::after  { right: 0; }
+  &::before {
+    left: 0;
+  }
+  &::after {
+    right: 0;
+  }
 }
 
 // Submit button — primary with subtle glow on hover
@@ -226,7 +233,9 @@
   font-weight: 600;
   letter-spacing: 0.01em;
   border-radius: 0.6rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 
   &:not(:disabled):hover {
     transform: translateY(-1px);
@@ -249,6 +258,8 @@
   .auth-strength-fill {
     height: 100%;
     border-radius: 2px;
-    transition: width 0.3s ease, background-color 0.3s ease;
+    transition:
+      width 0.3s ease,
+      background-color 0.3s ease;
   }
 }

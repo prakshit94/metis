@@ -90,7 +90,9 @@ export class SidebarManager {
         const targetId = toggleButton.getAttribute('data-bs-target');
         const targetElement = document.querySelector(targetId);
         if (targetElement && window.bootstrap && window.bootstrap.Collapse) {
-          const bsCollapse = window.bootstrap.Collapse.getInstance(targetElement) || new window.bootstrap.Collapse(targetElement);
+          const bsCollapse =
+            window.bootstrap.Collapse.getInstance(targetElement) ||
+            new window.bootstrap.Collapse(targetElement);
           bsCollapse.show();
         }
       }

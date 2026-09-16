@@ -13,7 +13,7 @@
     flex-shrink: 0;
     padding: 1rem 1.25rem 0.75rem;
   }
-  
+
   // Main calendar container — flex:1 so it fills what the page header leaves
   .calendar-container {
     flex: 1;
@@ -36,7 +36,7 @@
   // ==========================================================================
   // SIDEBAR STYLES
   // ==========================================================================
-  
+
   .calendar-sidebar {
     width: 320px;
     background: var(--calendar-sidebar-bg);
@@ -314,7 +314,9 @@
 
         .category-color {
           filter: grayscale(0.6);
-          &::after { opacity: 0; }
+          &::after {
+            opacity: 0;
+          }
         }
 
         .category-name {
@@ -554,7 +556,7 @@
           content: attr(data-short);
         }
         &::before {
-          content: "";
+          content: '';
           display: none;
         }
       }
@@ -1107,7 +1109,8 @@
 // ==========================================================================
 
 @keyframes pulse-line {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -1121,7 +1124,7 @@
 
 // The app layout wraps @yield('content') in `container-fluid p-4 p-lg-5`.
 // The calendar is a full-height component and must break out of that padding.
-body[data-page="calendar"] {
+body[data-page='calendar'] {
   .admin-main > .container-fluid {
     padding: 0 !important;
   }
@@ -1141,7 +1144,7 @@ body[data-page="calendar"] {
   --calendar-day-hover: #{$gray-50};
 }
 
-[data-bs-theme="dark"] {
+[data-bs-theme='dark'] {
   --calendar-bg: #{$dark-bg};
   --calendar-sidebar-bg: #{$gray-800};
   --calendar-border: #{$dark-border-color};

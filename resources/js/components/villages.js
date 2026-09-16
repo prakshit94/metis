@@ -13,7 +13,7 @@ async function apiFetch(url, options = {}) {
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'X-CSRF-TOKEN': getCsrfToken(),
       ...(headers || {}),
     },
@@ -26,7 +26,14 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
-    if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
+    if (
+      res.status === 403 ||
+      message.toLowerCase().includes('authoriz') ||
+      message.toLowerCase().includes('forbidden')
+    ) {
+      window.location.href = '/';
+      return;
+    }
     throw new Error(message);
   }
 
@@ -34,9 +41,10 @@ async function apiFetch(url, options = {}) {
 }
 
 function getModal(elementOrSelector) {
-  const element = typeof elementOrSelector === 'string'
-    ? document.querySelector(elementOrSelector)
-    : elementOrSelector;
+  const element =
+    typeof elementOrSelector === 'string'
+      ? document.querySelector(elementOrSelector)
+      : elementOrSelector;
 
   return element ? Modal.getOrCreateInstance(element) : null;
 }
@@ -49,9 +57,9 @@ function showToast(message, type = 'success') {
   const id = 'toast-' + Date.now();
   const iconMap = {
     success: 'bi-check-circle-fill',
-    danger:  'bi-x-circle-fill',
+    danger: 'bi-x-circle-fill',
     warning: 'bi-exclamation-triangle-fill',
-    info:    'bi-info-circle-fill',
+    info: 'bi-info-circle-fill',
   };
 
   const el = document.createElement('div');
@@ -88,8 +96,6 @@ async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it'
 }
 
 document.addEventListener('alpine:init', () => {
-
-
   // ─── Village Table Controller ─────────────────────────────────────────────
   Alpine.data('villageTable', () => ({
     villages: [],
@@ -98,7 +104,7 @@ document.addEventListener('alpine:init', () => {
     totalPages: 1,
     totalVillages: 0,
     itemsPerPage: 15,
-    
+
     // Import state
     syncing: false,
     stopSyncing: false,
@@ -130,77 +136,81 @@ document.addEventListener('alpine:init', () => {
     villageSearch: '',
 
     get filteredStates() {
-        let list = Object.values(this.statesList || {});
-        if (!this.stateSearch) return list;
-        return list.filter(s => s && s.toLowerCase().includes(this.stateSearch.toLowerCase()));
+      let list = Object.values(this.statesList || {});
+      if (!this.stateSearch) return list;
+      return list.filter((s) => s && s.toLowerCase().includes(this.stateSearch.toLowerCase()));
     },
-    
+
     get filteredDistricts() {
-        let list = Object.values(this.districtsList || {});
-        if (!this.districtSearch) return list;
-        return list.filter(d => d && d.toLowerCase().includes(this.districtSearch.toLowerCase()));
+      let list = Object.values(this.districtsList || {});
+      if (!this.districtSearch) return list;
+      return list.filter((d) => d && d.toLowerCase().includes(this.districtSearch.toLowerCase()));
     },
 
     get filteredTalukas() {
-        let list = Object.values(this.talukasList || {});
-        if (!this.talukaSearch) return list;
-        return list.filter(t => t && t.toLowerCase().includes(this.talukaSearch.toLowerCase()));
+      let list = Object.values(this.talukasList || {});
+      if (!this.talukaSearch) return list;
+      return list.filter((t) => t && t.toLowerCase().includes(this.talukaSearch.toLowerCase()));
     },
 
     get filteredVillages() {
-        let list = Object.values(this.villagesList || {});
-        if (!this.villageSearch) return list;
-        return list.filter(v => v && v.toLowerCase().includes(this.villageSearch.toLowerCase()));
+      let list = Object.values(this.villagesList || {});
+      if (!this.villageSearch) return list;
+      return list.filter((v) => v && v.toLowerCase().includes(this.villageSearch.toLowerCase()));
     },
 
     toggleFilter(type, value) {
-        if (type === 'state') {
-            if (this.stateFilter.includes(value)) this.stateFilter = this.stateFilter.filter(v => v !== value);
-            else this.stateFilter.push(value);
-            this.districtFilter = [];
-            this.talukaFilter = [];
-            this.villageFilter = [];
-        } else if (type === 'district') {
-            if (this.districtFilter.includes(value)) this.districtFilter = this.districtFilter.filter(v => v !== value);
-            else this.districtFilter.push(value);
-            this.talukaFilter = [];
-            this.villageFilter = [];
-        } else if (type === 'taluka') {
-            if (this.talukaFilter.includes(value)) this.talukaFilter = this.talukaFilter.filter(v => v !== value);
-            else this.talukaFilter.push(value);
-            this.villageFilter = [];
-        } else if (type === 'village') {
-            if (this.villageFilter.includes(value)) this.villageFilter = this.villageFilter.filter(v => v !== value);
-            else this.villageFilter.push(value);
-        }
-        this.filterVillages();
+      if (type === 'state') {
+        if (this.stateFilter.includes(value))
+          this.stateFilter = this.stateFilter.filter((v) => v !== value);
+        else this.stateFilter.push(value);
+        this.districtFilter = [];
+        this.talukaFilter = [];
+        this.villageFilter = [];
+      } else if (type === 'district') {
+        if (this.districtFilter.includes(value))
+          this.districtFilter = this.districtFilter.filter((v) => v !== value);
+        else this.districtFilter.push(value);
+        this.talukaFilter = [];
+        this.villageFilter = [];
+      } else if (type === 'taluka') {
+        if (this.talukaFilter.includes(value))
+          this.talukaFilter = this.talukaFilter.filter((v) => v !== value);
+        else this.talukaFilter.push(value);
+        this.villageFilter = [];
+      } else if (type === 'village') {
+        if (this.villageFilter.includes(value))
+          this.villageFilter = this.villageFilter.filter((v) => v !== value);
+        else this.villageFilter.push(value);
+      }
+      this.filterVillages();
     },
 
     toggleAllFilter(type) {
-        if (type === 'state') {
-            let list = Object.values(this.statesList || {});
-            if (this.stateFilter.length === list.length) this.stateFilter = [];
-            else this.stateFilter = [...list];
-            this.districtFilter = [];
-            this.talukaFilter = [];
-            this.villageFilter = [];
-        } else if (type === 'district') {
-            let list = Object.values(this.districtsList || {});
-            if (this.districtFilter.length === list.length) this.districtFilter = [];
-            else this.districtFilter = [...list];
-            this.talukaFilter = [];
-            this.villageFilter = [];
-        } else if (type === 'taluka') {
-            let list = Object.values(this.talukasList || {});
-            if (this.talukaFilter.length === list.length) this.talukaFilter = [];
-            else this.talukaFilter = [...list];
-            this.villageFilter = [];
-        } else if (type === 'village') {
-            let list = Object.values(this.villagesList || {});
-            if (this.villageFilter.length === list.length) this.villageFilter = [];
-            else this.villageFilter = [...list];
-        }
-        this.filterVillages();
+      if (type === 'state') {
+        let list = Object.values(this.statesList || {});
+        if (this.stateFilter.length === list.length) this.stateFilter = [];
+        else this.stateFilter = [...list];
+        this.districtFilter = [];
+        this.talukaFilter = [];
+        this.villageFilter = [];
+      } else if (type === 'district') {
+        let list = Object.values(this.districtsList || {});
+        if (this.districtFilter.length === list.length) this.districtFilter = [];
+        else this.districtFilter = [...list];
+        this.talukaFilter = [];
+        this.villageFilter = [];
+      } else if (type === 'taluka') {
+        let list = Object.values(this.talukasList || {});
+        if (this.talukaFilter.length === list.length) this.talukaFilter = [];
+        else this.talukaFilter = [...list];
+        this.villageFilter = [];
+      } else if (type === 'village') {
+        let list = Object.values(this.villagesList || {});
+        if (this.villageFilter.length === list.length) this.villageFilter = [];
+        else this.villageFilter = [...list];
+      }
+      this.filterVillages();
     },
 
     hasActiveAdvancedFilters() {
@@ -235,9 +245,10 @@ document.addEventListener('alpine:init', () => {
       // restart loop when the cache flag is stale (e.g. after a server crash or
       // browser close mid-sync).
       if (window.backendSyncing) {
-        const query = window.backendSyncQuery && window.backendSyncQuery !== 'ALL'
-          ? ` for pincode ${window.backendSyncQuery}`
-          : '';
+        const query =
+          window.backendSyncQuery && window.backendSyncQuery !== 'ALL'
+            ? ` for pincode ${window.backendSyncQuery}`
+            : '';
         Swal.fire({
           title: 'Resume Sync?',
           text: `A previous India Post sync${query} was interrupted. Would you like to resume it?`,
@@ -247,7 +258,7 @@ document.addEventListener('alpine:init', () => {
           cancelButtonText: 'No, stop it',
           confirmButtonColor: '#0d6efd',
           reverseButtons: true,
-        }).then(result => {
+        }).then((result) => {
           if (result.isConfirmed) {
             if (window.backendSyncQuery && window.backendSyncQuery !== 'ALL') {
               this.searchQuery = window.backendSyncQuery;
@@ -256,8 +267,8 @@ document.addEventListener('alpine:init', () => {
           } else {
             // User chose not to resume — send a stop signal to clear the cache flag
             apiFetch('/api/villages/sync-indiapost', {
-              method : 'POST',
-              body   : JSON.stringify({ action: 'stop' }),
+              method: 'POST',
+              body: JSON.stringify({ action: 'stop' }),
             }).catch(() => {});
           }
         });
@@ -283,27 +294,27 @@ document.addEventListener('alpine:init', () => {
           sort_dir: this.sortDirection,
         });
 
-        if (this.searchQuery)    params.set('search', this.searchQuery);
-        if (this.stateFilter.length > 0)    params.set('state', this.stateFilter.join(','));
+        if (this.searchQuery) params.set('search', this.searchQuery);
+        if (this.stateFilter.length > 0) params.set('state', this.stateFilter.join(','));
         if (this.districtFilter.length > 0) params.set('district', this.districtFilter.join(','));
-        if (this.talukaFilter.length > 0)   params.set('taluka', this.talukaFilter.join(','));
-        if (this.villageFilter.length > 0)  params.set('village', this.villageFilter.join(','));
-        if (this.serviceFilter)  params.set('service_id', this.serviceFilter);
-        if (this.deletedFilter)  params.set('deleted', this.deletedFilter);
+        if (this.talukaFilter.length > 0) params.set('taluka', this.talukaFilter.join(','));
+        if (this.villageFilter.length > 0) params.set('village', this.villageFilter.join(','));
+        if (this.serviceFilter) params.set('service_id', this.serviceFilter);
+        if (this.deletedFilter) params.set('deleted', this.deletedFilter);
 
         const data = await apiFetch(`/api/villages?${params.toString()}`);
-        
+
         const list = data.pagination?.data ?? data.data ?? [];
-        this.villages = list.map(v => this._mapVillage(v));
-        
+        this.villages = list.map((v) => this._mapVillage(v));
+
         this.currentPage = data.pagination?.current_page ?? data.current_page ?? 1;
         this.totalPages = data.pagination?.last_page ?? data.last_page ?? 1;
         this.totalVillages = data.pagination?.total ?? data.total ?? 0;
 
-        this.statesList    = data.states    ?? [];
+        this.statesList = data.states ?? [];
         this.districtsList = data.districts ?? [];
-        this.talukasList   = data.talukas   ?? [];
-        this.villagesList  = data.villages  ?? [];
+        this.talukasList = data.talukas ?? [];
+        this.villagesList = data.villages ?? [];
 
         this.$nextTick(() => {
           this.initCharts(data.stats ?? {});
@@ -317,7 +328,7 @@ document.addEventListener('alpine:init', () => {
 
     _mapVillage(v) {
       const activeMappings = (v.mappings ?? [])
-        .filter(m => m.is_available)
+        .filter((m) => m.is_available)
         .sort((a, b) => Number(a.priority ?? 0) - Number(b.priority ?? 0));
       return {
         ...v,
@@ -335,7 +346,11 @@ document.addEventListener('alpine:init', () => {
     get visiblePages() {
       const pages = [];
       const delta = 2;
-      for (let i = Math.max(1, this.currentPage - delta); i <= Math.min(this.totalPages, this.currentPage + delta); i++) {
+      for (
+        let i = Math.max(1, this.currentPage - delta);
+        i <= Math.min(this.totalPages, this.currentPage + delta);
+        i++
+      ) {
         pages.push(i);
       }
       return pages;
@@ -374,39 +389,41 @@ document.addEventListener('alpine:init', () => {
 
     getSortIcon(field) {
       if (this.sortField !== field) return 'bi-arrow-down-up text-muted small';
-      return this.sortDirection === 'asc' ? 'bi-arrow-up text-primary' : 'bi-arrow-down text-primary';
+      return this.sortDirection === 'asc'
+        ? 'bi-arrow-up text-primary'
+        : 'bi-arrow-down text-primary';
     },
 
     resetFilters() {
-      this.searchQuery    = '';
-      this.stateFilter    = [];
+      this.searchQuery = '';
+      this.stateFilter = [];
       this.districtFilter = [];
-      this.talukaFilter   = [];
-      this.villageFilter  = [];
-      this.serviceFilter  = '';
-      this.deletedFilter  = '';
-      this.currentPage    = 1;
+      this.talukaFilter = [];
+      this.villageFilter = [];
+      this.serviceFilter = '';
+      this.deletedFilter = '';
+      this.currentPage = 1;
       this.loadVillages();
     },
 
     // Selection
     toggleAll(checked) {
       if (checked) {
-        this.villages.forEach(item => {
+        this.villages.forEach((item) => {
           if (!this.selectedVillages.includes(String(item.id))) {
             this.selectedVillages.push(String(item.id));
           }
         });
       } else {
-        const currentIds = this.villages.map(item => String(item.id));
-        this.selectedVillages = this.selectedVillages.filter(id => !currentIds.includes(id));
+        const currentIds = this.villages.map((item) => String(item.id));
+        this.selectedVillages = this.selectedVillages.filter((id) => !currentIds.includes(id));
       }
     },
 
     toggleVillage(id) {
       const strId = String(id);
       if (this.selectedVillages.includes(strId)) {
-        this.selectedVillages = this.selectedVillages.filter(i => i !== strId);
+        this.selectedVillages = this.selectedVillages.filter((i) => i !== strId);
       } else {
         this.selectedVillages = [...this.selectedVillages, strId];
       }
@@ -486,7 +503,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     get hasSelectedDeletedVillages() {
-      return this.selectedVillages.some(id => this.villages.find(v => String(v.id) === String(id))?.deleted_at);
+      return this.selectedVillages.some(
+        (id) => this.villages.find((v) => String(v.id) === String(id))?.deleted_at
+      );
     },
 
     async bulkAction(action) {
@@ -526,16 +545,20 @@ document.addEventListener('alpine:init', () => {
 
     get districtBreakdown() {
       const counts = {};
-      this.villages.forEach(v => {
+      this.villages.forEach((v) => {
         const dist = v.district_name || 'Unknown';
         counts[dist] = (counts[dist] || 0) + 1;
       });
-      
+
       const totalInPage = this.villages.length || 1;
-      return Object.entries(counts).map(([name, count]) => ({
-        name, count,
-        percentage: Math.round((count / totalInPage) * 100),
-      })).sort((a,b) => b.count - a.count).slice(0, 5);
+      return Object.entries(counts)
+        .map(([name, count]) => ({
+          name,
+          count,
+          percentage: Math.round((count / totalInPage) * 100),
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
     },
 
     initCharts(serverStats) {
@@ -552,12 +575,12 @@ document.addEventListener('alpine:init', () => {
 
       // Aggregate how many villages have which services active
       const serviceCounts = {};
-      this.servicesOptions.forEach(s => {
+      this.servicesOptions.forEach((s) => {
         serviceCounts[s.name] = 0;
       });
 
-      this.villages.forEach(v => {
-        v.active_mappings.forEach(m => {
+      this.villages.forEach((v) => {
+        v.active_mappings.forEach((m) => {
           if (m.service) {
             serviceCounts[m.service.name] = (serviceCounts[m.service.name] || 0) + 1;
           }
@@ -574,7 +597,7 @@ document.addEventListener('alpine:init', () => {
         plotOptions: { bar: { borderRadius: 4, horizontal: true } },
         xaxis: {
           categories: categories.length > 0 ? categories : ['No Services'],
-          labels: { style: { colors: '#64748b' } }
+          labels: { style: { colors: '#64748b' } },
         },
         grid: { show: false },
       });
@@ -584,13 +607,13 @@ document.addEventListener('alpine:init', () => {
     // ─── Export Methods ──────────────────────────────────────────────────────
     exportVillages() {
       const params = new URLSearchParams();
-      if (this.searchQuery)             params.set('search', this.searchQuery);
-      if (this.deletedFilter)           params.set('deleted', this.deletedFilter);
-      if (this.serviceFilter)           params.set('service_id', this.serviceFilter);
-      if (this.stateFilter.length)      params.set('state', this.stateFilter.join(','));
-      if (this.districtFilter.length)   params.set('district', this.districtFilter.join(','));
-      if (this.talukaFilter.length)     params.set('taluka', this.talukaFilter.join(','));
-      if (this.villageFilter.length)    params.set('village', this.villageFilter.join(','));
+      if (this.searchQuery) params.set('search', this.searchQuery);
+      if (this.deletedFilter) params.set('deleted', this.deletedFilter);
+      if (this.serviceFilter) params.set('service_id', this.serviceFilter);
+      if (this.stateFilter.length) params.set('state', this.stateFilter.join(','));
+      if (this.districtFilter.length) params.set('district', this.districtFilter.join(','));
+      if (this.talukaFilter.length) params.set('taluka', this.talukaFilter.join(','));
+      if (this.villageFilter.length) params.set('village', this.villageFilter.join(','));
       window.open(`/api/villages/export?${params.toString()}`, '_blank');
     },
 
@@ -604,20 +627,20 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': getCsrfToken()
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
           },
-          body: JSON.stringify({ ids: this.selectedVillages })
+          body: JSON.stringify({ ids: this.selectedVillages }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.message || 'Export failed');
         }
         const blob = await res.blob();
-        const url  = window.URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href     = url;
-        a.download = `villages-export-selected-${new Date().toISOString().slice(0,10)}.csv`;
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `villages-export-selected-${new Date().toISOString().slice(0, 10)}.csv`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -632,9 +655,9 @@ document.addEventListener('alpine:init', () => {
       // Prevent launching a second concurrent sync
       if (this.syncing) return;
 
-      this.syncing      = true;
-      this.stopSyncing  = false;
-      this._syncAbort   = null; // will hold the current AbortController
+      this.syncing = true;
+      this.stopSyncing = false;
+      this._syncAbort = null; // will hold the current AbortController
 
       let url = '/api/villages/sync-indiapost';
       if (this.searchQuery && /^\d+$/.test(this.searchQuery)) {
@@ -642,8 +665,8 @@ document.addEventListener('alpine:init', () => {
       }
 
       let abortController = new AbortController();
-      this._syncAbort     = abortController;
-      let batchCount      = 0;
+      this._syncAbort = abortController;
+      let batchCount = 0;
 
       try {
         while (true) {
@@ -651,10 +674,12 @@ document.addEventListener('alpine:init', () => {
           if (this.stopSyncing) {
             try {
               await apiFetch('/api/villages/sync-indiapost', {
-                method : 'POST',
-                body   : JSON.stringify({ action: 'stop' }),
+                method: 'POST',
+                body: JSON.stringify({ action: 'stop' }),
               });
-            } catch (_) { /* best effort */ }
+            } catch (_) {
+              /* best effort */
+            }
             showToast('Sync stopped by user.', 'info');
             break;
           }
@@ -667,18 +692,20 @@ document.addEventListener('alpine:init', () => {
           let res;
           try {
             res = await apiFetch(url, {
-              method : 'POST',
-              signal : abortController.signal,
+              method: 'POST',
+              signal: abortController.signal,
             });
           } catch (fetchErr) {
             // AbortError = user clicked Stop while the request was in-flight
             if (fetchErr.name === 'AbortError' || this.stopSyncing) {
               try {
                 await apiFetch('/api/villages/sync-indiapost', {
-                  method : 'POST',
-                  body   : JSON.stringify({ action: 'stop' }),
+                  method: 'POST',
+                  body: JSON.stringify({ action: 'stop' }),
                 });
-              } catch (_) { /* best effort */ }
+              } catch (_) {
+                /* best effort */
+              }
               showToast('Sync stopped by user.', 'info');
               break;
             }
@@ -703,14 +730,14 @@ document.addEventListener('alpine:init', () => {
           showToast(`Batch ${batchCount}: ${res.message}`, 'info');
 
           // Brief pause between batches to avoid hammering the server
-          await new Promise(r => setTimeout(r, 800));
+          await new Promise((r) => setTimeout(r, 800));
         }
       } catch (err) {
         showToast(err.message || 'Failed to sync pincodes.', 'danger');
       } finally {
         abortController.abort(); // cancel any lingering signal
-        this._syncAbort  = null;
-        this.syncing     = false;
+        this._syncAbort = null;
+        this.syncing = false;
         this.stopSyncing = false;
         this.loadVillages();
       }
@@ -725,18 +752,18 @@ document.addEventListener('alpine:init', () => {
       formData.append('file', file);
       formData.append('preview', '1');
       try {
-        const res  = await fetch('/api/villages/import', {
-          method : 'POST',
-          body   : formData,
-          headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': getCsrfToken() }
+        const res = await fetch('/api/villages/import', {
+          method: 'POST',
+          body: formData,
+          headers: { Accept: 'application/json', 'X-CSRF-TOKEN': getCsrfToken() },
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Preview failed');
         if (data.preview) {
-          this.importRows      = data.rows      || [];
-          this.importTotal     = data.total     ?? this.importRows.length;
-          this.importTruncated = data.truncated  ?? false;
-          this.importFile      = file;
+          this.importRows = data.rows || [];
+          this.importTotal = data.total ?? this.importRows.length;
+          this.importTruncated = data.truncated ?? false;
+          this.importFile = file;
           getModal('#importPreviewModal')?.show();
         } else {
           showToast(data.message || 'Unexpected response.', 'warning');
@@ -750,9 +777,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     cancelImport() {
-      this.importRows      = [];
-      this.importFile      = null;
-      this.importTotal     = 0;
+      this.importRows = [];
+      this.importFile = null;
+      this.importTotal = 0;
       this.importTruncated = false;
       getModal('#importPreviewModal')?.hide();
     },
@@ -763,17 +790,17 @@ document.addEventListener('alpine:init', () => {
       const formData = new FormData();
       formData.append('file', this.importFile);
       try {
-        const res  = await fetch('/api/villages/import', {
-          method : 'POST',
-          body   : formData,
-          headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': getCsrfToken() }
+        const res = await fetch('/api/villages/import', {
+          method: 'POST',
+          body: formData,
+          headers: { Accept: 'application/json', 'X-CSRF-TOKEN': getCsrfToken() },
         });
         const data = await res.json();
         if (res.ok) {
           showToast(data.message || 'Import successful!', 'success');
           getModal('#importPreviewModal')?.hide();
-          this.importFile  = null;
-          this.importRows  = [];
+          this.importFile = null;
+          this.importRows = [];
           this.loadVillages();
         } else {
           showToast(data.message || 'Import failed.', 'danger');
@@ -783,7 +810,7 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.importing = false;
       }
-    }
+    },
   }));
 
   // ─── Village Form Controller ───────────────────────────────────────────────
@@ -839,12 +866,14 @@ document.addEventListener('alpine:init', () => {
       this.saving = true;
       try {
         const payload = { ...this.form };
-        const url = this.editingVillageId ? `/api/villages/${this.editingVillageId}` : '/api/villages';
+        const url = this.editingVillageId
+          ? `/api/villages/${this.editingVillageId}`
+          : '/api/villages';
         const method = this.editingVillageId ? 'PATCH' : 'POST';
 
         const res = await apiFetch(url, {
           method,
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
 
         showToast(res.message || 'Village saved successfully.', 'success');
@@ -856,7 +885,6 @@ document.addEventListener('alpine:init', () => {
         this.saving = false;
       }
     },
-
   }));
 
   // ─── Village Services Controller ───────────────────────────────────────────
@@ -881,7 +909,7 @@ document.addEventListener('alpine:init', () => {
         this.services = options;
 
         // Initialize empty mappings
-        options.forEach(s => {
+        options.forEach((s) => {
           this.mappings[s.id] = {
             is_available: false,
             priority: 1,
@@ -894,7 +922,7 @@ document.addEventListener('alpine:init', () => {
         // Load existing mappings
         const data = await apiFetch(`/api/villages/${v.id}`);
         const existing = data.data?.mappings ?? [];
-        existing.forEach(m => {
+        existing.forEach((m) => {
           if (this.mappings[m.service_id]) {
             this.mappings[m.service_id] = {
               is_available: !!m.is_available,
@@ -907,7 +935,7 @@ document.addEventListener('alpine:init', () => {
         });
         // Keep existing mappings consistent with the new 1, 2, 3… priority
         // sequence before the administrator makes further changes.
-        existing.forEach(m => this.ensureUniquePriority(m.service_id));
+        existing.forEach((m) => this.ensureUniquePriority(m.service_id));
       } catch (err) {
         showToast('Failed to load mappings: ' + err.message, 'danger');
       }
@@ -927,7 +955,7 @@ document.addEventListener('alpine:init', () => {
             village_name: this.villageName,
             pincode: this.pincode,
             services: this.mappings,
-          })
+          }),
         });
 
         showToast(res.message || 'Services updated successfully.', 'success');
@@ -945,18 +973,19 @@ document.addEventListener('alpine:init', () => {
       if (!mapping?.is_available) return false;
 
       const priority = Number(mapping.priority ?? 0);
-      return Object.entries(this.mappings).some(([id, other]) =>
-        String(id) !== String(serviceId)
-        && other.is_available
-        && Number(other.priority ?? 0) === priority
+      return Object.entries(this.mappings).some(
+        ([id, other]) =>
+          String(id) !== String(serviceId) &&
+          other.is_available &&
+          Number(other.priority ?? 0) === priority
       );
     },
 
     hasDuplicatePriorities() {
       const priorities = new Set();
       return Object.values(this.mappings)
-        .filter(mapping => mapping.is_available)
-        .some(mapping => {
+        .filter((mapping) => mapping.is_available)
+        .some((mapping) => {
           const priority = Number(mapping.priority ?? 0);
           if (priorities.has(priority)) return true;
           priorities.add(priority);
@@ -966,8 +995,8 @@ document.addEventListener('alpine:init', () => {
 
     hasInvalidPriorities() {
       return Object.values(this.mappings)
-        .filter(mapping => mapping.is_available)
-        .some(mapping => Number(mapping.priority) < 1);
+        .filter((mapping) => mapping.is_available)
+        .some((mapping) => Number(mapping.priority) < 1);
     },
 
     ensureUniquePriority(serviceId) {
@@ -977,13 +1006,15 @@ document.addEventListener('alpine:init', () => {
       const priority = Number(mapping.priority ?? 0);
       if (priority >= 1 && !this.isPriorityDuplicate(serviceId)) return;
 
-      const usedPriorities = new Set(Object.entries(this.mappings)
-        .filter(([id, other]) => String(id) !== String(serviceId) && other.is_available)
-        .map(([, other]) => Number(other.priority ?? 0)));
+      const usedPriorities = new Set(
+        Object.entries(this.mappings)
+          .filter(([id, other]) => String(id) !== String(serviceId) && other.is_available)
+          .map(([, other]) => Number(other.priority ?? 0))
+      );
       let nextPriority = 1;
       while (usedPriorities.has(nextPriority)) nextPriority += 1;
       mapping.priority = nextPriority;
-    }
+    },
   }));
 
   // ─── Bulk Services Form Controller ─────────────────────────────────────────
@@ -997,15 +1028,15 @@ document.addEventListener('alpine:init', () => {
 
     resetForm(status = 'available') {
       this.status = status;
-      
+
       const table = Alpine.$data(document.querySelector('[x-data="villageTable"]'));
       this.services = table?.servicesOptions ?? [];
-      
+
       if (status === 'unavailable' && table) {
         const activeServiceIds = new Set();
-        table.villages.forEach(v => {
+        table.villages.forEach((v) => {
           if (this.ids.includes(String(v.id))) {
-            (v.active_mappings || []).forEach(m => {
+            (v.active_mappings || []).forEach((m) => {
               if (m.service_id) activeServiceIds.add(Number(m.service_id));
             });
           }
@@ -1034,25 +1065,27 @@ document.addEventListener('alpine:init', () => {
               ids: this.ids,
               service_id: serviceId,
               status: this.status,
-            })
+            }),
           });
         }
 
-        showToast(`${this.serviceIds.length} service(s) updated for ${this.ids.length} village(s).`, 'success');
-        
+        showToast(
+          `${this.serviceIds.length} service(s) updated for ${this.ids.length} village(s).`,
+          'success'
+        );
+
         const table = Alpine.$data(document.querySelector('[x-data="villageTable"]'));
         if (table) {
           table.selectedVillages = [];
           table.loadVillages();
         }
-        
+
         getModal('#bulkServicesModal')?.hide();
       } catch (err) {
         showToast(err.message, 'danger');
       } finally {
         this.saving = false;
       }
-    }
+    },
   }));
-
 });

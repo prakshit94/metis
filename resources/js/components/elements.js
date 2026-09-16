@@ -7,65 +7,65 @@ import { createSearchComponent } from '../utils/search-component.js';
 
 // Elements data configuration
 const elementsData = [
-    {
-        id: 'buttons',
-        title: 'Buttons',
-        category: 'components',
-        icon: 'bi bi-square',
-        description: 'Bootstrap button styles, sizes, and states',
-        examples: 12,
-        url: '/elements/buttons',
-        preview: `
+  {
+    id: 'buttons',
+    title: 'Buttons',
+    category: 'components',
+    icon: 'bi bi-square',
+    description: 'Bootstrap button styles, sizes, and states',
+    examples: 12,
+    url: '/elements/buttons',
+    preview: `
             <div class="d-flex gap-2 flex-wrap">
                 <button class="btn btn-primary btn-sm">Primary</button>
                 <button class="btn btn-outline-secondary btn-sm">Secondary</button>
                 <button class="btn btn-success btn-sm">Success</button>
             </div>
-        `
-    },
-    {
-        id: 'alerts',
-        title: 'Alerts',
-        category: 'components',
-        icon: 'bi bi-exclamation-triangle',
-        description: 'Contextual feedback messages for user actions',
-        examples: 8,
-        url: '/elements/alerts',
-        preview: `
+        `,
+  },
+  {
+    id: 'alerts',
+    title: 'Alerts',
+    category: 'components',
+    icon: 'bi bi-exclamation-triangle',
+    description: 'Contextual feedback messages for user actions',
+    examples: 8,
+    url: '/elements/alerts',
+    preview: `
             <div class="alert alert-primary alert-sm py-2 px-3 mb-2" role="alert">
                 <i class="bi bi-info-circle me-2"></i>Primary alert
             </div>
             <div class="alert alert-success alert-sm py-2 px-3 mb-0" role="alert">
                 <i class="bi bi-check-circle me-2"></i>Success alert
             </div>
-        `
-    },
-    {
-        id: 'badges',
-        title: 'Badges',
-        category: 'components',
-        icon: 'bi bi-award',
-        description: 'Small count and labeling components',
-        examples: 6,
-        url: '/elements/badges',
-        preview: `
+        `,
+  },
+  {
+    id: 'badges',
+    title: 'Badges',
+    category: 'components',
+    icon: 'bi bi-award',
+    description: 'Small count and labeling components',
+    examples: 6,
+    url: '/elements/badges',
+    preview: `
             <div class="d-flex gap-2 flex-wrap">
                 <span class="badge bg-primary">Primary</span>
                 <span class="badge bg-secondary">Secondary</span>
                 <span class="badge bg-success">Success</span>
                 <span class="badge bg-danger">Danger</span>
             </div>
-        `
-    },
-    {
-        id: 'cards',
-        title: 'Cards',
-        category: 'components',
-        icon: 'bi bi-card-text',
-        description: 'Flexible content containers with headers and footers',
-        examples: 10,
-        url: '/elements/cards',
-        preview: `
+        `,
+  },
+  {
+    id: 'cards',
+    title: 'Cards',
+    category: 'components',
+    icon: 'bi bi-card-text',
+    description: 'Flexible content containers with headers and footers',
+    examples: 10,
+    url: '/elements/cards',
+    preview: `
             <div class="card" style="width: 200px;">
                 <div class="card-body p-3">
                     <h6 class="card-title mb-2">Card Title</h6>
@@ -73,17 +73,17 @@ const elementsData = [
                     <button class="btn btn-primary btn-sm">Action</button>
                 </div>
             </div>
-        `
-    },
-    {
-        id: 'modals',
-        title: 'Modals',
-        category: 'components',
-        icon: 'bi bi-window',
-        description: 'Streamlined modal dialogs with flexible content',
-        examples: 9,
-        url: '/elements/modals',
-        preview: `
+        `,
+  },
+  {
+    id: 'modals',
+    title: 'Modals',
+    category: 'components',
+    icon: 'bi bi-window',
+    description: 'Streamlined modal dialogs with flexible content',
+    examples: 9,
+    url: '/elements/modals',
+    preview: `
             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal">
                 Launch Modal
             </button>
@@ -100,17 +100,17 @@ const elementsData = [
                     </div>
                 </div>
             </div>
-        `
-    },
-    {
-        id: 'forms',
-        title: 'Form Controls',
-        category: 'forms',
-        icon: 'bi bi-ui-checks-grid',
-        description: 'Form inputs, selects, checkboxes, and validation',
-        examples: 15,
-        url: '/elements/forms',
-        preview: `
+        `,
+  },
+  {
+    id: 'forms',
+    title: 'Form Controls',
+    category: 'forms',
+    icon: 'bi bi-ui-checks-grid',
+    description: 'Form inputs, selects, checkboxes, and validation',
+    examples: 15,
+    url: '/elements/forms',
+    preview: `
             <div class="mb-2">
                 <input type="text" class="form-control form-control-sm" placeholder="Text input">
             </div>
@@ -124,17 +124,17 @@ const elementsData = [
                 <input class="form-check-input" type="checkbox" checked>
                 <label class="form-check-label small">Check me</label>
             </div>
-        `
-    },
-    {
-        id: 'tables',
-        title: 'Tables',
-        category: 'content',
-        icon: 'bi bi-table',
-        description: 'Responsive tables with various styling options',
-        examples: 8,
-        url: '/elements/tables',
-        preview: `
+        `,
+  },
+  {
+    id: 'tables',
+    title: 'Tables',
+    category: 'content',
+    icon: 'bi bi-table',
+    description: 'Responsive tables with various styling options',
+    examples: 8,
+    url: '/elements/tables',
+    preview: `
             <table class="table table-sm">
                 <thead>
                     <tr>
@@ -153,104 +153,108 @@ const elementsData = [
                     </tr>
                 </tbody>
             </table>
-        `
-    }
+        `,
+  },
 ];
 
 // Register Alpine component
 document.addEventListener('alpine:init', () => {
-    Alpine.data('elementsComponent', () => ({
-        // State
-        components: elementsData,
-        filteredComponents: elementsData,
-        viewMode: 'grid',
-        searchQuery: '',
-        categoryFilter: '',
+  Alpine.data('elementsComponent', () => ({
+    // State
+    components: elementsData,
+    filteredComponents: elementsData,
+    viewMode: 'grid',
+    searchQuery: '',
+    categoryFilter: '',
 
-        // Initialize component
-        init() {
-            this.filteredComponents = this.components;
-            console.log('🧩 Elements component initialized');
-        },
+    // Initialize component
+    init() {
+      this.filteredComponents = this.components;
+      console.log('🧩 Elements component initialized');
+    },
 
-        // Filter components based on search and category
-        filterComponents() {
-            let filtered = this.components;
+    // Filter components based on search and category
+    filterComponents() {
+      let filtered = this.components;
 
-            // Apply search filter
-            if (this.searchQuery) {
-                const query = this.searchQuery.toLowerCase();
-                filtered = filtered.filter(component => 
-                    component.title.toLowerCase().includes(query) ||
-                    component.description.toLowerCase().includes(query) ||
-                    component.category.toLowerCase().includes(query)
-                );
-            }
+      // Apply search filter
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase();
+        filtered = filtered.filter(
+          (component) =>
+            component.title.toLowerCase().includes(query) ||
+            component.description.toLowerCase().includes(query) ||
+            component.category.toLowerCase().includes(query)
+        );
+      }
 
-            // Apply category filter
-            if (this.categoryFilter) {
-                filtered = filtered.filter(component => 
-                    component.category === this.categoryFilter
-                );
-            }
+      // Apply category filter
+      if (this.categoryFilter) {
+        filtered = filtered.filter((component) => component.category === this.categoryFilter);
+      }
 
-            this.filteredComponents = filtered;
-        },
+      this.filteredComponents = filtered;
+    },
 
-        // Toggle view mode
-        toggleView() {
-            this.viewMode = this.viewMode === 'grid' ? 'list' : 'grid';
-            localStorage.setItem('elements-view-mode', this.viewMode);
-        },
+    // Toggle view mode
+    toggleView() {
+      this.viewMode = this.viewMode === 'grid' ? 'list' : 'grid';
+      localStorage.setItem('elements-view-mode', this.viewMode);
+    },
 
-        // Navigate to component page
-        navigateToComponent(component) {
-            window.location.href = component.url;
-        },
+    // Navigate to component page
+    navigateToComponent(component) {
+      window.location.href = component.url;
+    },
 
-        // Show all components
-        showAllComponents() {
-            this.searchQuery = '';
-            this.categoryFilter = '';
-            this.filteredComponents = this.components;
-        },
+    // Show all components
+    showAllComponents() {
+      this.searchQuery = '';
+      this.categoryFilter = '';
+      this.filteredComponents = this.components;
+    },
 
-        // Clear all filters
-        clearFilters() {
-            this.searchQuery = '';
-            this.categoryFilter = '';
-            this.filterComponents();
-        },
+    // Clear all filters
+    clearFilters() {
+      this.searchQuery = '';
+      this.categoryFilter = '';
+      this.filterComponents();
+    },
 
-        // Get component count by category
-        getComponentCount(category) {
-            return this.components.filter(c => c.category === category).length;
-        }
-    }));
+    // Get component count by category
+    getComponentCount(category) {
+      return this.components.filter((c) => c.category === category).length;
+    },
+  }));
 
-    // Enhanced search component for elements
-    Alpine.data('searchComponent', createSearchComponent({
-        getResults(query) {
-            const q = query.toLowerCase();
-            const elementResults = elementsData
-                .filter((c) => c.title.toLowerCase().includes(q) || c.description.toLowerCase().includes(q))
-                .map((c) => ({ title: c.title, url: c.url, type: 'element' }));
-            const generalResults = [
-                { title: 'Dashboard', url: '/', type: 'page' },
-                { title: 'Analytics', url: '/analytics', type: 'page' },
-                { title: 'Users', url: '/users', type: 'page' },
-                { title: 'Elements', url: '/elements', type: 'page' },
-            ].filter((item) => item.title.toLowerCase().includes(q));
-            return [...elementResults, ...generalResults].slice(0, 8);
-        },
-    }));
+  // Enhanced search component for elements
+  Alpine.data(
+    'searchComponent',
+    createSearchComponent({
+      getResults(query) {
+        const q = query.toLowerCase();
+        const elementResults = elementsData
+          .filter(
+            (c) => c.title.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)
+          )
+          .map((c) => ({ title: c.title, url: c.url, type: 'element' }));
+        const generalResults = [
+          { title: 'Dashboard', url: '/', type: 'page' },
+          { title: 'Analytics', url: '/analytics', type: 'page' },
+          { title: 'Users', url: '/users', type: 'page' },
+          { title: 'Elements', url: '/elements', type: 'page' },
+        ].filter((item) => item.title.toLowerCase().includes(q));
+        return [...elementResults, ...generalResults].slice(0, 8);
+      },
+    })
+  );
 });
 
 // Initialize tooltips when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Bootstrap tooltips
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    [...tooltipTriggerList].forEach(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+  // Initialize Bootstrap tooltips
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  [...tooltipTriggerList].forEach((tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl));
 });
 
 export { elementsData };

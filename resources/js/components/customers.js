@@ -13,7 +13,7 @@ async function apiFetch(url, options = {}) {
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'X-CSRF-TOKEN': getCsrfToken(),
       ...(headers || {}),
     },
@@ -26,7 +26,14 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
-    if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
+    if (
+      res.status === 403 ||
+      message.toLowerCase().includes('authoriz') ||
+      message.toLowerCase().includes('forbidden')
+    ) {
+      window.location.href = '/';
+      return;
+    }
     throw new Error(message);
   }
 
@@ -34,9 +41,10 @@ async function apiFetch(url, options = {}) {
 }
 
 function getModal(elementOrSelector) {
-  const element = typeof elementOrSelector === 'string'
-    ? document.querySelector(elementOrSelector)
-    : elementOrSelector;
+  const element =
+    typeof elementOrSelector === 'string'
+      ? document.querySelector(elementOrSelector)
+      : elementOrSelector;
 
   return element ? Modal.getOrCreateInstance(element) : null;
 }
@@ -49,9 +57,9 @@ function showToast(message, type = 'success') {
   const id = 'toast-' + Date.now();
   const iconMap = {
     success: 'bi-check-circle-fill',
-    danger:  'bi-x-circle-fill',
+    danger: 'bi-x-circle-fill',
     warning: 'bi-exclamation-triangle-fill',
-    info:    'bi-info-circle-fill',
+    info: 'bi-info-circle-fill',
   };
 
   const el = document.createElement('div');
@@ -130,8 +138,6 @@ function parseCsvLine(line) {
 }
 
 document.addEventListener('alpine:init', () => {
-
-
   // ─── Customer Table Controller ─────────────────────────────────────────────
   Alpine.data('customerTable', () => ({
     customers: [],
@@ -140,29 +146,29 @@ document.addEventListener('alpine:init', () => {
     totalPages: 1,
     totalCustomers: 0,
     itemsPerPage: 15,
-    
+
     // Filters
     searchQuery: '',
     statusFilter: '',
     categoryFilter: '',
     sortField: 'updated_at',
     sortDirection: 'desc',
-    
+
     // Selection
     selectedCustomers: [],
 
     get selectedRows() {
-      return this.customers.filter(c => this.selectedCustomers.includes(c.id));
+      return this.customers.filter((c) => this.selectedCustomers.includes(c.id));
     },
 
     get hasSelectedDeletedCustomers() {
-      return this.selectedRows.some(c => c.isDeleted);
+      return this.selectedRows.some((c) => c.isDeleted);
     },
 
     get hasSelectedActiveCustomers() {
-      return this.selectedRows.some(c => !c.isDeleted);
+      return this.selectedRows.some((c) => !c.isDeleted);
     },
-    
+
     // Charts & Trends
     growthPeriod: 7,
     charts: {},
@@ -194,8 +200,8 @@ document.addEventListener('alpine:init', () => {
         if (this.categoryFilter) params.set('category', this.categoryFilter);
 
         const data = await apiFetch(`/api/customers?${params.toString()}`);
-        
-        this.customers = (data.data ?? []).map(c => this._mapCustomer(c));
+
+        this.customers = (data.data ?? []).map((c) => this._mapCustomer(c));
         this.currentPage = data.current_page ?? 1;
         this.totalPages = data.last_page ?? 1;
         this.totalCustomers = data.total ?? 0;
@@ -214,9 +220,17 @@ document.addEventListener('alpine:init', () => {
       const first = c.firstname ?? '';
       const last = c.lastname ?? '';
       const initials = ((first[0] ?? '') + (last[0] ?? '')).toUpperCase();
-      const cropsList = Array.isArray(c.crops) ? c.crops : (typeof c.crops === 'string' ? JSON.parse(c.crops || '[]') : []);
-      const irrigationList = Array.isArray(c.irrigation_type) ? c.irrigation_type : (typeof c.irrigation_type === 'string' ? JSON.parse(c.irrigation_type || '[]') : []);
-      
+      const cropsList = Array.isArray(c.crops)
+        ? c.crops
+        : typeof c.crops === 'string'
+          ? JSON.parse(c.crops || '[]')
+          : [];
+      const irrigationList = Array.isArray(c.irrigation_type)
+        ? c.irrigation_type
+        : typeof c.irrigation_type === 'string'
+          ? JSON.parse(c.irrigation_type || '[]')
+          : [];
+
       return {
         ...c,
         name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(' '),
@@ -224,7 +238,12 @@ document.addEventListener('alpine:init', () => {
         isDeleted: !!c.deleted_at,
         cropsList,
         irrigationList,
-        formattedOutstanding: '₹ ' + Number(c.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        formattedOutstanding:
+          '₹ ' +
+          Number(c.outstanding_balance || 0).toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }),
         joinDate: c.created_at ? new Date(c.created_at).toLocaleDateString() : '—',
       };
     },
@@ -239,7 +258,11 @@ document.addEventListener('alpine:init', () => {
     get visiblePages() {
       const pages = [];
       const delta = 2;
-      for (let i = Math.max(1, this.currentPage - delta); i <= Math.min(this.totalPages, this.currentPage + delta); i++) {
+      for (
+        let i = Math.max(1, this.currentPage - delta);
+        i <= Math.min(this.totalPages, this.currentPage + delta);
+        i++
+      ) {
         pages.push(i);
       }
       return pages;
@@ -278,7 +301,9 @@ document.addEventListener('alpine:init', () => {
 
     getSortIcon(field) {
       if (this.sortField !== field) return 'bi-arrow-down-up text-muted small';
-      return this.sortDirection === 'asc' ? 'bi-arrow-up text-primary' : 'bi-arrow-down text-primary';
+      return this.sortDirection === 'asc'
+        ? 'bi-arrow-up text-primary'
+        : 'bi-arrow-down text-primary';
     },
 
     resetFilters() {
@@ -292,20 +317,20 @@ document.addEventListener('alpine:init', () => {
     // Selection
     toggleAll(checked) {
       if (checked) {
-        this.customers.forEach(item => {
+        this.customers.forEach((item) => {
           if (!this.selectedCustomers.includes(item.id)) {
             this.selectedCustomers.push(item.id);
           }
         });
       } else {
-        const currentIds = this.customers.map(item => item.id);
-        this.selectedCustomers = this.selectedCustomers.filter(id => !currentIds.includes(id));
+        const currentIds = this.customers.map((item) => item.id);
+        this.selectedCustomers = this.selectedCustomers.filter((id) => !currentIds.includes(id));
       }
     },
 
     toggleCustomer(id) {
       if (this.selectedCustomers.includes(id)) {
-        this.selectedCustomers = this.selectedCustomers.filter(i => i !== id);
+        this.selectedCustomers = this.selectedCustomers.filter((i) => i !== id);
       } else {
         this.selectedCustomers = [...this.selectedCustomers, id];
       }
@@ -416,9 +441,9 @@ document.addEventListener('alpine:init', () => {
 
     // Stats calculations
     get stats() {
-      const active = this.customers.filter(c => c.status === 'active').length;
-      const blacklisted = this.customers.filter(c => c.is_blacklisted).length;
-      const kycCompleted = this.customers.filter(c => c.kyc_completed).length;
+      const active = this.customers.filter((c) => c.status === 'active').length;
+      const blacklisted = this.customers.filter((c) => c.is_blacklisted).length;
+      const kycCompleted = this.customers.filter((c) => c.kyc_completed).length;
 
       return {
         total: this.totalCustomers,
@@ -430,17 +455,22 @@ document.addEventListener('alpine:init', () => {
 
     get cropStats() {
       const counts = {};
-      this.customers.forEach(c => {
-        c.cropsList.forEach(crop => {
+      this.customers.forEach((c) => {
+        c.cropsList.forEach((crop) => {
           counts[crop] = (counts[crop] || 0) + 1;
         });
       });
-      const colors = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
-      return Object.entries(counts).map(([name, count], i) => ({
-        name, count,
-        percentage: this.customers.length > 0 ? Math.round((count / this.customers.length) * 100) : 0,
-        color: colors[i % colors.length],
-      })).sort((a,b) => b.count - a.count).slice(0, 5);
+      const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+      return Object.entries(counts)
+        .map(([name, count], i) => ({
+          name,
+          count,
+          percentage:
+            this.customers.length > 0 ? Math.round((count / this.customers.length) * 100) : 0,
+          color: colors[i % colors.length],
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
     },
 
     // Charts
@@ -487,8 +517,13 @@ document.addEventListener('alpine:init', () => {
       for (let i = period - 1; i >= 0; i--) {
         const d = new Date(now);
         d.setDate(d.getDate() - i);
-        dayLabels.push(d.toLocaleDateString('en', period <= 7 ? { weekday: 'short' } : { month: 'short', day: 'numeric' }));
-        dayCounts[period - 1 - i] = this.customers.filter(c => {
+        dayLabels.push(
+          d.toLocaleDateString(
+            'en',
+            period <= 7 ? { weekday: 'short' } : { month: 'short', day: 'numeric' }
+          )
+        );
+        dayCounts[period - 1 - i] = this.customers.filter((c) => {
           const j = new Date(c.created_at);
           return j.toDateString() === d.toDateString();
         }).length;
@@ -501,7 +536,7 @@ document.addEventListener('alpine:init', () => {
         plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
         xaxis: {
           categories: dayLabels,
-          labels: { style: { colors: '#64748b', fontSize: '12px' } }
+          labels: { style: { colors: '#64748b', fontSize: '12px' } },
         },
         yaxis: { show: false },
         grid: { show: false },
@@ -515,11 +550,14 @@ document.addEventListener('alpine:init', () => {
       if (!el || el.hasAttribute('data-chart-initialized')) return;
       el.setAttribute('data-chart-initialized', 'true');
 
-      const catCounts = this.customers.reduce((acc, c) => {
-        const cat = c.category || 'individual';
-        acc[cat] = (acc[cat] || 0) + 1;
-        return acc;
-      }, { individual: 0, business: 0 });
+      const catCounts = this.customers.reduce(
+        (acc, c) => {
+          const cat = c.category || 'individual';
+          acc[cat] = (acc[cat] || 0) + 1;
+          return acc;
+        },
+        { individual: 0, business: 0 }
+      );
 
       this.charts.categoryChart = new ApexCharts(el, {
         series: [catCounts.individual, catCounts.business],
@@ -527,7 +565,7 @@ document.addEventListener('alpine:init', () => {
         labels: ['Individual/Farmer', 'Business/Dealer'],
         colors: ['#6366f1', '#06b6d4'],
         legend: { position: 'bottom', labels: { colors: '#64748b' } },
-        dataLabels: { enabled: false }
+        dataLabels: { enabled: false },
       });
       this.charts.categoryChart.render();
     },
@@ -541,7 +579,7 @@ document.addEventListener('alpine:init', () => {
           sort_by: this.sortField,
           sort_dir: this.sortDirection,
         });
-        if (this.searchQuery)   p.set('search', this.searchQuery);
+        if (this.searchQuery) p.set('search', this.searchQuery);
         if (this.statusFilter) {
           if (this.statusFilter === 'deleted') p.set('deleted', 'only');
           else p.set('status', this.statusFilter);
@@ -550,13 +588,13 @@ document.addEventListener('alpine:init', () => {
         return p.toString();
       };
 
-      const first    = await apiFetch(`/api/customers?${buildParams(1)}`);
-      const mapped   = (first.data ?? []).map(c => this._mapCustomer(c));
+      const first = await apiFetch(`/api/customers?${buildParams(1)}`);
+      const mapped = (first.data ?? []).map((c) => this._mapCustomer(c));
       const lastPage = first.last_page ?? 1;
 
       for (let page = 2; page <= lastPage; page++) {
         const data = await apiFetch(`/api/customers?${buildParams(page)}`);
-        mapped.push(...(data.data ?? []).map(c => this._mapCustomer(c)));
+        mapped.push(...(data.data ?? []).map((c) => this._mapCustomer(c)));
       }
       return mapped;
     },
@@ -566,123 +604,186 @@ document.addEventListener('alpine:init', () => {
         let list = await this.fetchAllFilteredCustomers();
 
         if (this.selectedCustomers && this.selectedCustomers.length > 0) {
-          list = list.filter(c => this.selectedCustomers.includes(c.id));
+          list = list.filter((c) => this.selectedCustomers.includes(c.id));
         }
 
         // ── All columns from parties migration + party_addresses migration ──
         const headers = [
           // Identity
-          'Party Code', 'UUID', 'Referral Code', 'Referred By (Party Code)',
+          'Party Code',
+          'UUID',
+          'Referral Code',
+          'Referred By (Party Code)',
           // Name
-          'First Name', 'Middle Name', 'Last Name',
+          'First Name',
+          'Middle Name',
+          'Last Name',
           // Contact
-          'Email', 'Phone', 'Alternate Mobile', 'Relative Name', 'Relative Phone',
+          'Email',
+          'Phone',
+          'Alternate Mobile',
+          'Relative Name',
+          'Relative Phone',
           // Classification
-          'Source', 'Category',
+          'Source',
+          'Category',
           // Business
-          'Company Name', 'GST No', 'PAN No', 'Tax No',
+          'Company Name',
+          'GST No',
+          'PAN No',
+          'Tax No',
           // Agriculture
-          'Land Area', 'Land Unit', 'Crops', 'Irrigation Type',
+          'Land Area',
+          'Land Unit',
+          'Crops',
+          'Irrigation Type',
           // Financial
-          'Credit Limit', 'Credit Days', 'Outstanding Balance', 'Wallet Balance', 'Credit Valid Till',
+          'Credit Limit',
+          'Credit Days',
+          'Outstanding Balance',
+          'Wallet Balance',
+          'Credit Valid Till',
           // KYC
-          'Aadhaar Last 4', 'KYC Completed', 'KYC Verified At',
+          'Aadhaar Last 4',
+          'KYC Completed',
+          'KYC Verified At',
           // Engagement
-          'First Purchase At', 'Last Purchase At', 'Orders Count',
+          'First Purchase At',
+          'Last Purchase At',
+          'Orders Count',
           // Status
-          'Status', 'Is Active', 'Is Blacklisted', 'Internal Notes', 'Tags',
+          'Status',
+          'Is Active',
+          'Is Blacklisted',
+          'Internal Notes',
+          'Tags',
           // Address columns (party_addresses)
-          'Addr Label', 'Addr Line 1', 'Addr Line 2',
-          'Village Name', 'Post Office', 'Taluka', 'District',
-          'City', 'State', 'Pincode',
-          'Addr Is Default', 'Addr Status',
+          'Addr Label',
+          'Addr Line 1',
+          'Addr Line 2',
+          'Village Name',
+          'Post Office',
+          'Taluka',
+          'District',
+          'City',
+          'State',
+          'Pincode',
+          'Addr Is Default',
+          'Addr Status',
         ];
 
         const rows = [];
 
-        list.forEach(c => {
-          const source  = Array.isArray(c.source)         ? c.source         : (c.source         ? JSON.parse(c.source         || '[]') : []);
-          const tags    = Array.isArray(c.tags)           ? c.tags           : (c.tags           ? JSON.parse(c.tags           || '[]') : []);
-          const crops   = Array.isArray(c.crops)          ? c.crops          : (c.crops          ? JSON.parse(c.crops          || '[]') : []);
-          const irrig   = Array.isArray(c.irrigation_type)? c.irrigation_type: (c.irrigation_type? JSON.parse(c.irrigation_type|| '[]') : []);
+        list.forEach((c) => {
+          const source = Array.isArray(c.source)
+            ? c.source
+            : c.source
+              ? JSON.parse(c.source || '[]')
+              : [];
+          const tags = Array.isArray(c.tags) ? c.tags : c.tags ? JSON.parse(c.tags || '[]') : [];
+          const crops = Array.isArray(c.crops)
+            ? c.crops
+            : c.crops
+              ? JSON.parse(c.crops || '[]')
+              : [];
+          const irrig = Array.isArray(c.irrigation_type)
+            ? c.irrigation_type
+            : c.irrigation_type
+              ? JSON.parse(c.irrigation_type || '[]')
+              : [];
 
-          const fmt = (v) => v ? String(v).split('T')[0] : '';
+          const fmt = (v) => (v ? String(v).split('T')[0] : '');
 
           const baseRow = [
             // Identity
-            c.party_code     || '',
-            c.uuid           || '',
-            c.referral_code  || '',
+            c.party_code || '',
+            c.uuid || '',
+            c.referral_code || '',
             c.referrer?.party_code || '',
             // Name
-            c.firstname  || '', c.middlename || '', c.lastname || '',
+            c.firstname || '',
+            c.middlename || '',
+            c.lastname || '',
             // Contact
-            c.email || '', c.phone || '', c.alternatemobile || '',
-            c.relative_name || '', c.relative_phone || '',
+            c.email || '',
+            c.phone || '',
+            c.alternatemobile || '',
+            c.relative_name || '',
+            c.relative_phone || '',
             // Classification
-            source.join(';'), c.category || 'individual',
+            source.join(';'),
+            c.category || 'individual',
             // Business
-            c.company_name || '', c.gst_no || '', c.pan_no || '', c.tax_no || '',
+            c.company_name || '',
+            c.gst_no || '',
+            c.pan_no || '',
+            c.tax_no || '',
             // Agriculture
-            c.land_area || '', c.land_unit || '',
-            crops.join(';'), irrig.join(';'),
+            c.land_area || '',
+            c.land_unit || '',
+            crops.join(';'),
+            irrig.join(';'),
             // Financial
-            c.credit_limit || '0', c.credit_days || '0',
-            c.outstanding_balance || '0', c.wallet_balance || '0',
+            c.credit_limit || '0',
+            c.credit_days || '0',
+            c.outstanding_balance || '0',
+            c.wallet_balance || '0',
             fmt(c.credit_valid_till),
             // KYC
             c.aadhaar_last4 || '',
             c.kyc_completed ? 'true' : 'false',
             fmt(c.kyc_verified_at),
             // Engagement
-            fmt(c.first_purchase_at), fmt(c.last_purchase_at),
+            fmt(c.first_purchase_at),
+            fmt(c.last_purchase_at),
             c.orders_count ?? '',
             // Status
             c.status || 'active',
-            c.is_active       ? 'true' : 'false',
-            c.is_blacklisted  ? 'true' : 'false',
-            c.internal_notes  || '',
+            c.is_active ? 'true' : 'false',
+            c.is_blacklisted ? 'true' : 'false',
+            c.internal_notes || '',
             tags.join(';'),
           ];
 
           const addresses = c.addresses && c.addresses.length > 0 ? c.addresses : [null];
 
-          addresses.forEach(addr => {
-            const addrRow = addr ? [
-              addr.label            || '',
-              addr.address_line_1   || '',
-              addr.address_line_2   || '',
-              addr.village_name     || (addr.village?.village_name  || ''),
-              addr.post_office      || (addr.village?.post_so_name  || ''),
-              addr.taluka           || (addr.village?.taluka_name   || ''),
-              addr.district         || (addr.village?.district_name || ''),
-              addr.city             || '',
-              addr.state            || '',
-              addr.pincode          || '',
-              addr.is_default       ? 'true' : 'false',
-              addr.status           || 'active',
-            ] : ['', '', '', '', '', '', '', '', '', '', '', ''];
+          addresses.forEach((addr) => {
+            const addrRow = addr
+              ? [
+                  addr.label || '',
+                  addr.address_line_1 || '',
+                  addr.address_line_2 || '',
+                  addr.village_name || addr.village?.village_name || '',
+                  addr.post_office || addr.village?.post_so_name || '',
+                  addr.taluka || addr.village?.taluka_name || '',
+                  addr.district || addr.village?.district_name || '',
+                  addr.city || '',
+                  addr.state || '',
+                  addr.pincode || '',
+                  addr.is_default ? 'true' : 'false',
+                  addr.status || 'active',
+                ]
+              : ['', '', '', '', '', '', '', '', '', '', '', ''];
 
             rows.push([...baseRow, ...addrRow]);
           });
         });
 
-        const csv = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\n');
+        const csv = [headers, ...rows].map((r) => r.map(csvEscape).join(',')).join('\n');
         downloadBlob('customers-export.csv', csv, 'text/csv;charset=utf-8;');
         showToast(`Exported ${list.length} customer(s) with full details.`);
       } catch (err) {
         showToast('Export failed: ' + err.message, 'danger');
       }
-    }
+    },
   }));
-
 
   // ─── Customer Profile & Address Manager Controller ──────────────────────────
   Alpine.data('customerProfile', () => ({
     customer: null,
     loading: false,
     savingAddress: false,
-    
+
     // Address Form
     showAddressForm: false,
     editingAddressId: null,
@@ -697,7 +798,7 @@ document.addEventListener('alpine:init', () => {
       pincode: '',
       is_default: false,
     },
-    
+
     // Village Autocomplete Search
     villageSearchQuery: '',
     villageResults: [],
@@ -719,8 +820,16 @@ document.addEventListener('alpine:init', () => {
       const first = c.firstname ?? '';
       const last = c.lastname ?? '';
       const initials = ((first[0] ?? '') + (last[0] ?? '')).toUpperCase();
-      const cropsList = Array.isArray(c.crops) ? c.crops : (typeof c.crops === 'string' ? JSON.parse(c.crops || '[]') : []);
-      const irrigationList = Array.isArray(c.irrigation_type) ? c.irrigation_type : (typeof c.irrigation_type === 'string' ? JSON.parse(c.irrigation_type || '[]') : []);
+      const cropsList = Array.isArray(c.crops)
+        ? c.crops
+        : typeof c.crops === 'string'
+          ? JSON.parse(c.crops || '[]')
+          : [];
+      const irrigationList = Array.isArray(c.irrigation_type)
+        ? c.irrigation_type
+        : typeof c.irrigation_type === 'string'
+          ? JSON.parse(c.irrigation_type || '[]')
+          : [];
 
       return {
         ...c,
@@ -729,7 +838,12 @@ document.addEventListener('alpine:init', () => {
         isDeleted: !!c.deleted_at,
         cropsList,
         irrigationList,
-        formattedOutstanding: '₹ ' + Number(c.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        formattedOutstanding:
+          '₹ ' +
+          Number(c.outstanding_balance || 0).toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }),
       };
     },
 
@@ -741,7 +855,9 @@ document.addEventListener('alpine:init', () => {
 
     async toggleActiveStatus() {
       try {
-        const res = await apiFetch(`/api/customers/${this.customer.id}/toggle-active`, { method: 'PATCH' });
+        const res = await apiFetch(`/api/customers/${this.customer.id}/toggle-active`, {
+          method: 'PATCH',
+        });
         showToast(res.message);
         this.customer.is_active = res.is_active;
         this.customer.status = res.is_active ? 'active' : 'inactive';
@@ -828,7 +944,9 @@ document.addEventListener('alpine:init', () => {
         return;
       }
       try {
-        const data = await apiFetch(`/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`);
+        const data = await apiFetch(
+          `/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`
+        );
         this.villageResults = data.data ?? [];
       } catch (err) {
         console.error(err);
@@ -856,29 +974,29 @@ document.addEventListener('alpine:init', () => {
 
         // Always include status; derive city/state/pincode from village when available
         const payload = {
-          label:          f.label,
-          status:         'active',
+          label: f.label,
+          status: 'active',
           address_line_1: f.address_line_1,
           address_line_2: f.address_line_2 || '',
-          village_id:     f.village_id || null,
-          city:           f.city || f.taluka_name || f.district_name || '',
-          state:          f.state || f.state_name || '',
-          pincode:        f.pincode || '',
-          is_default:     f.is_default,
+          village_id: f.village_id || null,
+          city: f.city || f.taluka_name || f.district_name || '',
+          state: f.state || f.state_name || '',
+          pincode: f.pincode || '',
+          is_default: f.is_default,
         };
 
-        const url = this.editingAddressId 
+        const url = this.editingAddressId
           ? `/api/customers/${this.customer.id}/addresses/${this.editingAddressId}`
           : `/api/customers/${this.customer.id}/addresses`;
         const method = this.editingAddressId ? 'PATCH' : 'POST';
 
         const res = await apiFetch(url, {
           method,
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
 
         showToast(res.message || 'Address saved successfully.', 'success');
-        
+
         // Hide Address Modal
         getModal('#addressModal')?.hide();
 
@@ -903,21 +1021,21 @@ document.addEventListener('alpine:init', () => {
 
       try {
         const res = await apiFetch(`/api/customers/${this.customer.id}/addresses/${addr.id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
         });
         showToast(res.message, 'success');
         this.loadProfile(this.customer.id);
       } catch (err) {
         showToast(err.message, 'danger');
       }
-    }
+    },
   }));
 
   // ─── importForm ─────────────────────────────────────────────────────────────
   Alpine.data('importForm', () => ({
-    file:     null,
+    file: null,
     importing: false,
-    result:   null,
+    result: null,
     previewHeaders: [],
     previewData: [],
 
@@ -927,10 +1045,13 @@ document.addEventListener('alpine:init', () => {
         return;
       }
       this.importing = true;
-      this.result    = null;
+      this.result = null;
 
       const text = await this.file.text();
-      const lines = text.trim().split('\n').filter(l => l.trim());
+      const lines = text
+        .trim()
+        .split('\n')
+        .filter((l) => l.trim());
       if (lines.length < 2) {
         showToast('CSV file is empty or has no data rows.', 'warning');
         this.importing = false;
@@ -938,126 +1059,191 @@ document.addEventListener('alpine:init', () => {
       }
 
       let created = 0;
-      let errors  = [];
+      let errors = [];
 
       const customerMap = {};
-      
+
       for (let i = 1; i < lines.length; i++) {
         const values = parseCsvLine(lines[i]);
         const [
           // Identity
-          party_code, _uuid, _referral_code, _referred_by_code,
+          party_code,
+          _uuid,
+          _referral_code,
+          _referred_by_code,
           // Name
-          firstname, middlename, lastname,
+          firstname,
+          middlename,
+          lastname,
           // Contact
-          email, phone, alternatemobile, relative_name, relative_phone,
+          email,
+          phone,
+          alternatemobile,
+          relative_name,
+          relative_phone,
           // Classification
-          source, category,
+          source,
+          category,
           // Business
-          company_name, gst_no, pan_no, tax_no,
+          company_name,
+          gst_no,
+          pan_no,
+          tax_no,
           // Agriculture
-          land_area, land_unit, crops, irrigation_type,
+          land_area,
+          land_unit,
+          crops,
+          irrigation_type,
           // Financial
-          credit_limit, credit_days, outstanding_balance, wallet_balance, credit_valid_till,
+          credit_limit,
+          credit_days,
+          outstanding_balance,
+          wallet_balance,
+          credit_valid_till,
           // KYC
-          aadhaar_last4, kyc_completed, _kyc_verified_at,
+          aadhaar_last4,
+          kyc_completed,
+          _kyc_verified_at,
           // Engagement (read-only, ignored on import)
-          _first_purchase_at, _last_purchase_at, _orders_count,
+          _first_purchase_at,
+          _last_purchase_at,
+          _orders_count,
           // Status
-          statusRaw, is_active, is_blacklisted, internal_notes, tags,
+          statusRaw,
+          is_active,
+          is_blacklisted,
+          internal_notes,
+          tags,
           // Address (party_addresses)
-          address_label, address_line_1, address_line_2,
-          village_name, post_office, taluka, district,
-          city, state, pincode,
-          addr_is_default, _addr_status,
+          address_label,
+          address_line_1,
+          address_line_2,
+          village_name,
+          post_office,
+          taluka,
+          district,
+          city,
+          state,
+          pincode,
+          addr_is_default,
+          _addr_status,
         ] = values;
 
-        if (!firstname || !lastname) { errors.push(`Row ${i + 1}: missing first or last name`); continue; }
+        if (!firstname || !lastname) {
+          errors.push(`Row ${i + 1}: missing first or last name`);
+          continue;
+        }
 
         const uniqueKey = phone || email || `${firstname} ${lastname}`;
 
         if (!customerMap[uniqueKey]) {
-          const status = ['active', 'inactive', 'suspended'].includes(statusRaw?.toLowerCase()) ? statusRaw.toLowerCase() : 'active';
+          const status = ['active', 'inactive', 'suspended'].includes(statusRaw?.toLowerCase())
+            ? statusRaw.toLowerCase()
+            : 'active';
 
           customerMap[uniqueKey] = {
             rowIndex: i + 1,
             payload: {
-              party_code:         party_code || null,
+              party_code: party_code || null,
               firstname,
-              middlename:         middlename || null,
+              middlename: middlename || null,
               lastname,
-              email:              email || null,
-              phone:              phone || null,
-              alternatemobile:    alternatemobile || null,
-              relative_name:      relative_name || null,
-              relative_phone:     relative_phone || null,
-              source:             source ? source.split(';').map(s => s.trim()).filter(Boolean) : [],
-              category:           ['individual', 'business'].includes(category?.toLowerCase()) ? category.toLowerCase() : 'individual',
-              company_name:       company_name || null,
-              gst_no:             gst_no || null,
-              pan_no:             pan_no || null,
-              tax_no:             tax_no || null,
-              land_area:          land_area  ? parseFloat(land_area)  : null,
-              land_unit:          land_unit  || null,
-              crops:              crops         ? crops.split(';').map(s => s.trim()).filter(Boolean)         : [],
-              irrigation_type:    irrigation_type ? irrigation_type.split(';').map(s => s.trim()).filter(Boolean) : [],
-              credit_limit:       credit_limit       ? parseFloat(credit_limit)       : null,
-              credit_days:        credit_days        ? parseInt(credit_days)          : null,
+              email: email || null,
+              phone: phone || null,
+              alternatemobile: alternatemobile || null,
+              relative_name: relative_name || null,
+              relative_phone: relative_phone || null,
+              source: source
+                ? source
+                    .split(';')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                : [],
+              category: ['individual', 'business'].includes(category?.toLowerCase())
+                ? category.toLowerCase()
+                : 'individual',
+              company_name: company_name || null,
+              gst_no: gst_no || null,
+              pan_no: pan_no || null,
+              tax_no: tax_no || null,
+              land_area: land_area ? parseFloat(land_area) : null,
+              land_unit: land_unit || null,
+              crops: crops
+                ? crops
+                    .split(';')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                : [],
+              irrigation_type: irrigation_type
+                ? irrigation_type
+                    .split(';')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                : [],
+              credit_limit: credit_limit ? parseFloat(credit_limit) : null,
+              credit_days: credit_days ? parseInt(credit_days) : null,
               outstanding_balance: outstanding_balance ? parseFloat(outstanding_balance) : null,
-              wallet_balance:     wallet_balance     ? parseFloat(wallet_balance)     : null,
-              credit_valid_till:  credit_valid_till  || null,
-              aadhaar_last4:      aadhaar_last4      || null,
-              kyc_completed:      kyc_completed?.toLowerCase() === 'true' || kyc_completed === '1',
+              wallet_balance: wallet_balance ? parseFloat(wallet_balance) : null,
+              credit_valid_till: credit_valid_till || null,
+              aadhaar_last4: aadhaar_last4 || null,
+              kyc_completed: kyc_completed?.toLowerCase() === 'true' || kyc_completed === '1',
               status,
-              is_active:          is_active?.toLowerCase() !== 'false' && is_active !== '0',
-              is_blacklisted:     is_blacklisted?.toLowerCase() === 'true' || is_blacklisted === '1',
-              internal_notes:     internal_notes || null,
-              tags:               tags ? tags.split(';').map(s => s.trim()).filter(Boolean) : [],
+              is_active: is_active?.toLowerCase() !== 'false' && is_active !== '0',
+              is_blacklisted: is_blacklisted?.toLowerCase() === 'true' || is_blacklisted === '1',
+              internal_notes: internal_notes || null,
+              tags: tags
+                ? tags
+                    .split(';')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                : [],
             },
-            addresses: []
+            addresses: [],
           };
         }
 
         if (address_line_1 || village_name || city || state || pincode) {
           const addrCount = customerMap[uniqueKey].addresses.length;
           customerMap[uniqueKey].addresses.push({
-            label:          address_label || (addrCount === 0 ? 'Primary' : 'Secondary'),
+            label: address_label || (addrCount === 0 ? 'Primary' : 'Secondary'),
             address_line_1: address_line_1 || '',
             address_line_2: address_line_2 || '',
-            village_name:   village_name   || '',
-            post_office:    post_office    || '',
-            taluka:         taluka         || '',
-            district:       district       || '',
-            city:           city           || '',
-            state:          state          || '',
-            pincode:        pincode        || '',
-            is_default:     addr_is_default?.toLowerCase() === 'true' || addrCount === 0,
-            status:         'active',
+            village_name: village_name || '',
+            post_office: post_office || '',
+            taluka: taluka || '',
+            district: district || '',
+            city: city || '',
+            state: state || '',
+            pincode: pincode || '',
+            is_default: addr_is_default?.toLowerCase() === 'true' || addrCount === 0,
+            status: 'active',
           });
         }
       }
 
       for (const key of Object.keys(customerMap)) {
-          const cust = customerMap[key];
-          try {
-              const res = await apiFetch('/api/customers', {
+        const cust = customerMap[key];
+        try {
+          const res = await apiFetch('/api/customers', {
+            method: 'POST',
+            body: JSON.stringify(cust.payload),
+          });
+
+          const customerId = res.data?.id;
+          if (customerId) {
+            for (const addr of cust.addresses) {
+              await apiFetch(`/api/customers/${customerId}/addresses`, {
                 method: 'POST',
-                body: JSON.stringify(cust.payload)
+                body: JSON.stringify(addr),
               });
-              
-              const customerId = res.data?.id;
-              if (customerId) {
-                  for (const addr of cust.addresses) {
-                      await apiFetch(`/api/customers/${customerId}/addresses`, {
-                          method: 'POST',
-                          body: JSON.stringify(addr)
-                      });
-                  }
-              }
-              created++;
-          } catch (err) {
-              errors.push(`Row ${cust.rowIndex} (${cust.payload.firstname} ${cust.payload.lastname}): ${err.message}`);
+            }
           }
+          created++;
+        } catch (err) {
+          errors.push(
+            `Row ${cust.rowIndex} (${cust.payload.firstname} ${cust.payload.lastname}): ${err.message}`
+          );
+        }
       }
 
       this.result = { created, errors };
@@ -1075,60 +1261,99 @@ document.addEventListener('alpine:init', () => {
 
     expectedHeaders: [
       // Identity
-      'Party Code', 'UUID', 'Referral Code', 'Referred By (Party Code)',
+      'Party Code',
+      'UUID',
+      'Referral Code',
+      'Referred By (Party Code)',
       // Name
-      'First Name', 'Middle Name', 'Last Name',
+      'First Name',
+      'Middle Name',
+      'Last Name',
       // Contact
-      'Email', 'Phone', 'Alternate Mobile', 'Relative Name', 'Relative Phone',
+      'Email',
+      'Phone',
+      'Alternate Mobile',
+      'Relative Name',
+      'Relative Phone',
       // Classification
-      'Source', 'Category',
+      'Source',
+      'Category',
       // Business
-      'Company Name', 'GST No', 'PAN No', 'Tax No',
+      'Company Name',
+      'GST No',
+      'PAN No',
+      'Tax No',
       // Agriculture
-      'Land Area', 'Land Unit', 'Crops', 'Irrigation Type',
+      'Land Area',
+      'Land Unit',
+      'Crops',
+      'Irrigation Type',
       // Financial
-      'Credit Limit', 'Credit Days', 'Outstanding Balance', 'Wallet Balance', 'Credit Valid Till',
+      'Credit Limit',
+      'Credit Days',
+      'Outstanding Balance',
+      'Wallet Balance',
+      'Credit Valid Till',
       // KYC
-      'Aadhaar Last 4', 'KYC Completed', 'KYC Verified At',
+      'Aadhaar Last 4',
+      'KYC Completed',
+      'KYC Verified At',
       // Engagement
-      'First Purchase At', 'Last Purchase At', 'Orders Count',
+      'First Purchase At',
+      'Last Purchase At',
+      'Orders Count',
       // Status
-      'Status', 'Is Active', 'Is Blacklisted', 'Internal Notes', 'Tags',
+      'Status',
+      'Is Active',
+      'Is Blacklisted',
+      'Internal Notes',
+      'Tags',
       // Address columns (party_addresses)
-      'Addr Label', 'Addr Line 1', 'Addr Line 2',
-      'Village Name', 'Post Office', 'Taluka', 'District',
-      'City', 'State', 'Pincode',
-      'Addr Is Default', 'Addr Status',
+      'Addr Label',
+      'Addr Line 1',
+      'Addr Line 2',
+      'Village Name',
+      'Post Office',
+      'Taluka',
+      'District',
+      'City',
+      'State',
+      'Pincode',
+      'Addr Is Default',
+      'Addr Status',
     ],
 
     async handleFile(event) {
-      this.file   = event.target.files[0] ?? null;
+      this.file = event.target.files[0] ?? null;
       this.result = null;
       this.previewHeaders = [];
       this.previewData = [];
-      
+
       if (this.file) {
         try {
           const text = await this.file.text();
-          const lines = text.trim().split('\n').filter(l => l.trim());
+          const lines = text
+            .trim()
+            .split('\n')
+            .filter((l) => l.trim());
           if (lines.length > 0) {
             const parsedHeaders = parseCsvLine(lines[0]);
-            
+
             // Validate headers
             if (parsedHeaders.join(',') !== this.expectedHeaders.join(',')) {
-               showToast('Invalid Format! Please use the provided template exactly as is.', 'error');
-               event.target.value = '';
-               this.file = null;
-               return;
+              showToast('Invalid Format! Please use the provided template exactly as is.', 'error');
+              event.target.value = '';
+              this.file = null;
+              return;
             }
             this.previewHeaders = parsedHeaders;
           }
           if (lines.length > 1) {
             const previewLines = lines.slice(1);
-            this.previewData = previewLines.map(line => parseCsvLine(line));
+            this.previewData = previewLines.map((line) => parseCsvLine(line));
           }
         } catch (e) {
-          console.error("Preview failed", e);
+          console.error('Preview failed', e);
           showToast('Failed to parse file. Ensure it is a valid CSV.', 'error');
           event.target.value = '';
           this.file = null;
@@ -1139,36 +1364,72 @@ document.addEventListener('alpine:init', () => {
     downloadTemplate() {
       const exampleRow = [
         // Identity (leave UUID/referral_code blank — auto-generated on import)
-        'CUST-EXAMPLE', '', '', '',
+        'CUST-EXAMPLE',
+        '',
+        '',
+        '',
         // Name
-        'John', 'Marie', 'Doe',
+        'John',
+        'Marie',
+        'Doe',
         // Contact
-        'john@example.com', '9876543210', '9876543211', 'Jane Doe', '9876543212',
+        'john@example.com',
+        '9876543210',
+        '9876543211',
+        'Jane Doe',
+        '9876543212',
         // Classification
-        'Walk-in', 'individual',
+        'Walk-in',
+        'individual',
         // Business
-        'Acme Corp', '22AAAAA0000A1Z5', 'ABCDE1234F', '',
+        'Acme Corp',
+        '22AAAAA0000A1Z5',
+        'ABCDE1234F',
+        '',
         // Agriculture
-        '10', 'acres', 'Wheat;Rice', 'Drip;Sprinkler',
+        '10',
+        'acres',
+        'Wheat;Rice',
+        'Drip;Sprinkler',
         // Financial
-        '50000', '30', '0', '0', '2026-12-31',
+        '50000',
+        '30',
+        '0',
+        '0',
+        '2026-12-31',
         // KYC
-        '1234', 'true', '',
+        '1234',
+        'true',
+        '',
         // Engagement (informational — not written on import)
-        '', '', '',
+        '',
+        '',
+        '',
         // Status
-        'active', 'true', 'false', 'Good customer', 'VIP;Bulk',
+        'active',
+        'true',
+        'false',
+        'Good customer',
+        'VIP;Bulk',
         // Address
-        'Office', '123 Main St', 'Suite 100',
-        'Springfield', 'Main Post Office', 'Springfield Taluka', 'Springfield District',
-        'Mumbai', 'Maharashtra', '400001',
-        'true', 'active',
+        'Office',
+        '123 Main St',
+        'Suite 100',
+        'Springfield',
+        'Main Post Office',
+        'Springfield Taluka',
+        'Springfield District',
+        'Mumbai',
+        'Maharashtra',
+        '400001',
+        'true',
+        'active',
       ];
-      const csv = [this.expectedHeaders, exampleRow].map(r => r.map(csvEscape).join(',')).join('\n');
+      const csv = [this.expectedHeaders, exampleRow]
+        .map((r) => r.map(csvEscape).join(','))
+        .join('\n');
       downloadBlob('customers-import-template.csv', csv, 'text/csv;charset=utf-8;');
       showToast('Template downloaded successfully.');
-    }
+    },
   }));
-
 });
-

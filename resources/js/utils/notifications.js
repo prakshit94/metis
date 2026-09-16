@@ -41,14 +41,14 @@ export class NotificationManager {
         cancelButton: 'btn btn-secondary',
         popup: 'rounded-3 shadow-lg',
         title: 'fs-4 fw-bold',
-        content: 'text-muted'
+        content: 'text-muted',
       },
       buttonsStyling: false,
       reverseButtons: true,
       focusConfirm: false,
       allowOutsideClick: true,
       allowEscapeKey: true,
-      showCloseButton: true
+      showCloseButton: true,
     });
   }
 
@@ -60,7 +60,7 @@ export class NotificationManager {
       duration: options.duration || this.defaultDuration,
       persistent: options.persistent || false,
       action: options.action || null,
-      icon: options.icon || this.getIconForType(type)
+      icon: options.icon || this.getIconForType(type),
     };
 
     const toast = this.createToast(toastConfig);
@@ -68,7 +68,7 @@ export class NotificationManager {
 
     const bsToast = new Toast(toast, {
       autohide: !toastConfig.persistent,
-      delay: toastConfig.duration
+      delay: toastConfig.duration,
     });
 
     this.activeToasts.add(bsToast);
@@ -134,7 +134,16 @@ export class NotificationManager {
   _sanitizeType(type) {
     // 'error' is not a valid Bootstrap bg class — map to 'danger'
     if (type === 'error') return 'danger';
-    const allowed = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'];
+    const allowed = [
+      'primary',
+      'secondary',
+      'success',
+      'danger',
+      'warning',
+      'info',
+      'light',
+      'dark',
+    ];
     return allowed.includes(type) ? type : 'info';
   }
 
@@ -152,7 +161,7 @@ export class NotificationManager {
       secondary: 'bi bi-info-circle-fill',
       danger: 'bi bi-exclamation-triangle-fill',
       light: 'bi bi-info-circle-fill',
-      dark: 'bi bi-info-circle-fill'
+      dark: 'bi bi-info-circle-fill',
     };
     return icons[type] || icons.info;
   }
@@ -182,12 +191,12 @@ export class NotificationManager {
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Yes, proceed',
-      cancelButtonText: 'Cancel'
+      cancelButtonText: 'Cancel',
     };
 
     const result = await Swal.fire({
       ...defaultOptions,
-      ...options
+      ...options,
     });
 
     return result.isConfirmed;
@@ -204,12 +213,12 @@ export class NotificationManager {
         if (!value) {
           return 'Please enter a value';
         }
-      }
+      },
     };
 
     const result = await Swal.fire({
       ...defaultOptions,
-      ...options
+      ...options,
     });
 
     return result.isConfirmed ? result.value : null;
@@ -220,14 +229,14 @@ export class NotificationManager {
       success: 'success',
       error: 'error',
       warning: 'warning',
-      info: 'info'
+      info: 'info',
     };
 
     await Swal.fire({
       title: title,
       text: message,
       icon: icons[type] || 'info',
-      confirmButtonText: 'OK'
+      confirmButtonText: 'OK',
     });
   }
 
@@ -239,7 +248,7 @@ export class NotificationManager {
       showConfirmButton: false,
       willOpen: () => {
         Swal.showLoading();
-      }
+      },
     });
   }
 
@@ -279,13 +288,13 @@ export class NotificationManager {
             }
           });
         }
-      }
+      },
     });
   }
 
   // Bulk operations
   clearAll() {
-    this.activeToasts.forEach(toast => {
+    this.activeToasts.forEach((toast) => {
       toast.hide();
     });
     this.activeToasts.clear();
@@ -294,10 +303,10 @@ export class NotificationManager {
   // Real-time notifications (for WebSocket/SSE integration)
   handleRealTimeNotification(data) {
     const { type, message, priority = 'normal', persistent = false } = data;
-    
+
     const options = {
       persistent: priority === 'high' || persistent,
-      duration: priority === 'high' ? 10000 : this.defaultDuration
+      duration: priority === 'high' ? 10000 : this.defaultDuration,
     };
 
     // Add sound for high priority notifications
@@ -310,7 +319,9 @@ export class NotificationManager {
 
   playNotificationSound() {
     // Create audio element for notification sound
-    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMcBjiS2O/FeCkFKXnJ8N+PQAoSXrTp6qpTFAlEnt//wUfZBBmBzOvQDh8VHH/H7N4=' );
+    const audio = new Audio(
+      'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMcBjiS2O/FeCkFKXnJ8N+PQAoSXrTp6qpTFAlEnt//wUfZBBmBzOvQDh8VHH/H7N4='
+    );
     audio.volume = 0.3;
     audio.play().catch(() => {
       // Ignore audio play errors (browser restrictions)
@@ -364,11 +375,13 @@ export class NotificationManager {
 
   showBrowserNotification(title, options = {}) {
     if ('Notification' in window && Notification.permission === 'granted') {
-      const appLogoUrl = document.querySelector('link[rel="icon"]')?.getAttribute('href') || '/assets/images/logo.png';
+      const appLogoUrl =
+        document.querySelector('link[rel="icon"]')?.getAttribute('href') ||
+        '/assets/images/logo.png';
       const notification = new Notification(title, {
         icon: appLogoUrl,
         badge: appLogoUrl,
-        ...options
+        ...options,
       });
 
       // Auto close after 5 seconds
@@ -379,4 +392,4 @@ export class NotificationManager {
       return notification;
     }
   }
-} 
+}

@@ -16,7 +16,24 @@ document.addEventListener('alpine:init', () => {
     conversations: [],
     filteredConversations: [],
     currentMessages: [],
-    emojis: ['😀', '😃', '😄', '😁', '😊', '😍', '🥰', '😘', '👍', '👏', '🎉', '❤️', '🔥', '💯', '😂', '🤔'],
+    emojis: [
+      '😀',
+      '😃',
+      '😄',
+      '😁',
+      '😊',
+      '😍',
+      '🥰',
+      '😘',
+      '👍',
+      '👏',
+      '🎉',
+      '❤️',
+      '🔥',
+      '💯',
+      '😂',
+      '🤔',
+    ],
 
     _intervals: new Set(),
 
@@ -36,7 +53,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     destroy() {
-      this._intervals.forEach(id => clearInterval(id));
+      this._intervals.forEach((id) => clearInterval(id));
       this._intervals.clear();
     },
 
@@ -58,93 +75,93 @@ document.addEventListener('alpine:init', () => {
               id: 1,
               text: 'Hi! I have a question about my recent order.',
               time: '10:30 AM',
-              sent: false
+              sent: false,
             },
             {
               id: 2,
-              text: 'Hello John! I\'d be happy to help you with your order. What seems to be the issue?',
+              text: "Hello John! I'd be happy to help you with your order. What seems to be the issue?",
               time: '10:32 AM',
-              sent: true
+              sent: true,
             },
             {
               id: 3,
-              text: 'I haven\'t received a tracking number yet, and it\'s been 3 days since I placed the order.',
+              text: "I haven't received a tracking number yet, and it's been 3 days since I placed the order.",
               time: '10:33 AM',
-              sent: false
+              sent: false,
             },
             {
               id: 4,
               text: 'Let me check that for you right away. Can you please provide your order number?',
               time: '10:35 AM',
-              sent: true
+              sent: true,
             },
             {
               id: 5,
-              text: 'Sure! It\'s ORD-2025-001',
+              text: "Sure! It's ORD-2025-001",
               time: '10:36 AM',
-              sent: false
+              sent: false,
             },
             {
               id: 6,
               text: 'Perfect! I can see your order here. It was shipped yesterday and the tracking number is TR123456789. You should receive an email with the details shortly.',
               time: '10:38 AM',
-              sent: true
+              sent: true,
             },
             {
               id: 7,
               text: 'Thank you for the quick response!',
               time: '10:40 AM',
-              sent: false
+              sent: false,
             },
             {
               id: 8,
-              text: 'You\'re very welcome! Is there anything else I can help you with today?',
+              text: "You're very welcome! Is there anything else I can help you with today?",
               time: '10:42 AM',
-              sent: true
+              sent: true,
             },
             {
               id: 9,
               text: 'Actually, yes! I was wondering about the return policy for this product.',
               time: '10:45 AM',
-              sent: false
+              sent: false,
             },
             {
               id: 10,
               text: 'Great question! You have 30 days from the delivery date to return any item for a full refund. The item just needs to be in its original condition.',
               time: '10:47 AM',
-              sent: true
+              sent: true,
             },
             {
               id: 11,
-              text: 'That\'s perfect. And what about exchanges?',
+              text: "That's perfect. And what about exchanges?",
               time: '10:48 AM',
-              sent: false
+              sent: false,
             },
             {
               id: 12,
               text: 'Exchanges follow the same 30-day policy. You can exchange for a different size, color, or even a completely different product of equal or lesser value.',
               time: '10:50 AM',
-              sent: true
+              sent: true,
             },
             {
               id: 13,
-              text: 'Excellent! You\'ve been incredibly helpful. I think I have everything I need now.',
+              text: "Excellent! You've been incredibly helpful. I think I have everything I need now.",
               time: '10:52 AM',
-              sent: false
+              sent: false,
             },
             {
               id: 14,
-              text: 'I\'m so glad I could help! If you have any other questions in the future, please don\'t hesitate to reach out. Have a wonderful day! 😊',
+              text: "I'm so glad I could help! If you have any other questions in the future, please don't hesitate to reach out. Have a wonderful day! 😊",
               time: '10:54 AM',
-              sent: true
+              sent: true,
             },
             {
               id: 15,
               text: 'You too! Thanks again for the excellent customer service.',
               time: '10:55 AM',
-              sent: false
-            }
-          ]
+              sent: false,
+            },
+          ],
         },
         {
           id: 2,
@@ -162,21 +179,21 @@ document.addEventListener('alpine:init', () => {
               id: 1,
               text: 'Hey! Can you review the new dashboard design when you get a chance?',
               time: '9:15 AM',
-              sent: false
+              sent: false,
             },
             {
               id: 2,
               text: 'Absolutely! Let me take a look now.',
               time: '9:18 AM',
-              sent: true
+              sent: true,
             },
             {
               id: 3,
               text: 'The new dashboard looks great! I love the updated charts and the clean layout.',
               time: '9:45 AM',
-              sent: false
-            }
-          ]
+              sent: false,
+            },
+          ],
         },
         {
           id: 3,
@@ -185,36 +202,36 @@ document.addEventListener('alpine:init', () => {
           type: 'Vendor',
           location: 'Surat, Gujarat',
           online: false,
-          lastMessage: 'I\'ll get back to you with the pricing.',
+          lastMessage: "I'll get back to you with the pricing.",
           lastMessageTime: '3h ago',
           lastSeen: '2h ago',
           unread: 0,
           messages: [
             {
               id: 1,
-              text: 'Hi Mike! We\'re looking to place a bulk order. Can you send us a quote?',
+              text: "Hi Mike! We're looking to place a bulk order. Can you send us a quote?",
               time: '8:30 AM',
-              sent: true
+              sent: true,
             },
             {
               id: 2,
               text: 'Sure thing! What quantities are you looking at?',
               time: '8:45 AM',
-              sent: false
+              sent: false,
             },
             {
               id: 3,
               text: 'We need about 500 units of the premium package.',
               time: '8:47 AM',
-              sent: true
+              sent: true,
             },
             {
               id: 4,
-              text: 'I\'ll get back to you with the pricing.',
+              text: "I'll get back to you with the pricing.",
               time: '8:50 AM',
-              sent: false
-            }
-          ]
+              sent: false,
+            },
+          ],
         },
         {
           id: 4,
@@ -232,33 +249,33 @@ document.addEventListener('alpine:init', () => {
               id: 1,
               text: 'Is there a way to cancel my subscription?',
               time: 'Yesterday 2:30 PM',
-              sent: false
+              sent: false,
             },
             {
               id: 2,
               text: 'Yes, you can cancel anytime from your account settings. Would you like me to guide you through it?',
               time: 'Yesterday 2:35 PM',
-              sent: true
+              sent: true,
             },
             {
               id: 3,
               text: 'That would be great, thank you!',
               time: 'Yesterday 2:36 PM',
-              sent: false
+              sent: false,
             },
             {
               id: 4,
-              text: 'Go to Settings > Billing > Cancel Subscription. You\'ll see a red button at the bottom.',
+              text: "Go to Settings > Billing > Cancel Subscription. You'll see a red button at the bottom.",
               time: 'Yesterday 2:37 PM',
-              sent: true
+              sent: true,
             },
             {
               id: 5,
               text: 'Perfect, thanks!',
               time: 'Yesterday 2:40 PM',
-              sent: false
-            }
-          ]
+              sent: false,
+            },
+          ],
         },
         {
           id: 5,
@@ -274,24 +291,24 @@ document.addEventListener('alpine:init', () => {
           messages: [
             {
               id: 1,
-              text: 'We\'ve received reports of slow loading times on the dashboard.',
+              text: "We've received reports of slow loading times on the dashboard.",
               time: '2 days ago',
-              sent: false
+              sent: false,
             },
             {
               id: 2,
-              text: 'Thanks for reporting this. I\'ll investigate right away.',
+              text: "Thanks for reporting this. I'll investigate right away.",
               time: '2 days ago',
-              sent: true
+              sent: true,
             },
             {
               id: 3,
               text: 'The issue has been resolved.',
               time: '2 days ago',
-              sent: false
-            }
-          ]
-        }
+              sent: false,
+            },
+          ],
+        },
       ];
     },
 
@@ -300,10 +317,11 @@ document.addEventListener('alpine:init', () => {
         this.filteredConversations = [...this.conversations];
       } else {
         const query = this.searchQuery.toLowerCase();
-        this.filteredConversations = this.conversations.filter(conv =>
-          conv.name.toLowerCase().includes(query) ||
-          conv.lastMessage.toLowerCase().includes(query) ||
-          conv.type.toLowerCase().includes(query)
+        this.filteredConversations = this.conversations.filter(
+          (conv) =>
+            conv.name.toLowerCase().includes(query) ||
+            conv.lastMessage.toLowerCase().includes(query) ||
+            conv.type.toLowerCase().includes(query)
         );
       }
     },
@@ -311,10 +329,10 @@ document.addEventListener('alpine:init', () => {
     selectConversation(conversation) {
       this.selectedConversation = conversation;
       this.currentMessages = [...conversation.messages];
-      
+
       // Mark as read
       conversation.unread = 0;
-      
+
       // Hide sidebar on mobile after selection
       if (window.innerWidth < 992) {
         this.sidebarVisible = false;
@@ -333,18 +351,18 @@ document.addEventListener('alpine:init', () => {
         id: Date.now(),
         text: this.newMessage.trim(),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        sent: true
+        sent: true,
       };
 
       // Add to current messages
       this.currentMessages.push(message);
-      
+
       // Update conversation's last message
       this.selectedConversation.lastMessage = this.newMessage.trim();
       this.selectedConversation.lastMessageTime = 'now';
-      
+
       // Update the conversation in the list
-      const convIndex = this.conversations.findIndex(c => c.id === this.selectedConversation.id);
+      const convIndex = this.conversations.findIndex((c) => c.id === this.selectedConversation.id);
       if (convIndex !== -1) {
         this.conversations[convIndex].messages.push(message);
         this.conversations[convIndex].lastMessage = this.newMessage.trim();
@@ -369,41 +387,46 @@ document.addEventListener('alpine:init', () => {
       // Show typing indicator
       this.isTyping = true;
 
-      setTimeout(() => {
-        this.isTyping = false;
-        
-        const responses = [
-          "Thanks for your message!",
-          "I'll look into that right away.",
-          "Let me check that for you.",
-          "That sounds good to me.",
-          "I understand your concern.",
-          "I'll get back to you shortly."
-        ];
+      setTimeout(
+        () => {
+          this.isTyping = false;
 
-        const response = {
-          id: Date.now(),
-          text: responses[Math.floor(Math.random() * responses.length)],
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          sent: false
-        };
+          const responses = [
+            'Thanks for your message!',
+            "I'll look into that right away.",
+            'Let me check that for you.',
+            'That sounds good to me.',
+            'I understand your concern.',
+            "I'll get back to you shortly.",
+          ];
 
-        this.currentMessages.push(response);
-        this.selectedConversation.lastMessage = response.text;
-        this.selectedConversation.lastMessageTime = 'now';
+          const response = {
+            id: Date.now(),
+            text: responses[Math.floor(Math.random() * responses.length)],
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            sent: false,
+          };
 
-        // Update conversation in list
-        const convIndex = this.conversations.findIndex(c => c.id === this.selectedConversation.id);
-        if (convIndex !== -1) {
-          this.conversations[convIndex].messages.push(response);
-          this.conversations[convIndex].lastMessage = response.text;
-          this.conversations[convIndex].lastMessageTime = 'now';
-        }
+          this.currentMessages.push(response);
+          this.selectedConversation.lastMessage = response.text;
+          this.selectedConversation.lastMessageTime = 'now';
 
-        this.$nextTick(() => {
-          this.scrollToBottom();
-        });
-      }, 1500 + Math.random() * 1000);
+          // Update conversation in list
+          const convIndex = this.conversations.findIndex(
+            (c) => c.id === this.selectedConversation.id
+          );
+          if (convIndex !== -1) {
+            this.conversations[convIndex].messages.push(response);
+            this.conversations[convIndex].lastMessage = response.text;
+            this.conversations[convIndex].lastMessageTime = 'now';
+          }
+
+          this.$nextTick(() => {
+            this.scrollToBottom();
+          });
+        },
+        1500 + Math.random() * 1000
+      );
     },
 
     scrollToBottom() {
@@ -443,7 +466,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     markAllRead() {
-      this.conversations.forEach(conv => {
+      this.conversations.forEach((conv) => {
         conv.unread = 0;
       });
       this.showNotification('All conversations marked as read', 'success');
@@ -469,7 +492,7 @@ document.addEventListener('alpine:init', () => {
             cancelButton: 'btn btn-secondary',
             popup: 'bg-body text-body rounded-4 shadow-lg border-0',
             title: 'text-body-emphasis fs-4 fw-bold mt-2',
-            htmlContainer: 'text-body'
+            htmlContainer: 'text-body',
           },
           buttonsStyling: false,
           background: 'transparent',
@@ -508,7 +531,7 @@ document.addEventListener('alpine:init', () => {
             cancelButton: 'btn btn-secondary',
             popup: 'bg-body text-body rounded-4 shadow-lg border-0',
             title: 'text-body-emphasis fs-4 fw-bold mt-2',
-            htmlContainer: 'text-body'
+            htmlContainer: 'text-body',
           },
           buttonsStyling: false,
           background: 'transparent',
@@ -519,7 +542,7 @@ document.addEventListener('alpine:init', () => {
               return false;
             }
             return { name };
-          }
+          },
         }).then((result) => {
           if (result.isConfirmed) {
             this.showNotification(`Group "${result.value.name}" created!`, 'success');
@@ -549,8 +572,13 @@ document.addEventListener('alpine:init', () => {
     },
 
     deleteConversation() {
-      if (this.selectedConversation && confirm(`Delete conversation with ${this.selectedConversation.name}?`)) {
-        this.conversations = this.conversations.filter(c => c.id !== this.selectedConversation.id);
+      if (
+        this.selectedConversation &&
+        confirm(`Delete conversation with ${this.selectedConversation.name}?`)
+      ) {
+        this.conversations = this.conversations.filter(
+          (c) => c.id !== this.selectedConversation.id
+        );
         this.filterConversations();
         this.selectedConversation = null;
         this.currentMessages = [];
@@ -560,30 +588,36 @@ document.addEventListener('alpine:init', () => {
 
     simulateActivity() {
       // Randomly show online/offline status changes
-      this._intervals.add(setInterval(() => {
-        const randomConv = this.conversations[Math.floor(Math.random() * this.conversations.length)];
-        if (Math.random() > 0.7) {
-          randomConv.online = !randomConv.online;
-        }
-      }, SIMULATE_PRESENCE_MS));
+      this._intervals.add(
+        setInterval(() => {
+          const randomConv =
+            this.conversations[Math.floor(Math.random() * this.conversations.length)];
+          if (Math.random() > 0.7) {
+            randomConv.online = !randomConv.online;
+          }
+        }, SIMULATE_PRESENCE_MS)
+      );
 
       // Occasionally add new messages from others
-      this._intervals.add(setInterval(() => {
-        if (Math.random() > 0.8) {
-          const randomConv = this.conversations[Math.floor(Math.random() * this.conversations.length)];
-          const newMessages = [
-            'Hey, are you available?',
-            'I have a quick question',
-            'Thanks for your help earlier!',
-            'Can we schedule a meeting?',
-            'Just wanted to follow up',
-          ];
+      this._intervals.add(
+        setInterval(() => {
+          if (Math.random() > 0.8) {
+            const randomConv =
+              this.conversations[Math.floor(Math.random() * this.conversations.length)];
+            const newMessages = [
+              'Hey, are you available?',
+              'I have a quick question',
+              'Thanks for your help earlier!',
+              'Can we schedule a meeting?',
+              'Just wanted to follow up',
+            ];
 
-          randomConv.unread += 1;
-          randomConv.lastMessage = newMessages[Math.floor(Math.random() * newMessages.length)];
-          randomConv.lastMessageTime = 'now';
-        }
-      }, SIMULATE_INBOUND_MS));
+            randomConv.unread += 1;
+            randomConv.lastMessage = newMessages[Math.floor(Math.random() * newMessages.length)];
+            randomConv.lastMessageTime = 'now';
+          }
+        }, SIMULATE_INBOUND_MS)
+      );
     },
 
     showNotification(message, type = 'info') {
@@ -598,13 +632,13 @@ document.addEventListener('alpine:init', () => {
           background: 'transparent',
           customClass: {
             popup: 'colored-toast bg-body text-body shadow-lg rounded-3 border-0',
-            title: 'text-body-emphasis'
-          }
+            title: 'text-body-emphasis',
+          },
         });
       } else {
         alert(message);
       }
-    }
+    },
   }));
 
   // Search component for header
@@ -623,6 +657,6 @@ document.addEventListener('alpine:init', () => {
       this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
       localStorage.setItem('theme', this.currentTheme);
-    }
+    },
   }));
 });

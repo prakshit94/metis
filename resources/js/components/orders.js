@@ -15,7 +15,7 @@ async function apiFetch(url, options = {}) {
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'X-CSRF-TOKEN': getCsrfToken(),
       ...(headers || {}),
     },
@@ -28,7 +28,14 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
-    if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
+    if (
+      res.status === 403 ||
+      message.toLowerCase().includes('authoriz') ||
+      message.toLowerCase().includes('forbidden')
+    ) {
+      window.location.href = '/';
+      return;
+    }
     throw new Error(message);
   }
 
@@ -37,9 +44,10 @@ async function apiFetch(url, options = {}) {
 
 // ─── Modal helper ────────────────────────────────────────────────────────────
 function getModal(elementOrSelector) {
-  const element = typeof elementOrSelector === 'string'
-    ? document.querySelector(elementOrSelector)
-    : elementOrSelector;
+  const element =
+    typeof elementOrSelector === 'string'
+      ? document.querySelector(elementOrSelector)
+      : elementOrSelector;
 
   return element ? Modal.getOrCreateInstance(element) : null;
 }
@@ -52,9 +60,9 @@ function showToast(message, type = 'success') {
   const id = 'toast-' + Date.now();
   const iconMap = {
     success: 'bi-check-circle-fill',
-    danger:  'bi-x-circle-fill',
+    danger: 'bi-x-circle-fill',
     warning: 'bi-exclamation-triangle-fill',
-    info:    'bi-info-circle-fill',
+    info: 'bi-info-circle-fill',
   };
 
   const el = document.createElement('div');
@@ -82,7 +90,7 @@ document.addEventListener('alpine:init', () => {
     totalPages: 1,
     totalOrders: 0,
     itemsPerPage: 15,
-    
+
     // Filters state
     searchQuery: '',
     statusFilter: [],
@@ -100,7 +108,7 @@ document.addEventListener('alpine:init', () => {
     sortField: 'id',
     sortDirection: 'desc',
     isLoading: false,
-    
+
     // ApexCharts settings
     charts: {},
     _resizeHandler: null,
@@ -127,7 +135,7 @@ document.addEventListener('alpine:init', () => {
       delivered_amount: 0,
       cancelled: 0,
       cancelled_amount: 0,
-      revenue: 0
+      revenue: 0,
     },
 
     statusStats: [],
@@ -146,7 +154,19 @@ document.addEventListener('alpine:init', () => {
     carrierProvidersMap: {},
     warehousesList: [],
     allowedFilterStatuses: [],
-    allFilterStatuses: ['future_order', 'pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'return_requested', 'returned', 'cancelled'],
+    allFilterStatuses: [
+      'future_order',
+      'pending',
+      'pending_confirmation',
+      'confirmed',
+      'processing',
+      'ready_to_ship',
+      'dispatched',
+      'delivered',
+      'return_requested',
+      'returned',
+      'cancelled',
+    ],
 
     // Modal data state
     selectedOrder: null,
@@ -202,123 +222,135 @@ document.addEventListener('alpine:init', () => {
     warehouseSearch: '',
 
     get filteredProducts() {
-        let list = this.productsList || [];
-        if (!this.productSearch) return list;
-        return list.filter(p => p && p.name && p.name.toLowerCase().includes(this.productSearch.toLowerCase()));
+      let list = this.productsList || [];
+      if (!this.productSearch) return list;
+      return list.filter(
+        (p) => p && p.name && p.name.toLowerCase().includes(this.productSearch.toLowerCase())
+      );
     },
     get filteredCarriers() {
-        let list = this.carriersList || [];
-        if (!this.carrierSearch) return list;
-        return list.filter(c => c && c.toLowerCase().includes(this.carrierSearch.toLowerCase()));
+      let list = this.carriersList || [];
+      if (!this.carrierSearch) return list;
+      return list.filter((c) => c && c.toLowerCase().includes(this.carrierSearch.toLowerCase()));
     },
     get filteredWarehouses() {
-        let list = this.warehousesList || [];
-        if (!this.warehouseSearch) return list;
-        return list.filter(w => w && w.name && w.name.toLowerCase().includes(this.warehouseSearch.toLowerCase()));
+      let list = this.warehousesList || [];
+      if (!this.warehouseSearch) return list;
+      return list.filter(
+        (w) => w && w.name && w.name.toLowerCase().includes(this.warehouseSearch.toLowerCase())
+      );
     },
 
     get filteredStates() {
-        let list = Object.values(this.statesList || {});
-        if (!this.stateSearch) return list;
-        return list.filter(s => s && s.toLowerCase().includes(this.stateSearch.toLowerCase()));
+      let list = Object.values(this.statesList || {});
+      if (!this.stateSearch) return list;
+      return list.filter((s) => s && s.toLowerCase().includes(this.stateSearch.toLowerCase()));
     },
-    
+
     get filteredDistricts() {
-        let list = Object.values(this.districtsList || {});
-        if (!this.districtSearch) return list;
-        return list.filter(d => d && d.toLowerCase().includes(this.districtSearch.toLowerCase()));
+      let list = Object.values(this.districtsList || {});
+      if (!this.districtSearch) return list;
+      return list.filter((d) => d && d.toLowerCase().includes(this.districtSearch.toLowerCase()));
     },
 
     get filteredTalukas() {
-        let list = Object.values(this.talukasList || {});
-        if (!this.talukaSearch) return list;
-        return list.filter(t => t && t.toLowerCase().includes(this.talukaSearch.toLowerCase()));
+      let list = Object.values(this.talukasList || {});
+      if (!this.talukaSearch) return list;
+      return list.filter((t) => t && t.toLowerCase().includes(this.talukaSearch.toLowerCase()));
     },
 
     get filteredVillages() {
-        let list = Object.values(this.villagesList || {});
-        if (!this.villageSearch) return list;
-        return list.filter(v => v && v.toLowerCase().includes(this.villageSearch.toLowerCase()));
+      let list = Object.values(this.villagesList || {});
+      if (!this.villageSearch) return list;
+      return list.filter((v) => v && v.toLowerCase().includes(this.villageSearch.toLowerCase()));
     },
 
     toggleFilter(type, value) {
-        if (type === 'status') {
-            if (this.statusFilter.includes(value)) this.statusFilter = this.statusFilter.filter(v => v !== value);
-            else this.statusFilter.push(value);
-        } else if (type === 'state') {
-            if (this.stateFilter.includes(value)) this.stateFilter = this.stateFilter.filter(v => v !== value);
-            else this.stateFilter.push(value);
-            this.districtFilter = [];
-            this.talukaFilter = [];
-            this.villageFilter = [];
-        } else if (type === 'district') {
-            if (this.districtFilter.includes(value)) this.districtFilter = this.districtFilter.filter(v => v !== value);
-            else this.districtFilter.push(value);
-            this.talukaFilter = [];
-            this.villageFilter = [];
-        } else if (type === 'taluka') {
-            if (this.talukaFilter.includes(value)) this.talukaFilter = this.talukaFilter.filter(v => v !== value);
-            else this.talukaFilter.push(value);
-            this.villageFilter = [];
-        } else if (type === 'village') {
-            if (this.villageFilter.includes(value)) this.villageFilter = this.villageFilter.filter(v => v !== value);
-            else this.villageFilter.push(value);
-        } else if (type === 'product') {
-            // value is the product ID (number)
-            if (this.productFilter.includes(value)) this.productFilter = this.productFilter.filter(v => v !== value);
-            else this.productFilter.push(value);
-        } else if (type === 'carrier') {
-            if (this.carrierFilter.includes(value)) this.carrierFilter = this.carrierFilter.filter(v => v !== value);
-            else this.carrierFilter.push(value);
-        } else if (type === 'warehouse') {
-            // value is the warehouse ID (number)
-            if (this.warehouseFilter.includes(value)) this.warehouseFilter = this.warehouseFilter.filter(v => v !== value);
-            else this.warehouseFilter.push(value);
-        }
-        this.filterOrders();
+      if (type === 'status') {
+        if (this.statusFilter.includes(value))
+          this.statusFilter = this.statusFilter.filter((v) => v !== value);
+        else this.statusFilter.push(value);
+      } else if (type === 'state') {
+        if (this.stateFilter.includes(value))
+          this.stateFilter = this.stateFilter.filter((v) => v !== value);
+        else this.stateFilter.push(value);
+        this.districtFilter = [];
+        this.talukaFilter = [];
+        this.villageFilter = [];
+      } else if (type === 'district') {
+        if (this.districtFilter.includes(value))
+          this.districtFilter = this.districtFilter.filter((v) => v !== value);
+        else this.districtFilter.push(value);
+        this.talukaFilter = [];
+        this.villageFilter = [];
+      } else if (type === 'taluka') {
+        if (this.talukaFilter.includes(value))
+          this.talukaFilter = this.talukaFilter.filter((v) => v !== value);
+        else this.talukaFilter.push(value);
+        this.villageFilter = [];
+      } else if (type === 'village') {
+        if (this.villageFilter.includes(value))
+          this.villageFilter = this.villageFilter.filter((v) => v !== value);
+        else this.villageFilter.push(value);
+      } else if (type === 'product') {
+        // value is the product ID (number)
+        if (this.productFilter.includes(value))
+          this.productFilter = this.productFilter.filter((v) => v !== value);
+        else this.productFilter.push(value);
+      } else if (type === 'carrier') {
+        if (this.carrierFilter.includes(value))
+          this.carrierFilter = this.carrierFilter.filter((v) => v !== value);
+        else this.carrierFilter.push(value);
+      } else if (type === 'warehouse') {
+        // value is the warehouse ID (number)
+        if (this.warehouseFilter.includes(value))
+          this.warehouseFilter = this.warehouseFilter.filter((v) => v !== value);
+        else this.warehouseFilter.push(value);
+      }
+      this.filterOrders();
     },
 
     toggleAllFilter(type) {
-        if (type === 'status') {
-            let list = this.allowedFilterStatuses || [];
-            if (this.statusFilter.length === list.length) this.statusFilter = [];
-            else this.statusFilter = [...list];
-        } else if (type === 'state') {
-            let list = Object.values(this.statesList || {});
-            if (this.stateFilter.length === list.length) this.stateFilter = [];
-            else this.stateFilter = [...list];
-            this.districtFilter = [];
-            this.talukaFilter = [];
-            this.villageFilter = [];
-        } else if (type === 'district') {
-            let list = Object.values(this.districtsList || {});
-            if (this.districtFilter.length === list.length) this.districtFilter = [];
-            else this.districtFilter = [...list];
-            this.talukaFilter = [];
-            this.villageFilter = [];
-        } else if (type === 'taluka') {
-            let list = Object.values(this.talukasList || {});
-            if (this.talukaFilter.length === list.length) this.talukaFilter = [];
-            else this.talukaFilter = [...list];
-            this.villageFilter = [];
-        } else if (type === 'village') {
-            let list = Object.values(this.villagesList || {});
-            if (this.villageFilter.length === list.length) this.villageFilter = [];
-            else this.villageFilter = [...list];
-        } else if (type === 'product') {
-            let list = (this.productsList || []).map(p => p.id);
-            if (this.productFilter.length === list.length) this.productFilter = [];
-            else this.productFilter = [...list];
-        } else if (type === 'carrier') {
-            let list = this.carriersList || [];
-            if (this.carrierFilter.length === list.length) this.carrierFilter = [];
-            else this.carrierFilter = [...list];
-        } else if (type === 'warehouse') {
-            let list = (this.warehousesList || []).map(w => w.id);
-            if (this.warehouseFilter.length === list.length) this.warehouseFilter = [];
-            else this.warehouseFilter = [...list];
-        }
-        this.filterOrders();
+      if (type === 'status') {
+        let list = this.allowedFilterStatuses || [];
+        if (this.statusFilter.length === list.length) this.statusFilter = [];
+        else this.statusFilter = [...list];
+      } else if (type === 'state') {
+        let list = Object.values(this.statesList || {});
+        if (this.stateFilter.length === list.length) this.stateFilter = [];
+        else this.stateFilter = [...list];
+        this.districtFilter = [];
+        this.talukaFilter = [];
+        this.villageFilter = [];
+      } else if (type === 'district') {
+        let list = Object.values(this.districtsList || {});
+        if (this.districtFilter.length === list.length) this.districtFilter = [];
+        else this.districtFilter = [...list];
+        this.talukaFilter = [];
+        this.villageFilter = [];
+      } else if (type === 'taluka') {
+        let list = Object.values(this.talukasList || {});
+        if (this.talukaFilter.length === list.length) this.talukaFilter = [];
+        else this.talukaFilter = [...list];
+        this.villageFilter = [];
+      } else if (type === 'village') {
+        let list = Object.values(this.villagesList || {});
+        if (this.villageFilter.length === list.length) this.villageFilter = [];
+        else this.villageFilter = [...list];
+      } else if (type === 'product') {
+        let list = (this.productsList || []).map((p) => p.id);
+        if (this.productFilter.length === list.length) this.productFilter = [];
+        else this.productFilter = [...list];
+      } else if (type === 'carrier') {
+        let list = this.carriersList || [];
+        if (this.carrierFilter.length === list.length) this.carrierFilter = [];
+        else this.carrierFilter = [...list];
+      } else if (type === 'warehouse') {
+        let list = (this.warehousesList || []).map((w) => w.id);
+        if (this.warehouseFilter.length === list.length) this.warehouseFilter = [];
+        else this.warehouseFilter = [...list];
+      }
+      this.filterOrders();
     },
 
     init() {
@@ -331,9 +363,11 @@ document.addEventListener('alpine:init', () => {
       if (params.has('date')) this.dateFilter = params.get('date');
       if (params.has('fulfillment')) this.fulfillmentFilter = params.get('fulfillment');
       if (params.has('state')) this.stateFilter = params.get('state').split(',').filter(Boolean);
-      if (params.has('district')) this.districtFilter = params.get('district').split(',').filter(Boolean);
+      if (params.has('district'))
+        this.districtFilter = params.get('district').split(',').filter(Boolean);
       if (params.has('taluka')) this.talukaFilter = params.get('taluka').split(',').filter(Boolean);
-      if (params.has('village')) this.villageFilter = params.get('village').split(',').filter(Boolean);
+      if (params.has('village'))
+        this.villageFilter = params.get('village').split(',').filter(Boolean);
       if (params.has('from_date')) this.fromDate = params.get('from_date');
       if (params.has('to_date')) this.toDate = params.get('to_date');
       if (params.has('limit')) this.itemsPerPage = parseInt(params.get('limit')) || 15;
@@ -342,9 +376,16 @@ document.addEventListener('alpine:init', () => {
       if (params.has('sort_direction')) this.sortDirection = params.get('sort_direction');
 
       // Extract x-model values for <select> elements populated via <template x-for>
-      const urlProduct = params.has('product') && params.get('product') ? params.get('product').split(',').map(Number) : [];
-      const urlCarrier = params.has('carrier') && params.get('carrier') ? params.get('carrier').split(',') : [];
-      const urlWarehouse = params.has('warehouse') && params.get('warehouse') ? params.get('warehouse').split(',').map(Number) : [];
+      const urlProduct =
+        params.has('product') && params.get('product')
+          ? params.get('product').split(',').map(Number)
+          : [];
+      const urlCarrier =
+        params.has('carrier') && params.get('carrier') ? params.get('carrier').split(',') : [];
+      const urlWarehouse =
+        params.has('warehouse') && params.get('warehouse')
+          ? params.get('warehouse').split(',').map(Number)
+          : [];
 
       this.productFilter = urlProduct;
       this.carrierFilter = urlCarrier;
@@ -358,11 +399,11 @@ document.addEventListener('alpine:init', () => {
       }, 500);
 
       this.loadOrders();
-      
-      this.$watch('visibleWarehouseStat', value => {
+
+      this.$watch('visibleWarehouseStat', (value) => {
         let whId = '';
         if (value) {
-          const wh = Object.values(this.warehousesList || {}).find(w => w.name === value);
+          const wh = Object.values(this.warehousesList || {}).find((w) => w.name === value);
           if (wh) whId = wh.id;
         }
         if (this.warehouseFilter !== whId) {
@@ -370,22 +411,23 @@ document.addEventListener('alpine:init', () => {
           this.filterOrders();
         }
       });
-      
-      this.$watch('warehouseFilter', value => {
+
+      this.$watch('warehouseFilter', (value) => {
         let whName = '';
         if (value) {
-          const wh = Object.values(this.warehousesList || {}).find(w => w.id == value);
+          const wh = Object.values(this.warehousesList || {}).find((w) => w.id == value);
           if (wh) whName = wh.name;
         }
         if (this.visibleWarehouseStat !== whName) {
           this.visibleWarehouseStat = whName;
         }
       });
-      
+
       if (params.has('success')) {
         showToast(params.get('success'));
         params.delete('success');
-        const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        const newUrl =
+          window.location.pathname + (params.toString() ? '?' + params.toString() : '');
         window.history.replaceState({}, document.title, newUrl);
       }
 
@@ -408,7 +450,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     clearExistingCharts() {
-      Object.values(this.charts).forEach(chart => {
+      Object.values(this.charts).forEach((chart) => {
         if (chart && typeof chart.destroy === 'function') {
           chart.destroy();
         }
@@ -419,7 +461,7 @@ document.addEventListener('alpine:init', () => {
 
     initResizeHandler() {
       this._resizeHandler = () => {
-        Object.values(this.charts).forEach(chart => {
+        Object.values(this.charts).forEach((chart) => {
           if (chart && typeof chart.updateOptions === 'function') {
             chart.updateOptions({ chart: { width: '100%' } }, false, true);
           }
@@ -431,22 +473,25 @@ document.addEventListener('alpine:init', () => {
     loadOrders() {
       this.isLoading = true;
       const params = new URLSearchParams();
-      
+
       if (this.searchQuery) params.append('search', this.searchQuery);
       if (this.statusFilter.length) params.append('status', this.statusFilter.join(','));
-      if (this.productFilter && this.productFilter.length) params.append('product', this.productFilter.join(','));
+      if (this.productFilter && this.productFilter.length)
+        params.append('product', this.productFilter.join(','));
       if (this.fulfillmentFilter) params.append('fulfillment', this.fulfillmentFilter);
       if (this.stateFilter.length) params.append('state', this.stateFilter.join(','));
       if (this.districtFilter.length) params.append('district', this.districtFilter.join(','));
       if (this.talukaFilter.length) params.append('taluka', this.talukaFilter.join(','));
       if (this.villageFilter.length) params.append('village', this.villageFilter.join(','));
-      if (this.carrierFilter && this.carrierFilter.length) params.append('carrier', this.carrierFilter.join(','));
-      if (this.warehouseFilter && this.warehouseFilter.length) params.append('warehouse', this.warehouseFilter.join(','));
-      
+      if (this.carrierFilter && this.carrierFilter.length)
+        params.append('carrier', this.carrierFilter.join(','));
+      if (this.warehouseFilter && this.warehouseFilter.length)
+        params.append('warehouse', this.warehouseFilter.join(','));
+
       // Handle Date selection
       let activeFromDate = this.fromDate;
       let activeToDate = this.toDate;
-      
+
       if (this.dateFilter) {
         const today = new Date();
         const formatDate = (date) => {
@@ -455,7 +500,7 @@ document.addEventListener('alpine:init', () => {
           const d = String(date.getDate()).padStart(2, '0');
           return `${y}-${m}-${d}`;
         };
-        
+
         if (this.dateFilter === 'today') {
           activeFromDate = formatDate(today);
           activeToDate = formatDate(today);
@@ -486,10 +531,10 @@ document.addEventListener('alpine:init', () => {
           activeToDate = formatDate(today);
         }
       }
-      
+
       if (activeFromDate) params.append('from_date', activeFromDate);
       if (activeToDate) params.append('to_date', activeToDate);
-      
+
       params.append('limit', this.itemsPerPage);
       params.append('page', this.currentPage);
       params.append('sort_field', this.sortField);
@@ -499,12 +544,12 @@ document.addEventListener('alpine:init', () => {
       window.history.replaceState({}, '', newUrl);
 
       apiFetch(`/orders?${params.toString()}`)
-        .then(data => {
-          this.orders = (data.orders.data || []).map(o => this.mapOrder(o));
+        .then((data) => {
+          this.orders = (data.orders.data || []).map((o) => this.mapOrder(o));
           this.currentPage = data.orders.current_page || 1;
           this.totalPages = data.orders.last_page || 1;
           this.totalOrders = data.orders.total || 0;
-          
+
           if (data.stats) {
             this.stats = {
               total: data.stats.total,
@@ -534,23 +579,107 @@ document.addEventListener('alpine:init', () => {
               returned_amount: data.stats.returned_amount,
               return_requested: data.stats.return_requested,
               return_requested_amount: data.stats.return_requested_amount,
-              revenue: data.stats.total_amount
+              revenue: data.stats.total_amount,
             };
 
             this.statusStats = [
-              { name: 'Future', count: this.stats.future_order, percentage: this.stats.total ? Math.round((this.stats.future_order / this.stats.total) * 100) : 0, color: '#a855f7' },
-              { name: 'Pending', count: this.stats.pending, percentage: this.stats.total ? Math.round((this.stats.pending / this.stats.total) * 100) : 0, color: '#f97316' },
-              { name: 'Unfulfillable', count: this.stats.unfulfillable, percentage: this.stats.total ? Math.round((this.stats.unfulfillable / this.stats.total) * 100) : 0, color: '#ef4444' },
-              { name: 'Pending Confirmation', count: this.stats.pending_confirmation, percentage: this.stats.total ? Math.round((this.stats.pending_confirmation / this.stats.total) * 100) : 0, color: '#f97316' },
-              { name: 'Confirmed', count: this.stats.confirmed, percentage: this.stats.total ? Math.round((this.stats.confirmed / this.stats.total) * 100) : 0, color: '#0ea5e9' },
-              { name: 'Processing', count: this.stats.processing, percentage: this.stats.total ? Math.round((this.stats.processing / this.stats.total) * 100) : 0, color: '#3b82f6' },
-              { name: 'Ready to Ship', count: this.stats.ready_to_ship, percentage: this.stats.total ? Math.round((this.stats.ready_to_ship / this.stats.total) * 100) : 0, color: '#6366f1' },
-              { name: 'Dispatched', count: this.stats.dispatched, percentage: this.stats.total ? Math.round((this.stats.dispatched / this.stats.total) * 100) : 0, color: '#14b8a6' },
-              { name: 'Delivered', count: this.stats.delivered, percentage: this.stats.total ? Math.round((this.stats.delivered / this.stats.total) * 100) : 0, color: '#10b981' },
-              { name: 'Cancelled', count: this.stats.cancelled, percentage: this.stats.total ? Math.round((this.stats.cancelled / this.stats.total) * 100) : 0, color: '#ef4444' },
-              { name: 'Return Requested', count: this.stats.return_requested, percentage: this.stats.total ? Math.round((this.stats.return_requested / this.stats.total) * 100) : 0, color: '#f59e0b' },
-              { name: 'Returned', count: this.stats.returned, percentage: this.stats.total ? Math.round((this.stats.returned / this.stats.total) * 100) : 0, color: '#6b7280' }
-            ].filter(stat => stat.count > 0);
+              {
+                name: 'Future',
+                count: this.stats.future_order,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.future_order / this.stats.total) * 100)
+                  : 0,
+                color: '#a855f7',
+              },
+              {
+                name: 'Pending',
+                count: this.stats.pending,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.pending / this.stats.total) * 100)
+                  : 0,
+                color: '#f97316',
+              },
+              {
+                name: 'Unfulfillable',
+                count: this.stats.unfulfillable,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.unfulfillable / this.stats.total) * 100)
+                  : 0,
+                color: '#ef4444',
+              },
+              {
+                name: 'Pending Confirmation',
+                count: this.stats.pending_confirmation,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.pending_confirmation / this.stats.total) * 100)
+                  : 0,
+                color: '#f97316',
+              },
+              {
+                name: 'Confirmed',
+                count: this.stats.confirmed,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.confirmed / this.stats.total) * 100)
+                  : 0,
+                color: '#0ea5e9',
+              },
+              {
+                name: 'Processing',
+                count: this.stats.processing,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.processing / this.stats.total) * 100)
+                  : 0,
+                color: '#3b82f6',
+              },
+              {
+                name: 'Ready to Ship',
+                count: this.stats.ready_to_ship,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.ready_to_ship / this.stats.total) * 100)
+                  : 0,
+                color: '#6366f1',
+              },
+              {
+                name: 'Dispatched',
+                count: this.stats.dispatched,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.dispatched / this.stats.total) * 100)
+                  : 0,
+                color: '#14b8a6',
+              },
+              {
+                name: 'Delivered',
+                count: this.stats.delivered,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.delivered / this.stats.total) * 100)
+                  : 0,
+                color: '#10b981',
+              },
+              {
+                name: 'Cancelled',
+                count: this.stats.cancelled,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.cancelled / this.stats.total) * 100)
+                  : 0,
+                color: '#ef4444',
+              },
+              {
+                name: 'Return Requested',
+                count: this.stats.return_requested,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.return_requested / this.stats.total) * 100)
+                  : 0,
+                color: '#f59e0b',
+              },
+              {
+                name: 'Returned',
+                count: this.stats.returned,
+                percentage: this.stats.total
+                  ? Math.round((this.stats.returned / this.stats.total) * 100)
+                  : 0,
+                color: '#6b7280',
+              },
+            ].filter((stat) => stat.count > 0);
 
             if (data.trends) {
               this.trendsData = data.trends;
@@ -565,23 +694,35 @@ document.addEventListener('alpine:init', () => {
           if (data.districts) this.districtsList = data.districts;
           if (data.talukas) this.talukasList = data.talukas;
           if (data.villages) this.villagesList = data.villages;
-          if (data.allowed_filter_statuses) this.allowedFilterStatuses = data.allowed_filter_statuses;
+          if (data.allowed_filter_statuses)
+            this.allowedFilterStatuses = data.allowed_filter_statuses;
           if (data.carrierProvidersMap) {
             this.carrierProvidersMap = data.carrierProvidersMap;
           }
-          
-          if (data.carriers && data.carriers.length && JSON.stringify(this.carriersList) !== JSON.stringify(data.carriers)) {
+
+          if (
+            data.carriers &&
+            data.carriers.length &&
+            JSON.stringify(this.carriersList) !== JSON.stringify(data.carriers)
+          ) {
             const oldCarrier = this.carrierFilter;
             this.carriersList = data.carriers;
-            setTimeout(() => { if (oldCarrier) this.carrierFilter = oldCarrier; }, 50);
+            setTimeout(() => {
+              if (oldCarrier) this.carrierFilter = oldCarrier;
+            }, 50);
           }
-          if (data.warehousesList && JSON.stringify(this.warehousesList) !== JSON.stringify(data.warehousesList)) {
+          if (
+            data.warehousesList &&
+            JSON.stringify(this.warehousesList) !== JSON.stringify(data.warehousesList)
+          ) {
             const oldWarehouse = this.warehouseFilter;
             this.warehousesList = data.warehousesList;
-            setTimeout(() => { if (oldWarehouse) this.warehouseFilter = oldWarehouse; }, 50);
+            setTimeout(() => {
+              if (oldWarehouse) this.warehouseFilter = oldWarehouse;
+            }, 50);
           }
         })
-        .catch(err => {
+        .catch((err) => {
           showToast(err.message, 'danger');
         })
         .finally(() => {
@@ -591,45 +732,54 @@ document.addEventListener('alpine:init', () => {
 
     mapOrder(o) {
       const formatAddress = (orderObj, prefix) => {
-        const addressObj = prefix === 'shipping' ? orderObj.shipping_address : (prefix === 'billing' ? orderObj.billing_address : null);
-        
+        const addressObj =
+          prefix === 'shipping'
+            ? orderObj.shipping_address
+            : prefix === 'billing'
+              ? orderObj.billing_address
+              : null;
+
         if (addressObj) {
-            const villageName = addressObj.village ? addressObj.village.village_name : addressObj.village_name;
-            const taluka = addressObj.village ? addressObj.village.taluka_name : addressObj.taluka;
-            const district = addressObj.village ? addressObj.village.district_name : addressObj.district;
-            const po = addressObj.village ? addressObj.village.post_so_name : addressObj.post_office;
+          const villageName = addressObj.village
+            ? addressObj.village.village_name
+            : addressObj.village_name;
+          const taluka = addressObj.village ? addressObj.village.taluka_name : addressObj.taluka;
+          const district = addressObj.village
+            ? addressObj.village.district_name
+            : addressObj.district;
+          const po = addressObj.village ? addressObj.village.post_so_name : addressObj.post_office;
 
-            const parts = [
-              addressObj.address_line_1,
-              addressObj.address_line_2,
-              villageName ? `Vill: ${villageName}` : null,
-              taluka ? `Ta: ${taluka}` : null,
-              district ? `Dist: ${district}` : null,
-              po ? `PO: ${po}` : null,
-              addressObj.city,
-              addressObj.state,
-              addressObj.pincode,
-            ].filter(Boolean);
+          const parts = [
+            addressObj.address_line_1,
+            addressObj.address_line_2,
+            villageName ? `Vill: ${villageName}` : null,
+            taluka ? `Ta: ${taluka}` : null,
+            district ? `Dist: ${district}` : null,
+            po ? `PO: ${po}` : null,
+            addressObj.city,
+            addressObj.state,
+            addressObj.pincode,
+          ].filter(Boolean);
 
-            return {
-              id: addressObj.id,
-              label: addressObj.label || '',
-              line1: addressObj.address_line_1 || '',
-              line2: addressObj.address_line_2 || '',
-              city: addressObj.city || '',
+          return {
+            id: addressObj.id,
+            label: addressObj.label || '',
+            line1: addressObj.address_line_1 || '',
+            line2: addressObj.address_line_2 || '',
+            city: addressObj.city || '',
+            state: addressObj.state || '',
+            pincode: addressObj.pincode || '',
+            country: 'India',
+            village: {
+              name: villageName || '',
+              taluka: taluka || '',
+              district: district || '',
               state: addressObj.state || '',
-              pincode: addressObj.pincode || '',
-              country: 'India',
-              village: {
-                name: villageName || '',
-                taluka: taluka || '',
-                district: district || '',
-                state: addressObj.state || '',
-                postOffice: po || '',
-              },
-              formatted: parts.join(', ') || 'N/A',
-              raw: addressObj,
-            };
+              postOffice: po || '',
+            },
+            formatted: parts.join(', ') || 'N/A',
+            raw: addressObj,
+          };
         }
 
         // Fallback to old flat structure if relation is missing
@@ -656,13 +806,15 @@ document.addEventListener('alpine:init', () => {
           state: orderObj[`${prefix}_state`] || '',
           pincode: orderObj[`${prefix}_pincode`] || '',
           country: 'India',
-          village: orderObj[`${prefix}_village_name`] ? {
-            name: orderObj[`${prefix}_village_name`] || '',
-            taluka: orderObj[`${prefix}_taluka`] || '',
-            district: orderObj[`${prefix}_district`] || '',
-            state: orderObj[`${prefix}_state`] || '',
-            postOffice: orderObj[`${prefix}_post_office`] || '',
-          } : null,
+          village: orderObj[`${prefix}_village_name`]
+            ? {
+                name: orderObj[`${prefix}_village_name`] || '',
+                taluka: orderObj[`${prefix}_taluka`] || '',
+                district: orderObj[`${prefix}_district`] || '',
+                state: orderObj[`${prefix}_state`] || '',
+                postOffice: orderObj[`${prefix}_post_office`] || '',
+              }
+            : null,
           formatted: parts.join(', ') || 'N/A',
           raw: orderObj,
         };
@@ -675,48 +827,64 @@ document.addEventListener('alpine:init', () => {
 
       const shipment = Array.isArray(o.shipments) && o.shipments.length ? o.shipments[0] : null;
       const availableServices = (o.shipping_address?.village?.services || [])
-        .filter(service => {
+        .filter((service) => {
           const pivot = service.pivot || {};
-          return service.is_active && (pivot.is_available === true || pivot.is_available === 1 || pivot.is_available === '1');
+          return (
+            service.is_active &&
+            (pivot.is_available === true || pivot.is_available === 1 || pivot.is_available === '1')
+          );
         })
         .sort((a, b) => {
-          const priorityA = Number.isFinite(Number(a.pivot?.priority)) ? Number(a.pivot.priority) : 0;
-          const priorityB = Number.isFinite(Number(b.pivot?.priority)) ? Number(b.pivot.priority) : 0;
+          const priorityA = Number.isFinite(Number(a.pivot?.priority))
+            ? Number(a.pivot.priority)
+            : 0;
+          const priorityB = Number.isFinite(Number(b.pivot?.priority))
+            ? Number(b.pivot.priority)
+            : 0;
           return priorityA - priorityB || String(a.name).localeCompare(String(b.name));
         })
-        .map(service => ({
+        .map((service) => ({
           name: service.name || 'N/A',
           code: service.code || '',
           description: service.description || '',
-          priority: Number.isFinite(Number(service.pivot?.priority)) ? Number(service.pivot.priority) : 0,
-          providers: (service.providers || []).map(provider => ({
+          priority: Number.isFinite(Number(service.pivot?.priority))
+            ? Number(service.pivot.priority)
+            : 0,
+          providers: (service.providers || []).map((provider) => ({
             id: provider.id,
             name: provider.name || 'N/A',
             phone: provider.phone || '',
           })),
         }));
-      const availableCarrierOptions = availableServices.map(service => ({
+      const availableCarrierOptions = availableServices.map((service) => ({
         name: service.name,
         priority: service.priority,
       }));
       const assignedService = shipment
-        ? availableServices.find(service =>
-          service.name.trim().toLowerCase() === String(shipment.carrier_name || '').trim().toLowerCase()
-        ) || null
+        ? availableServices.find(
+            (service) =>
+              service.name.trim().toLowerCase() ===
+              String(shipment.carrier_name || '')
+                .trim()
+                .toLowerCase()
+          ) || null
         : null;
       const invoice = o.invoice || null;
       const invoicePayments = invoice && Array.isArray(invoice.payments) ? invoice.payments : [];
       const paidAmount = invoicePayments
-        .filter(payment => payment.status === 'completed')
+        .filter((payment) => payment.status === 'completed')
         .reduce((sum, payment) => sum + formatMoney(payment.amount || 0), 0);
       const netAmount = formatMoney(invoice ? (invoice.net_amount ?? 0) : 0);
       const payments = Array.isArray(o.payments) ? o.payments : [];
-      const latestPaymentWithMethod = [...payments, ...invoicePayments]
-        .filter(payment => String(payment.payment_method || '').trim())
-        .sort((a, b) => new Date(b.payment_date || 0) - new Date(a.payment_date || 0))[0] || null;
+      const latestPaymentWithMethod =
+        [...payments, ...invoicePayments]
+          .filter((payment) => String(payment.payment_method || '').trim())
+          .sort((a, b) => new Date(b.payment_date || 0) - new Date(a.payment_date || 0))[0] || null;
       const formattedPaymentMethod = latestPaymentWithMethod
         ? latestPaymentWithMethod.payment_method.toUpperCase().replace(/_/g, ' ')
-        : (invoice ? 'PENDING PAYMENT' : 'NOT RECORDED');
+        : invoice
+          ? 'PENDING PAYMENT'
+          : 'NOT RECORDED';
 
       return {
         id: o.id,
@@ -731,66 +899,83 @@ document.addEventListener('alpine:init', () => {
         status: o.lifecycle_status || o.status,
         scheduledConfirmDate: o.scheduled_confirmation_date,
         confirmAttempts: o.confirmation_attempts || 0,
-        statusLabel: o.status_label || (o.lifecycle_status || o.status || '').charAt(0).toUpperCase() + (o.lifecycle_status || o.status || '').slice(1).replace(/_/g, ' '),
+        statusLabel:
+          o.status_label ||
+          (o.lifecycle_status || o.status || '').charAt(0).toUpperCase() +
+            (o.lifecycle_status || o.status || '').slice(1).replace(/_/g, ' '),
         customer: {
           name: o.party ? `${o.party.firstname} ${o.party.lastname}` : 'N/A',
           email: o.party ? o.party.email : 'N/A',
           avatar: o.party && o.party.avatar ? o.party.avatar : '/assets/images/default_avatar.jpeg',
           phone: o.party ? o.party.phone : '',
-          relativeName: o.party ? (o.party.relative_name || o.party.relative_name) : '',
+          relativeName: o.party ? o.party.relative_name || o.party.relative_name : '',
           relativePhone: o.party ? o.party.relative_phone : '',
           company: o.party ? o.party.company_name : '',
           pan: o.party ? o.party.pan_number : '',
-          gstin: o.party ? o.party.gstin : ''
+          gstin: o.party ? o.party.gstin : '',
         },
-        warehouse: o.warehouse ? {
-          name: o.warehouse.name || o.warehouse.company_name || 'N/A',
-          phone: o.warehouse.phone || 'N/A',
-          gstin: o.warehouse.gstin || 'N/A',
-          address: [
-            o.warehouse.address_line_1,
-            o.warehouse.address_line_2,
-            o.warehouse.city,
-            o.warehouse.state,
-            o.warehouse.pincode,
-          ].filter(Boolean).join(', ') || 'N/A',
-        } : null,
+        warehouse: o.warehouse
+          ? {
+              name: o.warehouse.name || o.warehouse.company_name || 'N/A',
+              phone: o.warehouse.phone || 'N/A',
+              gstin: o.warehouse.gstin || 'N/A',
+              address:
+                [
+                  o.warehouse.address_line_1,
+                  o.warehouse.address_line_2,
+                  o.warehouse.city,
+                  o.warehouse.state,
+                  o.warehouse.pincode,
+                ]
+                  .filter(Boolean)
+                  .join(', ') || 'N/A',
+            }
+          : null,
         shippingAddress: formatAddress(o, 'shipping'),
         availableCarrierOptions,
         assignedService,
         billingAddress: formatAddress(o, 'billing'),
-        invoice: invoice ? {
-          number: invoice.invoice_no || 'N/A',
-          date: invoice.invoice_date || null,
-          status: invoice.status || 'N/A',
-          total: formatMoney(invoice.total_amount ?? invoice.total_amount),
-          tax: formatMoney(invoice.tax_amount ?? 0),
-          net: netAmount,
-          paid: paidAmount,
-          due: Math.max(0, netAmount - paidAmount),
-          paymentCount: invoicePayments.length,
-        } : null,
-        shipment: shipment ? {
-          no: shipment.shipment_no || 'N/A',
-          carrier: shipment.carrier_name || 'N/A',
-          trackingNo: shipment.tracking_no || 'N/A',
-          status: shipment.status || 'N/A',
-          serviceProviderId: shipment.service_provider_id || null,
-          shippedAt: shipment.shipped_at || null,
-          deliveredAt: shipment.delivered_at || null,
-          delivery_attempts: shipment.delivery_attempts || 0,
-          next_followup_date: shipment.next_followup_date || null,
-          reschedule_reason: shipment.reschedule_reason || null,
-          events: Array.isArray(shipment.events) ? shipment.events : [],
-        } : null,
-        orderReturn: (o.order_returns && o.order_returns.length) ? {
-          reason: o.order_returns[o.order_returns.length - 1].reason || 'N/A',
-          notes: o.order_returns[o.order_returns.length - 1].notes || '',
-        } : (o.orderReturns && o.orderReturns.length ? {
-          reason: o.orderReturns[o.orderReturns.length - 1].reason || 'N/A',
-          notes: o.orderReturns[o.orderReturns.length - 1].notes || '',
-        } : null),
-        payments: payments.map(payment => ({
+        invoice: invoice
+          ? {
+              number: invoice.invoice_no || 'N/A',
+              date: invoice.invoice_date || null,
+              status: invoice.status || 'N/A',
+              total: formatMoney(invoice.total_amount ?? invoice.total_amount),
+              tax: formatMoney(invoice.tax_amount ?? 0),
+              net: netAmount,
+              paid: paidAmount,
+              due: Math.max(0, netAmount - paidAmount),
+              paymentCount: invoicePayments.length,
+            }
+          : null,
+        shipment: shipment
+          ? {
+              no: shipment.shipment_no || 'N/A',
+              carrier: shipment.carrier_name || 'N/A',
+              trackingNo: shipment.tracking_no || 'N/A',
+              status: shipment.status || 'N/A',
+              serviceProviderId: shipment.service_provider_id || null,
+              shippedAt: shipment.shipped_at || null,
+              deliveredAt: shipment.delivered_at || null,
+              delivery_attempts: shipment.delivery_attempts || 0,
+              next_followup_date: shipment.next_followup_date || null,
+              reschedule_reason: shipment.reschedule_reason || null,
+              events: Array.isArray(shipment.events) ? shipment.events : [],
+            }
+          : null,
+        orderReturn:
+          o.order_returns && o.order_returns.length
+            ? {
+                reason: o.order_returns[o.order_returns.length - 1].reason || 'N/A',
+                notes: o.order_returns[o.order_returns.length - 1].notes || '',
+              }
+            : o.orderReturns && o.orderReturns.length
+              ? {
+                  reason: o.orderReturns[o.orderReturns.length - 1].reason || 'N/A',
+                  notes: o.orderReturns[o.orderReturns.length - 1].notes || '',
+                }
+              : null,
+        payments: payments.map((payment) => ({
           id: payment.id,
           no: payment.payment_no || 'N/A',
           amount: formatMoney(payment.amount || 0),
@@ -800,30 +985,39 @@ document.addEventListener('alpine:init', () => {
           date: payment.payment_date || null,
           transactionId: payment.transaction_id || 'N/A',
         })),
-        items: (o.items || []).map(item => {
+        items: (o.items || []).map((item) => {
           const qty = formatMoney(item.quantity) || 1;
           const uPrice = formatMoney(item.unit_price);
           const discAmt = formatMoney(item.discount_amount);
-          const type = item.product ? (item.product.default_discount_type || 'percent') : 'percent';
+          const type = item.product ? item.product.default_discount_type || 'percent' : 'percent';
           const baseAmount = uPrice * qty;
-          const val = item.product && formatMoney(item.product.default_discount) > 0
-            ? formatMoney(item.product.default_discount)
-            : (discAmt > 0 
-                ? (['flat', 'fixed', 'amount'].includes(type.toLowerCase()) 
-                    ? (qty > 0 ? discAmt / qty : 0) 
-                    : (baseAmount > 0 ? (discAmt / baseAmount) * 100 : 0)) 
-                : 0);
+          const val =
+            item.product && formatMoney(item.product.default_discount) > 0
+              ? formatMoney(item.product.default_discount)
+              : discAmt > 0
+                ? ['flat', 'fixed', 'amount'].includes(type.toLowerCase())
+                  ? qty > 0
+                    ? discAmt / qty
+                    : 0
+                  : baseAmount > 0
+                    ? (discAmt / baseAmount) * 100
+                    : 0
+                : 0;
 
           const isFlat = ['flat', 'fixed', 'amount'].includes(type.toLowerCase());
           const displayVal = Number.isFinite(val) ? val : 0;
           const formattedVal = displayVal % 1 === 0 ? displayVal.toFixed(0) : displayVal.toFixed(2);
-          const badgeLabel = displayVal > 0 ? (isFlat ? `₹ ${formattedVal} off` : `${formattedVal}% off`) : '';
+          const badgeLabel =
+            displayVal > 0 ? (isFlat ? `₹ ${formattedVal} off` : `${formattedVal}% off`) : '';
 
           return {
             product_id: item.product_id || (item.product ? item.product.id : null),
             name: item.product ? item.product.name : 'Unknown Product',
             sku: item.product ? item.product.sku || '' : '',
-            image: item.product && item.product.image_path ? `/storage/${item.product.image_path}` : null,
+            image:
+              item.product && item.product.image_path
+                ? `/storage/${item.product.image_path}`
+                : null,
             quantity: item.quantity,
             price: item.unit_price,
             discount: discAmt,
@@ -834,14 +1028,25 @@ document.addEventListener('alpine:init', () => {
             taxRate: item.tax_rate || 0,
             net: item.total_amount || 0,
             isOutOfStock: item.is_out_of_stock || false,
-            availableStock: item.available_stock || 0
+            availableStock: item.available_stock || 0,
           };
         }),
         itemCount: o.items_count || (o.items ? o.items.length : 0),
         total: formatMoney(o.net_amount),
-        subtotal: (o.items || []).reduce((sum, item) => sum + (formatMoney(item.unit_price) * formatMoney(item.quantity)), 0),
+        subtotal: (o.items || []).reduce(
+          (sum, item) => sum + formatMoney(item.unit_price) * formatMoney(item.quantity),
+          0
+        ),
         taxTotal: formatMoney(o.tax_amount),
-        discountTotal: Math.max(0, (o.items || []).reduce((sum, item) => sum + (formatMoney(item.unit_price) * formatMoney(item.quantity)), 0) + formatMoney(o.tax_amount) - formatMoney(o.net_amount)),
+        discountTotal: Math.max(
+          0,
+          (o.items || []).reduce(
+            (sum, item) => sum + formatMoney(item.unit_price) * formatMoney(item.quantity),
+            0
+          ) +
+            formatMoney(o.tax_amount) -
+            formatMoney(o.net_amount)
+        ),
         paymentMethod: formattedPaymentMethod,
         couponCode: o.coupon_code || '',
         appliedOfferName: o.applied_offer ? o.applied_offer.name : '',
@@ -849,12 +1054,13 @@ document.addEventListener('alpine:init', () => {
         futureOrderDate: o.future_order_date || null,
         createdBy: {
           name: o.creator ? (o.creator.name || '').trim() : 'N/A',
-          email: o.creator ? (o.creator.email || '') : '',
-          avatar: o.creator && o.creator.avatar ? o.creator.avatar : '/assets/images/default_avatar.jpeg',
+          email: o.creator ? o.creator.email || '' : '',
+          avatar:
+            o.creator && o.creator.avatar ? o.creator.avatar : '/assets/images/default_avatar.jpeg',
         },
         updatedBy: o.updater ? `${o.updater.name || ''}`.trim() : 'N/A',
         isUnfulfillable: o.is_unfulfillable || false,
-        original: o
+        original: o,
       };
     },
 
@@ -890,7 +1096,7 @@ document.addEventListener('alpine:init', () => {
         delivered: 'success',
         cancelled: 'danger',
         return_requested: 'warning',
-        returned: 'danger'
+        returned: 'danger',
       };
       return themes[status] || 'secondary';
     },
@@ -948,7 +1154,7 @@ document.addEventListener('alpine:init', () => {
 
     toggleAll(checked) {
       if (checked) {
-        this.selectedOrders = this.orders.map(o => String(o.id));
+        this.selectedOrders = this.orders.map((o) => String(o.id));
       } else {
         this.selectedOrders = [];
       }
@@ -974,11 +1180,19 @@ document.addEventListener('alpine:init', () => {
       }
 
       // Build a Set of statuses for all selected orders
-      const selectedOrderObjs = this.orders.filter(o => this.selectedOrders.includes(String(o.id)));
-      const statuses = new Set(selectedOrderObjs.map(o => o.status));
+      const selectedOrderObjs = this.orders.filter((o) =>
+        this.selectedOrders.includes(String(o.id))
+      );
+      const statuses = new Set(selectedOrderObjs.map((o) => o.status));
 
       // Cancellable statuses
-      const cancellableStatuses = ['pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'];
+      const cancellableStatuses = [
+        'pending',
+        'pending_confirmation',
+        'confirmed',
+        'processing',
+        'ready_to_ship',
+      ];
 
       return {
         // Pending → Confirmed
@@ -992,18 +1206,22 @@ document.addEventListener('alpine:init', () => {
         // Dispatched/Shipped → Delivered
         canDeliver: statuses.has('dispatched') || statuses.has('shipped'),
         // Cancel (any order that is still active)
-        canCancel: [...statuses].some(s => cancellableStatuses.includes(s)),
+        canCancel: [...statuses].some((s) => cancellableStatuses.includes(s)),
       };
     },
 
     get bulkDocumentActions() {
-      const selectedOrderObjs = this.orders.filter(o => this.selectedOrders.includes(String(o.id)));
-      
+      const selectedOrderObjs = this.orders.filter((o) =>
+        this.selectedOrders.includes(String(o.id))
+      );
+
       const allowedStatuses = ['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'];
-      const canPrint = selectedOrderObjs.length > 0 && selectedOrderObjs.some(o => {
+      const canPrint =
+        selectedOrderObjs.length > 0 &&
+        selectedOrderObjs.some((o) => {
           const status = String(o.lifecycle_status || o.status || '').toLowerCase();
           return allowedStatuses.includes(status);
-      });
+        });
 
       return {
         canPrint: canPrint,
@@ -1012,17 +1230,20 @@ document.addEventListener('alpine:init', () => {
     },
 
     // ─── Lifecycle Actions ───────────────────────────────────────────────────
-    
+
     confirmOrder(order) {
       if (!order) return;
       if (order.isUnfulfillable) {
-        showToast('Cannot confirm: Order contains items with insufficient stock in the assigned warehouse.', 'danger');
+        showToast(
+          'Cannot confirm: Order contains items with insufficient stock in the assigned warehouse.',
+          'danger'
+        );
         return;
       }
       const query = new URLSearchParams();
       query.set('order_id', order.id);
       if (order.partyId || order.original?.party_id) {
-          query.set('customer_id', order.partyId || order.original?.party_id);
+        query.set('customer_id', order.partyId || order.original?.party_id);
       }
       query.set('step', 'confirm');
       window.location.href = `/orders/create?${query.toString()}`;
@@ -1044,14 +1265,14 @@ document.addEventListener('alpine:init', () => {
           action: this.confirmAction,
           scheduled_date: this.confirmAction === 'schedule' ? this.scheduledConfirmDate : null,
           reason: this.confirmAction === 'schedule' ? this.scheduleReason : null,
-          notes: this.confirmNotes
+          notes: this.confirmNotes,
         };
-        
-        const res = await apiFetch(`/orders/${this.confirmModalOrder.id}/confirm`, { 
+
+        const res = await apiFetch(`/orders/${this.confirmModalOrder.id}/confirm`, {
           method: 'POST',
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
-        
+
         showToast(res.message || 'Order updated successfully.');
         const modal = getModal('#confirmOrderModal');
         if (modal) modal.hide();
@@ -1075,9 +1296,9 @@ document.addEventListener('alpine:init', () => {
           cancelButton: 'btn btn-secondary',
           popup: 'rounded-4 shadow-lg border-0 bg-body',
           title: 'fs-4 fw-bold text-body-emphasis',
-          htmlContainer: 'text-body text-start'
+          htmlContainer: 'text-body text-start',
         },
-        buttonsStyling: false
+        buttonsStyling: false,
       });
       if (!confirmed.isConfirmed) return;
 
@@ -1092,9 +1313,9 @@ document.addEventListener('alpine:init', () => {
 
     async editShipmentDetails(order) {
       if (!order || !order.shipment || !order.original?.shipments?.[0]?.id) return;
-      
+
       getModal('#orderDetailModal')?.hide();
-      
+
       const shipment = order.original.shipments[0];
       const shipmentId = shipment.id;
 
@@ -1131,7 +1352,7 @@ document.addEventListener('alpine:init', () => {
               }
             ">
               <option value="" disabled>Select Carrier</option>
-              ${(this.carriersList || []).map(c => `<option value="${c}" ${c === order.shipment.carrier ? 'selected' : ''}>${c}</option>`).join('')}
+              ${(this.carriersList || []).map((c) => `<option value="${c}" ${c === order.shipment.carrier ? 'selected' : ''}>${c}</option>`).join('')}
             </select>
             
             <div id="swal-edit-sp-container" class="mb-3" style="display: none;">
@@ -1147,11 +1368,11 @@ document.addEventListener('alpine:init', () => {
           </div>
         `,
         didOpen: () => {
-           // trigger change manually to initialize the providers list
-           const el = document.getElementById('swal-edit-carrier');
-           if (el && el.value) {
-               el.dispatchEvent(new Event('change'));
-           }
+          // trigger change manually to initialize the providers list
+          const el = document.getElementById('swal-edit-carrier');
+          if (el && el.value) {
+            el.dispatchEvent(new Event('change'));
+          }
         },
         icon: 'question',
         showCancelButton: true,
@@ -1162,7 +1383,7 @@ document.addEventListener('alpine:init', () => {
           cancelButton: 'btn btn-secondary',
           popup: 'rounded-4 shadow-lg border-0 bg-body',
           title: 'fs-4 fw-bold text-body-emphasis',
-          htmlContainer: 'text-body text-start'
+          htmlContainer: 'text-body text-start',
         },
         buttonsStyling: false,
         preConfirm: () => {
@@ -1174,7 +1395,7 @@ document.addEventListener('alpine:init', () => {
             return false;
           }
           return { carrierName: cName, trackingNo: tNo, serviceProviderId: spId };
-        }
+        },
       });
 
       if (!result.isConfirmed) return;
@@ -1186,17 +1407,19 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({
             carrier_name: carrierName,
             tracking_no: trackingNo,
-            ...(typeof serviceProviderId !== 'undefined' && serviceProviderId ? { service_provider_id: serviceProviderId } : {})
-          })
+            ...(typeof serviceProviderId !== 'undefined' && serviceProviderId
+              ? { service_provider_id: serviceProviderId }
+              : {}),
+          }),
         });
         showToast(res.message || 'Shipping details updated.');
-        
+
         // Reload details in modal
         const details = await apiFetch(`/orders/${order.id}`);
         if (details && details.order) {
           this.selectedOrder = this.mapOrder(details.order);
           // Also update it in the main list
-          const index = this.orders.findIndex(o => o.id === order.id);
+          const index = this.orders.findIndex((o) => o.id === order.id);
           if (index !== -1) {
             this.orders[index] = this.selectedOrder;
           }
@@ -1230,12 +1453,12 @@ document.addEventListener('alpine:init', () => {
       // to the highest-priority (lowest number) option.
       const defaultCarrier = options[0]?.name || '';
       this.shipTrackingNo = '';
-      
+
       setTimeout(() => {
         this.shipCarrierName = defaultCarrier;
         this.updateDefaultServiceProvider();
       }, 50);
-      
+
       getModal('#createShipmentModal')?.show();
     },
 
@@ -1250,8 +1473,8 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({
             carrier_name: this.shipCarrierName,
             service_provider_id: this.shipServiceProviderId || null,
-            tracking_no: this.shipTrackingNo
-          })
+            tracking_no: this.shipTrackingNo,
+          }),
         });
         showToast(res.message || 'Order marked as ready to ship.');
         getModal('#createShipmentModal')?.hide();
@@ -1275,9 +1498,9 @@ document.addEventListener('alpine:init', () => {
           cancelButton: 'btn btn-secondary',
           popup: 'rounded-4 shadow-lg border-0 bg-body',
           title: 'fs-4 fw-bold text-body-emphasis',
-          htmlContainer: 'text-body text-start'
+          htmlContainer: 'text-body text-start',
         },
-        buttonsStyling: false
+        buttonsStyling: false,
       });
       if (!confirmed.isConfirmed) return;
 
@@ -1322,14 +1545,14 @@ document.addEventListener('alpine:init', () => {
           scheduled_date: this.deliverAction === 'schedule' ? this.scheduledDeliveryDate : null,
           reason: this.deliverAction === 'schedule' ? this.scheduleDeliveryReason : null,
           delivered_by: this.deliverAction === 'now' ? this.deliveredBy : null,
-          notes: this.deliverNotes
+          notes: this.deliverNotes,
         };
-        
-        const res = await apiFetch(`/orders/${this.deliverModalOrder.id}/deliver`, { 
+
+        const res = await apiFetch(`/orders/${this.deliverModalOrder.id}/deliver`, {
           method: 'POST',
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
-        
+
         showToast(res.message || 'Order updated successfully.');
         const modal = getModal('#deliverOrderModal');
         if (modal) modal.hide();
@@ -1344,11 +1567,11 @@ document.addEventListener('alpine:init', () => {
       this.returnModalOrder = order;
       this.returnReason = '';
       this.returnNotes = '';
-      this.returnItems = (order.items || []).map(item => ({
+      this.returnItems = (order.items || []).map((item) => ({
         product_id: item.product_id,
         name: item.name,
         requested_qty: item.quantity,
-        max_qty: item.quantity
+        max_qty: item.quantity,
       }));
       getModal('#initiateReturnModal')?.show();
     },
@@ -1358,21 +1581,24 @@ document.addEventListener('alpine:init', () => {
         showToast('Please select a return reason.', 'warning');
         return;
       }
-      
-      const itemsToReturn = this.returnItems.filter(i => i.requested_qty > 0);
+
+      const itemsToReturn = this.returnItems.filter((i) => i.requested_qty > 0);
       if (itemsToReturn.length === 0) {
-        showToast('Please select at least one item to return with a quantity greater than 0.', 'warning');
+        showToast(
+          'Please select at least one item to return with a quantity greater than 0.',
+          'warning'
+        );
         return;
       }
 
       try {
-        const res = await apiFetch(`/orders/${this.returnModalOrder.id}/returns`, { 
+        const res = await apiFetch(`/orders/${this.returnModalOrder.id}/returns`, {
           method: 'POST',
           body: JSON.stringify({
             reason: this.returnReason,
             notes: this.returnNotes,
-            items: itemsToReturn
-          })
+            items: itemsToReturn,
+          }),
         });
         showToast(res.message || 'Return request initiated.');
         getModal('#initiateReturnModal')?.hide();
@@ -1395,18 +1621,18 @@ document.addEventListener('alpine:init', () => {
         showToast('Please select a cancellation reason.', 'warning');
         return;
       }
-      
+
       try {
         const payload = {
           reason: this.cancelReason,
-          notes: this.cancelNotes
+          notes: this.cancelNotes,
         };
-        
-        const res = await apiFetch(`/orders/${this.cancelModalOrder.id}/cancel`, { 
+
+        const res = await apiFetch(`/orders/${this.cancelModalOrder.id}/cancel`, {
           method: 'POST',
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
-        
+
         showToast(res.message || 'Order cancelled successfully.');
         getModal('#cancelOrderModal')?.hide();
         this.loadOrders();
@@ -1419,18 +1645,31 @@ document.addEventListener('alpine:init', () => {
       getModal('#orderDetailModal')?.hide();
       let options;
       switch (order.status) {
-        case 'confirmed': options = { pending: 'Pending' }; break;
-        case 'processing': options = { confirmed: 'Confirmed' }; break;
-        case 'ready_to_ship': options = { processing: 'Processing' }; break;
+        case 'confirmed':
+          options = { pending: 'Pending' };
+          break;
+        case 'processing':
+          options = { confirmed: 'Confirmed' };
+          break;
+        case 'ready_to_ship':
+          options = { processing: 'Processing' };
+          break;
         case 'dispatched':
-        case 'shipped': options = { ready_to_ship: 'Ready to Ship' }; break;
-        case 'delivered': options = { dispatched: 'Dispatched' }; break;
-        case 'cancelled': options = { pending: 'Pending' }; break;
+        case 'shipped':
+          options = { ready_to_ship: 'Ready to Ship' };
+          break;
+        case 'delivered':
+          options = { dispatched: 'Dispatched' };
+          break;
+        case 'cancelled':
+          options = { pending: 'Pending' };
+          break;
         case 'return_requested':
           const logs = order.original.status_logs || [];
-          const prevLog = logs.find(l => l.status !== 'return_requested');
+          const prevLog = logs.find((l) => l.status !== 'return_requested');
           const prevStatus = prevLog ? prevLog.status : 'delivered';
-          const statusName = prevStatus.charAt(0).toUpperCase() + prevStatus.slice(1).replace(/_/g, ' ');
+          const statusName =
+            prevStatus.charAt(0).toUpperCase() + prevStatus.slice(1).replace(/_/g, ' ');
           options = { [prevStatus]: statusName };
           break;
         default:
@@ -1450,11 +1689,13 @@ document.addEventListener('alpine:init', () => {
         cancelButtonText: 'Cancel',
         customClass: {
           confirmButton: 'btn btn-primary shadow-sm rounded-pill px-4 fw-semibold me-2',
-          cancelButton: 'btn btn-light shadow-sm rounded-pill px-4 fw-semibold border-secondary border-opacity-25',
+          cancelButton:
+            'btn btn-light shadow-sm rounded-pill px-4 fw-semibold border-secondary border-opacity-25',
           popup: 'rounded-4 shadow-lg border-0 bg-body',
           title: 'fs-5 fw-bolder text-body-emphasis mt-2',
-          input: 'form-select form-select-lg mx-auto w-75 shadow-sm border-secondary border-opacity-25 rounded-3 mb-3',
-          icon: 'text-primary border-primary'
+          input:
+            'form-select form-select-lg mx-auto w-75 shadow-sm border-secondary border-opacity-25 rounded-3 mb-3',
+          icon: 'text-primary border-primary',
         },
         buttonsStyling: false,
         inputValidator: (value) => {
@@ -1465,7 +1706,7 @@ document.addEventListener('alpine:init', () => {
               resolve('You need to select a status.');
             }
           });
-        }
+        },
       });
 
       if (!status) return;
@@ -1473,7 +1714,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await apiFetch(`/orders/${order.id}/revert-status`, {
           method: 'POST',
-          body: JSON.stringify({ status })
+          body: JSON.stringify({ status }),
         });
         showToast(res.message || 'Order status reverted.');
         this.loadOrders();
@@ -1513,13 +1754,13 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await apiFetch(`/orders/${order.id}/generate-invoice`, { method: 'POST' });
         showToast(res.message || 'Invoice generated successfully.');
-        
+
         // Open/Print the PDF invoice in a new tab
         this.printInvoice(order);
-        
+
         // Reload list of orders
         this.loadOrders();
-        
+
         // If the detail modal is currently showing the selected order, update it too
         if (this.selectedOrder && this.selectedOrder.id === order.id) {
           const details = await apiFetch(`/orders/${order.id}`);
@@ -1533,17 +1774,24 @@ document.addEventListener('alpine:init', () => {
     },
 
     // ─── Verification Logs ───────────────────────────────────────────────────
-    
+
     // ─── Bulk Actions ────────────────────────────────────────────────────────
-    
+
     async bulkUpdateStatus(status) {
       if (this.selectedOrders.length === 0) return;
 
       if (status === 'confirmed') {
-        const unfulfillableSelected = this.orders.filter(o => this.selectedOrders.includes(String(o.id)) && o.isUnfulfillable);
+        const unfulfillableSelected = this.orders.filter(
+          (o) => this.selectedOrders.includes(String(o.id)) && o.isUnfulfillable
+        );
         if (unfulfillableSelected.length > 0) {
-          showToast(`Skipped ${unfulfillableSelected.length} unfulfillable order(s) due to insufficient stock.`, 'warning');
-          this.selectedOrders = this.selectedOrders.filter(id => !unfulfillableSelected.find(u => String(u.id) === id));
+          showToast(
+            `Skipped ${unfulfillableSelected.length} unfulfillable order(s) due to insufficient stock.`,
+            'warning'
+          );
+          this.selectedOrders = this.selectedOrders.filter(
+            (id) => !unfulfillableSelected.find((u) => String(u.id) === id)
+          );
           if (this.selectedOrders.length === 0) return;
         }
       }
@@ -1553,16 +1801,21 @@ document.addEventListener('alpine:init', () => {
       let serviceProviderId = null;
 
       if (status === 'ready_to_ship') {
-        const noServiceOrders = this.orders.filter(o => {
-            if (!this.selectedOrders.includes(String(o.id))) return false;
-            const carriers = o.availableCarrierOptions || [];
-            return carriers.length === 0;
+        const noServiceOrders = this.orders.filter((o) => {
+          if (!this.selectedOrders.includes(String(o.id))) return false;
+          const carriers = o.availableCarrierOptions || [];
+          return carriers.length === 0;
         });
 
         if (noServiceOrders.length > 0) {
-            showToast(`Skipped ${noServiceOrders.length} order(s) because no service is mapped.`, 'warning');
-            this.selectedOrders = this.selectedOrders.filter(id => !noServiceOrders.find(u => String(u.id) === id));
-            if (this.selectedOrders.length === 0) return;
+          showToast(
+            `Skipped ${noServiceOrders.length} order(s) because no service is mapped.`,
+            'warning'
+          );
+          this.selectedOrders = this.selectedOrders.filter(
+            (id) => !noServiceOrders.find((u) => String(u.id) === id)
+          );
+          if (this.selectedOrders.length === 0) return;
         }
 
         const confirmed = await Swal.fire({
@@ -1577,9 +1830,9 @@ document.addEventListener('alpine:init', () => {
             cancelButton: 'btn btn-secondary',
             popup: 'rounded-4 shadow-lg border-0 bg-body',
             title: 'fs-4 fw-bold text-body-emphasis',
-            htmlContainer: 'text-body text-start'
+            htmlContainer: 'text-body text-start',
           },
-          buttonsStyling: false
+          buttonsStyling: false,
         });
         if (!confirmed.isConfirmed) return;
       } else {
@@ -1595,9 +1848,9 @@ document.addEventListener('alpine:init', () => {
             cancelButton: 'btn btn-secondary',
             popup: 'rounded-4 shadow-lg border-0 bg-body',
             title: 'fs-4 fw-bold text-body-emphasis',
-            htmlContainer: 'text-body text-start'
+            htmlContainer: 'text-body text-start',
           },
-          buttonsStyling: false
+          buttonsStyling: false,
         });
         if (!confirmed.isConfirmed) return;
       }
@@ -1610,8 +1863,10 @@ document.addEventListener('alpine:init', () => {
             status: status,
             ...(carrierName ? { carrier_name: carrierName } : {}),
             ...(trackingNo ? { tracking_no: trackingNo } : {}),
-            ...(typeof serviceProviderId !== 'undefined' && serviceProviderId ? { service_provider_id: serviceProviderId } : {})
-          })
+            ...(typeof serviceProviderId !== 'undefined' && serviceProviderId
+              ? { service_provider_id: serviceProviderId }
+              : {}),
+          }),
         });
         showToast(res.message || 'Bulk status update completed.');
         this.selectedOrders = [];
@@ -1625,27 +1880,30 @@ document.addEventListener('alpine:init', () => {
       if (this.selectedOrders.length === 0) return;
       const allowedStatuses = ['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'];
       const validIds = this.orders
-          .filter(o => this.selectedOrders.includes(String(o.id)))
-          .filter(o => {
-              const status = String(o.lifecycle_status || o.status || '').toLowerCase();
-              return allowedStatuses.includes(status);
-          })
-          .map(o => String(o.id));
+        .filter((o) => this.selectedOrders.includes(String(o.id)))
+        .filter((o) => {
+          const status = String(o.lifecycle_status || o.status || '').toLowerCase();
+          return allowedStatuses.includes(status);
+        })
+        .map((o) => String(o.id));
 
       if (validIds.length === 0) {
-          showToast('No eligible orders selected for printing. Orders must be processing or above.', 'warning');
-          return;
+        showToast(
+          'No eligible orders selected for printing. Orders must be processing or above.',
+          'warning'
+        );
+        return;
       }
 
       const params = new URLSearchParams();
-      validIds.forEach(id => params.append('order_ids[]', id));
+      validIds.forEach((id) => params.append('order_ids[]', id));
       params.append('type', type);
 
       try {
         const response = await fetch(`/orders/bulk-print?${params.toString()}`, {
           headers: {
-            'Accept': 'application/json, application/pdf'
-          }
+            Accept: 'application/json, application/pdf',
+          },
         });
 
         if (!response.ok) {
@@ -1686,16 +1944,16 @@ document.addEventListener('alpine:init', () => {
           cancelButton: 'btn btn-secondary',
           popup: 'rounded-4 shadow-lg border-0 bg-body',
           title: 'fs-4 fw-bold text-body-emphasis',
-          htmlContainer: 'text-body text-start'
+          htmlContainer: 'text-body text-start',
         },
-        buttonsStyling: false
+        buttonsStyling: false,
       });
       if (!confirmed.isConfirmed) return;
 
       try {
         const res = await apiFetch('/orders/bulk-generate-invoices', {
           method: 'POST',
-          body: JSON.stringify({ order_ids: this.selectedOrders })
+          body: JSON.stringify({ order_ids: this.selectedOrders }),
         });
         showToast(res.message || 'Bulk invoices generated successfully.');
         this.selectedOrders = [];
@@ -1706,20 +1964,23 @@ document.addEventListener('alpine:init', () => {
     },
 
     exportOrders() {
-      window.open(`/orders/export?${new URLSearchParams({
-        search: this.searchQuery,
-        status: this.statusFilter.length ? this.statusFilter.join(',') : '',
-        product: this.productFilter ? this.productFilter.join(',') : '',
-        fulfillment: this.fulfillmentFilter,
-        state: this.stateFilter.join(','),
-        district: this.districtFilter.join(','),
-        taluka: this.talukaFilter.join(','),
-        village: this.villageFilter.join(','),
-        carrier: this.carrierFilter ? this.carrierFilter.join(',') : '',
-        warehouse: this.warehouseFilter ? this.warehouseFilter.join(',') : '',
-        from_date: this.fromDate,
-        to_date: this.toDate
-      }).toString()}`, '_blank');
+      window.open(
+        `/orders/export?${new URLSearchParams({
+          search: this.searchQuery,
+          status: this.statusFilter.length ? this.statusFilter.join(',') : '',
+          product: this.productFilter ? this.productFilter.join(',') : '',
+          fulfillment: this.fulfillmentFilter,
+          state: this.stateFilter.join(','),
+          district: this.districtFilter.join(','),
+          taluka: this.talukaFilter.join(','),
+          village: this.villageFilter.join(','),
+          carrier: this.carrierFilter ? this.carrierFilter.join(',') : '',
+          warehouse: this.warehouseFilter ? this.warehouseFilter.join(',') : '',
+          from_date: this.fromDate,
+          to_date: this.toDate,
+        }).toString()}`,
+        '_blank'
+      );
     },
 
     async exportSelectedOrders() {
@@ -1729,11 +1990,11 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': getCsrfToken()
+            'X-CSRF-TOKEN': getCsrfToken(),
           },
-          body: JSON.stringify({ ids: this.selectedOrders })
+          body: JSON.stringify({ ids: this.selectedOrders }),
         });
-        
+
         if (!res.ok) {
           const text = await res.text();
           const errData = text ? JSON.parse(text) : {};
@@ -1755,7 +2016,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     // ─── CSV Import Preview & Confirm ────────────────────────────────────────
-    
+
     async handleImportFileSelect(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1770,9 +2031,9 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           body: formData,
           headers: {
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': getCsrfToken()
-          }
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+          },
         });
 
         const data = await res.json();
@@ -1792,21 +2053,21 @@ document.addEventListener('alpine:init', () => {
     async confirmImport() {
       const fileInput = document.getElementById('import-file');
       if (!fileInput.files.length) return;
-      
+
       this.importing = true;
       const formData = new FormData();
       formData.append('file', fileInput.files[0]);
-      
+
       try {
         const res = await fetch('/orders/import', {
           method: 'POST',
           body: formData,
           headers: {
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': getCsrfToken()
-          }
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+          },
         });
-        
+
         const data = await res.json();
         if (data.error) {
           showToast(data.error, 'danger');
@@ -1829,28 +2090,31 @@ document.addEventListener('alpine:init', () => {
     },
 
     // ─── Charts Rendering ────────────────────────────────────────────────────
-    
+
     initCharts() {
       if (this.chartsInitialized) {
         if (this.charts.status) {
-          this.charts.status.updateSeries(this.statusStats.map(stat => stat.count));
+          this.charts.status.updateSeries(this.statusStats.map((stat) => stat.count));
           this.charts.status.updateOptions({
-            labels: this.statusStats.map(stat => stat.name),
-            colors: this.statusStats.map(stat => stat.color)
+            labels: this.statusStats.map((stat) => stat.name),
+            colors: this.statusStats.map((stat) => stat.color),
           });
         }
         if (this.charts.orderTrends && this.trendsData && this.trendsData.length) {
-          this.charts.orderTrends.updateSeries([{
-            name: 'Orders',
-            data: this.trendsData.map(t => t.orders)
-          }, {
-            name: 'Revenue',
-            data: this.trendsData.map(t => t.revenue)
-          }]);
+          this.charts.orderTrends.updateSeries([
+            {
+              name: 'Orders',
+              data: this.trendsData.map((t) => t.orders),
+            },
+            {
+              name: 'Revenue',
+              data: this.trendsData.map((t) => t.revenue),
+            },
+          ]);
           this.charts.orderTrends.updateOptions({
             xaxis: {
-              categories: this.trendsData.map(t => t.date)
-            }
+              categories: this.trendsData.map((t) => t.date),
+            },
           });
         }
         return;
@@ -1869,17 +2133,26 @@ document.addEventListener('alpine:init', () => {
 
       try {
         const trendsData = {
-          series: [{
-            name: 'Orders',
-            data: this.trendsData && this.trendsData.length ? this.trendsData.map(t => t.orders) : [0, 0, 0, 0, 0, 0, 0]
-          }, {
-            name: 'Revenue',
-            data: this.trendsData && this.trendsData.length ? this.trendsData.map(t => t.revenue) : [0, 0, 0, 0, 0, 0, 0]
-          }],
+          series: [
+            {
+              name: 'Orders',
+              data:
+                this.trendsData && this.trendsData.length
+                  ? this.trendsData.map((t) => t.orders)
+                  : [0, 0, 0, 0, 0, 0, 0],
+            },
+            {
+              name: 'Revenue',
+              data:
+                this.trendsData && this.trendsData.length
+                  ? this.trendsData.map((t) => t.revenue)
+                  : [0, 0, 0, 0, 0, 0, 0],
+            },
+          ],
           chart: {
             type: 'area',
             height: 300,
-            toolbar: { show: false }
+            toolbar: { show: false },
           },
           colors: ['#6366f1', '#10b981'],
           fill: {
@@ -1888,28 +2161,37 @@ document.addEventListener('alpine:init', () => {
               shadeIntensity: 1,
               opacityFrom: 0.7,
               opacityTo: 0.3,
-            }
+            },
           },
           stroke: {
             curve: 'smooth',
-            width: 2
+            width: 2,
           },
           xaxis: {
-            categories: this.trendsData && this.trendsData.length ? this.trendsData.map(t => t.date) : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            categories:
+              this.trendsData && this.trendsData.length
+                ? this.trendsData.map((t) => t.date)
+                : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
           },
-          yaxis: [{
-            title: { text: 'Orders' }
-          }, {
-            opposite: true,
-            title: { text: 'Revenue (₹)' }
-          }],
+          yaxis: [
+            {
+              title: { text: 'Orders' },
+            },
+            {
+              opposite: true,
+              title: { text: 'Revenue (₹)' },
+            },
+          ],
           tooltip: {
-            y: [{
-              formatter: (val) => val + " orders"
-            }, {
-              formatter: (val) => "₹ " + val
-            }]
-          }
+            y: [
+              {
+                formatter: (val) => val + ' orders',
+              },
+              {
+                formatter: (val) => '₹ ' + val,
+              },
+            ],
+          },
         };
 
         this.charts.orderTrends = new ApexCharts(chartElement, trendsData);
@@ -1927,24 +2209,24 @@ document.addEventListener('alpine:init', () => {
 
       try {
         const chartData = {
-          series: this.statusStats.map(stat => stat.count),
+          series: this.statusStats.map((stat) => stat.count),
           chart: {
             type: 'donut',
-            height: 200
+            height: 200,
           },
-          labels: this.statusStats.map(stat => stat.name),
-          colors: this.statusStats.map(stat => stat.color),
+          labels: this.statusStats.map((stat) => stat.name),
+          colors: this.statusStats.map((stat) => stat.color),
           plotOptions: {
             pie: {
-              donut: { size: '70%' }
-            }
+              donut: { size: '70%' },
+            },
           },
           legend: { show: false },
           tooltip: {
             y: {
-              formatter: (val) => val + " orders"
-            }
-          }
+              formatter: (val) => val + ' orders',
+            },
+          },
         };
 
         this.charts.status = new ApexCharts(chartElement, chartData);
@@ -1959,7 +2241,7 @@ document.addEventListener('alpine:init', () => {
 
       const pages = [];
       pages.push(1);
-      
+
       if (this.totalPages <= 7) {
         for (let i = 2; i <= this.totalPages; i++) {
           pages.push(i);
@@ -1993,7 +2275,7 @@ document.addEventListener('alpine:init', () => {
         this.currentPage = page;
         this.loadOrders();
       }
-    }
+    },
   }));
 
   // Shared navbar search

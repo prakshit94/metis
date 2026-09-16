@@ -23,7 +23,7 @@ export class DashboardManager {
       performance: [],
       recentOrders: [],
       futureOrders: [],
-      salesByLocation: []
+      salesByLocation: [],
     };
     this.currentPeriod = '7d';
     this.init();
@@ -50,7 +50,7 @@ export class DashboardManager {
   initResizeHandler() {
     const onResize = () => {
       const t = setTimeout(() => {
-        this.charts.forEach(chart => {
+        this.charts.forEach((chart) => {
           if (typeof chart.updateOptions === 'function') {
             chart.updateOptions({ chart: { width: '100%' } }, false, true);
           }
@@ -64,7 +64,7 @@ export class DashboardManager {
 
     const onThemeChange = (e) => {
       const theme = e.detail?.theme || 'light';
-      this.charts.forEach(chart => {
+      this.charts.forEach((chart) => {
         if (typeof chart.updateOptions === 'function') {
           chart.updateOptions({ theme: { mode: theme } });
         }
@@ -80,7 +80,10 @@ export class DashboardManager {
       this.data.dailyRevenue = window.dashboardData.revenue_daily || [];
       this.data.users = window.dashboardData.users || [];
       this.data.orders = window.dashboardData.orders || {
-        completed: 0, pending: 0, cancelled: 0, processing: 0
+        completed: 0,
+        pending: 0,
+        cancelled: 0,
+        processing: 0,
       };
       this.data.recentOrders = window.dashboardData.recentOrders || [];
       this.data.futureOrders = window.dashboardData.futureOrders || [];
@@ -97,33 +100,33 @@ export class DashboardManager {
         type: 'area',
         height: 320,
         toolbar: { show: false },
-        zoom: { enabled: false }
+        zoom: { enabled: false },
       },
       series: [
-        { name: 'Revenue', data: this.data.revenue.map(item => item.revenue) },
-        { name: 'Profit', data: this.data.revenue.map(item => item.profit) }
+        { name: 'Revenue', data: this.data.revenue.map((item) => item.revenue) },
+        { name: 'Profit', data: this.data.revenue.map((item) => item.profit) },
       ],
       xaxis: {
-        categories: this.data.revenue.map(item => item.month),
-        axisBorder: { show: false }
+        categories: this.data.revenue.map((item) => item.month),
+        axisBorder: { show: false },
       },
       yaxis: {
         labels: {
-          formatter: value => '$' + value.toLocaleString()
-        }
+          formatter: (value) => '$' + value.toLocaleString(),
+        },
       },
       colors: ['#6366f1', '#10b981'],
       stroke: { curve: 'smooth', width: 2 },
       fill: {
         type: 'gradient',
-        gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 }
+        gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 },
       },
       dataLabels: { enabled: false },
       legend: { position: 'top' },
       tooltip: {
-        y: { formatter: value => '$' + value.toLocaleString() }
+        y: { formatter: (value) => '$' + value.toLocaleString() },
       },
-      grid: { borderColor: 'rgba(0,0,0,0.08)', strokeDashArray: 4 }
+      grid: { borderColor: 'rgba(0,0,0,0.08)', strokeDashArray: 4 },
     };
 
     const chart = new ApexCharts(el, options);
@@ -138,15 +141,15 @@ export class DashboardManager {
     const recent = this.data.users.slice(-7);
     const options = {
       chart: { type: 'bar', height: 280, toolbar: { show: false } },
-      series: [{ name: 'New Users', data: recent.map(item => item.newUsers) }],
+      series: [{ name: 'New Users', data: recent.map((item) => item.newUsers) }],
       xaxis: {
-        categories: recent.map(item => `Day ${item.day}`),
-        axisBorder: { show: false }
+        categories: recent.map((item) => `Day ${item.day}`),
+        axisBorder: { show: false },
       },
       colors: ['#6366f1'],
       plotOptions: { bar: { borderRadius: 6, columnWidth: '55%' } },
       dataLabels: { enabled: false },
-      grid: { borderColor: 'rgba(0,0,0,0.08)', strokeDashArray: 4 }
+      grid: { borderColor: 'rgba(0,0,0,0.08)', strokeDashArray: 4 },
     };
 
     const chart = new ApexCharts(el, options);
@@ -164,13 +167,13 @@ export class DashboardManager {
         this.data.orders.completed,
         this.data.orders.processing,
         this.data.orders.pending,
-        this.data.orders.cancelled
+        this.data.orders.cancelled,
       ],
       labels: ['Completed', 'Processing', 'Pending', 'Cancelled'],
       colors: ['#198754', '#0d6efd', '#6c757d', '#dc3545'], // Match success, primary, secondary, danger from orders page
       legend: { position: 'bottom' },
       dataLabels: { enabled: false },
-      plotOptions: { pie: { donut: { size: '60%' } } }
+      plotOptions: { pie: { donut: { size: '60%' } } },
     };
 
     const chart = new ApexCharts(el, options);
@@ -192,16 +195,21 @@ export class DashboardManager {
           track: { dropShadow: { enabled: true, top: 2, left: 0, blur: 4, opacity: 0.15 } },
           dataLabels: {
             name: { offsetY: -10, color: '#fff', fontSize: '13px' },
-            value: { color: '#fff', fontSize: '30px', show: true }
-          }
-        }
+            value: { color: '#fff', fontSize: '30px', show: true },
+          },
+        },
       },
       fill: {
         type: 'gradient',
-        gradient: { shade: 'dark', type: 'vertical', gradientToColors: ['#87D4F9'], stops: [0, 100] }
+        gradient: {
+          shade: 'dark',
+          type: 'vertical',
+          gradientToColors: ['#87D4F9'],
+          stops: [0, 100],
+        },
       },
       stroke: { lineCap: 'round' },
-      labels: ['Used Space']
+      labels: ['Used Space'],
     };
 
     const chart = new ApexCharts(el, options);
@@ -214,27 +222,39 @@ export class DashboardManager {
     if (!chartElement) return;
 
     const options = {
-      series: [{
-        name: 'Sales',
-        data: this.data.salesByLocation.map(c => ({ x: c.name, y: c.value }))
-      }],
+      series: [
+        {
+          name: 'Sales',
+          data: this.data.salesByLocation.map((c) => ({ x: c.name, y: c.value })),
+        },
+      ],
       chart: {
         type: 'treemap',
         height: 350,
         width: '100%',
         toolbar: {
           show: true,
-          tools: { download: true, selection: false, zoom: false, zoomin: false, zoomout: false, pan: false, reset: false }
+          tools: {
+            download: true,
+            selection: false,
+            zoom: false,
+            zoomin: false,
+            zoomout: false,
+            pan: false,
+            reset: false,
+          },
         },
         events: {
-          mounted: (chart) => { chart.windowResizeHandler(); }
-        }
+          mounted: (chart) => {
+            chart.windowResizeHandler();
+          },
+        },
       },
       dataLabels: {
         enabled: true,
         style: { fontSize: '12px' },
         formatter: (text, op) => [text, op.value],
-        offsetY: -4
+        offsetY: -4,
       },
       plotOptions: {
         treemap: {
@@ -245,15 +265,21 @@ export class DashboardManager {
             ranges: [
               { from: 0, to: 1000, color: '#CDD7B6' },
               { from: 1001, to: 2000, color: '#A4B494' },
-              { from: 2001, to: 3000, color: '#52708E' }
-            ]
-          }
-        }
+              { from: 2001, to: 3000, color: '#52708E' },
+            ],
+          },
+        },
       },
       responsive: [
-        { breakpoint: 1200, options: { chart: { height: 350 }, dataLabels: { style: { fontSize: '11px' } } } },
-        { breakpoint: 768, options: { chart: { height: 300 }, dataLabels: { style: { fontSize: '10px' } } } }
-      ]
+        {
+          breakpoint: 1200,
+          options: { chart: { height: 350 }, dataLabels: { style: { fontSize: '11px' } } },
+        },
+        {
+          breakpoint: 768,
+          options: { chart: { height: 300 }, dataLabels: { style: { fontSize: '10px' } } },
+        },
+      ],
     };
 
     const chart = new ApexCharts(chartElement, options);
@@ -295,13 +321,14 @@ export class DashboardManager {
       badge.className = `badge ${order.status.class}`;
       badge.textContent = order.status.text;
       statusCell.appendChild(badge);
-      
+
       if (order.status.tooltip) {
-          const icon = document.createElement('i');
-          icon.className = 'bi bi-info-circle-fill text-muted fs-6 cursor-pointer ms-2 d-inline-block align-middle';
-          icon.setAttribute('data-bs-toggle', 'tooltip');
-          icon.setAttribute('title', order.status.tooltip);
-          statusCell.appendChild(icon);
+        const icon = document.createElement('i');
+        icon.className =
+          'bi bi-info-circle-fill text-muted fs-6 cursor-pointer ms-2 d-inline-block align-middle';
+        icon.setAttribute('data-bs-toggle', 'tooltip');
+        icon.setAttribute('title', order.status.tooltip);
+        statusCell.appendChild(icon);
       }
 
       const dateCell = document.createElement('td');
@@ -358,13 +385,14 @@ export class DashboardManager {
       badge.className = `badge ${order.status.class}`;
       badge.textContent = order.status.text;
       statusCell.appendChild(badge);
-      
+
       if (order.status.tooltip) {
-          const icon = document.createElement('i');
-          icon.className = 'bi bi-info-circle-fill text-muted fs-6 cursor-pointer ms-2 d-inline-block align-middle';
-          icon.setAttribute('data-bs-toggle', 'tooltip');
-          icon.setAttribute('title', order.status.tooltip);
-          statusCell.appendChild(icon);
+        const icon = document.createElement('i');
+        icon.className =
+          'bi bi-info-circle-fill text-muted fs-6 cursor-pointer ms-2 d-inline-block align-middle';
+        icon.setAttribute('data-bs-toggle', 'tooltip');
+        icon.setAttribute('title', order.status.tooltip);
+        statusCell.appendChild(icon);
       }
 
       const dateCell = document.createElement('td');
@@ -381,13 +409,14 @@ export class DashboardManager {
     }
   }
 
-
   initInteractiveElements() {
     const onPeriodClick = (e) => {
       if (e.target.matches('[data-chart-period]')) {
         this.currentPeriod = e.target.dataset.chartPeriod;
         this.updateChartPeriod(this.currentPeriod);
-        document.querySelectorAll('[data-chart-period]').forEach(btn => btn.classList.remove('active'));
+        document
+          .querySelectorAll('[data-chart-period]')
+          .forEach((btn) => btn.classList.remove('active'));
         e.target.classList.add('active');
       }
     };
@@ -406,10 +435,18 @@ export class DashboardManager {
 
   updateChartPeriod(period) {
     switch (period) {
-      case '7d': this.loadWeeklyData(); break;
-      case '30d': this.loadMonthlyData(); break;
-      case '90d': this.loadQuarterlyData(); break;
-      case '1y': this.loadYearlyData(); break;
+      case '7d':
+        this.loadWeeklyData();
+        break;
+      case '30d':
+        this.loadMonthlyData();
+        break;
+      case '90d':
+        this.loadQuarterlyData();
+        break;
+      case '1y':
+        this.loadYearlyData();
+        break;
     }
   }
 
@@ -420,23 +457,23 @@ export class DashboardManager {
     const slice = (this.data.dailyRevenue || []).slice(-7);
     chart.updateOptions({
       series: [
-        { name: 'Revenue', data: slice.map(d => d.revenue) },
-        { name: 'Profit',  data: slice.map(d => d.profit)  },
+        { name: 'Revenue', data: slice.map((d) => d.revenue) },
+        { name: 'Profit', data: slice.map((d) => d.profit) },
       ],
-      xaxis: { categories: slice.map(d => d.month) } // month contains the formatted date (e.g., M d)
+      xaxis: { categories: slice.map((d) => d.month) }, // month contains the formatted date (e.g., M d)
     });
   }
 
   loadMonthlyData() {
     const chart = this.charts.get('revenue');
     if (!chart) return;
-    const slice = (this.data.dailyRevenue || []);
+    const slice = this.data.dailyRevenue || [];
     chart.updateOptions({
       series: [
-        { name: 'Revenue', data: slice.map(d => d.revenue) },
-        { name: 'Profit',  data: slice.map(d => d.profit)  },
+        { name: 'Revenue', data: slice.map((d) => d.revenue) },
+        { name: 'Profit', data: slice.map((d) => d.profit) },
       ],
-      xaxis: { categories: slice.map(d => d.month) }
+      xaxis: { categories: slice.map((d) => d.month) },
     });
   }
 
@@ -453,30 +490,33 @@ export class DashboardManager {
     this.data.revenue.forEach((d, i) => {
       const q = Math.floor(i / 3);
       quarters[q].revenue += d.revenue;
-      quarters[q].profit  += d.profit;
+      quarters[q].profit += d.profit;
     });
     chart.updateOptions({
       series: [
-        { name: 'Revenue', data: quarters.map(q => q.revenue) },
-        { name: 'Profit',  data: quarters.map(q => q.profit)  },
+        { name: 'Revenue', data: quarters.map((q) => q.revenue) },
+        { name: 'Profit', data: quarters.map((q) => q.profit) },
       ],
-      xaxis: { categories: quarters.map(q => q.label) }
+      xaxis: { categories: quarters.map((q) => q.label) },
     });
   }
 
   loadYearlyData() {
     const chart = this.charts.get('revenue');
     if (!chart) return;
-    const total = this.data.revenue.reduce((acc, d) => ({
-      revenue: acc.revenue + d.revenue,
-      profit:  acc.profit  + d.profit
-    }), { revenue: 0, profit: 0 });
+    const total = this.data.revenue.reduce(
+      (acc, d) => ({
+        revenue: acc.revenue + d.revenue,
+        profit: acc.profit + d.profit,
+      }),
+      { revenue: 0, profit: 0 }
+    );
     chart.updateOptions({
       series: [
         { name: 'Revenue', data: [total.revenue] },
-        { name: 'Profit',  data: [total.profit]  },
+        { name: 'Profit', data: [total.profit] },
       ],
-      xaxis: { categories: ['This Year'] }
+      xaxis: { categories: ['This Year'] },
     });
   }
 
@@ -493,13 +533,13 @@ export class DashboardManager {
   }
 
   destroy() {
-    this.intervals.forEach(id => clearInterval(id));
+    this.intervals.forEach((id) => clearInterval(id));
     this.intervals.clear();
-    this.timeouts.forEach(id => clearTimeout(id));
+    this.timeouts.forEach((id) => clearTimeout(id));
     this.timeouts.clear();
-    this.cleanupFns.forEach(fn => fn());
+    this.cleanupFns.forEach((fn) => fn());
     this.cleanupFns = [];
-    this.charts.forEach(chart => chart.destroy());
+    this.charts.forEach((chart) => chart.destroy());
     this.charts.clear();
   }
 }

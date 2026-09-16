@@ -3,610 +3,637 @@ import { Modal } from 'bootstrap';
 import Swal from 'sweetalert2';
 
 function showToast(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
+  const container = document.getElementById('toast-container');
+  if (!container) return;
 
-    const id = 'toast-' + Date.now();
-    const iconMap = {
-        success: 'bi-check-circle-fill',
-        danger:  'bi-x-circle-fill',
-        warning: 'bi-exclamation-triangle-fill',
-        info:    'bi-info-circle-fill',
-        error:   'bi-x-circle-fill',
-    };
+  const id = 'toast-' + Date.now();
+  const iconMap = {
+    success: 'bi-check-circle-fill',
+    danger: 'bi-x-circle-fill',
+    warning: 'bi-exclamation-triangle-fill',
+    info: 'bi-info-circle-fill',
+    error: 'bi-x-circle-fill',
+  };
 
-    const el = document.createElement('div');
-    el.id = id;
-    el.className = `toast align-items-center text-bg-${type === 'error' ? 'danger' : type} border-0 show mb-2`;
-    el.setAttribute('role', 'alert');
-    el.innerHTML = `
+  const el = document.createElement('div');
+  el.id = id;
+  el.className = `toast align-items-center text-bg-${type === 'error' ? 'danger' : type} border-0 show mb-2`;
+  el.setAttribute('role', 'alert');
+  el.innerHTML = `
         <div class="d-flex">
             <div class="toast-body">
                 <i class="bi ${iconMap[type] ?? 'bi-info-circle-fill'} me-2"></i><span></span>
             </div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>`;
-    el.querySelector('.toast-body span').textContent = message;
+  el.querySelector('.toast-body span').textContent = message;
 
-    container.appendChild(el);
-    setTimeout(() => el.remove(), 4000);
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
 }
 
 async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it' }) {
-    const result = await Swal.fire({
-        title,
-        text,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText,
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#dc3545',
-        reverseButtons: true,
-        focusCancel: true,
-        customClass: {
-            popup: 'rounded-4 shadow-lg',
-            confirmButton: 'btn btn-danger me-2',
-            cancelButton: 'btn btn-secondary',
-        },
-        buttonsStyling: false,
-    });
+  const result = await Swal.fire({
+    title,
+    text,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText,
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#dc3545',
+    reverseButtons: true,
+    focusCancel: true,
+    customClass: {
+      popup: 'rounded-4 shadow-lg',
+      confirmButton: 'btn btn-danger me-2',
+      cancelButton: 'btn btn-secondary',
+    },
+    buttonsStyling: false,
+  });
 
-    return result.isConfirmed;
+  return result.isConfirmed;
 }
 
 function emptyForm() {
-    return {
-        id: null,
-        name: '',
-        code: '',
-        company_name: '',
-        gstin: '',
-        phone: '',
-        email: '',
-        reference_no: '',
-        seed_lic_no: '',
-        pesti_lic_no: '',
-        ebiller_id: '',
-        address_line_1: '',
-        address_line_2: '',
-        village_id: '',
-        village_name: '',
-        post_office: '',
-        taluka: '',
-        city: '',
-        state: '',
-        pincode: '',
-        is_default: false,
-        status: 'active',
-    };
+  return {
+    id: null,
+    name: '',
+    code: '',
+    company_name: '',
+    gstin: '',
+    phone: '',
+    email: '',
+    reference_no: '',
+    seed_lic_no: '',
+    pesti_lic_no: '',
+    ebiller_id: '',
+    address_line_1: '',
+    address_line_2: '',
+    village_id: '',
+    village_name: '',
+    post_office: '',
+    taluka: '',
+    city: '',
+    state: '',
+    pincode: '',
+    is_default: false,
+    status: 'active',
+  };
 }
 
 export default () => {
-    const instance = {
-        items: [],
-        filteredItems: [],
-        selectedItems: [],
-        stats: { total: 0, active: 0, inactive: 0 },
+  const instance = {
+    items: [],
+    filteredItems: [],
+    selectedItems: [],
+    stats: { total: 0, active: 0, inactive: 0 },
 
-        searchQuery: '',
-        statusFilter: '',
-        sortField: 'id',
-        sortDirection: 'desc',
-        currentPage: 1,
-        itemsPerPage: 10,
+    searchQuery: '',
+    statusFilter: '',
+    sortField: 'id',
+    sortDirection: 'desc',
+    currentPage: 1,
+    itemsPerPage: 10,
 
-        isLoading: false,
-        saving: false,
-        isEditing: false,
+    isLoading: false,
+    saving: false,
+    isEditing: false,
 
-        apiBase: '/api/warehouses',
-        modalInstance: null,
-        viewModalInstance: null,
+    apiBase: '/api/warehouses',
+    modalInstance: null,
+    viewModalInstance: null,
 
-        // Village autofill
-        villageSearchQuery: '',
-        villageResults: [],
-        villageSearchLoading: false,
-        villageSearchTimeout: null,
+    // Village autofill
+    villageSearchQuery: '',
+    villageResults: [],
+    villageSearchLoading: false,
+    villageSearchTimeout: null,
 
-        form: emptyForm(),
-        viewData: {},
+    form: emptyForm(),
+    viewData: {},
 
-        stockChart: null,
-        skuChart: null,
-        _themeHandler: null,
+    stockChart: null,
+    skuChart: null,
+    _themeHandler: null,
 
-        init() {
-            this.loadData();
+    init() {
+      this.loadData();
 
-            const modalEl = document.getElementById('warehousesModal');
-            if (modalEl) {
-                this.modalInstance = Modal.getOrCreateInstance(modalEl);
-                modalEl.addEventListener('hidden.bs.modal', () => {
-                    this.resetForm();
-                });
-            }
+      const modalEl = document.getElementById('warehousesModal');
+      if (modalEl) {
+        this.modalInstance = Modal.getOrCreateInstance(modalEl);
+        modalEl.addEventListener('hidden.bs.modal', () => {
+          this.resetForm();
+        });
+      }
 
-            const viewModalEl = document.getElementById('viewWarehouseModal');
-            if (viewModalEl) {
-                this.viewModalInstance = Modal.getOrCreateInstance(viewModalEl);
-            }
+      const viewModalEl = document.getElementById('viewWarehouseModal');
+      if (viewModalEl) {
+        this.viewModalInstance = Modal.getOrCreateInstance(viewModalEl);
+      }
 
-            this._themeHandler = (e) => {
-                const theme = e.detail?.theme || 'light';
-                [this.stockChart, this.skuChart].forEach(chart => {
-                    if (chart && typeof chart.updateOptions === 'function') {
-                        chart.updateOptions({ 
-                            theme: { mode: theme },
-                            stroke: chart === this.skuChart ? { width: 2, colors: [theme === 'dark' ? '#212529' : '#fff'] } : undefined
-                        });
-                    }
-                });
-            };
-            window.addEventListener('themeChanged', this._themeHandler);
-            
-            // Clean up when Alpine element is destroyed
-            const onHide = () => {
-                if (this._themeHandler) {
-                    window.removeEventListener('themeChanged', this._themeHandler);
-                    this._themeHandler = null;
-                }
-            };
-            window.addEventListener('pagehide', onHide, { once: true });
-        },
-
-        async apiRequest(url, options = {}) {
-            const { headers, ...otherOptions } = options;
-            const response = await fetch(url, {
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    ...(headers || {})
-                },
-                ...otherOptions,
+      this._themeHandler = (e) => {
+        const theme = e.detail?.theme || 'light';
+        [this.stockChart, this.skuChart].forEach((chart) => {
+          if (chart && typeof chart.updateOptions === 'function') {
+            chart.updateOptions({
+              theme: { mode: theme },
+              stroke:
+                chart === this.skuChart
+                  ? { width: 2, colors: [theme === 'dark' ? '#212529' : '#fff'] }
+                  : undefined,
             });
+          }
+        });
+      };
+      window.addEventListener('themeChanged', this._themeHandler);
 
-            const text = await response.text();
-            const payload = text ? JSON.parse(text) : {};
+      // Clean up when Alpine element is destroyed
+      const onHide = () => {
+        if (this._themeHandler) {
+          window.removeEventListener('themeChanged', this._themeHandler);
+          this._themeHandler = null;
+        }
+      };
+      window.addEventListener('pagehide', onHide, { once: true });
+    },
 
-            if (!response.ok) {
-                const validation = payload?.errors ? Object.values(payload.errors).flat().join(' ') : '';
-                const message = validation || payload?.message || payload?.error || 'Request failed.';
-                throw new Error(message);
-            }
-            return payload;
+    async apiRequest(url, options = {}) {
+      const { headers, ...otherOptions } = options;
+      const response = await fetch(url, {
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+          'X-Requested-With': 'XMLHttpRequest',
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(headers || {}),
         },
+        ...otherOptions,
+      });
 
-        async loadData() {
-            this.isLoading = true;
-            try {
-                const payload = await this.apiRequest(`${this.apiBase}?per_page=1000`);
-                this.items = Array.isArray(payload.data) ? payload.data : [];
-                this.filterData();
-            } catch (error) {
-                console.error('Failed to load data:', error);
-                showToast(error.message, 'error');
-            } finally {
-                this.isLoading = false;
-            }
+      const text = await response.text();
+      const payload = text ? JSON.parse(text) : {};
+
+      if (!response.ok) {
+        const validation = payload?.errors ? Object.values(payload.errors).flat().join(' ') : '';
+        const message = validation || payload?.message || payload?.error || 'Request failed.';
+        throw new Error(message);
+      }
+      return payload;
+    },
+
+    async loadData() {
+      this.isLoading = true;
+      try {
+        const payload = await this.apiRequest(`${this.apiBase}?per_page=1000`);
+        this.items = Array.isArray(payload.data) ? payload.data : [];
+        this.filterData();
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        showToast(error.message, 'error');
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    calculateStats() {
+      this.stats.total = this.items.length;
+      this.stats.active = this.items.filter((i) => i.status === 'active').length;
+      this.stats.inactive = this.items.filter((i) => i.status === 'inactive').length;
+    },
+
+    filterData() {
+      this.filteredItems = this.items.filter((item) => {
+        const q = this.searchQuery.toLowerCase();
+        const matchesSearch =
+          !q ||
+          (item.name || '').toLowerCase().includes(q) ||
+          (item.code || '').toLowerCase().includes(q) ||
+          (item.city || '').toLowerCase().includes(q) ||
+          (item.state || '').toLowerCase().includes(q) ||
+          (item.gstin || '').toLowerCase().includes(q);
+
+        const matchesStatus = !this.statusFilter || item.status === this.statusFilter;
+        return matchesSearch && matchesStatus;
+      });
+
+      this.sortData();
+      this.calculateStats();
+      this.currentPage = 1;
+      this.selectedItems = [];
+
+      // Re-render charts after filtering to keep them synchronized
+      setTimeout(() => this.renderCharts(), 100);
+    },
+
+    renderCharts() {
+      if (typeof window.ApexCharts === 'undefined') return;
+
+      const items = this.filteredItems || [];
+
+      const warehouseNames = items.map((i) => i.name || `WH-${i.id}`);
+      const physicalStock = items.map((i) => parseFloat(i.total_physical_stock || 0));
+      const totalSkus = items.map((i) => parseFloat(i.total_skus || 0));
+
+      const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+
+      // Stock Distribution Chart (Bar)
+      const stockOptions = {
+        series: [{ name: 'Physical Stock', data: physicalStock }],
+        chart: {
+          type: 'bar',
+          height: 300,
+          toolbar: { show: false },
+          background: 'transparent',
         },
+        theme: { mode: currentTheme },
+        plotOptions: { bar: { borderRadius: 6, horizontal: false, columnWidth: '40%' } },
+        dataLabels: { enabled: false },
+        xaxis: { categories: warehouseNames, tooltip: { enabled: false } },
+        colors: ['#0d6efd'],
+        grid: { strokeDashArray: 4 },
+        tooltip: { y: { formatter: (val) => val.toLocaleString() + ' Units' } },
+      };
 
-        calculateStats() {
-            this.stats.total    = this.items.length;
-            this.stats.active   = this.items.filter(i => i.status === 'active').length;
-            this.stats.inactive = this.items.filter(i => i.status === 'inactive').length;
+      if (this.stockChart) {
+        this.stockChart.updateOptions(stockOptions);
+      } else {
+        const el = document.querySelector('#stockDistributionChart');
+        if (el) {
+          this.stockChart = new window.ApexCharts(el, stockOptions);
+          this.stockChart.render();
+        }
+      }
+
+      // SKU Spread Chart (Donut)
+      const hasSkuData = totalSkus.some((v) => v > 0);
+      const skuOptions = {
+        series: hasSkuData ? totalSkus : [1],
+        chart: {
+          type: 'donut',
+          height: 300,
+          background: 'transparent',
         },
-
-        filterData() {
-            this.filteredItems = this.items.filter(item => {
-                const q = this.searchQuery.toLowerCase();
-                const matchesSearch = !q ||
-                    (item.name || '').toLowerCase().includes(q) ||
-                    (item.code || '').toLowerCase().includes(q) ||
-                    (item.city || '').toLowerCase().includes(q) ||
-                    (item.state || '').toLowerCase().includes(q) ||
-                    (item.gstin || '').toLowerCase().includes(q);
-
-                const matchesStatus = !this.statusFilter || item.status === this.statusFilter;
-                return matchesSearch && matchesStatus;
-            });
-
-            this.sortData();
-            this.calculateStats();
-            this.currentPage = 1;
-            this.selectedItems = [];
-            
-            // Re-render charts after filtering to keep them synchronized
-            setTimeout(() => this.renderCharts(), 100);
+        theme: { mode: currentTheme },
+        labels: hasSkuData ? warehouseNames : ['No Data'],
+        colors: hasSkuData
+          ? ['#198754', '#0dcaf0', '#ffc107', '#fd7e14', '#dc3545', '#6f42c1', '#20c997']
+          : ['#e9ecef'],
+        dataLabels: { enabled: hasSkuData, dropShadow: { enabled: false } },
+        stroke: { width: 2, colors: [currentTheme === 'dark' ? '#212529' : '#fff'] },
+        legend: { position: 'bottom', markers: { radius: 12 } },
+        tooltip: {
+          y: { formatter: (val) => (hasSkuData ? val.toLocaleString() + ' SKUs' : '0 SKUs') },
         },
+      };
 
-        renderCharts() {
-            if (typeof window.ApexCharts === 'undefined') return;
+      if (this.skuChart) {
+        this.skuChart.updateOptions(skuOptions);
+      } else {
+        const el = document.querySelector('#skuSpreadChart');
+        if (el) {
+          this.skuChart = new window.ApexCharts(el, skuOptions);
+          this.skuChart.render();
+        }
+      }
+    },
 
-            const items = this.filteredItems || [];
-            
-            const warehouseNames = items.map(i => i.name || `WH-${i.id}`);
-            const physicalStock = items.map(i => parseFloat(i.total_physical_stock || 0));
-            const totalSkus = items.map(i => parseFloat(i.total_skus || 0));
-            
-            const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+    sortData() {
+      this.filteredItems.sort((a, b) => {
+        let aVal = a[this.sortField] || '';
+        let bVal = b[this.sortField] || '';
 
-            // Stock Distribution Chart (Bar)
-            const stockOptions = {
-                series: [{ name: 'Physical Stock', data: physicalStock }],
-                chart: { 
-                    type: 'bar', 
-                    height: 300, 
-                    toolbar: { show: false },
-                    background: 'transparent'
-                },
-                theme: { mode: currentTheme },
-                plotOptions: { bar: { borderRadius: 6, horizontal: false, columnWidth: '40%' } },
-                dataLabels: { enabled: false },
-                xaxis: { categories: warehouseNames, tooltip: { enabled: false } },
-                colors: ['#0d6efd'],
-                grid: { strokeDashArray: 4 },
-                tooltip: { y: { formatter: val => val.toLocaleString() + ' Units' } }
-            };
+        if (this.sortField === 'id') {
+          aVal = parseInt(aVal) || 0;
+          bVal = parseInt(bVal) || 0;
+        } else {
+          aVal = String(aVal).toLowerCase();
+          bVal = String(bVal).toLowerCase();
+        }
 
-            if (this.stockChart) {
-                this.stockChart.updateOptions(stockOptions);
-            } else {
-                const el = document.querySelector("#stockDistributionChart");
-                if (el) {
-                    this.stockChart = new window.ApexCharts(el, stockOptions);
-                    this.stockChart.render();
-                }
-            }
+        if (this.sortDirection === 'asc') return aVal > bVal ? 1 : -1;
+        return aVal < bVal ? 1 : -1;
+      });
+    },
 
-            // SKU Spread Chart (Donut)
-            const hasSkuData = totalSkus.some(v => v > 0);
-            const skuOptions = {
-                series: hasSkuData ? totalSkus : [1],
-                chart: { 
-                    type: 'donut', 
-                    height: 300,
-                    background: 'transparent'
-                },
-                theme: { mode: currentTheme },
-                labels: hasSkuData ? warehouseNames : ['No Data'],
-                colors: hasSkuData ? ['#198754', '#0dcaf0', '#ffc107', '#fd7e14', '#dc3545', '#6f42c1', '#20c997'] : ['#e9ecef'],
-                dataLabels: { enabled: hasSkuData, dropShadow: { enabled: false } },
-                stroke: { width: 2, colors: [currentTheme === 'dark' ? '#212529' : '#fff'] },
-                legend: { position: 'bottom', markers: { radius: 12 } },
-                tooltip: { y: { formatter: val => hasSkuData ? val.toLocaleString() + ' SKUs' : '0 SKUs' } }
-            };
+    sortBy(field) {
+      if (this.sortField === field) {
+        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortField = field;
+        this.sortDirection = 'asc';
+      }
+      this.sortData();
+    },
 
-            if (this.skuChart) {
-                this.skuChart.updateOptions(skuOptions);
-            } else {
-                const el = document.querySelector("#skuSpreadChart");
-                if (el) {
-                    this.skuChart = new window.ApexCharts(el, skuOptions);
-                    this.skuChart.render();
-                }
-            }
-        },
+    get paginatedItems() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      return this.filteredItems.slice(start, start + this.itemsPerPage);
+    },
 
-        sortData() {
-            this.filteredItems.sort((a, b) => {
-                let aVal = a[this.sortField] || '';
-                let bVal = b[this.sortField] || '';
+    get pageFrom() {
+      if (this.filteredItems.length === 0) return 0;
+      return (this.currentPage - 1) * this.itemsPerPage + 1;
+    },
 
-                if (this.sortField === 'id') {
-                    aVal = parseInt(aVal) || 0;
-                    bVal = parseInt(bVal) || 0;
-                } else {
-                    aVal = String(aVal).toLowerCase();
-                    bVal = String(bVal).toLowerCase();
-                }
+    get pageTo() {
+      return Math.min(this.currentPage * this.itemsPerPage, this.filteredItems.length);
+    },
 
-                if (this.sortDirection === 'asc') return aVal > bVal ? 1 : -1;
-                return aVal < bVal ? 1 : -1;
-            });
-        },
+    get totalPages() {
+      return Math.ceil(this.filteredItems.length / this.itemsPerPage);
+    },
 
-        sortBy(field) {
-            if (this.sortField === field) {
-                this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                this.sortField = field;
-                this.sortDirection = 'asc';
-            }
-            this.sortData();
-        },
+    get visiblePages() {
+      if (this.totalPages <= 1) return [1];
+      const pages = [1];
 
-        get paginatedItems() {
-            const start = (this.currentPage - 1) * this.itemsPerPage;
-            return this.filteredItems.slice(start, start + this.itemsPerPage);
-        },
+      if (this.totalPages <= 7) {
+        for (let i = 2; i <= this.totalPages; i++) pages.push(i);
+      } else {
+        if (this.currentPage <= 4) {
+          for (let i = 2; i <= 5; i++) pages.push(i);
+          pages.push('...');
+          pages.push(this.totalPages);
+        } else if (this.currentPage >= this.totalPages - 3) {
+          pages.push('...');
+          for (let i = this.totalPages - 4; i <= this.totalPages; i++) pages.push(i);
+        } else {
+          pages.push('...');
+          for (let i = this.currentPage - 1; i <= this.currentPage + 1; i++) pages.push(i);
+          pages.push('...');
+          pages.push(this.totalPages);
+        }
+      }
+      return pages;
+    },
 
-        get pageFrom() {
-            if (this.filteredItems.length === 0) return 0;
-            return (this.currentPage - 1) * this.itemsPerPage + 1;
-        },
+    goToPage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page;
+      }
+    },
 
-        get pageTo() {
-            return Math.min(this.currentPage * this.itemsPerPage, this.filteredItems.length);
-        },
-
-        get totalPages() {
-            return Math.ceil(this.filteredItems.length / this.itemsPerPage);
-        },
-
-        get visiblePages() {
-            if (this.totalPages <= 1) return [1];
-            const pages = [1];
-
-            if (this.totalPages <= 7) {
-                for (let i = 2; i <= this.totalPages; i++) pages.push(i);
-            } else {
-                if (this.currentPage <= 4) {
-                    for (let i = 2; i <= 5; i++) pages.push(i);
-                    pages.push('...');
-                    pages.push(this.totalPages);
-                } else if (this.currentPage >= this.totalPages - 3) {
-                    pages.push('...');
-                    for (let i = this.totalPages - 4; i <= this.totalPages; i++) pages.push(i);
-                } else {
-                    pages.push('...');
-                    for (let i = this.currentPage - 1; i <= this.currentPage + 1; i++) pages.push(i);
-                    pages.push('...');
-                    pages.push(this.totalPages);
-                }
-            }
-            return pages;
-        },
-
-        goToPage(page) {
-            if (page >= 1 && page <= this.totalPages) {
-                this.currentPage = page;
-            }
-        },
-
-        toggleAll(checked) {
+    toggleAll(checked) {
       if (checked) {
-        this.paginatedItems.forEach(item => {
+        this.paginatedItems.forEach((item) => {
           if (!this.selectedItems.includes(item.id)) {
             this.selectedItems.push(item.id);
           }
         });
       } else {
-        const currentIds = this.paginatedItems.map(item => item.id);
-        this.selectedItems = this.selectedItems.filter(id => !currentIds.includes(id));
+        const currentIds = this.paginatedItems.map((item) => item.id);
+        this.selectedItems = this.selectedItems.filter((id) => !currentIds.includes(id));
       }
     },
 
-        toggleItem(id) {
-            if (this.selectedItems.includes(id)) {
-                this.selectedItems = this.selectedItems.filter(i => i !== id);
-            } else {
-                this.selectedItems.push(id);
-            }
-        },
+    toggleItem(id) {
+      if (this.selectedItems.includes(id)) {
+        this.selectedItems = this.selectedItems.filter((i) => i !== id);
+      } else {
+        this.selectedItems.push(id);
+      }
+    },
 
-        resetForm() {
-            this.isEditing = false;
-            this.form = emptyForm();
-            this.villageSearchQuery = '';
-            this.villageResults = [];
-        },
+    resetForm() {
+      this.isEditing = false;
+      this.form = emptyForm();
+      this.villageSearchQuery = '';
+      this.villageResults = [];
+    },
 
-        openCreateModal() {
-            this.resetForm();
-            this.modalInstance?.show();
-        },
+    openCreateModal() {
+      this.resetForm();
+      this.modalInstance?.show();
+    },
 
-        viewItem(item) {
-            this.viewData = { ...item };
-            this.viewModalInstance?.show();
-        },
+    viewItem(item) {
+      this.viewData = { ...item };
+      this.viewModalInstance?.show();
+    },
 
-        editItem(item) {
-            this.isEditing = true;
-            this.form = {
-                id:             item.id,
-                name:           item.name || '',
-                code:           item.code || '',
-                company_name:   item.company_name || '',
-                gstin:          item.gstin || '',
-                phone:          item.phone || '',
-                email:          item.email || '',
-                reference_no:   item.reference_no || '',
-                seed_lic_no:    item.seed_lic_no || '',
-                pesti_lic_no:   item.pesti_lic_no || '',
-                address_line_1: item.address_line_1 || '',
-                address_line_2: item.address_line_2 || '',
-                village_id:     item.village_id || '',
-                village_name:   item.village_name || '',
-                post_office:    item.post_office || '',
-                taluka:         item.taluka || '',
-                city:           item.city || '',
-                state:          item.state || '',
-                pincode:        item.pincode || '',
-                is_default:     !!item.is_default,
-                status:         item.status || 'active',
-            };
-            this.villageSearchQuery = item.village_name || '';
-            this.villageResults = [];
-            this.modalInstance?.show();
-        },
+    editItem(item) {
+      this.isEditing = true;
+      this.form = {
+        id: item.id,
+        name: item.name || '',
+        code: item.code || '',
+        company_name: item.company_name || '',
+        gstin: item.gstin || '',
+        phone: item.phone || '',
+        email: item.email || '',
+        reference_no: item.reference_no || '',
+        seed_lic_no: item.seed_lic_no || '',
+        pesti_lic_no: item.pesti_lic_no || '',
+        address_line_1: item.address_line_1 || '',
+        address_line_2: item.address_line_2 || '',
+        village_id: item.village_id || '',
+        village_name: item.village_name || '',
+        post_office: item.post_office || '',
+        taluka: item.taluka || '',
+        city: item.city || '',
+        state: item.state || '',
+        pincode: item.pincode || '',
+        is_default: !!item.is_default,
+        status: item.status || 'active',
+      };
+      this.villageSearchQuery = item.village_name || '';
+      this.villageResults = [];
+      this.modalInstance?.show();
+    },
 
-        async saveItem() {
-            if (!this.form.name.trim()) {
-                showToast('Warehouse name is required.', 'warning');
-                return;
-            }
+    async saveItem() {
+      if (!this.form.name.trim()) {
+        showToast('Warehouse name is required.', 'warning');
+        return;
+      }
 
-            this.saving = true;
-            try {
-                const url    = this.isEditing ? `${this.apiBase}/${this.form.id}` : this.apiBase;
-                const method = this.isEditing ? 'PUT' : 'POST';
+      this.saving = true;
+      try {
+        const url = this.isEditing ? `${this.apiBase}/${this.form.id}` : this.apiBase;
+        const method = this.isEditing ? 'PUT' : 'POST';
 
-                const payload = { ...this.form };
+        const payload = { ...this.form };
 
-                await this.apiRequest(url, {
-                    method,
-                    body: JSON.stringify(payload),
-                });
+        await this.apiRequest(url, {
+          method,
+          body: JSON.stringify(payload),
+        });
 
-                showToast(`Warehouse ${this.isEditing ? 'updated' : 'created'} successfully.`, 'success');
-                this.modalInstance?.hide();
-                await this.loadData();
-            } catch (error) {
-                showToast(error.message, 'error');
-            } finally {
-                this.saving = false;
-            }
-        },
+        showToast(`Warehouse ${this.isEditing ? 'updated' : 'created'} successfully.`, 'success');
+        this.modalInstance?.hide();
+        await this.loadData();
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        this.saving = false;
+      }
+    },
 
-        async deleteItem(item) {
-            const name = item.name || item.code;
-            const confirmed = await confirmDelete({
-                title: 'Delete Warehouse?',
-                text: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+    async deleteItem(item) {
+      const name = item.name || item.code;
+      const confirmed = await confirmDelete({
+        title: 'Delete Warehouse?',
+        text: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+      });
+      if (!confirmed) return;
+
+      try {
+        await this.apiRequest(`${this.apiBase}/${item.id}`, { method: 'DELETE' });
+        showToast('Warehouse deleted successfully.', 'success');
+        await this.loadData();
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    },
+
+    async bulkAction(action) {
+      if (this.selectedItems.length === 0) {
+        showToast('Please select at least one warehouse.', 'warning');
+        return;
+      }
+
+      try {
+        if (action === 'delete') {
+          const confirmed = await confirmDelete({
+            title: 'Delete Selected?',
+            text: `Are you sure you want to delete ${this.selectedItems.length} warehouses?`,
+          });
+          if (!confirmed) return;
+
+          for (const id of this.selectedItems) {
+            await this.apiRequest(`${this.apiBase}/${id}`, { method: 'DELETE' });
+          }
+        } else {
+          const status = action;
+          for (const id of this.selectedItems) {
+            await this.apiRequest(`${this.apiBase}/${id}`, {
+              method: 'PUT',
+              body: JSON.stringify({ status }),
             });
-            if (!confirmed) return;
+          }
+        }
 
-            try {
-                await this.apiRequest(`${this.apiBase}/${item.id}`, { method: 'DELETE' });
-                showToast('Warehouse deleted successfully.', 'success');
-                await this.loadData();
-            } catch (error) {
-                showToast(error.message, 'error');
-            }
-        },
+        this.selectedItems = [];
+        showToast('Bulk action completed successfully.', 'success');
+        await this.loadData();
+      } catch (error) {
+        showToast(error.message || 'Bulk action failed.', 'error');
+      }
+    },
 
-        async bulkAction(action) {
-            if (this.selectedItems.length === 0) {
-                showToast('Please select at least one warehouse.', 'warning');
-                return;
-            }
+    // ─── Village Autofill ──────────────────────────────────────────────────────
 
-            try {
-                if (action === 'delete') {
-                    const confirmed = await confirmDelete({
-                        title: 'Delete Selected?',
-                        text: `Are you sure you want to delete ${this.selectedItems.length} warehouses?`,
-                    });
-                    if (!confirmed) return;
+    onVillageInput() {
+      clearTimeout(this.villageSearchTimeout);
+      if (this.villageSearchQuery.length < 3) {
+        this.villageResults = [];
+        return;
+      }
+      this.villageSearchTimeout = setTimeout(() => this.searchVillages(), 300);
+    },
 
-                    for (const id of this.selectedItems) {
-                        await this.apiRequest(`${this.apiBase}/${id}`, { method: 'DELETE' });
-                    }
-                } else {
-                    const status = action;
-                    for (const id of this.selectedItems) {
-                        await this.apiRequest(`${this.apiBase}/${id}`, {
-                            method: 'PUT',
-                            body: JSON.stringify({ status }),
-                        });
-                    }
-                }
+    async searchVillages() {
+      if (this.villageSearchQuery.trim().length < 3) {
+        this.villageResults = [];
+        return;
+      }
+      this.villageSearchLoading = true;
+      try {
+        const res = await this.apiRequest(
+          `/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`
+        );
+        this.villageResults = res.data ?? [];
+      } catch (e) {
+        console.error('Village search failed:', e);
+      } finally {
+        this.villageSearchLoading = false;
+      }
+    },
 
-                this.selectedItems = [];
-                showToast('Bulk action completed successfully.', 'success');
-                await this.loadData();
-            } catch (error) {
-                showToast(error.message || 'Bulk action failed.', 'error');
-            }
-        },
+    selectVillage(v) {
+      this.form.village_id = v.id;
+      this.form.village_name = v.village_name;
+      this.form.city = v.taluka_name || v.district_name || '';
+      this.form.state = v.state_name || '';
+      this.form.pincode = v.pincode || '';
+      this.form.post_office = v.post_so_name || '';
+      this.form.taluka = v.taluka_name || '';
+      this.villageSearchQuery = v.village_name;
+      this.villageResults = [];
+    },
 
-        // ─── Village Autofill ──────────────────────────────────────────────────────
+    clearVillage() {
+      this.form.village_id = '';
+      this.form.village_name = '';
+      this.form.city = '';
+      this.form.state = '';
+      this.form.pincode = '';
+      this.form.post_office = '';
+      this.form.taluka = '';
+      this.villageSearchQuery = '';
+      this.villageResults = [];
+    },
 
-        onVillageInput() {
-            clearTimeout(this.villageSearchTimeout);
-            if (this.villageSearchQuery.length < 3) {
-                this.villageResults = [];
-                return;
-            }
-            this.villageSearchTimeout = setTimeout(() => this.searchVillages(), 300);
-        },
+    exportData() {
+      if (this.filteredItems.length === 0) {
+        showToast('No data to export.', 'warning');
+        return;
+      }
 
-        async searchVillages() {
-            if (this.villageSearchQuery.trim().length < 3) {
-                this.villageResults = [];
-                return;
-            }
-            this.villageSearchLoading = true;
-            try {
-                const res = await this.apiRequest(`/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`);
-                this.villageResults = res.data ?? [];
-            } catch (e) {
-                console.error('Village search failed:', e);
-            } finally {
-                this.villageSearchLoading = false;
-            }
-        },
+      const headers = [
+        'ID',
+        'Name',
+        'Code',
+        'Company',
+        'GSTIN',
+        'Phone',
+        'Email',
+        'Reference No',
+        'Seed Lic No',
+        'Pesti Lic No',
+        'Address',
+        'City',
+        'State',
+        'Pincode',
+        'Status',
+        'Default',
+      ];
+      const csvRows = [headers.join(',')];
 
-        selectVillage(v) {
-            this.form.village_id   = v.id;
-            this.form.village_name = v.village_name;
-            this.form.city         = v.taluka_name || v.district_name || '';
-            this.form.state        = v.state_name || '';
-            this.form.pincode      = v.pincode || '';
-            this.form.post_office  = v.post_so_name || '';
-            this.form.taluka       = v.taluka_name || '';
-            this.villageSearchQuery = v.village_name;
-            this.villageResults = [];
-        },
+      this.filteredItems.forEach((item) => {
+        const addr = [item.address_line_1, item.address_line_2].filter(Boolean).join(', ');
+        const values = [
+          item.id,
+          `"${(item.name || '').replace(/"/g, '""')}"`,
+          item.code || '',
+          `"${(item.company_name || '').replace(/"/g, '""')}"`,
+          item.gstin || '',
+          item.phone || '',
+          item.email || '',
+          `"${(item.reference_no || '').replace(/"/g, '""')}"`,
+          `"${(item.seed_lic_no || '').replace(/"/g, '""')}"`,
+          `"${(item.pesti_lic_no || '').replace(/"/g, '""')}"`,
+          `"${addr.replace(/"/g, '""')}"`,
+          item.city || '',
+          item.state || '',
+          item.pincode || '',
+          item.status,
+          item.is_default ? 'Yes' : 'No',
+        ];
+        csvRows.push(values.join(','));
+      });
 
-        clearVillage() {
-            this.form.village_id   = '';
-            this.form.village_name = '';
-            this.form.city         = '';
-            this.form.state        = '';
-            this.form.pincode      = '';
-            this.form.post_office  = '';
-            this.form.taluka       = '';
-            this.villageSearchQuery = '';
-            this.villageResults = [];
-        },
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', 'warehouses_export.csv');
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  };
 
-        exportData() {
-            if (this.filteredItems.length === 0) {
-                showToast('No data to export.', 'warning');
-                return;
-            }
-
-            const headers = ['ID', 'Name', 'Code', 'Company', 'GSTIN', 'Phone', 'Email', 'Reference No', 'Seed Lic No', 'Pesti Lic No', 'Address', 'City', 'State', 'Pincode', 'Status', 'Default'];
-            const csvRows = [headers.join(',')];
-
-            this.filteredItems.forEach(item => {
-                const addr = [item.address_line_1, item.address_line_2].filter(Boolean).join(', ');
-                const values = [
-                    item.id,
-                    `"${(item.name || '').replace(/"/g, '""')}"`,
-                    item.code || '',
-                    `"${(item.company_name || '').replace(/"/g, '""')}"`,
-                    item.gstin || '',
-                    item.phone || '',
-                    item.email || '',
-                    `"${(item.reference_no || '').replace(/"/g, '""')}"`,
-                    `"${(item.seed_lic_no || '').replace(/"/g, '""')}"`,
-                    `"${(item.pesti_lic_no || '').replace(/"/g, '""')}"`,
-                    `"${addr.replace(/"/g, '""')}"`,
-                    item.city || '',
-                    item.state || '',
-                    item.pincode || '',
-                    item.status,
-                    item.is_default ? 'Yes' : 'No',
-                ];
-                csvRows.push(values.join(','));
-            });
-
-            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', 'warehouses_export.csv');
-            a.click();
-            URL.revokeObjectURL(url);
-        },
-    };
-
-    window.Alpine.store('warehousesTable', instance);
-    return instance;
+  window.Alpine.store('warehousesTable', instance);
+  return instance;
 };

@@ -13,7 +13,7 @@ async function apiFetch(url, options = {}) {
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'X-CSRF-TOKEN': getCsrfToken(),
       ...(headers || {}),
     },
@@ -26,7 +26,14 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
-    if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
+    if (
+      res.status === 403 ||
+      message.toLowerCase().includes('authoriz') ||
+      message.toLowerCase().includes('forbidden')
+    ) {
+      window.location.href = '/';
+      return;
+    }
     throw new Error(message);
   }
 
@@ -40,9 +47,9 @@ function showToast(message, type = 'success') {
 
   const iconMap = {
     success: 'bi-check-circle-fill',
-    danger:  'bi-x-circle-fill',
+    danger: 'bi-x-circle-fill',
     warning: 'bi-exclamation-triangle-fill',
-    info:    'bi-info-circle-fill',
+    info: 'bi-info-circle-fill',
   };
 
   const el = document.createElement('div');
@@ -137,11 +144,11 @@ document.addEventListener('alpine:init', () => {
       params.append('sort_direction', this.sortDirection);
 
       apiFetch(`/returns?${params.toString()}`)
-        .then(data => {
-          this.returns = (data.returns?.data || []).map(r => this.mapReturn(r));
+        .then((data) => {
+          this.returns = (data.returns?.data || []).map((r) => this.mapReturn(r));
           this.currentPage = data.returns?.current_page || 1;
-          this.totalPages  = data.returns?.last_page  || 1;
-          this.totalReturns = data.returns?.total     || 0;
+          this.totalPages = data.returns?.last_page || 1;
+          this.totalReturns = data.returns?.total || 0;
 
           if (data.stats) {
             this.stats = { ...this.stats, ...data.stats };
@@ -150,8 +157,10 @@ document.addEventListener('alpine:init', () => {
             this.shippingServices = data.shipping_services;
           }
         })
-        .catch(err => showToast(err.message, 'danger'))
-        .finally(() => { this.isLoading = false; });
+        .catch((err) => showToast(err.message, 'danger'))
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
     // ─── Approvals & Cancellations ───────────────────────────────────────────
@@ -169,13 +178,13 @@ document.addEventListener('alpine:init', () => {
           cancelButton: 'btn btn-secondary',
           popup: 'rounded-4 shadow-lg border-0 bg-body',
           title: 'fs-4 fw-bold text-body-emphasis',
-          htmlContainer: 'text-body text-start'
+          htmlContainer: 'text-body text-start',
         },
-        buttonsStyling: false
+        buttonsStyling: false,
       });
 
       if (!confirmed.isConfirmed) return;
-      
+
       try {
         const res = await apiFetch(`/returns/${ret.id}/approve`, { method: 'POST' });
         showToast(res.message || 'Return approved.');
@@ -198,9 +207,9 @@ document.addEventListener('alpine:init', () => {
           cancelButton: 'btn btn-secondary',
           popup: 'rounded-4 shadow-lg border-0 bg-body',
           title: 'fs-4 fw-bold text-body-emphasis',
-          htmlContainer: 'text-body text-start'
+          htmlContainer: 'text-body text-start',
         },
-        buttonsStyling: false
+        buttonsStyling: false,
       });
 
       if (!confirmed.isConfirmed) return;
@@ -217,43 +226,43 @@ document.addEventListener('alpine:init', () => {
     // ─── Mapping ──────────────────────────────────────────────────────────────
 
     mapReturn(r) {
-      const items = (r.items || []).map(item => ({
+      const items = (r.items || []).map((item) => ({
         id: item.id,
         product_id: item.product_id,
-        product:        item.product  || { name: 'Unknown', sku: 'N/A', image_url: null },
-        image_url:      item.product?.image_url || item.product?.image_path || null,
-        requested_qty:  parseFloat(item.requested_qty  || 0),
-        received_qty:   parseFloat(item.received_qty   || 0),
-        restocked_qty:  parseFloat(item.restocked_qty  || 0),
-        damaged_qty:    parseFloat(item.damaged_qty    || 0),
-        qc_notes:  item.qc_notes  || '',
+        product: item.product || { name: 'Unknown', sku: 'N/A', image_url: null },
+        image_url: item.product?.image_url || item.product?.image_path || null,
+        requested_qty: parseFloat(item.requested_qty || 0),
+        received_qty: parseFloat(item.received_qty || 0),
+        restocked_qty: parseFloat(item.restocked_qty || 0),
+        damaged_qty: parseFloat(item.damaged_qty || 0),
+        qc_notes: item.qc_notes || '',
         qc_status: item.qc_status || 'pending',
       }));
 
       const totalPaid = (r.order?.payments || [])
-        .filter(p => p.status === 'completed')
+        .filter((p) => p.status === 'completed')
         .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
 
       return {
-        id:              r.id,
-        return_no:       r.return_no,
-        order_id:        r.order_id,
-        order_no:        r.order?.order_no || 'N/A',
-        status:          r.status,
-        financial_status:r.financial_status,
-        reason:          r.reason || 'N/A',
-        notes:           r.notes  || '',
-        refund_amount:   parseFloat(r.refund_amount        || 0),
+        id: r.id,
+        return_no: r.return_no,
+        order_id: r.order_id,
+        order_no: r.order?.order_no || 'N/A',
+        status: r.status,
+        financial_status: r.financial_status,
+        reason: r.reason || 'N/A',
+        notes: r.notes || '',
+        refund_amount: parseFloat(r.refund_amount || 0),
         credit_note_amount: parseFloat(r.credit_note_amount || 0),
-        created_at:      r.created_at,
+        created_at: r.created_at,
         customer: {
           name: r.order?.party
             ? `${r.order.party.firstname} ${r.order.party.lastname || ''}`.trim()
             : 'N/A',
         },
-        order:    r.order,
-        items:    items,
-        refunds:  r.refunds || [],
+        order: r.order,
+        items: items,
+        refunds: r.refunds || [],
         totalPaid,
         original: r,
       };
@@ -267,18 +276,19 @@ document.addEventListener('alpine:init', () => {
     },
 
     clearFilters() {
-      this.searchQuery    = '';
-      this.statusFilter   = '';
+      this.searchQuery = '';
+      this.statusFilter = '';
       this.financialFilter = '';
-      this.serviceFilter  = '';
-      this.sortField      = 'id';
-      this.sortDirection  = 'desc';
-      this.currentPage    = 1;
+      this.serviceFilter = '';
+      this.sortField = 'id';
+      this.sortDirection = 'desc';
+      this.currentPage = 1;
       this.loadReturns();
     },
 
     sortBy(field) {
-      this.sortDirection = (this.sortField === field && this.sortDirection === 'asc') ? 'desc' : 'asc';
+      this.sortDirection =
+        this.sortField === field && this.sortDirection === 'asc' ? 'desc' : 'asc';
       this.sortField = field;
       this.currentPage = 1;
       this.loadReturns();
@@ -299,7 +309,7 @@ document.addEventListener('alpine:init', () => {
       } else {
         if (this.currentPage > 3) pages.push('...');
         const start = Math.max(2, this.currentPage - 1);
-        const end   = Math.min(this.totalPages - 1, this.currentPage + 1);
+        const end = Math.min(this.totalPages - 1, this.currentPage + 1);
         for (let i = start; i <= end; i++) pages.push(i);
         if (this.currentPage < this.totalPages - 2) pages.push('...');
         pages.push(this.totalPages);
@@ -311,48 +321,53 @@ document.addEventListener('alpine:init', () => {
 
     toggleAll(checked) {
       if (checked) {
-        this.returns.forEach(r => {
+        this.returns.forEach((r) => {
           if (!this.selectedReturns.includes(String(r.id))) {
             this.selectedReturns.push(String(r.id));
           }
           this.selectedReturnsMap[r.id] = r;
         });
       } else {
-        this.returns.forEach(r => {
-          this.selectedReturns = this.selectedReturns.filter(id => id !== String(r.id));
+        this.returns.forEach((r) => {
+          this.selectedReturns = this.selectedReturns.filter((id) => id !== String(r.id));
           delete this.selectedReturnsMap[r.id];
         });
       }
     },
 
     toggleReturn(ret, checked) {
-        const idStr = String(ret.id);
-        if (checked) {
-            if (!this.selectedReturns.includes(idStr)) {
-                this.selectedReturns.push(idStr);
-            }
-            this.selectedReturnsMap[ret.id] = ret;
-        } else {
-            this.selectedReturns = this.selectedReturns.filter(id => id !== idStr);
-            delete this.selectedReturnsMap[ret.id];
+      const idStr = String(ret.id);
+      if (checked) {
+        if (!this.selectedReturns.includes(idStr)) {
+          this.selectedReturns.push(idStr);
         }
+        this.selectedReturnsMap[ret.id] = ret;
+      } else {
+        this.selectedReturns = this.selectedReturns.filter((id) => id !== idStr);
+        delete this.selectedReturnsMap[ret.id];
+      }
     },
 
     get allSelected() {
-      return this.returns.length > 0 && this.returns.every(r => this.selectedReturns.includes(String(r.id)));
+      return (
+        this.returns.length > 0 &&
+        this.returns.every((r) => this.selectedReturns.includes(String(r.id)))
+      );
     },
 
     get bulkAvailableActions() {
-      const selected = this.returns.filter(r => this.selectedReturns.includes(String(r.id)));
+      const selected = this.returns.filter((r) => this.selectedReturns.includes(String(r.id)));
       return {
-        approve: selected.some(r => r.status === 'pending'),
-        cancel: selected.some(r => r.status === 'pending'),
-        qc: selected.some(r => ['approved', 'qc_in_progress', 'received'].includes(r.status))
+        approve: selected.some((r) => r.status === 'pending'),
+        cancel: selected.some((r) => r.status === 'pending'),
+        qc: selected.some((r) => ['approved', 'qc_in_progress', 'received'].includes(r.status)),
       };
     },
 
     async bulkApprove() {
-      const pending = this.returns.filter(r => this.selectedReturns.includes(String(r.id)) && r.status === 'pending');
+      const pending = this.returns.filter(
+        (r) => this.selectedReturns.includes(String(r.id)) && r.status === 'pending'
+      );
       if (!pending.length) return;
 
       const confirmed = await Swal.fire({
@@ -367,9 +382,9 @@ document.addEventListener('alpine:init', () => {
           cancelButton: 'btn btn-secondary',
           popup: 'rounded-4 shadow-lg border-0 bg-body',
           title: 'fs-4 fw-bold text-body-emphasis',
-          htmlContainer: 'text-body text-start'
+          htmlContainer: 'text-body text-start',
         },
-        buttonsStyling: false
+        buttonsStyling: false,
       });
       if (!confirmed.isConfirmed) return;
 
@@ -395,7 +410,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     async bulkCancel() {
-      const pending = this.returns.filter(r => this.selectedReturns.includes(String(r.id)) && r.status === 'pending');
+      const pending = this.returns.filter(
+        (r) => this.selectedReturns.includes(String(r.id)) && r.status === 'pending'
+      );
       if (!pending.length) return;
 
       const confirmed = await Swal.fire({
@@ -410,9 +427,9 @@ document.addEventListener('alpine:init', () => {
           cancelButton: 'btn btn-secondary',
           popup: 'rounded-4 shadow-lg border-0 bg-body',
           title: 'fs-4 fw-bold text-body-emphasis',
-          htmlContainer: 'text-body text-start'
+          htmlContainer: 'text-body text-start',
         },
-        buttonsStyling: false
+        buttonsStyling: false,
       });
       if (!confirmed.isConfirmed) return;
 
@@ -444,8 +461,9 @@ document.addEventListener('alpine:init', () => {
     async bulkUpdateStatus(action) {
       if (!this.selectedReturns.length) return;
 
-      const pendingReturns = this.returns
-        .filter(r => this.selectedReturns.includes(String(r.id)) && r.status === 'pending');
+      const pendingReturns = this.returns.filter(
+        (r) => this.selectedReturns.includes(String(r.id)) && r.status === 'pending'
+      );
 
       if (!pendingReturns.length) {
         showToast('No pending returns selected.', 'warning');
@@ -459,17 +477,21 @@ document.addEventListener('alpine:init', () => {
       for (const ret of pendingReturns) {
         try {
           const payload = {
-            items: ret.items.map(i => ({
-              id:            i.id,
-              received_qty:  i.requested_qty,
+            items: ret.items.map((i) => ({
+              id: i.id,
+              received_qty: i.requested_qty,
               restocked_qty: action === 'completed' ? i.requested_qty : 0,
-              damaged_qty:   action === 'rejected'  ? i.requested_qty : 0,
-              qc_notes:      action === 'completed'
-                ? 'Bulk approved — all items restocked'
-                : 'Bulk rejected — all items marked damaged',
+              damaged_qty: action === 'rejected' ? i.requested_qty : 0,
+              qc_notes:
+                action === 'completed'
+                  ? 'Bulk approved — all items restocked'
+                  : 'Bulk rejected — all items marked damaged',
             })),
           };
-          await apiFetch(`/returns/${ret.id}/qc`, { method: 'POST', body: JSON.stringify(payload) });
+          await apiFetch(`/returns/${ret.id}/qc`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
           successCount++;
         } catch {
           failCount++;
@@ -481,7 +503,7 @@ document.addEventListener('alpine:init', () => {
       this.selectedReturnsMap = {};
 
       if (successCount) showToast(`${successCount} return(s) processed successfully.`);
-      if (failCount)    showToast(`${failCount} return(s) failed.`, 'warning');
+      if (failCount) showToast(`${failCount} return(s) failed.`, 'warning');
 
       this.loadReturns();
     },
@@ -492,13 +514,13 @@ document.addEventListener('alpine:init', () => {
     viewReturnDetails(ret) {
       this.selectedReturn = ret;
       // Deep-copy items so we don't mutate the table data until confirmed
-      this.qcItems = ret.items.map(i => ({
+      this.qcItems = ret.items.map((i) => ({
         ...i,
-        image_url:     i.image_url || i.product?.image_url || null,
-        received_qty:  i.requested_qty,
+        image_url: i.image_url || i.product?.image_url || null,
+        received_qty: i.requested_qty,
         restocked_qty: i.requested_qty,
-        damaged_qty:   0,
-        qc_notes:      i.qc_notes || '',
+        damaged_qty: 0,
+        qc_notes: i.qc_notes || '',
       }));
       this.financeAmount = 0;
       this.financeAction = 'refund';
@@ -516,56 +538,59 @@ document.addEventListener('alpine:init', () => {
 
     /** Per-item validation: damaged + restocked should not exceed received, received ≤ requested */
     qcItemValid(item) {
-      const req  = parseFloat(item.requested_qty || 0);
-      const recv = parseFloat(item.received_qty  || 0);
+      const req = parseFloat(item.requested_qty || 0);
+      const recv = parseFloat(item.received_qty || 0);
       const rest = parseFloat(item.restocked_qty || 0);
-      const dmg  = parseFloat(item.damaged_qty   || 0);
-      return recv >= 0 && recv <= req && rest >= 0 && dmg >= 0 && (rest + dmg) <= recv;
+      const dmg = parseFloat(item.damaged_qty || 0);
+      return recv >= 0 && recv <= req && rest >= 0 && dmg >= 0 && rest + dmg <= recv;
     },
 
     get qcFormValid() {
-      return this.qcItems.length > 0 && this.qcItems.every(i => this.qcItemValid(i));
+      return this.qcItems.length > 0 && this.qcItems.every((i) => this.qcItemValid(i));
     },
 
     /** Clamp received to [0, requested], then auto-set restocked to remainder */
     onReceivedChange(item) {
-      const req  = parseFloat(item.requested_qty || 0);
-      item.received_qty  = Math.min(Math.max(0, parseFloat(item.received_qty || 0)), req);
+      const req = parseFloat(item.requested_qty || 0);
+      item.received_qty = Math.min(Math.max(0, parseFloat(item.received_qty || 0)), req);
       const recv = item.received_qty;
-      const dmg  = Math.min(parseFloat(item.damaged_qty || 0), recv);
-      item.damaged_qty   = dmg;
+      const dmg = Math.min(parseFloat(item.damaged_qty || 0), recv);
+      item.damaged_qty = dmg;
       item.restocked_qty = Math.max(0, recv - dmg);
     },
 
     /** Clamp damaged to [0, received], then auto-set restocked to remainder */
     onDamagedChange(item) {
       const recv = parseFloat(item.received_qty || 0);
-      item.damaged_qty   = Math.min(Math.max(0, parseFloat(item.damaged_qty || 0)), recv);
+      item.damaged_qty = Math.min(Math.max(0, parseFloat(item.damaged_qty || 0)), recv);
       item.restocked_qty = Math.max(0, recv - item.damaged_qty);
     },
 
     /** Clamp restocked to [0, received - damaged] */
     onRestockedChange(item) {
       const recv = parseFloat(item.received_qty || 0);
-      const dmg  = parseFloat(item.damaged_qty  || 0);
-      item.restocked_qty = Math.min(Math.max(0, parseFloat(item.restocked_qty || 0)), Math.max(0, recv - dmg));
+      const dmg = parseFloat(item.damaged_qty || 0);
+      item.restocked_qty = Math.min(
+        Math.max(0, parseFloat(item.restocked_qty || 0)),
+        Math.max(0, recv - dmg)
+      );
     },
 
     /** Quick-fill: mark all as fully restocked (all good) */
     markAllGood() {
-      this.qcItems.forEach(i => {
-        i.received_qty  = i.requested_qty;
+      this.qcItems.forEach((i) => {
+        i.received_qty = i.requested_qty;
         i.restocked_qty = i.requested_qty;
-        i.damaged_qty   = 0;
+        i.damaged_qty = 0;
       });
     },
 
     /** Quick-fill: mark all as damaged */
     markAllDamaged() {
-      this.qcItems.forEach(i => {
-        i.received_qty  = i.requested_qty;
+      this.qcItems.forEach((i) => {
+        i.received_qty = i.requested_qty;
         i.restocked_qty = 0;
-        i.damaged_qty   = i.requested_qty;
+        i.damaged_qty = i.requested_qty;
       });
     },
 
@@ -579,12 +604,12 @@ document.addEventListener('alpine:init', () => {
       this.isSubmitting = true;
       try {
         const payload = {
-          items: this.qcItems.map(i => ({
-            id:            i.id,
-            received_qty:  parseFloat(i.received_qty  || 0),
+          items: this.qcItems.map((i) => ({
+            id: i.id,
+            received_qty: parseFloat(i.received_qty || 0),
             restocked_qty: parseFloat(i.restocked_qty || 0),
-            damaged_qty:   parseFloat(i.damaged_qty   || 0),
-            qc_notes:      i.qc_notes || null,
+            damaged_qty: parseFloat(i.damaged_qty || 0),
+            qc_notes: i.qc_notes || null,
           })),
         };
 
@@ -606,8 +631,11 @@ document.addEventListener('alpine:init', () => {
     // ─── Bulk QC Inspect Modal ────────────────────────────────────────────────
     openBulkQcModal() {
       // Find selected pending returns
-      this.selectedReturnsForBulk = this.returns
-        .filter(r => this.selectedReturns.includes(String(r.id)) && ['approved', 'qc_in_progress', 'received'].includes(r.status));
+      this.selectedReturnsForBulk = this.returns.filter(
+        (r) =>
+          this.selectedReturns.includes(String(r.id)) &&
+          ['approved', 'qc_in_progress', 'received'].includes(r.status)
+      );
 
       if (!this.selectedReturnsForBulk.length) {
         showToast('No approved returns selected.', 'warning');
@@ -642,7 +670,7 @@ document.addEventListener('alpine:init', () => {
       }
 
       // Map map to array and set default quantities
-      this.bulkQcItems = Object.values(aggregationMap).map(p => {
+      this.bulkQcItems = Object.values(aggregationMap).map((p) => {
         p.received_qty = p.requested_qty;
         p.restocked_qty = p.requested_qty;
         p.damaged_qty = 0;
@@ -661,51 +689,54 @@ document.addEventListener('alpine:init', () => {
     },
 
     bulkQcItemValid(item) {
-      const req  = parseFloat(item.requested_qty || 0);
-      const recv = parseFloat(item.received_qty  || 0);
+      const req = parseFloat(item.requested_qty || 0);
+      const recv = parseFloat(item.received_qty || 0);
       const rest = parseFloat(item.restocked_qty || 0);
-      const dmg  = parseFloat(item.damaged_qty   || 0);
-      return recv >= 0 && recv <= req && rest >= 0 && dmg >= 0 && (rest + dmg) <= recv;
+      const dmg = parseFloat(item.damaged_qty || 0);
+      return recv >= 0 && recv <= req && rest >= 0 && dmg >= 0 && rest + dmg <= recv;
     },
 
     get bulkQcFormValid() {
-      return this.bulkQcItems.length > 0 && this.bulkQcItems.every(i => this.bulkQcItemValid(i));
+      return this.bulkQcItems.length > 0 && this.bulkQcItems.every((i) => this.bulkQcItemValid(i));
     },
 
     onBulkReceivedChange(item) {
-      const req  = parseFloat(item.requested_qty || 0);
-      item.received_qty  = Math.min(Math.max(0, parseFloat(item.received_qty || 0)), req);
+      const req = parseFloat(item.requested_qty || 0);
+      item.received_qty = Math.min(Math.max(0, parseFloat(item.received_qty || 0)), req);
       const recv = item.received_qty;
-      const dmg  = Math.min(parseFloat(item.damaged_qty || 0), recv);
-      item.damaged_qty   = dmg;
+      const dmg = Math.min(parseFloat(item.damaged_qty || 0), recv);
+      item.damaged_qty = dmg;
       item.restocked_qty = Math.max(0, recv - dmg);
     },
 
     onBulkDamagedChange(item) {
       const recv = parseFloat(item.received_qty || 0);
-      item.damaged_qty   = Math.min(Math.max(0, parseFloat(item.damaged_qty || 0)), recv);
+      item.damaged_qty = Math.min(Math.max(0, parseFloat(item.damaged_qty || 0)), recv);
       item.restocked_qty = Math.max(0, recv - item.damaged_qty);
     },
 
     onBulkRestockedChange(item) {
       const recv = parseFloat(item.received_qty || 0);
-      const dmg  = parseFloat(item.damaged_qty  || 0);
-      item.restocked_qty = Math.min(Math.max(0, parseFloat(item.restocked_qty || 0)), Math.max(0, recv - dmg));
+      const dmg = parseFloat(item.damaged_qty || 0);
+      item.restocked_qty = Math.min(
+        Math.max(0, parseFloat(item.restocked_qty || 0)),
+        Math.max(0, recv - dmg)
+      );
     },
 
     bulkMarkAllGood() {
-      this.bulkQcItems.forEach(i => {
-        i.received_qty  = i.requested_qty;
+      this.bulkQcItems.forEach((i) => {
+        i.received_qty = i.requested_qty;
         i.restocked_qty = i.requested_qty;
-        i.damaged_qty   = 0;
+        i.damaged_qty = 0;
       });
     },
 
     bulkMarkAllDamaged() {
-      this.bulkQcItems.forEach(i => {
-        i.received_qty  = i.requested_qty;
+      this.bulkQcItems.forEach((i) => {
+        i.received_qty = i.requested_qty;
         i.restocked_qty = 0;
-        i.damaged_qty   = i.requested_qty;
+        i.damaged_qty = i.requested_qty;
       });
     },
 
@@ -745,11 +776,11 @@ document.addEventListener('alpine:init', () => {
           }
 
           returnPayloads[item.return_id].items.push({
-            id:            item.id,
-            received_qty:  itemReceived,
+            id: item.id,
+            received_qty: itemReceived,
             restocked_qty: itemRestocked,
-            damaged_qty:   itemDamaged,
-            qc_notes:      notes,
+            damaged_qty: itemDamaged,
+            qc_notes: notes,
           });
         }
       }
@@ -777,7 +808,7 @@ document.addEventListener('alpine:init', () => {
       this.selectedReturnsMap = {};
 
       if (successCount) showToast(`${successCount} return(s) processed successfully.`);
-      if (failCount)    showToast(`${failCount} return(s) failed.`, 'warning');
+      if (failCount) showToast(`${failCount} return(s) failed.`, 'warning');
 
       this.closeBulkQcModal();
       this.loadReturns();
@@ -794,8 +825,8 @@ document.addEventListener('alpine:init', () => {
       this.isSubmitting = true;
       try {
         const payload = {
-          action:         this.financeAction,
-          amount:         parseFloat(this.financeAmount),
+          action: this.financeAction,
+          amount: parseFloat(this.financeAmount),
           payment_method: this.financeMethod,
         };
 
@@ -824,37 +855,45 @@ document.addEventListener('alpine:init', () => {
     formatDate(value) {
       if (!value) return 'N/A';
       const d = new Date(value);
-      return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      return Number.isNaN(d.getTime())
+        ? 'N/A'
+        : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     },
 
     getStatusColor(status) {
       // Returns hex so blades can use :style="`color: ${getStatusColor(s)}`"
-      return {
-        pending:        '#f97316',
-        received:       '#0ea5e9',
-        qc_in_progress: '#6366f1',
-        completed:      '#10b981',
-        rejected:       '#ef4444',
-      }[status] || '#6c757d';
+      return (
+        {
+          pending: '#f97316',
+          received: '#0ea5e9',
+          qc_in_progress: '#6366f1',
+          completed: '#10b981',
+          rejected: '#ef4444',
+        }[status] || '#6c757d'
+      );
     },
 
     getStatusLabel(status) {
-      return {
-        pending:        'Pending',
-        received:       'Received',
-        qc_in_progress: 'QC In Progress',
-        completed:      'Completed',
-        rejected:       'Rejected',
-      }[status] || status;
+      return (
+        {
+          pending: 'Pending',
+          received: 'Received',
+          qc_in_progress: 'QC In Progress',
+          completed: 'Completed',
+          rejected: 'Rejected',
+        }[status] || status
+      );
     },
 
     getFinancialStatusColor(status) {
-      return {
-        pending:        '#f97316',
-        partial_refund: '#0ea5e9',
-        fully_refunded: '#10b981',
-        credited:       '#6366f1',
-      }[status] || '#6c757d';
+      return (
+        {
+          pending: '#f97316',
+          partial_refund: '#0ea5e9',
+          fully_refunded: '#10b981',
+          credited: '#6366f1',
+        }[status] || '#6c757d'
+      );
     },
   }));
 });

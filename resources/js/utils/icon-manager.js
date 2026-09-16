@@ -71,7 +71,7 @@ export class BootstrapIconManager {
     const iconClass = this.get(iconName);
     const element = document.createElement('i');
     element.className = `${iconClass} ${className}`.trim();
-    
+
     Object.entries(attributes).forEach(([key, value]) => {
       element.setAttribute(key, value);
     });
@@ -104,21 +104,21 @@ export class LucideIconManager {
     try {
       // Check if lucide is available as optional dependency
       const lucideModule = await import('lucide').catch(() => null);
-      
+
       if (!lucideModule) {
         console.info('Lucide icons not installed, using Bootstrap Icons only');
         return;
       }
 
-      const { 
-        BarChart3, 
-        Users, 
-        Settings, 
-        Bell, 
-        Search, 
-        Menu, 
-        X, 
-        Check, 
+      const {
+        BarChart3,
+        Users,
+        Settings,
+        Bell,
+        Search,
+        Menu,
+        X,
+        Check,
         AlertTriangle,
         Info,
         CheckCircle,
@@ -156,7 +156,7 @@ export class LucideIconManager {
         Unlock,
         User,
         Crown,
-        Shield
+        Shield,
       } = lucideModule;
 
       // Map icon names to Lucide components
@@ -208,7 +208,6 @@ export class LucideIconManager {
       this.icons.set('shield', Shield);
 
       console.info('✨ Lucide icons loaded successfully');
-
     } catch {
       console.info('Lucide icons not available, falling back to Bootstrap Icons only');
     }
@@ -225,7 +224,7 @@ export class LucideIconManager {
       size = this.size,
       strokeWidth = this.strokeWidth,
       className = '',
-      color = 'currentColor'
+      color = 'currentColor',
     } = options;
 
     // Create SVG element
@@ -253,9 +252,7 @@ export class LucideIconManager {
 export class IconManager {
   constructor(provider = 'bootstrap') {
     this.provider = provider;
-    this.manager = provider === 'lucide' 
-      ? new LucideIconManager() 
-      : new BootstrapIconManager();
+    this.manager = provider === 'lucide' ? new LucideIconManager() : new BootstrapIconManager();
   }
 
   // Unified API for both providers
@@ -289,7 +286,7 @@ export class IconManager {
 
   // Batch icon loading for better performance
   preloadIcons(iconNames = []) {
-    iconNames.forEach(name => {
+    iconNames.forEach((name) => {
       this.create(name);
     });
   }
@@ -297,9 +294,7 @@ export class IconManager {
   // Switch provider dynamically
   switchProvider(provider) {
     this.provider = provider;
-    this.manager = provider === 'lucide' 
-      ? new LucideIconManager() 
-      : new BootstrapIconManager();
+    this.manager = provider === 'lucide' ? new LucideIconManager() : new BootstrapIconManager();
   }
 }
 
@@ -313,4 +308,4 @@ export const switchToLucide = () => {
 
 export const switchToBootstrap = () => {
   iconManager.switchProvider('bootstrap');
-}; 
+};

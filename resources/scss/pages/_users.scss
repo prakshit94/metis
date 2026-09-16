@@ -23,7 +23,7 @@
 
   .user-status {
     @include status-badge();
-    
+
     &.online {
       background-color: var(--bs-success-bg-subtle);
       color: var(--bs-success-text-emphasis);
@@ -53,7 +53,6 @@
     border-radius: var(--bs-border-radius);
   }
 
-
   .user-row {
     transition: background-color 0.2s ease-in-out;
 
@@ -68,7 +67,7 @@
 
   .chart-container {
     height: 250px;
-    
+
     @include media-breakpoint-up(lg) {
       height: 300px;
     }

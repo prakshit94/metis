@@ -10,7 +10,7 @@ async function apiFetch(url, options = {}) {
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'X-CSRF-TOKEN': getCsrfToken(),
       ...(headers || {}),
     },
@@ -23,7 +23,14 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
-    if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
+    if (
+      res.status === 403 ||
+      message.toLowerCase().includes('authoriz') ||
+      message.toLowerCase().includes('forbidden')
+    ) {
+      window.location.href = '/';
+      return;
+    }
     throw new Error(message);
   }
 
@@ -36,9 +43,9 @@ function showToast(message, type = 'success') {
 
   const iconMap = {
     success: 'bi-check-circle-fill',
-    danger:  'bi-x-circle-fill',
+    danger: 'bi-x-circle-fill',
     warning: 'bi-exclamation-triangle-fill',
-    info:    'bi-info-circle-fill',
+    info: 'bi-info-circle-fill',
   };
 
   const el = document.createElement('div');
@@ -92,7 +99,7 @@ document.addEventListener('alpine:init', () => {
       payment_date: '',
       payment_method: '',
       status: '',
-      transaction_id: ''
+      transaction_id: '',
     },
 
     importStep: 1,
@@ -118,7 +125,7 @@ document.addEventListener('alpine:init', () => {
       params.append('sort_direction', this.sortDirection);
 
       apiFetch(`/payments?${params.toString()}`)
-        .then(data => {
+        .then((data) => {
           this.payments = data.payments?.data || [];
           this.currentPage = data.payments?.current_page || 1;
           this.totalPages = data.payments?.last_page || 1;
@@ -128,18 +135,21 @@ document.addEventListener('alpine:init', () => {
             this.stats = { ...this.stats, ...data.stats };
           }
         })
-        .catch(err => showToast(err.message, 'danger'))
-        .finally(() => { this.isLoading = false; });
+        .catch((err) => showToast(err.message, 'danger'))
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
     filterPayments() {
       this.currentPage = 1;
-      
+
       this.loadPayments();
     },
 
     sortBy(field) {
-      this.sortDirection = (this.sortField === field && this.sortDirection === 'asc') ? 'desc' : 'asc';
+      this.sortDirection =
+        this.sortField === field && this.sortDirection === 'asc' ? 'desc' : 'asc';
       this.sortField = field;
       this.currentPage = 1;
       this.loadPayments();
@@ -170,14 +180,14 @@ document.addEventListener('alpine:init', () => {
 
     toggleAll(checked) {
       if (checked) {
-        this.payments.forEach(item => {
+        this.payments.forEach((item) => {
           if (!this.selectedPayments.includes(String(item.id))) {
             this.selectedPayments.push(String(item.id));
           }
         });
       } else {
-        const currentIds = this.payments.map(item => String(item.id));
-        this.selectedPayments = this.selectedPayments.filter(id => !currentIds.includes(id));
+        const currentIds = this.payments.map((item) => String(item.id));
+        this.selectedPayments = this.selectedPayments.filter((id) => !currentIds.includes(id));
       }
     },
 
@@ -190,8 +200,8 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           body: JSON.stringify({
             ids: this.selectedPayments,
-            status: status
-          })
+            status: status,
+          }),
         });
         showToast(res.message || 'Status updated successfully.');
         this.selectedPayments = [];
@@ -210,8 +220,8 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           body: JSON.stringify({
             ids: [id],
-            status: status
-          })
+            status: status,
+          }),
         });
         showToast(res.message || 'Payment status updated.');
         this.loadPayments();
@@ -223,11 +233,12 @@ document.addEventListener('alpine:init', () => {
     },
 
     async revertPayment(id) {
-      if (!confirm('Are you sure you want to revert this payment? This action cannot be undone.')) return;
+      if (!confirm('Are you sure you want to revert this payment? This action cannot be undone.'))
+        return;
       this.isSubmitting = true;
       try {
         const res = await apiFetch(`/payments/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
         });
         showToast(res.message || 'Payment reverted successfully.');
         this.loadPayments();
@@ -238,7 +249,6 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-
     async exportSelectedPayments() {
       if (!this.selectedPayments.length) return;
       this.isSubmitting = true;
@@ -247,11 +257,11 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': getCsrfToken()
+            'X-CSRF-TOKEN': getCsrfToken(),
           },
-          body: JSON.stringify({ ids: this.selectedPayments })
+          body: JSON.stringify({ ids: this.selectedPayments }),
         });
-        
+
         if (!res.ok) {
           const text = await res.text();
           const errData = text ? JSON.parse(text) : {};
@@ -267,7 +277,7 @@ document.addEventListener('alpine:init', () => {
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
-        
+
         showToast('Payments exported successfully.');
         this.selectedPayments = [];
       } catch (err) {
@@ -299,7 +309,7 @@ document.addEventListener('alpine:init', () => {
         payment_date: payment.payment_date ? payment.payment_date.slice(0, 16) : '',
         payment_method: payment.payment_method,
         status: payment.status,
-        transaction_id: payment.transaction_id || ''
+        transaction_id: payment.transaction_id || '',
       };
       this.$nextTick(() => {
         getModal('editModal')?.show();
@@ -312,7 +322,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await apiFetch(`/payments/${this.editForm.id}`, {
           method: 'PUT',
-          body: JSON.stringify(this.editForm)
+          body: JSON.stringify(this.editForm),
         });
         showToast(res.message || 'Payment updated successfully.');
         getModal('editModal')?.hide();
@@ -346,12 +356,12 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/payments/import/preview', {
           method: 'POST',
-          headers: { 'X-CSRF-TOKEN': getCsrfToken(), 'Accept': 'application/json' },
-          body: formData
+          headers: { 'X-CSRF-TOKEN': getCsrfToken(), Accept: 'application/json' },
+          body: formData,
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed to parse file.');
-        
+
         this.importPreview = data.preview || [];
         this.importErrors = data.errors || [];
         this.importStep = 2;
@@ -368,11 +378,11 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await apiFetch('/payments/import/process', {
           method: 'POST',
-          body: JSON.stringify({ payments: this.importPreview })
+          body: JSON.stringify({ payments: this.importPreview }),
         });
         showToast(res.message);
         if (res.errors && res.errors.length) {
-          res.errors.forEach(e => showToast(e, 'warning'));
+          res.errors.forEach((e) => showToast(e, 'warning'));
         }
         getModal('importPaymentsModal')?.hide();
         this.loadPayments();
@@ -385,19 +395,32 @@ document.addEventListener('alpine:init', () => {
 
     formatCurrency(value) {
       const n = Number.parseFloat(value ?? 0);
-      return Number.isFinite(n) ? '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '₹0.00';
+      return Number.isFinite(n)
+        ? '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : '₹0.00';
     },
 
     formatDate(value) {
       if (!value) return 'N/A';
       const d = new Date(value);
-      return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      return Number.isNaN(d.getTime())
+        ? 'N/A'
+        : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     },
 
     formatDateTime(value) {
       if (!value) return 'N/A';
       const d = new Date(value);
-      return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
-    }
+      return Number.isNaN(d.getTime())
+        ? 'N/A'
+        : d.toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          });
+    },
   }));
 });

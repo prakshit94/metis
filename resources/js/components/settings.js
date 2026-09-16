@@ -6,11 +6,11 @@ document.addEventListener('alpine:init', () => {
     // UI State
     sidebarVisible: false,
     activeSection: 'general',
-    
+
     // Storage Information
     storageUsed: 47.3,
     storageTotal: 100,
-    
+
     // Settings Data
     settings: {
       // General Settings
@@ -18,72 +18,74 @@ document.addEventListener('alpine:init', () => {
       timezone: 'America/New_York',
       dateFormat: 'MM/DD/YYYY',
       autoSave: true,
-      
+
       // Appearance Settings
       theme: 'light',
       collapsedSidebar: false,
       animations: true,
       highContrast: false,
-      
+
       // Notifications Settings
       notifications: {
         desktop: true,
         email: true,
         sound: false,
-        marketing: false
+        marketing: false,
       },
-      
+
       // Privacy Settings
       privacy: {
         analytics: true,
         performance: true,
-        activityHistory: true
+        activityHistory: true,
       },
-      
+
       // Storage Settings
       storage: {
         autoCleanup: true,
-        cacheLimit: '1000'
-      }
+        cacheLimit: '1000',
+      },
     },
-    
+
     // Navigation Sections
     sections: [
       {
         id: 'general',
         name: 'General',
-        icon: 'bi-gear'
+        icon: 'bi-gear',
       },
       {
         id: 'appearance',
         name: 'Appearance',
-        icon: 'bi-palette'
+        icon: 'bi-palette',
       },
       {
         id: 'notifications',
         name: 'Notifications',
-        icon: 'bi-bell'
+        icon: 'bi-bell',
       },
       {
         id: 'privacy',
         name: 'Privacy',
-        icon: 'bi-shield-check'
+        icon: 'bi-shield-check',
       },
       {
         id: 'storage',
         name: 'Storage',
-        icon: 'bi-hdd'
-      }
+        icon: 'bi-hdd',
+      },
     ],
 
     init() {
       // Get current theme from document or localStorage
-      const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 
-                          localStorage.getItem('theme') || 'light';
-      
+      const currentTheme =
+        document.documentElement.getAttribute('data-bs-theme') ||
+        localStorage.getItem('theme') ||
+        'light';
+
       // Update settings theme to match current theme
       this.settings.theme = currentTheme;
-      
+
       this.loadSettings();
     },
 
@@ -123,7 +125,7 @@ document.addEventListener('alpine:init', () => {
       try {
         localStorage.setItem('appSettings', JSON.stringify(this.settings));
         this.showNotification('Settings saved successfully!', 'success');
-        
+
         // Apply theme change immediately and sync with global theme system
         if (this.settings.theme) {
           document.documentElement.setAttribute('data-bs-theme', this.settings.theme);
@@ -136,7 +138,11 @@ document.addEventListener('alpine:init', () => {
     },
 
     resetSettings() {
-      if (confirm('Are you sure you want to reset all settings to their default values? This action cannot be undone.')) {
+      if (
+        confirm(
+          'Are you sure you want to reset all settings to their default values? This action cannot be undone.'
+        )
+      ) {
         // Reset to default values
         this.settings = {
           language: 'en',
@@ -151,25 +157,25 @@ document.addEventListener('alpine:init', () => {
             desktop: true,
             email: true,
             sound: false,
-            marketing: false
+            marketing: false,
           },
           privacy: {
             analytics: true,
             performance: true,
-            activityHistory: true
+            activityHistory: true,
           },
           storage: {
             autoCleanup: true,
-            cacheLimit: '1000'
-          }
+            cacheLimit: '1000',
+          },
         };
-        
+
         // Clear localStorage
         localStorage.removeItem('appSettings');
-        
+
         // Apply default theme
         document.documentElement.setAttribute('data-bs-theme', 'light');
-        
+
         this.showNotification('Settings reset to defaults', 'success');
       }
     },
@@ -187,7 +193,7 @@ document.addEventListener('alpine:init', () => {
     setTheme(theme) {
       this.settings.theme = theme;
       document.documentElement.setAttribute('data-bs-theme', theme);
-      
+
       // Save immediately for theme changes
       this.saveSettings();
     },
@@ -196,7 +202,7 @@ document.addEventListener('alpine:init', () => {
     clearCache() {
       // Simulate cache clearing
       this.showNotification('Cache cleared successfully', 'success');
-      
+
       // Simulate storage reduction
       this.storageUsed = Math.max(this.storageUsed - 5, 30);
     },
@@ -204,7 +210,7 @@ document.addEventListener('alpine:init', () => {
     optimizeStorage() {
       // Simulate storage optimization
       this.showNotification('Storage optimized successfully', 'success');
-      
+
       // Simulate storage reduction
       this.storageUsed = Math.max(this.storageUsed - 2, 35);
     },
@@ -214,11 +220,11 @@ document.addEventListener('alpine:init', () => {
       const exportData = {
         settings: this.settings,
         exportDate: new Date().toISOString(),
-        format: format
+        format: format,
       };
-      
+
       let content, mimeType, filename;
-      
+
       switch (format) {
         case 'json':
           content = JSON.stringify(exportData, null, 2);
@@ -242,7 +248,7 @@ document.addEventListener('alpine:init', () => {
           this.showNotification('Unsupported export format', 'error');
           return;
       }
-      
+
       // Create and trigger download
       const blob = new Blob([content], { type: mimeType });
       const url = URL.createObjectURL(blob);
@@ -253,14 +259,14 @@ document.addEventListener('alpine:init', () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       this.showNotification(`Data exported as ${format.toUpperCase()}`, 'success');
     },
 
     convertToCSV(data) {
       const rows = [];
       rows.push('Setting,Value');
-      
+
       const flattenObject = (obj, prefix = '') => {
         for (const key in obj) {
           if (typeof obj[key] === 'object' && obj[key] !== null) {
@@ -270,7 +276,7 @@ document.addEventListener('alpine:init', () => {
           }
         }
       };
-      
+
       flattenObject(data.settings);
       return rows.join('\n');
     },
@@ -279,7 +285,7 @@ document.addEventListener('alpine:init', () => {
       const convertObjectToXML = (obj, indent = 0) => {
         let xml = '';
         const indentStr = '  '.repeat(indent);
-        
+
         for (const key in obj) {
           if (typeof obj[key] === 'object' && obj[key] !== null) {
             xml += `${indentStr}<${key}>\n`;
@@ -289,10 +295,10 @@ document.addEventListener('alpine:init', () => {
             xml += `${indentStr}<${key}>${obj[key]}</${key}>\n`;
           }
         }
-        
+
         return xml;
       };
-      
+
       return `<?xml version="1.0" encoding="UTF-8"?>\n<export>\n${convertObjectToXML(data, 1)}</export>`;
     },
 
@@ -301,16 +307,23 @@ document.addEventListener('alpine:init', () => {
       if (typeof Swal !== 'undefined') {
         Swal.fire({
           title: message,
-          icon: type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info',
+          icon:
+            type === 'success'
+              ? 'success'
+              : type === 'error'
+                ? 'error'
+                : type === 'warning'
+                  ? 'warning'
+                  : 'info',
           toast: true,
           position: 'top-end',
           showConfirmButton: false,
-          timer: 3000
+          timer: 3000,
         });
       } else {
         alert(message);
       }
-    }
+    },
   }));
 
   // Search component for header
@@ -329,23 +342,25 @@ document.addEventListener('alpine:init', () => {
       this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
       localStorage.setItem('theme', this.currentTheme);
-    }
+    },
   }));
 
   // Also register search and theme components for this page
 
   Alpine.data('themeSwitch', () => ({
     currentTheme: 'light',
-    
+
     init() {
-      this.currentTheme = document.documentElement.getAttribute('data-bs-theme') || 
-                         localStorage.getItem('theme') || 'light';
+      this.currentTheme =
+        document.documentElement.getAttribute('data-bs-theme') ||
+        localStorage.getItem('theme') ||
+        'light';
     },
-    
+
     toggle() {
       this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
       localStorage.setItem('theme', this.currentTheme);
-    }
+    },
   }));
 });

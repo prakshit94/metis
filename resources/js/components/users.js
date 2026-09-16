@@ -13,7 +13,7 @@ async function apiFetch(url, options = {}) {
   const { headers, ...otherOptions } = options;
   const fetchHeaders = {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
     'X-CSRF-TOKEN': getCsrfToken(),
     ...(headers || {}),
   };
@@ -34,7 +34,14 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
-    if (res.status === 403 || message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")) { window.location.href = "/"; return; }
+    if (
+      res.status === 403 ||
+      message.toLowerCase().includes('authoriz') ||
+      message.toLowerCase().includes('forbidden')
+    ) {
+      window.location.href = '/';
+      return;
+    }
     throw new Error(message);
   }
 
@@ -84,11 +91,17 @@ function parseCsvLine(line) {
 
 function formatRoleName(role) {
   if (!role) return 'User';
-  return role.split(/\s+/).map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join(' ');
+  return role
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
 }
 
 function splitFullName(name) {
-  const parts = String(name ?? '').trim().split(/\s+/).filter(Boolean);
+  const parts = String(name ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
   return {
     first_name: parts[0] ?? '',
     middle_name: parts.length > 2 ? parts.slice(1, -1).join(' ') : '',
@@ -98,7 +111,7 @@ function splitFullName(name) {
 
 function buildFullName(firstName, middleName, lastName) {
   return [firstName, middleName, lastName]
-    .map(value => String(value ?? '').trim())
+    .map((value) => String(value ?? '').trim())
     .filter(Boolean)
     .join(' ');
 }
@@ -124,9 +137,10 @@ function formatActivityTimestamp(value) {
 }
 
 function getModal(elementOrSelector) {
-  const element = typeof elementOrSelector === 'string'
-    ? document.querySelector(elementOrSelector)
-    : elementOrSelector;
+  const element =
+    typeof elementOrSelector === 'string'
+      ? document.querySelector(elementOrSelector)
+      : elementOrSelector;
 
   return element ? Modal.getOrCreateInstance(element) : null;
 }
@@ -179,9 +193,9 @@ async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it'
       title: 'text-body',
       htmlContainer: 'text-body',
       cancelButton: 'btn btn-outline-secondary',
-      confirmButton: 'btn btn-danger'
+      confirmButton: 'btn btn-danger',
     },
-    buttonsStyling: false
+    buttonsStyling: false,
   });
 
   return result.isConfirmed;
@@ -195,8 +209,9 @@ function permissionActionLabel(name) {
   const parts = String(name ?? '').split(/[-.]/);
   if (parts.length <= 1) return String(name ?? '');
 
-  return parts.slice(1)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1).replace(/_/g, ' '))
+  return parts
+    .slice(1)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).replace(/_/g, ' '))
     .join(' ');
 }
 
@@ -218,13 +233,33 @@ function permissionGroupFor(name) {
   if (prefix === 'audit-log') prefix = 'audit';
 
   const groups = {
-    catalog_products: ['brand', 'catalog', 'category', 'productattribute', 'hsncode', 'taxrate', 'unitofmeasure', 'product'],
+    catalog_products: [
+      'brand',
+      'catalog',
+      'category',
+      'productattribute',
+      'hsncode',
+      'taxrate',
+      'unitofmeasure',
+      'product',
+    ],
     inventory_warehousing: ['warehouse', 'inventoryadjustment', 'stockmanagement', 'stocktransfer'],
     sales_orders: ['orders', 'invoices', 'payments', 'refunds', 'returns'],
     customers: ['customer', 'customeraddress'],
     marketing: ['coupon', 'promotions'],
     utilities_tools: ['chat', 'messages', 'calendar', 'files', 'forms', 'security', 'help'],
-    core_system: ['village', 'shipping', 'role', 'permission', 'user', 'dashboard', 'analytics', 'reports', 'settings', 'audit']
+    core_system: [
+      'village',
+      'shipping',
+      'role',
+      'permission',
+      'user',
+      'dashboard',
+      'analytics',
+      'reports',
+      'settings',
+      'audit',
+    ],
   };
 
   let groupKey = 'other';
@@ -246,19 +281,49 @@ function getEntityLabel(name) {
   if (name === 'view_all_order') prefix = 'orders';
   if (prefix === 'bulkuser') prefix = 'user';
   if (prefix === 'audit-log') prefix = 'audit';
-  
+
   const labels = {
-    brand: 'Brands', catalog: 'Catalogs', category: 'Categories', productattribute: 'Product Attributes',
-    hsncode: 'HSN Codes', taxrate: 'Tax Rates', unitofmeasure: 'Units of Measure', product: 'Products',
-    warehouse: 'Warehouses', inventoryadjustment: 'Inventory Adjustments', stockmanagement: 'Stock Management',
-    stocktransfer: 'Stock Transfers', orders: 'Orders', invoices: 'Invoices', payments: 'Payments',
-    refunds: 'Refunds', returns: 'Returns', customer: 'Customers', customeraddress: 'Customer Addresses',
-    coupon: 'Coupons', promotions: 'Promotions', village: 'Villages', shipping: 'Shipping', role: 'Roles',
-    permission: 'Permissions', user: 'Users', audit: 'Audit Logs', dashboard: 'Dashboard', view_all_data: 'Global Data Visibility',
-    chat: 'Team Chat', messages: 'Messages', calendar: 'Calendar', files: 'Files', forms: 'Forms', security: 'Security', help: 'Help & Support',
-    analytics: 'Analytics', reports: 'Reports', settings: 'Settings'
+    brand: 'Brands',
+    catalog: 'Catalogs',
+    category: 'Categories',
+    productattribute: 'Product Attributes',
+    hsncode: 'HSN Codes',
+    taxrate: 'Tax Rates',
+    unitofmeasure: 'Units of Measure',
+    product: 'Products',
+    warehouse: 'Warehouses',
+    inventoryadjustment: 'Inventory Adjustments',
+    stockmanagement: 'Stock Management',
+    stocktransfer: 'Stock Transfers',
+    orders: 'Orders',
+    invoices: 'Invoices',
+    payments: 'Payments',
+    refunds: 'Refunds',
+    returns: 'Returns',
+    customer: 'Customers',
+    customeraddress: 'Customer Addresses',
+    coupon: 'Coupons',
+    promotions: 'Promotions',
+    village: 'Villages',
+    shipping: 'Shipping',
+    role: 'Roles',
+    permission: 'Permissions',
+    user: 'Users',
+    audit: 'Audit Logs',
+    dashboard: 'Dashboard',
+    view_all_data: 'Global Data Visibility',
+    chat: 'Team Chat',
+    messages: 'Messages',
+    calendar: 'Calendar',
+    files: 'Files',
+    forms: 'Forms',
+    security: 'Security',
+    help: 'Help & Support',
+    analytics: 'Analytics',
+    reports: 'Reports',
+    settings: 'Settings',
   };
-  return labels[prefix] || (prefix.charAt(0).toUpperCase() + prefix.slice(1));
+  return labels[prefix] || prefix.charAt(0).toUpperCase() + prefix.slice(1);
 }
 
 function groupPermissions(permissions) {
@@ -266,7 +331,7 @@ function groupPermissions(permissions) {
 
   [...permissions]
     .sort((a, b) => String(a.name).localeCompare(String(b.name)))
-    .forEach(permission => {
+    .forEach((permission) => {
       const group = permissionGroupFor(permission.name);
       if (!groups.has(group.key)) {
         groups.set(group.key, {
@@ -275,17 +340,17 @@ function groupPermissions(permissions) {
           subGroups: [],
         });
       }
-      
+
       const permObj = {
         ...permission,
         actionLabel: permissionActionLabel(permission.name),
       };
-      
+
       const groupData = groups.get(group.key);
       groupData.items.push(permObj);
-      
+
       const subLabel = getEntityLabel(permission.name);
-      let subGroup = groupData.subGroups.find(s => s.label === subLabel);
+      let subGroup = groupData.subGroups.find((s) => s.label === subLabel);
       if (!subGroup) {
         subGroup = { label: subLabel, items: [] };
         groupData.subGroups.push(subGroup);
@@ -297,7 +362,6 @@ function groupPermissions(permissions) {
 }
 
 document.addEventListener('alpine:init', () => {
-
   // ─── userTable ──────────────────────────────────────────────────────────────
   Alpine.data('userTable', () => ({
     users: [],
@@ -368,7 +432,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     clearExistingCharts() {
-      Object.values(this.charts).forEach(chart => {
+      Object.values(this.charts).forEach((chart) => {
         if (chart && typeof chart.destroy === 'function') chart.destroy();
       });
       this.charts = {};
@@ -389,7 +453,7 @@ document.addEventListener('alpine:init', () => {
 
     initResizeHandler() {
       this._resizeHandler = () => {
-        Object.values(this.charts).forEach(chart => {
+        Object.values(this.charts).forEach((chart) => {
           if (chart && typeof chart.updateOptions === 'function') {
             chart.updateOptions({ chart: { width: '100%' } }, false, true);
           }
@@ -418,7 +482,7 @@ document.addEventListener('alpine:init', () => {
         const data = await apiFetch(`/api/users?${params}`);
 
         // Map API response to the shape the template expects
-        this.users = (data.data ?? []).map(u => this._mapUser(u));
+        this.users = (data.data ?? []).map((u) => this._mapUser(u));
         this.totalUsers = data.total ?? this.users.length;
         this.totalPages = data.last_page ?? 1;
         this.currentPage = data.current_page ?? 1;
@@ -430,7 +494,12 @@ document.addEventListener('alpine:init', () => {
         });
       } catch (err) {
         const msg = err.message.toLowerCase();
-        if (msg.includes('right permissions') || msg.includes('authoriz') || msg.includes('unauthorized') || msg.includes('forbidden')) {
+        if (
+          msg.includes('right permissions') ||
+          msg.includes('authoriz') ||
+          msg.includes('unauthorized') ||
+          msg.includes('forbidden')
+        ) {
           window.location.href = '/';
           return;
         }
@@ -469,7 +538,7 @@ document.addEventListener('alpine:init', () => {
         roleLabel,
         roleClass: this.roleBadgeClass(roleName),
         roles: u.roles ?? [],
-        status: u.deleted_at ? 'deleted' : (u.is_active ? 'active' : 'inactive'),
+        status: u.deleted_at ? 'deleted' : u.is_active ? 'active' : 'inactive',
         is_active: u.is_active,
         isDeleted: Boolean(u.deleted_at),
         deleted_at: u.deleted_at ?? null,
@@ -497,7 +566,12 @@ document.addEventListener('alpine:init', () => {
         designation: u.designation,
         emergency_contact_name: u.emergency_contact_name,
         emergency_contact_phone: u.emergency_contact_phone,
-        avatar: u.gender === 'Male' ? '/assets/images/default_male.png' : (u.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg'),
+        avatar:
+          u.gender === 'Male'
+            ? '/assets/images/default_male.png'
+            : u.gender === 'Female'
+              ? '/assets/images/default_female.png'
+              : '/assets/images/default_avatar.jpeg',
       };
     },
 
@@ -512,7 +586,7 @@ document.addEventListener('alpine:init', () => {
     // ── Filtering helpers (trigger server reload) ────────────────────────────
     filterUsers() {
       this.currentPage = 1;
-      
+
       this.loadUsers();
     },
 
@@ -536,30 +610,33 @@ document.addEventListener('alpine:init', () => {
     },
 
     get selectedRows() {
-      return this.users.filter(user => this.selectedUsers.includes(String(user.id)));
+      return this.users.filter((user) => this.selectedUsers.includes(String(user.id)));
     },
 
     get hasSelectedDeletedUsers() {
-      return this.selectedRows.some(user => user.isDeleted);
+      return this.selectedRows.some((user) => user.isDeleted);
     },
 
     get hasSelectedActiveUsers() {
-      return this.selectedRows.some(user => !user.isDeleted);
+      return this.selectedRows.some((user) => !user.isDeleted);
     },
 
     get canBulkActivate() {
-      return this.selectedRows.some(user => !user.isDeleted && !user.is_active);
+      return this.selectedRows.some((user) => !user.isDeleted && !user.is_active);
     },
 
     get canBulkDeactivate() {
-      return this.selectedRows.some(user => !user.isDeleted && user.is_active);
+      return this.selectedRows.some((user) => !user.isDeleted && user.is_active);
     },
 
     get visiblePages() {
       const delta = 2;
       const range = [];
-      for (let i = Math.max(2, this.currentPage - delta);
-        i <= Math.min(this.totalPages - 1, this.currentPage + delta); i++) {
+      for (
+        let i = Math.max(2, this.currentPage - delta);
+        i <= Math.min(this.totalPages - 1, this.currentPage + delta);
+        i++
+      ) {
         range.push(i);
       }
       const result = [];
@@ -568,7 +645,9 @@ document.addEventListener('alpine:init', () => {
       result.push(...range);
       if (this.currentPage + delta < this.totalPages - 1) result.push('...', this.totalPages);
       else if (this.totalPages > 1) result.push(this.totalPages);
-      return result.filter((v, i, a) => a.indexOf(v) === i && (typeof v === 'string' || v <= this.totalPages));
+      return result.filter(
+        (v, i, a) => a.indexOf(v) === i && (typeof v === 'string' || v <= this.totalPages)
+      );
     },
 
     goToPage(page) {
@@ -590,20 +669,20 @@ document.addEventListener('alpine:init', () => {
     // ── Selection management ──────────────────────────────────────────────────
     toggleAll(checked) {
       if (checked) {
-        this.users.forEach(item => {
+        this.users.forEach((item) => {
           if (!this.selectedUsers.includes(String(item.id))) {
             this.selectedUsers.push(String(item.id));
           }
         });
       } else {
-        const currentIds = this.users.map(item => String(item.id));
-        this.selectedUsers = this.selectedUsers.filter(id => !currentIds.includes(id));
+        const currentIds = this.users.map((item) => String(item.id));
+        this.selectedUsers = this.selectedUsers.filter((id) => !currentIds.includes(id));
       }
     },
 
     toggleUser(userId) {
       if (this.selectedUsers.includes(userId)) {
-        this.selectedUsers = this.selectedUsers.filter(id => id !== userId);
+        this.selectedUsers = this.selectedUsers.filter((id) => id !== userId);
       } else {
         this.selectedUsers = [...this.selectedUsers, userId];
       }
@@ -634,11 +713,14 @@ document.addEventListener('alpine:init', () => {
       form.form.joining_date = user.joining_date ? String(user.joining_date).split('T')[0] : '';
       // Find the first role that is explicitly scoped to a team (LOB/State).
       // Prefer a role with pivot.team_id set over global (null) roles.
-      const lobRole = (user.roles ?? []).find(r => r.pivot && r.pivot.team_id != null);
+      const lobRole = (user.roles ?? []).find((r) => r.pivot && r.pivot.team_id != null);
       const primaryRole = lobRole || (user.roles && user.roles.length ? user.roles[0] : null);
       form.form.role = primaryRole ? primaryRole.name : 'User';
-      form.form.team_id = (lobRole && lobRole.pivot && lobRole.pivot.team_id != null) ? String(lobRole.pivot.team_id) : '';
-      form.form.permissions = (user.permissions ?? []).map(p => p.name);
+      form.form.team_id =
+        lobRole && lobRole.pivot && lobRole.pivot.team_id != null
+          ? String(lobRole.pivot.team_id)
+          : '';
+      form.form.permissions = (user.permissions ?? []).map((p) => p.name);
       form.form.is_active = user.is_active ?? true;
       form.form.address_line_1 = user.address_line_1 ?? '';
       form.form.address_line_2 = user.address_line_2 ?? '';
@@ -684,13 +766,13 @@ document.addEventListener('alpine:init', () => {
       try {
         const response = await apiFetch(`/api/users/${user.id}`);
         const fullUser = response.data ?? response;
-        
+
         // Merge fullUser with mapped user to get all fields
         const completeUser = { ...user, ...fullUser };
-        
+
         // Call editUser but flag as view mode
         this.editUser(completeUser, true);
-        
+
         // Ensure the modal is shown
         getModal('#userModal')?.show();
       } catch (error) {
@@ -712,7 +794,7 @@ document.addEventListener('alpine:init', () => {
 
         const profile = Alpine.$data(document.querySelector('[x-data="userProfile"]'));
         if (profile?.user?.id === user.id) {
-          const refreshed = this.users.find(u => u.id === user.id);
+          const refreshed = this.users.find((u) => u.id === user.id);
           if (refreshed) profile.user = refreshed;
         }
       } catch (err) {
@@ -769,7 +851,7 @@ document.addEventListener('alpine:init', () => {
         showToast('Restore this user before impersonating.', 'warning');
         return;
       }
-      
+
       const confirmed = await confirmDelete({
         title: 'Impersonate User?',
         text: `Are you sure you want to log in as ${user.name}? All actions you take will be logged as them.`,
@@ -841,12 +923,12 @@ document.addEventListener('alpine:init', () => {
 
     async fetchAllFilteredUsers() {
       const first = await apiFetch(`/api/users?${this._queryParams({ page: 1, per_page: 100 })}`);
-      const mapped = (first.data ?? []).map(u => this._mapUser(u));
+      const mapped = (first.data ?? []).map((u) => this._mapUser(u));
       const lastPage = first.last_page ?? 1;
 
       for (let page = 2; page <= lastPage; page++) {
         const data = await apiFetch(`/api/users?${this._queryParams({ page, per_page: 100 })}`);
-        mapped.push(...(data.data ?? []).map(u => this._mapUser(u)));
+        mapped.push(...(data.data ?? []).map((u) => this._mapUser(u)));
       }
 
       return mapped;
@@ -857,22 +939,64 @@ document.addEventListener('alpine:init', () => {
       try {
         const users = await this.fetchAllFilteredUsers();
         const headers = [
-          'ID', 'First Name', 'Middle Name', 'Last Name', 'Email', 'Phone',
-          'Employee ID', 'Employment Type', 'Designation', 'Department', 'Manager',
-          'Role', 'Status', 'Date of Birth', 'Gender', 'Blood Group',
-          'Emergency Contact Name', 'Emergency Contact Phone',
-          'Address Line 1', 'Address Line 2', 'Village Name', 'Post Office',
-          'Taluka', 'District', 'City', 'State', 'Pincode'
+          'ID',
+          'First Name',
+          'Middle Name',
+          'Last Name',
+          'Email',
+          'Phone',
+          'Employee ID',
+          'Employment Type',
+          'Designation',
+          'Department',
+          'Manager',
+          'Role',
+          'Status',
+          'Date of Birth',
+          'Gender',
+          'Blood Group',
+          'Emergency Contact Name',
+          'Emergency Contact Phone',
+          'Address Line 1',
+          'Address Line 2',
+          'Village Name',
+          'Post Office',
+          'Taluka',
+          'District',
+          'City',
+          'State',
+          'Pincode',
         ];
-        const rows = users.map(u => [
-          u.id, u.first_name, u.middle_name, u.last_name, u.email, u.phone,
-          u.employee_id, u.employment_type, u.designation, u.department, u.manager,
-          u.roleLabel, u.status, u.date_of_birth, u.gender, u.blood_group,
-          u.emergency_contact_name, u.emergency_contact_phone,
-          u.address_line_1, u.address_line_2, u.village_name, u.post_office,
-          u.taluka, u.district, u.city, u.state, u.pincode
+        const rows = users.map((u) => [
+          u.id,
+          u.first_name,
+          u.middle_name,
+          u.last_name,
+          u.email,
+          u.phone,
+          u.employee_id,
+          u.employment_type,
+          u.designation,
+          u.department,
+          u.manager,
+          u.roleLabel,
+          u.status,
+          u.date_of_birth,
+          u.gender,
+          u.blood_group,
+          u.emergency_contact_name,
+          u.emergency_contact_phone,
+          u.address_line_1,
+          u.address_line_2,
+          u.village_name,
+          u.post_office,
+          u.taluka,
+          u.district,
+          u.city,
+          u.state,
+          u.pincode,
         ]);
-        const csv = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\n');
+        const csv = [headers, ...rows].map((r) => r.map(csvEscape).join(',')).join('\n');
         downloadBlob('users-export.csv', csv, 'text/csv;charset=utf-8;');
         showToast(`Exported ${users.length} user(s).`);
       } catch (err) {
@@ -885,8 +1009,8 @@ document.addEventListener('alpine:init', () => {
         showToast('Please select users to send invites to.', 'warning');
         return;
       }
-      const selected = this.users.filter(user => this.selectedUsers.includes(user.id));
-      const emails = selected.map(user => user.email).filter(Boolean);
+      const selected = this.users.filter((user) => this.selectedUsers.includes(user.id));
+      const emails = selected.map((user) => user.email).filter(Boolean);
       if (emails.length === 0) {
         showToast('Selected users do not have email addresses.', 'warning');
         return;
@@ -921,10 +1045,10 @@ document.addEventListener('alpine:init', () => {
 
     // ── Computed stats (derived from current page + totals) ───────────────────
     get stats() {
-      const active = this.users.filter(u => u.status === 'active').length;
-      const inactive = this.users.filter(u => u.status === 'inactive').length;
+      const active = this.users.filter((u) => u.status === 'active').length;
+      const inactive = this.users.filter((u) => u.status === 'inactive').length;
       const now = new Date();
-      const newThisMonth = this.users.filter(u => {
+      const newThisMonth = this.users.filter((u) => {
         const d = new Date(u.joinDate);
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       }).length;
@@ -934,7 +1058,8 @@ document.addEventListener('alpine:init', () => {
         active,
         inactive,
         newThisMonth,
-        activePercentage: this.users.length > 0 ? Math.round((active / this.users.length) * 100) : 0,
+        activePercentage:
+          this.users.length > 0 ? Math.round((active / this.users.length) * 100) : 0,
       };
     },
 
@@ -946,7 +1071,8 @@ document.addEventListener('alpine:init', () => {
       }, {});
       const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
       return Object.entries(counts).map(([name, count], i) => ({
-        name, count,
+        name,
+        count,
         percentage: this.users.length > 0 ? Math.round((count / this.users.length) * 100) : 0,
         color: colors[i % colors.length],
       }));
@@ -1034,8 +1160,13 @@ document.addEventListener('alpine:init', () => {
       for (let i = period - 1; i >= 0; i--) {
         const d = new Date(now);
         d.setDate(d.getDate() - i);
-        dayLabels.push(d.toLocaleDateString('en', period <= 7 ? { weekday: 'short' } : { month: 'short', day: 'numeric' }));
-        dayCounts[period - 1 - i] = this.users.filter(u => {
+        dayLabels.push(
+          d.toLocaleDateString(
+            'en',
+            period <= 7 ? { weekday: 'short' } : { month: 'short', day: 'numeric' }
+          )
+        );
+        dayCounts[period - 1 - i] = this.users.filter((u) => {
           const j = new Date(u.created_at || new Date());
           return j.toDateString() === d.toDateString();
         }).length;
@@ -1043,7 +1174,13 @@ document.addEventListener('alpine:init', () => {
 
       this.charts.userGrowth = new ApexCharts(el, {
         series: [{ name: 'New Users', data: dayCounts }],
-        chart: { type: 'bar', height: 250, width: '100%', toolbar: { show: false }, zoom: { enabled: false } },
+        chart: {
+          type: 'bar',
+          height: 250,
+          width: '100%',
+          toolbar: { show: false },
+          zoom: { enabled: false },
+        },
         colors: ['#6366f1'],
         plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
         xaxis: {
@@ -1055,7 +1192,10 @@ document.addEventListener('alpine:init', () => {
         yaxis: { show: false },
         grid: { show: false },
         dataLabels: { enabled: false },
-        tooltip: { theme: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light' },
+        tooltip: {
+          theme:
+            document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light',
+        },
       });
       this.charts.userGrowth.render();
     },
@@ -1080,7 +1220,10 @@ document.addEventListener('alpine:init', () => {
         legend: { show: false },
         plotOptions: { pie: { donut: { size: '70%' } } },
         dataLabels: { enabled: false },
-        tooltip: { theme: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light' },
+        tooltip: {
+          theme:
+            document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light',
+        },
       });
       this.charts.roleDistribution.render();
     },
@@ -1129,11 +1272,11 @@ document.addEventListener('alpine:init', () => {
     managers: [],
     designations: [],
     employmentTypes: [],
-    
+
     get groupedAvailablePermissions() {
       return groupPermissions(this.availablePermissions);
     },
-    
+
     villageSearchQuery: '',
     villageResults: [],
     editingUserId: null,
@@ -1149,9 +1292,12 @@ document.addEventListener('alpine:init', () => {
         return;
       }
       try {
-        const res = await fetch(`/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`, {
-          headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        });
+        const res = await fetch(
+          `/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`,
+          {
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          }
+        );
         const data = await res.json();
         this.villageResults = data.data || [];
       } catch (e) {
@@ -1183,7 +1329,7 @@ document.addEventListener('alpine:init', () => {
         const title = document.querySelector('#userModal .modal-title');
         if (title) title.textContent = 'Add New User';
       });
-      
+
       this.loadHrData();
     },
 
@@ -1222,7 +1368,9 @@ document.addEventListener('alpine:init', () => {
         this.roles = data.data ?? data;
       } catch (err) {
         try {
-          const data = await apiFetch('/api/roles?per_page=100&deleted=without&sort_by=name&sort_dir=asc');
+          const data = await apiFetch(
+            '/api/roles?per_page=100&deleted=without&sort_by=name&sort_dir=asc'
+          );
           this.roles = data.data ?? data;
         } catch (fallbackErr) {
           this.roles = [];
@@ -1231,12 +1379,12 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.form.is_active = true;
         this.form.permissions = [];
-        if (this.roles.length > 0 && !this.roles.some(role => role.name === this.form.role)) {
+        if (this.roles.length > 0 && !this.roles.some((role) => role.name === this.form.role)) {
           this.form.role = this.roles[0].name;
         }
         this.rolesLoading = false;
       }
-      
+
       try {
         const pData = await apiFetch(`/api/permissions/options?_t=${Date.now()}`);
         this.availablePermissions = pData.data ?? pData;
@@ -1318,7 +1466,11 @@ document.addEventListener('alpine:init', () => {
 
       this.saving = true;
       try {
-        const name = buildFullName(this.form.first_name, this.form.middle_name, this.form.last_name);
+        const name = buildFullName(
+          this.form.first_name,
+          this.form.middle_name,
+          this.form.last_name
+        );
 
         let formattedPhone = null;
         if (this.form.phone) {
@@ -1346,17 +1498,35 @@ document.addEventListener('alpine:init', () => {
         formData.append('roles[]', this.form.role);
         // Always send team_id, even if empty, to clear it
         formData.append('team_id', this.form.team_id || '');
-        
+
         if (this.form.permissions && this.form.permissions.length > 0) {
-          this.form.permissions.forEach(p => formData.append('permissions[]', p));
+          this.form.permissions.forEach((p) => formData.append('permissions[]', p));
         }
 
-        const addressFields = ['address_line_1', 'address_line_2', 'village_id', 'village_name', 'post_office', 'taluka', 'district', 'city', 'state', 'pincode'];
+        const addressFields = [
+          'address_line_1',
+          'address_line_2',
+          'village_id',
+          'village_name',
+          'post_office',
+          'taluka',
+          'district',
+          'city',
+          'state',
+          'pincode',
+        ];
         for (const field of addressFields) {
           formData.append(field, this.form[field] ?? '');
         }
 
-        const advancedFields = ['date_of_birth', 'gender', 'blood_group', 'designation', 'emergency_contact_name', 'emergency_contact_phone'];
+        const advancedFields = [
+          'date_of_birth',
+          'gender',
+          'blood_group',
+          'designation',
+          'emergency_contact_name',
+          'emergency_contact_phone',
+        ];
         for (const field of advancedFields) {
           formData.append(field, this.form[field] ?? '');
         }
@@ -1391,16 +1561,16 @@ document.addEventListener('alpine:init', () => {
         // Reload table
         const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
         if (table) await table.loadUsers();
-
       } catch (err) {
-        showToast(`${this.editingUserId ? 'Failed to update user' : 'Failed to create user'}: ${err.message}`, 'danger');
+        showToast(
+          `${this.editingUserId ? 'Failed to update user' : 'Failed to create user'}: ${err.message}`,
+          'danger'
+        );
       } finally {
         this.saving = false;
       }
     },
   }));
-
-
 
   // ─── importForm ─────────────────────────────────────────────────────────────
   Alpine.data('importForm', () => ({
@@ -1445,7 +1615,10 @@ document.addEventListener('alpine:init', () => {
       if (!this.file) return;
 
       const text = await this.file.text();
-      const lines = text.trim().split('\n').filter(l => l.trim());
+      const lines = text
+        .trim()
+        .split('\n')
+        .filter((l) => l.trim());
       if (lines.length < 2) {
         showToast('CSV file is empty or has no data rows.', 'warning');
         return;
@@ -1477,10 +1650,13 @@ document.addEventListener('alpine:init', () => {
 
       for (let i = 0; i < this.parsedRows.length; i++) {
         const row = this.parsedRows[i];
-        
+
         let [firstName, middleName, lastName, email, phone, password] = row;
 
-        if (!firstName || !email) { errors.push(`Row ${i + 2}: missing first name or email`); continue; }
+        if (!firstName || !email) {
+          errors.push(`Row ${i + 2}: missing first name or email`);
+          continue;
+        }
 
         const name = buildFullName(firstName, middleName, lastName);
 
@@ -1521,25 +1697,28 @@ document.addEventListener('alpine:init', () => {
   }));
 
   // ─── searchComponent ─────────────────────────────────────────────────────────
-  Alpine.data('searchComponent', createSearchComponent({
-    delayMs: 300,
-    getResults(query) {
-      const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
-      if (table) {
-        table.searchQuery = query;
-        table.filterUsers();
-      }
-      const q = query.toLowerCase();
-      return [
-        { title: 'Dashboard', url: '/', type: 'page' },
-        { title: 'Users', url: '/users', type: 'page' },
-        { title: 'Settings', url: '/settings', type: 'page' },
-        { title: 'Analytics', url: '/analytics', type: 'page' },
-        { title: 'Security', url: '/security', type: 'page' },
-        { title: 'Help', url: '/help', type: 'page' },
-      ].filter(item => item.title.toLowerCase().includes(q));
-    },
-  }));
+  Alpine.data(
+    'searchComponent',
+    createSearchComponent({
+      delayMs: 300,
+      getResults(query) {
+        const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
+        if (table) {
+          table.searchQuery = query;
+          table.filterUsers();
+        }
+        const q = query.toLowerCase();
+        return [
+          { title: 'Dashboard', url: '/', type: 'page' },
+          { title: 'Users', url: '/users', type: 'page' },
+          { title: 'Settings', url: '/settings', type: 'page' },
+          { title: 'Analytics', url: '/analytics', type: 'page' },
+          { title: 'Security', url: '/security', type: 'page' },
+          { title: 'Help', url: '/help', type: 'page' },
+        ].filter((item) => item.title.toLowerCase().includes(q));
+      },
+    })
+  );
 
   // ─── themeSwitch ─────────────────────────────────────────────────────────────
   Alpine.data('themeSwitch', () => ({

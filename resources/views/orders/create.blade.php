@@ -3378,16 +3378,7 @@ mapOrder(o) {
                 }
             }, true);
             
-
             this.searchProducts();
-            
-            const phoneParam = new URLSearchParams(window.location.search).get('phone');
-            if (phoneParam && !this.partyId) {
-                setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('open-add-customer-modal', { detail: { phone: phoneParam } }));
-                }, 300);
-            }
-
             if (this.customerDetails) {
                 this.addresses = this.customerDetails.addresses || [];
                 this.recentOrders = this.customerDetails.orders || [];
@@ -4653,16 +4644,7 @@ mapOrder(o) {
                 const successMsg = this.editingOrderId ? 'Order Updated!' : 'Order Placed!';
                 window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: successMsg } }));
                 this.loadAddresses(); // Refresh the customer's recent orders list
-    
-            this.searchProducts();
-            
-            const phoneParam = new URLSearchParams(window.location.search).get('phone');
-            if (phoneParam && !this.partyId) {
-                setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('open-add-customer-modal', { detail: { phone: phoneParam } }));
-                }, 300);
-            }
- // Refresh the products list to update inventory stock
+                this.searchProducts(); // Refresh the products list to update inventory stock
                 if (this.editingOrderId) {
                     this.editingOrderId = null;
                     this.editingOrderNo = null;

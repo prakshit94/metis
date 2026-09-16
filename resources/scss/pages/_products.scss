@@ -50,7 +50,7 @@
     border-radius: var(--bs-border-radius);
     padding: 0.75rem 1rem;
     margin-bottom: 1rem;
-    
+
     .alert-icon {
       color: var(--bs-warning-text-emphasis);
     }
@@ -61,7 +61,7 @@
       border: none;
       background: none;
       color: var(--bs-secondary-color);
-      
+
       &:hover {
         color: var(--bs-emphasis-color);
       }
@@ -104,7 +104,7 @@
 
   // Simple table checkbox styling for product selection
   .table {
-    input[type="checkbox"].form-check-input {
+    input[type='checkbox'].form-check-input {
       width: 16px !important;
       height: 16px !important;
       border: 1px solid var(--bs-border-color) !important;

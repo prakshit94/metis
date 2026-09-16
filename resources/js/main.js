@@ -4,14 +4,7 @@
 // ==========================================================================
 
 // Import Bootstrap 5 JavaScript components (only those actively used)
-import {
-  Collapse,
-  Dropdown,
-  Modal,
-  Tab,
-  Toast,
-  Tooltip,
-} from 'bootstrap';
+import { Collapse, Dropdown, Modal, Tab, Toast, Tooltip } from 'bootstrap';
 
 window.bootstrap = {
   Collapse,
@@ -55,7 +48,7 @@ class AdminApp {
     try {
       // Wait for DOM to be ready
       if (document.readyState === 'loading') {
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           document.addEventListener('DOMContentLoaded', resolve);
         });
       }
@@ -92,7 +85,6 @@ class AdminApp {
 
       this.isInitialized = true;
       console.log('🚀 Admin App initialized successfully');
-
     } catch (error) {
       console.error('❌ Failed to initialize Admin App:', error);
     }
@@ -109,34 +101,34 @@ class AdminApp {
   // Initialize Bootstrap components
   initBootstrapComponents() {
     // Initialize dropdowns
-    document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(element => {
+    document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach((element) => {
       new Dropdown(element);
     });
 
     // Initialize modals
-    document.querySelectorAll('.modal').forEach(element => {
+    document.querySelectorAll('.modal').forEach((element) => {
       new Modal(element);
     });
 
     // Initialize collapse elements (toggle:false — don't auto-open on construction)
-    document.querySelectorAll('.collapse').forEach(element => {
+    document.querySelectorAll('.collapse').forEach((element) => {
       new Collapse(element, { toggle: false });
     });
 
     // Initialize tabs
-    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(element => {
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach((element) => {
       new Tab(element);
     });
 
     // Initialize toasts
-    document.querySelectorAll('.toast').forEach(element => {
+    document.querySelectorAll('.toast').forEach((element) => {
       new Toast(element);
     });
   }
 
   // Initialize tooltips
   initTooltipsAndPopovers() {
-    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(element => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
       new Tooltip(element);
     });
   }
@@ -173,16 +165,36 @@ class AdminApp {
       case 'forms':
         await this.initFormsPage();
         break;
-      case 'catalog-brands': await this.initCatalogBrands(); break;
-      case 'catalog-categories': await this.initCatalogCategories(); break;
-      case 'catalog-uom': await this.initCatalogUom(); break;
-      case 'catalog-tax-rates': await this.initCatalogTaxRates(); break;
-      case 'catalog-hsn-codes': await this.initCatalogHsnCodes(); break;
-      case 'catalog-warehouses': await this.initCatalogWarehouses(); break;
-      case 'catalog-attributes': await this.initCatalogAttributes(); break;
-      case 'inventory-stock-management': await this.initInventoryStockManagement(); break;
-      case 'inventory-stock-transfers': await this.initInventoryStockTransfers(); break;
-      case 'inventory-adjustments': await this.initInventoryAdjustments(); break;
+      case 'catalog-brands':
+        await this.initCatalogBrands();
+        break;
+      case 'catalog-categories':
+        await this.initCatalogCategories();
+        break;
+      case 'catalog-uom':
+        await this.initCatalogUom();
+        break;
+      case 'catalog-tax-rates':
+        await this.initCatalogTaxRates();
+        break;
+      case 'catalog-hsn-codes':
+        await this.initCatalogHsnCodes();
+        break;
+      case 'catalog-warehouses':
+        await this.initCatalogWarehouses();
+        break;
+      case 'catalog-attributes':
+        await this.initCatalogAttributes();
+        break;
+      case 'inventory-stock-management':
+        await this.initInventoryStockManagement();
+        break;
+      case 'inventory-stock-transfers':
+        await this.initInventoryStockTransfers();
+        break;
+      case 'inventory-adjustments':
+        await this.initInventoryAdjustments();
+        break;
       case 'catalog-products':
         await this.initProductsPage();
         break;
@@ -310,17 +322,96 @@ class AdminApp {
     }
   }
 
-
-  async initCatalogBrands() { try { const m = await import('./components/catalog/brands.js'); window.Alpine.data('brandsTable', m.default); console.log('Loaded brands'); } catch (e) { console.error(e); } }
-  async initCatalogCategories() { try { const m = await import('./components/catalog/categories.js'); window.Alpine.data('categoriesTable', m.default); console.log('Loaded categories'); } catch (e) { console.error(e); } }
-  async initCatalogUom() { try { const m = await import('./components/catalog/uom.js'); window.Alpine.data('uomTable', m.default); console.log('Loaded uom'); } catch (e) { console.error(e); } }
-  async initCatalogTaxRates() { try { const m = await import('./components/catalog/tax-rates.js'); window.Alpine.data('taxRatesTable', m.default); console.log('Loaded tax rates'); } catch (e) { console.error(e); } }
-  async initCatalogHsnCodes() { try { const m = await import('./components/catalog/hsn-codes.js'); window.Alpine.data('hsnCodesTable', m.default); console.log('Loaded hsn codes'); } catch (e) { console.error(e); } }
-  async initCatalogWarehouses() { try { const m = await import('./components/catalog/warehouses.js'); window.Alpine.data('warehousesTable', m.default); console.log('Loaded warehouses'); } catch (e) { console.error(e); } }
-  async initCatalogAttributes() { try { const m = await import('./components/catalog/attributes.js'); window.Alpine.data('attributesTable', m.default); console.log('Loaded attributes'); } catch (e) { console.error(e); } }
-  async initInventoryStockManagement() { try { const m = await import('./components/inventory/stock-management.js'); window.Alpine.data('stockManagement', m.default); console.log('Loaded stock management'); } catch (e) { console.error(e); } }
-  async initInventoryStockTransfers() { try { const m = await import('./components/inventory/stock-transfers.js'); window.Alpine.data('stockTransfers', m.default); console.log('Loaded stock transfers'); } catch (e) { console.error(e); } }
-  async initInventoryAdjustments() { try { const m = await import('./components/inventory/adjustments.js'); window.Alpine.data('inventoryAdjustments', m.default); console.log('Loaded inventory adjustments'); } catch (e) { console.error(e); } }
+  async initCatalogBrands() {
+    try {
+      const m = await import('./components/catalog/brands.js');
+      window.Alpine.data('brandsTable', m.default);
+      console.log('Loaded brands');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async initCatalogCategories() {
+    try {
+      const m = await import('./components/catalog/categories.js');
+      window.Alpine.data('categoriesTable', m.default);
+      console.log('Loaded categories');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async initCatalogUom() {
+    try {
+      const m = await import('./components/catalog/uom.js');
+      window.Alpine.data('uomTable', m.default);
+      console.log('Loaded uom');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async initCatalogTaxRates() {
+    try {
+      const m = await import('./components/catalog/tax-rates.js');
+      window.Alpine.data('taxRatesTable', m.default);
+      console.log('Loaded tax rates');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async initCatalogHsnCodes() {
+    try {
+      const m = await import('./components/catalog/hsn-codes.js');
+      window.Alpine.data('hsnCodesTable', m.default);
+      console.log('Loaded hsn codes');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async initCatalogWarehouses() {
+    try {
+      const m = await import('./components/catalog/warehouses.js');
+      window.Alpine.data('warehousesTable', m.default);
+      console.log('Loaded warehouses');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async initCatalogAttributes() {
+    try {
+      const m = await import('./components/catalog/attributes.js');
+      window.Alpine.data('attributesTable', m.default);
+      console.log('Loaded attributes');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async initInventoryStockManagement() {
+    try {
+      const m = await import('./components/inventory/stock-management.js');
+      window.Alpine.data('stockManagement', m.default);
+      console.log('Loaded stock management');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async initInventoryStockTransfers() {
+    try {
+      const m = await import('./components/inventory/stock-transfers.js');
+      window.Alpine.data('stockTransfers', m.default);
+      console.log('Loaded stock transfers');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async initInventoryAdjustments() {
+    try {
+      const m = await import('./components/inventory/adjustments.js');
+      window.Alpine.data('inventoryAdjustments', m.default);
+      console.log('Loaded inventory adjustments');
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   async initProductsPage() {
     try {
@@ -544,12 +635,17 @@ class AdminApp {
   initNavigation() {
     const currentPage = window.location.pathname;
     const elementsPages = [
-      '/elements', '/elements/alerts', '/elements/badges',
-      '/elements/buttons', '/elements/cards', '/elements/modals',
-      '/elements/forms', '/elements/tables'
+      '/elements',
+      '/elements/alerts',
+      '/elements/badges',
+      '/elements/buttons',
+      '/elements/cards',
+      '/elements/modals',
+      '/elements/forms',
+      '/elements/tables',
     ];
 
-    const isElementsPage = elementsPages.some(page => currentPage.includes(page));
+    const isElementsPage = elementsPages.some((page) => currentPage.includes(page));
 
     if (isElementsPage) {
       const elementsSubmenu = document.getElementById('elementsSubmenu');
@@ -565,10 +661,6 @@ class AdminApp {
         }
       }
     }
-
-
-
-
   }
 
   // Initialize Alpine.js
@@ -614,10 +706,13 @@ class AdminApp {
       { title: 'Help & Support', url: '/help', type: 'page' },
     ];
 
-    Alpine.data('searchComponent', createSearchComponent({
-      getResults: (query) =>
-        navbarPages.filter(p => p.title.toLowerCase().includes(query.toLowerCase())),
-    }));
+    Alpine.data(
+      'searchComponent',
+      createSearchComponent({
+        getResults: (query) =>
+          navbarPages.filter((p) => p.title.toLowerCase().includes(query.toLowerCase())),
+      })
+    );
 
     // Stats counter — animates from 0 to target on load
     Alpine.data('statsCounter', (targetValue = 0) => ({
@@ -652,7 +747,7 @@ class AdminApp {
         this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
         localStorage.setItem('theme', this.currentTheme);
-      }
+      },
     }));
 
     Alpine.data('iconDemo', () => ({
@@ -665,7 +760,7 @@ class AdminApp {
 
       getIcon(iconName) {
         return iconManager.get(iconName);
-      }
+      },
     }));
 
     // Quick Add Form for Dashboard
@@ -707,75 +802,86 @@ class AdminApp {
         );
 
         this.resetForm();
-      }
+      },
     }));
 
     // Expose Alpine globally BEFORE starting it so alpine:init listeners can use it
     window.Alpine = Alpine;
 
     // Register x-tom-select directive globally
-    Alpine.directive('tom-select', (el, { expression }, { Alpine, cleanup, evaluateLater, effect }) => {
-      // Import dynamically to keep initial load small, or we can assume it's bundled if imported at top
-      import('tom-select').then(({ default: TomSelect }) => {
-        const plugins = ['dropdown_input'];
-        if (el.hasAttribute('multiple')) {
+    Alpine.directive(
+      'tom-select',
+      (el, { expression }, { Alpine, cleanup, evaluateLater, effect }) => {
+        // Import dynamically to keep initial load small, or we can assume it's bundled if imported at top
+        import('tom-select').then(({ default: TomSelect }) => {
+          const plugins = ['dropdown_input'];
+          if (el.hasAttribute('multiple')) {
             plugins.push('remove_button');
-        }
-        
-        const ts = new TomSelect(el, {
-          create: false,
-          plugins: plugins,
-          sortField: { field: "text", direction: "asc" }
-        });
-        
-        // Remove Bootstrap native form-select classes from the wrapper to prevent double arrows
-        if (ts.wrapper) {
-            ts.wrapper.classList.remove('form-select', 'form-select-sm', 'form-select-lg');
-        }
+          }
 
-        // Sync x-model changes from Alpine -> TomSelect
-        const modelName = el.getAttribute('x-model') || el.getAttribute('x-model.number');
-        if (modelName) {
-          const evaluate = evaluateLater(modelName);
-          effect(() => {
-            evaluate(value => {
-              let currentValue = ts.getValue();
-              let isDifferent = false;
-
-              if (Array.isArray(value)) {
-                  let stringValues = value.map(String);
-                  if (!Array.isArray(currentValue)) currentValue = currentValue ? [currentValue] : [];
-                  
-                  if (currentValue.length !== stringValues.length || !currentValue.every(v => stringValues.includes(v))) {
-                      isDifferent = true;
-                  }
-              } else {
-                  if (currentValue !== String(value) && value !== undefined && value !== null) {
-                      isDifferent = true;
-                  }
-              }
-
-              if (isDifferent) {
-                ts.setValue(value, true); // true = silent, prevents infinite loop
-              } else if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
-                  if (currentValue !== '' && currentValue.length !== 0) {
-                      ts.setValue('', true);
-                  }
-              }
-            });
+          const ts = new TomSelect(el, {
+            create: false,
+            plugins: plugins,
+            sortField: { field: 'text', direction: 'asc' },
           });
-        }
 
-        cleanup(() => ts.destroy());
-      });
-    });
+          // Remove Bootstrap native form-select classes from the wrapper to prevent double arrows
+          if (ts.wrapper) {
+            ts.wrapper.classList.remove('form-select', 'form-select-sm', 'form-select-lg');
+          }
+
+          // Sync x-model changes from Alpine -> TomSelect
+          const modelName = el.getAttribute('x-model') || el.getAttribute('x-model.number');
+          if (modelName) {
+            const evaluate = evaluateLater(modelName);
+            effect(() => {
+              evaluate((value) => {
+                let currentValue = ts.getValue();
+                let isDifferent = false;
+
+                if (Array.isArray(value)) {
+                  let stringValues = value.map(String);
+                  if (!Array.isArray(currentValue))
+                    currentValue = currentValue ? [currentValue] : [];
+
+                  if (
+                    currentValue.length !== stringValues.length ||
+                    !currentValue.every((v) => stringValues.includes(v))
+                  ) {
+                    isDifferent = true;
+                  }
+                } else {
+                  if (currentValue !== String(value) && value !== undefined && value !== null) {
+                    isDifferent = true;
+                  }
+                }
+
+                if (isDifferent) {
+                  ts.setValue(value, true); // true = silent, prevents infinite loop
+                } else if (
+                  value === '' ||
+                  value === null ||
+                  (Array.isArray(value) && value.length === 0)
+                ) {
+                  if (currentValue !== '' && currentValue.length !== 0) {
+                    ts.setValue('', true);
+                  }
+                }
+              });
+            });
+          }
+
+          cleanup(() => ts.destroy());
+        });
+      }
+    );
 
     Alpine.start();
   }
 
   // Cleanup method
   destroy() {
-    this.components.forEach(component => {
+    this.components.forEach((component) => {
       if (component.destroy) {
         component.destroy();
       }

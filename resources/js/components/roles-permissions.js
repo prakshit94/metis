@@ -12,7 +12,7 @@ async function apiFetch(url, options = {}) {
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'X-CSRF-TOKEN': getCsrfToken(),
       ...(headers || {}),
     },
@@ -41,9 +41,9 @@ function showToast(message, type = 'success') {
 
   const iconMap = {
     success: 'bi-check-circle-fill',
-    danger:  'bi-x-circle-fill',
+    danger: 'bi-x-circle-fill',
     warning: 'bi-exclamation-triangle-fill',
-    info:    'bi-info-circle-fill',
+    info: 'bi-info-circle-fill',
   };
 
   const el = document.createElement('div');
@@ -140,7 +140,7 @@ function endpointFor(type) {
 
 function permissionGroupFor(name) {
   let prefix = String(name ?? '').split(/[-.]/)[0] || 'other';
-  
+
   if (name === 'view_all_order') prefix = 'orders';
   if (name === 'view-all-data') prefix = 'view-all-data';
   if (prefix === 'bulkuser') prefix = 'user';
@@ -149,21 +149,53 @@ function permissionGroupFor(name) {
   const label = getEntityLabel(name);
 
   const icons = {
-    orders: 'cart', invoices: 'receipt', payments: 'credit-card', refunds: 'arrow-return-left', returns: 'box-arrow-in-down-left',
-    customer: 'people', customeraddress: 'geo-alt',
-    product: 'box', category: 'tags', brand: 'award', catalog: 'collection', productattribute: 'list-ul', hsncode: 'upc-scan', taxrate: 'percent', unitofmeasure: 'rulers',
-    warehouse: 'building', inventoryadjustment: 'sliders', stockmanagement: 'boxes', stocktransfer: 'arrow-left-right',
-    coupon: 'ticket', promotions: 'megaphone',
-    chat: 'chat', messages: 'envelope', calendar: 'calendar', files: 'folder', forms: 'ui-radios', security: 'shield-lock', help: 'question-circle',
-    village: 'pin-map', shipping: 'truck', role: 'shield-shaded', permission: 'key', user: 'person-badge', dashboard: 'speedometer2', analytics: 'graph-up', reports: 'file-earmark-bar-graph', settings: 'gear', audit: 'journal-text', team: 'buildings',
-    'view-all-data': 'globe'
+    orders: 'cart',
+    invoices: 'receipt',
+    payments: 'credit-card',
+    refunds: 'arrow-return-left',
+    returns: 'box-arrow-in-down-left',
+    customer: 'people',
+    customeraddress: 'geo-alt',
+    product: 'box',
+    category: 'tags',
+    brand: 'award',
+    catalog: 'collection',
+    productattribute: 'list-ul',
+    hsncode: 'upc-scan',
+    taxrate: 'percent',
+    unitofmeasure: 'rulers',
+    warehouse: 'building',
+    inventoryadjustment: 'sliders',
+    stockmanagement: 'boxes',
+    stocktransfer: 'arrow-left-right',
+    coupon: 'ticket',
+    promotions: 'megaphone',
+    chat: 'chat',
+    messages: 'envelope',
+    calendar: 'calendar',
+    files: 'folder',
+    forms: 'ui-radios',
+    security: 'shield-lock',
+    help: 'question-circle',
+    village: 'pin-map',
+    shipping: 'truck',
+    role: 'shield-shaded',
+    permission: 'key',
+    user: 'person-badge',
+    dashboard: 'speedometer2',
+    analytics: 'graph-up',
+    reports: 'file-earmark-bar-graph',
+    settings: 'gear',
+    audit: 'journal-text',
+    team: 'buildings',
+    'view-all-data': 'globe',
   };
 
-  return { 
-    key: prefix, 
-    label: label, 
-    icon: icons[prefix] || 'grid', 
-    order: 99 
+  return {
+    key: prefix,
+    label: label,
+    icon: icons[prefix] || 'grid',
+    order: 99,
   };
 }
 
@@ -175,8 +207,9 @@ function permissionActionLabel(name) {
   const parts = String(name ?? '').split(/[-.]/);
   if (parts.length <= 1) return String(name ?? '');
 
-  return parts.slice(1)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1).replace(/_/g, ' '))
+  return parts
+    .slice(1)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).replace(/_/g, ' '))
     .join(' ');
 }
 
@@ -186,19 +219,49 @@ function getEntityLabel(name) {
   if (name === 'view-all-data') prefix = 'view-all-data';
   if (prefix === 'bulkuser') prefix = 'user';
   if (prefix === 'audit-log') prefix = 'audit';
-  
+
   const labels = {
-    brand: 'Brands', catalog: 'Catalogs', category: 'Categories', productattribute: 'Product Attributes',
-    hsncode: 'HSN Codes', taxrate: 'Tax Rates', unitofmeasure: 'Units of Measure', product: 'Products',
-    warehouse: 'Warehouses', inventoryadjustment: 'Inventory Adjustments', stockmanagement: 'Stock Management',
-    stocktransfer: 'Stock Transfers', orders: 'Orders', invoices: 'Invoices', payments: 'Payments',
-    refunds: 'Refunds', returns: 'Returns', customer: 'Customers', customeraddress: 'Customer Addresses',
-    coupon: 'Coupons', promotions: 'Promotions', village: 'Villages', shipping: 'Shipping', role: 'Roles',
-    permission: 'Permissions', user: 'Users', audit: 'Audit Logs', dashboard: 'Dashboard', 'view-all-data': 'Global Data Visibility',
-    chat: 'Team Chat', messages: 'Messages', calendar: 'Calendar', files: 'Files', forms: 'Forms', security: 'Security', help: 'Help & Support',
-    analytics: 'Analytics', reports: 'Reports', settings: 'Settings'
+    brand: 'Brands',
+    catalog: 'Catalogs',
+    category: 'Categories',
+    productattribute: 'Product Attributes',
+    hsncode: 'HSN Codes',
+    taxrate: 'Tax Rates',
+    unitofmeasure: 'Units of Measure',
+    product: 'Products',
+    warehouse: 'Warehouses',
+    inventoryadjustment: 'Inventory Adjustments',
+    stockmanagement: 'Stock Management',
+    stocktransfer: 'Stock Transfers',
+    orders: 'Orders',
+    invoices: 'Invoices',
+    payments: 'Payments',
+    refunds: 'Refunds',
+    returns: 'Returns',
+    customer: 'Customers',
+    customeraddress: 'Customer Addresses',
+    coupon: 'Coupons',
+    promotions: 'Promotions',
+    village: 'Villages',
+    shipping: 'Shipping',
+    role: 'Roles',
+    permission: 'Permissions',
+    user: 'Users',
+    audit: 'Audit Logs',
+    dashboard: 'Dashboard',
+    'view-all-data': 'Global Data Visibility',
+    chat: 'Team Chat',
+    messages: 'Messages',
+    calendar: 'Calendar',
+    files: 'Files',
+    forms: 'Forms',
+    security: 'Security',
+    help: 'Help & Support',
+    analytics: 'Analytics',
+    reports: 'Reports',
+    settings: 'Settings',
   };
-  return labels[prefix] || (prefix.charAt(0).toUpperCase() + prefix.slice(1));
+  return labels[prefix] || prefix.charAt(0).toUpperCase() + prefix.slice(1);
 }
 
 function groupPermissions(permissions) {
@@ -206,7 +269,7 @@ function groupPermissions(permissions) {
 
   [...permissions]
     .sort((a, b) => String(a.name).localeCompare(String(b.name)))
-    .forEach(permission => {
+    .forEach((permission) => {
       const group = permissionGroupFor(permission.name);
       if (!groups.has(group.key)) {
         groups.set(group.key, {
@@ -215,17 +278,17 @@ function groupPermissions(permissions) {
           subGroups: [],
         });
       }
-      
+
       const permObj = {
         ...permission,
         actionLabel: permissionActionLabel(permission.name),
       };
-      
+
       const groupData = groups.get(group.key);
       groupData.items.push(permObj);
-      
+
       const subLabel = getEntityLabel(permission.name);
-      let subGroup = groupData.subGroups.find(s => s.label === subLabel);
+      let subGroup = groupData.subGroups.find((s) => s.label === subLabel);
       if (!subGroup) {
         subGroup = { label: subLabel, items: [] };
         groupData.subGroups.push(subGroup);
@@ -290,7 +353,7 @@ document.addEventListener('alpine:init', () => {
 
     initResizeHandler() {
       this._resizeHandler = () => {
-        Object.values(this.charts).forEach(chart => {
+        Object.values(this.charts).forEach((chart) => {
           if (chart && typeof chart.updateOptions === 'function') {
             chart.updateOptions({ chart: { width: '100%' } }, false, true);
           }
@@ -300,7 +363,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     clearExistingCharts() {
-      Object.values(this.charts).forEach(chart => {
+      Object.values(this.charts).forEach((chart) => {
         if (chart && typeof chart.destroy === 'function') chart.destroy();
       });
       this.charts = {};
@@ -327,7 +390,7 @@ document.addEventListener('alpine:init', () => {
       if (this.activeTab === 'roles') this.isLoading = true;
       try {
         const data = await apiFetch(`/api/roles?${this.params()}`);
-        this.roles = (data.data ?? []).map(item => this.mapItem(item));
+        this.roles = (data.data ?? []).map((item) => this.mapItem(item));
         if (this.activeTab === 'roles') this.applyPagination(data);
       } catch (err) {
         showToast(`Failed to load roles: ${err.message}`, 'danger');
@@ -340,7 +403,7 @@ document.addEventListener('alpine:init', () => {
       if (this.activeTab === 'permissions') this.isLoading = true;
       try {
         const data = await apiFetch(`/api/permissions?${this.params()}`);
-        this.permissions = (data.data ?? []).map(item => this.mapItem(item));
+        this.permissions = (data.data ?? []).map((item) => this.mapItem(item));
         if (this.activeTab === 'permissions') this.applyPagination(data);
       } catch (err) {
         showToast(`Failed to load permissions: ${err.message}`, 'danger');
@@ -390,7 +453,7 @@ document.addEventListener('alpine:init', () => {
 
     filterItems() {
       this.currentPage = 1;
-      
+
       this.loadCurrent();
     },
 
@@ -409,15 +472,15 @@ document.addEventListener('alpine:init', () => {
     },
 
     get selectedRows() {
-      return this.currentItems.filter(item => this.selectedItems.includes(item.id));
+      return this.currentItems.filter((item) => this.selectedItems.includes(item.id));
     },
 
     get hasSelectedDeletedItems() {
-      return this.selectedRows.some(item => item.isDeleted);
+      return this.selectedRows.some((item) => item.isDeleted);
     },
 
     get hasSelectedActiveItems() {
-      return this.selectedRows.some(item => !item.isDeleted);
+      return this.selectedRows.some((item) => !item.isDeleted);
     },
 
     get pageFrom() {
@@ -432,7 +495,11 @@ document.addEventListener('alpine:init', () => {
     get visiblePages() {
       const delta = 2;
       const range = [];
-      for (let i = Math.max(2, this.currentPage - delta); i <= Math.min(this.totalPages - 1, this.currentPage + delta); i++) {
+      for (
+        let i = Math.max(2, this.currentPage - delta);
+        i <= Math.min(this.totalPages - 1, this.currentPage + delta);
+        i++
+      ) {
         range.push(i);
       }
       const result = [];
@@ -441,7 +508,10 @@ document.addEventListener('alpine:init', () => {
       result.push(...range);
       if (this.currentPage + delta < this.totalPages - 1) result.push('...', this.totalPages);
       else if (this.totalPages > 1) result.push(this.totalPages);
-      return result.filter((value, index, all) => all.indexOf(value) === index && (typeof value === 'string' || value <= this.totalPages));
+      return result.filter(
+        (value, index, all) =>
+          all.indexOf(value) === index && (typeof value === 'string' || value <= this.totalPages)
+      );
     },
 
     goToPage(page) {
@@ -453,20 +523,20 @@ document.addEventListener('alpine:init', () => {
 
     toggleAll(checked) {
       if (checked) {
-        this.currentItems.forEach(item => {
+        this.currentItems.forEach((item) => {
           if (!this.selectedItems.includes(String(item.id))) {
             this.selectedItems.push(String(item.id));
           }
         });
       } else {
-        const currentIds = this.currentItems.map(item => String(item.id));
-        this.selectedItems = this.selectedItems.filter(id => !currentIds.includes(id));
+        const currentIds = this.currentItems.map((item) => String(item.id));
+        this.selectedItems = this.selectedItems.filter((id) => !currentIds.includes(id));
       }
     },
 
     toggleItem(itemId) {
       if (this.selectedItems.includes(itemId)) {
-        this.selectedItems = this.selectedItems.filter(id => id !== itemId);
+        this.selectedItems = this.selectedItems.filter((id) => id !== itemId);
       } else {
         this.selectedItems = [...this.selectedItems, itemId];
       }
@@ -516,7 +586,9 @@ document.addEventListener('alpine:init', () => {
       if (!confirmed) return;
 
       try {
-        const res = await apiFetch(`${endpointFor(this.activeTab)}/${item.id}`, { method: 'DELETE' });
+        const res = await apiFetch(`${endpointFor(this.activeTab)}/${item.id}`, {
+          method: 'DELETE',
+        });
         showToast(res.message || `${item.name} deleted successfully.`);
         await this.loadCurrent();
       } catch (err) {
@@ -526,7 +598,9 @@ document.addEventListener('alpine:init', () => {
 
     async restoreItem(item) {
       try {
-        const res = await apiFetch(`${endpointFor(this.activeTab)}/${item.id}/restore`, { method: 'PATCH' });
+        const res = await apiFetch(`${endpointFor(this.activeTab)}/${item.id}/restore`, {
+          method: 'PATCH',
+        });
         showToast(res.message || `${item.name} restored successfully.`);
         await this.loadCurrent();
       } catch (err) {
@@ -544,7 +618,9 @@ document.addEventListener('alpine:init', () => {
       if (!confirmed) return;
 
       try {
-        const res = await apiFetch(`${endpointFor(this.activeTab)}/${item.id}/force`, { method: 'DELETE' });
+        const res = await apiFetch(`${endpointFor(this.activeTab)}/${item.id}/force`, {
+          method: 'DELETE',
+        });
         showToast(res.message || `${item.name} permanently deleted successfully.`, 'success');
         await this.loadData();
       } catch (err) {
@@ -557,14 +633,17 @@ document.addEventListener('alpine:init', () => {
         showToast('Restore this role before cloning.', 'warning');
         return;
       }
-      
-      const newName = prompt(`Enter a name for the new role (cloning from ${item.name}):`, `${item.name} (Copy)`);
+
+      const newName = prompt(
+        `Enter a name for the new role (cloning from ${item.name}):`,
+        `${item.name} (Copy)`
+      );
       if (!newName || newName.trim() === '') return;
 
       try {
-        const res = await apiFetch(`/api/roles/${item.id}/clone`, { 
+        const res = await apiFetch(`/api/roles/${item.id}/clone`, {
           method: 'POST',
-          body: JSON.stringify({ new_name: newName.trim() })
+          body: JSON.stringify({ new_name: newName.trim() }),
         });
         showToast(res.message, 'success');
         await this.loadData();
@@ -581,10 +660,14 @@ document.addEventListener('alpine:init', () => {
 
       if (action === 'delete' || action === 'force-delete') {
         const confirmed = await confirmDelete({
-          title: action === 'delete' ? 'Temporarily delete selected items?' : 'Permanently delete selected items?',
-          text: action === 'delete'
-            ? `Do you want to move ${this.selectedItems.length} selected item(s) to deleted records?`
-            : `This will permanently delete ${this.selectedItems.length} selected item(s). This action cannot be undone.`,
+          title:
+            action === 'delete'
+              ? 'Temporarily delete selected items?'
+              : 'Permanently delete selected items?',
+          text:
+            action === 'delete'
+              ? `Do you want to move ${this.selectedItems.length} selected item(s) to deleted records?`
+              : `This will permanently delete ${this.selectedItems.length} selected item(s). This action cannot be undone.`,
           confirmButtonText: action === 'delete' ? 'Yes, delete items' : 'Yes, permanently delete',
         });
         if (!confirmed) return;
@@ -596,9 +679,14 @@ document.addEventListener('alpine:init', () => {
 
       for (const item of selected) {
         try {
-          if (action === 'delete') await apiFetch(`${endpointFor(this.activeTab)}/${item.id}`, { method: 'DELETE' });
-          if (action === 'restore') await apiFetch(`${endpointFor(this.activeTab)}/${item.id}/restore`, { method: 'PATCH' });
-          if (action === 'force-delete') await apiFetch(`${endpointFor(this.activeTab)}/${item.id}/force`, { method: 'DELETE' });
+          if (action === 'delete')
+            await apiFetch(`${endpointFor(this.activeTab)}/${item.id}`, { method: 'DELETE' });
+          if (action === 'restore')
+            await apiFetch(`${endpointFor(this.activeTab)}/${item.id}/restore`, {
+              method: 'PATCH',
+            });
+          if (action === 'force-delete')
+            await apiFetch(`${endpointFor(this.activeTab)}/${item.id}/force`, { method: 'DELETE' });
           completed++;
         } catch {
           failed++;
@@ -607,31 +695,41 @@ document.addEventListener('alpine:init', () => {
 
       this.selectedItems = [];
       await this.loadCurrent();
-      showToast(`${completed} item(s) processed${failed ? `, ${failed} failed` : ''}.`, failed ? 'warning' : 'success');
+      showToast(
+        `${completed} item(s) processed${failed ? `, ${failed} failed` : ''}.`,
+        failed ? 'warning' : 'success'
+      );
     },
 
     async exportItems() {
       try {
-        const first = await apiFetch(`${endpointFor(this.activeTab)}?${this.params({ page: 1, per_page: 500 })}`);
-        const rows = (first.data ?? []).map(item => this.mapItem(item));
+        const first = await apiFetch(
+          `${endpointFor(this.activeTab)}?${this.params({ page: 1, per_page: 500 })}`
+        );
+        const rows = (first.data ?? []).map((item) => this.mapItem(item));
         for (let page = 2; page <= (first.last_page ?? 1); page++) {
-          const data = await apiFetch(`${endpointFor(this.activeTab)}?${this.params({ page, per_page: 500 })}`);
-          rows.push(...(data.data ?? []).map(item => this.mapItem(item)));
+          const data = await apiFetch(
+            `${endpointFor(this.activeTab)}?${this.params({ page, per_page: 500 })}`
+          );
+          rows.push(...(data.data ?? []).map((item) => this.mapItem(item)));
         }
 
-        const headers = this.activeTab === 'roles'
-          ? ['ID', 'Name', 'Guard', 'Permissions', 'Status', 'Created', 'Updated']
-          : ['ID', 'Name', 'Guard', 'Roles', 'Status', 'Created', 'Updated'];
-        const csvRows = rows.map(item => [
+        const headers =
+          this.activeTab === 'roles'
+            ? ['ID', 'Name', 'Guard', 'Permissions', 'Status', 'Created', 'Updated']
+            : ['ID', 'Name', 'Guard', 'Roles', 'Status', 'Created', 'Updated'];
+        const csvRows = rows.map((item) => [
           item.id,
           item.name,
           item.guard_name,
-          this.activeTab === 'roles' ? item.permissions.map(p => p.name).join('|') : item.roles.map(r => r.name).join('|'),
+          this.activeTab === 'roles'
+            ? item.permissions.map((p) => p.name).join('|')
+            : item.roles.map((r) => r.name).join('|'),
           item.isDeleted ? 'deleted' : 'active',
           item.createdAtDateTime,
           item.updatedAtDateTime,
         ]);
-        const csv = [headers, ...csvRows].map(row => row.map(csvEscape).join(',')).join('\n');
+        const csv = [headers, ...csvRows].map((row) => row.map(csvEscape).join(',')).join('\n');
         downloadBlob(`${this.activeTab}-export.csv`, csv, 'text/csv;charset=utf-8;');
         showToast(`Exported ${rows.length} ${this.activeTab}.`);
       } catch (err) {
@@ -660,7 +758,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     get deletedCount() {
-      return this.currentItems.filter(item => item.isDeleted).length;
+      return this.currentItems.filter((item) => item.isDeleted).length;
     },
 
     get topRoles() {
@@ -676,7 +774,7 @@ document.addEventListener('alpine:init', () => {
         action: item.isDeleted ? 'was deleted' : 'was updated',
         time: `Date & time: ${item.updatedAtDateTime}`,
         type: item.isDeleted ? 'deleted' : 'updated',
-        icon: item.isDeleted ? 'trash' : (this.activeTab === 'roles' ? 'shield-check' : 'key'),
+        icon: item.isDeleted ? 'trash' : this.activeTab === 'roles' ? 'shield-check' : 'key',
         details: `${item.guard_name} guard · ${this.activeTab === 'roles' ? `${item.permissions_count || 0} permissions` : `${item.roles_count || 0} roles`}`,
       }));
     },
@@ -684,10 +782,22 @@ document.addEventListener('alpine:init', () => {
     get systemAlerts() {
       const alerts = [];
       if (this.roles.length === 0) {
-        alerts.push({ id: 1, title: 'No Roles', message: 'No roles found. Add your first role.', type: 'info', time: 'Just now' });
+        alerts.push({
+          id: 1,
+          title: 'No Roles',
+          message: 'No roles found. Add your first role.',
+          type: 'info',
+          time: 'Just now',
+        });
       }
       if (this.permissions.length === 0) {
-        alerts.push({ id: 2, title: 'No Permissions', message: 'No permissions found. Add your first permission.', type: 'warning', time: 'Just now' });
+        alerts.push({
+          id: 2,
+          title: 'No Permissions',
+          message: 'No permissions found. Add your first permission.',
+          type: 'warning',
+          time: 'Just now',
+        });
       }
       return alerts;
     },
@@ -718,9 +828,22 @@ document.addEventListener('alpine:init', () => {
       for (let i = period - 1; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
-        labels.push(date.toLocaleDateString('en', period <= 7 ? { weekday: 'short' } : { month: 'short', day: 'numeric' }));
-        roleCounts.push(this.roles.filter(role => new Date(role.created_at).toDateString() === date.toDateString()).length);
-        permissionCounts.push(this.permissions.filter(permission => new Date(permission.created_at).toDateString() === date.toDateString()).length);
+        labels.push(
+          date.toLocaleDateString(
+            'en',
+            period <= 7 ? { weekday: 'short' } : { month: 'short', day: 'numeric' }
+          )
+        );
+        roleCounts.push(
+          this.roles.filter(
+            (role) => new Date(role.created_at).toDateString() === date.toDateString()
+          ).length
+        );
+        permissionCounts.push(
+          this.permissions.filter(
+            (permission) => new Date(permission.created_at).toDateString() === date.toDateString()
+          ).length
+        );
       }
 
       this.charts.coverage = new ApexCharts(el, {
@@ -728,14 +851,28 @@ document.addEventListener('alpine:init', () => {
           { name: 'Roles', data: roleCounts },
           { name: 'Permissions', data: permissionCounts },
         ],
-        chart: { type: 'bar', height: 250, width: '100%', toolbar: { show: false }, zoom: { enabled: false } },
+        chart: {
+          type: 'bar',
+          height: 250,
+          width: '100%',
+          toolbar: { show: false },
+          zoom: { enabled: false },
+        },
         colors: ['#6366f1', '#10b981'],
         plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
-        xaxis: { categories: labels, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#64748b' } } },
+        xaxis: {
+          categories: labels,
+          axisBorder: { show: false },
+          axisTicks: { show: false },
+          labels: { style: { fontSize: '12px', colors: '#64748b' } },
+        },
         yaxis: { show: false },
         grid: { show: false },
         dataLabels: { enabled: false },
-        tooltip: { theme: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light' },
+        tooltip: {
+          theme:
+            document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light',
+        },
       });
       this.charts.coverage.render();
     },
@@ -760,7 +897,10 @@ document.addEventListener('alpine:init', () => {
         legend: { show: false },
         plotOptions: { pie: { donut: { size: '70%' } } },
         dataLabels: { enabled: false },
-        tooltip: { theme: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light' },
+        tooltip: {
+          theme:
+            document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light',
+        },
       });
       this.charts.guards.render();
     },
@@ -791,12 +931,14 @@ document.addEventListener('alpine:init', () => {
       const query = this.permissionSearch.trim().toLowerCase();
       if (!query) return groupPermissions(this.permissions);
 
-      return groupPermissions(this.permissions.filter(permission => {
-        const name = String(permission.name ?? '').toLowerCase();
-        const label = String(permission.actionLabel ?? '').toLowerCase();
-        const group = permissionGroupFor(permission.name).label.toLowerCase();
-        return name.includes(query) || label.includes(query) || group.includes(query);
-      }));
+      return groupPermissions(
+        this.permissions.filter((permission) => {
+          const name = String(permission.name ?? '').toLowerCase();
+          const label = String(permission.actionLabel ?? '').toLowerCase();
+          const group = permissionGroupFor(permission.name).label.toLowerCase();
+          return name.includes(query) || label.includes(query) || group.includes(query);
+        })
+      );
     },
 
     get totalPermissionsCount() {
@@ -804,12 +946,16 @@ document.addEventListener('alpine:init', () => {
     },
 
     get selectedGroups() {
-      return groupPermissions(this.permissions.filter(permission => this.isPermissionSelected(permission.name)));
+      return groupPermissions(
+        this.permissions.filter((permission) => this.isPermissionSelected(permission.name))
+      );
     },
 
     async init() {
       await Promise.all([this.loadPermissions(), this.loadRoles()]);
-      document.getElementById('accessModal')?.addEventListener('hidden.bs.modal', () => this.resetForm(this.type));
+      document
+        .getElementById('accessModal')
+        ?.addEventListener('hidden.bs.modal', () => this.resetForm(this.type));
     },
 
     async loadPermissions() {
@@ -817,14 +963,16 @@ document.addEventListener('alpine:init', () => {
       this.permissionsError = '';
       try {
         const data = await apiFetch(`/api/permissions/options?_t=${Date.now()}`);
-        this.permissions = (data.data ?? data).map(permission => ({
+        this.permissions = (data.data ?? data).map((permission) => ({
           ...permission,
           actionLabel: permissionActionLabel(permission.name),
         }));
       } catch (err) {
         try {
-          const data = await apiFetch('/api/permissions?per_page=500&deleted=without&sort_by=name&sort_dir=asc');
-          this.permissions = (data.data ?? data).map(permission => ({
+          const data = await apiFetch(
+            '/api/permissions?per_page=500&deleted=without&sort_by=name&sort_dir=asc'
+          );
+          this.permissions = (data.data ?? data).map((permission) => ({
             ...permission,
             actionLabel: permissionActionLabel(permission.name),
           }));
@@ -836,15 +984,17 @@ document.addEventListener('alpine:init', () => {
         this.permissionsLoading = false;
       }
     },
-    
+
     async loadRoles() {
       try {
         const data = await apiFetch(`/api/roles/options?_t=${Date.now()}`);
-        this.rolesList = (data.data ?? data).map(role => role.name);
+        this.rolesList = (data.data ?? data).map((role) => role.name);
       } catch (err) {
         try {
-          const data = await apiFetch('/api/roles?per_page=500&deleted=without&sort_by=name&sort_dir=asc');
-          this.rolesList = (data.data ?? data).map(role => role.name);
+          const data = await apiFetch(
+            '/api/roles?per_page=500&deleted=without&sort_by=name&sort_dir=asc'
+          );
+          this.rolesList = (data.data ?? data).map((role) => role.name);
         } catch (fallbackErr) {
           this.rolesList = [];
         }
@@ -870,8 +1020,9 @@ document.addEventListener('alpine:init', () => {
       this.editingId = item.id;
       this.form.name = item.name;
       this.form.guard_name = item.guard_name || 'web';
-      this.form.permissions = type === 'roles' ? (item.permissions ?? []).map(permission => permission.name) : [];
-      this.form.roles = type === 'permissions' ? (item.roles ?? []).map(r => r.name) : [];
+      this.form.permissions =
+        type === 'roles' ? (item.permissions ?? []).map((permission) => permission.name) : [];
+      this.form.roles = type === 'permissions' ? (item.roles ?? []).map((r) => r.name) : [];
     },
 
     isPermissionSelected(permissionName) {
@@ -879,17 +1030,22 @@ document.addEventListener('alpine:init', () => {
     },
 
     isPermissionGroupSelected(group) {
-      return group.items.length > 0 && group.items.every(permission => this.isPermissionSelected(permission.name));
+      return (
+        group.items.length > 0 &&
+        group.items.every((permission) => this.isPermissionSelected(permission.name))
+      );
     },
 
     selectedPermissionCount(group) {
-      return group.items.filter(permission => this.isPermissionSelected(permission.name)).length;
+      return group.items.filter((permission) => this.isPermissionSelected(permission.name)).length;
     },
 
     togglePermissionGroup(group) {
-      const groupNames = group.items.map(permission => permission.name);
+      const groupNames = group.items.map((permission) => permission.name);
       if (this.isPermissionGroupSelected(group)) {
-        this.form.permissions = this.form.permissions.filter(permission => !groupNames.includes(permission));
+        this.form.permissions = this.form.permissions.filter(
+          (permission) => !groupNames.includes(permission)
+        );
         return;
       }
 
@@ -897,7 +1053,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     selectAllPermissions() {
-      this.form.permissions = this.permissions.map(permission => permission.name);
+      this.form.permissions = this.permissions.map((permission) => permission.name);
     },
 
     clearPermissions() {
@@ -919,7 +1075,9 @@ document.addEventListener('alpine:init', () => {
         if (this.type === 'roles') payload.permissions = this.form.permissions;
         if (this.type === 'permissions') payload.roles = this.form.roles;
 
-        const url = this.editingId ? `${endpointFor(this.type)}/${this.editingId}` : endpointFor(this.type);
+        const url = this.editingId
+          ? `${endpointFor(this.type)}/${this.editingId}`
+          : endpointFor(this.type);
         const method = this.editingId ? 'PUT' : 'POST';
         const res = await apiFetch(url, { method, body: JSON.stringify(payload) });
         showToast(res.message || 'Saved successfully.');
@@ -988,7 +1146,10 @@ document.addEventListener('alpine:init', () => {
       this.importing = true;
       this.result = null;
       const text = await this.file.text();
-      const lines = text.trim().split('\n').filter(line => line.trim());
+      const lines = text
+        .trim()
+        .split('\n')
+        .filter((line) => line.trim());
       let created = 0;
       const errors = [];
 
@@ -1005,7 +1166,10 @@ document.addEventListener('alpine:init', () => {
           guard_name: guardName || 'web',
         };
         if (type === 'roles') {
-          payload.permissions = String(permissionsRaw ?? '').split('|').map(value => value.trim()).filter(Boolean);
+          payload.permissions = String(permissionsRaw ?? '')
+            .split('|')
+            .map((value) => value.trim())
+            .filter(Boolean);
         }
 
         try {

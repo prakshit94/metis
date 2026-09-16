@@ -11,7 +11,7 @@ async function apiFetch(url, options = {}) {
   const { headers, ...otherOptions } = options;
   const fetchHeaders = {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
     'X-CSRF-TOKEN': getCsrfToken(),
     ...(headers || {}),
   };
@@ -32,7 +32,12 @@ function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
   if (!container) return;
   const id = 'toast-' + Date.now();
-  const iconMap = { success: 'bi-check-circle-fill', danger: 'bi-x-circle-fill', warning: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
+  const iconMap = {
+    success: 'bi-check-circle-fill',
+    danger: 'bi-x-circle-fill',
+    warning: 'bi-exclamation-triangle-fill',
+    info: 'bi-info-circle-fill',
+  };
   const el = document.createElement('div');
   el.id = id;
   el.className = `toast align-items-center text-bg-${type} border-0 show mb-2`;
@@ -45,7 +50,15 @@ function showToast(message, type = 'success') {
 
 async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it' }) {
   const result = await Swal.fire({
-    title, text, icon: 'warning', showCancelButton: true, confirmButtonText, cancelButtonText: 'Cancel', confirmButtonColor: '#dc3545', reverseButtons: true, focusCancel: true,
+    title,
+    text,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText,
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#dc3545',
+    reverseButtons: true,
+    focusCancel: true,
   });
   return result.isConfirmed;
 }
@@ -87,7 +100,7 @@ document.addEventListener('alpine:init', () => {
       window.addEventListener('attendance-saved', () => {
         this.loadItems();
       });
-      
+
       this.$watch('usersList', () => {
         if (currentUserId) {
           this.$nextTick(() => {
@@ -101,7 +114,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await apiFetch('/api/users?per_page=100');
         this.usersList = res.data ?? res;
-      } catch(e) {}
+      } catch (e) {}
     },
 
     async loadItems() {
@@ -116,7 +129,7 @@ document.addEventListener('alpine:init', () => {
         if (this.searchQuery) params.set('search', this.searchQuery);
         if (this.statusFilter) params.set('status', this.statusFilter);
         if (this.userFilter) params.set('user_id', this.userFilter);
-        
+
         if (this.currentView === 'calendar') {
           if (this.calendarDays.length > 0) {
             params.set('start_date', this.calendarDays[0].date);
@@ -132,11 +145,11 @@ document.addEventListener('alpine:init', () => {
         this.totalItems = data.total ?? this.items.length;
         this.totalPages = data.last_page ?? 1;
         this.currentPage = data.current_page ?? 1;
-        
+
         if (this.currentView === 'calendar') {
           this.mapEventsToCalendar();
         }
-        
+
         this.calculateStats();
       } catch (err) {
         showToast('Failed to load attendances: ' + err.message, 'danger');
@@ -148,44 +161,44 @@ document.addEventListener('alpine:init', () => {
     calculateStats() {
       // Group items by date to get unique days
       const uniqueDays = {};
-      this.items.forEach(i => {
-         if (!uniqueDays[i.date]) {
-             uniqueDays[i.date] = i.status;
-         } else {
-             if (i.status !== 'Absent') uniqueDays[i.date] = i.status; // Prioritize non-absent
-         }
+      this.items.forEach((i) => {
+        if (!uniqueDays[i.date]) {
+          uniqueDays[i.date] = i.status;
+        } else {
+          if (i.status !== 'Absent') uniqueDays[i.date] = i.status; // Prioritize non-absent
+        }
       });
-      
+
       const uniqueStatuses = Object.values(uniqueDays);
 
       this.stats.total = this.totalItems;
-      this.stats.present = uniqueStatuses.filter(s => s === 'Present').length;
-      this.stats.absent = uniqueStatuses.filter(s => s === 'Absent').length;
-      this.stats.late = uniqueStatuses.filter(s => s === 'Late').length;
-      this.stats.halfDay = uniqueStatuses.filter(s => s === 'Half-Day').length;
+      this.stats.present = uniqueStatuses.filter((s) => s === 'Present').length;
+      this.stats.absent = uniqueStatuses.filter((s) => s === 'Absent').length;
+      this.stats.late = uniqueStatuses.filter((s) => s === 'Late').length;
+      this.stats.halfDay = uniqueStatuses.filter((s) => s === 'Half-Day').length;
     },
 
     filterItems() {
       this.currentPage = 1;
       this.loadItems();
     },
-    
+
     exportSummary() {
       const pad = (n) => String(n).padStart(2, '0');
       const monthStr = `${this.currentMonthDate.getFullYear()}-${pad(this.currentMonthDate.getMonth() + 1)}`;
       window.open(`/api/attendances/export/summary?month=${monthStr}`, '_blank');
     },
-    
+
     exportDetailed() {
       const pad = (n) => String(n).padStart(2, '0');
       const monthStr = `${this.currentMonthDate.getFullYear()}-${pad(this.currentMonthDate.getMonth() + 1)}`;
       window.open(`/api/attendances/export/detailed?month=${monthStr}`, '_blank');
     },
-    
+
     get currentMonthYear() {
       return this.currentMonthDate.toLocaleString('default', { month: 'long', year: 'numeric' });
     },
-    
+
     switchView(view) {
       this.currentView = view;
       if (view === 'calendar') {
@@ -195,13 +208,21 @@ document.addEventListener('alpine:init', () => {
     },
 
     previousMonth() {
-      this.currentMonthDate = new Date(this.currentMonthDate.getFullYear(), this.currentMonthDate.getMonth() - 1, 1);
+      this.currentMonthDate = new Date(
+        this.currentMonthDate.getFullYear(),
+        this.currentMonthDate.getMonth() - 1,
+        1
+      );
       this.generateCalendarDays();
       this.loadItems();
     },
 
     nextMonth() {
-      this.currentMonthDate = new Date(this.currentMonthDate.getFullYear(), this.currentMonthDate.getMonth() + 1, 1);
+      this.currentMonthDate = new Date(
+        this.currentMonthDate.getFullYear(),
+        this.currentMonthDate.getMonth() + 1,
+        1
+      );
       this.generateCalendarDays();
       this.loadItems();
     },
@@ -228,12 +249,12 @@ document.addEventListener('alpine:init', () => {
           day: d.getDate(),
           isOtherMonth: true,
           isToday: d.toDateString() === today.toDateString(),
-          events: []
+          events: [],
         });
       }
 
       const pad = (n) => String(n).padStart(2, '0');
-      
+
       for (let i = 1; i <= lastDay.getDate(); i++) {
         const d = new Date(year, month, i);
         days.push({
@@ -241,7 +262,7 @@ document.addEventListener('alpine:init', () => {
           day: d.getDate(),
           isOtherMonth: false,
           isToday: d.toDateString() === today.toDateString(),
-          events: []
+          events: [],
         });
       }
 
@@ -253,7 +274,7 @@ document.addEventListener('alpine:init', () => {
           day: d.getDate(),
           isOtherMonth: true,
           isToday: d.toDateString() === today.toDateString(),
-          events: []
+          events: [],
         });
       }
 
@@ -262,22 +283,22 @@ document.addEventListener('alpine:init', () => {
 
     mapEventsToCalendar() {
       const itemsByDate = {};
-      this.items.forEach(item => {
+      this.items.forEach((item) => {
         if (!itemsByDate[item.date]) itemsByDate[item.date] = [];
         itemsByDate[item.date].push(item);
       });
 
-      this.calendarDays.forEach(day => {
+      this.calendarDays.forEach((day) => {
         day.events = [];
-        
+
         // Add Leave events if they exist for this day
-        this.leaves.forEach(leave => {
+        this.leaves.forEach((leave) => {
           if (day.date >= leave.start_date && day.date <= leave.end_date) {
             let leaveClass = 'bg-secondary text-white';
             if (leave.status === 'Approved') leaveClass = 'bg-primary text-white';
             if (leave.status === 'Rejected') leaveClass = 'bg-secondary text-white';
             if (leave.status === 'Pending') leaveClass = 'bg-info text-dark';
-            
+
             day.events.push({
               id: 'leave-' + leave.id + '-' + day.date,
               type: leaveClass + ' border-0',
@@ -285,7 +306,7 @@ document.addEventListener('alpine:init', () => {
               checkIn: leave.status,
               checkOut: null,
               totalTime: null,
-              raw: { ...leave, isLeave: true }
+              raw: { ...leave, isLeave: true },
             });
           }
         });
@@ -299,7 +320,7 @@ document.addEventListener('alpine:init', () => {
           let overallStatus = 'Absent';
           let hasActiveSession = false;
 
-          items.forEach(item => {
+          items.forEach((item) => {
             if (item.status !== 'Absent') overallStatus = item.status; // Priorities: Present > Absent
 
             if (item.check_in) {
@@ -316,7 +337,7 @@ document.addEventListener('alpine:init', () => {
               if (parts.length === 2) {
                 const h = parseInt(parts[0].replace('h', '')) || 0;
                 const m = parseInt(parts[1].replace('m', '')) || 0;
-                totalMins += (h * 60) + m;
+                totalMins += h * 60 + m;
               }
             }
           });
@@ -335,33 +356,33 @@ document.addEventListener('alpine:init', () => {
             checkIn: firstCheckIn ? firstCheckIn.substring(0, 5) : '--:--',
             checkOut: lastCheckOut ? lastCheckOut.substring(0, 5) : '--:--',
             totalTime: totalTimeStr,
-            raw: items[0]
+            raw: items[0],
           });
         }
       });
-      
+
       const now = new Date();
       const pad = (n) => String(n).padStart(2, '0');
       const todayDateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-      
+
       let joiningDateStr = null;
       if (this.userFilter) {
-          const u = this.usersList.find(x => String(x.id) === String(this.userFilter));
-          if (u && u.joining_date) {
-              joiningDateStr = u.joining_date.split('T')[0];
-          }
+        const u = this.usersList.find((x) => String(x.id) === String(this.userFilter));
+        if (u && u.joining_date) {
+          joiningDateStr = u.joining_date.split('T')[0];
+        }
       } else if (this.items.length > 0 && this.items[0].user && this.items[0].user.joining_date) {
-          joiningDateStr = this.items[0].user.joining_date.split('T')[0];
+        joiningDateStr = this.items[0].user.joining_date.split('T')[0];
       }
-      
-      this.calendarDays.forEach(day => {
+
+      this.calendarDays.forEach((day) => {
         if (day.events.length === 0 && day.date <= todayDateStr && !day.isOtherMonth) {
           if (joiningDateStr && day.date < joiningDateStr) return;
-          
+
           // Parse date properly across timezones avoiding shift
           const [year, month, date] = day.date.split('-');
           const d = new Date(year, month - 1, date);
-          
+
           if (d.getDay() !== 0 && d.getDay() !== 6) {
             day.events.push({
               id: 'auto-absent-' + day.date,
@@ -370,7 +391,7 @@ document.addEventListener('alpine:init', () => {
               checkIn: '--:--',
               checkOut: '--:--',
               totalTime: '--h --m',
-              raw: { date: day.date, status: 'Absent' }
+              raw: { date: day.date, status: 'Absent' },
             });
           }
         }
@@ -386,7 +407,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     addEventForDay(day) {
-      window.dispatchEvent(new CustomEvent('open-attendance-modal', { detail: { date: day.date } }));
+      window.dispatchEvent(
+        new CustomEvent('open-attendance-modal', { detail: { date: day.date } })
+      );
     },
 
     sortBy(field) {
@@ -405,11 +428,15 @@ document.addEventListener('alpine:init', () => {
         this.loadItems();
       }
     },
-    
+
     get visiblePages() {
       const delta = 2;
       const range = [];
-      for (let i = Math.max(2, this.currentPage - delta); i <= Math.min(this.totalPages - 1, this.currentPage + delta); i++) {
+      for (
+        let i = Math.max(2, this.currentPage - delta);
+        i <= Math.min(this.totalPages - 1, this.currentPage + delta);
+        i++
+      ) {
         range.push(i);
       }
       const result = [];
@@ -418,7 +445,9 @@ document.addEventListener('alpine:init', () => {
       result.push(...range);
       if (this.currentPage + delta < this.totalPages - 1) result.push('...', this.totalPages);
       else if (this.totalPages > 1) result.push(this.totalPages);
-      return result.filter((v, i, a) => a.indexOf(v) === i && (typeof v === 'string' || v <= this.totalPages));
+      return result.filter(
+        (v, i, a) => a.indexOf(v) === i && (typeof v === 'string' || v <= this.totalPages)
+      );
     },
 
     get pageFrom() {
@@ -431,19 +460,20 @@ document.addEventListener('alpine:init', () => {
 
     toggleAll(checked) {
       if (checked) {
-        this.items.forEach(item => {
-          if (!this.selectedItems.includes(String(item.id))) this.selectedItems.push(String(item.id));
+        this.items.forEach((item) => {
+          if (!this.selectedItems.includes(String(item.id)))
+            this.selectedItems.push(String(item.id));
         });
       } else {
-        const currentIds = this.items.map(item => String(item.id));
-        this.selectedItems = this.selectedItems.filter(id => !currentIds.includes(id));
+        const currentIds = this.items.map((item) => String(item.id));
+        this.selectedItems = this.selectedItems.filter((id) => !currentIds.includes(id));
       }
     },
 
     toggleItem(id) {
       id = String(id);
       if (this.selectedItems.includes(id)) {
-        this.selectedItems = this.selectedItems.filter(i => i !== id);
+        this.selectedItems = this.selectedItems.filter((i) => i !== id);
       } else {
         this.selectedItems.push(id);
       }
@@ -493,7 +523,7 @@ document.addEventListener('alpine:init', () => {
         confirmButtonText: 'Yes, delete',
       });
       if (!confirmed) return;
-      
+
       try {
         const res = await apiFetch('/api/attendances/bulk-action', {
           method: 'POST',
@@ -522,9 +552,9 @@ document.addEventListener('alpine:init', () => {
       start_date: '',
       end_date: '',
       reason: '',
-      status: 'Pending'
+      status: 'Pending',
     },
-    
+
     init() {
       this.loadUsers();
       window.addEventListener('open-leave-modal', (e) => {
@@ -534,8 +564,12 @@ document.addEventListener('alpine:init', () => {
           this.originalLeaveType = e.detail.leave_type;
           this.form.user_id = e.detail.user_id;
           this.form.leave_type = e.detail.leave_type;
-          this.form.start_date = e.detail.start_date ? e.detail.start_date.split('T')[0].split(' ')[0] : '';
-          this.form.end_date = e.detail.end_date ? e.detail.end_date.split('T')[0].split(' ')[0] : '';
+          this.form.start_date = e.detail.start_date
+            ? e.detail.start_date.split('T')[0].split(' ')[0]
+            : '';
+          this.form.end_date = e.detail.end_date
+            ? e.detail.end_date.split('T')[0].split(' ')[0]
+            : '';
           this.form.reason = e.detail.reason;
           this.form.status = e.detail.status;
         } else {
@@ -552,73 +586,75 @@ document.addEventListener('alpine:init', () => {
       });
 
       this.$watch('form.user_id', (value) => {
-          this.fetchBalances(value);
+        this.fetchBalances(value);
       });
-      
-      this.$watch('users', () => {
-          if (!this.editingId && currentUserId) {
-              this.$nextTick(() => {
-                  this.form.user_id = currentUserId;
-              });
-          }
-      });
-    },
 
-    async fetchBalances(userId) {
-        const prevType = this.form.leave_type;
-        this.userBalances = [];
-        if (!userId) return;
-        
-        this.isLoadingBalances = true;
-        try {
-            const res = await apiFetch(`/api/leave-balances?user_id=${userId}&is_active=1&per_page=100`);
-            if (res && res.data) {
-                this.userBalances = res.data;
-                this.$nextTick(() => {
-                    if (prevType) this.form.leave_type = prevType;
-                });
-            }
-        } catch (e) {
-            console.error("Failed to load balances");
-        }
-        this.isLoadingBalances = false;
-    },
-    
-    async loadUsers() {
-      try {
-        const res = await apiFetch('/api/users?per_page=100');
-        this.users = res.data ?? res;
-        
+      this.$watch('users', () => {
         if (!this.editingId && currentUserId) {
           this.$nextTick(() => {
             this.form.user_id = currentUserId;
           });
         }
-      } catch(e) {}
+      });
     },
-    
+
+    async fetchBalances(userId) {
+      const prevType = this.form.leave_type;
+      this.userBalances = [];
+      if (!userId) return;
+
+      this.isLoadingBalances = true;
+      try {
+        const res = await apiFetch(
+          `/api/leave-balances?user_id=${userId}&is_active=1&per_page=100`
+        );
+        if (res && res.data) {
+          this.userBalances = res.data;
+          this.$nextTick(() => {
+            if (prevType) this.form.leave_type = prevType;
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load balances');
+      }
+      this.isLoadingBalances = false;
+    },
+
+    async loadUsers() {
+      try {
+        const res = await apiFetch('/api/users?per_page=100');
+        this.users = res.data ?? res;
+
+        if (!this.editingId && currentUserId) {
+          this.$nextTick(() => {
+            this.form.user_id = currentUserId;
+          });
+        }
+      } catch (e) {}
+    },
+
     async saveItem() {
       this.saving = true;
       this.error = null;
-      
+
       try {
         const method = this.editingId ? 'PUT' : 'POST';
         const url = this.editingId ? `/api/leaves/${this.editingId}` : '/api/leaves';
-        
+
         await apiFetch(url, {
           method: method,
-          body: JSON.stringify(this.form)
+          body: JSON.stringify(this.form),
         });
-        
+
         window.dispatchEvent(new CustomEvent('leave-saved'));
         showToast('Leave requested successfully', 'success');
         getModal('#leaveModal')?.hide();
         window.dispatchEvent(new CustomEvent('attendance-saved'));
-      } catch(e) {
+      } catch (e) {
         this.error = e.message || 'Validation error.';
       }
       this.saving = false;
-    }
+    },
   }));
 
   Alpine.data('attendanceForm', (currentUserId = '') => ({
@@ -631,7 +667,7 @@ document.addEventListener('alpine:init', () => {
       check_in_time: '',
       check_out_time: '',
       status: 'Present',
-      notes: ''
+      notes: '',
     },
 
     init() {
@@ -640,31 +676,35 @@ document.addEventListener('alpine:init', () => {
         if (e.detail) {
           this.editingId = e.detail.id;
           this.form.user_id = e.detail.user_id;
-          
+
           const dateStr = e.detail.date ? e.detail.date.split('T')[0] : '';
           this.form.date = dateStr;
-          
+
           this.form.check_in_time = e.detail.check_in ? `${dateStr}T${e.detail.check_in}` : '';
           this.form.check_out_time = e.detail.check_out ? `${dateStr}T${e.detail.check_out}` : '';
           this.form.status = e.detail.status;
           this.form.notes = e.detail.notes || '';
-          
+
           const title = document.querySelector('#attendanceModalLabel');
-          if (title) title.innerHTML = '<i class="bi bi-calendar-check-fill text-primary me-2"></i>Edit Attendance';
+          if (title)
+            title.innerHTML =
+              '<i class="bi bi-calendar-check-fill text-primary me-2"></i>Edit Attendance';
         } else {
           this.resetForm();
           const title = document.querySelector('#attendanceModalLabel');
-          if (title) title.innerHTML = '<i class="bi bi-calendar-check-fill text-primary me-2"></i>Log Attendance';
+          if (title)
+            title.innerHTML =
+              '<i class="bi bi-calendar-check-fill text-primary me-2"></i>Log Attendance';
         }
         getModal('#attendanceModal')?.show();
       });
-      
+
       this.$watch('users', () => {
-          if (!this.editingId && currentUserId) {
-              this.$nextTick(() => {
-                  this.form.user_id = currentUserId;
-              });
-          }
+        if (!this.editingId && currentUserId) {
+          this.$nextTick(() => {
+            this.form.user_id = currentUserId;
+          });
+        }
       });
     },
 
@@ -676,7 +716,7 @@ document.addEventListener('alpine:init', () => {
         check_in_time: '',
         check_out_time: '',
         status: 'Present',
-        notes: ''
+        notes: '',
       };
       this.saving = false;
     },
@@ -685,13 +725,13 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await apiFetch('/api/users?per_page=100');
         this.users = res.data ?? res;
-        
+
         if (!this.editingId && currentUserId) {
           this.$nextTick(() => {
             this.form.user_id = currentUserId;
           });
         }
-      } catch(e) {}
+      } catch (e) {}
     },
 
     async saveItem() {
@@ -701,7 +741,7 @@ document.addEventListener('alpine:init', () => {
         const url = this.editingId ? `/api/attendances/${this.editingId}` : '/api/attendances';
         const res = await apiFetch(url, {
           method: method,
-          body: JSON.stringify(this.form)
+          body: JSON.stringify(this.form),
         });
         showToast(res.message, 'success');
         window.dispatchEvent(new CustomEvent('attendance-saved'));
@@ -712,6 +752,6 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.saving = false;
       }
-    }
+    },
   }));
 });

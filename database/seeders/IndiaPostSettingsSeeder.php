@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\IndiaPostBarcodeRange;
 use App\Models\SystemSetting;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Crypt;
@@ -33,7 +34,7 @@ class IndiaPostSettingsSeeder extends Seeder
                 'contract_24_sp_doc' => '41469430',
                 'contract_24_spp_parspl' => '41918281',
                 'contract_48_sp_doc' => '41471113',
-            ]
+            ],
         ];
 
         SystemSetting::updateOrCreate(
@@ -42,13 +43,13 @@ class IndiaPostSettingsSeeder extends Seeder
         );
 
         // Seed a default active barcode range for this office
-        \App\Models\IndiaPostBarcodeRange::updateOrCreate(
+        IndiaPostBarcodeRange::updateOrCreate(
             ['office_id' => $officeId, 'prefix' => 'EA'],
             [
                 'start_sequence' => 10000000,
                 'end_sequence' => 19999999,
                 'current_sequence' => 10000000,
-                'status' => 'active'
+                'status' => 'active',
             ]
         );
 

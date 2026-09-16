@@ -13,7 +13,9 @@
   align-items: center;
   justify-content: center;
   background-color: var(--bs-body-bg);
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
 
   &.hidden {
     opacity: 0;
@@ -100,21 +102,33 @@
 // ---------------------------------------------------------------------------
 // Cursor Utilities
 // ---------------------------------------------------------------------------
-.cursor-pointer { cursor: pointer; }
-.cursor-default  { cursor: default; }
-.cursor-not-allowed { cursor: not-allowed; }
+.cursor-pointer {
+  cursor: pointer;
+}
+.cursor-default {
+  cursor: default;
+}
+.cursor-not-allowed {
+  cursor: not-allowed;
+}
 
 // ---------------------------------------------------------------------------
 // Overflow helpers
 // ---------------------------------------------------------------------------
-.overflow-x-auto { overflow-x: auto; }
-.overflow-y-auto { overflow-y: auto; }
+.overflow-x-auto {
+  overflow-x: auto;
+}
+.overflow-y-auto {
+  overflow-y: auto;
+}
 
 // ---------------------------------------------------------------------------
 // Hover-lift animation helper
 // ---------------------------------------------------------------------------
 .hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 
   &:hover {
     transform: translateY(-2px);
@@ -134,7 +148,7 @@
 
   &::before,
   &::after {
-    content: "";
+    content: '';
     flex: 1;
     height: 1px;
     background-color: var(--bs-border-color);

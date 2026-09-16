@@ -9,29 +9,43 @@ document.addEventListener('alpine:init', () => {
     currentView: 'month',
     selectedDate: null,
     selectedDay: null,
-    
+
     // Calendar State
     currentDate: new Date(),
     miniCalendarDate: new Date(),
-    
+
     // Event Types and Filters
     visibleTypes: ['event', 'meeting', 'task', 'reminder', 'deadline'],
-    
+
     // Sample Events Data
     events: [],
-    
+
     // Time slots for week/day view
     hours: [
-      '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
-      '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM',
-      '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM'
+      '6:00 AM',
+      '7:00 AM',
+      '8:00 AM',
+      '9:00 AM',
+      '10:00 AM',
+      '11:00 AM',
+      '12:00 PM',
+      '1:00 PM',
+      '2:00 PM',
+      '3:00 PM',
+      '4:00 PM',
+      '5:00 PM',
+      '6:00 PM',
+      '7:00 PM',
+      '8:00 PM',
+      '9:00 PM',
+      '10:00 PM',
     ],
 
     init() {
       this.loadSampleEvents();
       this.selectedDate = new Date();
       this.selectedDay = new Date().toISOString().split('T')[0];
-      
+
       // Initialize calendar view
       this.currentDate = new Date();
       this.miniCalendarDate = new Date();
@@ -42,42 +56,144 @@ document.addEventListener('alpine:init', () => {
       const currentYear = today.getFullYear();
       const currentMonth = today.getMonth();
       const currentDay = today.getDate();
-      
+
       // Get current month name for display
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthNames = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       const currentMonthName = monthNames[currentMonth];
-      
+
       // Generate future events for the current month
       const eventTemplates = [
-        { title: 'Team Meeting', type: 'meeting', time: '10:00', description: 'Weekly team sync and project updates' },
-        { title: 'Product Launch', type: 'event', time: '14:00', description: 'Launch event for new product line' },
-        { title: 'Stand-up', type: 'meeting', time: '09:00', description: 'Daily team stand-up meeting' },
-        { title: 'Client Presentation', type: 'task', time: '11:30', description: 'Present quarterly results to client' },
-        { title: 'Payment Due', type: 'reminder', time: '09:00', description: 'Monthly subscription payment reminder' },
-        { title: 'Workshop', type: 'event', time: '14:00', description: 'Design thinking workshop' },
-        { title: 'Project Deadline', type: 'deadline', time: '17:00', description: 'Final submission for Q1 project' },
-        { title: 'Team Lunch', type: 'event', time: '12:00', description: 'Monthly team lunch gathering' },
-        { title: 'Board Meeting', type: 'meeting', time: '15:00', description: 'Monthly board meeting and strategy review' },
-        { title: 'Training Session', type: 'event', time: '13:00', description: 'Employee training on new software tools' },
-        { title: 'One-on-One', type: 'meeting', time: '15:00', description: 'Manager check-in meeting' },
-        { title: 'Code Review', type: 'task', time: '16:00', description: 'Review new feature implementations' },
-        { title: 'Doctor Appointment', type: 'reminder', time: '14:30', description: 'Annual health checkup appointment' },
-        { title: 'Release Planning', type: 'meeting', time: '10:00', description: 'Plan next release cycle' },
+        {
+          title: 'Team Meeting',
+          type: 'meeting',
+          time: '10:00',
+          description: 'Weekly team sync and project updates',
+        },
+        {
+          title: 'Product Launch',
+          type: 'event',
+          time: '14:00',
+          description: 'Launch event for new product line',
+        },
+        {
+          title: 'Stand-up',
+          type: 'meeting',
+          time: '09:00',
+          description: 'Daily team stand-up meeting',
+        },
+        {
+          title: 'Client Presentation',
+          type: 'task',
+          time: '11:30',
+          description: 'Present quarterly results to client',
+        },
+        {
+          title: 'Payment Due',
+          type: 'reminder',
+          time: '09:00',
+          description: 'Monthly subscription payment reminder',
+        },
+        {
+          title: 'Workshop',
+          type: 'event',
+          time: '14:00',
+          description: 'Design thinking workshop',
+        },
+        {
+          title: 'Project Deadline',
+          type: 'deadline',
+          time: '17:00',
+          description: 'Final submission for Q1 project',
+        },
+        {
+          title: 'Team Lunch',
+          type: 'event',
+          time: '12:00',
+          description: 'Monthly team lunch gathering',
+        },
+        {
+          title: 'Board Meeting',
+          type: 'meeting',
+          time: '15:00',
+          description: 'Monthly board meeting and strategy review',
+        },
+        {
+          title: 'Training Session',
+          type: 'event',
+          time: '13:00',
+          description: 'Employee training on new software tools',
+        },
+        {
+          title: 'One-on-One',
+          type: 'meeting',
+          time: '15:00',
+          description: 'Manager check-in meeting',
+        },
+        {
+          title: 'Code Review',
+          type: 'task',
+          time: '16:00',
+          description: 'Review new feature implementations',
+        },
+        {
+          title: 'Doctor Appointment',
+          type: 'reminder',
+          time: '14:30',
+          description: 'Annual health checkup appointment',
+        },
+        {
+          title: 'Release Planning',
+          type: 'meeting',
+          time: '10:00',
+          description: 'Plan next release cycle',
+        },
         { title: 'Demo Day', type: 'event', time: '14:00', description: 'Quarterly product demo' },
-        { title: 'Conference Call', type: 'meeting', time: '10:00', description: 'International team coordination call' },
-        { title: 'Sprint Review', type: 'meeting', time: '16:00', description: 'Review sprint deliverables' },
-        { title: 'Budget Review', type: 'task', time: '11:00', description: 'Quarterly budget assessment' },
-        { title: 'All Hands', type: 'meeting', time: '15:00', description: 'Company-wide monthly meeting' }
+        {
+          title: 'Conference Call',
+          type: 'meeting',
+          time: '10:00',
+          description: 'International team coordination call',
+        },
+        {
+          title: 'Sprint Review',
+          type: 'meeting',
+          time: '16:00',
+          description: 'Review sprint deliverables',
+        },
+        {
+          title: 'Budget Review',
+          type: 'task',
+          time: '11:00',
+          description: 'Quarterly budget assessment',
+        },
+        {
+          title: 'All Hands',
+          type: 'meeting',
+          time: '15:00',
+          description: 'Company-wide monthly meeting',
+        },
       ];
-      
+
       // Get the number of days in current month
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-      
+
       // Generate events for future dates in current month
       this.events = [];
       let eventIndex = 0;
-      
+
       // Create events distributed across remaining days of the month
       for (let day = currentDay; day <= daysInMonth && eventIndex < eventTemplates.length; day++) {
         // Skip some days to avoid too many events
@@ -85,7 +201,7 @@ document.addEventListener('alpine:init', () => {
           const template = eventTemplates[eventIndex];
           const eventDate = new Date(currentYear, currentMonth, day);
           const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          
+
           // Create time string based on day
           let timeStr, dateStr;
           if (day === currentDay) {
@@ -98,7 +214,7 @@ document.addEventListener('alpine:init', () => {
             timeStr = this.formatTime(template.time);
             dateStr = `${currentMonthName} ${day}`;
           }
-          
+
           this.events.push({
             id: eventIndex + 1,
             title: template.title,
@@ -109,23 +225,23 @@ document.addEventListener('alpine:init', () => {
             description: template.description,
             date: dateString,
             dateObj: eventDate,
-            read: Math.random() > 0.3 // Most events are read
+            read: Math.random() > 0.3, // Most events are read
           });
-          
+
           eventIndex++;
         }
       }
-      
+
       // Add some events for next month too
       const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
       const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
       const nextMonthName = monthNames[nextMonth];
-      
+
       for (let day = 1; day <= 10 && eventIndex < eventTemplates.length; day += 2) {
         const template = eventTemplates[eventIndex];
         const eventDate = new Date(nextYear, nextMonth, day);
         const dateString = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        
+
         this.events.push({
           id: eventIndex + 1,
           title: template.title,
@@ -136,9 +252,9 @@ document.addEventListener('alpine:init', () => {
           description: template.description,
           date: dateString,
           dateObj: eventDate,
-          read: Math.random() > 0.3
+          read: Math.random() > 0.3,
         });
-        
+
         eventIndex++;
       }
     },
@@ -152,31 +268,31 @@ document.addEventListener('alpine:init', () => {
 
     // Computed Properties
     get currentMonthYear() {
-      return this.miniCalendarDate.toLocaleDateString('en-US', { 
-        month: 'long', 
-        year: 'numeric' 
+      return this.miniCalendarDate.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
       });
     },
 
     get currentPeriodTitle() {
       if (this.currentView === 'month') {
-        return this.currentDate.toLocaleDateString('en-US', { 
-          month: 'long', 
-          year: 'numeric' 
+        return this.currentDate.toLocaleDateString('en-US', {
+          month: 'long',
+          year: 'numeric',
         });
       } else if (this.currentView === 'week') {
         const startOfWeek = new Date(this.currentDate);
         startOfWeek.setDate(this.currentDate.getDate() - this.currentDate.getDay());
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
-        
+
         return `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
       } else {
-        return this.currentDate.toLocaleDateString('en-US', { 
+        return this.currentDate.toLocaleDateString('en-US', {
           weekday: 'long',
-          month: 'long', 
+          month: 'long',
           day: 'numeric',
-          year: 'numeric' 
+          year: 'numeric',
         });
       }
     },
@@ -190,10 +306,10 @@ document.addEventListener('alpine:init', () => {
     get selectedDayDate() {
       if (!this.selectedDay) return '';
       const date = new Date(this.selectedDay);
-      return date.toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
+      return date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
       });
     },
 
@@ -203,22 +319,22 @@ document.addEventListener('alpine:init', () => {
       const firstDay = new Date(year, month, 1);
       const startDate = new Date(firstDay);
       startDate.setDate(startDate.getDate() - firstDay.getDay());
-      
+
       const days = [];
       for (let i = 0; i < 42; i++) {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
-        
+
         const dateString = date.toISOString().split('T')[0];
-        const hasEvents = this.events.some(event => event.date === dateString);
-        
+        const hasEvents = this.events.some((event) => event.date === dateString);
+
         days.push({
           date: dateString,
           day: date.getDate(),
           isToday: this.isToday(date),
           isOtherMonth: date.getMonth() !== month,
           isSelected: dateString === this.selectedDay,
-          hasEvents: hasEvents
+          hasEvents: hasEvents,
         });
       }
       return days;
@@ -230,24 +346,24 @@ document.addEventListener('alpine:init', () => {
       const firstDay = new Date(year, month, 1);
       const startDate = new Date(firstDay);
       startDate.setDate(startDate.getDate() - firstDay.getDay());
-      
+
       const days = [];
       for (let i = 0; i < 42; i++) {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
-        
+
         const dateString = date.toISOString().split('T')[0];
-        const dayEvents = this.getEventsForDate(dateString).filter(event => 
+        const dayEvents = this.getEventsForDate(dateString).filter((event) =>
           this.visibleTypes.includes(event.type)
         );
-        
+
         days.push({
           date: dateString,
           day: date.getDate(),
           isToday: this.isToday(date),
           isOtherMonth: date.getMonth() !== month,
           isSelected: dateString === this.selectedDay,
-          events: dayEvents
+          events: dayEvents,
         });
       }
       return days;
@@ -256,17 +372,17 @@ document.addEventListener('alpine:init', () => {
     get weekDays() {
       const startOfWeek = new Date(this.currentDate);
       startOfWeek.setDate(this.currentDate.getDate() - this.currentDate.getDay());
-      
+
       const days = [];
       for (let i = 0; i < 7; i++) {
         const date = new Date(startOfWeek);
         date.setDate(startOfWeek.getDate() + i);
-        
+
         days.push({
           date: date.toISOString().split('T')[0],
           dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
           dayNumber: date.getDate(),
-          isToday: this.isToday(date)
+          isToday: this.isToday(date),
         });
       }
       return days;
@@ -275,7 +391,7 @@ document.addEventListener('alpine:init', () => {
     get upcomingEvents() {
       const now = new Date();
       return this.events
-        .filter(event => {
+        .filter((event) => {
           if (!this.visibleTypes.includes(event.type)) return false;
           return event.dateObj >= now;
         })
@@ -357,24 +473,24 @@ document.addEventListener('alpine:init', () => {
       const currentHour = now.getHours();
       const hourNumber = parseInt(hour.split(':')[0]);
       const isAM = hour.includes('AM');
-      
+
       let hour24 = hourNumber;
       if (!isAM && hourNumber !== 12) {
         hour24 += 12;
       } else if (isAM && hourNumber === 12) {
         hour24 = 0;
       }
-      
+
       return hour24 === currentHour;
     },
 
     // Event Methods
     getEventsForDate(dateString) {
-      return this.events.filter(event => event.date === dateString);
+      return this.events.filter((event) => event.date === dateString);
     },
 
     getEventsForDateTime(dateString, hour) {
-      return this.events.filter(event => {
+      return this.events.filter((event) => {
         if (event.date !== dateString) return false;
         return this.eventMatchesHour(event, hour);
       });
@@ -384,14 +500,14 @@ document.addEventListener('alpine:init', () => {
       const eventHour = parseInt(event.time.split(':')[0]);
       const hourNumber = parseInt(hour.split(':')[0]);
       const isAM = hour.includes('AM');
-      
+
       let hour24 = hourNumber;
       if (!isAM && hourNumber !== 12) {
         hour24 += 12;
       } else if (isAM && hourNumber === 12) {
         hour24 = 0;
       }
-      
+
       return eventHour === hour24;
     },
 
@@ -400,7 +516,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     getCategoryCount(type) {
-      return this.events.filter(event => event.type === type).length;
+      return this.events.filter((event) => event.type === type).length;
     },
 
     getCategoryColor(type) {
@@ -409,7 +525,7 @@ document.addEventListener('alpine:init', () => {
         meeting: 'var(--bs-success)',
         task: 'var(--bs-warning)',
         reminder: '#8b5cf6',
-        deadline: 'var(--bs-danger)'
+        deadline: 'var(--bs-danger)',
       };
       return colors[type] || 'var(--bs-secondary)';
     },
@@ -420,7 +536,7 @@ document.addEventListener('alpine:init', () => {
         meeting: 'bg-success',
         task: 'bg-warning text-dark',
         reminder: 'text-white',
-        deadline: 'bg-danger'
+        deadline: 'bg-danger',
       };
       return classes[type] || 'bg-secondary';
     },
@@ -431,7 +547,7 @@ document.addEventListener('alpine:init', () => {
         meeting: 'alert-success',
         task: 'alert-warning',
         reminder: 'alert-info',
-        deadline: 'alert-danger'
+        deadline: 'alert-danger',
       };
       return classes[type] || 'alert-secondary';
     },
@@ -450,7 +566,9 @@ document.addEventListener('alpine:init', () => {
     addEventForDay(day) {
       this.selectDay(day);
       // Pre-fill the date in the modal
-      const addEventModalComponent = Alpine.$data(document.querySelector('[x-data*="addEventModal"]'));
+      const addEventModalComponent = Alpine.$data(
+        document.querySelector('[x-data*="addEventModal"]')
+      );
       if (addEventModalComponent) {
         addEventModalComponent.eventData.date = day.date;
       }
@@ -460,7 +578,9 @@ document.addEventListener('alpine:init', () => {
     addEventAtTime(dateString, hour) {
       this.selectDate(dateString);
       // Pre-fill the date and time in the modal
-      const addEventModalComponent = Alpine.$data(document.querySelector('[x-data*="addEventModal"]'));
+      const addEventModalComponent = Alpine.$data(
+        document.querySelector('[x-data*="addEventModal"]')
+      );
       if (addEventModalComponent) {
         addEventModalComponent.eventData.date = dateString;
         // Convert hour to 24-hour format for the time input
@@ -498,12 +618,12 @@ document.addEventListener('alpine:init', () => {
           toast: true,
           position: 'top-end',
           showConfirmButton: false,
-          timer: 3000
+          timer: 3000,
         });
       } else {
         alert(message);
       }
-    }
+    },
   }));
 
   // Add Event Modal Component
@@ -520,13 +640,13 @@ document.addEventListener('alpine:init', () => {
       priority: 'medium',
       reminders: ['15'],
       attendees: '',
-      location: ''
+      location: '',
     },
 
     priorityOptions: [
       { value: 'low', label: 'Low Priority', color: 'var(--bs-success)' },
       { value: 'medium', label: 'Medium Priority', color: 'var(--bs-warning)' },
-      { value: 'high', label: 'High Priority', color: 'var(--bs-danger)' }
+      { value: 'high', label: 'High Priority', color: 'var(--bs-danger)' },
     ],
 
     reminderOptions: [
@@ -535,7 +655,7 @@ document.addEventListener('alpine:init', () => {
       { value: '15', label: '15 minutes before' },
       { value: '30', label: '30 minutes before' },
       { value: '60', label: '1 hour before' },
-      { value: '1440', label: '1 day before' }
+      { value: '1440', label: '1 day before' },
     ],
 
     init() {
@@ -567,17 +687,17 @@ document.addEventListener('alpine:init', () => {
           weekday: 'long',
           year: 'numeric',
           month: 'long',
-          day: 'numeric'
+          day: 'numeric',
         }),
         formattedTime: new Date(`2000-01-01T${this.eventData.time}`).toLocaleTimeString('en-US', {
           hour: 'numeric',
           minute: '2-digit',
-          hour12: true
-        })
+          hour12: true,
+        }),
       };
 
       console.log('Creating event:', formattedEvent);
-      
+
       // Show success message with event details
       if (typeof Swal !== 'undefined') {
         Swal.fire({
@@ -595,7 +715,7 @@ document.addEventListener('alpine:init', () => {
           `,
           icon: 'success',
           confirmButtonText: 'Awesome!',
-          confirmButtonColor: 'var(--bs-primary)'
+          confirmButtonColor: 'var(--bs-primary)',
         });
       } else {
         alert(`Event "${this.eventData.title}" created successfully!`);
@@ -608,7 +728,7 @@ document.addEventListener('alpine:init', () => {
     getDurationLabel(duration) {
       const hours = Math.floor(duration / 60);
       const minutes = duration % 60;
-      
+
       if (duration === 480) return 'All day';
       if (hours === 0) return `${minutes} minutes`;
       if (minutes === 0) return `${hours} hour${hours > 1 ? 's' : ''}`;
@@ -622,7 +742,7 @@ document.addEventListener('alpine:init', () => {
           text: message,
           icon: 'error',
           confirmButtonText: 'OK',
-          confirmButtonColor: 'var(--bs-danger)'
+          confirmButtonColor: 'var(--bs-danger)',
         });
       } else {
         alert(message);
@@ -653,7 +773,7 @@ document.addEventListener('alpine:init', () => {
         priority: 'medium',
         reminders: ['15'],
         attendees: '',
-        location: ''
+        location: '',
       };
     },
 
@@ -663,24 +783,27 @@ document.addEventListener('alpine:init', () => {
         meeting: 'var(--bs-success)',
         task: 'var(--bs-warning)',
         reminder: '#8b5cf6',
-        deadline: 'var(--bs-danger)'
+        deadline: 'var(--bs-danger)',
       };
       return colors[type] || 'var(--bs-secondary)';
-    }
+    },
   }));
 
   // Search component for header
-  Alpine.data('searchComponent', createSearchComponent({
-    minLength: 3,
-    getResults(query) {
-      const q = query.toLowerCase();
-      return [
-        { title: 'Team Meeting', url: '/calendar.html', type: 'Event' },
-        { title: 'Calendar Settings', url: '/settings.html', type: 'Page' },
-        { title: 'Project Timeline', url: '/calendar.html', type: 'Event' },
-      ].filter((item) => item.title.toLowerCase().includes(q));
-    },
-  }));
+  Alpine.data(
+    'searchComponent',
+    createSearchComponent({
+      minLength: 3,
+      getResults(query) {
+        const q = query.toLowerCase();
+        return [
+          { title: 'Team Meeting', url: '/calendar.html', type: 'Event' },
+          { title: 'Calendar Settings', url: '/settings.html', type: 'Page' },
+          { title: 'Project Timeline', url: '/calendar.html', type: 'Event' },
+        ].filter((item) => item.title.toLowerCase().includes(q));
+      },
+    })
+  );
 
   // Theme switch component
   Alpine.data('themeSwitch', () => ({
@@ -695,6 +818,6 @@ document.addEventListener('alpine:init', () => {
       this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
       localStorage.setItem('theme', this.currentTheme);
-    }
+    },
   }));
 });

@@ -12,14 +12,13 @@ export class ThemeManager {
   init() {
     // Set initial theme
     this.setTheme(this.currentTheme);
-    
+
     // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)')
-      .addEventListener('change', (e) => {
-        if (!this.getStoredTheme()) {
-          this.setTheme(e.matches ? 'dark' : 'light');
-        }
-      });
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if (!this.getStoredTheme()) {
+        this.setTheme(e.matches ? 'dark' : 'light');
+      }
+    });
   }
 
   getStoredTheme() {
@@ -35,7 +34,7 @@ export class ThemeManager {
     localStorage.setItem('theme', theme);
     this.currentTheme = theme;
     this.updateThemeIcons();
-    
+
     // Dispatch event so active components can update existing charts
     window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
   }
@@ -48,17 +47,17 @@ export class ThemeManager {
   updateThemeIcons() {
     const lightIcons = document.querySelectorAll('.theme-icon-light');
     const darkIcons = document.querySelectorAll('.theme-icon-dark');
-    
+
     if (this.currentTheme === 'dark') {
-      lightIcons.forEach(icon => icon.classList.add('d-none'));
-      darkIcons.forEach(icon => icon.classList.remove('d-none'));
+      lightIcons.forEach((icon) => icon.classList.add('d-none'));
+      darkIcons.forEach((icon) => icon.classList.remove('d-none'));
     } else {
-      lightIcons.forEach(icon => icon.classList.remove('d-none'));
-      darkIcons.forEach(icon => icon.classList.add('d-none'));
+      lightIcons.forEach((icon) => icon.classList.remove('d-none'));
+      darkIcons.forEach((icon) => icon.classList.add('d-none'));
     }
   }
 
   getCurrentTheme() {
     return this.currentTheme;
   }
-} 
+}

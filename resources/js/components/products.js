@@ -5,9 +5,10 @@ import Swal from 'sweetalert2';
 import { createSearchComponent } from '../utils/search-component.js';
 
 function getModal(elementOrSelector) {
-  const element = typeof elementOrSelector === 'string'
-    ? document.querySelector(elementOrSelector)
-    : elementOrSelector;
+  const element =
+    typeof elementOrSelector === 'string'
+      ? document.querySelector(elementOrSelector)
+      : elementOrSelector;
 
   return element ? Modal.getOrCreateInstance(element) : null;
 }
@@ -58,7 +59,9 @@ function parseCsvLine(line) {
 }
 
 function normalizeStatus(status) {
-  const value = String(status ?? '').trim().toLowerCase();
+  const value = String(status ?? '')
+    .trim()
+    .toLowerCase();
   if (['published', 'publish'].includes(value)) return 'published';
   if (value === 'active') return 'active';
   if (['draft', 'unpublished'].includes(value)) return 'draft';
@@ -68,7 +71,9 @@ function normalizeStatus(status) {
 }
 
 function normalizeCategory(category) {
-  const value = String(category ?? '').trim().toLowerCase();
+  const value = String(category ?? '')
+    .trim()
+    .toLowerCase();
   if (value.includes('electronic')) return 'electronics';
   if (value.includes('cloth')) return 'clothing';
   if (value.includes('book')) return 'books';
@@ -79,7 +84,6 @@ function normalizeCategory(category) {
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString() : 'N/A';
 }
-
 
 function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
@@ -114,7 +118,7 @@ async function apiFetch(url, options = {}) {
   const { headers, ...otherOptions } = options;
   const fetchHeaders = {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
     'X-CSRF-TOKEN': getCsrfToken(),
     ...(headers || {}),
   };
@@ -134,7 +138,14 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
-    if (res.status === 403 || (typeof message === 'string' && (message.toLowerCase().includes("authoriz") || message.toLowerCase().includes("forbidden")))) { window.location.href = "/"; return; }
+    if (
+      res.status === 403 ||
+      (typeof message === 'string' &&
+        (message.toLowerCase().includes('authoriz') || message.toLowerCase().includes('forbidden')))
+    ) {
+      window.location.href = '/';
+      return;
+    }
     throw new Error(message);
   }
 
@@ -182,7 +193,11 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     categoryFilter: '',
     stockFilter: '',
-    warehouseFilter: window.userContext?.isMasterAdmin ? '' : (window.userContext?.warehouseId ? String(window.userContext.warehouseId) : ''),
+    warehouseFilter: window.userContext?.isMasterAdmin
+      ? ''
+      : window.userContext?.warehouseId
+        ? String(window.userContext.warehouseId)
+        : '',
     sortField: 'name',
     sortDirection: 'asc',
     isLoading: false,
@@ -199,7 +214,7 @@ document.addEventListener('alpine:init', () => {
       inStock: 0,
       lowStock: 0,
       outOfStock: 0,
-      totalValue: 0
+      totalValue: 0,
     },
 
     categoryStats: [],
@@ -209,7 +224,7 @@ document.addEventListener('alpine:init', () => {
       await this.loadProductsFromApi();
       this.filterProducts();
       this.calculateStats();
-      
+
       // Delay chart initialization to ensure DOM is fully ready
       setTimeout(() => {
         this.initCharts();
@@ -231,7 +246,6 @@ document.addEventListener('alpine:init', () => {
       window.addEventListener('pagehide', onHide, { once: true });
     },
 
-
     destroy() {
       if (this._resizeHandler) {
         window.removeEventListener('resize', this._resizeHandler);
@@ -245,7 +259,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     clearExistingCharts() {
-      Object.values(this.charts).forEach(chart => {
+      Object.values(this.charts).forEach((chart) => {
         if (chart && typeof chart.destroy === 'function') {
           chart.destroy();
         }
@@ -256,7 +270,7 @@ document.addEventListener('alpine:init', () => {
 
     initResizeHandler() {
       this._resizeHandler = () => {
-        Object.values(this.charts).forEach(chart => {
+        Object.values(this.charts).forEach((chart) => {
           if (chart && typeof chart.updateOptions === 'function') {
             chart.updateOptions({ chart: { width: '100%' } }, false, true);
           }
@@ -266,7 +280,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     get nextProductId() {
-      return this.products.length ? Math.max(...this.products.map(product => Number(product.id) || 0)) + 1 : 1;
+      return this.products.length
+        ? Math.max(...this.products.map((product) => Number(product.id) || 0)) + 1
+        : 1;
     },
 
     get pageFrom() {
@@ -296,10 +312,18 @@ document.addEventListener('alpine:init', () => {
           };
           try {
             const form = this._getProductForm();
-            if (form && !form.editingProductId && !form.form.default_warehouse_id && this.options.warehouses && this.options.warehouses.length > 0) {
+            if (
+              form &&
+              !form.editingProductId &&
+              !form.form.default_warehouse_id &&
+              this.options.warehouses &&
+              this.options.warehouses.length > 0
+            ) {
               form.form.default_warehouse_id = String(this.options.warehouses[0].id);
             }
-          } catch (e) { /* ignore */ }
+          } catch (e) {
+            /* ignore */
+          }
         }
       } catch (error) {
         console.error('Failed to load products from API:', error);
@@ -317,10 +341,12 @@ document.addEventListener('alpine:init', () => {
     isOversellingAllowed(product) {
       if (!product) return false;
       if (this.warehouseFilter) {
-          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
-          if (ws && ws.allow_overselling !== null) {
-              return ws.allow_overselling;
-          }
+        const ws = product.warehouse_stocks?.find(
+          (s) => String(s.warehouse_id) === String(this.warehouseFilter)
+        );
+        if (ws && ws.allow_overselling !== null) {
+          return ws.allow_overselling;
+        }
       }
       return Boolean(product.allow_overselling);
     },
@@ -328,126 +354,172 @@ document.addEventListener('alpine:init', () => {
     getOversellingLimit(product) {
       if (!product) return 0;
       if (this.warehouseFilter) {
-          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
-          if (ws && ws.allow_overselling !== null) {
-              return ws.overselling_qty !== null ? (parseInt(ws.overselling_qty) || 999) : (parseInt(product.overselling_qty) || 999);
-          }
+        const ws = product.warehouse_stocks?.find(
+          (s) => String(s.warehouse_id) === String(this.warehouseFilter)
+        );
+        if (ws && ws.allow_overselling !== null) {
+          return ws.overselling_qty !== null
+            ? parseInt(ws.overselling_qty) || 999
+            : parseInt(product.overselling_qty) || 999;
+        }
       }
       return parseInt(product.overselling_qty) || 999;
     },
 
     getRemainingOversell(product) {
       if (!product) return 0;
-      
+
       if (this.warehouseFilter) {
-          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
-          if (ws) {
-              let allow = ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
-              let limit = ws.overselling_qty !== null ? (parseInt(ws.overselling_qty) || 999) : (parseInt(product.overselling_qty) || 999);
-              if (!allow) return 0;
-              const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
-              return rawStock < 0 ? Math.max(0, limit + rawStock) : limit;
-          }
-          return 0;
+        const ws = product.warehouse_stocks?.find(
+          (s) => String(s.warehouse_id) === String(this.warehouseFilter)
+        );
+        if (ws) {
+          let allow =
+            ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
+          let limit =
+            ws.overselling_qty !== null
+              ? parseInt(ws.overselling_qty) || 999
+              : parseInt(product.overselling_qty) || 999;
+          if (!allow) return 0;
+          const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
+          return rawStock < 0 ? Math.max(0, limit + rawStock) : limit;
+        }
+        return 0;
       }
-      
+
       if (product.warehouse_stocks && product.warehouse_stocks.length > 0) {
-          let totalRemaining = 0;
-          for (const ws of product.warehouse_stocks) {
-              let allow = ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
-              let limit = ws.overselling_qty !== null ? (parseInt(ws.overselling_qty) || 999) : (parseInt(product.overselling_qty) || 999);
-              if (allow) {
-                  const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
-                  totalRemaining += rawStock < 0 ? Math.max(0, limit + rawStock) : limit;
-              }
+        let totalRemaining = 0;
+        for (const ws of product.warehouse_stocks) {
+          let allow =
+            ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
+          let limit =
+            ws.overselling_qty !== null
+              ? parseInt(ws.overselling_qty) || 999
+              : parseInt(product.overselling_qty) || 999;
+          if (allow) {
+            const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
+            totalRemaining += rawStock < 0 ? Math.max(0, limit + rawStock) : limit;
           }
-          return totalRemaining;
+        }
+        return totalRemaining;
       }
-      
+
       let allow = product.allow_overselling;
       if (!allow) return 0;
       let limit = parseInt(product.overselling_qty) || 999;
-      let rawStock = (product.stock_qty || 0) - (product.reserved_qty || 0) - (product.pending_qty || 0);
+      let rawStock =
+        (product.stock_qty || 0) - (product.reserved_qty || 0) - (product.pending_qty || 0);
       return rawStock < 0 ? Math.max(0, limit + rawStock) : limit;
     },
 
     getEffectiveStock(product) {
       if (!product) return 0;
-      
+
       if (this.warehouseFilter) {
-          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
-          if (ws) {
-              let allow = ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
-              let limit = ws.overselling_qty !== null ? (parseInt(ws.overselling_qty) || 999) : (parseInt(product.overselling_qty) || 999);
-              const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
-              return allow ? Math.max(0, rawStock + limit) : Math.max(0, rawStock);
-          }
-          return 0;
+        const ws = product.warehouse_stocks?.find(
+          (s) => String(s.warehouse_id) === String(this.warehouseFilter)
+        );
+        if (ws) {
+          let allow =
+            ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
+          let limit =
+            ws.overselling_qty !== null
+              ? parseInt(ws.overselling_qty) || 999
+              : parseInt(product.overselling_qty) || 999;
+          const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
+          return allow ? Math.max(0, rawStock + limit) : Math.max(0, rawStock);
+        }
+        return 0;
       }
-      
+
       if (product.warehouse_stocks && product.warehouse_stocks.length > 0) {
-          let total = 0;
-          for (const ws of product.warehouse_stocks) {
-              let allow = ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
-              let limit = ws.overselling_qty !== null ? (parseInt(ws.overselling_qty) || 999) : (parseInt(product.overselling_qty) || 999);
-              const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
-              total += allow ? Math.max(0, rawStock + limit) : Math.max(0, rawStock);
-          }
-          return total;
+        let total = 0;
+        for (const ws of product.warehouse_stocks) {
+          let allow =
+            ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
+          let limit =
+            ws.overselling_qty !== null
+              ? parseInt(ws.overselling_qty) || 999
+              : parseInt(product.overselling_qty) || 999;
+          const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
+          total += allow ? Math.max(0, rawStock + limit) : Math.max(0, rawStock);
+        }
+        return total;
       }
-      
+
       let allow = product.allow_overselling;
       let limit = parseInt(product.overselling_qty) || 999;
-      const globalRawStock = (product.stock_qty || 0) - (product.reserved_qty || 0) - (product.pending_qty || 0);
+      const globalRawStock =
+        (product.stock_qty || 0) - (product.reserved_qty || 0) - (product.pending_qty || 0);
       return allow ? Math.max(0, globalRawStock + limit) : Math.max(0, globalRawStock);
     },
-    
+
     getPhysicalStock(product) {
       if (!product) return 0;
-      
+
       if (this.warehouseFilter) {
-          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
-          return ws ? (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0) : 0;
+        const ws = product.warehouse_stocks?.find(
+          (s) => String(s.warehouse_id) === String(this.warehouseFilter)
+        );
+        return ws ? (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0) : 0;
       }
       return (product.stock_qty || 0) - (product.reserved_qty || 0) - (product.pending_qty || 0);
     },
 
     isSkuEnabled(product) {
       if (!product) return false;
-      
+
       if (this.warehouseFilter) {
-          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
-          if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
-              return ws.is_sku_enabled;
-          }
+        const ws = product.warehouse_stocks?.find(
+          (s) => String(s.warehouse_id) === String(this.warehouseFilter)
+        );
+        if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
+          return ws.is_sku_enabled;
+        }
       }
       return Boolean(product.is_sku_enabled);
     },
 
     calculateStats() {
       // Calculate stats based on base filters (search, category, warehouse) but ignoring stock filter
-      const baseProducts = this.products.filter(product => {
-        const matchesSearch = !this.searchQuery || 
+      const baseProducts = this.products.filter((product) => {
+        const matchesSearch =
+          !this.searchQuery ||
           product.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
           product.sku.toLowerCase().includes(this.searchQuery.toLowerCase());
-        
+
         const matchesCategory = !this.categoryFilter || product.category === this.categoryFilter;
-        
-        const matchesWarehouse = !this.warehouseFilter || (product.warehouse_stocks && product.warehouse_stocks.some(s => String(s.warehouse_id) === String(this.warehouseFilter)));
-        
+
+        const matchesWarehouse =
+          !this.warehouseFilter ||
+          (product.warehouse_stocks &&
+            product.warehouse_stocks.some(
+              (s) => String(s.warehouse_id) === String(this.warehouseFilter)
+            ));
+
         return matchesSearch && matchesCategory && matchesWarehouse;
       });
 
       this.stats.total = baseProducts.length;
-      this.stats.active = baseProducts.filter(p => ['published', 'active'].includes(String(p.status || '').toLowerCase())).length;
-      this.stats.inStock = baseProducts.filter(p => this.getEffectiveStock(p) > (p.min_stock_level || 10)).length;
-      this.stats.lowStock = baseProducts.filter(p => this.getEffectiveStock(p) > 0 && this.getEffectiveStock(p) <= (p.min_stock_level || 10)).length;
-      this.stats.outOfStock = baseProducts.filter(p => this.getEffectiveStock(p) <= 0).length;
-      this.stats.totalValue = baseProducts.reduce((sum, p) => sum + ((p.price || 0) * Math.max(0, this.getPhysicalStock(p))), 0);
+      this.stats.active = baseProducts.filter((p) =>
+        ['published', 'active'].includes(String(p.status || '').toLowerCase())
+      ).length;
+      this.stats.inStock = baseProducts.filter(
+        (p) => this.getEffectiveStock(p) > (p.min_stock_level || 10)
+      ).length;
+      this.stats.lowStock = baseProducts.filter(
+        (p) =>
+          this.getEffectiveStock(p) > 0 && this.getEffectiveStock(p) <= (p.min_stock_level || 10)
+      ).length;
+      this.stats.outOfStock = baseProducts.filter((p) => this.getEffectiveStock(p) <= 0).length;
+      this.stats.totalValue = baseProducts.reduce(
+        (sum, p) => sum + (p.price || 0) * Math.max(0, this.getPhysicalStock(p)),
+        0
+      );
 
       // Calculate category distribution
       const categories = {};
-      baseProducts.forEach(product => {
+      baseProducts.forEach((product) => {
         const key = product.category || product.category_label || 'uncategorized';
         categories[key] = (categories[key] || 0) + 1;
       });
@@ -457,7 +529,7 @@ document.addEventListener('alpine:init', () => {
         name: name.charAt(0).toUpperCase() + name.slice(1),
         count,
         percentage: Math.round((count / total) * 100),
-        color: this.getCategoryColor(name)
+        color: this.getCategoryColor(name),
       }));
 
       this.updateCategoryChart();
@@ -465,10 +537,10 @@ document.addEventListener('alpine:init', () => {
 
     updateCategoryChart() {
       if (this.charts.category && typeof this.charts.category.updateSeries === 'function') {
-        this.charts.category.updateSeries(this.categoryStats.map(cat => cat.count));
+        this.charts.category.updateSeries(this.categoryStats.map((cat) => cat.count));
         this.charts.category.updateOptions({
-          labels: this.categoryStats.map(cat => cat.name),
-          colors: this.categoryStats.map(cat => cat.color),
+          labels: this.categoryStats.map((cat) => cat.name),
+          colors: this.categoryStats.map((cat) => cat.color),
         });
       }
     },
@@ -479,26 +551,35 @@ document.addEventListener('alpine:init', () => {
         clothing: '#8b5cf6',
         books: '#06b6d4',
         home: '#10b981',
-        uncategorized: '#6b7280'
+        uncategorized: '#6b7280',
       };
       return colors[category] || '#6b7280';
     },
 
     filterProducts() {
-      this.filteredProducts = this.products.filter(product => {
-        const matchesSearch = !this.searchQuery || 
+      this.filteredProducts = this.products.filter((product) => {
+        const matchesSearch =
+          !this.searchQuery ||
           product.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
           product.sku.toLowerCase().includes(this.searchQuery.toLowerCase());
-        
+
         const matchesCategory = !this.categoryFilter || product.category === this.categoryFilter;
-        
-        const matchesWarehouse = !this.warehouseFilter || (product.warehouse_stocks && product.warehouse_stocks.some(s => String(s.warehouse_id) === String(this.warehouseFilter)));
-        
+
+        const matchesWarehouse =
+          !this.warehouseFilter ||
+          (product.warehouse_stocks &&
+            product.warehouse_stocks.some(
+              (s) => String(s.warehouse_id) === String(this.warehouseFilter)
+            ));
+
         const effStock = this.getEffectiveStock(product);
 
-        const matchesStock = !this.stockFilter || 
+        const matchesStock =
+          !this.stockFilter ||
           (this.stockFilter === 'in-stock' && effStock > (product.min_stock_level || 10)) ||
-          (this.stockFilter === 'low-stock' && effStock > 0 && effStock <= (product.min_stock_level || 10)) ||
+          (this.stockFilter === 'low-stock' &&
+            effStock > 0 &&
+            effStock <= (product.min_stock_level || 10)) ||
           (this.stockFilter === 'out-of-stock' && effStock <= 0);
 
         return matchesSearch && matchesCategory && matchesWarehouse && matchesStock;
@@ -513,7 +594,11 @@ document.addEventListener('alpine:init', () => {
       this.searchQuery = '';
       this.categoryFilter = '';
       this.stockFilter = '';
-      this.warehouseFilter = window.userContext?.isMasterAdmin ? '' : (window.userContext?.warehouseId ? String(window.userContext.warehouseId) : '');
+      this.warehouseFilter = window.userContext?.isMasterAdmin
+        ? ''
+        : window.userContext?.warehouseId
+          ? String(window.userContext.warehouseId)
+          : '';
       this.filterProducts();
     },
 
@@ -553,7 +638,7 @@ document.addEventListener('alpine:init', () => {
 
     toggleAll(checked) {
       if (checked) {
-        this.selectedProducts = this.filteredProducts.map(p => p.id);
+        this.selectedProducts = this.filteredProducts.map((p) => p.id);
       } else {
         this.selectedProducts = [];
       }
@@ -561,7 +646,7 @@ document.addEventListener('alpine:init', () => {
 
     toggleProduct(productId) {
       if (this.selectedProducts.includes(productId)) {
-        this.selectedProducts = this.selectedProducts.filter(id => id !== productId);
+        this.selectedProducts = this.selectedProducts.filter((id) => id !== productId);
       } else {
         this.selectedProducts = [...this.selectedProducts, productId];
       }
@@ -581,7 +666,7 @@ document.addEventListener('alpine:init', () => {
       this.resetProductForm();
       const form = this._getProductForm();
       if (form && this.warehouseFilter) {
-          form.form.default_warehouse_id = String(this.warehouseFilter);
+        form.form.default_warehouse_id = String(this.warehouseFilter);
       }
       getModal('#productModal')?.show();
     },
@@ -602,17 +687,21 @@ document.addEventListener('alpine:init', () => {
         length_cm: product.length_cm ?? '',
         width_cm: product.width_cm ?? '',
         height_cm: product.height_cm ?? '',
-        purchase_price: product.purchase_price ? String(Math.round(parseFloat(product.purchase_price))) : '',
+        purchase_price: product.purchase_price
+          ? String(Math.round(parseFloat(product.purchase_price)))
+          : '',
         mrp: product.mrp ? String(Math.round(parseFloat(product.mrp))) : '',
         selling_price_inc_gst: (() => {
           let basePrice = parseFloat(product.selling_price ?? product.price ?? 0);
           let rateId = String(product.tax_rate_id ?? '');
           let rate = 0;
           if (rateId && Alpine.store('productTable')?.options?.taxRates) {
-            let taxObj = Alpine.store('productTable').options.taxRates.find(r => String(r.id) === rateId);
+            let taxObj = Alpine.store('productTable').options.taxRates.find(
+              (r) => String(r.id) === rateId
+            );
             if (taxObj) rate = parseFloat(taxObj.rate) || 0;
           }
-          return String(Math.round(basePrice + (basePrice * rate / 100)));
+          return String(Math.round(basePrice + (basePrice * rate) / 100));
         })(),
         selling_price: String(product.selling_price ?? product.price ?? ''),
         stock: String(product.stock_quantity ?? product.stock ?? ''),
@@ -624,41 +713,44 @@ document.addEventListener('alpine:init', () => {
         manage_stock: product.manage_stock !== undefined ? Boolean(product.manage_stock) : true,
         batch_tracking: Boolean(product.batch_tracking),
         expiry_tracking: Boolean(product.expiry_tracking),
-        is_sku_enabled: product.is_sku_enabled !== undefined ? Boolean(product.is_sku_enabled) : true,
+        is_sku_enabled:
+          product.is_sku_enabled !== undefined ? Boolean(product.is_sku_enabled) : true,
         description: product.description ?? '',
         status: normalizeStatus(product.status),
         image: product.image ?? '/assets/images/product-placeholder.svg',
         application_instructions: product.application_instructions ?? '',
         grade: product.grade ?? '',
-        attributes: Array.isArray(product.attributes) ? product.attributes.map(attribute => String(attribute.id)) : [],
+        attributes: Array.isArray(product.attributes)
+          ? product.attributes.map((attribute) => String(attribute.id))
+          : [],
       };
-      
+
       const whId = mapped.default_warehouse_id;
       if (whId && product.warehouse_stocks) {
-          const ws = product.warehouse_stocks.find(s => String(s.warehouse_id) === whId);
-          if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
-              mapped.warehouse_allow_overselling = ws.allow_overselling;
-              mapped.warehouse_overselling_qty = ws.overselling_qty;
-          } else {
-              mapped.warehouse_allow_overselling = null;
-              mapped.warehouse_overselling_qty = null;
-          }
-          if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
-              mapped.warehouse_is_sku_enabled = ws.is_sku_enabled;
-          } else {
-              mapped.warehouse_is_sku_enabled = null;
-          }
-      } else {
+        const ws = product.warehouse_stocks.find((s) => String(s.warehouse_id) === whId);
+        if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
+          mapped.warehouse_allow_overselling = ws.allow_overselling;
+          mapped.warehouse_overselling_qty = ws.overselling_qty;
+        } else {
           mapped.warehouse_allow_overselling = null;
           mapped.warehouse_overselling_qty = null;
+        }
+        if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
+          mapped.warehouse_is_sku_enabled = ws.is_sku_enabled;
+        } else {
           mapped.warehouse_is_sku_enabled = null;
+        }
+      } else {
+        mapped.warehouse_allow_overselling = null;
+        mapped.warehouse_overselling_qty = null;
+        mapped.warehouse_is_sku_enabled = null;
       }
-      
+
       return mapped;
     },
 
     _findProductIndex(productId) {
-      return this.products.findIndex(product => product.id === productId);
+      return this.products.findIndex((product) => product.id === productId);
     },
 
     _getProductForm() {
@@ -681,27 +773,29 @@ document.addEventListener('alpine:init', () => {
       if (!form) return;
 
       form.editingProductId = product.id;
-      
+
       const mapped = this._mapProductForForm(product);
-      
+
       if (this.warehouseFilter) {
-          mapped.default_warehouse_id = String(this.warehouseFilter);
-          const ws = product.warehouse_stocks?.find(s => String(s.warehouse_id) === String(this.warehouseFilter));
-          mapped.stock = String(ws ? (ws.quantity || 0) : 0);
-          if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
-              mapped.warehouse_allow_overselling = ws.allow_overselling;
-              mapped.warehouse_overselling_qty = ws.overselling_qty;
-          } else {
-              mapped.warehouse_allow_overselling = null;
-              mapped.warehouse_overselling_qty = null;
-          }
-          if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
-              mapped.warehouse_is_sku_enabled = ws.is_sku_enabled;
-          } else {
-              mapped.warehouse_is_sku_enabled = null;
-          }
+        mapped.default_warehouse_id = String(this.warehouseFilter);
+        const ws = product.warehouse_stocks?.find(
+          (s) => String(s.warehouse_id) === String(this.warehouseFilter)
+        );
+        mapped.stock = String(ws ? ws.quantity || 0 : 0);
+        if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
+          mapped.warehouse_allow_overselling = ws.allow_overselling;
+          mapped.warehouse_overselling_qty = ws.overselling_qty;
+        } else {
+          mapped.warehouse_allow_overselling = null;
+          mapped.warehouse_overselling_qty = null;
+        }
+        if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
+          mapped.warehouse_is_sku_enabled = ws.is_sku_enabled;
+        } else {
+          mapped.warehouse_is_sku_enabled = null;
+        }
       }
-      
+
       form.form = mapped;
       form.originalProduct = product;
       form.form.imageFile = null;
@@ -717,9 +811,9 @@ document.addEventListener('alpine:init', () => {
       if (!form) return;
 
       form.editingProductId = null;
-      
+
       const mapped = this._mapProductForForm(product);
-      
+
       mapped.name = mapped.name + ' (Copy)';
       mapped.sku = mapped.sku + '-COPY'; // User will likely change this
       mapped.default_warehouse_id = ''; // Force warehouse selection
@@ -727,7 +821,7 @@ document.addEventListener('alpine:init', () => {
       mapped.warehouse_allow_overselling = null;
       mapped.warehouse_overselling_qty = null;
       mapped.warehouse_is_sku_enabled = null;
-      
+
       form.form = mapped;
       form.originalProduct = null;
       form.form.imageFile = null;
@@ -754,7 +848,10 @@ document.addEventListener('alpine:init', () => {
       if (action === 'disable_sku') {
         apiFetch(`${this.apiBase}/bulk-disable-sku`, {
           method: 'POST',
-          body: JSON.stringify({ ids: this.selectedProducts, warehouse_id: this.warehouseFilter || null }),
+          body: JSON.stringify({
+            ids: this.selectedProducts,
+            warehouse_id: this.warehouseFilter || null,
+          }),
         })
           .then(async () => {
             await this.loadProductsFromApi();
@@ -770,7 +867,10 @@ document.addEventListener('alpine:init', () => {
       if (action === 'enable_sku') {
         apiFetch(`${this.apiBase}/bulk-enable-sku`, {
           method: 'POST',
-          body: JSON.stringify({ ids: this.selectedProducts, warehouse_id: this.warehouseFilter || null }),
+          body: JSON.stringify({
+            ids: this.selectedProducts,
+            warehouse_id: this.warehouseFilter || null,
+          }),
         })
           .then(async () => {
             await this.loadProductsFromApi();
@@ -810,7 +910,7 @@ document.addEventListener('alpine:init', () => {
         text: `You are about to delete ${ids.length} product(s). This action can be undone from trash.`,
         confirmButtonText: 'Yes, delete!',
       });
-      
+
       if (confirmed) {
         this.executeDelete(ids);
       }
@@ -825,7 +925,7 @@ document.addEventListener('alpine:init', () => {
           await this.loadProductsFromApi();
           this.filterProducts();
           this.calculateStats();
-          this.selectedProducts = this.selectedProducts.filter(id => !ids.includes(id));
+          this.selectedProducts = this.selectedProducts.filter((id) => !ids.includes(id));
           showToast('Products deleted successfully!', 'success');
         })
         .catch((error) => showToast(error.message || 'Failed to delete products.', 'danger'));
@@ -838,7 +938,7 @@ document.addEventListener('alpine:init', () => {
     exportProducts() {
       const csvContent = [
         ['Name', 'SKU', 'Category', 'Price', 'Stock', 'Status', 'Created', 'Description'],
-        ...this.filteredProducts.map(product => ([
+        ...this.filteredProducts.map((product) => [
           escapeCsv(product.name),
           escapeCsv(product.sku),
           escapeCsv(product.category),
@@ -847,11 +947,13 @@ document.addEventListener('alpine:init', () => {
           escapeCsv(product.status),
           escapeCsv(product.created),
           escapeCsv(product.description),
-        ])),
-      ].map(row => row.join(',')).join('\n');
+        ]),
+      ]
+        .map((row) => row.join(','))
+        .join('\n');
 
       downloadBlob('products.csv', csvContent, 'text/csv;charset=utf-8');
-      
+
       showToast('Products exported successfully!', 'success');
     },
 
@@ -880,10 +982,13 @@ document.addEventListener('alpine:init', () => {
         this.filterProducts();
         this.calculateStats();
         this.selectedProducts = [];
-        
+
         if (resData.errors && resData.errors.length > 0) {
           this.importErrors = resData.errors;
-          showToast(`Imported ${resData.imported || 0} products, but encountered errors.`, 'warning');
+          showToast(
+            `Imported ${resData.imported || 0} products, but encountered errors.`,
+            'warning'
+          );
         } else {
           fileInput.value = '';
           getModal('#importModal')?.hide();
@@ -896,11 +1001,10 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-
     initCharts() {
       // Prevent multiple chart initializations
       if (this.chartsInitialized) return;
-      
+
       this.initSalesChart();
       this.initCategoryChart();
       this.chartsInitialized = true;
@@ -917,47 +1021,48 @@ document.addEventListener('alpine:init', () => {
       salesChart.innerHTML = '';
 
       try {
-
-      // Sample sales data
-      const salesData = {
-        series: [{
-          name: 'Sales',
-          data: [65, 78, 85, 92, 88, 95, 102]
-        }],
-        chart: {
-          type: 'area',
-          height: 300,
-          toolbar: { show: false }
-        },
-        colors: ['#6366f1'],
-        fill: {
-          type: 'gradient',
-          gradient: {
-            shadeIntensity: 1,
-            opacityFrom: 0.7,
-            opacityTo: 0.3,
-          }
-        },
-        stroke: {
-          curve: 'smooth',
-          width: 2
-        },
-        xaxis: {
-          categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-        },
-        yaxis: {
-          title: {
-            text: 'Sales (₹1000s)'
-          }
-        },
-        tooltip: {
-          y: {
-            formatter: function (val) {
-              return "₹" + val + "k"
-            }
-          }
-        }
-      };
+        // Sample sales data
+        const salesData = {
+          series: [
+            {
+              name: 'Sales',
+              data: [65, 78, 85, 92, 88, 95, 102],
+            },
+          ],
+          chart: {
+            type: 'area',
+            height: 300,
+            toolbar: { show: false },
+          },
+          colors: ['#6366f1'],
+          fill: {
+            type: 'gradient',
+            gradient: {
+              shadeIntensity: 1,
+              opacityFrom: 0.7,
+              opacityTo: 0.3,
+            },
+          },
+          stroke: {
+            curve: 'smooth',
+            width: 2,
+          },
+          xaxis: {
+            categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          },
+          yaxis: {
+            title: {
+              text: 'Sales (₹1000s)',
+            },
+          },
+          tooltip: {
+            y: {
+              formatter: function (val) {
+                return '₹' + val + 'k';
+              },
+            },
+          },
+        };
 
         this.charts.sales = new ApexCharts(salesChart, salesData);
         this.charts.sales.render();
@@ -977,33 +1082,32 @@ document.addEventListener('alpine:init', () => {
       categoryChart.innerHTML = '';
 
       try {
-
-      const chartData = {
-        series: this.categoryStats.map(cat => cat.count),
-        chart: {
-          type: 'donut',
-          height: 200
-        },
-        labels: this.categoryStats.map(cat => cat.name),
-        colors: this.categoryStats.map(cat => cat.color),
-        plotOptions: {
-          pie: {
-            donut: {
-              size: '70%'
-            }
-          }
-        },
-        legend: {
-          show: false
-        },
-        tooltip: {
-          y: {
-            formatter: function (val) {
-              return val + " products"
-            }
-          }
-        }
-      };
+        const chartData = {
+          series: this.categoryStats.map((cat) => cat.count),
+          chart: {
+            type: 'donut',
+            height: 200,
+          },
+          labels: this.categoryStats.map((cat) => cat.name),
+          colors: this.categoryStats.map((cat) => cat.color),
+          plotOptions: {
+            pie: {
+              donut: {
+                size: '70%',
+              },
+            },
+          },
+          legend: {
+            show: false,
+          },
+          tooltip: {
+            y: {
+              formatter: function (val) {
+                return val + ' products';
+              },
+            },
+          },
+        };
 
         this.charts.category = new ApexCharts(categoryChart, chartData);
         this.charts.category.render();
@@ -1029,7 +1133,7 @@ document.addEventListener('alpine:init', () => {
 
       // Always show first page
       pages.push(1);
-      
+
       if (this.totalPages <= 7) {
         // If total pages is small, show all
         for (let i = 2; i <= this.totalPages; i++) {
@@ -1060,7 +1164,7 @@ document.addEventListener('alpine:init', () => {
           pages.push(this.totalPages);
         }
       }
-      
+
       return pages;
     },
 
@@ -1068,7 +1172,7 @@ document.addEventListener('alpine:init', () => {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page;
       }
-    }
+    },
   }));
 
   // Product form component for modals
@@ -1076,24 +1180,28 @@ document.addEventListener('alpine:init', () => {
     editingProductId: null,
     originalProduct: null,
     get options() {
-      return Alpine.store('productTable')?.options || {
-        categories: [],
-        brands: [],
-        uoms: [],
-        taxRates: [],
-        hsnCodes: [],
-        warehouses: [],
-        attributes: [],
-        statusList: [],
-      };
+      return (
+        Alpine.store('productTable')?.options || {
+          categories: [],
+          brands: [],
+          uoms: [],
+          taxRates: [],
+          hsnCodes: [],
+          warehouses: [],
+          attributes: [],
+          statusList: [],
+        }
+      );
     },
     get baseSellingPriceExcludingTax() {
       let priceIncGst = parseFloat(this.form.selling_price_inc_gst) || 0;
       if (!this.form.tax_rate_id) return priceIncGst;
-      let taxRate = this.options.taxRates.find(r => String(r.id) === String(this.form.tax_rate_id));
+      let taxRate = this.options.taxRates.find(
+        (r) => String(r.id) === String(this.form.tax_rate_id)
+      );
       if (!taxRate) return priceIncGst;
       let rate = parseFloat(taxRate.rate) || 0;
-      return priceIncGst / (1 + (rate / 100));
+      return priceIncGst / (1 + rate / 100);
     },
     form: {
       name: '',
@@ -1189,20 +1297,22 @@ document.addEventListener('alpine:init', () => {
 
     init() {
       this.$watch('form.default_warehouse_id', (newVal) => {
-         this.form.warehouse_allow_overselling = null;
-         this.form.warehouse_overselling_qty = null;
-         this.form.warehouse_is_sku_enabled = null;
-         if (this.editingProductId && this.originalProduct) {
-             const ws = this.originalProduct.warehouse_stocks?.find(s => String(s.warehouse_id) === String(newVal));
-             this.form.stock = String(ws ? (ws.quantity || 0) : 0);
-             if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
-                 this.form.warehouse_allow_overselling = ws.allow_overselling;
-                 this.form.warehouse_overselling_qty = ws.overselling_qty;
-             }
-             if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
-                 this.form.warehouse_is_sku_enabled = ws.is_sku_enabled;
-             }
-         }
+        this.form.warehouse_allow_overselling = null;
+        this.form.warehouse_overselling_qty = null;
+        this.form.warehouse_is_sku_enabled = null;
+        if (this.editingProductId && this.originalProduct) {
+          const ws = this.originalProduct.warehouse_stocks?.find(
+            (s) => String(s.warehouse_id) === String(newVal)
+          );
+          this.form.stock = String(ws ? ws.quantity || 0 : 0);
+          if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
+            this.form.warehouse_allow_overselling = ws.allow_overselling;
+            this.form.warehouse_overselling_qty = ws.overselling_qty;
+          }
+          if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
+            this.form.warehouse_is_sku_enabled = ws.is_sku_enabled;
+          }
+        }
       });
     },
 
@@ -1255,22 +1365,44 @@ document.addEventListener('alpine:init', () => {
       }
 
       if (!this.form.is_sku_enabled && !this.form.sku) {
-        const prefix = this.form.name ? String(this.form.name).substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'PROD' : 'PROD';
+        const prefix = this.form.name
+          ? String(this.form.name)
+              .substring(0, 3)
+              .toUpperCase()
+              .replace(/[^A-Z]/g, '') || 'PROD'
+          : 'PROD';
         const timestamp = Date.now().toString().slice(-6);
         this.form.sku = `${prefix}-${timestamp}`;
       }
 
-      if (!this.form.name || !this.form.sku || !this.form.category_id ||
-          this.form.selling_price_inc_gst === '' || this.form.purchase_price === '' ||
-          this.form.mrp === '' || this.form.mrp === null ||
-          !this.form.status || !this.form.default_warehouse_id ||
-          !this.form.tax_rate_id || !this.form.hsn_code_id || 
-          !this.form.uom_id || this.form.weight_g === '' || this.form.weight_g === null ||
-          this.form.min_stock_level === '' || this.form.min_stock_level === null ||
-          this.form.length_cm === '' || this.form.length_cm === null ||
-          this.form.width_cm === '' || this.form.width_cm === null ||
-          this.form.height_cm === '' || this.form.height_cm === null) {
-        showToast('Please fill in all required fields (Name, SKU, Category, Prices, Tax, HSN, UOM, Warehouse, Dimensions, Min Stock, Status).', 'warning');
+      if (
+        !this.form.name ||
+        !this.form.sku ||
+        !this.form.category_id ||
+        this.form.selling_price_inc_gst === '' ||
+        this.form.purchase_price === '' ||
+        this.form.mrp === '' ||
+        this.form.mrp === null ||
+        !this.form.status ||
+        !this.form.default_warehouse_id ||
+        !this.form.tax_rate_id ||
+        !this.form.hsn_code_id ||
+        !this.form.uom_id ||
+        this.form.weight_g === '' ||
+        this.form.weight_g === null ||
+        this.form.min_stock_level === '' ||
+        this.form.min_stock_level === null ||
+        this.form.length_cm === '' ||
+        this.form.length_cm === null ||
+        this.form.width_cm === '' ||
+        this.form.width_cm === null ||
+        this.form.height_cm === '' ||
+        this.form.height_cm === null
+      ) {
+        showToast(
+          'Please fill in all required fields (Name, SKU, Category, Prices, Tax, HSN, UOM, Warehouse, Dimensions, Min Stock, Status).',
+          'warning'
+        );
         return;
       }
 
@@ -1283,17 +1415,25 @@ document.addEventListener('alpine:init', () => {
       if (this.form.uom_id) formData.append('uom_id', String(this.form.uom_id));
       if (this.form.tax_rate_id) formData.append('tax_rate_id', String(this.form.tax_rate_id));
       if (this.form.hsn_code_id) formData.append('hsn_code_id', String(this.form.hsn_code_id));
-      if (this.form.default_warehouse_id) formData.append('default_warehouse_id', String(this.form.default_warehouse_id));
+      if (this.form.default_warehouse_id)
+        formData.append('default_warehouse_id', String(this.form.default_warehouse_id));
       if (this.form.barcode) formData.append('barcode', String(this.form.barcode).trim());
-      if (this.form.weight_g !== '' && this.form.weight_g !== null) formData.append('weight_g', String(this.form.weight_g).trim());
-      if (this.form.length_cm !== '' && this.form.length_cm !== null) formData.append('length_cm', String(this.form.length_cm).trim());
-      if (this.form.width_cm !== '' && this.form.width_cm !== null) formData.append('width_cm', String(this.form.width_cm).trim());
-      if (this.form.height_cm !== '' && this.form.height_cm !== null) formData.append('height_cm', String(this.form.height_cm).trim());
+      if (this.form.weight_g !== '' && this.form.weight_g !== null)
+        formData.append('weight_g', String(this.form.weight_g).trim());
+      if (this.form.length_cm !== '' && this.form.length_cm !== null)
+        formData.append('length_cm', String(this.form.length_cm).trim());
+      if (this.form.width_cm !== '' && this.form.width_cm !== null)
+        formData.append('width_cm', String(this.form.width_cm).trim());
+      if (this.form.height_cm !== '' && this.form.height_cm !== null)
+        formData.append('height_cm', String(this.form.height_cm).trim());
       formData.append('purchase_price', String(Number(this.form.purchase_price || 0)));
       if (this.form.mrp !== '' && this.form.mrp !== null && this.form.mrp !== undefined) {
         formData.append('mrp', String(Number(this.form.mrp)));
       }
-      formData.append('selling_price', String(Number(this.baseSellingPriceExcludingTax.toFixed(2))));
+      formData.append(
+        'selling_price',
+        String(Number(this.baseSellingPriceExcludingTax.toFixed(2)))
+      );
       formData.append('stock', String(Number(this.form.stock || 0)));
       formData.append('min_stock_level', String(Number(this.form.min_stock_level || 0)));
       formData.append('overselling_qty', String(Number(this.form.overselling_qty || 0)));
@@ -1306,15 +1446,30 @@ document.addEventListener('alpine:init', () => {
       formData.append('batch_tracking', this.form.batch_tracking ? '1' : '0');
       formData.append('expiry_tracking', this.form.expiry_tracking ? '1' : '0');
       formData.append('is_sku_enabled', this.form.is_sku_enabled ? '1' : '0');
-      if (this.form.warehouse_allow_overselling !== null && this.form.warehouse_allow_overselling !== undefined) {
-          formData.append('warehouse_allow_overselling', this.form.warehouse_allow_overselling ? '1' : '0');
-          formData.append('warehouse_overselling_qty', String(Number(this.form.warehouse_overselling_qty || 0)));
+      if (
+        this.form.warehouse_allow_overselling !== null &&
+        this.form.warehouse_allow_overselling !== undefined
+      ) {
+        formData.append(
+          'warehouse_allow_overselling',
+          this.form.warehouse_allow_overselling ? '1' : '0'
+        );
+        formData.append(
+          'warehouse_overselling_qty',
+          String(Number(this.form.warehouse_overselling_qty || 0))
+        );
       }
-      if (this.form.warehouse_is_sku_enabled !== null && this.form.warehouse_is_sku_enabled !== undefined) {
-          formData.append('warehouse_is_sku_enabled', this.form.warehouse_is_sku_enabled ? '1' : '0');
+      if (
+        this.form.warehouse_is_sku_enabled !== null &&
+        this.form.warehouse_is_sku_enabled !== undefined
+      ) {
+        formData.append('warehouse_is_sku_enabled', this.form.warehouse_is_sku_enabled ? '1' : '0');
       }
       if (this.form.application_instructions) {
-        formData.append('application_instructions', String(this.form.application_instructions).trim());
+        formData.append(
+          'application_instructions',
+          String(this.form.application_instructions).trim()
+        );
       }
       if (this.form.grade) {
         formData.append('grade', String(this.form.grade));
@@ -1358,7 +1513,7 @@ document.addEventListener('alpine:init', () => {
       } catch (error) {
         showToast(error.message || 'Failed to save product.', 'danger');
       }
-    }
+    },
   }));
 
   // Search component for header
@@ -1377,6 +1532,6 @@ document.addEventListener('alpine:init', () => {
       this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
       localStorage.setItem('theme', this.currentTheme);
-    }
+    },
   }));
 });

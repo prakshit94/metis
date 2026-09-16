@@ -21,7 +21,7 @@
 // ---------------------------------------------------------------------------
 // Dark theme overrides for ApexCharts
 // ---------------------------------------------------------------------------
-[data-bs-theme="dark"] {
+[data-bs-theme='dark'] {
   .apexcharts-tooltip {
     background: var(--bs-body-bg) !important;
     border-color: var(--bs-border-color) !important;
@@ -88,18 +88,34 @@
   width: 100%;
   overflow: hidden;
 
-  &--sm  { min-height: 200px; }
-  &--md  { min-height: 280px; }
-  &--lg  { min-height: 350px; }
-  &--xl  { min-height: 450px; }
+  &--sm {
+    min-height: 200px;
+  }
+  &--md {
+    min-height: 280px;
+  }
+  &--lg {
+    min-height: 350px;
+  }
+  &--xl {
+    min-height: 450px;
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Responsive chart sizing
 // ---------------------------------------------------------------------------
 @media (max-width: 767.98px) {
-  #revenueChart        { min-height: 220px !important; }
-  #userGrowthChart     { min-height: 200px !important; }
-  #orderStatusChart    { min-height: 220px !important; }
-  #salesByLocationChart { min-height: 250px !important; }
+  #revenueChart {
+    min-height: 220px !important;
+  }
+  #userGrowthChart {
+    min-height: 200px !important;
+  }
+  #orderStatusChart {
+    min-height: 220px !important;
+  }
+  #salesByLocationChart {
+    min-height: 250px !important;
+  }
 }

@@ -3,7 +3,6 @@
 // ==========================================================================
 
 .messages-page {
-  
   // Main messages container
   .messages-container {
     height: calc(100vh - var(--header-height) - 8rem);
@@ -28,7 +27,7 @@
   // ==========================================================================
   // SIDEBAR STYLES
   // ==========================================================================
-  
+
   .messages-sidebar {
     width: 380px;
     background: var(--messages-sidebar-bg);
@@ -566,7 +565,7 @@
 
         .message-status {
           color: var(--bs-success);
-          
+
           i {
             font-size: 0.7rem;
           }
@@ -811,7 +810,9 @@
 // ==========================================================================
 
 @keyframes typing-dot {
-  0%, 60%, 100% {
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
     opacity: 0.4;
   }
@@ -859,7 +860,8 @@
 // CSS CUSTOM PROPERTIES
 // ==========================================================================
 
-:root, [data-bs-theme="light"] {
+:root,
+[data-bs-theme='light'] {
   --messages-bg: var(--bs-body-bg);
   --messages-sidebar-bg: var(--bs-body-bg);
   --messages-border: var(--bs-border-color);
@@ -870,7 +872,7 @@
   --messages-input-bg: var(--bs-body-bg);
 }
 
-[data-bs-theme="dark"] {
+[data-bs-theme='dark'] {
   --messages-bg: var(--bs-body-bg);
   --messages-sidebar-bg: var(--bs-body-bg);
   --messages-border: var(--bs-border-color);

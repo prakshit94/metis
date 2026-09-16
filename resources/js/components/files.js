@@ -10,15 +10,15 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     selectedFiles: [],
     showUploadZone: false,
-    
+
     // Storage Information
     storageUsed: 45.2,
     storageTotal: 100,
-    
+
     // Current Navigation
     currentFolder: null,
     breadcrumbs: [{ name: 'My Files', path: '/' }],
-    
+
     // Data
     folders: [],
     currentFiles: [],
@@ -29,7 +29,7 @@ document.addEventListener('alpine:init', () => {
     async init() {
       await this.loadFiles();
       this.sortFiles();
-      
+
       // Show upload zone if folder is empty
       this.showUploadZone = this.currentFiles.length === 0;
     },
@@ -47,21 +47,51 @@ document.addEventListener('alpine:init', () => {
       try {
         const response = await fetch('/api/files');
         const files = await response.json();
-        
-        this.allFiles = files.map(file => ({ ...file, folder: file.isAsset ? 'Assets' : 'Uploads' }));
+
+        this.allFiles = files.map((file) => ({
+          ...file,
+          folder: file.isAsset ? 'Assets' : 'Uploads',
+        }));
         this.currentFiles = [...this.allFiles];
-        
+
         this.folders = [
-          { id: 1, name: 'Uploads', fileCount: this.allFiles.filter(f => f.folder === 'Uploads').length, icon: 'bi-folder-fill' },
-          { id: 2, name: 'Assets', fileCount: this.allFiles.filter(f => f.folder === 'Assets').length, icon: 'bi-images' }
+          {
+            id: 1,
+            name: 'Uploads',
+            fileCount: this.allFiles.filter((f) => f.folder === 'Uploads').length,
+            icon: 'bi-folder-fill',
+          },
+          {
+            id: 2,
+            name: 'Assets',
+            fileCount: this.allFiles.filter((f) => f.folder === 'Assets').length,
+            icon: 'bi-images',
+          },
         ];
 
-        this.recentFiles = [...this.allFiles].sort((a, b) => new Date(b.modifiedDate) - new Date(a.modifiedDate)).slice(0, 5);
-        
+        this.recentFiles = [...this.allFiles]
+          .sort((a, b) => new Date(b.modifiedDate) - new Date(a.modifiedDate))
+          .slice(0, 5);
+
         this.quickAccess = [
-          { name: 'Recent', icon: 'bi-clock-history', count: this.recentFiles.length, type: 'recent' },
-          { name: 'Images', icon: 'bi-image', count: this.allFiles.filter(f => f.type === 'image').length, type: 'images' },
-          { name: 'Documents', icon: 'bi-file-earmark-text', count: this.allFiles.filter(f => f.type === 'document').length, type: 'documents' }
+          {
+            name: 'Recent',
+            icon: 'bi-clock-history',
+            count: this.recentFiles.length,
+            type: 'recent',
+          },
+          {
+            name: 'Images',
+            icon: 'bi-image',
+            count: this.allFiles.filter((f) => f.type === 'image').length,
+            type: 'images',
+          },
+          {
+            name: 'Documents',
+            icon: 'bi-file-earmark-text',
+            count: this.allFiles.filter((f) => f.type === 'document').length,
+            type: 'documents',
+          },
         ];
 
         this.sortFiles();
@@ -76,9 +106,9 @@ document.addEventListener('alpine:init', () => {
         this.currentFiles = [...this.allFiles];
       } else {
         const query = this.searchQuery.toLowerCase();
-        this.currentFiles = this.allFiles.filter(file => 
-          file.name.toLowerCase().includes(query) || 
-          file.type.toLowerCase().includes(query)
+        this.currentFiles = this.allFiles.filter(
+          (file) =>
+            file.name.toLowerCase().includes(query) || file.type.toLowerCase().includes(query)
         );
       }
       this.sortFiles();
@@ -88,16 +118,16 @@ document.addEventListener('alpine:init', () => {
       const now = new Date();
       if (modifiedStr.includes('hour')) {
         const hours = parseInt(modifiedStr);
-        return now.getTime() - (hours * 60 * 60 * 1000);
+        return now.getTime() - hours * 60 * 60 * 1000;
       } else if (modifiedStr.includes('day')) {
         const days = parseInt(modifiedStr);
-        return now.getTime() - (days * 24 * 60 * 60 * 1000);
+        return now.getTime() - days * 24 * 60 * 60 * 1000;
       } else if (modifiedStr.includes('week')) {
         const weeks = parseInt(modifiedStr);
-        return now.getTime() - (weeks * 7 * 24 * 60 * 60 * 1000);
+        return now.getTime() - weeks * 7 * 24 * 60 * 60 * 1000;
       } else if (modifiedStr.includes('month')) {
         const months = parseInt(modifiedStr);
-        return now.getTime() - (months * 30 * 24 * 60 * 60 * 1000);
+        return now.getTime() - months * 30 * 24 * 60 * 60 * 1000;
       }
       return now.getTime();
     },
@@ -109,7 +139,9 @@ document.addEventListener('alpine:init', () => {
           case 'name':
             return a.name.localeCompare(b.name);
           case 'date':
-            return this.getModifiedTimestamp(a.modifiedDate) - this.getModifiedTimestamp(b.modifiedDate);
+            return (
+              this.getModifiedTimestamp(a.modifiedDate) - this.getModifiedTimestamp(b.modifiedDate)
+            );
           case 'size':
             return this.parseSize(a.size) - this.parseSize(b.size);
           case 'type':
@@ -124,7 +156,7 @@ document.addEventListener('alpine:init', () => {
       const parts = sizeStr.split(' ');
       const value = parseFloat(parts[0]);
       const unit = parts[1];
-      
+
       switch (unit) {
         case 'KB':
           return value * 1024;
@@ -159,7 +191,7 @@ document.addEventListener('alpine:init', () => {
       if (this.selectedFiles.length === this.currentFiles.length) {
         this.selectedFiles = [];
       } else {
-        this.selectedFiles = this.currentFiles.map(f => f.id);
+        this.selectedFiles = this.currentFiles.map((f) => f.id);
       }
     },
 
@@ -170,11 +202,11 @@ document.addEventListener('alpine:init', () => {
     // Navigation
     openFolder(folder) {
       this.currentFolder = folder;
-      this.currentFiles = this.allFiles.filter(f => f.folder === folder.name);
+      this.currentFiles = this.allFiles.filter((f) => f.folder === folder.name);
       // Replace breadcrumbs properly - don't just push
       this.breadcrumbs = [
         { name: 'My Files', path: '/' },
-        { name: folder.name, path: `/${folder.name}` }
+        { name: folder.name, path: `/${folder.name}` },
       ];
       this.selectedFiles = [];
       this.showUploadZone = this.currentFiles.length === 0;
@@ -184,7 +216,7 @@ document.addEventListener('alpine:init', () => {
     navigateToBreadcrumb(index) {
       // Properly slice breadcrumbs and navigate
       this.breadcrumbs = this.breadcrumbs.slice(0, index + 1);
-      
+
       if (index === 0) {
         // Back to root - My Files
         this.currentFolder = null;
@@ -193,19 +225,19 @@ document.addEventListener('alpine:init', () => {
       } else {
         // Navigate to specific folder
         const folderName = this.breadcrumbs[index].name;
-        
+
         // Check if it's a quick access item
-        const quickAccessItem = this.quickAccess.find(q => q.name === folderName);
+        const quickAccessItem = this.quickAccess.find((q) => q.name === folderName);
         if (quickAccessItem) {
           this.navigateToQuickAccessItem(quickAccessItem);
           return;
         }
-        
+
         // Otherwise it's a regular folder
-        const folder = this.folders.find(f => f.name === folderName);
+        const folder = this.folders.find((f) => f.name === folderName);
         if (folder) {
           this.currentFolder = folder;
-          this.currentFiles = this.allFiles.filter(f => f.folder === folder.name);
+          this.currentFiles = this.allFiles.filter((f) => f.folder === folder.name);
         } else {
           // Fallback to root if folder not found
           this.currentFolder = null;
@@ -213,7 +245,7 @@ document.addEventListener('alpine:init', () => {
           this.breadcrumbs = [{ name: 'My Files', path: '/' }];
         }
       }
-      
+
       this.selectedFiles = [];
       this.showUploadZone = this.currentFiles.length === 0;
       this.sortFiles();
@@ -227,22 +259,22 @@ document.addEventListener('alpine:init', () => {
       // Set proper breadcrumbs for quick access
       this.breadcrumbs = [
         { name: 'My Files', path: '/' },
-        { name: item.name, path: `/${item.type}` }
+        { name: item.name, path: `/${item.type}` },
       ];
       this.currentFolder = null;
-      
+
       switch (item.type) {
         case 'recent':
           this.currentFiles = [...this.recentFiles];
           break;
         case 'images':
-          this.currentFiles = this.allFiles.filter(f => f.type === 'image');
+          this.currentFiles = this.allFiles.filter((f) => f.type === 'image');
           break;
         case 'documents':
-          this.currentFiles = this.allFiles.filter(f => f.type === 'document');
+          this.currentFiles = this.allFiles.filter((f) => f.type === 'document');
           break;
         case 'shared':
-          this.currentFiles = this.allFiles.filter(f => f.folder === 'Shared');
+          this.currentFiles = this.allFiles.filter((f) => f.folder === 'Shared');
           break;
         case 'trash':
           this.currentFiles = [];
@@ -250,7 +282,7 @@ document.addEventListener('alpine:init', () => {
         default:
           this.currentFiles = [...this.allFiles];
       }
-      
+
       this.selectedFiles = [];
       this.showUploadZone = this.currentFiles.length === 0;
       this.sortFiles();
@@ -281,8 +313,8 @@ document.addEventListener('alpine:init', () => {
             customClass: {
               popup: 'bg-body text-body rounded-4 shadow-lg border-0',
               image: 'img-fluid rounded',
-              title: 'text-body-emphasis fs-5 mb-2'
-            }
+              title: 'text-body-emphasis fs-5 mb-2',
+            },
           });
         } else {
           Swal.fire({
@@ -305,10 +337,10 @@ document.addEventListener('alpine:init', () => {
               cancelButton: 'btn btn-secondary',
               popup: 'bg-body text-body rounded-4 shadow-lg border-0',
               title: 'text-body-emphasis fs-4 fw-bold mt-2',
-              htmlContainer: 'text-body'
+              htmlContainer: 'text-body',
             },
             buttonsStyling: false,
-            background: 'transparent'
+            background: 'transparent',
           }).then((result) => {
             if (result.isConfirmed) {
               this.showNotification(`Opening ${file.name} in default application...`, 'success');
@@ -334,7 +366,7 @@ document.addEventListener('alpine:init', () => {
         this.showNotification('❌ No files selected', 'warning');
         return;
       }
-      
+
       if (typeof Swal !== 'undefined') {
         Swal.fire({
           title: 'Download Selected Files',
@@ -348,13 +380,16 @@ document.addEventListener('alpine:init', () => {
             cancelButton: 'btn btn-secondary',
             popup: 'bg-body text-body rounded-4 shadow-lg border-0',
             title: 'text-body-emphasis fs-4 fw-bold mt-2',
-            htmlContainer: 'text-body-secondary'
+            htmlContainer: 'text-body-secondary',
           },
           buttonsStyling: false,
-          background: 'transparent'
+          background: 'transparent',
         }).then((result) => {
           if (result.isConfirmed) {
-            this.showNotification(`📦 Creating ZIP archive with ${this.selectedFiles.length} files...`, 'info');
+            this.showNotification(
+              `📦 Creating ZIP archive with ${this.selectedFiles.length} files...`,
+              'info'
+            );
             this.performZipDownload();
           }
         });
@@ -362,7 +397,6 @@ document.addEventListener('alpine:init', () => {
         this.showNotification(`Downloading ${this.selectedFiles.length} files...`, 'success');
       }
     },
-
 
     renameFile(file) {
       if (file.isAsset) {
@@ -384,7 +418,7 @@ document.addEventListener('alpine:init', () => {
             popup: 'bg-body text-body rounded-4 shadow-lg border-0',
             title: 'text-body-emphasis fs-4 fw-bold mt-2',
             input: 'form-control bg-body text-body border-secondary border-opacity-25',
-            htmlContainer: 'text-body-secondary'
+            htmlContainer: 'text-body-secondary',
           },
           buttonsStyling: false,
           background: 'transparent',
@@ -395,7 +429,7 @@ document.addEventListener('alpine:init', () => {
             if (value === file.name) {
               return 'Please enter a different name';
             }
-          }
+          },
         }).then((result) => {
           if (result.isConfirmed && result.value) {
             const oldName = file.name;
@@ -413,31 +447,35 @@ document.addEventListener('alpine:init', () => {
 
     async performZipDownload() {
       try {
-        const filesToDownload = this.currentFiles.filter(f => this.selectedFiles.includes(f.id)).map(f => f.id);
-        
+        const filesToDownload = this.currentFiles
+          .filter((f) => this.selectedFiles.includes(f.id))
+          .map((f) => f.id);
+
         const response = await fetch('/api/files/download-zip', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            },
-            body: JSON.stringify({ ids: filesToDownload })
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document
+              .querySelector('meta[name="csrf-token"]')
+              ?.getAttribute('content'),
+          },
+          body: JSON.stringify({ ids: filesToDownload }),
         });
-        
+
         if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'download_' + new Date().getTime() + '.zip';
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            this.showNotification(`✅ ZIP archive downloaded successfully!`, 'success');
-            this.selectedFiles = [];
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'download_' + new Date().getTime() + '.zip';
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          this.showNotification(`✅ ZIP archive downloaded successfully!`, 'success');
+          this.selectedFiles = [];
         } else {
-            this.showNotification('Failed to create ZIP', 'error');
+          this.showNotification('Failed to create ZIP', 'error');
         }
       } catch (error) {
         console.error('Download failed', error);
@@ -448,20 +486,22 @@ document.addEventListener('alpine:init', () => {
     async performFileRename(file, oldName, newName) {
       try {
         const response = await fetch('/api/files/rename', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            },
-            body: JSON.stringify({ id: file.id, newName })
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document
+              .querySelector('meta[name="csrf-token"]')
+              ?.getAttribute('content'),
+          },
+          body: JSON.stringify({ id: file.id, newName }),
         });
-        
+
         if (response.ok) {
-            this.showNotification(`📝 "${oldName}" renamed to "${newName}"`, 'success');
-            this.loadFiles();
+          this.showNotification(`📝 "${oldName}" renamed to "${newName}"`, 'success');
+          this.loadFiles();
         } else {
-            const error = await response.json();
-            this.showNotification(error.error || 'Failed to rename file', 'error');
+          const error = await response.json();
+          this.showNotification(error.error || 'Failed to rename file', 'error');
         }
       } catch (error) {
         console.error('Rename failed', error);
@@ -487,10 +527,10 @@ document.addEventListener('alpine:init', () => {
             cancelButton: 'btn btn-secondary',
             popup: 'bg-body text-body rounded-4 shadow-lg border-0',
             title: 'text-body-emphasis fs-4 fw-bold mt-2',
-            htmlContainer: 'text-body-secondary'
+            htmlContainer: 'text-body-secondary',
           },
           buttonsStyling: false,
-          background: 'transparent'
+          background: 'transparent',
         }).then((result) => {
           if (result.isConfirmed) {
             this.performFileDelete(file);
@@ -508,14 +548,16 @@ document.addEventListener('alpine:init', () => {
     async performFileDelete(file) {
       try {
         await fetch('/api/files', {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            },
-            body: JSON.stringify({ id: file.id })
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document
+              .querySelector('meta[name="csrf-token"]')
+              ?.getAttribute('content'),
+          },
+          body: JSON.stringify({ id: file.id }),
         });
-        this.selectedFiles = this.selectedFiles.filter(id => id !== file.id);
+        this.selectedFiles = this.selectedFiles.filter((id) => id !== file.id);
         this.loadFiles();
       } catch (error) {
         console.error('Delete failed', error);
@@ -524,45 +566,49 @@ document.addEventListener('alpine:init', () => {
     },
 
     async setLoginBackground(file) {
-        try {
-            await fetch('/api/files/login-background', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-                },
-                body: JSON.stringify({ url: file.url })
-            });
-            this.showNotification('Login background updated', 'success');
-            this.loadFiles();
-        } catch (error) {
-            console.error('Failed to set login background', error);
-            this.showNotification('Failed to update background', 'error');
-        }
+      try {
+        await fetch('/api/files/login-background', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document
+              .querySelector('meta[name="csrf-token"]')
+              ?.getAttribute('content'),
+          },
+          body: JSON.stringify({ url: file.url }),
+        });
+        this.showNotification('Login background updated', 'success');
+        this.loadFiles();
+      } catch (error) {
+        console.error('Failed to set login background', error);
+        this.showNotification('Failed to update background', 'error');
+      }
     },
 
     async setDefaultImage(file, targetName) {
-        try {
-            const response = await fetch('/api/files/set-default-image', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-                },
-                body: JSON.stringify({ file_id: file.id, target_name: targetName })
-            });
-            
-            if (response.ok) {
-                this.showNotification(`Default image ${targetName} updated`, 'success');
-                this.loadFiles();
-            } else {
-                const error = await response.json();
-                this.showNotification(error.error || 'Failed to update default image', 'error');
-            }
-        } catch (error) {
-            console.error('Failed to update default image', error);
-            this.showNotification('Failed to update default image', 'error');
+      try {
+        const response = await fetch('/api/files/set-default-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document
+              .querySelector('meta[name="csrf-token"]')
+              ?.getAttribute('content'),
+          },
+          body: JSON.stringify({ file_id: file.id, target_name: targetName }),
+        });
+
+        if (response.ok) {
+          this.showNotification(`Default image ${targetName} updated`, 'success');
+          this.loadFiles();
+        } else {
+          const error = await response.json();
+          this.showNotification(error.error || 'Failed to update default image', 'error');
         }
+      } catch (error) {
+        console.error('Failed to update default image', error);
+        this.showNotification('Failed to update default image', 'error');
+      }
     },
 
     deleteSelected() {
@@ -570,7 +616,7 @@ document.addEventListener('alpine:init', () => {
         this.showNotification('❌ No files selected', 'warning');
         return;
       }
-      
+
       if (typeof Swal !== 'undefined') {
         Swal.fire({
           title: 'Delete Selected Files',
@@ -584,23 +630,25 @@ document.addEventListener('alpine:init', () => {
             cancelButton: 'btn btn-secondary',
             popup: 'bg-body text-body rounded-4 shadow-lg border-0',
             title: 'text-body-emphasis fs-4 fw-bold mt-2',
-            htmlContainer: 'text-body-secondary'
+            htmlContainer: 'text-body-secondary',
           },
           buttonsStyling: false,
-          background: 'transparent'
+          background: 'transparent',
         }).then(async (result) => {
           if (result.isConfirmed) {
             const deletedCount = this.selectedFiles.length;
-            const filesToDelete = this.currentFiles.filter(f => this.selectedFiles.includes(f.id));
-            await Promise.all(filesToDelete.map(f => this.performFileDelete(f)));
+            const filesToDelete = this.currentFiles.filter((f) =>
+              this.selectedFiles.includes(f.id)
+            );
+            await Promise.all(filesToDelete.map((f) => this.performFileDelete(f)));
             this.selectedFiles = [];
             this.showNotification(`🗑️ ${deletedCount} files moved to trash`, 'success');
           }
         });
       } else {
         if (confirm(`Are you sure you want to delete ${this.selectedFiles.length} files?`)) {
-          this.currentFiles = this.currentFiles.filter(f => !this.selectedFiles.includes(f.id));
-          this.allFiles = this.allFiles.filter(f => !this.selectedFiles.includes(f.id));
+          this.currentFiles = this.currentFiles.filter((f) => !this.selectedFiles.includes(f.id));
+          this.allFiles = this.allFiles.filter((f) => !this.selectedFiles.includes(f.id));
           this.selectedFiles = [];
           this.showNotification('Files deleted successfully', 'success');
         }
@@ -640,7 +688,7 @@ document.addEventListener('alpine:init', () => {
             cancelButton: 'btn btn-secondary',
             popup: 'bg-body text-body rounded-4 shadow-lg border-0',
             title: 'text-body-emphasis fs-4 fw-bold mt-2',
-            htmlContainer: 'text-body'
+            htmlContainer: 'text-body',
           },
           buttonsStyling: false,
           background: 'transparent',
@@ -651,37 +699,43 @@ document.addEventListener('alpine:init', () => {
               return false;
             }
             return Array.from(fileInput.files);
-          }
+          },
         }).then((result) => {
           if (result.isConfirmed) {
             const files = result.value;
             this.showNotification(`☁️ Uploading ${files.length} files...`, 'info');
-            
-            Promise.all(files.map(file => {
+
+            Promise.all(
+              files.map((file) => {
                 const formData = new FormData();
                 formData.append('file', file);
                 return fetch('/api/files/upload', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                        'Accept': 'application/json'
-                    },
-                    body: formData
-                }).then(async response => {
-                    if (!response.ok) {
-                        const err = await response.json().catch(() => ({ message: 'Upload failed' }));
-                        throw new Error(err.message || 'Upload failed');
-                    }
-                    return response.json();
+                  method: 'POST',
+                  credentials: 'same-origin',
+                  headers: {
+                    'X-CSRF-TOKEN': document
+                      .querySelector('meta[name="csrf-token"]')
+                      ?.getAttribute('content'),
+                    Accept: 'application/json',
+                  },
+                  body: formData,
+                }).then(async (response) => {
+                  if (!response.ok) {
+                    const err = await response.json().catch(() => ({ message: 'Upload failed' }));
+                    throw new Error(err.message || 'Upload failed');
+                  }
+                  return response.json();
                 });
-            })).then(() => {
+              })
+            )
+              .then(() => {
                 this.showNotification(`✅ ${files.length} files uploaded successfully!`, 'success');
                 this.loadFiles();
-            }).catch(error => {
+              })
+              .catch((error) => {
                 console.error('Upload failed', error);
                 this.showNotification(error.message || 'Upload failed', 'error');
-            });
+              });
           }
         });
       } else {
@@ -704,7 +758,7 @@ document.addEventListener('alpine:init', () => {
             popup: 'bg-body text-body rounded-4 shadow-lg border-0',
             title: 'text-body-emphasis fs-4 fw-bold mt-2',
             input: 'form-control bg-body text-body border-secondary border-opacity-25',
-            htmlContainer: 'text-body-secondary'
+            htmlContainer: 'text-body-secondary',
           },
           buttonsStyling: false,
           background: 'transparent',
@@ -712,17 +766,17 @@ document.addEventListener('alpine:init', () => {
             if (!value || value.trim() === '') {
               return 'Please enter a folder name';
             }
-            if (this.folders.some(f => f.name.toLowerCase() === value.toLowerCase())) {
+            if (this.folders.some((f) => f.name.toLowerCase() === value.toLowerCase())) {
               return 'A folder with this name already exists';
             }
-          }
+          },
         }).then((result) => {
           if (result.isConfirmed && result.value) {
             const newFolder = {
               id: this.folders.length + 1,
               name: result.value.trim(),
               fileCount: 0,
-              icon: 'bi-folder-fill'
+              icon: 'bi-folder-fill',
             };
             this.folders.push(newFolder);
             this.showNotification(`📁 Folder "${newFolder.name}" created successfully`, 'success');
@@ -735,7 +789,7 @@ document.addEventListener('alpine:init', () => {
             id: this.folders.length + 1,
             name: folderName,
             fileCount: 0,
-            icon: 'bi-folder-fill'
+            icon: 'bi-folder-fill',
           };
           this.folders.push(newFolder);
           this.showNotification(`Folder "${folderName}" created successfully`, 'success');
@@ -757,7 +811,14 @@ document.addEventListener('alpine:init', () => {
       if (typeof Swal !== 'undefined') {
         Swal.fire({
           title: message,
-          icon: type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info',
+          icon:
+            type === 'success'
+              ? 'success'
+              : type === 'error'
+                ? 'error'
+                : type === 'warning'
+                  ? 'warning'
+                  : 'info',
           toast: true,
           position: 'top-end',
           showConfirmButton: false,
@@ -765,27 +826,30 @@ document.addEventListener('alpine:init', () => {
           background: 'transparent',
           customClass: {
             popup: 'colored-toast bg-body text-body shadow-lg rounded-3 border-0',
-            title: 'text-body-emphasis'
-          }
+            title: 'text-body-emphasis',
+          },
         });
       } else {
         alert(message);
       }
-    }
+    },
   }));
 
   // Search component for header
-  Alpine.data('searchComponent', createSearchComponent({
-    minLength: 3,
-    getResults(query) {
-      const q = query.toLowerCase();
-      return [
-        { title: 'Calendar Events', url: '/calendar', type: 'Page' },
-        { title: 'File Manager', url: '/files', type: 'Page' },
-        { title: 'User Settings', url: '/settings', type: 'Page' },
-      ].filter((item) => item.title.toLowerCase().includes(q));
-    },
-  }));
+  Alpine.data(
+    'searchComponent',
+    createSearchComponent({
+      minLength: 3,
+      getResults(query) {
+        const q = query.toLowerCase();
+        return [
+          { title: 'Calendar Events', url: '/calendar', type: 'Page' },
+          { title: 'File Manager', url: '/files', type: 'Page' },
+          { title: 'User Settings', url: '/settings', type: 'Page' },
+        ].filter((item) => item.title.toLowerCase().includes(q));
+      },
+    })
+  );
 
   // Theme switch component
   Alpine.data('themeSwitch', () => ({
@@ -800,6 +864,6 @@ document.addEventListener('alpine:init', () => {
       this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
       localStorage.setItem('theme', this.currentTheme);
-    }
+    },
   }));
 });

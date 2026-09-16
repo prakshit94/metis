@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('status')->default('active')->index();
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->unique(['targetable_type', 'targetable_id', 'metric_type', 'period_type', 'start_date'], 'targets_unique_composite');
         });
     }

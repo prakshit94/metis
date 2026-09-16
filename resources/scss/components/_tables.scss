@@ -62,18 +62,23 @@
 
 // Bulk Actions Bar
 .bulk-actions-bar {
-  background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.1), rgba(var(--bs-info-rgb), 0.1));
+  background: linear-gradient(
+    135deg,
+    rgba(var(--bs-primary-rgb), 0.1),
+    rgba(var(--bs-info-rgb), 0.1)
+  );
   border-bottom: 1px solid rgba(var(--bs-primary-rgb), 0.2) !important;
   animation: slideDown 0.3s ease-out;
 }
 
 // Search and Filter Controls
 .table-controls {
-
   .form-control,
   .form-select {
     border: 1px solid var(--bs-border-color);
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    transition:
+      border-color 0.15s ease-in-out,
+      box-shadow 0.15s ease-in-out;
 
     &:focus {
       border-color: var(--bs-primary);
@@ -263,7 +268,7 @@
 }
 
 // Dark Theme Adjustments
-[data-bs-theme="dark"] {
+[data-bs-theme='dark'] {
   .table {
     --bs-table-hover-bg: rgba(var(--bs-primary-rgb), 0.1);
 
@@ -283,7 +288,11 @@
   }
 
   .bulk-actions-bar {
-    background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.15), rgba(var(--bs-info-rgb), 0.15));
+    background: linear-gradient(
+      135deg,
+      rgba(var(--bs-primary-rgb), 0.15),
+      rgba(var(--bs-info-rgb), 0.15)
+    );
     background-color: var(--bs-dark);
   }
 
