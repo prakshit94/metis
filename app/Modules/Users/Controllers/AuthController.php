@@ -267,6 +267,11 @@ class AuthController extends Controller
             $request->session()->put('team_id', $teamId);
         }
 
+        $intendedUrl = $request->session()->get('url.intended');
+        if ($intendedUrl && (str_contains($intendedUrl, '/api/') || str_contains($intendedUrl, '/broadcasting/'))) {
+            $request->session()->forget('url.intended');
+        }
+        
         $response = redirect()->intended(route('dashboard'));
 
         if ($remember) {

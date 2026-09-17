@@ -86,6 +86,15 @@ class PaymentController extends Controller implements HasMiddleware
 
     public function show(Payment $payment)
     {
+        $user = auth()->user();
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
+            $relOrder = $payment->order;
+            if ($relOrder && $user->lob_state_name) {
+                if ($relOrder->shipping_state !== $user->lob_state_name && $relOrder->created_by !== $user->id) {
+                    abort(403, 'Unauthorized access to this payment.');
+                }
+            }
+        }
         $payment->load([
             'order.party',
             'invoice',

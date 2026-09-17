@@ -26,6 +26,15 @@ class InvoiceController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         $query = Invoice::with(['order.party', 'payments.recorder']);
+        $user = auth()->user();
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
+            if ($lobStateName = $user->lob_state_name) {
+                $query->whereHas('order', function ($q) use ($lobStateName, $user) {
+                    $q->where('shipping_state', $lobStateName)
+                      ->orWhere('created_by', $user->id);
+                });
+            }
+        }
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -94,6 +103,15 @@ class InvoiceController extends Controller implements HasMiddleware
 
     public function show(Invoice $invoice)
     {
+        $user = auth()->user();
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
+            $relOrder = $invoice->order;
+            if ($relOrder && $user->lob_state_name) {
+                if ($relOrder->shipping_state !== $user->lob_state_name && $relOrder->created_by !== $user->id) {
+                    abort(403, 'Unauthorized access to this invoice.');
+                }
+            }
+        }
         $invoice->load([
             'order.party',
             'payments' => fn ($query) => $query->with(['recorder', 'reverter'])->orderByDesc('payment_date')->orderByDesc('id'),

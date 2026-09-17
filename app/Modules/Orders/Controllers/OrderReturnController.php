@@ -30,6 +30,15 @@ class OrderReturnController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         $query = OrderReturn::with(['order.party', 'order.payments', 'order.shipments', 'items.product', 'refunds', 'creditNote']);
+        $user = auth()->user();
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
+            if ($lobStateName = $user->lob_state_name) {
+                $query->whereHas('order', function ($q) use ($lobStateName, $user) {
+                    $q->where('shipping_state', $lobStateName)
+                      ->orWhere('created_by', $user->id);
+                });
+            }
+        }
 
         $user = auth()->user();
         $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));

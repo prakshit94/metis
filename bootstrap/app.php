@@ -26,9 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             TeamContextMiddleware::class,
+            \App\Http\Middleware\PreventBackHistory::class,
         ]);
         $middleware->api(append: [
             TeamContextMiddleware::class,
+            \App\Http\Middleware\PreventBackHistory::class,
         ]);
 
         if (env('APP_ENV') === 'testing' || (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'testing')) {

@@ -33,6 +33,15 @@ class OrderComplaintController extends Controller implements HasMiddleware
         if ($request->wantsJson() || $request->ajax() || $request->is('api/*')) {
             try {
                 $query = OrderComplaint::with(['order', 'customer', 'assignee', 'creator', 'statusLogs.user', 'replies.user', 'audits.user', 'audits.auditable']);
+        $user = auth()->user();
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
+            if ($lobStateName = $user->lob_state_name) {
+                $query->whereHas('order', function ($q) use ($lobStateName, $user) {
+                    $q->where('shipping_state', $lobStateName)
+                      ->orWhere('created_by', $user->id);
+                });
+            }
+        }
 
                 // Visibility Logic
                 if (! auth()->user()->hasPermissionTo('complaints.view-all')) {
@@ -487,6 +496,15 @@ class OrderComplaintController extends Controller implements HasMiddleware
     public function bulkExport(Request $request)
     {
         $query = OrderComplaint::with(['order', 'customer', 'assignee']);
+        $user = auth()->user();
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('view-all-data')) {
+            if ($lobStateName = $user->lob_state_name) {
+                $query->whereHas('order', function ($q) use ($lobStateName, $user) {
+                    $q->where('shipping_state', $lobStateName)
+                      ->orWhere('created_by', $user->id);
+                });
+            }
+        }
 
         if (! auth()->user()->hasPermissionTo('complaints.view-all')) {
             $query->where('assigned_to', auth()->id());

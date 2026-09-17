@@ -371,6 +371,11 @@ class CustomerController extends Controller implements HasMiddleware
                 },
             ])
             ->findOrFail($customer);
+        $user = $request->user();
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
+        if (!$isGlobalView && $customer->created_by !== $user->id) {
+            abort(403, 'Unauthorized access to this customer.');
+        }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -402,6 +407,11 @@ class CustomerController extends Controller implements HasMiddleware
      */
     public function update(Request $request, Customer $customer): JsonResponse
     {
+        $user = $request->user();
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
+        if (!$isGlobalView && $customer->created_by !== $user->id) {
+            abort(403, 'Unauthorized access to this customer.');
+        }
         if ($request->filled('phone')) {
             $phone = preg_replace('/\D/', '', (string) $request->input('phone'));
             if (strlen($phone) > 10) {
@@ -485,6 +495,11 @@ class CustomerController extends Controller implements HasMiddleware
     public function destroy(Request $request, int|string $customer): JsonResponse
     {
         $customer = Customer::withTrashed()->findOrFail($customer);
+        $user = $request->user();
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
+        if (!$isGlobalView && $customer->created_by !== $user->id) {
+            abort(403, 'Unauthorized access to this customer.');
+        }
 
         if ($customer->trashed()) {
             return response()->json([
@@ -506,6 +521,11 @@ class CustomerController extends Controller implements HasMiddleware
     public function restore(Request $request, int|string $customer): JsonResponse
     {
         $customer = Customer::withTrashed()->findOrFail($customer);
+        $user = $request->user();
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
+        if (!$isGlobalView && $customer->created_by !== $user->id) {
+            abort(403, 'Unauthorized access to this customer.');
+        }
 
         if (! $customer->trashed()) {
             return response()->json([
@@ -529,6 +549,11 @@ class CustomerController extends Controller implements HasMiddleware
     {
         abort_unless($request->user()?->can('customer-permanent-delete'), 403);
         $customer = Customer::withTrashed()->findOrFail($customer);
+        $user = $request->user();
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
+        if (!$isGlobalView && $customer->created_by !== $user->id) {
+            abort(403, 'Unauthorized access to this customer.');
+        }
 
         $name = $customer->name;
         $customer->forceDelete();

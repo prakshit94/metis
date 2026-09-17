@@ -96,7 +96,7 @@ class FileManagerController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|max:10240', // 10MB max
+            'file' => 'required|file|mimes:jpeg,png,jpg,gif,svg,webp,pdf,csv,xlsx,xls,doc,docx,txt,zip|max:10240', // 10MB max
         ]);
 
         $file = $request->file('file');
