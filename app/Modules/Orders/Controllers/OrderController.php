@@ -1671,7 +1671,7 @@ class OrderController extends Controller implements HasMiddleware
         $hasHeader = in_array('order_no', $normalized, true) || in_array('order_id', $normalized, true);
 
         $updated = 0;
-        $skipped = 0;
+        $skipped = [];
         $previewData = [];
 
         $extractByHeader = function (array $row, array $header, array $keys): ?string {
@@ -1722,7 +1722,7 @@ class OrderController extends Controller implements HasMiddleware
                 }
 
                 if (! $order || $order->status !== 'processing') {
-                    $skipped++;
+                    $skipped[] = $orderNo;
 
                     continue;
                 }
@@ -1752,8 +1752,9 @@ class OrderController extends Controller implements HasMiddleware
         fclose($handle);
 
         $message = "Orders import completed. Updated {$updated} order(s).";
-        if ($skipped > 0) {
-            $message .= " Skipped {$skipped} invalid/non-processing row(s).";
+        if (count($skipped) > 0) {
+            $skippedCount = count($skipped);
+            $message .= "\n\nSkipped {$skippedCount} invalid/non-processing order(s):\n- " . implode("\n- ", $skipped);
         }
 
         if ($request->wantsJson() || $request->ajax()) {
@@ -2171,10 +2172,17 @@ class OrderController extends Controller implements HasMiddleware
         }
         
         try {
-            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\OrdersImport, $request->file('file'));
-            return response()->json(['message' => 'Orders imported successfully!']);
+            $import = new \App\Imports\OrdersImport;
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+            $msg = "Orders imported successfully! ({$import->importedCount} orders added).";
+            if (!empty($import->duplicates)) {
+                $msg .= "\n\nThe following duplicate order numbers were skipped:\n- " . implode("\n- ", $import->duplicates);
+            }
+
+            return response()->json(['message' => $msg]);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 400);
+            return response()->json(['error' => 'Import Failed: ' . $e->getMessage()], 400);
         }
     }
 

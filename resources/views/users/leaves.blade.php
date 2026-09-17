@@ -789,7 +789,12 @@
                 
                 this.isLoadingBalances = true;
                 try {
-                    const res = await fetch(`/api/leave-balances?user_id=${userId}&is_active=1&per_page=100`);
+                    const res = await fetch(`/api/leave-balances?user_id=${userId}&is_active=1&per_page=100`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
                     if (res.ok) {
                         const json = await res.json();
                         this.userBalances = json.data || [];
@@ -805,7 +810,12 @@
             
             async loadUsers() {
                 try {
-                    const res = await fetch('/api/users?per_page=100');
+                    const res = await fetch('/api/users?per_page=100', {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
                     if (res.ok) {
                         const json = await res.json();
                         this.users = json.data || json;
@@ -870,7 +880,12 @@
             
             async loadUsers() {
                 try {
-                    const res = await fetch('/api/users?per_page=100');
+                    const res = await fetch('/api/users?per_page=100', {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
                     if (res.ok) {
                         const json = await res.json();
                         this.users = json.data || json;

@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\DB;
 
 class OrdersImport implements ToCollection, WithHeadingRow
 {
+    public $duplicates = [];
+    public $importedCount = 0;
+
     public function collection(Collection $rows): void
     {
         // Allow using either the new 'Order No' header or the old 'order_reference' header.
@@ -33,6 +36,11 @@ class OrdersImport implements ToCollection, WithHeadingRow
         try {
             foreach ($grouped as $ref => $orderRows) {
                 if (empty($ref) || trim($ref) === '-') continue;
+                
+                if (Order::where('order_no', $ref)->exists()) {
+                    $this->duplicates[] = $ref;
+                    continue;
+                }
                 
                 $firstRow = $orderRows->first();
                 
@@ -176,6 +184,9 @@ class OrdersImport implements ToCollection, WithHeadingRow
                     $warehouse = Warehouse::where('state', $village->state_name)->first() ?? Warehouse::first();
                 }
 
+                $orderType = trim((string)($firstRow['order_type'] ?? ''));
+                if ($orderType === '' || $orderType === '-') $orderType = 'sale';
+
                 // 3. Collect Items
                 $items = [];
                 foreach ($orderRows as $row) {
@@ -191,16 +202,34 @@ class OrdersImport implements ToCollection, WithHeadingRow
                     $qty = ($rawQty === '' || $rawQty === '-') ? 1 : (float)$rawQty;
 
                     $rawPrice = trim((string)($row['unit_price'] ?? ''));
-                    $price = ($rawPrice === '' || $rawPrice === '-') ? (float)$product->sale_price : (float)$rawPrice;
+                    $price = ($rawPrice === '' || $rawPrice === '-') 
+                        ? ($orderType === 'purchase' ? (float)$product->purchase_price : (float)$product->selling_price) 
+                        : (float)$rawPrice;
                     
-                    $rawTax = trim((string)($row['item_tax_rate'] ?? ''));
-                    $taxRate = ($rawTax === '' || $rawTax === '-') ? ($product->tax_rate ?? 0) : (float)$rawTax;
+                    $rawTaxRate = trim((string)($row['item_tax_rate'] ?? ''));
+                    $taxRate = ($rawTaxRate === '' || $rawTaxRate === '-') ? ($product->tax_rate ?? 0) : (float)$rawTaxRate;
+
+                    $rawItemTax = trim((string)($row['item_tax'] ?? ''));
+                    $itemTax = ($rawItemTax === '' || $rawItemTax === '-') ? ($qty * $price * $taxRate / 100) : (float)$rawItemTax;
+
+                    $rawItemDiscount = trim((string)($row['item_discount'] ?? ''));
+                    $itemDiscount = ($rawItemDiscount === '' || $rawItemDiscount === '-') ? 0 : (float)$rawItemDiscount;
+
+                    $rawItemNet = trim((string)($row['item_net'] ?? ''));
+                    $itemNet = ($rawItemNet === '' || $rawItemNet === '-') ? (($qty * $price) - $itemDiscount) : (float)$rawItemNet;
+
+                    $rawBatch = trim((string)($row['batch_number'] ?? ''));
+                    $batchNumber = ($rawBatch === '' || $rawBatch === '-') ? null : $rawBatch;
 
                     $items[] = [
                         'product_id' => $product->id,
+                        'batch_number' => $batchNumber,
                         'quantity' => $qty,
                         'unit_price' => $price,
                         'tax_rate' => $taxRate,
+                        'tax_amount' => $itemTax,
+                        'discount_amount' => $itemDiscount,
+                        'total_amount' => $itemNet,
                     ];
                 }
 
@@ -215,9 +244,6 @@ class OrdersImport implements ToCollection, WithHeadingRow
                 $status = trim((string)($firstRow['status'] ?? ''));
                 if ($status === '' || $status === '-') $status = 'pending';
 
-                $orderType = trim((string)($firstRow['order_type'] ?? ''));
-                if ($orderType === '' || $orderType === '-') $orderType = 'sale';
-
                 $couponCode = trim((string)($firstRow['coupon_code'] ?? ''));
                 if ($couponCode === '-') $couponCode = null;
 
@@ -227,8 +253,16 @@ class OrdersImport implements ToCollection, WithHeadingRow
                 $carrierName = trim((string)($firstRow['carrier_name'] ?? ''));
                 if ($carrierName === '-') $carrierName = null;
 
+                $orderSubtotal = trim((string)($firstRow['order_subtotal'] ?? ''));
+                $orderTax = trim((string)($firstRow['order_tax'] ?? ''));
+                $orderDiscount = trim((string)($firstRow['order_discount'] ?? ''));
+                $orderTotal = trim((string)($firstRow['order_total'] ?? ''));
+                $walletUsed = trim((string)($firstRow['wallet_used'] ?? ''));
+                $cashbackEarned = trim((string)($firstRow['cashback_earned'] ?? ''));
+
                 // 4. Validate & Create Payload
                 $payload = [
+                    'order_no' => $ref,
                     'type' => $orderType,
                     'party_id' => $customer->id,
                     'warehouse_id' => $warehouse->id,
@@ -240,19 +274,29 @@ class OrdersImport implements ToCollection, WithHeadingRow
                     'coupon_code' => $couponCode,
                     'tracking_no' => $trackingNo,
                     'carrier_name' => $carrierName,
+                    'wallet_amount_used' => ($walletUsed !== '' && $walletUsed !== '-') ? (float)$walletUsed : 0,
+                    'cashback_earned' => ($cashbackEarned !== '' && $cashbackEarned !== '-') ? (float)$cashbackEarned : 0,
                 ];
 
-                $calc = $orderService->recalculateAndValidate($payload);
-                $payload['items'] = $calc['items'];
-                $payload['total_amount'] = $calc['subtotal'];
-                $payload['tax_amount'] = $calc['tax_amount'];
-                $payload['discount_amount'] = $calc['total_discount'];
-                $payload['net_amount'] = $calc['grand_total'];
-                $payload['coupon_code'] = $calc['coupon_code'] ?? null;
-                $payload['applied_offer_id'] = $calc['applied_offer_id'] ?? null;
-                $payload['applied_bogo_ids'] = $calc['applied_bogo_ids'] ?? [];
+                if ($orderTotal !== '' && $orderTotal !== '-') {
+                    $payload['total_amount'] = (float)$orderSubtotal;
+                    $payload['tax_amount'] = (float)$orderTax;
+                    $payload['discount_amount'] = (float)$orderDiscount;
+                    $payload['net_amount'] = (float)$orderTotal;
+                } else {
+                    $calc = $orderService->recalculateAndValidate($payload);
+                    $payload['items'] = $calc['items'];
+                    $payload['total_amount'] = $calc['subtotal'];
+                    $payload['tax_amount'] = $calc['tax_amount'];
+                    $payload['discount_amount'] = $calc['total_discount'];
+                    $payload['net_amount'] = $calc['grand_total'];
+                    $payload['coupon_code'] = $calc['coupon_code'] ?? null;
+                    $payload['applied_offer_id'] = $calc['applied_offer_id'] ?? null;
+                    $payload['applied_bogo_ids'] = $calc['applied_bogo_ids'] ?? [];
+                }
 
                 $orderService->createOrder($payload);
+                $this->importedCount++;
             }
             DB::commit();
         } catch (\Exception $e) {

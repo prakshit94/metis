@@ -124,11 +124,11 @@
                     <!-- Hover Effect -->
                     <div class="position-absolute top-0 start-0 w-100 h-100 bg-body opacity-0 transition-all group-hover-opacity-25"></div>
 
-                    <span x-show="!isSubmitting" class="d-flex align-items-center justify-content-center gap-2 position-relative z-1">
+                    <span x-show.important="!isSubmitting" class="d-flex align-items-center justify-content-center gap-2 position-relative z-1">
                         Sign In to Account
                         <i class="bi bi-arrow-right fw-bold fs-5 ms-1 transition-all group-hover-translate-x"></i>
                     </span>
-                    <span x-show="isSubmitting" style="display: none;" class="d-flex align-items-center justify-content-center gap-2 position-relative z-1">
+                    <span x-show.important="isSubmitting" style="display: none;" class="d-flex align-items-center justify-content-center gap-2 position-relative z-1">
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                         Authenticating…
                     </span>

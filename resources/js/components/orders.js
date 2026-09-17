@@ -26,8 +26,8 @@ async function apiFetch(url, options = {}) {
   const data = text ? JSON.parse(text) : {};
 
   if (!res.ok) {
-    const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
-    const message = validation || data?.message || data?.error || 'Request failed';
+    const validation = data?.errors ? Object.values(data.errors).flat().join('\n') : '';
+    let message = validation || data?.error || data?.message || 'Request failed';
     if (
       res.status === 403 ||
       message.toLowerCase().includes('authoriz') ||
@@ -69,17 +69,32 @@ function showToast(message, type = 'success') {
   el.id = id;
   el.className = `toast align-items-center text-bg-${type} border-0 show mb-2`;
   el.setAttribute('role', 'alert');
+  // allow wider toasts for detailed logs
+  el.style.width = 'auto';
+  el.style.maxWidth = '600px';
+
+  let displayMessage = message;
+  if (typeof message === 'object') {
+    if (message.message) {
+      displayMessage = message.message;
+    } else if (message.error) {
+      displayMessage = message.error;
+    } else {
+      try { displayMessage = JSON.stringify(message, null, 2); } catch (e) {}
+    }
+  }
+
   el.innerHTML = `
     <div class="d-flex">
       <div class="toast-body">
-        <i class="bi ${iconMap[type] ?? 'bi-info-circle-fill'} me-2"></i><span></span>
+        <i class="bi ${iconMap[type] ?? 'bi-info-circle-fill'} me-2"></i><span style="white-space: pre-wrap; word-break: break-all;"></span>
       </div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
     </div>`;
-  el.querySelector('.toast-body span').textContent = message;
+  el.querySelector('.toast-body span').textContent = displayMessage;
 
   container.appendChild(el);
-  setTimeout(() => el.remove(), 4000);
+  setTimeout(() => el.remove(), 10000);
 }
 
 document.addEventListener('alpine:init', () => {
@@ -1274,7 +1289,7 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify(payload),
         });
 
-        showToast(res.message || 'Order updated successfully.');
+        showToast(res || 'Order updated successfully.');
         const modal = getModal('#confirmOrderModal');
         if (modal) modal.hide();
         this.loadOrders();
@@ -1305,7 +1320,7 @@ document.addEventListener('alpine:init', () => {
 
       try {
         const res = await apiFetch(`/orders/${order.id}/processing`, { method: 'POST' });
-        showToast(res.message || 'Order moved to processing.');
+        showToast(res || 'Order moved to processing.');
         this.loadOrders();
       } catch (err) {
         showToast(err.message, 'danger');
@@ -1413,7 +1428,7 @@ document.addEventListener('alpine:init', () => {
               : {}),
           }),
         });
-        showToast(res.message || 'Shipping details updated.');
+        showToast(res || 'Shipping details updated.');
 
         // Reload details in modal
         const details = await apiFetch(`/orders/${order.id}`);
@@ -1477,7 +1492,7 @@ document.addEventListener('alpine:init', () => {
             tracking_no: this.shipTrackingNo,
           }),
         });
-        showToast(res.message || 'Order marked as ready to ship.');
+        showToast(res || 'Order marked as ready to ship.');
         getModal('#createShipmentModal')?.hide();
         this.loadOrders();
       } catch (err) {
@@ -1507,7 +1522,7 @@ document.addEventListener('alpine:init', () => {
 
       try {
         const res = await apiFetch(`/orders/${order.id}/dispatch`, { method: 'POST' });
-        showToast(res.message || 'Order marked as dispatched.');
+        showToast(res || 'Order marked as dispatched.');
         this.loadOrders();
       } catch (err) {
         showToast(err.message, 'danger');
@@ -1554,7 +1569,7 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify(payload),
         });
 
-        showToast(res.message || 'Order updated successfully.');
+        showToast(res || 'Order updated successfully.');
         const modal = getModal('#deliverOrderModal');
         if (modal) modal.hide();
         this.loadOrders();
@@ -1601,7 +1616,7 @@ document.addEventListener('alpine:init', () => {
             items: itemsToReturn,
           }),
         });
-        showToast(res.message || 'Return request initiated.');
+        showToast(res || 'Return request initiated.');
         getModal('#initiateReturnModal')?.hide();
         this.loadOrders();
       } catch (err) {
@@ -1634,7 +1649,7 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify(payload),
         });
 
-        showToast(res.message || 'Order cancelled successfully.');
+        showToast(res || 'Order cancelled successfully.');
         getModal('#cancelOrderModal')?.hide();
         this.loadOrders();
       } catch (err) {
@@ -1717,7 +1732,7 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           body: JSON.stringify({ status }),
         });
-        showToast(res.message || 'Order status reverted.');
+        showToast(res || 'Order status reverted.');
         this.loadOrders();
       } catch (err) {
         showToast(err.message, 'danger');
@@ -1754,7 +1769,7 @@ document.addEventListener('alpine:init', () => {
     async generateAndPrintInvoice(order) {
       try {
         const res = await apiFetch(`/orders/${order.id}/generate-invoice`, { method: 'POST' });
-        showToast(res.message || 'Invoice generated successfully.');
+        showToast(res || 'Invoice generated successfully.');
 
         // Open/Print the PDF invoice in a new tab
         this.printInvoice(order);
@@ -1869,7 +1884,7 @@ document.addEventListener('alpine:init', () => {
               : {}),
           }),
         });
-        showToast(res.message || 'Bulk status update completed.');
+        showToast(res || 'Bulk status update completed.');
         this.selectedOrders = [];
         this.loadOrders();
       } catch (err) {
@@ -1956,7 +1971,7 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           body: JSON.stringify({ order_ids: this.selectedOrders }),
         });
-        showToast(res.message || 'Bulk invoices generated successfully.');
+        showToast(res || 'Bulk invoices generated successfully.');
         this.selectedOrders = [];
         this.loadOrders();
       } catch (err) {
@@ -1999,9 +2014,15 @@ document.addEventListener('alpine:init', () => {
         });
 
         if (!res.ok) {
-          const text = await res.text();
-          const errData = text ? JSON.parse(text) : {};
-          throw new Error(errData.message || 'Export failed');
+          let errData = {};
+          try {
+            const text = await res.text();
+            errData = text ? JSON.parse(text) : {};
+          } catch (e) {}
+          let errStr = 'Export failed';
+          if (errData && errData.message) errStr = errData.message;
+          else if (errData && errData.error) errStr = errData.error;
+          throw new Error(errStr);
         }
 
         const blob = await res.blob();
@@ -2050,11 +2071,11 @@ document.addEventListener('alpine:init', () => {
           this.importNewTruncated = data.truncated || false;
           getModal('#importNewPreviewModal')?.show();
         } else if (!res.ok) {
-          showToast(data.error || 'Failed to parse CSV.', 'danger');
+          showToast(data || 'Failed to parse CSV.', 'danger');
           event.target.value = '';
         }
       } catch (err) {
-        showToast('Error uploading orders CSV preview.', 'danger');
+        showToast(err.message || 'Error uploading orders CSV preview.', 'danger');
         event.target.value = '';
       } finally {
         this.importing = false;
@@ -2081,14 +2102,14 @@ document.addEventListener('alpine:init', () => {
 
         const data = await res.json();
         if (res.ok) {
-          showToast(data.message || 'Orders imported successfully.', 'success');
+          showToast(data || 'Orders imported successfully.', 'success');
           this.cancelImportNew();
           this.loadOrders();
         } else {
-          showToast(data.error || 'Failed to import orders.', 'danger');
+          showToast(data || 'Failed to import orders.', 'danger');
         }
       } catch (err) {
-        showToast('Error finalizing import.', 'danger');
+        showToast(err.message || 'Error finalizing import.', 'danger');
       } finally {
         this.importing = false;
       }
@@ -2124,11 +2145,11 @@ document.addEventListener('alpine:init', () => {
         if (data.preview) {
           this.importRows = data.preview;
           getModal('#importPreviewModal')?.show();
-        } else if (data.error) {
-          showToast(data.error, 'danger');
+        } else if (data.error || !res.ok) {
+          showToast(data || 'Error occurred.', 'danger');
         }
       } catch (err) {
-        showToast('Error uploading CSV preview.', 'danger');
+        showToast(err.message || 'Error uploading CSV preview.', 'danger');
       } finally {
         this.importing = false;
       }
@@ -2153,15 +2174,15 @@ document.addEventListener('alpine:init', () => {
         });
 
         const data = await res.json();
-        if (data.error) {
-          showToast(data.error, 'danger');
+        if (data.error || !res.ok) {
+          showToast(data || 'Error occurred.', 'danger');
         } else {
-          showToast(data.message || 'Import successful.', 'success');
+          showToast(data || 'Import successful.', 'success');
           this.cancelImport();
           this.loadOrders();
         }
       } catch (err) {
-        showToast('Error finalizing import.', 'danger');
+        showToast(err.message || 'Error finalizing import.', 'danger');
       } finally {
         this.importing = false;
       }

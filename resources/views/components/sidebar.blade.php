@@ -71,7 +71,12 @@
                         }, 
                         async fetchUnread() { 
                             try { 
-                                const res = await fetch('/api/chat/unread-count'); 
+                                const res = await fetch('/api/chat/unread-count', {
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                }); 
                                 if (res.ok) {
                                     const data = await res.json(); 
                                     this.unread = data.unread || 0; 

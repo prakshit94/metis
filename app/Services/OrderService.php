@@ -91,17 +91,20 @@ class OrderService
     public function createOrder(array $data): Order
     {
         return DB::transaction(function () use ($data) {
-            // Generate order number: {daily_seq}-{MMDDYYYY}-{HHMM}
-            $today = now();
-            $datePart = $today->format('dmY');   // DDMMYYYY
-            $todayStart = $today->copy()->startOfDay();
-            $todayEnd = $today->copy()->endOfDay();
-            // Atomic sequence: lock the last inserted row so concurrent requests get distinct counts
-            $dailyCount = Order::whereBetween('created_at', [$todayStart, $todayEnd])
-                ->lockForUpdate()
-                ->count() + 1;
-            $seq = str_pad((string) $dailyCount, 2, '0', STR_PAD_LEFT);
-            $orderNo = "ORD-{$datePart}-{$seq}";
+            $orderNo = $data['order_no'] ?? null;
+            if (!$orderNo) {
+                // Generate order number: {daily_seq}-{MMDDYYYY}-{HHMM}
+                $today = now();
+                $datePart = $today->format('dmY');   // DDMMYYYY
+                $todayStart = $today->copy()->startOfDay();
+                $todayEnd = $today->copy()->endOfDay();
+                // Atomic sequence: lock the last inserted row so concurrent requests get distinct counts
+                $dailyCount = Order::whereBetween('created_at', [$todayStart, $todayEnd])
+                    ->lockForUpdate()
+                    ->count() + 1;
+                $seq = str_pad((string) $dailyCount, 2, '0', STR_PAD_LEFT);
+                $orderNo = "ORD-{$datePart}-{$seq}";
+            }
 
             $shippingAddressFields = [];
             if (! empty($data['shipping_address_id'])) {
@@ -126,6 +129,8 @@ class OrderService
                 'net_amount' => $data['net_amount'] ?? 0,
                 'status' => $data['status'] ?? 'pending',
                 'future_order_date' => $data['future_order_date'] ?? null,
+                'wallet_amount_used' => $data['wallet_amount_used'] ?? 0,
+                'cashback_earned' => $data['cashback_earned'] ?? 0,
                 'created_by' => auth()->id(),
                 'updated_by' => auth()->id(),
             ], $shippingAddressFields, $billingAddressFields);
@@ -136,6 +141,7 @@ class OrderService
                 $order->items()->create([
                     'product_id' => $item['product_id'],
                     'product_variant_id' => $item['product_variant_id'] ?? null,
+                    'batch_number' => $item['batch_number'] ?? null,
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
                     'tax_rate' => $item['tax_rate'] ?? 0,
