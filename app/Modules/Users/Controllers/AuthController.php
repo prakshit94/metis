@@ -97,13 +97,24 @@ class AuthController extends Controller
         // Validate credentials — use Hash::check to avoid timing side-channels
         $isValid = false;
         if ($user !== null) {
-            $isValid = Hash::check($request->validated('password'), $user->password);
+            try {
+                $isValid = Hash::check($request->validated('password'), $user->password);
+            } catch (\RuntimeException $e) {
+                // Ignore exception for legacy or invalid hashes in the DB
+                $isValid = false;
+            }
         } else {
             // Dummy hash to prevent timing-based user enumeration attacks
+            // Must be a valid 60-character bcrypt string or password_get_info will return 'unknown'
             $dummyHash = in_array(config('hashing.driver'), ['argon2id', 'argon2i'])
                 ? '$argon2id$v=19$m=65536,t=4,p=1$Z29uOU56Slc0SWRJbFAvYg$ILca1T1tS+yPIT6WNfrXcA6t0S0XqX9wngZa+PXrZj4'
-                : '$2y$12$R.vP3sZq1WJ/1q0kK8M9V.Qn6Qx.X.vP9Q..';
-            Hash::check($request->validated('password'), $dummyHash);
+                : '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
+            
+            try {
+                Hash::check($request->validated('password'), $dummyHash);
+            } catch (\RuntimeException $e) {
+                // Ignore exception if the dummy hash is still somehow considered invalid
+            }
         }
 
         if ($user === null || ! $isValid) {
