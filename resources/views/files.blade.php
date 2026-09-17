@@ -21,8 +21,8 @@
     {{-- Stats Cards --}}
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
+                <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-folder2-open"></i></div>
                         <div>
@@ -34,8 +34,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-info">
+                <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-info bg-opacity-10 text-info fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-image"></i></div>
                         <div>
@@ -47,8 +47,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
+                <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-hdd-fill"></i></div>
                         <div class="w-100">
@@ -63,8 +63,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success">
+                <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-success bg-opacity-10 text-success fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-hdd-network-fill"></i></div>
                         <div>
@@ -78,8 +78,8 @@
     </div>
 
     {{-- Data Table Card --}}
-    <div class="card">
-        <div class="card-header">
+    <div class="card mb-4">
+<div class="card-header">
             <div class="row align-items-center g-2">
                 <div class="col"><h2 class="h5 card-title mb-0">Files Overview</h2></div>
                 <div class="col-auto">

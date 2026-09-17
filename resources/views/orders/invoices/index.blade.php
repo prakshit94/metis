@@ -23,8 +23,8 @@
     <!-- Stats Cards -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 fs-3 rounded p-2">
                             <i class="bi bi-file-earmark-text"></i>
@@ -39,8 +39,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3 fs-3 rounded p-2">
                             <i class="bi bi-check2-square"></i>
@@ -55,8 +55,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3 fs-3 rounded p-2">
                             <i class="bi bi-clock-history"></i>
@@ -71,8 +71,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-info">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3 fs-3 rounded p-2">
                             <i class="bi bi-graph-up"></i>
@@ -89,14 +89,10 @@
     </div>
 
     <!-- Data Table Card -->
-    <div class="card">
-        <div class="card-header">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h2 class="h5 card-title mb-0">Invoice Directory</h2>
-                </div>
-                <div class="col-auto">
-                    <div class="d-flex flex-wrap gap-2 justify-content-end">
+    <div class="card mb-4">
+<div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <h2 class="h5 card-title mb-0">Invoice Directory</h2>
+            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
                         <div class="position-relative">
                             <input type="search" class="form-control form-control-sm" placeholder="Search Invoice #..." x-model="searchQuery" @input.debounce.300ms="filterInvoices()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>

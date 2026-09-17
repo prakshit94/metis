@@ -17,8 +17,8 @@
                     <!-- Contact Form -->
                     <div class="row g-4 mb-5">
                         <div class="col-lg-8">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">
                                         <i class="bi bi-envelope me-2 text-primary"></i>
                                         Contact Form with Real-time Validation
@@ -151,8 +151,8 @@
                     <!-- Registration Form -->
                     <div class="row g-4 mb-5">
                         <div class="col-lg-8">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">
                                         <i class="bi bi-person-plus me-2 text-success"></i>
                                         User Registration with Password Strength
@@ -289,8 +289,8 @@
                     <!-- File Upload Form -->
                     <div class="row g-4 mb-5">
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">
                                         <i class="bi bi-cloud-upload me-2 text-info"></i>
                                         Advanced File Upload with Progress
@@ -364,8 +364,8 @@
                     <!-- Enhanced Multi-step Form Wizard -->
                     <div class="row g-4">
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">
                                         <i class="bi bi-list-check me-2 text-warning"></i>
                                         Enhanced Multi-step Form Wizard

@@ -35,8 +35,8 @@
                         
                         <!-- Basic Modal -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Basic Modal</h2>
                                 </div>
                                 <div class="card-body">
@@ -79,8 +79,8 @@
 
                         <!-- Modal Sizes -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Modal Sizes</h2>
                                 </div>
                                 <div class="card-body">
@@ -120,8 +120,8 @@
 
                         <!-- Fullscreen Modal -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Fullscreen Modal</h2>
                                 </div>
                                 <div class="card-body">
@@ -153,8 +153,8 @@
 
                         <!-- Vertically Centered Modal -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Vertically Centered</h2>
                                 </div>
                                 <div class="card-body">
@@ -186,8 +186,8 @@
 
                         <!-- Modal with Form -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Modal with Form</h2>
                                 </div>
                                 <div class="card-body">
@@ -233,8 +233,8 @@
 
                         <!-- Static Backdrop Modal -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Static Backdrop</h2>
                                 </div>
                                 <div class="card-body">
@@ -277,8 +277,8 @@
 
                         <!-- Scrolling Long Content Modal -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Scrolling Long Content</h2>
                                 </div>
                                 <div class="card-body">
@@ -317,8 +317,8 @@
 
                         <!-- Optional Sizes Demo -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">All Modal Sizes Demo</h2>
                                 </div>
                                 <div class="card-body">

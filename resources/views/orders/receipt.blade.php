@@ -7,8 +7,8 @@
 <div class="container py-4 print-container">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <div class="card shadow border-0 rounded-4 overflow-hidden">
-                <!-- Header -->
+            <div class="card shadow overflow-hidden mb-4">
+<!-- Header -->
                 <div class="card-header bg-body-tertiary p-4 p-md-5 border-bottom-0">
                     <div class="row align-items-center g-4">
                         <div class="col-md-6">
@@ -123,7 +123,7 @@
                 </div>
 
                 <!-- Footer / Actions -->
-                <div class="card-footer bg-body-tertiary p-4 border-top border-light-subtle text-center">
+                <div class="card-footer bg-body-tertiary p-4 border-top text-center">
                     <p class="small text-muted mb-4">This is a computer generated document. No signature is required.</p>
                     <div class="d-flex align-items-center justify-content-center gap-2 print-hidden">
                         <button onclick="window.print()" class="btn btn-primary d-flex align-items-center gap-2 px-4">

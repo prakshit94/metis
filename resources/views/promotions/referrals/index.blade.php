@@ -37,8 +37,8 @@
     <!-- Stats Row -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 rounded-circle d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">
                             <i class="bi bi-diagram-3-fill fs-4"></i>
@@ -52,8 +52,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3 rounded-circle d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">
                             <i class="bi bi-check-circle-fill fs-4"></i>
@@ -67,8 +67,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-info">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3 rounded-circle d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">
                             <i class="bi bi-infinity fs-4"></i>
@@ -82,8 +82,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3 rounded-circle d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">
                             <i class="bi bi-hourglass-split fs-4"></i>
@@ -99,8 +99,8 @@
     </div>
 
     <!-- Table -->
-    <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-header border-bottom py-3">
+    <div class="card mb-4">
+<div class="card-header border-bottom py-3">
             <div class="row align-items-center">
                 <div class="col">
                     <h2 class="h5 card-title mb-0 fw-bold">Programs Directory</h2>
@@ -264,7 +264,7 @@
                             <div class="col-12">
                                 
                                 {{-- Card 1: Basic Information --}}
-                                <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-4 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
@@ -302,7 +302,7 @@
                                 </div>
 
                                 {{-- Card 2: Milestones & Rewards --}}
-                                <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-4 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center justify-content-between pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                             <div class="d-flex align-items-center gap-2">

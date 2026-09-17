@@ -37,8 +37,8 @@
     <!-- Customer Stats Widgets -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card shadow-sm rounded-4 stats-card h-100 border-start border-4 border-primary">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                             <i class="bi bi-people-fill"></i>
@@ -55,8 +55,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card shadow-sm rounded-4 stats-card h-100 border-start border-4 border-success">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                             <i class="bi bi-person-check-fill"></i>
@@ -73,8 +73,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card shadow-sm rounded-4 stats-card h-100 border-start border-4 border-warning">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
                             <i class="bi bi-shield-exclamation"></i>
@@ -91,8 +91,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card shadow-sm rounded-4 stats-card h-100 border-start border-4 border-info">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-info">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div id="activeCustomerChart" style="min-height: 40px; width: 50px;"></div>
                         <div class="ms-3">
@@ -112,8 +112,8 @@
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <!-- Customer Growth Chart -->
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card h-100 mb-4">
+<div class="card-header d-flex justify-content-between align-items-center">
                     <h2 class="h5 card-title mb-0">Customer Registration Trends</h2>
                     <div class="btn-group btn-group-sm" role="group" aria-label="Registration trend period">
                         <input type="radio" class="btn-check" name="growthPeriod" id="growth7d" autocomplete="off" value="7" x-model="growthPeriod" @change="setGrowthPeriod(7)">
@@ -124,7 +124,7 @@
                         <label class="btn btn-outline-secondary" for="growth90d">90D</label>
                     </div>
                 </div>
-                <div class="card-body p-3 p-lg-4">
+                <div class="card-body">
                     <div id="customerGrowthChart" style="width: 100%; overflow: hidden;"></div>
                 </div>
             </div>
@@ -132,11 +132,11 @@
 
         <!-- Category & Crop Distribution -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header">
+            <div class="card h-100 mb-4">
+<div class="card-header">
                     <h2 class="h5 card-title mb-0">Customer Profiling</h2>
                 </div>
-                <div class="card-body p-3 p-lg-4">
+                <div class="card-body">
                     <!-- Category Distribution -->
                     <div class="mb-4">
                         <h6 class="text-muted mb-3">By Category</h6>
@@ -165,14 +165,10 @@
     </div>
 
     <!-- Main Table Container -->
-    <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-header">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h2 class="h5 card-title mb-0">Customers Directory</h2>
-                </div>
-                <div class="col-auto">
-                    <div class="d-flex flex-wrap gap-2 justify-content-end">
+    <div class="card mb-4">
+<div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <h2 class="h5 card-title mb-0">Customers Directory</h2>
+            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
                         <!-- Search -->
                         <div class="position-relative">
                             <input type="search" 
@@ -491,7 +487,7 @@
                     <div class="row g-4 px-3 px-lg-4">
                         <!-- Left Panel: Customer Identity Card -->
                         <div class="col-lg-4">
-                            <div class="card border-0 bg-body-tertiary rounded-4 h-100">
+                            <div class="card bg-body-tertiary h-100">
                                 <div class="card-body p-4">
                                     <!-- Avatar & Name -->
                                     <div class="text-center mb-3">
@@ -843,7 +839,7 @@
                             <!-- Selected Village Details -->
                             <template x-if="addressForm.village_name">
                                 <div class="col-12">
-                                    <div class="card bg-body-tertiary border-0">
+                                    <div class="card bg-body-tertiary">
                                         <div class="card-body p-3">
                                             <div class="row g-2">
                                                 <div class="col-md-4">

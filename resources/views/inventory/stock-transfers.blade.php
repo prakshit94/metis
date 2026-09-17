@@ -20,8 +20,8 @@
     {{-- ── Stats Widgets ───────────────────────────────────────── --}}
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                             <i class="bi bi-arrow-left-right"></i>
@@ -38,8 +38,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-secondary">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
                             <i class="bi bi-pencil-fill"></i>
@@ -56,8 +56,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
                             <i class="bi bi-truck"></i>
@@ -74,8 +74,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                             <i class="bi bi-check-circle-fill"></i>
@@ -95,14 +95,10 @@
 
     {{-- ── Main Table Container ─────────────────────────────────── --}}
     <div>
-        <div class="card">
-            <div class="card-header">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h2 class="h5 card-title mb-0">Transfer Records</h2>
-                    </div>
-                    <div class="col-auto">
-                        <div class="d-flex gap-2">
+        <div class="card mb-4">
+<div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <h2 class="h5 card-title mb-0">Transfer Records</h2>
+            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
                             {{-- Search --}}
                             <div class="position-relative">
                                 <input type="search"
@@ -315,7 +311,7 @@
                         <div class="row g-4">
                             <div class="col-12">
                                 {{-- Card 1: Warehouse Route --}}
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                <div class="card mb-4 bg-body-tertiary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
@@ -347,7 +343,7 @@
                                 </div>
 
                                 {{-- Card 2: Transfer Items --}}
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                <div class="card mb-4 bg-body-tertiary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center justify-content-between mb-3">
                                             <div class="d-flex align-items-center">

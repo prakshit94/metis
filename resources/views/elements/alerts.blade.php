@@ -35,8 +35,8 @@
                         
                         <!-- Basic Alerts -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Basic Alerts</h2>
                                 </div>
                                 <div class="card-body">
@@ -89,8 +89,8 @@
 
                         <!-- Alerts with Icons -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Alerts with Icons</h2>
                                 </div>
                                 <div class="card-body">
@@ -131,8 +131,8 @@
 
                         <!-- Dismissible Alerts -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Dismissible Alerts</h2>
                                 </div>
                                 <div class="card-body">
@@ -167,8 +167,8 @@
 
                         <!-- Alerts with Additional Content -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Alerts with Additional Content</h2>
                                 </div>
                                 <div class="card-body">
@@ -208,8 +208,8 @@
 
                         <!-- Alert Examples -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Live Alert Examples</h2>
                                 </div>
                                 <div class="card-body">

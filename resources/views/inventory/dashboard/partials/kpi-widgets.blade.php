@@ -1,6 +1,6 @@
 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-4 g-lg-5 mb-4">
     <div class="col">
-        <div class="card h-100 border-0 bg-primary bg-opacity-10 shadow-sm rounded-4 metric-card p-3">
+        <div class="card h-100 bg-primary bg-opacity-10 metric-card p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h6 class="text-primary text-uppercase fw-bold mb-1" style="font-size: 11px; letter-spacing: 0.5px;">Pending Orders</h6>
@@ -15,7 +15,7 @@
     </div>
 
     <div class="col">
-        <div class="card h-100 border-0 bg-warning bg-opacity-10 shadow-sm rounded-4 metric-card p-3">
+        <div class="card h-100 bg-warning bg-opacity-10 metric-card p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h6 class="text-warning text-uppercase fw-bold mb-1" style="font-size: 11px; letter-spacing: 0.5px;">Pending Transfers</h6>
@@ -30,7 +30,7 @@
     </div>
 
     <div class="col">
-        <div class="card h-100 border-0 bg-danger bg-opacity-10 shadow-sm rounded-4 metric-card p-3">
+        <div class="card h-100 bg-danger bg-opacity-10 metric-card p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h6 class="text-danger text-uppercase fw-bold mb-1" style="font-size: 11px; letter-spacing: 0.5px;">Pending Returns</h6>
@@ -45,7 +45,7 @@
     </div>
 
     <div class="col">
-        <div class="card h-100 border-0 bg-info bg-opacity-10 shadow-sm rounded-4 metric-card p-3">
+        <div class="card h-100 bg-info bg-opacity-10 metric-card p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h6 class="text-info text-uppercase fw-bold mb-1" style="font-size: 11px; letter-spacing: 0.5px;">Low Stock Alerts</h6>
@@ -60,7 +60,7 @@
     </div>
 
     <div class="col">
-        <div class="card h-100 border-0 bg-secondary bg-opacity-10 shadow-sm rounded-4 metric-card p-3">
+        <div class="card h-100 bg-secondary bg-opacity-10 metric-card p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h6 class="text-secondary-emphasis text-uppercase fw-bold mb-1" style="font-size: 11px; letter-spacing: 0.5px;">Inbound POs</h6>

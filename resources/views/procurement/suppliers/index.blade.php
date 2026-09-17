@@ -26,7 +26,7 @@
     <!-- Stats Cards -->
     <div class="row g-3 g-lg-4 mb-4">
         <div class="col-12 col-sm-6 col-xl-4">
-            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative">
+            <div class="card h-100 overflow-hidden position-relative">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div class="text-muted text-uppercase fw-semibold" style="letter-spacing: 0.5px; font-size: 0.75rem;">Total Suppliers</div>
@@ -40,7 +40,7 @@
         </div>
         
         <div class="col-12 col-sm-6 col-xl-4">
-            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative">
+            <div class="card h-100 overflow-hidden position-relative">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div class="text-muted text-uppercase fw-semibold" style="letter-spacing: 0.5px; font-size: 0.75rem;">Active Suppliers</div>
@@ -54,7 +54,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-xl-4">
-            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative">
+            <div class="card h-100 overflow-hidden position-relative">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div class="text-muted text-uppercase fw-semibold" style="letter-spacing: 0.5px; font-size: 0.75rem;">Inactive Suppliers</div>
@@ -69,8 +69,8 @@
     </div>
 
     <!-- Data Table Card -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-header bg-transparent border-bottom-0 py-3">
+    <div class="card mb-4">
+<div class="card-header bg-transparent border-bottom-0 py-3">
             <div class="row align-items-center g-3">
                 <div class="col-12 col-md-5 col-lg-4">
                     <div class="input-group">
@@ -296,8 +296,8 @@
                         
                         <div class="row g-4 mt-2">
                             <div class="col-lg-4">
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                                <div class="card mb-4 bg-body-tertiary">
+<div class="card-header bg-transparent pt-4 pb-0">
                                         <h6 class="fw-bold text-uppercase text-muted mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-person-badge me-2"></i>Contact Details</h6>
                                     </div>
                                     <div class="card-body">
@@ -326,8 +326,8 @@
                             </div>
 
                             <div class="col-lg-8">
-                                <div class="card border-0 shadow-sm mb-4">
-                                    <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                                <div class="card mb-4">
+<div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
                                         <h6 class="fw-bold text-uppercase text-primary-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-briefcase me-2"></i>Company Information</h6>
                                     </div>
                                     <div class="card-body p-4">
@@ -371,8 +371,8 @@
                                         </div>
                                         
                                 <!-- Address Details -->
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                                <div class="card mb-4 bg-body-tertiary">
+<div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
                                         <h6 class="fw-bold text-uppercase text-danger-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-geo-alt me-2"></i>Address Details</h6>
                                     </div>
                                     <div class="card-body p-4">
@@ -414,8 +414,8 @@
                                 </div>
     
                                 <!-- Supplied Products -->
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                                <div class="card mb-4 bg-body-tertiary">
+<div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
                                         <h6 class="fw-bold text-uppercase text-success-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-box-seam me-2"></i>Supplied Products</h6>
                                     </div>
                                     <div class="card-body p-4">
@@ -455,7 +455,7 @@
                             <!-- Left Column -->
                             <div class="col-lg-8">
                                 <!-- Card 1: Company Details -->
-                                <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                                <div class="card mb-3 bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                             <i class="bi bi-building text-primary fs-5 me-2"></i>
@@ -479,7 +479,7 @@
                                 </div>
                                 
                                 <!-- Card 2: Contact & Address -->
-                                <div class="card border-0 shadow-sm mb-3 bg-body-tertiary" style="z-index: 10;">
+                                <div class="card mb-3 bg-body-tertiary" style="z-index: 10;">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                             <i class="bi bi-geo-alt-fill text-info fs-5 me-2"></i>
@@ -540,7 +540,7 @@
                                             <!-- Selected Village Details -->
                                             <template x-if="form.village_name">
                                                 <div class="col-12">
-                                                    <div class="card border border-info border-opacity-25 bg-info bg-opacity-10 shadow-sm mt-2">
+                                                    <div class="card border border-info border-opacity-25 bg-info bg-opacity-10 mt-2">
                                                         <div class="card-body p-3">
                                                             <div class="row g-2 small">
                                                                 <div class="col-md-4">
@@ -596,7 +596,7 @@
                                 </div>
                                 
                                 <!-- Card 3: Financial & Tax -->
-                                <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                                <div class="card mb-3 bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                             <i class="bi bi-cash-stack text-success fs-5 me-2"></i>
@@ -633,7 +633,7 @@
                             <!-- Right Column -->
                             <div class="col-lg-4">
                                 <!-- Card 4: Status & Settings -->
-                                <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                                <div class="card mb-3 bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                             <i class="bi bi-gear-fill text-warning fs-5 me-2"></i>
@@ -652,7 +652,7 @@
                                 </div>
                                 
                                 <!-- Card 5: Additional Details -->
-                                <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                                <div class="card mb-3 bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                             <i class="bi bi-journal-text text-secondary fs-5 me-2"></i>

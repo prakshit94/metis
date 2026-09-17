@@ -19,7 +19,7 @@
             
             <div class="modal-body p-4 bg-body-tertiary">
                 <form @submit.prevent="submitForm" autocomplete="off">
-                    <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-3" style="z-index: 30;">
+                    <div class="card border border-secondary border-opacity-25 bg-body-secondary mb-3" style="z-index: 30;">
                         <div class="card-body p-3">
                             <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                 <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -92,7 +92,7 @@
                                 <!-- Selected Village Details -->
                                 <template x-if="form.village_name">
                                     <div class="col-12">
-                                        <div class="card bg-body border-0 border-start border-4 border-primary shadow-sm mt-2">
+                                        <div class="card bg-body border-start border-4 border-primary mt-2">
                                             <div class="card-body p-3">
                                                 <div class="row g-2">
                                                     <div class="col-md-4">

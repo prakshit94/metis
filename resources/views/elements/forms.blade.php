@@ -35,8 +35,8 @@
                         
                         <!-- Basic Form Controls -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Basic Form Controls</h2>
                                 </div>
                                 <div class="card-body">
@@ -79,8 +79,8 @@
 
                         <!-- Form Sizing -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Form Sizing</h2>
                                 </div>
                                 <div class="card-body">
@@ -103,8 +103,8 @@
 
                         <!-- Disabled Forms -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Disabled Forms</h2>
                                 </div>
                                 <div class="card-body">
@@ -137,8 +137,8 @@
 
                         <!-- Select -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Select</h2>
                                 </div>
                                 <div class="card-body">
@@ -181,8 +181,8 @@
 
                         <!-- Checks and Radios -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Checks and Radios</h2>
                                 </div>
                                 <div class="card-body">
@@ -235,8 +235,8 @@
 
                         <!-- Switches -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Switches</h2>
                                 </div>
                                 <div class="card-body">
@@ -273,8 +273,8 @@
 
                         <!-- Range -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Range</h2>
                                 </div>
                                 <div class="card-body">
@@ -305,8 +305,8 @@
 
                         <!-- Input Groups -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Input Groups</h2>
                                 </div>
                                 <div class="card-body">
@@ -356,8 +356,8 @@
 
                         <!-- Floating Labels -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Floating Labels</h2>
                                 </div>
                                 <div class="card-body">
@@ -420,8 +420,8 @@
 
                         <!-- Form Validation -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Form Validation</h2>
                                 </div>
                                 <div class="card-body">

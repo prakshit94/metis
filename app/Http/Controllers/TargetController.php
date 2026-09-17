@@ -186,14 +186,15 @@ class TargetController extends Controller
             $target->save();
 
             $monthlyAmount = round($data['target_amount'] / 12, 2);
+            $yearlyRemainder = round($data['target_amount'] - ($monthlyAmount * 11), 2);
             
-            for ($m = 0; $m < 12; $m++) {
+            for ($m = 0; $m < 12; $m++) { 
                 $monthDate = $startDate->copy()->addMonths($m);
                 $monthData = $data;
                 $monthData['period_type'] = 'monthly';
                 $monthData['target_month'] = $monthDate->month;
                 $monthData['target_year'] = $monthDate->year;
-                $monthData['target_amount'] = $monthlyAmount;
+                $monthData['target_amount'] = ($m === 11) ? $yearlyRemainder : $monthlyAmount;
                 unset($monthData['achieved_amount']); // Don't pass achieved amount to children unless intended
                 $this->createTargetChain($monthData, $id);
             }
@@ -237,7 +238,9 @@ class TargetController extends Controller
             $numDays = count($workingDays);
             if ($numDays > 0) {
                 $dailyAmount = round($data['target_amount'] / $numDays, 2);
-                foreach ($workingDays as $day) {
+                $dailyRemainder = round($data['target_amount'] - ($dailyAmount * ($numDays - 1)), 2);
+                $dayIndex = 0;
+                foreach ($workingDays as $day) { 
                     $dTarget = Target::firstOrNew([
                         'targetable_type' => $baseData['targetable_type'],
                         'targetable_id' => $baseData['targetable_id'],
@@ -246,12 +249,13 @@ class TargetController extends Controller
                         'start_date' => $day->copy()->startOfDay(),
                         'end_date' => $day->copy()->endOfDay(),
                     ]);
-                    $dTarget->target_amount = $dailyAmount;
+                    $dTarget->target_amount = ($dayIndex === $numDays - 1) ? $dailyRemainder : $dailyAmount;
                     $dTarget->status = $baseData['status'];
                     if (!$dTarget->exists || isset($data['achieved_amount'])) {
                         $dTarget->achieved_amount = $baseData['achieved_amount'];
                     }
                     $dTarget->save();
+                    $dayIndex++;
                 }
             }
         } else {
@@ -279,7 +283,9 @@ class TargetController extends Controller
                 $numDays = count($workingDays);
                 if ($numDays > 0) {
                     $dailyAmount = round($data['target_amount'] / $numDays, 2);
-                    foreach ($workingDays as $day) {
+                $dailyRemainder = round($data['target_amount'] - ($dailyAmount * ($numDays - 1)), 2);
+                $dayIndex = 0;
+                foreach ($workingDays as $day) { 
                         $dTarget = Target::firstOrNew([
                             'targetable_type' => $baseData['targetable_type'],
                             'targetable_id' => $baseData['targetable_id'],
@@ -288,13 +294,14 @@ class TargetController extends Controller
                             'start_date' => $day->copy()->startOfDay(),
                             'end_date' => $day->copy()->endOfDay(),
                         ]);
-                        $dTarget->target_amount = $dailyAmount;
+                        $dTarget->target_amount = ($dayIndex === $numDays - 1) ? $dailyRemainder : $dailyAmount;
                         $dTarget->status = $baseData['status'];
                         if (!$dTarget->exists || isset($data['achieved_amount'])) {
                             $dTarget->achieved_amount = $baseData['achieved_amount'];
                         }
                         $dTarget->save();
-                    }
+                    $dayIndex++;
+                }
                 }
             } else {
                 $target = Target::firstOrNew([
@@ -475,9 +482,12 @@ class TargetController extends Controller
 
             if ($months->count() > 0) {
                 $newAmountPerMonth = round($target->target_amount / $months->count(), 2);
-                foreach ($months as $month) {
-                    $month->update(['target_amount' => $newAmountPerMonth]);
+                $yearlyRemainder = round($target->target_amount - ($newAmountPerMonth * ($months->count() - 1)), 2);
+                $monthIndex = 0;
+                foreach ($months as $month) { 
+                    $month->update(['target_amount' => ($monthIndex === $months->count() - 1) ? $yearlyRemainder : $newAmountPerMonth]);
                     $this->syncDailyTargets($month);
+                    $monthIndex++;
                 }
             }
         } elseif ($target->period_type === 'monthly' && $oldAmount != $validated['target_amount']) {
@@ -502,17 +512,59 @@ class TargetController extends Controller
 
                 if ($otherMonths->count() > 0) {
                     $remainingYearlyAmount = $yearlyTarget->target_amount - $target->target_amount;
-                    if ($remainingYearlyAmount < 0) $remainingYearlyAmount = 0;
+                    if ($remainingYearlyAmount < 0) {
+                        $yearlyTarget->update(['target_amount' => $target->target_amount]);
+                        $remainingYearlyAmount = 0;
+                    }
                     
                     $newAmountPerMonth = round($remainingYearlyAmount / $otherMonths->count(), 2);
-                    foreach ($otherMonths as $other) {
-                        $other->update(['target_amount' => $newAmountPerMonth]);
+                    $monthlyRemainder = round($remainingYearlyAmount - ($newAmountPerMonth * ($otherMonths->count() - 1)), 2);
+                    $otherIndex = 0;
+                    foreach ($otherMonths as $other) { 
+                        $other->update(['target_amount' => ($otherIndex === $otherMonths->count() - 1) ? $monthlyRemainder : $newAmountPerMonth]);
                         $this->syncDailyTargets($other);
+                        $otherIndex++;
                     }
                 }
             }
 
             $this->syncDailyTargets($target);
+        } elseif ($target->period_type === 'daily' && $oldAmount != $validated['target_amount']) {
+            $monthTarget = Target::where('targetable_type', $target->targetable_type)
+                ->where('targetable_id', $target->targetable_id)
+                ->where('metric_type', $target->metric_type)
+                ->where('period_type', 'monthly')
+                ->where('start_date', '<=', $target->start_date)
+                ->where('end_date', '>=', $target->end_date)
+                ->first();
+
+            if ($monthTarget) {
+                $otherDays = Target::where('targetable_type', $target->targetable_type)
+                    ->where('targetable_id', $target->targetable_id)
+                    ->where('metric_type', $target->metric_type)
+                    ->where('period_type', 'daily')
+                    ->where('id', '!=', $target->id)
+                    ->whereBetween('start_date', [$monthTarget->start_date, $monthTarget->end_date])
+                    ->get();
+                    
+                if ($otherDays->count() > 0) {
+                    $remainingMonthlyAmount = $monthTarget->target_amount - $target->target_amount;
+                    if ($remainingMonthlyAmount < 0) {
+                        $monthTarget->update(['target_amount' => $target->target_amount]);
+                        // We do not recursively call syncDailyTargets or the Yearly sync here 
+                        // to avoid infinite loops, but we reset remaining to 0 for other days
+                        $remainingMonthlyAmount = 0;
+                    }
+                    
+                    $newAmountPerDay = round($remainingMonthlyAmount / $otherDays->count(), 2);
+                    $dailyRemainder = round($remainingMonthlyAmount - ($newAmountPerDay * ($otherDays->count() - 1)), 2);
+                    $otherIndex = 0;
+                    foreach ($otherDays as $other) { 
+                        $other->update(['target_amount' => ($otherIndex === $otherDays->count() - 1) ? $dailyRemainder : $newAmountPerDay]);
+                        $otherIndex++;
+                    }
+                }
+            }
         }
 
         return redirect()->route('targets.index')->with('success', 'Target updated successfully.');
@@ -529,8 +581,11 @@ class TargetController extends Controller
 
         if ($dailyTargets->count() > 0) {
             $newDailyAmount = round($monthTarget->target_amount / $dailyTargets->count(), 2);
-            foreach ($dailyTargets as $daily) {
-                $daily->update(['target_amount' => $newDailyAmount]);
+            $dailyRemainder = round($monthTarget->target_amount - ($newDailyAmount * ($dailyTargets->count() - 1)), 2);
+            $dIndex = 0;
+            foreach ($dailyTargets as $daily) { 
+                $daily->update(['target_amount' => ($dIndex === $dailyTargets->count() - 1) ? $dailyRemainder : $newDailyAmount]);
+                $dIndex++;
             }
         }
     }

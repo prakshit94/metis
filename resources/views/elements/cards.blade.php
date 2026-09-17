@@ -35,8 +35,8 @@
                         
                         <!-- Basic Card -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Basic Card</h2>
                                 </div>
                                 <div class="card-body">
@@ -67,8 +67,8 @@
 
                         <!-- Card with Image -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Card with Image</h2>
                                 </div>
                                 <div class="card-body">
@@ -105,8 +105,8 @@
 
                         <!-- Card with Header and Footer -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Card with Header & Footer</h2>
                                 </div>
                                 <div class="card-body">
@@ -149,8 +149,8 @@
 
                         <!-- Card with List Group -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Card with List Group</h2>
                                 </div>
                                 <div class="card-body">
@@ -185,8 +185,8 @@
 
                         <!-- Card with Kitchen Sink -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Kitchen Sink Card</h2>
                                 </div>
                                 <div class="card-body">
@@ -239,8 +239,8 @@
 
                         <!-- Image Overlays -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Image Overlays</h2>
                                 </div>
                                 <div class="card-body">
@@ -277,8 +277,8 @@
 
                         <!-- Horizontal Card -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Horizontal Card</h2>
                                 </div>
                                 <div class="card-body">
@@ -327,8 +327,8 @@
 
                         <!-- Card Groups -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Card Groups</h2>
                                 </div>
                                 <div class="card-body">

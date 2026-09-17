@@ -25,7 +25,7 @@
                         <div class="col-lg-6">
                             
                             {{-- Basic Identity --}}
-                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 30;">
+                            <div class="card mb-3 border border-secondary border-opacity-25 bg-body-secondary" style="z-index: 30;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                         <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -126,7 +126,7 @@
                             </div>
                             
                             {{-- Contact Channels --}}
-                            <div class="card mb-3 mb-lg-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 20;">
+                            <div class="card mb-3 mb-lg-0 border border-secondary border-opacity-25 bg-body-secondary" style="z-index: 20;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                         <div class="bg-indigo text-indigo bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; color: var(--bs-purple);">
@@ -171,7 +171,7 @@
                         <div class="col-lg-6">
                             
                             {{-- Primary Address (Only for New Customers) --}}
-                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 40;" x-show="!isEdit" x-cloak>
+                            <div class="card mb-3 border border-secondary border-opacity-25 bg-body-secondary" style="z-index: 40;" x-show="!isEdit" x-cloak>
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                         <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -261,7 +261,7 @@
                                         <!-- Selected Village Details -->
                                         <template x-if="form.village_name">
                                             <div class="col-12 mt-2">
-                                                <div class="card bg-body border-0 border-start border-4 border-primary shadow-sm">
+                                                <div class="card bg-body border-start border-4 border-primary">
                                                     <div class="card-body p-2">
                                                         <div class="row g-1">
                                                             <div class="col-4">
@@ -327,7 +327,7 @@
                             </div>
                             
                             {{-- Business & Compliance --}}
-                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 30;" x-show="form.category === 'business'" x-transition x-cloak>
+                            <div class="card mb-3 border border-secondary border-opacity-25 bg-body-secondary" style="z-index: 30;" x-show="form.category === 'business'" x-transition x-cloak>
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                         <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -378,7 +378,7 @@
                             </div>
                             
                             {{-- Agriculture Profile --}}
-                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 20;">
+                            <div class="card mb-3 border border-secondary border-opacity-25 bg-body-secondary" style="z-index: 20;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                         <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; color: var(--bs-warning);">
@@ -449,7 +449,7 @@
                             </div>
 
                             {{-- Internal Notes --}}
-                            <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-3 mb-lg-0" style="z-index: 10;">
+                            <div class="card border border-secondary border-opacity-25 bg-body-secondary mb-3 mb-lg-0" style="z-index: 10;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                         <div class="bg-secondary bg-opacity-10 text-secondary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -462,7 +462,7 @@
                             </div>
 
                             {{-- Financial Terms --}}
-                            <div class="card d-none border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 10;">
+                            <div class="card d-none border border-secondary border-opacity-25 bg-body-secondary" style="z-index: 10;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                         <div class="bg-danger bg-opacity-10 text-danger rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">

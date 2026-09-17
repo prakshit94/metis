@@ -472,8 +472,8 @@
                                     <!-- Support Ticket Form -->
                                     <div class="row">
                                         <div class="col-lg-8">
-                                            <div class="card">
-                                                <div class="card-header">
+                                            <div class="card mb-4">
+<div class="card-header">
                                                     <h6 class="mb-0">Submit a Support Ticket</h6>
                                                 </div>
                                                 <div class="card-body">
@@ -536,8 +536,8 @@
                                         </div>
                                         
                                         <div class="col-lg-4">
-                                            <div class="card">
-                                                <div class="card-header">
+                                            <div class="card mb-4">
+<div class="card-header">
                                                     <h6 class="mb-0">System Status</h6>
                                                 </div>
                                                 <div class="card-body">

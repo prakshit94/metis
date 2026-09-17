@@ -69,8 +69,8 @@
         <div :class="isCartSidebarOpen ? 'col-xl-8' : 'col-xl-12'" style="transition: all 0.3s ease;">
             {{-- Confirmation Details (Visible only in Confirm Mode) --}}
             <template x-if="isConfirmMode && originalOrder">
-                <div class="card shadow-sm border-0 mb-4 bg-info bg-opacity-10 border-info border-opacity-25">
-                    <div class="card-header bg-transparent border-bottom-0 py-3 px-4">
+                <div class="card mb-4 bg-info bg-opacity-10 border-info border-opacity-25">
+<div class="card-header bg-transparent border-bottom-0 py-3 px-4">
                         <h5 class="mb-0 fw-bold text-info-emphasis"><i class="bi bi-info-circle me-2"></i>Confirmation Details</h5>
                     </div>
                     <div class="card-body p-4 pt-0 row">
@@ -127,7 +127,7 @@
                 </div>
             </template>
 
-            <div id="customer-workspace" class="card shadow-sm border-0 mb-4">
+            <div id="customer-workspace" class="card mb-4">
                 <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center gap-3">
                         <template x-if="customerDetails">
@@ -252,14 +252,14 @@
                     </div>
                 </div>
                 <div class="card-body p-4 p-lg-4" x-show="showCustomerWorkspace">
-                    <div class="card border shadow-sm mb-4" x-show="customerDetails" x-cloak>
+                    <div class="card border mb-4" x-show="customerDetails" x-cloak>
 
                         <div class="card-body p-3">
 
                             <div class="row g-3 small mt-2">
                                 <!-- Contact Profile -->
                                 <div class="col-md-6 col-lg-3">
-                                    <div class="card h-100 border-0 bg-primary bg-opacity-10 shadow-sm rounded-4">
+                                    <div class="card h-100 bg-primary bg-opacity-10">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center mb-2 border-bottom border-primary border-opacity-25 pb-1">
                                                 <i class="bi bi-person-lines-fill text-primary me-2"></i>
@@ -275,7 +275,7 @@
 
                                 <!-- Business Details -->
                                 <div class="col-md-6 col-lg-3" x-show="customerDetails.category === 'business'" x-cloak>
-                                    <div class="card h-100 border-0 bg-info bg-opacity-10 shadow-sm rounded-4">
+                                    <div class="card h-100 bg-info bg-opacity-10">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center mb-2 border-bottom border-info border-opacity-25 pb-1">
                                                 <i class="bi bi-building text-info me-2"></i>
@@ -293,7 +293,7 @@
 
                                 <!-- Agriculture Snapshot -->
                                 <div class="col-md-6 col-lg-3">
-                                    <div class="card h-100 border-0 bg-success bg-opacity-10 shadow-sm rounded-4">
+                                    <div class="card h-100 bg-success bg-opacity-10">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center mb-2 border-bottom border-success border-opacity-25 pb-1">
                                                 <i class="bi bi-tree text-success me-2"></i>
@@ -324,7 +324,7 @@
 
                                 <!-- Financial Snapshot -->
                                 <div class="col-md-6 col-lg-3">
-                                    <div class="card h-100 border-0 bg-warning bg-opacity-10 shadow-sm rounded-4">
+                                    <div class="card h-100 bg-warning bg-opacity-10">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center mb-2 border-bottom border-warning border-opacity-25 pb-1">
                                                 <i class="bi bi-wallet2 text-warning-emphasis me-2"></i>
@@ -397,7 +397,7 @@
                             <template x-for="addr in addresses" :key="addr.id">
                                     <div class="col-md-6 col-lg-4">
                                         <div class="w-100 h-100 cursor-pointer" style="display:block;" @click="shippingAddressId = addr.id">
-                                            <div class="card h-100 border shadow-sm transition-all" :class="shippingAddressId == addr.id ? 'border-primary bg-primary bg-opacity-10' : 'bg-body'">
+                                            <div class="card h-100 border transition-all" :class="shippingAddressId == addr.id ? 'border-primary bg-primary bg-opacity-10' : 'bg-body'">
                                                 <div class="card-body p-3 position-relative">
                                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                                         <div>
@@ -470,7 +470,7 @@
                                 <template x-for="addr in addresses" :key="addr.id">
                                     <div class="col-md-6 col-lg-4">
                                         <div class="w-100 h-100 cursor-pointer" style="display:block;" @click="billingAddressId = addr.id">
-                                            <div class="card h-100 border shadow-sm transition-all" :class="billingAddressId == addr.id ? 'border-primary bg-primary bg-opacity-10' : 'bg-body'">
+                                            <div class="card h-100 border transition-all" :class="billingAddressId == addr.id ? 'border-primary bg-primary bg-opacity-10' : 'bg-body'">
                                                 <div class="card-body p-3 position-relative">
                                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                                         <div>
@@ -534,7 +534,7 @@
             </div>
 
             {{-- Product Search Card --}}
-            <div id="catalog-section" class="card shadow-sm border-0 mb-4">
+            <div id="catalog-section" class="card mb-4">
                 <div class="card-header bg-transparent border-bottom py-3">
                     <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
                         <span class="fw-bold fs-5"><i class="bi bi-search me-2 text-info"></i>Product Catalog</span>
@@ -593,7 +593,7 @@
                         <div class="row g-3" x-show="viewMode === 'grid'">
                             <template x-for="p in filteredProducts" :key="p.id">
                                 <div class="col-sm-6 col-md-4">
-                                    <div class="card h-100 border shadow-sm transition-all" x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="isHovered ? 'position: relative; z-index: 1050;' : ''" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !isSkuEnabled(p) || getMaxAllowedStock(p) <= 0}">
+                                    <div class="card h-100 border transition-all" x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="isHovered ? 'position: relative; z-index: 1050;' : ''" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !isSkuEnabled(p) || getMaxAllowedStock(p) <= 0}">
                                         <div class="card-body p-3">
                                             <div class="d-flex gap-2 mb-3">
                                                 <div x-show="p.grade" 
@@ -637,8 +637,8 @@
                                                         <i class="bi bi-tags me-1"></i> View Offers (<span x-text="getProductPromotions(p).length"></span>)
                                                     </span>
                                                     <div x-show="showTooltip" x-transition.opacity class="position-absolute" style="bottom: 100%; z-index: 9999; left: 0; margin-bottom: 8px; width: 280px; cursor: default;" x-cloak>
-                                                        <div class="card border border-secondary-subtle shadow-lg rounded-3 overflow-hidden">
-                                                            <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
+                                                        <div class="card border border-secondary-subtle rounded-3 overflow-hidden mb-4">
+<div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
                                                                 <span class="fw-bold text-body" style="font-size: 12px;"><i class="bi bi-tags-fill me-1 text-primary"></i> Applicable Offers</span>
                                                                 <span class="badge bg-primary rounded-pill" x-text="getProductPromotions(p).length"></span>
                                                             </div>
@@ -734,8 +734,8 @@
                                                                     <i class="bi bi-gift-fill"></i> <span x-text="getProductPromotions(p).length + ' Offers'"></span>
                                                                 </button>
                                                                 <div x-show="showTooltip" x-transition.opacity class="position-absolute" style="top: 100%; z-index: 9999; left: 0; margin-top: 8px; width: 280px; cursor: default;" x-cloak>
-                                                                    <div class="card border border-secondary-subtle shadow-lg rounded-3 overflow-hidden">
-                                                                        <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
+                                                                    <div class="card border border-secondary-subtle rounded-3 overflow-hidden mb-4">
+<div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
                                                                             <span class="fw-bold text-body" style="font-size: 12px;"><i class="bi bi-tags-fill me-1 text-primary"></i> Applicable Offers</span>
                                                                             <span class="badge bg-primary rounded-pill" x-text="getProductPromotions(p).length"></span>
                                                                         </div>
@@ -872,7 +872,7 @@
             <div class="mb-4 space-y-3" x-show="false">
                 {{-- Empty Cart --}}
                 <template x-if="cart.length === 0">
-                    <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card">
                         <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-5 opacity-50">
                             <div class="bg-body-secondary rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
                                 <i class="bi bi-bag fs-1 text-body-secondary"></i>
@@ -885,7 +885,7 @@
 
                 {{-- Cart Item Cards --}}
                 <template x-for="(item, idx) in cart" :key="item.id + '_' + (item.is_gift ? item.gift_source : 'paid')">
-                    <div class="card border shadow-sm mb-3">
+                    <div class="card border mb-3">
                         <div class="d-flex align-items-start gap-3 p-3">
                             <div class="rounded-3 bg-body-tertiary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
                                 <img :src="item.image_url || '{{ asset('assets/images/product-placeholder.svg') }}'" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
@@ -951,8 +951,8 @@
         {{-- RIGHT: Cart Summary + Calculations + Offers + Place Order (Glossy Style) --}}
         <div class="col-xl-4" x-show="isCartSidebarOpen" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 translate-x-4">
             <div class="sticky-side-div" style="position: sticky; top: 24px;">
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                <div class="card mb-4">
+<div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="mb-0 fw-bold"><i class="bi bi-cart3 me-2 text-primary"></i>Shopping Cart (<span x-text="cart.length" class="text-primary"></span>)</h5>
                             <p class="mb-0 small text-body-secondary">Pinned summary for the order you’re building.</p>
@@ -961,7 +961,7 @@
                             <i class="bi bi-trash3 me-1"></i> Clear
                         </button>
                     </div>
-                    <div class="card-body p-3 p-lg-4">
+                    <div class="card-body">
                         <template x-if="cart.length === 0">
                             <div class="text-center py-4 text-body-secondary">
                                 <i class="bi bi-bag fs-1 d-block mb-2"></i>
@@ -969,7 +969,7 @@
                             </div>
                         </template>
                         <template x-for="(item, idx) in cart" :key="item.id + '_' + (item.is_gift ? item.gift_source : 'paid')">
-                            <div class="card border shadow-sm mb-3">
+                            <div class="card border mb-3">
                                 <div class="d-flex align-items-start gap-3 p-3">
                                     <div class="rounded-3 bg-body-tertiary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
                                         <img :src="item.image_url || '{{ asset('assets/images/product-placeholder.svg') }}'" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
@@ -1031,7 +1031,7 @@
                         </template>
                     </div>
                 </div>
-                <div class="card shadow-sm border-0 mb-4">
+                <div class="card mb-4">
                     <div class="card-body p-4 space-y-4">
                         
                         {{-- ── Promotions & Offers ── --}}
@@ -1266,7 +1266,7 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-5 overflow-hidden glass-panel mt-2 mb-4" x-show="partyId" x-cloak>
+    <div class="card rounded-5 overflow-hidden glass-panel mt-2 mb-4" x-show="partyId" x-cloak>
         <div class="card-header bg-body-tertiary border-bottom-0 p-3 p-lg-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
                 <div class="d-flex flex-wrap gap-2">
@@ -1282,7 +1282,7 @@
         </div>
         <div class="card-body p-4 p-lg-4">
             <template x-if="bottomTab === 'history'">
-                <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden">
+                <div class="card bg-body overflow-hidden">
                     <template x-if="historyOrders && historyOrders.length > 0">
                         <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
@@ -1343,7 +1343,7 @@
             </template>
 
             <template x-if="bottomTab === 'future'">
-                <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden">
+                <div class="card bg-body overflow-hidden">
                     <template x-if="futureOrders && futureOrders.length > 0">
                         <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
@@ -1404,7 +1404,7 @@
             </template>
 
             <template x-if="bottomTab === 'tags'">
-                    <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden">
+                    <div class="card bg-body overflow-hidden">
                         <template x-if="customerDetails && customerDetails.call_logs && customerDetails.call_logs.length > 0">
                             <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                                 <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
@@ -1514,7 +1514,7 @@
                             </template>
                             <div class="space-y-3">
                                 <template x-for="offer in sortedActiveOffers" :key="offer.id">
-                                    <div class="card border-2 rounded-4 transition-all hover-shadow" 
+                                    <div class="card border-2 transition-all hover-shadow" 
                                          :class="['bogo', 'free_product'].includes(offer.type) ? 'border-info border-opacity-25 bg-info bg-opacity-10' : ((bestOrderOffer && bestOrderOffer.id === offer.id) ? 'border-success bg-success bg-opacity-10' : (orderOfferDiscount(offer) > 0 ? 'border-secondary border-opacity-10 bg-body-tertiary cursor-pointer' : 'border-secondary border-opacity-10 bg-body-secondary opacity-75'))" 
                                          @click="if(['order_discount', 'category_discount'].includes(offer.type) && orderOfferDiscount(offer) > 0) appliedOfferId = ((bestOrderOffer && bestOrderOffer.id === offer.id) ? 'none' : offer.id)">
                                         <div class="card-body p-3 d-flex align-items-center justify-content-between gap-3">
@@ -1624,7 +1624,7 @@
 
                             <div class="space-y-3">
                                 <template x-for="c in activeCoupons" :key="c.id">
-                                    <div class="card border-2 rounded-4 transition-all hover-shadow cursor-pointer" :class="(couponApplied && couponCode === c.code) ? 'border-success bg-success bg-opacity-10' : 'border-secondary border-opacity-10 bg-body-tertiary'" @click="applyCoupon(c.code)">
+                                    <div class="card border-2 transition-all hover-shadow cursor-pointer" :class="(couponApplied && couponCode === c.code) ? 'border-success bg-success bg-opacity-10' : 'border-secondary border-opacity-10 bg-body-tertiary'" @click="applyCoupon(c.code)">
                                         <div class="card-body p-3 d-flex align-items-center justify-content-between gap-3">
                                             <div class="d-flex align-items-center gap-3">
                                                 <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center d-flex flex-column justify-content-center align-items-center" style="min-width: 90px; height: 90px;" x-show="c.type !== 'free_product'">
@@ -1690,7 +1690,7 @@
                     <div class="row g-0" style="min-height: 100%;">
                         <!-- Left: Image & Meta (fixed panel) -->
                         <div class="col-md-4 bg-body-tertiary border-end p-3" style="position: sticky; top: 0; height: fit-content; align-self: flex-start;">
-                            <div class="card border border-secondary border-opacity-25 mb-3 rounded-4 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
+                            <div class="card border border-secondary border-opacity-25 mb-3 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
                                 <img :src="selectedProductForModal ? (selectedProductForModal.image_url || '{{ asset('assets/images/product-placeholder.svg') }}') : ''" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                 <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm" x-show="selectedProductForModal && selectedProductForModal.default_discount > 0" x-text="selectedProductForModal ? selectedProductForModal.default_discount + (selectedProductForModal.default_discount_type === 'percent' ? '%' : '') + ' OFF' : ''"></span>
                             </div>
@@ -1715,7 +1715,7 @@
                         <div class="col-md-8 p-3">
 
                             <!-- Pricing Card -->
-                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                            <div class="card mb-3 border border-secondary border-opacity-25 bg-body-secondary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
                                         <div class="text-bg-primary-subtle text-primary-emphasis rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
@@ -1752,7 +1752,7 @@
                             <!-- Inventory & Specs Row -->
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
-                                    <div class="card h-100 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card h-100 border border-secondary border-opacity-25 bg-body-secondary">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
                                                 <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-box-seam-fill" style="font-size:12px;"></i></div>
@@ -1779,7 +1779,7 @@
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="card h-100 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card h-100 border border-secondary border-opacity-25 bg-body-secondary">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
                                                 <div class="text-bg-info-subtle text-info-emphasis rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-list-stars" style="font-size:12px;"></i></div>
@@ -1806,7 +1806,7 @@
                             </div>
 
                             <!-- Details & Usage -->
-                            <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                            <div class="card mb-3 border border-secondary border-opacity-25 bg-body-secondary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
                                         <div class="text-bg-secondary-subtle text-secondary-emphasis rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-file-text-fill" style="font-size:12px;"></i></div>
@@ -1829,7 +1829,7 @@
                             </div>
 
                             <!-- Promotions -->
-                            <div x-show="productModalOffers && productModalOffers.length > 0" class="card mb-3 border border-primary border-opacity-25 shadow-sm rounded-4 bg-primary-subtle">
+                            <div x-show="productModalOffers && productModalOffers.length > 0" class="card mb-3 border border-primary border-opacity-25 bg-primary-subtle">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-primary border-opacity-25">
                                         <div class="bg-primary text-white rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-stars" style="font-size:12px;"></i></div>
@@ -2238,7 +2238,7 @@
                                 <!-- Quick Stats Row -->
                                 <div class="row g-3 mb-4">
                                     <div class="col-sm-4">
-                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                        <div class="card h-100">
                                             <div class="card-body p-3 d-flex align-items-center gap-3">
                                                 <div class="text-bg-primary-subtle text-primary-emphasis p-2 rounded-3"><i class="bi bi-credit-card fs-5"></i></div>
                                                 <div>
@@ -2249,7 +2249,7 @@
                                         </div>
                                     </div>
                                     <div class="col-sm-4">
-                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                        <div class="card h-100">
                                             <div class="card-body p-3 d-flex align-items-center gap-3">
                                                 <div class="text-bg-success-subtle text-success-emphasis p-2 rounded-3"><i class="bi bi-tag fs-5"></i></div>
                                                 <div>
@@ -2260,7 +2260,7 @@
                                         </div>
                                     </div>
                                     <div class="col-sm-4">
-                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                        <div class="card h-100">
                                             <div class="card-body p-3 d-flex align-items-center gap-3">
                                                 <div class="text-bg-info-subtle text-info-emphasis p-2 rounded-3"><i class="bi bi-person-badge fs-5"></i></div>
                                                 <div>
@@ -2273,8 +2273,8 @@
                                 </div>
 
                                 <!-- Customer Info -->
-                                <div class="card border-0 shadow-sm rounded-4 mb-4">
-                                    <div class="card-header bg-body border-bottom-0 pt-4 pb-0 px-4">
+                                <div class="card mb-4">
+<div class="card-header bg-body border-bottom-0 pt-4 pb-0 px-4">
                                         <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                                             <i class="bi bi-person-hearts text-danger fs-5"></i> Customer & Fulfillment
                                         </h6>
@@ -2321,8 +2321,8 @@
                                 </div>
 
                                 <!-- Order Items Table -->
-                                <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
-                                    <div class="card-header bg-body border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                                <div class="card mb-4 overflow-hidden">
+<div class="card-header bg-body border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
                                         <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                                             <i class="bi bi-box-seam text-primary fs-5"></i> Order Items
                                         </h6>
@@ -2388,8 +2388,8 @@
                                 </div>
 
                                 <!-- Financial Summary -->
-                                <div class="card border-0 shadow-sm rounded-4">
-                                    <div class="card-body p-4 bg-body rounded-4">
+                                <div class="card">
+                                    <div class="card-body p-4 bg-body">
                                         <div class="row justify-content-end">
                                             <div class="col-md-6 col-lg-5">
                                                 <div class="d-flex justify-content-between mb-2">
@@ -2435,8 +2435,8 @@
                             <div class="col-lg-4 p-4 p-lg-5 border-start bg-body" style="height: fit-content; align-self: flex-start;">
                                 
                                 <!-- Logistics / Warehouse -->
-                                <div class="card border-0 shadow-sm rounded-4 mb-4">
-                                    <div class="card-header bg-body border-bottom-0 pt-4 pb-2 px-4">
+                                <div class="card mb-4">
+<div class="card-header bg-body border-bottom-0 pt-4 pb-2 px-4">
                                         <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                                             <i class="bi bi-building text-secondary fs-5"></i> Fulfillment Center
                                         </h6>
@@ -2457,7 +2457,7 @@
 
                                 <!-- Shipment Tracking -->
                                 <template x-if="selectedOrder.shipment">
-                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                                    <div class="card mb-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
                                         <div class="card-body p-4">
                                             <h6 class="fw-bold mb-3 text-primary d-flex align-items-center gap-2">
                                                 <i class="bi bi-truck fs-5"></i> Shipping Details
@@ -2525,7 +2525,7 @@
 
                                 <!-- Invoice Details -->
                                 <template x-if="selectedOrder.invoice">
-                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
+                                    <div class="card mb-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
                                         <div class="card-body p-4">
                                             <h6 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2">
                                                 <i class="bi bi-receipt fs-5"></i> Invoice Details
@@ -2559,7 +2559,7 @@
 
                                 <!-- Payments Tracking -->
                                 <template x-if="selectedOrder.payments && selectedOrder.payments.length > 0">
-                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-success bg-opacity-10 border border-success border-opacity-25">
+                                    <div class="card mb-4 bg-success bg-opacity-10 border border-success border-opacity-25">
                                         <div class="card-body p-4">
                                             <h6 class="fw-bold mb-3 text-success d-flex align-items-center gap-2">
                                                 <i class="bi bi-cash-stack fs-5"></i> Payments
@@ -2594,7 +2594,7 @@
 
                                 <!-- Returns Tracking -->
                                 <template x-if="selectedOrder.original && (selectedOrder.original.order_returns && selectedOrder.original.order_returns.length > 0 || selectedOrder.original.orderReturns && selectedOrder.original.orderReturns.length > 0)">
-                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-danger bg-opacity-10 border border-danger border-opacity-25">
+                                    <div class="card mb-4 bg-danger bg-opacity-10 border border-danger border-opacity-25">
                                         <div class="card-body p-4">
                                             <h6 class="fw-bold mb-3 text-danger d-flex align-items-center gap-2">
                                                 <i class="bi bi-arrow-return-left fs-5"></i> Returns & Refunds
@@ -2621,7 +2621,7 @@
 
                                 <!-- Order Status Timeline -->
                                 <template x-if="selectedOrder.original && selectedOrder.original.status_logs && selectedOrder.original.status_logs.length > 0">
-                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
+                                    <div class="card mb-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
                                         <div class="card-body p-4">
                                             <h6 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2">
                                                 <i class="bi bi-clock-history fs-5"></i> Order Status Timeline

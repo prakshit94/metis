@@ -55,8 +55,8 @@
     <!-- Stats Widgets -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                             <i class="bi bi-calendar3"></i>
@@ -70,8 +70,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                             <i class="bi bi-check-circle-fill"></i>
@@ -85,8 +85,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-danger">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-danger bg-opacity-10 text-danger me-3">
                             <i class="bi bi-x-circle-fill"></i>
@@ -100,8 +100,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
                             <i class="bi bi-clock-fill"></i>
@@ -120,8 +120,8 @@
     @php
         $userLeaveBalances = \App\Modules\Users\Models\LeaveBalance::where('user_id', auth()->id())->where('is_active', true)->get();
     @endphp
-    <div class="card border-0 shadow-sm mb-5 mb-lg-5 mb-xl-6">
-        <div class="card-header bg-body p-3 p-lg-4 border-bottom-0">
+    <div class="card mb-5 mb-lg-5 mb-xl-6 mb-4">
+<div class="card-header bg-body p-3 p-lg-4 border-bottom-0">
             <h2 class="h5 card-title mb-0 d-flex align-items-center">
                 <i class="bi bi-wallet2 text-primary me-2"></i>My Leave Balances
             </h2>
@@ -151,8 +151,8 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-body d-flex flex-column flex-md-row justify-content-between align-items-center p-3 p-lg-4 border-bottom-0">
+    <div class="card mb-4">
+<div class="card-header bg-body d-flex flex-column flex-md-row justify-content-between align-items-center p-3 p-lg-4 border-bottom-0">
             <h2 class="h5 card-title mb-3 mb-md-0 d-flex align-items-center">
                 <i class="bi bi-list-ul text-primary me-2"></i>Attendance List
             </h2>

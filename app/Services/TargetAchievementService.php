@@ -62,16 +62,16 @@ class TargetAchievementService
     /** Count of valid (non-cancelled/returned/future) orders. */
     private function calcOrdersCount(Target $target): float
     {
-        $orders = $this->buildOrdersQuery($target)
-            ->with('orderReturns')
-            ->get();
-
         $count = 0;
-        foreach ($orders as $order) {
-            if (!$this->isExcludedLifecycle($order->lifecycleStatus())) {
-                $count++;
-            }
-        }
+        $this->buildOrdersQuery($target)
+            ->with('orderReturns')
+            ->chunk(500, function ($orders) use (&$count) {
+                foreach ($orders as $order) {
+                    if (!$this->isExcludedLifecycle($order->lifecycleStatus())) {
+                        $count++;
+                    }
+                }
+            });
         return (float) $count;
     }
 

@@ -22,7 +22,7 @@
             <div class="modal-body p-4 bg-body-tertiary">
                 
                 {{-- LEVEL 1 CARD --}}
-                <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 30;">
+                <div class="card mb-3 border border-secondary border-opacity-25 bg-body-secondary" style="z-index: 30;">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                             <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -51,7 +51,7 @@
                 </div>
 
                 {{-- LEVEL 2 CARD & DYNAMIC FIELDS --}}
-                <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 20;" x-show="selectedL1" x-transition>
+                <div class="card mb-3 border border-secondary border-opacity-25 bg-body-secondary" style="z-index: 20;" x-show="selectedL1" x-transition>
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                             <div class="bg-info bg-opacity-10 text-info rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -185,7 +185,7 @@
                 </div>
 
                 {{-- LEVEL 3 CARD --}}
-                <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 10;" x-show="selectedL2" x-transition>
+                <div class="card mb-3 border border-secondary border-opacity-25 bg-body-secondary" style="z-index: 10;" x-show="selectedL2" x-transition>
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                             <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">

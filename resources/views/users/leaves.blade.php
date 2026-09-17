@@ -61,8 +61,8 @@
 
     <!-- BALANCES TAB -->
     <div x-show="currentTab === 'balances'" style="display: none;" x-data="balancesTable">
-        <div class="card">
-            <div class="card-header">
+        <div class="card mb-4">
+<div class="card-header">
                 <div class="row align-items-center g-3">
                     <div class="col">
                         <h2 class="h5 card-title mb-0">Leave Balances</h2>
@@ -163,8 +163,8 @@
 
     <!-- HOLIDAYS TAB -->
     <div x-show="currentTab === 'holidays'" style="display: none;" x-data="holidaysTable">
-        <div class="card">
-            <div class="card-header">
+        <div class="card mb-4">
+<div class="card-header">
                 <div class="row align-items-center g-3">
                     <div class="col">
                         <h2 class="h5 card-title mb-0">Holidays List</h2>

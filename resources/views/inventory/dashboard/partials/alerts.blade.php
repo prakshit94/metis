@@ -1,5 +1,5 @@
-<div class="card border-0 shadow-sm rounded-4 h-100">
-    <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 px-4">
+<div class="card h-100 mb-4">
+<div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 px-4">
         <h5 class="fw-bold mb-0"><i class="bi bi-bell text-warning me-2"></i>System Alerts</h5>
     </div>
     <div class="card-body p-4">

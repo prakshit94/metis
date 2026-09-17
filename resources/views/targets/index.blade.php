@@ -39,7 +39,7 @@
                 <input type="hidden" name="metric_type" value="{{ request('metric_type') }}">
                 <input type="hidden" name="period_type" value="{{ request('period_type', 'daily') }}">
                 <button type="submit" class="btn btn-outline-info"
-                        onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm me-2\' role=\'status\'></span>Syncing…'; this.form.submit();">
+                        onclick="this.disabled=true; this.innerHTML='<span class='spinner-border spinner-border-sm me-2' role='status'></span>Syncing…'; this.form.submit();">
                     <i class="bi bi-arrow-repeat me-2"></i>Sync Achieved
                 </button>
             </form>
@@ -79,8 +79,8 @@
     <!-- Stats Row -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-primary">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                             <i class="bi bi-bullseye fs-4"></i>
@@ -94,8 +94,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-info">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                             <i class="bi bi-activity fs-4"></i>
@@ -109,8 +109,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-success">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                             <i class="bi bi-trophy-fill fs-4"></i>
@@ -124,8 +124,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-danger">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-danger">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-danger bg-opacity-10 text-danger me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                             <i class="bi bi-x-circle-fill fs-4"></i>
@@ -141,8 +141,8 @@
     </div>
 
     <!-- Table -->
-    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-        <div class="card-header bg-body border-bottom p-4">
+    <div class="card overflow-hidden mb-4">
+<div class="card-header bg-body border-bottom p-4">
             <div class="row align-items-center g-3">
                 <div class="col">
                     <h2 class="h5 card-title mb-0 fw-bold"><i class="bi bi-list-task text-primary me-2"></i>Targets Directory</h2>
@@ -499,7 +499,7 @@
                 </div>
 
                 <div class="modal-body p-4 p-md-5 pt-4">
-                    <form method="POST" :action="isEdit ? '{{ url('targets') }}/' + form.id : '{{ route('targets.store') }}'">
+                    <form method="POST" :action="isEdit ? '{{ url('targets') }}/' + form.id : '{{ route('targets.store') }}'" @submit="isSubmitting = true">
                         @csrf
                         <input type="hidden" :name="isEdit ? '_method' : ''" value="PUT">
 
@@ -507,7 +507,7 @@
                             <div class="col-12">
                                 
                                 {{-- Card 1: Assignment --}}
-                                <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-4 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
@@ -562,7 +562,7 @@
                                 </div>
 
                                 {{-- Card 2: Configuration --}}
-                                <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-4 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
@@ -604,7 +604,7 @@
                                 </div>
 
                                 {{-- Card 3: Timeline & Status --}}
-                                <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-4 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
@@ -670,8 +670,10 @@
 
                         <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
                             <button type="button" class="btn btn-lg btn-light border-secondary border-opacity-25 fw-semibold px-4 rounded-3 shadow-sm" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-lg btn-primary fw-semibold px-5 rounded-3 shadow-sm">
-                                <i class="bi bi-save me-2"></i><span x-text="isEdit ? 'Save Changes' : 'Create Target'"></span>
+                            <button type="submit" class="btn btn-lg btn-primary fw-semibold px-5 rounded-3 shadow-sm" :disabled="isSubmitting">
+                                <i class="bi bi-save me-2" x-show="!isSubmitting"></i>
+                                <span class="spinner-border spinner-border-sm me-2" x-show="isSubmitting" style="display: none;"></span>
+                                <span x-text="isSubmitting ? 'Processing...' : (isEdit ? 'Save Changes' : 'Create Target')"></span>
                             </button>
                         </div>
                     </form>
@@ -707,7 +709,7 @@
                     
                     <form action="{{ route('targets.import.process') }}" method="POST" enctype="multipart/form-data">
                         @csrf
-                        <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-4">
+                        <div class="card border border-secondary border-opacity-25 bg-body-secondary mb-4">
                             <div class="card-body p-4">
                                 <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                     <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
@@ -788,6 +790,7 @@ function targetsModule() {
         },
         availableAssignees: @json($availableAssignees),
         searchQuery: '',
+        isSubmitting: false,
         isEdit: false,
         form: {
             id: null,
@@ -832,6 +835,7 @@ function targetsModule() {
         openModal(target = null) {
             if (target) {
                 this.isEdit = true;
+                this.isSubmitting = false;
                 // Spread target data but always ensure targetable_ids is an array
                 // (edit payload doesn't include it — so it must be explicitly set)
                 this.form = {
@@ -842,6 +846,7 @@ function targetsModule() {
                 };
             } else {
                 this.isEdit = false;
+                this.isSubmitting = false;
                 this.searchQuery = '';
                 this.form = {
                     id: null,

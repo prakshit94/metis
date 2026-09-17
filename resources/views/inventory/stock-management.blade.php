@@ -29,8 +29,8 @@
     {{-- ── Stats Widgets ───────────────────────────────────────── --}}
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card cursor-pointer" @click="stockLevelFilter = ''; loadData()">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card cursor-pointer h-100 border-start border-4 border-primary" @click="stockLevelFilter = ''; loadData()">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                             <i class="bi bi-box-seam-fill"></i>
@@ -47,8 +47,8 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-info">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
                             <i class="bi bi-buildings-fill"></i>
@@ -65,8 +65,8 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-secondary">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
                             <i class="bi bi-boxes"></i>
@@ -83,8 +83,8 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card cursor-pointer" @click="stockLevelFilter = 'in_stock'; loadData()">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card cursor-pointer h-100 border-start border-4 border-success" @click="stockLevelFilter = 'in_stock'; loadData()">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                             <i class="bi bi-check-circle-fill"></i>
@@ -101,8 +101,8 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card cursor-pointer" @click="stockLevelFilter = 'low_stock'; loadData()">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card cursor-pointer h-100 border-start border-4 border-warning" @click="stockLevelFilter = 'low_stock'; loadData()">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
                             <i class="bi bi-exclamation-triangle-fill"></i>
@@ -119,8 +119,8 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card cursor-pointer" @click="stockLevelFilter = 'out_of_stock'; loadData()">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card cursor-pointer h-100 border-start border-4 border-danger" @click="stockLevelFilter = 'out_of_stock'; loadData()">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-danger bg-opacity-10 text-danger me-3">
                             <i class="bi bi-x-circle-fill"></i>
@@ -140,8 +140,8 @@
 
     {{-- ── Main Table Container ─────────────────────────────────── --}}
     <div>
-        <div class="card">
-            <div class="card-header">
+        <div class="card mb-4">
+<div class="card-header">
                 <div class="row align-items-center">
                     <div class="col">
                         <h2 class="h5 card-title mb-0">Stock Levels</h2>
@@ -429,7 +429,7 @@
                         <div class="row g-4">
                             <div class="col-12">
                                 {{-- Card: Stock Override --}}
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                <div class="card mb-4 bg-body-tertiary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">

@@ -39,7 +39,7 @@
                         <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                             <div class="col-xl-3 col-lg-6">
                                 <div class="card metric-card">
-                                    <div class="card-body p-3 p-lg-4">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-center justify-content-between">
                                             <div>
                                                 <h6 class="text-muted mb-1">Total Users</h6>
@@ -57,7 +57,7 @@
                             </div>
                             <div class="col-xl-3 col-lg-6">
                                 <div class="card metric-card">
-                                    <div class="card-body p-3 p-lg-4">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-center justify-content-between">
                                             <div>
                                                 <h6 class="text-muted mb-1">Active Users</h6>
@@ -75,7 +75,7 @@
                             </div>
                             <div class="col-xl-3 col-lg-6">
                                 <div class="card metric-card">
-                                    <div class="card-body p-3 p-lg-4">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-center justify-content-between">
                                             <div>
                                                 <h6 class="text-muted mb-1">New This Month</h6>
@@ -93,7 +93,7 @@
                             </div>
                             <div class="col-xl-3 col-lg-6">
                                 <div class="card metric-card">
-                                    <div class="card-body p-3 p-lg-4">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-center justify-content-between">
                                             <div>
                                                 <h6 class="text-muted mb-1">Active Rate</h6>
@@ -114,8 +114,8 @@
                         <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                             <!-- User Growth Chart -->
                             <div class="col-lg-8">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="card h-100 mb-4">
+<div class="card-header d-flex justify-content-between align-items-center">
                                         <h2 class="h5 card-title mb-0">User Registration Trends</h2>
                                         <div class="btn-group btn-group-sm" role="group" aria-label="Registration trend period">
                                             <input type="radio" class="btn-check" name="growthPeriod" id="growth7d" autocomplete="off" value="7" x-model="growthPeriod" @change="setGrowthPeriod(7)">
@@ -126,7 +126,7 @@
                                             <label class="btn btn-outline-secondary" for="growth90d">90D</label>
                                         </div>
                                     </div>
-                                    <div class="card-body p-3 p-lg-4">
+                                    <div class="card-body">
                                         <div id="userGrowthChart" style="width: 100%; overflow: hidden;"></div>
                                     </div>
                                 </div>
@@ -134,11 +134,11 @@
 
                             <!-- Role & Department Distribution -->
                             <div class="col-lg-4">
-                                <div class="card h-100">
-                                    <div class="card-header">
+                                <div class="card h-100 mb-4">
+<div class="card-header">
                                         <h2 class="h5 card-title mb-0">User Distribution</h2>
                                     </div>
-                                    <div class="card-body p-3 p-lg-4">
+                                    <div class="card-body">
                                         <!-- Role Distribution -->
                                         <div class="mb-4">
                                             <h6 class="text-muted mb-3">By Role</h6>
@@ -170,8 +170,8 @@
                         <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                             <!-- Recent User Activity -->
                             <div class="col-lg-6">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="card h-100 mb-4">
+<div class="card-header d-flex justify-content-between align-items-center">
                                         <h2 class="h5 card-title mb-0">Recent Activity</h2>
                                         <button class="btn btn-sm btn-outline-secondary" type="button" @click="loadUsers()" :disabled="isLoading" title="Refresh users">
                                             <i class="bi bi-arrow-clockwise"></i>
@@ -209,8 +209,8 @@
                                 <div class="row g-4 g-lg-4 h-100">
                                     <!-- System Alerts -->
                                     <div class="col-12">
-                                        <div class="card">
-                                            <div class="card-header d-flex justify-content-between align-items-center">
+                                        <div class="card mb-4">
+<div class="card-header d-flex justify-content-between align-items-center">
                                                 <h2 class="h5 card-title mb-0">System Alerts</h2>
                                                 <span class="badge bg-danger rounded-pill" x-text="systemAlerts.length"></span>
                                             </div>
@@ -239,11 +239,11 @@
 
                                     <!-- Quick Actions -->
                                     <div class="col-12">
-                                        <div class="card">
-                                            <div class="card-header">
+                                        <div class="card mb-4">
+<div class="card-header">
                                                 <h2 class="h5 card-title mb-0">Quick Actions</h2>
                                             </div>
-                                            <div class="card-body p-3 p-lg-4">
+                                            <div class="card-body">
                                                 <div class="row g-2 g-lg-3">
                                                     @can('user-create')
                                                     <div class="col-6">
@@ -300,14 +300,10 @@
                         </div> <!-- End Analytics Wrapper -->
 
                         <!-- Users Table -->
-                        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-4 bg-body-tertiary">
-                            <div class="card-header">
-                                <div class="row align-items-center">
-                                    <div class="col">
-                                        <h2 class="h5 card-title mb-0">Users Directory</h2>
-                                    </div>
-                                    <div class="col-auto">
-                                                <div class="d-flex flex-wrap gap-2 justify-content-end">
+                        <div class="card overflow-hidden mt-4 bg-body-tertiary mb-4">
+<div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <h2 class="h5 card-title mb-0">Users Directory</h2>
+            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
                                             <!-- Search -->
                                             <div class="position-relative">
                                                 <input type="search" 
@@ -694,8 +690,8 @@
                     <div class="row g-4 mt-2">
                         <!-- Left Column: Core Identity & Contact -->
                         <div class="col-lg-4">
-                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
-                                <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                            <div class="card mb-4 bg-body-tertiary">
+<div class="card-header bg-transparent pt-4 pb-0">
                                     <h6 class="fw-bold text-uppercase text-muted mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-person-badge me-2"></i>Core Identity</h6>
                                 </div>
                                 <div class="card-body">
@@ -741,7 +737,7 @@
                             </div>
                             
                             <!-- Emergency Contact -->
-                            <div class="card border-0 shadow-sm bg-danger-subtle border border-danger-subtle">
+                            <div class="card bg-danger-subtle border border-danger-subtle">
                                 <div class="card-body p-4">
                                     <h6 class="fw-bold text-danger-emphasis mb-3 d-flex align-items-center gap-2"><i class="bi bi-heart-pulse-fill"></i> Emergency Contact</h6>
                                     <div class="mb-3">
@@ -759,8 +755,8 @@
                         <!-- Right Column: Details grid -->
                         <div class="col-lg-8">
                             <!-- Personal Details -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                            <div class="card mb-4">
+<div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
                                     <h6 class="fw-bold text-uppercase text-primary-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-person-vcard me-2"></i>Personal Information</h6>
                                 </div>
                                 <div class="card-body p-4">
@@ -797,8 +793,8 @@
                             </div>
                             
                             <!-- Employment Details -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                            <div class="card mb-4">
+<div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
                                     <h6 class="fw-bold text-uppercase text-success-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-briefcase me-2"></i>Employment Details</h6>
                                 </div>
                                 <div class="card-body p-4">
@@ -844,8 +840,8 @@
                             </div>
                             
                             <!-- Address Details -->
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                            <div class="card mb-4">
+<div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
                                     <h6 class="fw-bold text-uppercase text-info-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-geo-alt me-2"></i>Address Details</h6>
                                 </div>
                                 <div class="card-body p-4">
@@ -895,7 +891,7 @@
                         <!-- Left Column -->
                         <div class="col-lg-8">
                             <!-- Card 1: Personal Information -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                            <div class="card mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-person-lines-fill text-primary fs-5 me-2"></i>
@@ -944,7 +940,7 @@
                             </div>
                             
                             <!-- Card 2: Contact Information -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                            <div class="card mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-telephone-fill text-info fs-5 me-2"></i>
@@ -978,7 +974,7 @@
                             </div>
                             
                             <!-- Card 3: Address Details -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary" style="z-index: 10;">
+                            <div class="card mb-3 bg-body-tertiary" style="z-index: 10;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-geo-alt-fill text-success fs-5 me-2"></i>
@@ -1024,7 +1020,7 @@
                                         <!-- Selected Village Details -->
                                         <template x-if="form.village_name">
                                             <div class="col-12">
-                                                <div class="card border border-info border-opacity-25 bg-info bg-opacity-10 shadow-sm mt-2">
+                                                <div class="card border border-info border-opacity-25 bg-info bg-opacity-10 mt-2">
                                                     <div class="card-body p-3">
                                                         <div class="row g-2 small">
                                                             <div class="col-md-4">
@@ -1080,7 +1076,7 @@
                             </div>
                             
                             <!-- Card 4: Employment Details -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                            <div class="card mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-briefcase-fill text-warning fs-5 me-2"></i>
@@ -1144,7 +1140,7 @@
                         <!-- Right Column -->
                         <div class="col-lg-4">
                             <!-- Card 5: Profile Photo -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                            <div class="card mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-image text-secondary fs-5 me-2"></i>
@@ -1170,7 +1166,7 @@
                             </div>
 
                             <!-- Card 6: Account Settings -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                            <div class="card mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-shield-lock-fill text-danger fs-5 me-2"></i>

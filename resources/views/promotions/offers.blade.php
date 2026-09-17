@@ -20,8 +20,8 @@
     <!-- Stats Row -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                             <i class="bi bi-star-fill"></i>
@@ -35,8 +35,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                             <i class="bi bi-check-circle-fill"></i>
@@ -50,8 +50,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-info">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
                             <i class="bi bi-arrow-repeat"></i>
@@ -65,8 +65,8 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
                             <i class="bi bi-tag-fill"></i>
@@ -82,14 +82,10 @@
     </div>
 
     <!-- Table -->
-    <div class="card">
-        <div class="card-header">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h2 class="h5 card-title mb-0">Offers Directory</h2>
-                </div>
-                <div class="col-auto">
-                    <div class="d-flex flex-wrap gap-2 justify-content-end">
+    <div class="card mb-4">
+<div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <h2 class="h5 card-title mb-0">Offers Directory</h2>
+            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
                         <div class="position-relative">
                             <input type="search" class="form-control form-control-sm" placeholder="Search offers..." x-model="search" @input.debounce.400ms="fetchOffers()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
@@ -325,7 +321,7 @@
                         <div class="col-12">
                             
                             {{-- Card 1: Basic Information --}}
-                            <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                            <div class="card mb-4 border border-secondary border-opacity-25 bg-body-secondary">
                                 <div class="card-body p-4">
                                     <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                         <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
@@ -360,7 +356,7 @@
                             </div>
 
                             {{-- Card 2: Discount Rules --}}
-                            <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                            <div class="card mb-4 border border-secondary border-opacity-25 bg-body-secondary">
                                 <div class="card-body p-4">
                                     <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                         <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
@@ -438,7 +434,7 @@
                             </div>
 
                             {{-- Card 3: Targeting & Scope --}}
-                            <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary position-relative" style="z-index: 20;">
+                            <div class="card mb-4 border border-secondary border-opacity-25 bg-body-secondary position-relative" style="z-index: 20;">
                                 <div class="card-body p-4">
                                     <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                         <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
@@ -564,7 +560,7 @@
                             </div>
 
                             {{-- Card 4: Validity & Settings --}}
-                            <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary position-relative" style="z-index: 10;">
+                            <div class="card mb-4 border border-secondary border-opacity-25 bg-body-secondary position-relative" style="z-index: 10;">
                                 <div class="card-body p-4">
                                     <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                         <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">

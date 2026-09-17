@@ -27,8 +27,8 @@
     <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                             <i class="bi bi-file-earmark-text-fill"></i>
@@ -43,8 +43,8 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-warning" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
                             <i class="bi bi-clock-history"></i>
@@ -61,8 +61,8 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                             <i class="bi bi-check-circle-fill"></i>
@@ -79,8 +79,8 @@
     </div>
 
     <!-- ═══════════════════════ Main Table Card ═════════════════════════════ -->
-    <div class="card mb-5">
-        <div class="card-header">
+    <div class="card mb-5 mb-4">
+<div class="card-header">
             <div class="row align-items-center">
                 <div class="col">
                     <h2 class="h5 card-title mb-0">Purchase Orders Directory</h2>
@@ -363,7 +363,7 @@
                             
                             {{-- Basic Details --}}
                             <div class="col-12 position-relative" style="z-index: 100;">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
@@ -435,7 +435,7 @@
 
                             {{-- Line Items --}}
                             <div class="col-12 position-relative" style="z-index: 50;">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
@@ -590,7 +590,7 @@
                     <div class="modal-body p-4 bg-body-tertiary custom-scrollbar">
                         <div class="row g-4">
                             <div class="col-12 position-relative" style="z-index: 100;">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                             <div class="bg-success text-success bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -617,7 +617,7 @@
                             </div>
 
                             <div class="col-12 position-relative" style="z-index: 50;">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                             <div class="bg-success text-success bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -785,7 +785,7 @@
                             
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6">
-                                    <div class="card border-0 shadow-sm h-100">
+                                    <div class="card h-100">
                                         <div class="card-body">
                                             <h6 class="text-muted text-uppercase mb-3" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-truck me-2"></i>Supplier Info</h6>
                                             <p class="mb-1 fw-medium" x-text="selectedPO.supplier ? (selectedPO.supplier.company_name || selectedPO.supplier.firstname + ' ' + (selectedPO.supplier.lastname || '')) : 'Unknown'"></p>
@@ -829,7 +829,7 @@
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="card border-0 shadow-sm h-100">
+                                    <div class="card h-100">
                                         <div class="card-body">
                                             <h6 class="text-muted text-uppercase mb-3" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-building me-2"></i>Delivery Info (Warehouse)</h6>
                                             <p class="mb-1 fw-medium" x-text="selectedPO.warehouse ? selectedPO.warehouse.name : 'Unknown'"></p>

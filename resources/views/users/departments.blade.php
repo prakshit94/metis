@@ -46,8 +46,8 @@
     <!-- Stats Widgets -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6" x-show="activeTab !== 'org_chart'">
         <div class="col-xl-4 col-lg-4">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 fs-3 rounded p-2">
                             <i class="bi bi-list-check"></i>
@@ -62,8 +62,8 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3 fs-3 rounded p-2">
                             <i class="bi bi-check-circle-fill"></i>
@@ -78,8 +78,8 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4">
-            <div class="card stats-card">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-danger">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-danger bg-opacity-10 text-danger me-3 fs-3 rounded p-2">
                             <i class="bi bi-x-circle-fill"></i>
@@ -97,13 +97,9 @@
 
     <!-- Main Table Container -->
     <div class="card" x-show="activeTab !== 'org_chart'">
-        <div class="card-header">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h2 class="h5 card-title mb-0" x-text="tabTitle + ' Directory'"></h2>
-                </div>
-                <div class="col-auto">
-                    <div class="d-flex flex-wrap gap-2 justify-content-end">
+        <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <h2 class="h5 card-title mb-0" x-text="tabTitle + ' Directory'"></h2>
+            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
                         <div class="position-relative">
                             <input type="search" class="form-control form-control-sm" placeholder="Search..." x-model="searchQuery" @input.debounce.300ms="filterItems()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
@@ -322,7 +318,7 @@
                 <div class="d-flex flex-column align-items-center mb-5" x-show="chartData.standalone_users && chartData.standalone_users.length > 0">
                     <template x-for="user in chartData.standalone_users" :key="'su-'+user.id">
                         <div class="org-node text-center mb-3">
-                            <div class="card shadow-sm border-primary border-2" style="width: 250px; border-radius: 10px;">
+                            <div class="card border-primary border-2" style="width: 250px; border-radius: 10px;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center justify-content-center mb-2">
                                         <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 48px; height: 48px;">
@@ -343,7 +339,7 @@
                         <li class="tree-node position-relative d-flex flex-column align-items-center">
                             <!-- Department Node -->
                             <div class="org-node text-center position-relative z-1">
-                                <div class="card shadow-sm border-0" style="width: 260px; border-radius: 10px;">
+                                <div class="card" style="width: 260px; border-radius: 10px;">
                                     <div class="card-header bg-primary text-white py-2 px-3 border-bottom-0" style="border-radius: 10px 10px 0 0;">
                                         <h6 class="mb-0 fw-bold text-truncate" x-text="dept.name"></h6>
                                     </div>
@@ -377,7 +373,7 @@
                                         <li class="tree-node position-relative mt-4">
                                             <div class="tree-line position-absolute start-50 translate-middle-x" style="width: 2px; height: 24px; background-color: var(--bs-border-color); top: -24px;"></div>
                                             <div class="org-node text-center position-relative z-1">
-                                                <div class="card shadow-sm border-0" style="width: 220px; border-radius: 10px;">
+                                                <div class="card" style="width: 220px; border-radius: 10px;">
                                                     <div class="card-header bg-info text-white py-2 px-3 border-bottom-0" style="border-radius: 10px 10px 0 0;">
                                                         <h6 class="mb-0 fw-semibold text-truncate fs-6" x-text="child.name"></h6>
                                                     </div>
@@ -439,7 +435,7 @@
                 <div class="modal-body bg-body-tertiary pt-0 px-4">
                     <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
                     
-                    <div class="card border-0 shadow-sm mb-3">
+                    <div class="card mb-3">
                         <div class="card-body p-4">
                             <div class="row g-3">
                                 <div :class="getTab() === 'departments' ? 'col-md-6' : 'col-12'">
@@ -529,7 +525,7 @@
                 <template x-if="!loading && department">
                     <div class="row g-4 pb-4">
                         <div class="col-md-4">
-                            <div class="card border-0 shadow-sm h-100">
+                            <div class="card h-100">
                                 <div class="card-body">
                                     <h6 class="text-muted small fw-bold text-uppercase mb-3">Overview</h6>
                                     
@@ -563,7 +559,7 @@
                             </div>
                         </div>
                         <div class="col-md-8">
-                            <div class="card border-0 shadow-sm h-100">
+                            <div class="card h-100">
                                 <div class="card-body">
                                     <h6 class="text-muted small fw-bold text-uppercase mb-3 d-flex justify-content-between align-items-center">
                                         <span>Team Members</span>

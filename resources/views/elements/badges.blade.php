@@ -35,8 +35,8 @@
                         
                         <!-- Basic Badges -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Basic Badges</h2>
                                 </div>
                                 <div class="card-body">
@@ -69,8 +69,8 @@
 
                         <!-- Pill Badges -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Pill Badges</h2>
                                 </div>
                                 <div class="card-body">
@@ -97,8 +97,8 @@
 
                         <!-- Badges with Icons -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Badges with Icons</h2>
                                 </div>
                                 <div class="card-body">
@@ -133,8 +133,8 @@
 
                         <!-- Positioned Badges -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Positioned Badges</h2>
                                 </div>
                                 <div class="card-body">
@@ -175,8 +175,8 @@
 
                         <!-- Badge Sizes -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Badge Sizes</h2>
                                 </div>
                                 <div class="card-body">
@@ -203,8 +203,8 @@
 
                         <!-- Headings with Badges -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Headings with Badges</h2>
                                 </div>
                                 <div class="card-body">

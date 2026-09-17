@@ -22,8 +22,8 @@
     <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                             <i class="bi bi-clipboard-check-fill"></i>
@@ -38,8 +38,8 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                             <i class="bi bi-calendar-check-fill"></i>
@@ -56,8 +56,8 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-warning" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
                             <i class="bi bi-clock-history"></i>
@@ -74,8 +74,8 @@
     </div>
 
     <!-- ═══════════════════════ Main Table Card ═════════════════════════════ -->
-    <div class="card mb-5">
-        <div class="card-header">
+    <div class="card mb-5 mb-4">
+<div class="card-header">
             <div class="row align-items-center">
                 <div class="col">
                     <h2 class="h5 card-title mb-0">Receipts Directory</h2>
@@ -283,7 +283,7 @@
                     <div class="modal-body p-4 bg-body-tertiary custom-scrollbar">
                         <div class="row g-4">
                             <div class="col-12 position-relative" style="z-index: 100;">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                             <div class="bg-success text-success bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -315,7 +315,7 @@
                             </div>
 
                             <div class="col-12 position-relative" style="z-index: 50;">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                             <div class="bg-success text-success bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -416,7 +416,7 @@
                     <!-- Header Cards -->
                     <div class="row g-4 mb-4">
                         <div class="col-md-4">
-                            <div class="card h-100 border-0 shadow-sm">
+                            <div class="card h-100">
                                 <div class="card-body">
                                     <h6 class="text-muted mb-2 text-uppercase fw-bold" style="font-size: 0.75rem;">Receipt Information</h6>
                                     <div class="mb-2"><strong>GRN:</strong> <span x-text="selectedGRN?.grn_number"></span></div>
@@ -427,7 +427,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card h-100 border-0 shadow-sm">
+                            <div class="card h-100">
                                 <div class="card-body">
                                     <h6 class="text-muted mb-2 text-uppercase fw-bold" style="font-size: 0.75rem;">Supplier Info</h6>
                                     <div class="mb-2"><strong>PO Number:</strong> <span x-text="selectedGRN?.purchase_order?.po_number"></span></div>
@@ -437,7 +437,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card h-100 border-0 shadow-sm">
+                            <div class="card h-100">
                                 <div class="card-body">
                                     <h6 class="text-muted mb-2 text-uppercase fw-bold" style="font-size: 0.75rem;">Warehouse</h6>
                                     <div class="mb-2"><strong>Name:</strong> <span x-text="selectedGRN?.warehouse?.name"></span></div>
@@ -448,8 +448,8 @@
                     </div>
 
                     <!-- Items Table -->
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-body border-bottom-0 pt-4 pb-2">
+                    <div class="card mb-4">
+<div class="card-header bg-body border-bottom-0 pt-4 pb-2">
                             <h6 class="mb-0 fw-bold">Received Items</h6>
                         </div>
                         <div class="card-body p-0">

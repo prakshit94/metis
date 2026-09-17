@@ -21,7 +21,7 @@
     <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.35);"></div>
 
     <!-- Theme-aware Glassmorphism Card (Now frosted for text legibility) -->
-    <div class="auth-card position-relative z-1 shadow-lg border border-secondary-subtle mx-3" x-data="loginApp()" style="background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 20px; max-width: 380px; width: 100%; padding: 2.5rem 2rem;">
+    <div class="auth-card position-relative z-1 border border-secondary-subtle mx-3" x-data="loginApp()" style="background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 20px; max-width: 380px; width: 100%; padding: 2.5rem 2rem;">
 
 
 

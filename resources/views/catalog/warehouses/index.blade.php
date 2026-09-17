@@ -26,8 +26,8 @@
     <div class="row g-4 mb-4" x-show="items.length > 0" style="display: none;">
         <!-- Chart 1: Physical Stock Distribution -->
         <div class="col-lg-7">
-            <div class="card h-100">
-                <div class="card-header border-bottom-0 pt-4 pb-0">
+            <div class="card h-100 mb-4">
+<div class="card-header border-bottom-0 pt-4 pb-0">
                     <h5 class="fw-bold text-primary mb-0"><i class="bi bi-bar-chart-fill me-2"></i>Stock Distribution</h5>
                 </div>
                 <div class="card-body">
@@ -37,8 +37,8 @@
         </div>
         <!-- Chart 2: SKU Spread -->
         <div class="col-lg-5">
-            <div class="card h-100">
-                <div class="card-header border-bottom-0 pt-4 pb-0">
+            <div class="card h-100 mb-4">
+<div class="card-header border-bottom-0 pt-4 pb-0">
                     <h5 class="fw-bold text-success mb-0"><i class="bi bi-pie-chart-fill me-2"></i>SKU Spread</h5>
                 </div>
                 <div class="card-body d-flex align-items-center justify-content-center">
@@ -51,8 +51,8 @@
     <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                             <i class="bi bi-buildings-fill"></i>
@@ -67,8 +67,8 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                             <i class="bi bi-check-circle-fill"></i>
@@ -85,8 +85,8 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-secondary" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
                             <i class="bi bi-dash-circle-fill"></i>
@@ -103,8 +103,8 @@
     </div>
 
     <!-- ═══════════════════════ Main Table Card ═════════════════════════════ -->
-    <div class="card mb-5">
-        <div class="card-header">
+    <div class="card mb-5 mb-4">
+<div class="card-header">
             <div class="row align-items-center">
                 <div class="col">
                     <h2 class="h5 card-title mb-0">Warehouses Directory</h2>
@@ -406,7 +406,7 @@
                             <div class="col-lg-6">
 
                                 <!-- Identity Card -->
-                                <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-3">
+                                <div class="card border border-secondary border-opacity-25 bg-body-secondary mb-3">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -440,7 +440,7 @@
                                 </div>
 
                                 <!-- Contact Card -->
-                                <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary mb-3 mb-lg-0">
+                                <div class="card border border-secondary border-opacity-25 bg-body-secondary mb-3 mb-lg-0">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                             <div class="bg-info bg-opacity-10 text-info rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -513,7 +513,7 @@
 
                             <!-- ── Column 2: Address ────────────────────── -->
                             <div class="col-lg-6">
-                                <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary h-100">
+                                <div class="card border border-secondary border-opacity-25 bg-body-secondary h-100">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -579,7 +579,7 @@
                                             <!-- Selected Village Details -->
                                             <template x-if="form.village_id">
                                                 <div class="col-12 mt-2">
-                                                    <div class="card bg-body border-0 border-start border-4 border-primary shadow-sm mt-2">
+                                                    <div class="card bg-body border-start border-4 border-primary mt-2">
                                                         <div class="card-body p-3">
                                                             <div class="row g-2">
                                                                 <div class="col-md-4">

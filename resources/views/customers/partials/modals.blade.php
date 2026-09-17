@@ -54,7 +54,7 @@
                     </div>
                 </div>
                 
-                <div x-show="villages.length > 0" x-cloak @click.away="villages = []" class="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg shadow-primary/5 max-h-60 overflow-y-auto backdrop-blur-xl">
+                <div x-show="villages.length > 0" x-cloak @click.away="villages = []" class="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-primary/5 max-h-60 overflow-y-auto backdrop-blur-xl">
                     <template x-for="village in villages" :key="village.id">
                         <div @click="selectVillage(village)" class="p-3 border-b border-border/40 hover:bg-primary/5 cursor-pointer transition-colors last:border-0 group">
                             <p class="text-sm font-bold text-foreground group-hover:text-primary transition-colors" x-text="village.name"></p>

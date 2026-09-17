@@ -1,5 +1,5 @@
-<div class="card">
-    <div class="card-header">
+<div class="card mb-4">
+<div class="card-header">
         <div class="row align-items-center g-3">
             <div class="col">
                 <h2 class="h5 card-title mb-0">{{ $title }}</h2>

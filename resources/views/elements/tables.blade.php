@@ -35,8 +35,8 @@
                         
                         <!-- Basic Table -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Basic Table</h2>
                                 </div>
                                 <div class="card-body">
@@ -111,8 +111,8 @@
 
                         <!-- Table Variants -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Table Variants</h2>
                                 </div>
                                 <div class="card-body">
@@ -209,8 +209,8 @@
 
                         <!-- Striped Table -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Striped Table</h2>
                                 </div>
                                 <div class="card-body">
@@ -282,8 +282,8 @@
 
                         <!-- Hoverable Table -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Hoverable Table</h2>
                                 </div>
                                 <div class="card-body">
@@ -349,8 +349,8 @@
 
                         <!-- Bordered Table -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Bordered Table</h2>
                                 </div>
                                 <div class="card-body">
@@ -415,8 +415,8 @@
 
                         <!-- Borderless Table -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Borderless Table</h2>
                                 </div>
                                 <div class="card-body">
@@ -481,8 +481,8 @@
 
                         <!-- Small Table -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Small Table</h2>
                                 </div>
                                 <div class="card-body">
@@ -547,8 +547,8 @@
 
                         <!-- Responsive Table -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Responsive Tables</h2>
                                 </div>
                                 <div class="card-body">
@@ -654,8 +654,8 @@
 
                         <!-- Dark Table -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Dark Table</h2>
                                 </div>
                                 <div class="card-body">

@@ -101,8 +101,8 @@
                         <!-- Product Stats Widgets -->
                         <div class="row g-4 g-lg-5 mb-5">
                             <div class="col-xl-3 col-lg-6" style="cursor: pointer;" @click="stockFilter = ''; filterProducts()">
-                                <div class="card stats-card">
-                                    <div class="card-body p-3 p-lg-4">
+                                <div class="card stats-card h-100 border-start border-4 border-primary">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-center">
                                             <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                                                 <i class="bi bi-box"></i>
@@ -119,8 +119,8 @@
                                 </div>
                             </div>
                             <div class="col-xl-3 col-lg-6" style="cursor: pointer;" @click="stockFilter = 'in-stock'; filterProducts()">
-                                <div class="card stats-card">
-                                    <div class="card-body p-3 p-lg-4">
+                                <div class="card stats-card h-100 border-start border-4 border-success">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-center">
                                             <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                                                 <i class="bi bi-check-circle"></i>
@@ -137,8 +137,8 @@
                                 </div>
                             </div>
                             <div class="col-xl-3 col-lg-6" style="cursor: pointer;" @click="stockFilter = 'low-stock'; filterProducts()">
-                                <div class="card stats-card">
-                                    <div class="card-body p-3 p-lg-4">
+                                <div class="card stats-card h-100 border-start border-4 border-warning">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-center">
                                             <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
                                                 <i class="bi bi-exclamation-triangle"></i>
@@ -155,8 +155,8 @@
                                 </div>
                             </div>
                             <div class="col-xl-3 col-lg-6">
-                                <div class="card stats-card">
-                                    <div class="card-body p-3 p-lg-4">
+                                <div class="card stats-card h-100 border-start border-4 border-info">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-center">
                                             <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
                                                 <i class="bi bi-currency-rupee"></i>
@@ -176,14 +176,10 @@
 
 
                         <!-- Products Table -->
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row align-items-center">
-                                    <div class="col">
-                                        <h2 class="h5 card-title mb-0">Product Catalog</h2>
-                                    </div>
-                                    <div class="col-auto">
-                                        <div class="d-flex flex-wrap gap-2 justify-content-end">
+                        <div class="card mb-4">
+<div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <h2 class="h5 card-title mb-0">Product Catalog</h2>
+            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
                                             <!-- Search -->
                                             <div class="position-relative">
                                                 <input type="search" 
@@ -928,7 +924,7 @@
                 <div class="pvm-layout">
                     <!-- Left: Image & Meta (sticky panel) -->
                     <div class="pvm-left bg-body-tertiary border-end p-3">
-                        <div class="card border-0 shadow-sm mb-3 rounded-4 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
+                        <div class="card mb-3 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
                             <img :src="product ? (product.image || '{{ asset('assets/images/product-placeholder.svg') }}') : ''" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                             <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm" x-show="product && product.default_discount > 0" x-text="product ? product.default_discount + (product.default_discount_type === 'percent' ? '%' : '') + ' OFF' : ''"></span>
                         </div>
@@ -964,7 +960,7 @@
                     <div class="pvm-right p-3">
 
                         <!-- Pricing Card -->
-                        <div class="card mb-3 border-0 shadow-sm bg-body-tertiary">
+                        <div class="card mb-3 bg-body-tertiary">
                             <div class="card-body p-3">
                                 <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
                                     <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
@@ -1006,7 +1002,7 @@
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <!-- Technical Specs -->
-                                <div class="card h-100 border-0 shadow-sm bg-body-tertiary">
+                                <div class="card h-100 bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-info bg-opacity-10 text-info rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-list-stars" style="font-size:12px;"></i></div>
@@ -1031,7 +1027,7 @@
                             </div>
                             <div class="col-md-6">
                                 <!-- Details & Usage -->
-                                <div class="card h-100 border-0 shadow-sm bg-body-tertiary">
+                                <div class="card h-100 bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-secondary bg-opacity-10 text-secondary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-file-text-fill" style="font-size:12px;"></i></div>
@@ -1053,7 +1049,7 @@
                         </div>
 
                         <!-- Active Promotions Card -->
-                        <div class="card mb-3 border-0 shadow-sm bg-body-tertiary" x-show="applicablePromotions.offers.length > 0 || applicablePromotions.coupons.length > 0 || applicablePromotions.referrals.length > 0" x-cloak>
+                        <div class="card mb-3 bg-body-tertiary" x-show="applicablePromotions.offers.length > 0 || applicablePromotions.coupons.length > 0 || applicablePromotions.referrals.length > 0" x-cloak>
                             <div class="card-body p-3">
                                 <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
                                     <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-stars" style="font-size:12px;"></i></div>
@@ -1114,7 +1110,7 @@
                         <div class="row g-3 mb-3">
                             <div class="col-md-12">
                                 <!-- Inventory & Config -->
-                                <div class="card border-0 shadow-sm bg-body-tertiary">
+                                <div class="card bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-box-seam-fill" style="font-size:12px;"></i></div>
@@ -1173,7 +1169,7 @@
                         <div class="row g-3">
                             <!-- Supplier & Brand Details -->
                             <div class="col-md-6">
-                                <div class="card h-100 border-0 shadow-sm bg-body-tertiary">
+                                <div class="card h-100 bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-building" style="font-size:12px;"></i></div>
@@ -1209,7 +1205,7 @@
                             
                             <!-- Category & Warehouse Details -->
                             <div class="col-md-6">
-                                <div class="card h-100 border-0 shadow-sm bg-body-tertiary">
+                                <div class="card h-100 bg-body-tertiary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width:24px;height:24px;"><i class="bi bi-geo-alt" style="font-size:12px;"></i></div>

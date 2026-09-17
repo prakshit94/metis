@@ -20,14 +20,10 @@
     </div>
 
     <!-- Teams Table -->
-    <div class="card">
-        <div class="card-header">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h2 class="h5 card-title mb-0">Teams Directory</h2>
-                </div>
-                <div class="col-auto">
-                    <div class="d-flex flex-wrap gap-2 justify-content-end">
+    <div class="card mb-4">
+<div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <h2 class="h5 card-title mb-0">Teams Directory</h2>
+            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
                         <div class="position-relative">
                             <input type="search" class="form-control form-control-sm" placeholder="Search teams..." x-model="searchQuery" @input="filterTeams()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>

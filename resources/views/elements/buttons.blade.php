@@ -35,8 +35,8 @@
                         
                         <!-- Basic Button Styles -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Basic Button Styles</h2>
                                 </div>
                                 <div class="card-body">
@@ -71,8 +71,8 @@
 
                         <!-- Outline Buttons -->
                         <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Outline Buttons</h2>
                                 </div>
                                 <div class="card-body">
@@ -105,8 +105,8 @@
 
                         <!-- Button Sizes -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Button Sizes</h2>
                                 </div>
                                 <div class="card-body">
@@ -134,8 +134,8 @@
 
                         <!-- Button States -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Button States</h2>
                                 </div>
                                 <div class="card-body">
@@ -172,8 +172,8 @@
 
                         <!-- Button Groups -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Button Groups</h2>
                                 </div>
                                 <div class="card-body">
@@ -206,8 +206,8 @@
 
                         <!-- Icon Buttons -->
                         <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
+                            <div class="card mb-4">
+<div class="card-header">
                                     <h2 class="h5 card-title mb-0">Icon Buttons</h2>
                                 </div>
                                 <div class="card-body">

@@ -87,7 +87,7 @@
         
         <!-- Total Sales -->
         <div class="col-sm-6 col-xl-3">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-success">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
@@ -107,7 +107,7 @@
 
         <!-- Total Purchases -->
         <div class="col-sm-6 col-xl-3">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
@@ -127,7 +127,7 @@
 
         <!-- Inward Payments (Income) -->
         <div class="col-sm-6 col-xl-3">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-info">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
@@ -146,7 +146,7 @@
 
         <!-- Outward Payments (Expense) -->
         <div class="col-sm-6 col-xl-3">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-danger">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
@@ -209,7 +209,7 @@
 
         <!-- Customers -->
         <div class="col-sm-6 col-xl-3">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
@@ -230,8 +230,8 @@
 
         <!-- Inventory Health -->
         <div class="col-sm-6 col-xl-3">
-            <div class="card stats-card h-100">
-                <div class="card-body">
+            <div class="card stats-card h-100 border-start border-4 border-secondary">
+<div class="card-body">
                     <p class="h6 mb-3 text-body-secondary">Inventory Health</p>
                     <div class="d-flex justify-content-between text-center mt-3">
                         <div>
@@ -256,8 +256,8 @@
     <div class="row g-4 mb-4">
         <!-- Sales vs Purchase Trend -->
         <div class="col-lg-8">
-            <div class="card h-100">
-                <div class="card-header">
+            <div class="card h-100 mb-4 border-top border-4 border-primary">
+                            <div class="card-header">
                     <h2 class="h5 card-title mb-0">Sales vs Purchase Trend</h2>
                 </div>
                 <div class="card-body">
@@ -268,8 +268,8 @@
 
         <!-- State-wise Sales -->
         <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header">
+            <div class="card h-100 mb-4 border-top border-4 border-info">
+                            <div class="card-header">
                     <h2 class="h5 card-title mb-0">State-wise Sales</h2>
                 </div>
                 <div class="card-body">
@@ -284,8 +284,8 @@
         
         <!-- Product Performance -->
         <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card h-100 mb-4 border-top border-4 border-success">
+                            <div class="card-header d-flex justify-content-between align-items-center">
                     <h2 class="h5 card-title mb-0">Product Performance</h2>
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-primary" :class="{'active': showBestSelling}" @click="showBestSelling = true">Best Selling</button>
@@ -340,8 +340,8 @@
 
         <!-- Low Stock Alerts -->
         <div class="col-lg-6">
-            <div class="card h-100 border-top border-4 border-warning">
-                <div class="card-header">
+            <div class="card h-100 border-top border-4 border-warning mb-4">
+                            <div class="card-header">
                     <h2 class="h5 card-title mb-0 text-warning"><i class="bi bi-exclamation-triangle me-2"></i> Low Stock Alerts</h2>
                 </div>
                 <div class="card-body p-0">
@@ -386,8 +386,8 @@
     <div class="row g-4 mb-4">
         <!-- Top Customers & Vendors -->
         <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card h-100 mb-4 border-top border-4 border-warning">
+                            <div class="card-header d-flex justify-content-between align-items-center">
                     <h2 class="h5 card-title mb-0">Top Parties</h2>
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-primary" :class="{'active': showTopCustomers}" @click="showTopCustomers = true">Customers</button>
@@ -444,8 +444,8 @@
 
         <!-- Unpaid / Due Invoices -->
         <div class="col-lg-6">
-            <div class="card h-100 border-top border-4 border-danger">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card h-100 border-top border-4 border-danger mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
                     <h2 class="h5 card-title mb-0 text-danger"><i class="bi bi-receipt me-2"></i> Unpaid / Due</h2>
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-danger" :class="{'active': showSalesDue}" @click="showSalesDue = true">Sales Due</button>

@@ -18,8 +18,8 @@
     <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                             <i class="bi bi-building"></i>
@@ -34,8 +34,8 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                             <i class="bi bi-check-circle-fill"></i>
@@ -50,8 +50,8 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-secondary" style="cursor: default;">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
                             <i class="bi bi-dash-circle"></i>
@@ -68,8 +68,8 @@
     </div>
 
     <!-- ═══════════════════════ Main Table Card ═════════════════════════════ -->
-    <div class="card mb-5">
-        <div class="card-header">
+    <div class="card mb-5 mb-4">
+<div class="card-header">
             <div class="row align-items-center">
                 <div class="col">
                     <h2 class="h5 card-title mb-0">Offices Directory</h2>
@@ -261,7 +261,7 @@
                     <template x-if="officeViewData">
                         <div class="row g-3">
                             <div class="col-12">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-info-circle text-primary me-2"></i>Basic Information</h6>
                                         <table class="table table-sm table-borderless mb-0">
@@ -285,7 +285,7 @@
 
 
                             <div class="col-12">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-key text-success me-2"></i>API Credentials</h6>
                                         <table class="table table-sm table-borderless mb-0">
@@ -301,7 +301,7 @@
                             </div>
 
                             <div class="col-12">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-file-earmark-text text-warning me-2"></i>Contract Details</h6>
                                         <table class="table table-sm table-borderless mb-0">
@@ -343,7 +343,7 @@
                             
                             {{-- Basic Details Card --}}
                             <div class="col-12 position-relative">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
@@ -389,7 +389,7 @@
 
                             {{-- API Credentials Card --}}
                             <div class="col-12 position-relative">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom">
                                             <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
@@ -430,7 +430,7 @@
 
                             {{-- Contracts Card --}}
                             <div class="col-12 position-relative">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom">
                                             <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
@@ -495,7 +495,7 @@
                     <template x-if="activeAwbOffice">
                         <div class="row g-3">
                             <div class="col-12 mb-3">
-                                <div class="card bg-primary bg-opacity-10 border-primary border-opacity-25 shadow-sm">
+                                <div class="card bg-primary bg-opacity-10 border-primary border-opacity-25">
                                     <div class="card-body">
                                         <div class="row text-center">
                                             <div class="col-md-4 border-end border-primary border-opacity-25">
@@ -577,7 +577,7 @@
                     <template x-if="activeRangeOffice">
                         <div class="row g-3">
                             <div class="col-12">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">
                                             <i class="bi bi-pencil-square text-primary me-2" x-show="isEditingRange"></i>
@@ -612,7 +612,7 @@
                             </div>
                             
                             <div class="col-12">
-                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                <div class="card mb-0 border border-secondary border-opacity-25 bg-body-secondary">
                                     <div class="card-body p-3">
                                         <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-clock-history text-info me-2"></i>Range History</h6>
                                 <div class="table-responsive bg-body rounded shadow-sm border">

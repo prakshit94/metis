@@ -59,7 +59,7 @@
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
             <div class="card stats-card h-100 border-start border-4 border-primary">
-                <div class="card-body p-3 p-lg-4">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                             <i class="bi bi-geo-alt-fill"></i>
@@ -77,7 +77,7 @@
         </div>
         <div class="col-xl-3 col-lg-6">
             <div class="card stats-card h-100 border-start border-4 border-success">
-                <div class="card-body p-3 p-lg-4">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                             <i class="bi bi-mailbox"></i>
@@ -95,7 +95,7 @@
         </div>
         <div class="col-xl-3 col-lg-6">
             <div class="card stats-card h-100 border-start border-4 border-info">
-                <div class="card-body p-3 p-lg-4">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
                             <i class="bi bi-map-fill"></i>
@@ -113,7 +113,7 @@
         </div>
         <div class="col-xl-3 col-lg-6">
             <div class="card stats-card h-100 border-start border-4 border-warning">
-                <div class="card-body p-3 p-lg-4">
+                <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
                             <i class="bi bi-gear-fill"></i>
@@ -134,31 +134,31 @@
     <!-- Advanced Analytics Row -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header">
+            <div class="card h-100 mb-4">
+<div class="card-header">
                     <h2 class="h5 card-title mb-0">State-wise Distribution</h2>
                 </div>
-                <div class="card-body p-3 p-lg-4">
+                <div class="card-body">
                     <div id="stateDistributionChart" style="width: 100%; min-height: 250px;"></div>
                 </div>
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header">
+            <div class="card h-100 mb-4">
+<div class="card-header">
                     <h2 class="h5 card-title mb-0">Delivery vs Non-Delivery</h2>
                 </div>
-                <div class="card-body p-3 p-lg-4">
+                <div class="card-body">
                     <div id="deliveryDistributionChart" style="width: 100%; min-height: 250px;"></div>
                 </div>
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header">
+            <div class="card h-100 mb-4">
+<div class="card-header">
                     <h2 class="h5 card-title mb-0">Office Type Distribution</h2>
                 </div>
-                <div class="card-body p-3 p-lg-4">
+                <div class="card-body">
                     <div id="officeTypeChart" style="width: 100%; min-height: 250px;"></div>
                 </div>
             </div>
@@ -169,11 +169,11 @@
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <!-- Growth Chart (Village addition/region distribution) -->
         <div class="col-lg-8">
-            <div class="card h-100">
-                <div class="card-header">
+            <div class="card h-100 mb-4">
+<div class="card-header">
                     <h2 class="h5 card-title mb-0">Service Coverage Distribution</h2>
                 </div>
-                <div class="card-body p-3 p-lg-4">
+                <div class="card-body">
                     <div id="serviceDistributionChart" style="width: 100%; overflow: hidden;"></div>
                 </div>
             </div>
@@ -181,11 +181,11 @@
 
         <!-- Districts Breakdown list -->
         <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header">
+            <div class="card h-100 mb-4">
+<div class="card-header">
                     <h2 class="h5 card-title mb-0">Top Districts by Village Count</h2>
                 </div>
-                <div class="card-body p-3 p-lg-4">
+                <div class="card-body">
                     <div>
                         <template x-for="d in districtBreakdown" :key="d.name">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -209,14 +209,10 @@
     </div>
 
     <!-- Main Table Container -->
-    <div class="card">
-        <div class="card-header">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h2 class="h5 card-title mb-0">Villages Directory</h2>
-                </div>
-                <div class="col-auto">
-                    <div class="d-flex flex-wrap gap-2 justify-content-end">
+    <div class="card mb-4">
+<div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <h2 class="h5 card-title mb-0">Villages Directory</h2>
+            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
                         <!-- Search -->
                         <div class="position-relative">
                             <input type="search" 

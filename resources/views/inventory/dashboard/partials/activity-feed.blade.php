@@ -1,4 +1,4 @@
-<div class="card border-0 shadow-sm rounded-4 h-100" 
+<div class="card h-100" 
      x-data="{ 
          searchActivity: '', 
          isLoading: false,
