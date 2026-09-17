@@ -257,8 +257,6 @@
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
 
         <!-- Collapsible Advanced Filters Drawer -->
         <div class="collapse" id="advancedFilters">
