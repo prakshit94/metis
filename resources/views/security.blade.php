@@ -45,7 +45,7 @@
                             <div class="col-lg-9 security-content">
                                 
                                 <!-- Account Security -->
-                                <div x-show="activeSection === 'account'" class="security-section">
+                                <div x-show="activeSection === 'account'" class="security-section card shadow-sm border-start border-4 border-primary">
                                     <h5>Account Security</h5>
                                     <p>Manage your account security settings and password requirements</p>
                                     
@@ -61,7 +61,7 @@
                                 </div>
 
                                 <!-- Two-Factor Authentication -->
-                                <div x-show="activeSection === 'twofactor'" class="security-section">
+                                <div x-show="activeSection === 'twofactor'" class="security-section card shadow-sm border-start border-4 border-success">
                                     <h5>Two-Factor Authentication</h5>
                                     <p>Add an extra layer of security to your account</p>
                                     
@@ -105,7 +105,7 @@
                                 </div>
 
                                 <!-- Sessions Management -->
-                                <div x-show="activeSection === 'sessions'" class="security-section">
+                                <div x-show="activeSection === 'sessions'" class="security-section card shadow-sm border-start border-4 border-warning">
                                     <h5>Active Sessions</h5>
                                     <p>Manage and monitor your active login sessions</p>
                                     
@@ -143,7 +143,7 @@
 
 
                                 <!-- Security Activity -->
-                                <div x-show="activeSection === 'activity'" class="security-section">
+                                <div x-show="activeSection === 'activity'" class="security-section card shadow-sm border-start border-4 border-info">
                                     <h5>Recent Security Activity</h5>
                                     <p>Monitor recent security events and login attempts</p>
                                     
@@ -179,7 +179,7 @@
                 <!-- Custom Confirmation Modal -->
                 <div class="modal fade" id="securityConfirmModal" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered modal-sm">
-                        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                        <div class="modal-content border-start border-4 border-warning shadow-lg rounded-4 overflow-hidden">
                             <div class="modal-header bg-body-secondary border-bottom-0 py-3 px-4">
                                 <h6 class="modal-title fw-bold text-body" id="confirmModalTitle">
                                     <i class="bi bi-exclamation-triangle text-warning me-2" id="confirmModalIcon"></i><span id="confirmModalTitleText">Confirm Action</span>
@@ -200,7 +200,5 @@
 @endsection
 
 @push('scripts')
-<script type="module" src="./scripts/components/security.js"></script>
 
-<script type="module" src="./scripts/main.js"></script>
 @endpush
