@@ -243,15 +243,17 @@
 
                                             <div class="position-absolute w-100 bg-body border rounded shadow-lg mt-1 overflow-auto" style="max-height: 200px; z-index: 1060;" x-show="villageResults.length > 0">
                                                 <template x-for="v in villageResults" :key="v.id">
-                                                    <button type="button" class="dropdown-item w-100 text-start py-2 px-3 border-bottom custom-hover-bg" @click="selectVillage(v)">
-                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <button type="button" class="dropdown-item text-wrap w-100 text-start py-2 px-3 border-bottom custom-hover-bg" @click="selectVillage(v)">
+                                                        <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
                                                             <span class="fw-bold text-primary" style="font-size: 12px;" x-text="v.village_name"></span>
-                                                            <span class="badge bg-secondary-subtle text-secondary-emphasis" x-text="v.pincode"></span>
+                                                            <span class="badge bg-secondary-subtle text-secondary-emphasis flex-shrink-0" x-text="v.pincode"></span>
                                                         </div>
-                                                        <div class="text-muted small" style="font-size: 0.75rem;">
-                                                            <span x-show="v.post_so_name" x-text="'PO: ' + v.post_so_name + ' · '"></span>
-                                                            <span x-show="v.taluka_name" x-text="'Taluka: ' + v.taluka_name + ' · '"></span>
-                                                            <span x-show="v.district_name" x-text="'District: ' + v.district_name"></span>
+                                                        <div class="text-muted small" style="font-size: 0.75rem;" x-text="[
+                                                            v.post_so_name ? 'PO: ' + v.post_so_name : null,
+                                                            v.taluka_name ? 'Taluka: ' + v.taluka_name : null,
+                                                            v.district_name ? 'District: ' + v.district_name : null,
+                                                            v.state_name ? 'State: ' + v.state_name : null
+                                                        ].filter(Boolean).join(' · ')">
                                                         </div>
                                                     </button>
                                                 </template>
