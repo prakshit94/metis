@@ -716,6 +716,29 @@
             this.appliedOrderOfferId = null;
             
             const successMessage = this.editingOrderId ? 'Order updated successfully!' : 'Order placed successfully!';
+
+            // IMMEDIATE CONFIRMATION STEP
+            try {
+                const confirmPayload = {
+                    action: this.orderStatus === 'future_order' ? 'schedule' : 'confirm',
+                    reason: this.orderStatus === 'future_order' ? 'future_order' : null,
+                    scheduled_date: this.orderStatus === 'future_order' ? this.futureOrderDate : null,
+                    notes: 'Order placed via Customer Profile'
+                };
+                const confirmRes = await fetch(`/orders/${json.order?.id || json.data?.id || this.editingOrderId}/confirm`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify(confirmPayload)
+                });
+                if (!confirmRes.ok) {
+                    console.warn('Order saved, but confirmation failed.');
+                }
+            } catch(e) { console.warn('Error confirming order:', e); }
             this.notify('success', successMessage);
             
             if (this.editingOrderId) {
