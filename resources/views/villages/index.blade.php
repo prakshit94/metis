@@ -17,6 +17,7 @@
                 <i class="bi bi-download me-2"></i>Export
             </button>
             @endcan
+            @can('village-import')
             <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-upload me-2"></i>Import
@@ -30,6 +31,8 @@
                     </a></li>
                 </ul>
             </div>
+            @endcan
+            @can('village-edit')
             <template x-if="!syncing">
                 <button type="button" class="btn btn-outline-info" @click="syncPincodes()">
                     <i class="bi bi-arrow-repeat me-2"></i><span>Sync India Post</span>
@@ -40,12 +43,15 @@
                     <i class="bi bi-stop-circle me-2" :class="{'bi-spin': stopSyncing}"></i><span x-text="stopSyncing ? 'Stopping...' : 'Stop Syncing'"></span>
                 </button>
             </template>
+            @endcan
             <button type="button" class="btn btn-outline-primary btn-sm px-3" @click="loadVillages()" :disabled="isLoading" data-bs-toggle="tooltip" title="Refresh data">
                 <i class="bi bi-arrow-clockwise icon-hover" :class="{'bi-spin': isLoading}"></i>
             </button>
+            @can('village-create')
             <button type="button" class="btn btn-primary" @click="openCreateVillage()">
                 <i class="bi bi-plus-circle me-2"></i>Add Village
             </button>
+            @endcan
         </div>
     </div>
 
@@ -421,24 +427,34 @@
                         </span>
                     </div>
                     <div class="d-flex gap-2">
+                        @can('village-export')
                         <button class="btn btn-sm btn-outline-primary" @click="exportSelectedVillages()" title="Export Selected to CSV">
                             <i class="bi bi-download me-1"></i>Export CSV
                         </button>
+                        @endcan
+                        @can('village-edit')
                         <button class="btn btn-sm btn-primary" @click="openBulkServiceModal('available')" x-show="!hasSelectedDeletedVillages">
                             <i class="bi bi-plus-circle me-1"></i>Assign Services
                         </button>
                         <button class="btn btn-sm btn-warning" @click="openBulkServiceModal('unavailable')" x-show="!hasSelectedDeletedVillages">
                             <i class="bi bi-dash-circle me-1"></i>Remove Services
                         </button>
+                        @endcan
+                        @can('village-delete')
                         <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" x-show="!hasSelectedDeletedVillages">
                             <i class="bi bi-trash me-1"></i>Delete Selected
                         </button>
+                        @endcan
+                        @can('village-restore')
                         <button class="btn btn-sm btn-success" @click="bulkAction('restore')" x-show="hasSelectedDeletedVillages">
                             <i class="bi bi-arrow-counterclockwise me-1"></i>Restore
                         </button>
+                        @endcan
+                        @can('village-permanent-delete')
                         <button class="btn btn-sm btn-danger" @click="bulkAction('force-delete')" x-show="hasSelectedDeletedVillages">
                             <i class="bi bi-trash3 me-1"></i>Permanent Delete
                         </button>
+                        @endcan
                         <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selectedVillages = []" title="Clear selection">
                             <i class="bi bi-x-lg" style="margin-left: 7px"></i>
                         </button>
@@ -535,12 +551,14 @@
                                     </div>
                                 </td>
                                 <td>
+                                    @if(auth()->user()->can('village-edit') || auth()->user()->can('village-delete') || auth()->user()->can('village-restore') || auth()->user()->can('village-permanent-delete'))
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                                 type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
+                                            @can('village-edit')
                                             <li x-show="!v.deleted_at">
                                                 <a class="dropdown-item" href="#" @click.prevent="openServicesModal(v)">
                                                     <i class="bi bi-gear me-2"></i>Manage Services
@@ -552,23 +570,31 @@
                                                 </a>
                                             </li>
                                             <li x-show="!v.deleted_at"><hr class="dropdown-divider"></li>
+                                            @endcan
+                                            @can('village-delete')
                                             <li x-show="!v.deleted_at">
                                                 <a class="dropdown-item text-danger" href="#" @click.prevent="deleteVillage(v)">
                                                     <i class="bi bi-trash me-2"></i>Delete
                                                 </a>
                                             </li>
+                                            @endcan
+                                            @can('village-restore')
                                             <li x-show="v.deleted_at">
                                                 <a class="dropdown-item text-success" href="#" @click.prevent="restoreVillage(v)">
                                                     <i class="bi bi-arrow-counterclockwise me-2"></i>Restore
                                                 </a>
                                             </li>
+                                            @endcan
+                                            @can('village-permanent-delete')
                                             <li x-show="v.deleted_at">
                                                 <a class="dropdown-item text-danger" href="#" @click.prevent="forceDeleteVillage(v)">
                                                     <i class="bi bi-trash3 me-2"></i>Permanent Delete
                                                 </a>
                                             </li>
+                                            @endcan
                                         </ul>
                                     </div>
+                                    @endif
                                 </td>
                             </tr>
                         </template>

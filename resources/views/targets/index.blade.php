@@ -14,9 +14,12 @@
             <button type="button" class="btn btn-outline-primary shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data">
                 <i class="bi bi-arrow-clockwise icon-hover"></i>
             </button>
+            @can('target-create')
             <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                 <i class="bi bi-upload me-2"></i>Import
             </button>
+            @endcan
+            @can('target-export')
             <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-download me-2"></i>Export
@@ -31,7 +34,9 @@
                     <li><a class="dropdown-item d-flex align-items-center" href="{{ route('targets.export') }}"><i class="bi bi-asterisk me-2 text-primary"></i>Export All Data</a></li>
                 </ul>
             </div>
+            @endcan
 
+            @can('target-edit')
             {{-- Recalculate button: syncs achieved_amount from live order/payment/invoice data --}}
             <form method="POST" action="{{ route('targets.recalculate') }}" id="recalculate-form" class="m-0">
                 @csrf
@@ -43,10 +48,13 @@
                     <i class="bi bi-arrow-repeat me-2"></i>Sync Achieved
                 </button>
             </form>
+            @endcan
 
+            @can('target-create')
             <button class="btn btn-primary" @click="openModal()">
                 <i class="bi bi-plus-lg me-2"></i>New Target
             </button>
+            @endcan
         </div>
     </div>
 
@@ -141,7 +149,7 @@
     </div>
 
     <!-- Table -->
-    <div class="card shadow-sm border-start border-4 border-primary rounded-4 overflow-hidden">
+    <div class="card shadow-sm border-start border-4 border-primary rounded-4">
         <div class="card-header bg-body border-bottom p-4">
             <div class="row align-items-center g-3">
                 <div class="col">
@@ -222,7 +230,7 @@
             </div>
         </div>
         <div class="card-body p-0" id="targetsTableBody">
-            <div class="table-responsive">
+            <div class="table-responsive" style="min-height: 250px;">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="text-uppercase text-muted" style="font-size: 11px; letter-spacing: 0.5px;">
                         <tr class="table-light">
@@ -413,11 +421,13 @@
                                     </span>
                                 </td>
                                 <td class="text-end pe-4">
-                                    <div class="dropdown">
+                                    @if(auth()->user()->can('target-edit') || auth()->user()->can('target-delete'))
+                                    <div class="dropdown dropup">
                                         <button class="btn btn-sm btn-light border shadow-sm rounded-3 px-2 py-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2">
+                                            @can('target-edit')
                                             <li>
                                                 <button type="button" class="dropdown-item px-3 py-2 fw-medium d-flex align-items-center" @click="openModal({{ \Illuminate\Support\Js::from([
                                                     'id' => $target->id,
@@ -438,7 +448,13 @@
                                                     Edit Target
                                                 </button>
                                             </li>
+                                            @endcan
+                                            
+                                            @if(auth()->user()->can('target-edit') && auth()->user()->can('target-delete'))
                                             <li><hr class="dropdown-divider opacity-50 my-1"></li>
+                                            @endif
+
+                                            @can('target-delete')
                                             <li>
                                                 <form action="{{ route('targets.destroy', $target) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this target?');">
                                                     @csrf
@@ -451,8 +467,10 @@
                                                     </button>
                                                 </form>
                                             </li>
+                                            @endcan
                                         </ul>
                                     </div>
+                                    @endif
                                 </td>
                             </tr>
                         @empty

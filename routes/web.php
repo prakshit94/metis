@@ -185,7 +185,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/customers/search-by-phone', [CustomerController::class, 'searchByPhone'])->name('customers.search-by-phone');
     Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     Route::post('/customers/{customer}/orders/place', [CustomerController::class, 'placeOrder'])->name('customers.orders.place');
-    Route::get('/villages', [PageController::class, 'villages'])->name('villages');
+    Route::get('/villages', [PageController::class, 'villages'])->name('villages')->middleware('permission:village-view');
     Route::get('/shipping/shipments', [PageController::class, 'shipments'])->name('shipping.shipments')->middleware('permission:shipping-view');
     Route::get('/shipping/services', [PageController::class, 'shippingServices'])->name('shipping.services')->middleware('permission:shipping-view');
     Route::get('/shipping/settings', [ShippingSettingsController::class, 'index'])->name('shipping.settings')->middleware('permission:shipping-view');

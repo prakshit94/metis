@@ -23,7 +23,8 @@ class VillageController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:village-view', only: ['index', 'show', 'servicesOptions', 'search']),
-            new Middleware('permission:village-create', only: ['store', 'import', 'importTemplate']),
+            new Middleware('permission:village-create', only: ['store']),
+            new Middleware('permission:village-import', only: ['import', 'importTemplate']),
             new Middleware('permission:village-edit', only: ['update', 'bulkAction', 'syncIndiaPostPincodes']),
             new Middleware('permission:village-delete', only: ['destroy']),
             new Middleware('permission:village-export', only: ['export', 'exportSelected']),

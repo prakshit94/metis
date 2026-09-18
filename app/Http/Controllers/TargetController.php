@@ -8,10 +8,23 @@ use App\Imports\TargetsImport;
 use App\Modules\Core\Controllers\Controller;
 use App\Services\TargetAchievementService;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Maatwebsite\Excel\Facades\Excel;
 
-class TargetController extends Controller
+class TargetController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:target-view|target-view-all', only: ['index']),
+            new Middleware('permission:target-export', only: ['export']),
+            new Middleware('permission:target-create', only: ['create', 'store', 'importForm', 'importTemplate', 'import']),
+            new Middleware('permission:target-edit', only: ['edit', 'update', 'recalculate']),
+            new Middleware('permission:target-delete', only: ['destroy']),
+        ];
+    }
+
     public function index(Request $request)
     {
         $query = Target::with('targetable');
