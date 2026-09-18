@@ -699,9 +699,10 @@ class OrderController extends Controller implements HasMiddleware
         $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
         if ($initialCustomer && class_exists(Invoice::class)) {
-            $invoices = Invoice::whereIn('order_id', function ($query) use ($initialCustomer) {
-                $query->select('id')->from('orders')->where('party_id', $initialCustomer->id);
-            })->whereIn('status', ['unpaid', 'partially_paid'])->get();
+            $invoices = Invoice::join('orders', 'invoices.order_id', '=', 'orders.id')
+                ->where('orders.party_id', $initialCustomer->id)
+                ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
+                ->get();
             
             $due = 0;
             foreach ($invoices as $invoice) {
@@ -1112,6 +1113,10 @@ class OrderController extends Controller implements HasMiddleware
 
         DB::transaction(function () use ($ids, $targetStatus, $validated, $inventoryService, $orderService, $invoiceService, &$count, &$skipped, &$errors) {
             $orders = Order::whereIn('id', $ids)->lockForUpdate()->get();
+            
+            if ($targetStatus === 'ready_to_ship') {
+                $orders->loadMissing('shippingAddress.village.services.providers');
+            }
 
             foreach ($orders as $order) {
                 try {
@@ -1142,7 +1147,6 @@ class OrderController extends Controller implements HasMiddleware
                     } elseif ($targetStatus === 'ready_to_ship') {
                         if ($order->status === 'processing') {
                             // Auto-assign top priority carrier if not provided
-                            $order->loadMissing('shippingAddress.village.services.providers');
                             $assignedCarrier = $validated['carrier_name'] ?? null;
                             $assignedProviderId = $validated['service_provider_id'] ?? null;
                             $hasCarrier = false;
@@ -1630,7 +1634,7 @@ class OrderController extends Controller implements HasMiddleware
             $query->orderBy('id', 'asc');
         }
 
-        $orders = $query->get();
+        $orders = $query->cursor();
 
         $filename = 'orders-export-'.now()->format('Ymd_His').'.csv';
 
@@ -1792,7 +1796,7 @@ class OrderController extends Controller implements HasMiddleware
 
         $this->applyOrderActionPermissionScope($query, $user);
 
-        $orders = $query->get();
+        $orders = $query->cursor();
 
         $filename = 'orders-export-selected-'.now()->format('Ymd_His').'.csv';
 

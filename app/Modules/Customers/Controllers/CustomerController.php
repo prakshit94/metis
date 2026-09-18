@@ -119,16 +119,16 @@ class CustomerController extends Controller implements HasMiddleware
             $customerIds = $customers->pluck('id')->toArray();
             
             if (!empty($customerIds)) {
-                $allInvoices = \App\Modules\Orders\Models\Invoice::whereIn('order_id', function ($query) use ($customerIds) {
-                    $query->select('id')->from('orders')->whereIn('party_id', $customerIds);
-                })->whereIn('status', ['unpaid', 'partially_paid'])
-                  ->with('order:id,party_id')
+                $allInvoices = \App\Modules\Orders\Models\Invoice::join('orders', 'invoices.order_id', '=', 'orders.id')
+                  ->whereIn('orders.party_id', $customerIds)
+                  ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
+                  ->select('invoices.*', 'orders.party_id as order_party_id')
                   ->get();
                 
                 $customers->getCollection()->transform(function ($customer) use ($allInvoices) {
                     $due = 0;
                     $customerInvoices = $allInvoices->filter(function ($inv) use ($customer) {
-                        return $inv->order && $inv->order->party_id === $customer->id;
+                        return $inv->order_party_id === $customer->id;
                     });
                     foreach ($customerInvoices as $invoice) {
                         $due += $invoice->due_amount;

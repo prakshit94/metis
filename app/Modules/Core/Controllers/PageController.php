@@ -124,9 +124,11 @@ class PageController extends Controller
         $totalReturned = (int) ($orderStats->total_returned ?? 0);
         $revReturned = (float) ($orderStats->rev_returned ?? 0);
 
-        $totalProducts = (int) OrderItem::whereIn('order_id', (clone $orderQuery)->where('type', 'sale')->whereNotIn('status', ['cancelled', 'returned'])->select('id'))->sum('quantity');
+        $orderQueryForItems = (clone $orderQuery)->where('type', 'sale')->whereNotIn('status', ['cancelled', 'returned'])->select('id');
 
-        $totalVariantsObj = OrderItem::whereIn('order_id', (clone $orderQuery)->where('type', 'sale')->whereNotIn('status', ['cancelled', 'returned'])->select('id'))
+        $totalProducts = (int) OrderItem::joinSub($orderQueryForItems, 'o', 'order_items.order_id', '=', 'o.id')->sum('quantity');
+
+        $totalVariantsObj = OrderItem::joinSub($orderQueryForItems, 'o', 'order_items.order_id', '=', 'o.id')
             ->selectRaw('COUNT(DISTINCT CONCAT(product_id, "-", COALESCE(product_variant_id, 0))) as count')
             ->first();
         $totalVariants = $totalVariantsObj ? (int) $totalVariantsObj->count : 0;

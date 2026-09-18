@@ -36,10 +36,11 @@ class StockManagementController extends Controller implements HasMiddleware
 
         $query = Stock::query()
             ->with(['product:id,name,sku,status,image_path,grade,allow_overselling,overselling_qty', 'warehouse:id,name,code'])
-            ->withSum('pendingOrderItems as pending_qty', 'quantity')
-            ->withSum('deliveredOrderItems as raw_delivered_qty', 'quantity')
-            ->withSum('returnedOrderItems as returned_qty', 'received_qty')
-            ->withSum('returnRequestedOrderItems as return_requested_qty', 'requested_qty')
+            ->select('stocks.*')
+            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status = ? AND orders.deleted_at IS NULL) as pending_qty', ['pending'])
+            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status IN (?, ?) AND orders.deleted_at IS NULL) as raw_delivered_qty', ['delivered', 'completed'])
+            ->selectRaw('(SELECT COALESCE(SUM(received_qty), 0) FROM order_return_items INNER JOIN order_returns ON order_returns.id = order_return_items.order_return_id INNER JOIN orders ON orders.id = order_returns.order_id WHERE order_return_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND order_returns.status = ?) as returned_qty', ['completed'])
+            ->selectRaw('(SELECT COALESCE(SUM(requested_qty), 0) FROM order_return_items INNER JOIN order_returns ON order_returns.id = order_return_items.order_return_id INNER JOIN orders ON orders.id = order_returns.order_id WHERE order_return_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND order_returns.status IN (?, ?, ?, ?)) as return_requested_qty', ['pending', 'approved', 'received', 'qc_in_progress'])
             ->whereHas('product')
             ->whereHas('warehouse', function ($wq) use ($request) {
                 if ($lobState = $request->user()?->lob_state_name) {
@@ -76,10 +77,10 @@ class StockManagementController extends Controller implements HasMiddleware
         $sortDir = $request->query('sort_dir', 'desc');
 
         if ($sortBy === 'available') {
-            $query->orderByRaw('(quantity - reserved_qty) '.$sortDir);
+            $query->orderByRaw('(quantity - reserved_qty - pending_qty) '.$sortDir);
         } elseif ($sortBy === 'delivered_qty') {
-            $query->orderByRaw('(COALESCE((SELECT SUM(quantity) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status IN (\'delivered\', \'completed\')), 0) - COALESCE((SELECT SUM(received_qty) FROM order_return_items INNER JOIN order_returns ON order_returns.id = order_return_items.order_return_id INNER JOIN orders ON orders.id = order_returns.order_id WHERE order_return_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status IN (\'delivered\', \'completed\') AND order_returns.status = \'completed\'), 0)) '.$sortDir);
-        } elseif (in_array($sortBy, ['id', 'product_id', 'warehouse_id', 'quantity', 'reserved_qty', 'dispatched_qty', 'in_transit_qty', 'damaged_qty'])) {
+            $query->orderByRaw('(raw_delivered_qty - returned_qty) '.$sortDir);
+        } elseif (in_array($sortBy, ['id', 'product_id', 'warehouse_id', 'quantity', 'reserved_qty', 'dispatched_qty', 'in_transit_qty', 'damaged_qty', 'pending_qty', 'return_requested_qty'])) {
             $query->orderBy($sortBy, $sortDir);
         }
 
@@ -112,13 +113,22 @@ class StockManagementController extends Controller implements HasMiddleware
             $statsBaseQuery->where('warehouse_id', $warehouseId);
         }
 
+        $statsRow = (clone $statsBaseQuery)->selectRaw("
+            COUNT(DISTINCT product_id) as total_products,
+            COUNT(DISTINCT warehouse_id) as total_warehouses,
+            SUM(quantity) as total_units,
+            SUM(CASE WHEN quantity - reserved_qty > (SELECT COALESCE(min_stock_level, 5) FROM products WHERE products.id = stocks.product_id) AND quantity > 0 THEN 1 ELSE 0 END) as in_stock,
+            SUM(CASE WHEN quantity - reserved_qty <= (SELECT COALESCE(min_stock_level, 5) FROM products WHERE products.id = stocks.product_id) AND quantity > 0 THEN 1 ELSE 0 END) as low_stock_count,
+            SUM(CASE WHEN quantity <= 0 THEN 1 ELSE 0 END) as out_of_stock
+        ")->first();
+
         $stats = [
-            'total_products' => (clone $statsBaseQuery)->distinct('product_id')->count('product_id'),
-            'total_warehouses' => (clone $statsBaseQuery)->distinct('warehouse_id')->count('warehouse_id'),
-            'total_units' => (clone $statsBaseQuery)->sum('quantity'),
-            'in_stock' => (clone $statsBaseQuery)->whereRaw('quantity - reserved_qty > (SELECT COALESCE(min_stock_level, 5) FROM products WHERE products.id = stocks.product_id)')->where('quantity', '>', 0)->count(),
-            'low_stock_count' => (clone $statsBaseQuery)->whereRaw('quantity - reserved_qty <= (SELECT COALESCE(min_stock_level, 5) FROM products WHERE products.id = stocks.product_id)')->where('quantity', '>', 0)->count(),
-            'out_of_stock' => (clone $statsBaseQuery)->where('quantity', '<=', 0)->count(),
+            'total_products' => (int) ($statsRow->total_products ?? 0),
+            'total_warehouses' => (int) ($statsRow->total_warehouses ?? 0),
+            'total_units' => (float) ($statsRow->total_units ?? 0),
+            'in_stock' => (int) ($statsRow->in_stock ?? 0),
+            'low_stock_count' => (int) ($statsRow->low_stock_count ?? 0),
+            'out_of_stock' => (int) ($statsRow->out_of_stock ?? 0),
         ];
 
         return response()->json([

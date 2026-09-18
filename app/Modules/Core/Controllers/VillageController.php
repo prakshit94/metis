@@ -862,7 +862,7 @@ class VillageController extends Controller implements HasMiddleware
             }
         }
 
-        $villages = $query->with(['mappings.service'])->get();
+        $villages = $query->with(['mappings.service'])->cursor();
         $filename = 'villages-export-'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload($this->generateCsvExportCallback($villages), $filename, [
@@ -879,7 +879,7 @@ class VillageController extends Controller implements HasMiddleware
             'ids' => 'required|array',
         ]);
 
-        $villages = Village::withTrashed()->with(['mappings.service'])->whereIn('id', $validated['ids'])->get();
+        $villages = Village::withTrashed()->with(['mappings.service'])->whereIn('id', $validated['ids'])->cursor();
         $filename = 'villages-export-selected-'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload($this->generateCsvExportCallback($villages), $filename, [

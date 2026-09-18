@@ -24,7 +24,7 @@ class SecurityController extends Controller
     {
         $user = $request->user();
         
-        $tokens = $user->tokens()->orderByDesc('last_used_at')->get()->map(function ($token) {
+        $tokens = $user->tokens()->orderByDesc('last_used_at')->get()->map(function ($token) use ($request) {
             return [
                 'id' => 'token_' . $token->id,
                 'device' => $token->name,

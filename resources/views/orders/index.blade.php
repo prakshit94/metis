@@ -2205,7 +2205,7 @@
                     <label class="form-label fw-semibold">Select Items to Return</label>
                     <div class="table-responsive">
                         <table class="table table-bordered table-sm align-middle">
-                            <thead class="table-light">
+                            <thead class="table-secondary">
                                 <tr>
                                     <th>Product</th>
                                     <th style="width: 150px;">Qty to Return</th>
@@ -2216,7 +2216,7 @@
                                     <tr>
                                         <td x-text="item.name"></td>
                                         <td>
-                                            <input type="number" class="form-control form-control-sm bg-light text-muted" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly>
+                                            <input type="number" class="form-control form-control-sm bg-body-tertiary text-body-secondary" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly>
                                             <div class="form-text mt-0" style="font-size: 0.7rem;">Max: <span x-text="item.max_qty"></span></div>
                                         </td>
                                     </tr>

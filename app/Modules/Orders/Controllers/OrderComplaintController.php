@@ -469,10 +469,10 @@ class OrderComplaintController extends Controller implements HasMiddleware
             $query->where('assigned_to', auth()->id());
         }
 
-        $complaints = $query->get();
+        $complaints = $query->cursor();
 
         // Ensure user hasn't tried to export IDs they don't have access to
-        if ($complaints->count() !== count($validated['ids'])) {
+        if ($query->count() !== count($validated['ids'])) {
             abort(403, 'Unauthorized access to one or more selected complaints.');
         }
 
@@ -502,7 +502,7 @@ class OrderComplaintController extends Controller implements HasMiddleware
             $query->where('category', $request->category);
         }
 
-        $complaints = $query->get();
+        $complaints = $query->cursor();
 
         $filename = 'complaints_bulk_export_'.now()->format('Ymd_His').'.csv';
 

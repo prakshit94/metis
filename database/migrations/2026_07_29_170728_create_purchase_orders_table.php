@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('po_number')->unique();
             $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('restrict');
             $table->foreignId('warehouse_id')->constrained('warehouses')->onDelete('restrict');
-            $table->enum('status', ['pending', 'approved', 'rejected', 'partially_received', 'received'])->default('pending');
+            $table->enum('status', ['pending', 'approved', 'rejected', 'partially_received', 'received'])->default('pending')->index();
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('approved_at')->nullable();
             $table->text('rejection_reason')->nullable();

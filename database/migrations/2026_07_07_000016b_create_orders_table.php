@@ -89,6 +89,8 @@ return new class extends Migration
             $table->index(['status', 'created_at']);
             $table->index('order_date');
             $table->index('shipping_state');
+            $table->index(['warehouse_id', 'status']);
+            $table->index(['shipping_district', 'shipping_village_name'], 'idx_order_geo');
         });
 
         Schema::create('order_items', function (Blueprint $table) {

@@ -88,9 +88,9 @@ class TargetController extends Controller
 
         if ($isGlobalViewer) {
             $availableAssignees = [
-                'User' => \App\Modules\Users\Models\User::all()->map(function($u) { return ['id' => $u->id, 'name' => $u->name ?? $u->email]; }),
-                'Team' => \App\Modules\Users\Models\Team::all()->map(function($t) { return ['id' => $t->id, 'name' => $t->name]; }),
-                'Department' => \App\Modules\Users\Models\Department::all()->map(function($d) { return ['id' => $d->id, 'name' => $d->name]; }),
+                'User' => \App\Modules\Users\Models\User::select('id', 'name', 'email')->get()->map(function($u) { return ['id' => $u->id, 'name' => $u->name ?? $u->email]; }),
+                'Team' => \App\Modules\Users\Models\Team::select('id', 'name')->get()->map(function($t) { return ['id' => $t->id, 'name' => $t->name]; }),
+                'Department' => \App\Modules\Users\Models\Department::select('id', 'name')->get()->map(function($d) { return ['id' => $d->id, 'name' => $d->name]; }),
             ];
         } else {
             $availableAssignees = [

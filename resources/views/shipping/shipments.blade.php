@@ -729,7 +729,7 @@
                                 <label class="form-label fw-semibold text-body-secondary small text-uppercase">Select Items to Return</label>
                                 <div class="table-responsive rounded-3 border shadow-sm">
                                     <table class="table table-bordered table-sm align-middle mb-0">
-                                        <thead class="table-light">
+                                        <thead class="table-secondary">
                                             <tr>
                                                 <th class="px-3 py-2 text-secondary fw-semibold">Product</th>
                                                 <th class="px-3 py-2 text-secondary fw-semibold" style="width: 150px;">Qty to Return</th>
@@ -740,7 +740,7 @@
                                                 <tr>
                                                     <td class="px-3" x-text="item.name"></td>
                                                     <td class="px-3">
-                                                        <input type="number" class="form-control form-control-sm bg-light text-muted" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly>
+                                                        <input type="number" class="form-control form-control-sm bg-body-tertiary text-body-secondary" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly>
                                                         <div class="form-text mt-1 text-muted" style="font-size: 0.75rem;">Max: <span x-text="item.max_qty"></span></div>
                                                     </td>
                                                 </tr>
@@ -958,7 +958,7 @@
                             <label class="form-label fw-semibold text-body-secondary small text-uppercase">Select Items to Return</label>
                             <div class="table-responsive rounded-3 border border-secondary border-opacity-25 shadow-sm">
                                 <table class="table table-bordered table-sm align-middle mb-0">
-                                    <thead class="table-light">
+                                    <thead class="table-secondary">
                                         <tr>
                                             <th class="px-3 py-2 text-secondary fw-semibold">Product</th>
                                             <th class="px-3 py-2 text-secondary fw-semibold" style="width: 150px;">Qty to Return</th>
@@ -969,7 +969,7 @@
                                             <tr>
                                                 <td class="px-3" x-text="item.name"></td>
                                                 <td class="px-3">
-                                                    <input type="number" class="form-control form-control-sm bg-light text-muted" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly>
+                                                    <input type="number" class="form-control form-control-sm bg-body-tertiary text-body-secondary" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly>
                                                     <div class="form-text mt-1 text-muted" style="font-size: 0.75rem;">Max available: <span x-text="item.max_qty"></span></div>
                                                 </td>
                                             </tr>

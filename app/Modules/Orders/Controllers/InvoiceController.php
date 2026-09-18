@@ -69,7 +69,7 @@ class InvoiceController extends Controller implements HasMiddleware
 
             // Subquery prevents packet limit / bindings explosion compared to pluck('id')
             $collectedAmount = (float) Payment::where('status', 'completed')
-                ->whereIn('invoice_id', $statsQuery()->select('id'))
+                ->joinSub($statsQuery()->select('id'), 'inv', 'payments.invoice_id', '=', 'inv.id')
                 ->sum('amount');
 
             $pendingAmount = max(0, $totalInvoiced - $collectedAmount);

@@ -238,10 +238,13 @@ export default () => ({
         'Product Name',
         'SKU',
         'Warehouse',
-        'Quantity',
+        'In Stock',
+        'Available For Sell',
+        'Order Placed',
         'Reserved',
         'Dispatched',
         'Delivered',
+        'Return Req',
         'In Transit',
         'Bad Qty',
         'Alert Level',
@@ -250,10 +253,13 @@ export default () => ({
       const rows = exportItems.map((item) => {
         const qty = parseFloat(item.quantity || 0);
         const reserved = parseFloat(item.reserved_qty || 0);
+        const pending = parseFloat(item.pending_qty || 0);
         const dispatched = parseFloat(item.dispatched_qty || 0);
         const delivered = parseFloat(item.delivered_qty || 0);
+        const returnReq = parseFloat(item.return_requested_qty || 0);
         const inTransit = parseFloat(item.in_transit_qty || 0);
         const damaged = parseFloat(item.damaged_qty || 0);
+        const available = parseFloat((qty - reserved - pending).toFixed(4));
         const alert = parseFloat(item.product?.alert_quantity || 0);
         let status = 'In Stock';
         if (qty <= 0) status = 'Out of Stock';
@@ -264,9 +270,12 @@ export default () => ({
           item.product?.sku || '',
           item.warehouse?.name || '',
           qty,
+          available,
+          pending,
           reserved,
           dispatched,
           delivered,
+          returnReq,
           inTransit,
           damaged,
           alert,

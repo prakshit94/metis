@@ -56,7 +56,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(300)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(10000)->by($request->user()?->id ?: $request->ip());
         });
 
         Gate::define('viewApiDocs', function ($user) {

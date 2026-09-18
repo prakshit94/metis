@@ -136,7 +136,7 @@
             </div>
 
             {{-- Table --}}
-            <div class="table-responsive" x-show="!isLoading">
+            <div class="table-responsive-xl" style="min-height: 250px;" x-show="!isLoading">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
