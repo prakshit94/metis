@@ -2,7 +2,7 @@
 <div x-show="activeTab === 'system'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-cloak>
     <div class="row g-4">
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card border-start border-4 border-primary shadow-sm rounded-4 h-100">
                 <div class="card-body p-5">
                     <h4 class="mb-5 text-muted fw-bold text-uppercase d-flex align-items-center gap-2" style="font-size: 11px; letter-spacing: 2px;">
                         <span class="bg-secondary rounded-circle shadow-sm" style="width: 8px; height: 8px;"></span> Timestamps

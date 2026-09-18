@@ -7,7 +7,7 @@
     <div x-data="{ expandedOrder: null }" class="d-flex flex-column gap-4">
         @if(isset($customer->orders) && $customer->orders->count())
             @foreach($customer->orders as $order)
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden transition-all">
+                <div class="card border-start border-4 border-primary shadow-sm rounded-4 overflow-hidden transition-all">
                     
                     {{-- Order Summary Header (Click to expand) --}}
                     <div @click="expandedOrder = expandedOrder === {{ $order->id }} ? null : {{ $order->id }}" class="card-body p-4 cursor-pointer hover-bg-body-tertiary d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4">
@@ -78,7 +78,7 @@
                             </div>
 
                             {{-- Items Table --}}
-                            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-3">
+                            <div class="card border-start border-4 border-success shadow-sm rounded-4 overflow-hidden mt-3">
                                 <div class="card-header bg-body border-bottom py-3 d-flex justify-content-between align-items-center">
                                     <h4 class="mb-0 fw-bold text-body-emphasis fs-6">Order Items</h4>
                                     <span class="badge bg-body-tertiary text-secondary border px-2 py-1">{{ isset($order->items) ? $order->items->count() : 0 }} items</span>

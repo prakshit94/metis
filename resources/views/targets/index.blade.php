@@ -141,7 +141,7 @@
     </div>
 
     <!-- Table -->
-    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card shadow-sm border-start border-4 border-primary rounded-4 overflow-hidden">
         <div class="card-header bg-body border-bottom p-4">
             <div class="row align-items-center g-3">
                 <div class="col">

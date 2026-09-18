@@ -1,6 +1,6 @@
 {{-- ══ TAB: Order Products ══ --}}
 <div x-show="activeTab === 'order'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-cloak>
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card border-start border-4 border-primary shadow-sm rounded-4 overflow-hidden">
 
         {{-- Table Header: Title + Filters + Search --}}
         <div class="card-header bg-body-tertiary border-bottom p-4">

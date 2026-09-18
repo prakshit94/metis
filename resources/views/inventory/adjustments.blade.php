@@ -20,7 +20,7 @@
     {{-- ── Stats Widgets ───────────────────────────────────────── --}}
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -38,7 +38,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
@@ -56,7 +56,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
@@ -74,7 +74,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-danger bg-opacity-10 text-danger me-3">
@@ -303,7 +303,7 @@
                         <div class="row g-4">
                             <div class="col-12">
                                 {{-- Card 1: Details --}}
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                <div class="card border-start border-4 border-danger shadow-sm mb-4 bg-body-tertiary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
@@ -330,7 +330,7 @@
                                 </div>
 
                                 {{-- Card 2: Line Items --}}
-                                <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                                <div class="card border-start border-4 border-secondary shadow-sm mb-4 bg-body-tertiary">
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center justify-content-between mb-3">
                                             <div class="d-flex align-items-center">

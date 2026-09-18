@@ -31,7 +31,7 @@
 
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -47,7 +47,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
@@ -63,7 +63,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
@@ -79,7 +79,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card">
+            <div class="card stats-card border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
@@ -540,7 +540,7 @@
                                 <div class="row g-4">
                                     <template x-for="group in groupedRelatedItems" :key="group.key">
                                         <div class="col-lg-6 col-12">
-                                            <div class="card border-0 shadow-sm h-100 element-card transition-all hover-border-primary">
+                                            <div class="card border-start border-4 border-danger shadow-sm h-100 element-card transition-all hover-border-primary">
                                                 <div class="card-body">
                                                     <div class="d-flex align-items-center mb-3">
                                                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 rounded-3 d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">
@@ -581,7 +581,7 @@
                                 <h6 class="fw-bold mb-4 d-flex align-items-center">
                                     <i class="bi bi-people text-primary me-2"></i>Assigned Roles
                                 </h6>
-                                <div class="card border-0 shadow-sm element-card transition-all hover-border-primary">
+                                <div class="card border-start border-4 border-secondary shadow-sm element-card transition-all hover-border-primary">
                                     <div class="card-body p-4">
                                         <div class="d-flex flex-wrap gap-2">
                                             <template x-for="entry in relatedItems" :key="entry.id">

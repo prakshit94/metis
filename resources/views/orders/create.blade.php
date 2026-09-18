@@ -69,7 +69,7 @@
         <div :class="isCartSidebarOpen ? 'col-xl-8' : 'col-xl-12'" style="transition: all 0.3s ease;">
             {{-- Confirmation Details (Visible only in Confirm Mode) --}}
             <template x-if="isConfirmMode && originalOrder">
-                <div class="card shadow-sm border-0 mb-4 bg-info bg-opacity-10 border-info border-opacity-25">
+                <div class="card shadow-sm border-start border-4 border-primary mb-4 bg-info bg-opacity-10 border-info border-opacity-25">
                     <div class="card-header bg-transparent border-bottom-0 py-3 px-4">
                         <h5 class="mb-0 fw-bold text-info-emphasis"><i class="bi bi-info-circle me-2"></i>Confirmation Details</h5>
                     </div>
@@ -127,7 +127,7 @@
                 </div>
             </template>
 
-            <div id="customer-workspace" class="card shadow-sm border-0 mb-4">
+            <div id="customer-workspace" class="card shadow-sm border-start border-4 border-success mb-4">
                 <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center gap-3">
                         <template x-if="customerDetails">
@@ -259,7 +259,7 @@
                             <div class="row g-3 small mt-2">
                                 <!-- Contact Profile -->
                                 <div class="col-md-6 col-lg-3">
-                                    <div class="card h-100 border-0 bg-primary bg-opacity-10 shadow-sm rounded-4">
+                                    <div class="card h-100 border-start border-4 border-warning bg-primary bg-opacity-10 shadow-sm rounded-4">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center mb-2 border-bottom border-primary border-opacity-25 pb-1">
                                                 <i class="bi bi-person-lines-fill text-primary me-2"></i>
@@ -275,7 +275,7 @@
 
                                 <!-- Business Details -->
                                 <div class="col-md-6 col-lg-3" x-show="customerDetails.category === 'business'" x-cloak>
-                                    <div class="card h-100 border-0 bg-info bg-opacity-10 shadow-sm rounded-4">
+                                    <div class="card h-100 border-start border-4 border-info bg-info bg-opacity-10 shadow-sm rounded-4">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center mb-2 border-bottom border-info border-opacity-25 pb-1">
                                                 <i class="bi bi-building text-info me-2"></i>
@@ -293,7 +293,7 @@
 
                                 <!-- Agriculture Snapshot -->
                                 <div class="col-md-6 col-lg-3">
-                                    <div class="card h-100 border-0 bg-success bg-opacity-10 shadow-sm rounded-4">
+                                    <div class="card h-100 border-start border-4 border-danger bg-success bg-opacity-10 shadow-sm rounded-4">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center mb-2 border-bottom border-success border-opacity-25 pb-1">
                                                 <i class="bi bi-tree text-success me-2"></i>
@@ -324,7 +324,7 @@
 
                                 <!-- Financial Snapshot -->
                                 <div class="col-md-6 col-lg-3">
-                                    <div class="card h-100 border-0 bg-warning bg-opacity-10 shadow-sm rounded-4">
+                                    <div class="card h-100 border-start border-4 border-secondary bg-warning bg-opacity-10 shadow-sm rounded-4">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center mb-2 border-bottom border-warning border-opacity-25 pb-1">
                                                 <i class="bi bi-wallet2 text-warning-emphasis me-2"></i>
@@ -534,7 +534,7 @@
             </div>
 
             {{-- Product Search Card --}}
-            <div id="catalog-section" class="card shadow-sm border-0 mb-4">
+            <div id="catalog-section" class="card shadow-sm border-start border-4 border-primary mb-4">
                 <div class="card-header bg-transparent border-bottom py-3">
                     <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
                         <span class="fw-bold fs-5"><i class="bi bi-search me-2 text-info"></i>Product Catalog</span>
@@ -872,7 +872,7 @@
             <div class="mb-4 space-y-3" x-show="false">
                 {{-- Empty Cart --}}
                 <template x-if="cart.length === 0">
-                    <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card border-start border-4 border-success shadow-sm rounded-4">
                         <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-5 opacity-50">
                             <div class="bg-body-secondary rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
                                 <i class="bi bi-bag fs-1 text-body-secondary"></i>
@@ -951,7 +951,7 @@
         {{-- RIGHT: Cart Summary + Calculations + Offers + Place Order (Glossy Style) --}}
         <div class="col-xl-4" x-show="isCartSidebarOpen" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 translate-x-4">
             <div class="sticky-side-div" style="position: sticky; top: 24px;">
-                <div class="card shadow-sm border-0 mb-4">
+                <div class="card shadow-sm border-start border-4 border-warning mb-4">
                     <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="mb-0 fw-bold"><i class="bi bi-cart3 me-2 text-primary"></i>Shopping Cart (<span x-text="cart.length" class="text-primary"></span>)</h5>
@@ -1031,7 +1031,7 @@
                         </template>
                     </div>
                 </div>
-                <div class="card shadow-sm border-0 mb-4">
+                <div class="card shadow-sm border-start border-4 border-info mb-4">
                     <div class="card-body p-4 space-y-4">
                         
                         {{-- ── Promotions & Offers ── --}}
@@ -1266,7 +1266,7 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-5 overflow-hidden glass-panel mt-2 mb-4" x-show="partyId" x-cloak>
+    <div class="card border-start border-4 border-danger shadow-sm rounded-5 overflow-hidden glass-panel mt-2 mb-4" x-show="partyId" x-cloak>
         <div class="card-header bg-body-tertiary border-bottom-0 p-3 p-lg-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
                 <div class="d-flex flex-wrap gap-2">
@@ -1282,7 +1282,7 @@
         </div>
         <div class="card-body p-4 p-lg-4">
             <template x-if="bottomTab === 'history'">
-                <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden">
+                <div class="card border-start border-4 border-secondary shadow-sm rounded-4 bg-body overflow-hidden">
                     <template x-if="historyOrders && historyOrders.length > 0">
                         <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
@@ -1343,7 +1343,7 @@
             </template>
 
             <template x-if="bottomTab === 'future'">
-                <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden">
+                <div class="card border-start border-4 border-primary shadow-sm rounded-4 bg-body overflow-hidden">
                     <template x-if="futureOrders && futureOrders.length > 0">
                         <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
@@ -1404,7 +1404,7 @@
             </template>
 
             <template x-if="bottomTab === 'tags'">
-                    <div class="card border-0 shadow-sm rounded-4 bg-body overflow-hidden">
+                    <div class="card border-start border-4 border-success shadow-sm rounded-4 bg-body overflow-hidden">
                         <template x-if="customerDetails && customerDetails.call_logs && customerDetails.call_logs.length > 0">
                             <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                                 <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
@@ -2238,7 +2238,7 @@
                                 <!-- Quick Stats Row -->
                                 <div class="row g-3 mb-4">
                                     <div class="col-sm-4">
-                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                        <div class="card h-100 border-start border-4 border-warning shadow-sm rounded-4">
                                             <div class="card-body p-3 d-flex align-items-center gap-3">
                                                 <div class="text-bg-primary-subtle text-primary-emphasis p-2 rounded-3"><i class="bi bi-credit-card fs-5"></i></div>
                                                 <div>
@@ -2249,7 +2249,7 @@
                                         </div>
                                     </div>
                                     <div class="col-sm-4">
-                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                        <div class="card h-100 border-start border-4 border-info shadow-sm rounded-4">
                                             <div class="card-body p-3 d-flex align-items-center gap-3">
                                                 <div class="text-bg-success-subtle text-success-emphasis p-2 rounded-3"><i class="bi bi-tag fs-5"></i></div>
                                                 <div>
@@ -2260,7 +2260,7 @@
                                         </div>
                                     </div>
                                     <div class="col-sm-4">
-                                        <div class="card h-100 border-0 shadow-sm rounded-4">
+                                        <div class="card h-100 border-start border-4 border-danger shadow-sm rounded-4">
                                             <div class="card-body p-3 d-flex align-items-center gap-3">
                                                 <div class="text-bg-info-subtle text-info-emphasis p-2 rounded-3"><i class="bi bi-person-badge fs-5"></i></div>
                                                 <div>
@@ -2273,7 +2273,7 @@
                                 </div>
 
                                 <!-- Customer Info -->
-                                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                <div class="card border-start border-4 border-secondary shadow-sm rounded-4 mb-4">
                                     <div class="card-header bg-body border-bottom-0 pt-4 pb-0 px-4">
                                         <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                                             <i class="bi bi-person-hearts text-danger fs-5"></i> Customer & Fulfillment
@@ -2321,7 +2321,7 @@
                                 </div>
 
                                 <!-- Order Items Table -->
-                                <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                                <div class="card border-start border-4 border-primary shadow-sm rounded-4 mb-4 overflow-hidden">
                                     <div class="card-header bg-body border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
                                         <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                                             <i class="bi bi-box-seam text-primary fs-5"></i> Order Items
@@ -2388,7 +2388,7 @@
                                 </div>
 
                                 <!-- Financial Summary -->
-                                <div class="card border-0 shadow-sm rounded-4">
+                                <div class="card border-start border-4 border-success shadow-sm rounded-4">
                                     <div class="card-body p-4 bg-body rounded-4">
                                         <div class="row justify-content-end">
                                             <div class="col-md-6 col-lg-5">
@@ -2435,7 +2435,7 @@
                             <div class="col-lg-4 p-4 p-lg-5 border-start bg-body" style="height: fit-content; align-self: flex-start;">
                                 
                                 <!-- Logistics / Warehouse -->
-                                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                <div class="card border-start border-4 border-warning shadow-sm rounded-4 mb-4">
                                     <div class="card-header bg-body border-bottom-0 pt-4 pb-2 px-4">
                                         <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                                             <i class="bi bi-building text-secondary fs-5"></i> Fulfillment Center
@@ -2457,7 +2457,7 @@
 
                                 <!-- Shipment Tracking -->
                                 <template x-if="selectedOrder.shipment">
-                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                                    <div class="card border-start border-4 border-info shadow-sm rounded-4 mb-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
                                         <div class="card-body p-4">
                                             <h6 class="fw-bold mb-3 text-primary d-flex align-items-center gap-2">
                                                 <i class="bi bi-truck fs-5"></i> Shipping Details
@@ -2525,7 +2525,7 @@
 
                                 <!-- Invoice Details -->
                                 <template x-if="selectedOrder.invoice">
-                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
+                                    <div class="card border-start border-4 border-danger shadow-sm rounded-4 mb-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
                                         <div class="card-body p-4">
                                             <h6 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2">
                                                 <i class="bi bi-receipt fs-5"></i> Invoice Details
@@ -2559,7 +2559,7 @@
 
                                 <!-- Payments Tracking -->
                                 <template x-if="selectedOrder.payments && selectedOrder.payments.length > 0">
-                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-success bg-opacity-10 border border-success border-opacity-25">
+                                    <div class="card border-start border-4 border-secondary shadow-sm rounded-4 mb-4 bg-success bg-opacity-10 border border-success border-opacity-25">
                                         <div class="card-body p-4">
                                             <h6 class="fw-bold mb-3 text-success d-flex align-items-center gap-2">
                                                 <i class="bi bi-cash-stack fs-5"></i> Payments
@@ -2594,7 +2594,7 @@
 
                                 <!-- Returns Tracking -->
                                 <template x-if="selectedOrder.original && (selectedOrder.original.order_returns && selectedOrder.original.order_returns.length > 0 || selectedOrder.original.orderReturns && selectedOrder.original.orderReturns.length > 0)">
-                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-danger bg-opacity-10 border border-danger border-opacity-25">
+                                    <div class="card border-start border-4 border-primary shadow-sm rounded-4 mb-4 bg-danger bg-opacity-10 border border-danger border-opacity-25">
                                         <div class="card-body p-4">
                                             <h6 class="fw-bold mb-3 text-danger d-flex align-items-center gap-2">
                                                 <i class="bi bi-arrow-return-left fs-5"></i> Returns & Refunds
@@ -2621,7 +2621,7 @@
 
                                 <!-- Order Status Timeline -->
                                 <template x-if="selectedOrder.original && selectedOrder.original.status_logs && selectedOrder.original.status_logs.length > 0">
-                                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
+                                    <div class="card border-start border-4 border-success shadow-sm rounded-4 mb-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
                                         <div class="card-body p-4">
                                             <h6 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2">
                                                 <i class="bi bi-clock-history fs-5"></i> Order Status Timeline

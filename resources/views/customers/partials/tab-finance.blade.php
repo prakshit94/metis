@@ -2,7 +2,7 @@
 <div x-show="activeTab === 'finance'" class="security-section" x-cloak>
     <div class="row g-4">
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden">
+            <div class="card border-start border-4 border-primary shadow-sm rounded-4 h-100 position-relative overflow-hidden">
                 <div class="position-absolute top-0 end-0 p-4 opacity-25" style="z-index: 0;">
                     <i class="bi bi-file-earmark-text text-secondary" style="font-size: 8rem;"></i>
                 </div>
@@ -25,7 +25,7 @@
         </div>
 
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden">
+            <div class="card border-start border-4 border-success shadow-sm rounded-4 h-100 position-relative overflow-hidden">
                 <div class="position-absolute top-0 end-0 p-4 opacity-25" style="z-index: 0;">
                     <i class="bi bi-credit-card text-success" style="font-size: 8rem;"></i>
                 </div>

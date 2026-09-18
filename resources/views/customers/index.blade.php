@@ -112,7 +112,7 @@
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <!-- Customer Growth Chart -->
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card border-start border-4 border-primary shadow-sm rounded-4 h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h2 class="h5 card-title mb-0">Customer Registration Trends</h2>
                     <div class="btn-group btn-group-sm" role="group" aria-label="Registration trend period">
@@ -132,7 +132,7 @@
 
         <!-- Category & Crop Distribution -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card border-start border-4 border-success shadow-sm rounded-4 h-100">
                 <div class="card-header">
                     <h2 class="h5 card-title mb-0">Customer Profiling</h2>
                 </div>
@@ -165,7 +165,7 @@
     </div>
 
     <!-- Main Table Container -->
-    <div class="card border-0 shadow-sm rounded-4">
+    <div class="card border-start border-4 border-warning shadow-sm rounded-4">
         <div class="card-header">
             <div class="row align-items-center">
                 <div class="col">
@@ -491,7 +491,7 @@
                     <div class="row g-4 px-3 px-lg-4">
                         <!-- Left Panel: Customer Identity Card -->
                         <div class="col-lg-4">
-                            <div class="card border-0 bg-body-tertiary rounded-4 h-100">
+                            <div class="card border-start border-4 border-info bg-body-tertiary rounded-4 h-100">
                                 <div class="card-body p-4">
                                     <!-- Avatar & Name -->
                                     <div class="text-center mb-3">
@@ -686,7 +686,7 @@
                                     <div class="row g-3">
                                         <template x-for="addr in customer?.addresses" :key="addr.id">
                                             <div class="col-md-6">
-                                                <div class="card h-100" :class="addr.is_default ? 'border-primary' : 'border-light-subtle'">
+                                                <div class="card h-100 border-start border-4 border-primary" :class="addr.is_default ? 'border-primary' : 'border-light-subtle'">
                                                     <div class="card-body p-3">
                                                         <div class="d-flex justify-content-between align-items-start mb-2">
                                                             <div>

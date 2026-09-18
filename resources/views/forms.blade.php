@@ -119,7 +119,7 @@
                             </div>
                         </div>
                         <div class="col-lg-4">
-                            <div class="card h-100">
+                            <div class="card h-100 border-start border-4 border-primary">
                                 <div class="card-body">
                                     <h6 class="card-title">Contact Information</h6>
                                     <div class="d-flex align-items-center mb-3">

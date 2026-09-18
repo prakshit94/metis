@@ -2,7 +2,7 @@
      x-data="addCustomerApp()" 
      @open-add-customer-modal.window="openModal($event.detail)">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content shadow">
             
             {{-- GLOSSY STYLE HEADER WITH BOOTSTRAP --}}
             <div class="modal-header bg-body-tertiary border-bottom d-flex align-items-center justify-content-between p-4">
@@ -261,7 +261,7 @@
                                         <!-- Selected Village Details -->
                                         <template x-if="form.village_name">
                                             <div class="col-12 mt-2">
-                                                <div class="card bg-body border-0 border-start border-4 border-primary shadow-sm">
+                                                <div class="card bg-body border-start border-4 border-primary shadow-sm">
                                                     <div class="card-body p-2">
                                                         <div class="row g-1">
                                                             <div class="col-4">
@@ -432,7 +432,7 @@
                                                     </div>
                                                 </template>
                                                 <div class="flex-grow-1 position-relative" style="min-width: 100px;">
-                                                    <input x-ref="cropSearch" type="text" x-model="cropSearch" @focus="showCropsDropdown = true" placeholder="Search..." class="border-0 w-100 outline-none" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                                                    <input x-ref="cropSearch" type="text" x-model="cropSearch" @focus="showCropsDropdown = true" placeholder="Search..." class="w-100 outline-none" style="font-size: 12px; outline: none !important; box-shadow: none;">
                                                 </div>
                                             </div>
                                             <div x-show="showCropsDropdown && filteredCrops.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">

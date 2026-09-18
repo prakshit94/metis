@@ -20,7 +20,7 @@
     }
 @endphp
 
-<div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4 position-relative">
+<div class="card shadow-sm border-start border-4 border-primary rounded-4 overflow-hidden mb-4 position-relative">
     <!-- Left accent line -->
     <div class="position-absolute top-0 bottom-0 start-0 bg-primary" style="width: 4px;"></div>
     

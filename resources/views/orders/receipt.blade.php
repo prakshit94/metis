@@ -7,7 +7,7 @@
 <div class="container py-4 print-container">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <div class="card shadow border-0 rounded-4 overflow-hidden">
+            <div class="card shadow border-start border-4 border-primary rounded-4 overflow-hidden">
                 <!-- Header -->
                 <div class="card-header bg-body-tertiary p-4 p-md-5 border-bottom-0">
                     <div class="row align-items-center g-4">

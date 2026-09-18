@@ -23,7 +23,7 @@
     {{-- Stats Cards --}}
     <div class="row g-3 mb-4">
         <div class="col-xl col-lg-4 col-md-6">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-headset"></i></div>
@@ -36,7 +36,7 @@
             </div>
         </div>
         <div class="col-xl col-lg-4 col-md-6">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-exclamation-circle"></i></div>
@@ -49,7 +49,7 @@
             </div>
         </div>
         <div class="col-xl col-lg-4 col-md-6">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-info bg-opacity-10 text-info fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-arrow-repeat"></i></div>
@@ -62,7 +62,7 @@
             </div>
         </div>
         <div class="col-xl col-lg-4 col-md-6">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-success bg-opacity-10 text-success fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-check-circle"></i></div>
@@ -75,7 +75,7 @@
             </div>
         </div>
         <div class="col-xl col-lg-4 col-md-6">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-danger">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-secondary bg-opacity-10 text-secondary fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-x-circle"></i></div>
@@ -343,7 +343,7 @@
                                         </h6>
                                         <div class="d-flex flex-column gap-3">
                                             <template x-for="c in selectedOrderDetails.existing_complaints" :key="c.id">
-                                                <div class="card border-0 shadow-sm rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                                                <div class="card border-start border-4 border-secondary shadow-sm rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-25">
                                                     <div class="card-body p-3">
                                                         <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-warning border-opacity-25">
                                                             <a href="#" @click.prevent="viewComplaint(c)" class="fw-bold text-body-emphasis text-decoration-none d-flex align-items-center gap-2" style="font-size:0.85rem;" title="View Complaint">
@@ -409,7 +409,7 @@
                                 </div>
 
                                 <!-- Complaint Details Form -->
-                                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                <div class="card border-start border-4 border-primary shadow-sm rounded-4 mb-4">
                                     <div class="card-body p-3">
                                         <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-body-emphasis border-bottom pb-2">
                                             <i class="bi bi-pencil-square text-warning fs-6"></i> Complaint Details
@@ -471,7 +471,7 @@
 
                                 <!-- Activity & Communication Feed -->
                                 <template x-if="isEditing">
-                                    <div class="card border-0 shadow-sm rounded-4">
+                                    <div class="card border-start border-4 border-success shadow-sm rounded-4">
                                         <div class="card-header bg-primary bg-opacity-10 border-bottom-0 py-2 px-3">
                                             <h6 class="fw-bold mb-0 text-primary d-flex align-items-center gap-2" style="font-size:0.9rem;">
                                                 <i class="bi bi-chat-text"></i> Activity Feed
@@ -486,7 +486,7 @@
                                                                 <template x-if="item._type === 'reply'">
                                                                     <div>
                                                                         <div class="position-absolute bg-primary rounded-circle shadow-sm" style="width: 10px; height: 10px; left: -21px; top: 8px; border: 2px solid var(--bs-body-bg);"></div>
-                                                                        <div class="card border-0 shadow-sm rounded-3 bg-primary bg-opacity-10 ms-1">
+                                                                        <div class="card border-start border-4 border-warning shadow-sm rounded-3 bg-primary bg-opacity-10 ms-1">
                                                                             <div class="card-body p-2">
                                                                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                                                                     <span class="fw-bold text-primary" style="font-size:0.75rem;" x-text="item.user ? (item.user.name || item.user.first_name) : 'Agent'"></span>
@@ -608,7 +608,7 @@
                                     </div>
 
                                     <!-- Customer Info -->
-                                    <div class="card border-0 shadow-sm rounded-4 mb-3 bg-body-tertiary">
+                                    <div class="card border-start border-4 border-info shadow-sm rounded-4 mb-3 bg-body-tertiary">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center gap-2 mb-2">
                                                 <img :src="selectedOrderDetails.customer.avatar || '{{ asset('assets/images/default_avatar.jpeg') }}'" class="rounded-circle shadow-sm" width="32" height="32" alt="Customer" x-on:error="$el.src='{{ asset('assets/images/default_avatar.jpeg') }}'">
@@ -631,7 +631,7 @@
                                     </div>
 
                                     <!-- Order Items -->
-                                    <div class="card border-0 shadow-sm rounded-4 mb-3 overflow-hidden">
+                                    <div class="card border-start border-4 border-danger shadow-sm rounded-4 mb-3 overflow-hidden">
                                         <div class="card-header bg-body border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
                                             <div class="d-flex align-items-center gap-2">
                                                 <h6 class="fw-bold mb-0 text-body-emphasis" style="font-size: 0.85rem;">
@@ -693,7 +693,7 @@
 
                                     <!-- Order Timeline -->
                                     <template x-if="selectedOrderDetails.statusLogs && selectedOrderDetails.statusLogs.length > 0">
-                                        <div class="card border-0 shadow-sm rounded-4 mb-3">
+                                        <div class="card border-start border-4 border-secondary shadow-sm rounded-4 mb-3">
                                             <div class="card-header bg-body border-bottom py-2 px-3">
                                                 <h6 class="fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2" style="font-size:0.85rem;">
                                                     <i class="bi bi-clock-history text-primary"></i> Order Timeline
@@ -724,7 +724,7 @@
 
                                     <!-- Returns Tracking -->
                                     <template x-if="selectedOrderDetails.original && (selectedOrderDetails.original.order_returns && selectedOrderDetails.original.order_returns.length > 0 || selectedOrderDetails.original.orderReturns && selectedOrderDetails.original.orderReturns.length > 0)">
-                                        <div class="card border-0 shadow-sm rounded-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 p-3 mb-3">
+                                        <div class="card border-start border-4 border-primary shadow-sm rounded-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 p-3 mb-3">
                                             <h6 class="fw-bold mb-2 text-danger d-flex align-items-center gap-2" style="font-size: 0.85rem;">
                                                 <i class="bi bi-arrow-return-left"></i> Returns & Refunds
                                             </h6>

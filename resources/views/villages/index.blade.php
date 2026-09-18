@@ -134,7 +134,7 @@
     <!-- Advanced Analytics Row -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-lg-4">
-            <div class="card h-100">
+            <div class="card h-100 border-start border-4 border-primary">
                 <div class="card-header">
                     <h2 class="h5 card-title mb-0">State-wise Distribution</h2>
                 </div>
@@ -144,7 +144,7 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card h-100">
+            <div class="card h-100 border-start border-4 border-success">
                 <div class="card-header">
                     <h2 class="h5 card-title mb-0">Delivery vs Non-Delivery</h2>
                 </div>
@@ -154,7 +154,7 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card h-100">
+            <div class="card h-100 border-start border-4 border-warning">
                 <div class="card-header">
                     <h2 class="h5 card-title mb-0">Office Type Distribution</h2>
                 </div>
@@ -169,7 +169,7 @@
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <!-- Growth Chart (Village addition/region distribution) -->
         <div class="col-lg-8">
-            <div class="card h-100">
+            <div class="card h-100 border-start border-4 border-info">
                 <div class="card-header">
                     <h2 class="h5 card-title mb-0">Service Coverage Distribution</h2>
                 </div>
@@ -181,7 +181,7 @@
 
         <!-- Districts Breakdown list -->
         <div class="col-lg-4">
-            <div class="card h-100">
+            <div class="card h-100 border-start border-4 border-danger">
                 <div class="card-header">
                     <h2 class="h5 card-title mb-0">Top Districts by Village Count</h2>
                 </div>

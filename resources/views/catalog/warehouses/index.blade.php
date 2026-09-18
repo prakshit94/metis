@@ -26,7 +26,7 @@
     <div class="row g-4 mb-4" x-show="items.length > 0" style="display: none;">
         <!-- Chart 1: Physical Stock Distribution -->
         <div class="col-lg-7">
-            <div class="card h-100">
+            <div class="card h-100 border-start border-4 border-primary">
                 <div class="card-header border-bottom-0 pt-4 pb-0">
                     <h5 class="fw-bold text-primary mb-0"><i class="bi bi-bar-chart-fill me-2"></i>Stock Distribution</h5>
                 </div>
@@ -37,7 +37,7 @@
         </div>
         <!-- Chart 2: SKU Spread -->
         <div class="col-lg-5">
-            <div class="card h-100">
+            <div class="card h-100 border-start border-4 border-success">
                 <div class="card-header border-bottom-0 pt-4 pb-0">
                     <h5 class="fw-bold text-success mb-0"><i class="bi bi-pie-chart-fill me-2"></i>SKU Spread</h5>
                 </div>
@@ -51,7 +51,7 @@
     <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
+            <div class="card stats-card border-start border-4 border-primary" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -67,7 +67,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
+            <div class="card stats-card border-start border-4 border-success" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
@@ -85,7 +85,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
+            <div class="card stats-card border-start border-4 border-warning" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
@@ -376,7 +376,7 @@
     <!-- ═══════════════════════ Add / Edit Modal ════════════════════════════ -->
     <div class="modal fade" id="warehousesModal" tabindex="-1" aria-labelledby="warehousesModalLabel" data-bs-backdrop="static" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content shadow-lg border-0 rounded-4">
+            <div class="modal-content shadow-lg rounded-4">
 
                 <!-- Header -->
                 <div class="modal-header bg-body-tertiary border-bottom d-flex align-items-center justify-content-between p-4">
@@ -579,7 +579,7 @@
                                             <!-- Selected Village Details -->
                                             <template x-if="form.village_id">
                                                 <div class="col-12 mt-2">
-                                                    <div class="card bg-body border-0 border-start border-4 border-primary shadow-sm mt-2">
+                                                    <div class="card bg-body border-start border-4 border-primary shadow-sm mt-2">
                                                         <div class="card-body p-3">
                                                             <div class="row g-2">
                                                                 <div class="col-md-4">
@@ -638,7 +638,7 @@
     <!-- ═══════════════════════ View Details Modal ════════════════════════════ -->
     <div class="modal fade" id="viewWarehouseModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content shadow-lg border-0 rounded-4">
+            <div class="modal-content shadow-lg rounded-4">
                 <div class="modal-header border-bottom-0 pb-0">
                     <div class="d-flex align-items-center gap-2">
                         <h5 class="modal-title fw-bold">Warehouse Details</h5>

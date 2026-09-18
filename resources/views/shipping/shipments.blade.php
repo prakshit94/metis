@@ -30,7 +30,7 @@
     <div class="row g-3 mb-4 mb-lg-5">
         <!-- Total Shipments -->
         <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card metric-card shadow-sm border-0 rounded-4 overflow-hidden h-100">
+            <div class="card metric-card shadow-sm border-start border-4 border-primary rounded-4 overflow-hidden h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -46,7 +46,7 @@
         </div>
         <!-- Pending -->
         <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card metric-card shadow-sm border-0 rounded-4 overflow-hidden h-100">
+            <div class="card metric-card shadow-sm border-start border-4 border-success rounded-4 overflow-hidden h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -62,7 +62,7 @@
         </div>
         <!-- In Transit / Dispatched -->
         <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card metric-card shadow-sm border-0 rounded-4 overflow-hidden h-100 bg-primary bg-gradient text-white">
+            <div class="card metric-card shadow-sm border-start border-4 border-warning rounded-4 overflow-hidden h-100 bg-primary bg-gradient text-white">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -78,7 +78,7 @@
         </div>
         <!-- Delivered -->
         <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card metric-card shadow-sm border-0 rounded-4 overflow-hidden h-100">
+            <div class="card metric-card shadow-sm border-start border-4 border-info rounded-4 overflow-hidden h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -94,7 +94,7 @@
         </div>
         <!-- Returned -->
         <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card metric-card shadow-sm border-0 rounded-4 overflow-hidden h-100">
+            <div class="card metric-card shadow-sm border-start border-4 border-danger rounded-4 overflow-hidden h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -110,7 +110,7 @@
         </div>
         <!-- Failed -->
         <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card metric-card shadow-sm border-0 rounded-4 overflow-hidden h-100">
+            <div class="card metric-card shadow-sm border-start border-4 border-secondary rounded-4 overflow-hidden h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -130,7 +130,7 @@
     <div class="row g-4 mb-4">
         <!-- Service Providers -->
         <div class="col-12">
-            <div class="card shadow-sm border-0 rounded-4 h-100 overflow-hidden d-flex flex-column">
+            <div class="card shadow-sm border-start border-4 border-primary rounded-4 h-100 overflow-hidden d-flex flex-column">
                 <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h2 class="h6 fw-bold mb-0 text-body-emphasis"><i class="bi bi-truck text-success me-2"></i>Service Providers Tracker</h2>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
@@ -295,7 +295,7 @@
     </div>
 
     <!-- Main Directory Card -->
-    <div class="card shadow-sm border-0 rounded-4 mb-5">
+    <div class="card shadow-sm border-start border-4 border-success rounded-4 mb-5">
         <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
             
             <!-- Quick Filter Tabs -->
@@ -776,7 +776,7 @@
                 </div>
                 <div class="modal-body p-4 bg-body-tertiary bg-opacity-50">
                     <template x-if="selectedShipment">
-                        <div class="card shadow-sm border-0 mb-4 rounded-4">
+                        <div class="card shadow-sm border-start border-4 border-warning mb-4 rounded-4">
                             <div class="card-body">
                                 <h6 class="fw-bold mb-3">Shipment Summary</h6>
                                 <div class="row g-3">
@@ -823,7 +823,7 @@
                     <template x-if="selectedShipment?.order?.status_logs && selectedShipment.order.status_logs.length > 0">
                         <div class="mb-4">
                             <h6 class="fw-bold mb-3 ps-2">Order Status History</h6>
-                            <div class="card shadow-sm border-0 rounded-4">
+                            <div class="card shadow-sm border-start border-4 border-info rounded-4">
                                 <div class="card-body p-4">
                                     <div class="timeline">
                                         <template x-for="log in selectedShipment.order.status_logs" :key="log.id">
@@ -852,7 +852,7 @@
                     </template>
 
                     <h6 class="fw-bold mb-3 ps-2">Shipment Tracking History</h6>
-                    <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card shadow-sm border-start border-4 border-danger rounded-4">
                         <div class="card-body p-4">
                             <template x-if="trackingEvents.length === 0">
                                 <div class="text-center py-4 text-muted">

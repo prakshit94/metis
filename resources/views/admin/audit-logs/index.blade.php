@@ -21,7 +21,7 @@
     <!-- Stats Widgets -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 stats-card h-100">
+            <div class="card shadow-sm rounded-4 stats-card h-100 border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
@@ -37,7 +37,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 stats-card h-100">
+            <div class="card shadow-sm rounded-4 stats-card h-100 border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
@@ -53,7 +53,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 stats-card h-100">
+            <div class="card shadow-sm rounded-4 stats-card h-100 border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
@@ -69,7 +69,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 stats-card h-100">
+            <div class="card shadow-sm rounded-4 stats-card h-100 border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-danger bg-opacity-10 text-danger me-3" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
@@ -87,7 +87,7 @@
     </div>
 
     <!-- Main Table Container -->
-    <div class="card border-0 shadow-sm rounded-4">
+    <div class="card border-start border-4 border-danger shadow-sm rounded-4">
         <div class="card-header">
             <div class="row align-items-center">
                 <div class="col">
@@ -165,7 +165,7 @@
                 <table class="table table-hover align-middle mb-0 text-nowrap">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 40px;" class="border-0 ps-4 rounded-start">
+                            <th style="width: 40px;" class="ps-4 rounded-start">
                                 <input type="checkbox" 
                                        class="user-select-checkbox form-check-input" 
                                        :checked="items.length > 0 && selectedItems.length === items.length"
@@ -176,7 +176,7 @@
                             <th class="border-0">Details</th>
                             <th class="border-0">User</th>
                             <th class="border-0">IP Address</th>
-                            <th style="width: 80px;" class="border-0 pe-4 rounded-end"></th>
+                            <th style="width: 80px;" class="pe-4 rounded-end"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -289,7 +289,7 @@
     <!-- View Details Modal -->
     <div class="modal fade" id="viewAuditModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content shadow-lg border-0 rounded-4">
+            <div class="modal-content shadow-lg rounded-4">
                 <div class="modal-header border-bottom-0 pb-0 pt-4 px-4 px-lg-5">
                     <h5 class="modal-title fw-bold">
                         <i class="bi bi-journal-code me-2 text-primary"></i>Audit Details
@@ -301,7 +301,7 @@
                         <div class="row g-4">
                             <!-- Context info -->
                             <div class="col-12">
-                                <div class="card border-0 shadow-sm bg-body-tertiary rounded-4">
+                                <div class="card border-start border-4 border-secondary shadow-sm bg-body-tertiary rounded-4">
                                     <div class="card-body p-4 d-flex flex-wrap gap-4">
                                         <div>
                                             <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.05em;">Event</div>
@@ -349,7 +349,7 @@
                             
                             <!-- Changes comparison -->
                             <div class="col-md-6">
-                                <div class="card border-0 shadow-sm rounded-4 h-100">
+                                <div class="card border-start border-4 border-primary shadow-sm rounded-4 h-100">
                                     <div class="card-header bg-danger bg-opacity-10 border-bottom-0 py-3">
                                         <h6 class="fw-bold text-danger mb-0"><i class="bi bi-file-earmark-minus me-2"></i>Old Values</h6>
                                     </div>
@@ -360,7 +360,7 @@
                             </div>
                             
                             <div class="col-md-6">
-                                <div class="card border-0 shadow-sm rounded-4 h-100">
+                                <div class="card border-start border-4 border-success shadow-sm rounded-4 h-100">
                                     <div class="card-header bg-success bg-opacity-10 border-bottom-0 py-3">
                                         <h6 class="fw-bold text-success mb-0"><i class="bi bi-file-earmark-plus me-2"></i>New Values</h6>
                                     </div>
@@ -382,7 +382,7 @@
     <!-- Clear All Confirmation Modal -->
     <div class="modal fade" id="clearAllModal" tabindex="-1" aria-labelledby="clearAllModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-content shadow-lg rounded-4">
                 <div class="modal-header border-bottom-0 pb-0">
                     <h5 class="modal-title fw-bold" id="clearAllModalLabel">
                         <i class="fas fa-exclamation-triangle text-danger me-2"></i>Clear All Logs

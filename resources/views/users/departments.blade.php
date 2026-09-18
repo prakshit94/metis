@@ -46,7 +46,7 @@
     <!-- Stats Widgets -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6" x-show="activeTab !== 'org_chart'">
         <div class="col-xl-4 col-lg-4">
-            <div class="card stats-card">
+            <div class="card stats-card border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 fs-3 rounded p-2">
@@ -62,7 +62,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4">
-            <div class="card stats-card">
+            <div class="card stats-card border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3 fs-3 rounded p-2">
@@ -78,7 +78,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4">
-            <div class="card stats-card">
+            <div class="card stats-card border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-danger bg-opacity-10 text-danger me-3 fs-3 rounded p-2">
@@ -343,7 +343,7 @@
                         <li class="tree-node position-relative d-flex flex-column align-items-center">
                             <!-- Department Node -->
                             <div class="org-node text-center position-relative z-1">
-                                <div class="card shadow-sm border-0" style="width: 260px; border-radius: 10px;">
+                                <div class="card shadow-sm border-start border-4 border-info" style="width: 260px; border-radius: 10px;">
                                     <div class="card-header bg-primary text-white py-2 px-3 border-bottom-0" style="border-radius: 10px 10px 0 0;">
                                         <h6 class="mb-0 fw-bold text-truncate" x-text="dept.name"></h6>
                                     </div>
@@ -377,7 +377,7 @@
                                         <li class="tree-node position-relative mt-4">
                                             <div class="tree-line position-absolute start-50 translate-middle-x" style="width: 2px; height: 24px; background-color: var(--bs-border-color); top: -24px;"></div>
                                             <div class="org-node text-center position-relative z-1">
-                                                <div class="card shadow-sm border-0" style="width: 220px; border-radius: 10px;">
+                                                <div class="card shadow-sm border-start border-4 border-danger" style="width: 220px; border-radius: 10px;">
                                                     <div class="card-header bg-info text-white py-2 px-3 border-bottom-0" style="border-radius: 10px 10px 0 0;">
                                                         <h6 class="mb-0 fw-semibold text-truncate fs-6" x-text="child.name"></h6>
                                                     </div>
@@ -439,7 +439,7 @@
                 <div class="modal-body bg-body-tertiary pt-0 px-4">
                     <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
                     
-                    <div class="card border-0 shadow-sm mb-3">
+                    <div class="card border-start border-4 border-secondary shadow-sm mb-3">
                         <div class="card-body p-4">
                             <div class="row g-3">
                                 <div :class="getTab() === 'departments' ? 'col-md-6' : 'col-12'">
@@ -529,7 +529,7 @@
                 <template x-if="!loading && department">
                     <div class="row g-4 pb-4">
                         <div class="col-md-4">
-                            <div class="card border-0 shadow-sm h-100">
+                            <div class="card border-start border-4 border-primary shadow-sm h-100">
                                 <div class="card-body">
                                     <h6 class="text-muted small fw-bold text-uppercase mb-3">Overview</h6>
                                     
@@ -563,7 +563,7 @@
                             </div>
                         </div>
                         <div class="col-md-8">
-                            <div class="card border-0 shadow-sm h-100">
+                            <div class="card border-start border-4 border-success shadow-sm h-100">
                                 <div class="card-body">
                                     <h6 class="text-muted small fw-bold text-uppercase mb-3 d-flex justify-content-between align-items-center">
                                         <span>Team Members</span>

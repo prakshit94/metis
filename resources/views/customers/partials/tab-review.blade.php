@@ -7,7 +7,7 @@
     
     <div class="d-flex flex-column gap-4 mx-auto" style="max-width: 1200px;">
         {{-- ── Action Bar ── --}}
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-body-tertiary bg-opacity-50">
+        <div class="card border-start border-4 border-primary shadow-sm rounded-4 overflow-hidden bg-body-tertiary bg-opacity-50">
             <div class="card-body p-3 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
                 <button type="button" @click="activeTab = 'order'" 
                     class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 rounded-pill px-4 fw-bold text-uppercase w-100 w-sm-auto shadow-sm bg-body" style="font-size: 10px; letter-spacing: 1px;">
@@ -38,7 +38,7 @@
         <div class="d-flex flex-column gap-4">
             
             {{-- 1. Full Customer Profile --}}
-            <div class="card border-0 shadow-sm rounded-4">
+            <div class="card border-start border-4 border-success shadow-sm rounded-4">
                 <div class="card-body p-4 p-md-5">
                     <h4 class="mb-4 text-primary fw-bold text-uppercase d-flex align-items-center gap-3" style="font-size: 10px; letter-spacing: 2px;">
                         <span class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -68,7 +68,7 @@
             </div>
 
             {{-- 2. Billing Address --}}
-            <div class="card border-0 shadow-sm rounded-4">
+            <div class="card border-start border-4 border-warning shadow-sm rounded-4">
                 <div class="card-body p-4 p-md-5">
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
                         <h4 class="mb-0 text-primary fw-bold text-uppercase d-flex align-items-center gap-3" style="font-size: 10px; letter-spacing: 2px;">
@@ -142,7 +142,7 @@
             </div>
 
             {{-- 3. Shipping Address --}}
-            <div class="card border-0 shadow-sm rounded-4">
+            <div class="card border-start border-4 border-info shadow-sm rounded-4">
                 <div class="card-body p-4 p-md-5">
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
                         <h4 class="mb-0 text-primary fw-bold text-uppercase d-flex align-items-center gap-3" style="font-size: 10px; letter-spacing: 2px;">
@@ -226,7 +226,7 @@
             </div>
 
             {{-- 4. Dispatch Information (Warehouse) --}}
-            <div class="card border-0 shadow-sm rounded-4" x-data="{ warehousesMap: @js($warehouses->keyBy('id')) }">
+            <div class="card border-start border-4 border-danger shadow-sm rounded-4" x-data="{ warehousesMap: @js($warehouses->keyBy('id')) }">
                 <div class="card-body p-4 p-md-5">
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center border-bottom pb-4 mb-4 gap-3">
                         <h4 class="mb-0 text-primary fw-bold text-uppercase d-flex align-items-center gap-3" style="font-size: 10px; letter-spacing: 2px;">
@@ -301,7 +301,7 @@
             </div>
 
             {{-- 5. Order Items Matrix --}}
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card border-start border-4 border-secondary shadow-sm rounded-4 overflow-hidden">
                 <div class="card-header bg-body-tertiary border-bottom p-4 d-flex justify-content-between align-items-center">
                     <h4 class="mb-0 text-body-emphasis fw-bold text-uppercase d-flex align-items-center gap-3" style="font-size: 10px; letter-spacing: 2px;">
                         <i class="bi bi-bag"></i> Order Items

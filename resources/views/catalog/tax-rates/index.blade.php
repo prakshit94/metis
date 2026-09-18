@@ -24,7 +24,7 @@
     <!-- Stats Widgets -->
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-4 col-md-4">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -39,7 +39,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-md-4">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
@@ -54,7 +54,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-md-4">
-            <div class="card stats-card h-100">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
@@ -247,7 +247,7 @@
                 <div class="modal-body pt-3">
                     <form @submit.prevent="saveItem">
                         <!-- Card: Tax Rate Info -->
-                        <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                        <div class="card border-start border-4 border-info shadow-sm mb-4 bg-body-tertiary">
                             <div class="card-body p-4">
                                 <div class="d-flex align-items-center mb-3">
                                     <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">

@@ -18,13 +18,13 @@
     </div>
 
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 rounded-4" role="alert">
+        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-4" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
     @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 rounded-4" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-4" role="alert">
             <ul class="mb-0">
                 @foreach($errors->all() as $error)
                     <li><i class="bi bi-exclamation-triangle-fill me-2"></i> {{ $error }}</li>
@@ -37,7 +37,7 @@
     <!-- Stats Row -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 rounded-circle d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">
@@ -52,7 +52,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3 rounded-circle d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">
@@ -67,7 +67,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3 rounded-circle d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">
@@ -82,7 +82,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-0 shadow-sm rounded-4">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3 rounded-circle d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">
@@ -99,7 +99,7 @@
     </div>
 
     <!-- Table -->
-    <div class="card border-0 shadow-sm rounded-4">
+    <div class="card border-start border-4 border-danger shadow-sm rounded-4">
         <div class="card-header border-bottom py-3">
             <div class="row align-items-center">
                 <div class="col">
@@ -239,7 +239,7 @@
     <!-- Create Modal Glossy Style -->
     <div class="modal fade" id="createProgramModal" tabindex="-1" aria-labelledby="createProgramModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-0 shadow-lg rounded-4 bg-body">
+            <div class="modal-content shadow-lg rounded-4 bg-body">
                 
                 {{-- GLOSSY STYLE HEADER WITH BOOTSTRAP --}}
                 <div class="modal-header bg-body-tertiary border-bottom d-flex align-items-center justify-content-between p-4">
@@ -313,14 +313,14 @@
                                             </div>
                                         </div>
                                         
-                                        <div class="alert alert-info py-2 px-3 shadow-sm border-0 d-flex align-items-center gap-2 mb-4" style="font-size: 12px;">
+                                        <div class="alert alert-info py-2 px-3 shadow-sm d-flex align-items-center gap-2 mb-4" style="font-size: 12px;">
                                             <i class="bi bi-info-circle-fill"></i>
                                             <span><strong>Tip:</strong> Create a milestone with <strong>0 Required Referrals</strong> to give a base reward for <em>every</em> referral!</span>
                                         </div>
 
                                         <template x-for="(milestone, index) in milestones" :key="index">
                                             <div class="p-3 mb-3 bg-body border border-secondary border-opacity-25 rounded-3 shadow-sm position-relative">
-                                                <button type="button" class="btn btn-sm btn-outline-secondary text-danger border-0 position-absolute top-0 end-0 m-2" @click="removeMilestone(index)" x-show="milestones.length > 1" style="width: 28px; height: 28px; padding: 0;">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary text-danger position-absolute top-0 end-0 m-2" @click="removeMilestone(index)" x-show="milestones.length > 1" style="width: 28px; height: 28px; padding: 0;">
                                                     <i class="bi bi-x-lg"></i>
                                                 </button>
                                                 

@@ -114,7 +114,7 @@
                         <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                             <!-- User Growth Chart -->
                             <div class="col-lg-8">
-                                <div class="card h-100">
+                                <div class="card h-100 border-start border-4 border-primary">
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <h2 class="h5 card-title mb-0">User Registration Trends</h2>
                                         <div class="btn-group btn-group-sm" role="group" aria-label="Registration trend period">
@@ -134,7 +134,7 @@
 
                             <!-- Role & Department Distribution -->
                             <div class="col-lg-4">
-                                <div class="card h-100">
+                                <div class="card h-100 border-start border-4 border-success">
                                     <div class="card-header">
                                         <h2 class="h5 card-title mb-0">User Distribution</h2>
                                     </div>
@@ -170,7 +170,7 @@
                         <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                             <!-- Recent User Activity -->
                             <div class="col-lg-6">
-                                <div class="card h-100">
+                                <div class="card h-100 border-start border-4 border-warning">
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <h2 class="h5 card-title mb-0">Recent Activity</h2>
                                         <button class="btn btn-sm btn-outline-secondary" type="button" @click="loadUsers()" :disabled="isLoading" title="Refresh users">
@@ -300,7 +300,7 @@
                         </div> <!-- End Analytics Wrapper -->
 
                         <!-- Users Table -->
-                        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-4 bg-body-tertiary">
+                        <div class="card border-start border-4 border-primary shadow-sm rounded-4 overflow-hidden mt-4 bg-body-tertiary">
                             <div class="card-header">
                                 <div class="row align-items-center">
                                     <div class="col">
@@ -694,7 +694,7 @@
                     <div class="row g-4 mt-2">
                         <!-- Left Column: Core Identity & Contact -->
                         <div class="col-lg-4">
-                            <div class="card border-0 shadow-sm mb-4 bg-body-tertiary">
+                            <div class="card border-start border-4 border-success shadow-sm mb-4 bg-body-tertiary">
                                 <div class="card-header bg-transparent border-0 pt-4 pb-0">
                                     <h6 class="fw-bold text-uppercase text-muted mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-person-badge me-2"></i>Core Identity</h6>
                                 </div>
@@ -741,7 +741,7 @@
                             </div>
                             
                             <!-- Emergency Contact -->
-                            <div class="card border-0 shadow-sm bg-danger-subtle border border-danger-subtle">
+                            <div class="card border-start border-4 border-warning shadow-sm bg-danger-subtle border border-danger-subtle">
                                 <div class="card-body p-4">
                                     <h6 class="fw-bold text-danger-emphasis mb-3 d-flex align-items-center gap-2"><i class="bi bi-heart-pulse-fill"></i> Emergency Contact</h6>
                                     <div class="mb-3">
@@ -759,7 +759,7 @@
                         <!-- Right Column: Details grid -->
                         <div class="col-lg-8">
                             <!-- Personal Details -->
-                            <div class="card border-0 shadow-sm mb-4">
+                            <div class="card border-start border-4 border-info shadow-sm mb-4">
                                 <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
                                     <h6 class="fw-bold text-uppercase text-primary-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-person-vcard me-2"></i>Personal Information</h6>
                                 </div>
@@ -797,7 +797,7 @@
                             </div>
                             
                             <!-- Employment Details -->
-                            <div class="card border-0 shadow-sm mb-4">
+                            <div class="card border-start border-4 border-danger shadow-sm mb-4">
                                 <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
                                     <h6 class="fw-bold text-uppercase text-success-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-briefcase me-2"></i>Employment Details</h6>
                                 </div>
@@ -844,7 +844,7 @@
                             </div>
                             
                             <!-- Address Details -->
-                            <div class="card border-0 shadow-sm">
+                            <div class="card border-start border-4 border-secondary shadow-sm">
                                 <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
                                     <h6 class="fw-bold text-uppercase text-info-emphasis mb-0" style="letter-spacing: 0.5px; font-size: 0.8rem;"><i class="bi bi-geo-alt me-2"></i>Address Details</h6>
                                 </div>
@@ -895,7 +895,7 @@
                         <!-- Left Column -->
                         <div class="col-lg-8">
                             <!-- Card 1: Personal Information -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                            <div class="card border-start border-4 border-primary shadow-sm mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-person-lines-fill text-primary fs-5 me-2"></i>
@@ -944,7 +944,7 @@
                             </div>
                             
                             <!-- Card 2: Contact Information -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                            <div class="card border-start border-4 border-success shadow-sm mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-telephone-fill text-info fs-5 me-2"></i>
@@ -978,7 +978,7 @@
                             </div>
                             
                             <!-- Card 3: Address Details -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary" style="z-index: 10;">
+                            <div class="card border-start border-4 border-warning shadow-sm mb-3 bg-body-tertiary" style="z-index: 10;">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-geo-alt-fill text-success fs-5 me-2"></i>
@@ -1080,7 +1080,7 @@
                             </div>
                             
                             <!-- Card 4: Employment Details -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                            <div class="card border-start border-4 border-info shadow-sm mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-briefcase-fill text-warning fs-5 me-2"></i>
@@ -1144,7 +1144,7 @@
                         <!-- Right Column -->
                         <div class="col-lg-4">
                             <!-- Card 5: Profile Photo -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                            <div class="card border-start border-4 border-danger shadow-sm mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-image text-secondary fs-5 me-2"></i>
@@ -1170,7 +1170,7 @@
                             </div>
 
                             <!-- Card 6: Account Settings -->
-                            <div class="card border-0 shadow-sm mb-3 bg-body-tertiary">
+                            <div class="card border-start border-4 border-secondary shadow-sm mb-3 bg-body-tertiary">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                         <i class="bi bi-shield-lock-fill text-danger fs-5 me-2"></i>

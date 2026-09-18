@@ -43,7 +43,7 @@
 
     <!-- Tab 1: Customer Search -->
     <div x-show="activeTab === 'search'" x-transition.opacity.duration.300ms>
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-4 bg-body-tertiary">
+        <div class="card border-start border-4 border-primary shadow-sm rounded-4 overflow-hidden mt-4 bg-body-tertiary">
             <div class="card-body p-4 p-md-5 text-center">
                 <div class="mb-4">
                     <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 overflow-hidden" style="width: 80px; height: 80px;">
@@ -166,7 +166,7 @@
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <!-- Inception & Processing -->
                     <div class="col-md-6 col-lg-3">
-                        <div class="card h-100 border-0 bg-info bg-opacity-10 shadow-sm rounded-4">
+                        <div class="card h-100 border-start border-4 border-info bg-info bg-opacity-10 shadow-sm rounded-4">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center mb-3 border-bottom border-info border-opacity-25 pb-2">
                                     <i class="bi bi-cart-plus text-info fs-5 me-2"></i>
@@ -199,7 +199,7 @@
 
                     <!-- Shipping & Transit -->
                     <div class="col-md-6 col-lg-3">
-                        <div class="card h-100 border-0 bg-primary bg-opacity-10 shadow-sm rounded-4">
+                        <div class="card h-100 border-start border-4 border-primary bg-primary bg-opacity-10 shadow-sm rounded-4">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center mb-3 border-bottom border-primary border-opacity-25 pb-2">
                                     <i class="bi bi-truck text-primary fs-5 me-2"></i>
@@ -232,7 +232,7 @@
 
                     <!-- Fulfillment Performance -->
                     <div class="col-md-6 col-lg-3">
-                        <div class="card h-100 border-0 bg-success bg-opacity-10 shadow-sm rounded-4">
+                        <div class="card h-100 border-start border-4 border-success bg-success bg-opacity-10 shadow-sm rounded-4">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center mb-3 border-bottom border-success border-opacity-25 pb-2">
                                     <i class="bi bi-check-circle text-success fs-5 me-2"></i>
@@ -260,9 +260,9 @@
                         </div>
                     </div>
 
-                    <!-- Returns Performance -->
+                    <!-- Returns & Exceptions -->
                     <div class="col-md-6 col-lg-3">
-                        <div class="card h-100 border-0 bg-danger bg-opacity-10 shadow-sm rounded-4">
+                        <div class="card h-100 border-start border-4 border-danger bg-danger bg-opacity-10 shadow-sm rounded-4">
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center mb-3 border-bottom border-danger border-opacity-25 pb-2">
                                     <i class="bi bi-x-circle text-danger fs-5 me-2"></i>
@@ -296,7 +296,7 @@
                 <!-- Charts Row 1 -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <div class="col-lg-8">
-                        <div class="card h-100">
+                        <div class="card h-100 border-start border-4 border-success">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h2 class="h5 card-title mb-0">Revenue Analytics</h2>
                                 <div class="btn-group btn-group-sm" role="group">
@@ -315,7 +315,7 @@
                     </div>
 
                     <div class="col-lg-4">
-                        <div class="card h-100">
+                        <div class="card h-100 border-start border-4 border-warning">
                             <div class="card-header">
                                 <h2 class="h5 card-title mb-0">Order Status Distribution</h2>
                             </div>
@@ -329,7 +329,7 @@
                 <!-- Charts Row 2 -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <div class="col-lg-6">
-                        <div class="card h-100">
+                        <div class="card h-100 border-start border-4 border-primary">
                             <div class="card-header">
                                 <h2 class="h5 card-title mb-0">User Growth (Last 7 Days)</h2>
                             </div>
@@ -340,7 +340,7 @@
                     </div>
 
                     <div class="col-lg-6">
-                        <div class="card h-100">
+                        <div class="card h-100 border-start border-4 border-info">
                             <div class="card-header">
                                 <h2 class="h5 card-title mb-0">Storage Status</h2>
                             </div>
@@ -397,7 +397,7 @@
                 <!-- Geographic Data -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6" x-show="showAnalytics" x-transition>
                     <div class="col-12">
-                        <div class="card h-100">
+                        <div class="card h-100 border-start border-4 border-secondary">
                             <div class="card-header">
                                 <h2 class="h5 card-title mb-0">Sales by Location</h2>
                             </div>

@@ -18,7 +18,7 @@
     <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
+            <div class="card stats-card border-start border-4 border-primary" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -34,7 +34,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
+            <div class="card stats-card border-start border-4 border-success" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
@@ -50,7 +50,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card" style="cursor: default;">
+            <div class="card stats-card border-start border-4 border-warning" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">

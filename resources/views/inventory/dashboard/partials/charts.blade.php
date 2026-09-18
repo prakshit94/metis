@@ -1,6 +1,6 @@
 <div class="row g-4 mb-4">
     <div class="col-lg-6">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card border-start border-4 border-primary shadow-sm rounded-4 h-100">
             <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 px-4">
                 <h5 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow text-success me-2"></i>Fulfillment Performance</h5>
             </div>
@@ -44,7 +44,7 @@
     </div>
     
     <div class="col-lg-6">
-        <div class="card border-0 shadow-sm rounded-4 h-100 bg-primary bg-opacity-10 text-primary-emphasis">
+        <div class="card border-start border-4 border-success shadow-sm rounded-4 h-100 bg-primary bg-opacity-10 text-primary-emphasis">
             <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 px-4">
                 <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-wallet2 me-2"></i>Estimated Inventory Value</h5>
             </div>

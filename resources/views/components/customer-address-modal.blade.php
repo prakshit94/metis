@@ -2,7 +2,7 @@
      x-data="customerAddressApp()" 
      @open-address-modal.window="openModal($event.detail)">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content shadow">
             {{-- GLOSSY STYLE HEADER WITH BOOTSTRAP --}}
             <div class="modal-header bg-body-tertiary border-bottom d-flex align-items-center justify-content-between p-4">
                 <div class="d-flex align-items-center gap-3">
@@ -92,7 +92,7 @@
                                 <!-- Selected Village Details -->
                                 <template x-if="form.village_name">
                                     <div class="col-12">
-                                        <div class="card bg-body border-0 border-start border-4 border-primary shadow-sm mt-2">
+                                        <div class="card bg-body border-start border-4 border-primary shadow-sm mt-2">
                                             <div class="card-body p-3">
                                                 <div class="row g-2">
                                                     <div class="col-md-4">
