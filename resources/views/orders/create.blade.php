@@ -665,14 +665,10 @@
                                             </div>
                                             <div class="d-flex flex-column gap-2 mt-auto">
                                                 <div class="input-group shadow-sm flex-nowrap" style="min-height: 38px;">
-                                                    <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!canAddToCart(p)"><i class="bi bi-dash"></i></button>
-                                                    <input type="number" class="form-control text-center fw-bold px-1 no-spinners flex-grow-1" x-model.number="p._qty" min="1" :max="getMaxAllowedStock(p) || 9999" placeholder="Qty" :disabled="!canAddToCart(p)" style="min-width: 0;">
-                                                    <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty < (getMaxAllowedStock(p) || 9999)) p._qty++" :disabled="!canAddToCart(p)"><i class="bi bi-plus"></i></button>
+                                                    <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="updateQtyByProductId(p.id, -1)" :disabled="getCartItemQty(p.id) <= 0"><i class="bi bi-dash"></i></button>
+                                                    <input type="number" class="form-control text-center fw-bold px-1 no-spinners flex-grow-1" :value="getCartItemQty(p.id)" @change="setCartItemQty(p.id, $event.target.value)" min="0" :max="getMaxAllowedStock(p) || 9999" placeholder="Qty" :disabled="!canAddToCart(p) && getCartItemQty(p.id) === 0" style="min-width: 0;">
+                                                    <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="updateQtyByProductId(p.id, 1)" :disabled="!canAddToCart(p)"><i class="bi bi-plus"></i></button>
                                                 </div>
-                                                <button class="btn btn-sm w-100 shadow-sm d-flex align-items-center justify-content-center gap-2 transition-all fw-bold text-nowrap" style="min-height: 38px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!canAddToCart(p)">
-                                                    <i class="bi fs-5" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
-                                                    <span x-text="!isSkuEnabled(p) ? 'Disabled' : (!canAddToCart(p) ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 13px;"></span>
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -807,14 +803,10 @@
                                             <td class="text-end pe-4 align-middle">
                                                 <div class="d-flex flex-column gap-2 ms-auto" style="max-width: 130px;">
                                                     <div class="input-group input-group-sm shadow-sm flex-nowrap" style="min-height: 32px;">
-                                                        <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty > 1) p._qty--" :disabled="!canAddToCart(p)"><i class="bi bi-dash"></i></button>
-                                                        <input type="number" class="form-control text-center fw-bold px-1 no-spinners flex-grow-1" x-model.number="p._qty" min="1" :max="getMaxAllowedStock(p) || 9999" placeholder="Qty" :disabled="!canAddToCart(p)" style="min-width: 0;">
-                                                        <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="if(p._qty < (getMaxAllowedStock(p) || 9999)) p._qty++" :disabled="!canAddToCart(p)"><i class="bi bi-plus"></i></button>
+                                                        <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="updateQtyByProductId(p.id, -1)" :disabled="getCartItemQty(p.id) <= 0"><i class="bi bi-dash"></i></button>
+                                                        <input type="number" class="form-control text-center fw-bold px-1 no-spinners flex-grow-1" :value="getCartItemQty(p.id)" @change="setCartItemQty(p.id, $event.target.value)" min="0" :max="getMaxAllowedStock(p) || 9999" placeholder="Qty" :disabled="!canAddToCart(p) && getCartItemQty(p.id) === 0" style="min-width: 0;">
+                                                        <button class="btn btn-outline-secondary px-2 flex-shrink-0" type="button" @click="updateQtyByProductId(p.id, 1)" :disabled="!canAddToCart(p)"><i class="bi bi-plus"></i></button>
                                                     </div>
-                                                    <button class="btn btn-sm w-100 shadow-sm d-flex align-items-center justify-content-center gap-2 transition-all fw-bold text-nowrap" style="min-height: 32px;" :class="isInCart(p.id) ? 'btn-primary' : 'btn-outline-primary'" @click="addToCart(p)" :title="isInCart(p.id) ? 'Add more' : 'Add to cart'" :disabled="!canAddToCart(p)">
-                                                        <i class="bi" :class="isInCart(p.id) ? 'bi-cart-plus-fill' : 'bi-cart-plus'"></i>
-                                                        <span x-text="!isSkuEnabled(p) ? 'Disabled' : (!canAddToCart(p) ? 'Out of Stock' : (isInCart(p.id) ? 'Add More' : 'Add'))" style="font-size: 11px;"></span>
-                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -3797,7 +3789,7 @@ mapOrder(o) {
                 const p = new URLSearchParams({ q: this.productQuery, category: this.categoryFilter, perPage: this.perPage, page: this.productPage });
                 const res = await fetch(`/products-search-api?${p}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                 const json = await res.json();
-                this.products = (json.data || []).map(p => ({...p, _qty: 1, _disc: parseFloat(p.default_discount)||0}));
+                this.products = (json.data || []).map(p => ({...p, _qty: 0, _disc: parseFloat(p.default_discount)||0}));
                 this.productTotal = json.total||0; this.productFrom = json.from||0; this.productTo = json.to||0; this.productLastPage = json.last_page||1;
             } catch(e) { window.dispatchEvent(new CustomEvent('notify',{detail:{type:'error',message:'Failed to load products'}})); }
             finally { this.searching = false; }
@@ -3892,7 +3884,33 @@ mapOrder(o) {
                 return json.data;
             } catch(e) { return null; }
         },
-        isInCart(id) { return this.cart.some(i => i.id === id); },
+        isInCart(id) { return this.cart.some(i => String(i.id) === String(id) && !i.is_gift); },
+        getCartItemQty(id) {
+            const item = this.cart.find(i => String(i.id) === String(id) && !i.is_gift);
+            return item ? parseInt(item.quantity) : 0;
+        },
+        updateQtyByProductId(id, delta) {
+            const idx = this.cart.findIndex(i => String(i.id) === String(id) && !i.is_gift);
+            if (idx !== -1) {
+                this.updateQty(idx, delta);
+            } else if (delta > 0) {
+                const p = this.products.find(x => String(x.id) === String(id));
+                if (p) {
+                    let originalQty = p._qty;
+                    p._qty = delta;
+                    this.addToCart(p);
+                    p._qty = originalQty;
+                }
+            }
+        },
+        setCartItemQty(id, val) {
+            const newVal = parseInt(val) || 0;
+            const currentQty = this.getCartItemQty(id);
+            const delta = newVal - currentQty;
+            if (delta !== 0) {
+                this.updateQtyByProductId(id, delta);
+            }
+        },
 
         calculateAutoBogoQty(id, newQty, delta) {
             const match = this.getBogoMatch(id);
