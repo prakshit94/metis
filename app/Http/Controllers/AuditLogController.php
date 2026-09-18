@@ -203,13 +203,21 @@ class AuditLogController extends Controller implements HasMiddleware
         );
 
         $user = auth()->user();
-        $activities = Activity::with(['causer', 'subject'])->latest()->limit(50)->get();
+        
+        $activityQuery = Activity::with(['causer', 'subject'])->latest();
+        if ($user && !$user->hasRole('Super Admin')) {
+            $activityQuery->where('causer_id', $user->id);
+        }
+        $activities = $activityQuery->limit(50)->get();
         $readIds = $user ? $user->readActivities()->whereIn('activity_id', $activities->pluck('id'))->pluck('activity_id')->toArray() : [];
 
         $unreadCount = 0;
         if ($user) {
-            // Guarantee constant time performance by limiting the evaluation boundary to the 500 most recent activities
-            $recentIds = Activity::latest('id')->limit(500)->pluck('id');
+            $recentQuery = Activity::latest('id');
+            if (!$user->hasRole('Super Admin')) {
+                $recentQuery->where('causer_id', $user->id);
+            }
+            $recentIds = $recentQuery->limit(500)->pluck('id');
             $readIdsForCount = $user->readActivities()->whereIn('activity_id', $recentIds)->pluck('activity_id');
             $unreadCount = $recentIds->diff($readIdsForCount)->count();
         }

@@ -455,7 +455,12 @@
                 @endif
 
 @php
-    $initialActivities = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->latest()->limit(50)->get()->map(function($a) {
+    $activityQuery = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->latest();
+    if (auth()->check() && !auth()->user()->hasRole('Super Admin')) {
+        $activityQuery->where('causer_id', auth()->id());
+    }
+    
+    $initialActivities = $activityQuery->limit(50)->get()->map(function($a) {
         return [
             'id' => $a->id,
             'formatted_description' => \App\Http\Controllers\AuditLogController::formatActivityDescription($a),
@@ -467,7 +472,11 @@
     });
     $initialUnreadCount = 0;
     if (auth()->check()) {
-        $recentIds = \Spatie\Activitylog\Models\Activity::latest('id')->limit(500)->pluck('id');
+        $recentQuery = \Spatie\Activitylog\Models\Activity::latest('id');
+        if (!auth()->user()->hasRole('Super Admin')) {
+            $recentQuery->where('causer_id', auth()->id());
+        }
+        $recentIds = $recentQuery->limit(500)->pluck('id');
         $readIdsForCount = auth()->user()->readActivities()->whereIn('activity_id', $recentIds)->pluck('activity_id');
         $initialUnreadCount = $recentIds->diff($readIdsForCount)->count();
     }
