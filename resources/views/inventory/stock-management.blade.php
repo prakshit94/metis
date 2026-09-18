@@ -235,7 +235,6 @@
                                 <th @click="sortBy('dispatched_qty')" class="sortable text-center"><i class="bi bi-send-check me-1 text-secondary"></i>Dispatched</th>
                                 <th @click="sortBy('delivered_qty')" class="sortable text-center"><i class="bi bi-box2-heart me-1 text-secondary"></i>Delivered</th>
                                 <th @click="sortBy('return_requested_qty')" class="sortable text-center"><i class="bi bi-arrow-return-left me-1 text-secondary"></i>Return Req</th>
-                                <th @click="sortBy('in_transit_qty')" class="sortable text-center"><i class="bi bi-truck me-1 text-secondary"></i>In Transit</th>
                                 <th @click="sortBy('damaged_qty')" class="sortable text-center"><i class="bi bi-exclamation-octagon me-1 text-secondary"></i>Bad Qty</th>
                                 @canany(['stockmanagement-edit', 'stocktransfer-create'])
                                 <th style="width: 120px;" class="text-end pe-4"><i class="bi bi-lightning-charge me-1 text-secondary"></i>Actions</th>
@@ -337,7 +336,7 @@
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-info-subtle text-info border border-info-subtle"
-                                              x-text="parseFloat(item.dispatched_qty || 0).toFixed(2)"></span>
+                                              x-text="parseFloat((parseFloat(item.dispatched_qty || 0) + parseFloat(item.in_transit_qty || 0)).toFixed(2))"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-success-subtle text-success border border-success-subtle"
@@ -346,10 +345,6 @@
                                     <td class="text-center">
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
                                               x-text="parseFloat(item.return_requested_qty || 0).toFixed(2)"></span>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.in_transit_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle"

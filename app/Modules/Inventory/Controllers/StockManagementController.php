@@ -80,7 +80,9 @@ class StockManagementController extends Controller implements HasMiddleware
             $query->orderByRaw('(quantity - reserved_qty - pending_qty) '.$sortDir);
         } elseif ($sortBy === 'delivered_qty') {
             $query->orderByRaw('(raw_delivered_qty - returned_qty) '.$sortDir);
-        } elseif (in_array($sortBy, ['id', 'product_id', 'warehouse_id', 'quantity', 'reserved_qty', 'dispatched_qty', 'in_transit_qty', 'damaged_qty', 'pending_qty', 'return_requested_qty'])) {
+        } elseif ($sortBy === 'dispatched_qty') {
+            $query->orderByRaw('(dispatched_qty + in_transit_qty) '.$sortDir);
+        } elseif (in_array($sortBy, ['id', 'product_id', 'warehouse_id', 'quantity', 'reserved_qty', 'in_transit_qty', 'damaged_qty', 'pending_qty', 'return_requested_qty'])) {
             $query->orderBy($sortBy, $sortDir);
         }
 

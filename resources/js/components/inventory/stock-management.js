@@ -245,7 +245,6 @@ export default () => ({
         'Dispatched',
         'Delivered',
         'Return Req',
-        'In Transit',
         'Bad Qty',
         'Alert Level',
         'Status',
@@ -254,10 +253,10 @@ export default () => ({
         const qty = parseFloat(item.quantity || 0);
         const reserved = parseFloat(item.reserved_qty || 0);
         const pending = parseFloat(item.pending_qty || 0);
-        const dispatched = parseFloat(item.dispatched_qty || 0);
+        const inTransit = parseFloat(item.in_transit_qty || 0);
+        const dispatched = parseFloat(item.dispatched_qty || 0) + inTransit;
         const delivered = parseFloat(item.delivered_qty || 0);
         const returnReq = parseFloat(item.return_requested_qty || 0);
-        const inTransit = parseFloat(item.in_transit_qty || 0);
         const damaged = parseFloat(item.damaged_qty || 0);
         const available = parseFloat((qty - reserved - pending).toFixed(4));
         const alert = parseFloat(item.product?.alert_quantity || 0);
@@ -276,7 +275,6 @@ export default () => ({
           dispatched,
           delivered,
           returnReq,
-          inTransit,
           damaged,
           alert,
           status,
