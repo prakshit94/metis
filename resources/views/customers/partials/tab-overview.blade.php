@@ -1,5 +1,5 @@
 {{-- ══ TAB: Overview / Profile ══ --}}
-<div x-show="activeTab === 'overview'" class="security-section" x-cloak>
+<div x-show="activeTab === 'overview'" class="security-section card shadow-sm border-start border-4 border-primary" x-cloak>
     <h5>Personal Information</h5>
     <p>Manage customer personal profile and contact details</p>
     

@@ -11,12 +11,12 @@
 
     @include('customers.partials.scripts')
 
-    <div class="security-page" x-data="@include('customers.partials.alpine-state')">
+    <div class="security-page container-fluid p-4 p-lg-4" x-data="@include('customers.partials.alpine-state')">
         {{-- ── Header Section ── --}}
         @include('customers.partials.header_top')
 
         {{-- ── Main Layout: Vertical Tabs + Content ── --}}
-        <div class="security-layout container-fluid p-4 p-lg-4">
+        <div class="security-layout">
             <div class="row g-6">
                 
                 {{-- Sidebar: Vertical Navigation --}}
@@ -44,7 +44,7 @@
                     </nav>
 
                     {{-- Quick Info Card in Sidebar --}}
-                    <div class="card border border-primary border-opacity-10 bg-primary bg-opacity-10 rounded-4 d-none d-lg-block mt-4">
+                    <div class="card border-start border-4 border-primary shadow-sm bg-primary bg-opacity-10 rounded-4 d-none d-lg-block mt-4">
                         <div class="card-body p-4">
                             <p class="mb-1 text-primary fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Customer Since</p>
                             <p class="mb-3 fw-bold text-body-emphasis fs-6">{{ $customer->created_at->format('M Y') }}</p>

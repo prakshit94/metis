@@ -32,7 +32,7 @@
         </div>
 
         <div class="col-md-6">
-            <div class="card border border-danger border-opacity-25 bg-danger bg-opacity-10 rounded-4 h-100 position-relative overflow-hidden">
+            <div class="card border-start border-4 border-danger shadow-sm bg-danger bg-opacity-10 rounded-4 h-100 position-relative overflow-hidden">
                 <div class="position-absolute bottom-0 end-0 p-4 opacity-10" style="z-index: 0; transform: translate(25%, 25%);">
                     <i class="bi bi-exclamation-triangle text-danger" style="font-size: 10rem;"></i>
                 </div>

@@ -1,5 +1,5 @@
 {{-- ══ TAB: Addresses ══ --}}
-<div x-show="activeTab === 'addresses'" class="security-section" x-cloak>
+<div x-show="activeTab === 'addresses'" class="security-section card shadow-sm border-start border-4 border-success" x-cloak>
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <h5>Registered Addresses</h5>

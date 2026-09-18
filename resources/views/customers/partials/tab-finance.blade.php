@@ -1,5 +1,5 @@
 {{-- ══ TAB: Finance ══ --}}
-<div x-show="activeTab === 'finance'" class="security-section" x-cloak>
+<div x-show="activeTab === 'finance'" class="security-section card shadow-sm border-start border-4 border-warning" x-cloak>
     <div class="row g-4">
         <div class="col-md-6">
             <div class="card border-start border-4 border-primary shadow-sm rounded-4 h-100 position-relative overflow-hidden">
