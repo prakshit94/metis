@@ -672,7 +672,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     _mapProductForForm(product) {
-      return {
+      let mapped = {
         name: product.name ?? '',
         sku: product.sku ?? '',
         category_id: String(product.category_id ?? ''),
@@ -687,10 +687,10 @@ document.addEventListener('alpine:init', () => {
         length_cm: product.length_cm ?? '',
         width_cm: product.width_cm ?? '',
         height_cm: product.height_cm ?? '',
-        purchase_price: product.purchase_price
+        purchase_price: product.purchase_price !== null && product.purchase_price !== undefined
           ? String(Math.round(parseFloat(product.purchase_price)))
           : '',
-        mrp: product.mrp ? String(Math.round(parseFloat(product.mrp))) : '',
+        mrp: product.mrp !== null && product.mrp !== undefined ? String(Math.round(parseFloat(product.mrp))) : '',
         selling_price_inc_gst: (() => {
           let basePrice = parseFloat(product.selling_price ?? product.price ?? 0);
           let rateId = String(product.tax_rate_id ?? '');
@@ -816,7 +816,7 @@ document.addEventListener('alpine:init', () => {
 
       mapped.name = mapped.name + ' (Copy)';
       mapped.sku = mapped.sku + '-COPY'; // User will likely change this
-      mapped.default_warehouse_id = ''; // Force warehouse selection
+      
       mapped.stock = '0';
       mapped.warehouse_allow_overselling = null;
       mapped.warehouse_overselling_qty = null;
