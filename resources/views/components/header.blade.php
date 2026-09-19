@@ -813,8 +813,9 @@
                                         </a>
                                     </template>
                                 </div>
-                                <div class="p-2 text-center bg-body-secondary bg-opacity-50 rounded-bottom-4">
-                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All Activity <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                <div class="p-2 bg-body-secondary bg-opacity-50 rounded-bottom-4 d-flex align-items-center justify-content-between px-3">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0">View All Activity <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                    <button type="button" @click="markAsRead('activities')" x-show="count > 0" class="btn btn-sm btn-link text-muted text-decoration-none p-0 fw-semibold" style="font-size: 11px;"><i class="bi bi-check2-all me-1"></i>Mark read</button>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="messages-noti-tab" role="tabpanel">
@@ -1249,6 +1250,10 @@ document.addEventListener('alpine:init', () => {
                     }).catch(() => {});
                     return;
 
+                } else if (id === 'activities') {
+                    // Mark only activities as read
+                    this.activities.forEach(a => a.is_read = true);
+                    this.count = 0;
                 } else {
                     // Mark single activity as read
                     const activity = this.activities.find(a => a.id === id);
@@ -1259,7 +1264,8 @@ document.addEventListener('alpine:init', () => {
                 }
                 
                 // POST to API for activity read tracking
-                fetch(`/api/activities/${id}/read`, {
+                const apiId = (id === 'activities') ? 'all' : id;
+                fetch(`/api/activities/${apiId}/read`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1273,6 +1279,7 @@ document.addEventListener('alpine:init', () => {
 });
 </script>
 @endpush
+ 
  
  
  
