@@ -596,7 +596,49 @@
         } catch (\Exception $e) {}
     }
 
-    // 6. Failed Shipments
+    // 6. Pending Order Returns
+    if (\Illuminate\Support\Facades\Schema::hasTable('order_returns')) {
+        try {
+            $pendingReturns = \App\Modules\Orders\Models\OrderReturn::where('status', 'pending')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($pendingReturns as $returnRequest) {
+                $systemAlerts->push((object)[
+                    'id' => 'return_' . $returnRequest->id,
+                    'type' => 'warning',
+                    'icon' => 'bi-arrow-return-left',
+                    'title' => 'Pending Return Request',
+                    'message' => "Return <b>{$returnRequest->return_no}</b> is awaiting approval.",
+                    'time_ago' => $returnRequest->created_at ? $returnRequest->created_at->diffForHumans() : null,
+                    'link' => '/returns'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 7. Pending Refunds
+    if (\Illuminate\Support\Facades\Schema::hasTable('refunds')) {
+        try {
+            $pendingRefunds = \App\Modules\Orders\Models\Refund::where('status', 'pending')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($pendingRefunds as $refund) {
+                $systemAlerts->push((object)[
+                    'id' => 'refund_' . $refund->id,
+                    'type' => 'danger',
+                    'icon' => 'bi-cash-coin',
+                    'title' => 'Pending Refund',
+                    'message' => "Refund <b>{$refund->refund_no}</b> requires processing.",
+                    'time_ago' => $refund->created_at ? $refund->created_at->diffForHumans() : null,
+                    'link' => '/refunds'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 8. Failed Shipments
     if (\Illuminate\Support\Facades\Schema::hasTable('shipments')) {
         try {
             $failedShipments = \App\Modules\Orders\Models\Shipment::where('status', 'failed')
@@ -1186,3 +1228,4 @@ document.addEventListener('alpine:init', () => {
 });
 </script>
 @endpush
+ 
