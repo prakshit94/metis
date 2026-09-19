@@ -501,6 +501,16 @@ $totalIGST = 0;
          {{ number_format($invoice->net_amount, 0) }}
       </td>
    </tr>
+   @if($invoice->order->cashback_earned > 0)
+   <tr>
+      <td colspan="8" class="text-right bold" style="color: #0c5460;">
+         Cashback Earned
+      </td>
+      <td class="text-right bold" style="color: #0c5460;">
+         {{ number_format($invoice->order->cashback_earned, 2) }}
+      </td>
+   </tr>
+   @endif
 </table>
 <br>
       <!-- TERMS -->

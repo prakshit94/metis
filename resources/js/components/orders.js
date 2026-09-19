@@ -1063,6 +1063,7 @@ document.addEventListener('alpine:init', () => {
             formatMoney(o.tax_amount) -
             formatMoney(o.net_amount)
         ),
+        cashbackEarned: formatMoney(o.cashback_earned ?? 0),
         paymentMethod: formattedPaymentMethod,
         couponCode: o.coupon_code || '',
         appliedOfferName: o.applied_offer ? o.applied_offer.name : '',

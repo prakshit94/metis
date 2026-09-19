@@ -183,14 +183,12 @@ class OrderService
                     $netPayable = $order->net_amount - (float) $party->wallet_balance;
                     if ($netPayable <= 0) {
                         $usedAmount = $order->net_amount;
-                        $party->wallet_balance = abs($netPayable);
                         $order->update(['net_amount' => 0, 'wallet_amount_used' => $usedAmount]);
                     } else {
                         $usedAmount = $party->wallet_balance;
-                        $party->wallet_balance = 0;
                         $order->update(['net_amount' => $netPayable, 'wallet_amount_used' => $usedAmount]);
                     }
-                    $party->save();
+                    $party->decrement('wallet_balance', (float) $usedAmount);
 
                     WalletTransaction::create([
                         'party_id' => $party->id,
@@ -617,11 +615,23 @@ class OrderService
                             $eligibleSubtotal += max(0, $item['total_amount'] - $item['bogo_discount']);
                         }
                     }
+                } elseif (!empty($bestOrderOffer->applicable_products)) {
+                    $apps = is_string($bestOrderOffer->applicable_products) ? json_decode($bestOrderOffer->applicable_products, true) : $bestOrderOffer->applicable_products;
+                    $eligibleSubtotal = 0.0;
+                    foreach ($items as $item) {
+                        if ($item['is_gift']) {
+                            continue;
+                        }
+                        $pid = $item['product_id'];
+                        if (in_array($pid, $apps) || in_array((string) $pid, $apps)) {
+                            $eligibleSubtotal += max(0, $item['total_amount'] - $item['bogo_discount']);
+                        }
+                    }
                 }
 
                 $orderEligibleSubtotal = $eligibleSubtotal;
                 $discount = $this->calculateOfferDiscount($eligibleSubtotal, $subtotal, $bestOrderOffer);
-                if ($discount > 0) {
+                if ($discount > 0 || $bestOrderOffer->cashback_percent > 0 || $bestOrderOffer->cashback_fixed > 0) {
                     $orderDiscount = $discount;
                 } else {
                     $bestOrderOffer = null;
@@ -647,6 +657,12 @@ class OrderService
                         }
                     } elseif ($bestOrderOffer->product_id) {
                         if ($item['product_id'] != $bestOrderOffer->product_id) {
+                            $isEligible = false;
+                        }
+                    } elseif (!empty($bestOrderOffer->applicable_products)) {
+                        $apps = is_string($bestOrderOffer->applicable_products) ? json_decode($bestOrderOffer->applicable_products, true) : $bestOrderOffer->applicable_products;
+                        $pid = $item['product_id'];
+                        if (! in_array($pid, $apps) && ! in_array((string) $pid, $apps)) {
                             $isEligible = false;
                         }
                     }
@@ -698,6 +714,28 @@ class OrderService
 
         $grandTotal = round(max(0.0, $subtotal - $totalDiscount + $taxAmount));
 
+        $cashbackEarned = 0.0;
+
+        if ($coupon && $couponEligibleSubtotal > 0 && $couponEligibleSubtotal >= ((float) $coupon->min_spend ?? 0)) {
+            if ($coupon->cashback_percent > 0) {
+                $cashbackEarned += $couponEligibleSubtotal * ($coupon->cashback_percent / 100);
+            }
+            if ($coupon->cashback_fixed > 0) {
+                $cashbackEarned += (float) $coupon->cashback_fixed;
+            }
+        }
+
+        if ($bestOrderOffer && $orderEligibleSubtotal > 0 && $orderEligibleSubtotal >= ((float) $bestOrderOffer->min_spend ?? 0)) {
+            if ($bestOrderOffer->cashback_percent > 0) {
+                $cashbackEarned += $orderEligibleSubtotal * ($bestOrderOffer->cashback_percent / 100);
+            }
+            if ($bestOrderOffer->cashback_fixed > 0) {
+                $cashbackEarned += (float) $bestOrderOffer->cashback_fixed;
+            }
+        }
+        
+        $cashbackEarned = round($cashbackEarned, 2);
+
         return [
             'items' => $items,
             'subtotal' => $subtotal,
@@ -711,6 +749,7 @@ class OrderService
             'order_offer_name' => $bestOrderOffer?->name,
             'applied_offer_id' => $bestOrderOffer?->id,
             'applied_bogo_ids' => $appliedBogoIds,
+            'cashback_earned' => $cashbackEarned,
         ];
     }
 
@@ -809,6 +848,7 @@ class OrderService
                 'net_amount' => $calc['grand_total'],
                 'status' => $newStatus,
                 'future_order_date' => $newStatus === 'future_order' ? (array_key_exists('future_order_date', $data) ? $data['future_order_date'] : $order->future_order_date) : null,
+                'cashback_earned' => $calc['cashback_earned'] ?? 0,
                 'updated_by' => auth()->id(),
             ], $this->mapAddressFields($shippingAddr, 'shipping'), $this->mapAddressFields($billingAddr, 'billing'));
 
@@ -885,6 +925,7 @@ class OrderService
         ]);
 
         if ($status === 'processing') {
+            $this->inventoryService->revokeOrderCashback($order);
             $order->loadMissing(['shipments', 'shippingAddress.village.services']);
             if ($order->shipments->isEmpty()) {
                 $carrierName = null;
@@ -910,6 +951,7 @@ class OrderService
         }
 
         if ($status === 'delivered') {
+            $this->inventoryService->creditOrderCashback($order);
             foreach ($order->shipments as $shipment) {
                 if ($shipment->status !== 'delivered') {
                     $shipment->update([

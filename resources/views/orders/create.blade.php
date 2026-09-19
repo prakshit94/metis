@@ -1148,6 +1148,16 @@
                                 <span class="text-body" x-text="'₹ ' + Number(taxAmount).toFixed(2)"></span>
                             </div>
 
+                            <template x-if="cashbackEarned > 0">
+                                <div class="d-flex justify-content-between fw-medium text-info mt-2" style="font-size: 13px;">
+                                    <div>
+                                        <span>Cashback Earned</span>
+                                        <span class="text-info opacity-75 d-block" style="font-size: 10px;" x-text="cashbackSources"></span>
+                                    </div>
+                                    <span class="text-info fw-bold align-top" x-text="'+ ₹ ' + Number(cashbackEarned).toFixed(2)"></span>
+                                </div>
+                            </template>
+
                             <hr class="border-secondary opacity-10 my-3">
 
                             <div class="d-flex justify-content-between align-items-center">
@@ -2089,6 +2099,13 @@
                                 </template>
                                 <template x-if="(!couponApplied || !appliedCouponObj || appliedCouponObj.type !== 'free_shipping') && shippingFee > 0">
                                     <div class="d-flex justify-content-between mb-1 small"><span class="text-body-secondary">Shipping:</span> <span class="fw-bold" x-text="'₹ ' + Number(shippingFee).toFixed(2)"></span></div>
+                                </template>
+
+                                <template x-if="cashbackEarned > 0">
+                                    <div class="d-flex justify-content-between mb-1 small text-info">
+                                        <span class="text-info">Cashback Earned:</span>
+                                        <span class="fw-bold" x-text="'+ ₹ ' + Number(cashbackEarned).toFixed(2)"></span>
+                                    </div>
                                 </template>
                                 
                                 <div class="d-flex justify-content-between mt-2 pt-2 border-top border-primary border-opacity-25 fs-5">
@@ -3332,6 +3349,14 @@ mapOrder(o) {
         getProductPromotions(p) {
             let promos = [];
             this.activeOffers.forEach(o => {
+                let cashbackInfo = '';
+                if (Number(o.cashback_percent) > 0 || Number(o.cashback_fixed) > 0) {
+                    let parts = [];
+                    if (Number(o.cashback_percent) > 0) parts.push(Number(o.cashback_percent) + '%');
+                    if (Number(o.cashback_fixed) > 0) parts.push('₹' + Number(o.cashback_fixed));
+                    cashbackInfo = ' + Cashback (' + parts.join(' & ') + ')';
+                }
+
                 if (o.type === 'bogo') {
                     let apps = o.applicable_products;
                     if (typeof apps === 'string') { try { apps = JSON.parse(apps); } catch(e) { apps = null; } }
@@ -3346,10 +3371,10 @@ mapOrder(o) {
                     if (match) {
                         let reward = o.product_name ? ` (${o.product_name})` : '';
                         promos.push({
-                            title: o.name, 
+                            title: o.name + (cashbackInfo ? ' 💰' : ''), 
                             icon: 'bi-gift-fill', 
                             color: 'info', 
-                            tooltip: `Buy ${o.buy_qty} Get ${o.get_qty} Free${reward}.<br>Min Spend: ₹${o.min_spend || 0}`
+                            tooltip: `Buy ${o.buy_qty} Get ${o.get_qty} Free${reward}${cashbackInfo}.<br>Min Spend: ₹${o.min_spend || 0}`
                         });
                     }
                 }
@@ -3367,10 +3392,10 @@ mapOrder(o) {
                     if (match) {
                         let reward = o.product_name && o.product_name !== 'Any Product' ? ` (${o.product_name})` : '';
                         promos.push({
-                            title: o.name, 
+                            title: o.name + (cashbackInfo ? ' 💰' : ''), 
                             icon: 'bi-gift', 
                             color: 'success', 
-                            tooltip: `Buy ${o.buy_qty || 1} Get ${o.get_qty} Free Gift${reward}.<br>Min Spend: ₹${o.min_spend || 0}`
+                            tooltip: `Buy ${o.buy_qty || 1} Get ${o.get_qty} Free Gift${reward}${cashbackInfo}.<br>Min Spend: ₹${o.min_spend || 0}`
                         });
                     }
                 }
@@ -3379,30 +3404,52 @@ mapOrder(o) {
                     if (typeof cats === 'string') { try { cats = JSON.parse(cats); } catch(e) { cats = null; } }
                     if (cats && cats.length > 0 && (cats.includes(p.category_id) || cats.includes(String(p.category_id)))) {
                         promos.push({
-                            title: o.name, 
+                            title: o.name + (cashbackInfo ? ' 💰' : ''), 
                             icon: 'bi-tags', 
                             color: 'primary', 
-                            tooltip: `Category Discount: ${o.discount_type === 'percentage' ? o.value+'%' : '₹'+o.value} OFF.<br>Min Spend: ₹${o.min_spend || 0}`
+                            tooltip: `Category Discount: ${o.discount_type === 'percentage' ? o.value+'%' : '₹'+o.value} OFF${cashbackInfo}.<br>Min Spend: ₹${o.min_spend || 0}`
                         });
                     }
                 }
                 
-                if (o.type === 'order_discount' && o.product_id && String(o.product_id) === String(p.id)) {
-                    promos.push({
-                        title: o.name,
-                        icon: 'bi-tag-fill',
-                        color: 'primary',
-                        tooltip: `Product Discount: ${o.discount_type === 'percentage' ? o.value+'%' : '₹'+o.value} OFF.<br>Min Spend: ₹${o.min_spend || 0}`
-                    });
+                if (o.type === 'order_discount') {
+                    let apps = o.applicable_products;
+                    if (typeof apps === 'string') { try { apps = JSON.parse(apps); } catch(e) { apps = null; } }
+                    let cats = o.applicable_categories;
+                    if (typeof cats === 'string') { try { cats = JSON.parse(cats); } catch(e) { cats = null; } }
+                    
+                    let match = false;
+                    if ((!apps || apps.length === 0) && (!cats || cats.length === 0)) match = true;
+                    if (apps && apps.length > 0 && (apps.includes(p.id) || apps.includes(String(p.id)))) match = true;
+                    if (cats && cats.length > 0 && (cats.includes(p.category_id) || cats.includes(String(p.category_id)))) match = true;
+                    if (o.product_id && String(o.product_id) === String(p.id)) match = true;
+
+                    if (match) {
+                        promos.push({
+                            title: o.name + (cashbackInfo ? ' 💰' : ''),
+                            icon: 'bi-tag-fill',
+                            color: 'primary',
+                            tooltip: `Product Discount: ${o.discount_type === 'percentage' ? o.value+'%' : '₹'+o.value} OFF${cashbackInfo}.<br>Min Spend: ₹${o.min_spend || 0}`
+                        });
+                    }
                 }
             });
             this.activeCoupons.forEach(c => {
+                let cashbackInfo = '';
+                if (Number(c.cashback_percent) > 0 || Number(c.cashback_fixed) > 0) {
+                    let parts = [];
+                    if (Number(c.cashback_percent) > 0) parts.push(Number(c.cashback_percent) + '%');
+                    if (Number(c.cashback_fixed) > 0) parts.push('₹' + Number(c.cashback_fixed));
+                    cashbackInfo = ' + Cashback (' + parts.join(' & ') + ')';
+                }
+
                 let apps = c.applicable_products;
                 if (typeof apps === 'string') { try { apps = JSON.parse(apps); } catch(e) { apps = null; } }
                 let cats = c.applicable_categories;
                 if (typeof cats === 'string') { try { cats = JSON.parse(cats); } catch(e) { cats = null; } }
                 
                 let match = false;
+                if ((!apps || apps.length === 0) && (!cats || cats.length === 0)) match = true;
                 if (apps && apps.length > 0 && (apps.includes(p.id) || apps.includes(String(p.id)))) match = true;
                 if (cats && cats.length > 0 && (cats.includes(p.category_id) || cats.includes(String(p.category_id)))) match = true;
                 
@@ -3414,10 +3461,10 @@ mapOrder(o) {
                     }
                     let desc = c.type === 'free_product' ? `Free Gift${reward} with Coupon` : `${c.type === 'percentage' ? parseFloat(c.value)+'%' : '₹'+parseFloat(c.value)} OFF`;
                     promos.push({
-                        title: `Coupon: ${c.code}`, 
+                        title: `Coupon: ${c.code}` + (cashbackInfo ? ' 💰' : ''), 
                         icon: 'bi-ticket-perforated', 
                         color: 'warning', 
-                        tooltip: `${desc}.<br>Min Spend: ₹${c.min_spend || 0}`
+                        tooltip: `${desc}${cashbackInfo}.<br>Min Spend: ₹${c.min_spend || 0}`
                     });
                 }
             });
@@ -3827,8 +3874,8 @@ mapOrder(o) {
                         const apps = typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : o.applicable_products;
                         const cats = typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : o.applicable_categories;
                         
-                        let triggerQty = 0;
                         if ((apps && apps.length > 0) || (cats && cats.length > 0)) {
+                            let triggerQty = 0;
                             this.cart.forEach(item => {
                                 if (item.is_gift) return;
                                 if (apps && apps.length > 0 && (apps.includes(item.id) || apps.includes(String(item.id)))) {
@@ -3912,29 +3959,7 @@ mapOrder(o) {
             }
         },
 
-        calculateAutoBogoQty(id, newQty, delta) {
-            const match = this.getBogoMatch(id);
-            if (!match) return newQty;
-            
-            const buyQty = parseInt(match.buy_qty)||1;
-            const getQty = parseInt(match.get_qty)||1;
-            const cycle = buyQty + getQty;
-            
-            if (delta > 0) {
-                let completeCycles = Math.floor(newQty / cycle);
-                let remainder = newQty % cycle;
-                if (remainder >= buyQty) {
-                    return (completeCycles * cycle) + buyQty + getQty;
-                }
-            } else if (delta < 0) {
-                let completeCycles = Math.floor(newQty / cycle);
-                let remainder = newQty % cycle;
-                if (remainder >= buyQty) {
-                    return (completeCycles * cycle) + buyQty - 1;
-                }
-            }
-            return newQty;
-        },
+
 
         addToCart(p) {
             let qtyToAdd = parseInt(p._qty)||1;
@@ -3947,7 +3972,6 @@ mapOrder(o) {
             let newQty;
             if (existing >= 0) {
                 newQty = this.cart[existing].quantity + qtyToAdd;
-                newQty = this.calculateAutoBogoQty(p.id, newQty, qtyToAdd);
                 if (maxAllowed !== null && maxAllowed !== undefined && newQty > maxAllowed) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+maxAllowed+')'}}));
                     return;
@@ -3955,7 +3979,6 @@ mapOrder(o) {
                 this.cart[existing].quantity = newQty;
             } else {
                 newQty = qtyToAdd;
-                newQty = this.calculateAutoBogoQty(p.id, newQty, qtyToAdd);
                 if (maxAllowed !== null && maxAllowed !== undefined && newQty > maxAllowed) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+maxAllowed+')'}}));
                     return;
@@ -3974,7 +3997,6 @@ mapOrder(o) {
             if (newQty <= 0) {
                 this.cart.splice(idx,1);
             } else {
-                newQty = this.calculateAutoBogoQty(item.id, newQty, delta);
                 if (item.available !== null && item.available !== undefined && newQty > item.available) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+item.available+')'}}));
                     return;
@@ -4030,6 +4052,19 @@ mapOrder(o) {
                     }
                     return t;
                 }, 0);
+            } else if (o.type === 'order_discount') {
+                const apps = typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : o.applicable_products;
+                let hasApps = apps && apps.length > 0;
+                let hasPid = !!o.product_id;
+                
+                if (hasApps || hasPid) {
+                    return this.cart.reduce((t, item) => {
+                        if (item.is_gift) return t;
+                        if (hasApps && !apps.includes(item.id) && !apps.includes(String(item.id))) return t;
+                        if (hasPid && item.id !== o.product_id && String(item.id) !== String(o.product_id)) return t;
+                        return t + Math.max(0, this.lineTotal(item) - this.itemBogoDiscount(item));
+                    }, 0);
+                }
             }
             return this.subtotal - this.bogoDiscount;
         },
@@ -4058,6 +4093,10 @@ mapOrder(o) {
                     if (o.type === 'category_discount' && o.applicable_categories && o.applicable_categories.length > 0) {
                         const cats = typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : o.applicable_categories;
                         if (!cats.includes(i.category_id) && !cats.includes(String(i.category_id))) isEligible = false;
+                    } else if (o.type === 'order_discount') {
+                        const apps = typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : o.applicable_products;
+                        if (apps && apps.length > 0 && !apps.includes(i.id) && !apps.includes(String(i.id))) isEligible = false;
+                        if (o.product_id && i.id !== o.product_id && String(i.id) !== String(o.product_id)) isEligible = false;
                     }
                     if (isEligible) {
                         taxableAmount -= (this.orderOfferDiscountAmount * (postBogo / orderEligibleSubtotal));
@@ -4121,7 +4160,36 @@ mapOrder(o) {
             });
         },
         get availableOrderOffers() {
-            return this.activeOffers.filter(o => ['order_discount', 'category_discount'].includes(o.type) && (parseFloat(o.min_spend)||0) <= this.subtotal);
+            return this.activeOffers.filter(o => {
+                if (!['order_discount', 'category_discount'].includes(o.type)) return false;
+                if ((parseFloat(o.min_spend)||0) > this.subtotal) return false;
+                
+                if (o.type === 'category_discount' && o.applicable_categories) {
+                    const cats = typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : o.applicable_categories;
+                    if (cats && cats.length > 0) {
+                        if (!this.cart.some(i => !i.is_gift && (cats.includes(i.category_id) || cats.includes(String(i.category_id))))) return false;
+                    }
+                }
+                
+                if (o.type === 'order_discount') {
+                    const apps = typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : o.applicable_products;
+                    const cats = typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : o.applicable_categories;
+                    let hasApps = apps && apps.length > 0;
+                    let hasCats = cats && cats.length > 0;
+                    let hasPid = !!o.product_id;
+                    
+                    if (hasApps || hasCats || hasPid) {
+                        return this.cart.some(i => {
+                            if (i.is_gift) return false;
+                            if (hasApps && (apps.includes(i.id) || apps.includes(String(i.id)))) return true;
+                            if (hasCats && (cats.includes(i.category_id) || cats.includes(String(i.category_id)))) return true;
+                            if (hasPid && (i.id === o.product_id || String(i.id) === String(o.product_id))) return true;
+                            return false;
+                        });
+                    }
+                }
+                return true;
+            });
         },
         orderOfferDiscount(o) {
             if (!o || !['order_discount', 'category_discount'].includes(o.type)) return 0;
@@ -4154,11 +4222,17 @@ mapOrder(o) {
             }
             
             let best = null;
-            let maxVal = 0;
+            let maxVal = -1;
             this.availableOrderOffers.forEach(o => {
                 let d = this.orderOfferDiscount(o);
-                if (d > maxVal) {
-                    maxVal = d;
+                let cb = 0;
+                let eligibleCbSubtotal = this.subtotal - this.bogoDiscount; // Approximation for sorting
+                if (parseFloat(o.cashback_percent) > 0) cb += eligibleCbSubtotal * (parseFloat(o.cashback_percent) / 100);
+                if (parseFloat(o.cashback_fixed) > 0) cb += parseFloat(o.cashback_fixed);
+                
+                let totalBenefit = d + cb;
+                if (totalBenefit > maxVal && totalBenefit > 0) {
+                    maxVal = totalBenefit;
                     best = o;
                 }
             });
@@ -4201,6 +4275,62 @@ mapOrder(o) {
                 }
             }
             return Math.round(Math.max(0, this.subtotal - this.totalDiscount + this.taxAmount + shipping)); 
+        },
+        get cashbackSources() {
+            let sources = [];
+            if (this.couponApplied && this.appliedCouponObj && (parseFloat(this.appliedCouponObj.cashback_percent) > 0 || parseFloat(this.appliedCouponObj.cashback_fixed) > 0)) {
+                sources.push('Coupon: ' + this.appliedCouponObj.code);
+            }
+            if (this.bestOrderOffer && (parseFloat(this.bestOrderOffer.cashback_percent) > 0 || parseFloat(this.bestOrderOffer.cashback_fixed) > 0)) {
+                sources.push('Offer: ' + this.bestOrderOffer.name);
+            }
+            return sources.join(' & ');
+        },
+        get cashbackEarned() {
+            let cashback = 0;
+            if (this.couponApplied && this.appliedCouponObj) {
+                const c = this.appliedCouponObj;
+                if ((parseFloat(c.cashback_percent) > 0 || parseFloat(c.cashback_fixed) > 0)) {
+                    let eligibleSubtotal = this.cart.reduce((t, item) => {
+                        if (item.is_gift) return t;
+                        const apps = typeof c.applicable_products === 'string' ? JSON.parse(c.applicable_products) : c.applicable_products;
+                        const excs = typeof c.excluded_products === 'string' ? JSON.parse(c.excluded_products) : c.excluded_products;
+                        const appCats = typeof c.applicable_categories === 'string' ? JSON.parse(c.applicable_categories) : c.applicable_categories;
+                        const excCats = typeof c.excluded_categories === 'string' ? JSON.parse(c.excluded_categories) : c.excluded_categories;
+                        if (apps && apps.length > 0 && !apps.includes(item.id) && !apps.includes(String(item.id))) return t;
+                        if (excs && excs.length > 0 && (excs.includes(item.id) || excs.includes(String(item.id)))) return t;
+                        if (appCats && appCats.length > 0 && !appCats.includes(item.category_id) && !appCats.includes(String(item.category_id))) return t;
+                        if (excCats && excCats.length > 0 && (excCats.includes(item.category_id) || excCats.includes(String(item.category_id)))) return t;
+                        return t + Math.max(0, this.lineTotal(item) - this.itemBogoDiscount(item));
+                    }, 0);
+                    if (eligibleSubtotal >= (parseFloat(c.min_spend) || 0)) {
+                        if (parseFloat(c.cashback_percent) > 0) cashback += eligibleSubtotal * (parseFloat(c.cashback_percent)/100);
+                        if (parseFloat(c.cashback_fixed) > 0) cashback += parseFloat(c.cashback_fixed);
+                    }
+                }
+            }
+            if (this.bestOrderOffer) {
+                const o = this.bestOrderOffer;
+                if ((parseFloat(o.cashback_percent) > 0 || parseFloat(o.cashback_fixed) > 0)) {
+                    let eligibleSubtotal = this.cart.reduce((t, item) => {
+                        if (item.is_gift) return t;
+                        if (o.type === 'category_discount') {
+                            const appCats = typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : o.applicable_categories;
+                            if (appCats && appCats.length > 0 && !appCats.includes(item.category_id) && !appCats.includes(String(item.category_id))) return t;
+                        } else if (o.type === 'order_discount') {
+                            const apps = typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : o.applicable_products;
+                            if (apps && apps.length > 0 && !apps.includes(item.id) && !apps.includes(String(item.id))) return t;
+                            if (o.product_id && item.id !== o.product_id && String(item.id) !== String(o.product_id)) return t;
+                        }
+                        return t + Math.max(0, this.lineTotal(item) - this.itemBogoDiscount(item));
+                    }, 0);
+                    if (eligibleSubtotal >= (parseFloat(o.min_spend) || 0)) {
+                        if (parseFloat(o.cashback_percent) > 0) cashback += eligibleSubtotal * (parseFloat(o.cashback_percent)/100);
+                        if (parseFloat(o.cashback_fixed) > 0) cashback += parseFloat(o.cashback_fixed);
+                    }
+                }
+            }
+            return Math.round(cashback * 100) / 100;
         },
 
         async applyCoupon(codeToApply = null) {
@@ -4305,6 +4435,7 @@ mapOrder(o) {
                     tax_amount: parseFloat(this.taxAmount.toFixed(2)),
                     discount_amount: parseFloat(this.totalDiscount.toFixed(2)),
                     net_amount: parseFloat(this.grandTotal.toFixed(2)),
+                    cashback_earned: this.cashbackEarned,
                     use_wallet_balance: this.useWalletBalance ? 1 : 0,
                 };
                 const url = this.editingOrderId ? `/orders/${this.editingOrderId}` : '/orders';

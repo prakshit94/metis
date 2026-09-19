@@ -1505,6 +1505,12 @@
                                                     <span class="text-muted fw-medium">Tax</span>
                                                     <span class="text-body-emphasis fw-bold" x-text="`₹ ${formatCurrency(selectedOrder.taxTotal)}`"></span>
                                                 </div>
+                                                <template x-if="selectedOrder && selectedOrder.cashbackEarned > 0">
+                                                    <div class="d-flex justify-content-between mb-3 border-bottom pb-3">
+                                                        <span class="text-info fw-medium"><i class="bi bi-wallet2 me-1"></i>Cashback Earned</span>
+                                                        <span class="text-info fw-bold" x-text="`+ ₹ ${formatCurrency(selectedOrder.cashbackEarned)}`"></span>
+                                                    </div>
+                                                </template>
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <div>
                                                         <span class="text-body-emphasis fw-bolder fs-5 d-block">Grand Total</span>

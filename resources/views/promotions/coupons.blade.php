@@ -169,17 +169,29 @@
                                 </td>
                                 <td>
                                     <span class="fw-bold text-body-emphasis fs-6">
-                                        <template x-if="c.type === 'percentage'">
+                                        <template x-if="c.type === 'percentage' && parseFloat(c.value) > 0">
                                             <span x-text="c.value + '%'"></span>
                                         </template>
-                                        <template x-if="c.type === 'fixed'">
+                                        <template x-if="c.type === 'fixed' && parseFloat(c.value) > 0">
                                             <span x-text="'₹ ' + parseFloat(c.value).toFixed(2)"></span>
+                                        </template>
+                                        <template x-if="(c.type === 'percentage' || c.type === 'fixed') && parseFloat(c.value) === 0">
+                                            <span class="text-muted fst-italic" style="font-size: 12px;">Cashback Only</span>
                                         </template>
                                         <template x-if="c.type === 'free_shipping'">
                                             <span class="text-success"><i class="bi bi-truck me-1"></i>Free</span>
                                         </template>
                                         <template x-if="c.type === 'free_product'">
                                             <span class="text-warning"><i class="bi bi-gift me-1"></i>Gift <span class="text-muted fs-7 fw-normal" x-text="c.free_product ? '(' + c.free_product.name + ')' : ''"></span></span>
+                                        </template>
+                                        <template x-if="c.cashback_percent > 0 || c.cashback_fixed > 0">
+                                            <div class="text-info mt-1" style="font-size: 11px;">
+                                                <i class="bi bi-wallet2 me-1"></i>+
+                                                <span x-show="c.cashback_percent > 0" x-text="parseFloat(c.cashback_percent) + '%'"></span>
+                                                <span x-show="c.cashback_percent > 0 && c.cashback_fixed > 0"> &amp; </span>
+                                                <span x-show="c.cashback_fixed > 0" x-text="'₹ ' + parseFloat(c.cashback_fixed)"></span>
+                                                Cashback
+                                            </div>
                                         </template>
                                     </span>
                                 </td>
@@ -314,7 +326,8 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Type *</label>
-                                            <select class="form-select form-select-sm fw-semibold" x-model="form.type">
+                                            <select class="form-select form-select-sm fw-semibold" x-model="form.display_type">
+                                                <option value="none">None</option>
                                                 <option value="percentage">Percentage (%)</option>
                                                 <option value="fixed">Flat Amount (₹ )</option>
                                                 <option value="free_shipping">Free Shipping</option>
@@ -336,15 +349,15 @@
                                         <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Value & Limits</h6>
                                     </div>
                                     <div class="row g-3">
-                                        <div class="col-md-4" x-show="form.type === 'percentage' || form.type === 'fixed'">
+                                        <div class="col-md-4" x-show="form.display_type === 'percentage' || form.display_type === 'fixed'">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Discount Value *</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text" x-text="form.type === 'percentage' ? '%' : '₹ '"></span>
+                                                <span class="input-group-text" x-text="form.display_type === 'percentage' ? '%' : '₹ '"></span>
                                                 <input type="number" class="form-control fw-semibold" x-model="form.value" min="0" step="0.01">
                                             </div>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Numeric value of the discount.</small>
                                         </div>
-                                        <div class="col-md-4" x-show="form.type === 'free_product'" style="display: none;">
+                                        <div class="col-md-4" x-show="form.display_type === 'free_product'" style="display: none;">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Free Product *</label>
                                             <select class="form-select form-select-sm fw-semibold" x-model="form.free_product_id">
                                                 <option value="">Select Product...</option>
@@ -373,20 +386,20 @@
                                         <div class="col-12 mt-3 pt-3 border-top">
                                             <div class="row g-3">
                                                 <div class="col-md-6">
-                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Cashback Percentage</label>
-                                                    <div class="input-group input-group-sm">
-                                                        <input type="number" class="form-control fw-semibold" x-model="form.cashback_percent" min="0" max="100" step="0.01">
-                                                        <span class="input-group-text">%</span>
-                                                    </div>
-                                                    <small class="text-muted d-block mt-1" style="font-size: 10px;">Percent of net amount to credit to wallet on delivery.</small>
+                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Cashback Type</label>
+                                                    <select class="form-select form-select-sm fw-semibold" x-model="form.cashback_type">
+                                                        <option value="none">None</option>
+                                                        <option value="percentage">Percentage (%)</option>
+                                                        <option value="fixed">Flat Amount (₹ )</option>
+                                                    </select>
                                                 </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Cashback Fixed Amount</label>
+                                                <div class="col-md-6" x-show="form.cashback_type !== 'none'" x-cloak>
+                                                    <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Cashback Value</label>
                                                     <div class="input-group input-group-sm">
-                                                        <span class="input-group-text">₹ </span>
-                                                        <input type="number" class="form-control fw-semibold" x-model="form.cashback_fixed" min="0" step="0.01">
+                                                        <span class="input-group-text" x-text="form.cashback_type === 'percentage' ? '%' : '₹ '"></span>
+                                                        <input type="number" class="form-control fw-semibold" x-model="form.cashback_val" min="0" step="0.01">
                                                     </div>
-                                                    <small class="text-muted d-block mt-1" style="font-size: 10px;">Fixed amount to credit to wallet on delivery.</small>
+                                                    <small class="text-muted d-block mt-1" style="font-size: 10px;" x-text="form.cashback_type === 'percentage' ? 'Percent of net amount to credit.' : 'Fixed amount to credit.'"></small>
                                                 </div>
                                             </div>
                                         </div>
@@ -463,7 +476,7 @@ function couponsModule() {
         search: '', filterStatus: '', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0,
         selected: [], stats: { total: 0, active: 0, inactive: 0, expiring_soon: 0 },
-        form: { id: null, code: '', type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_percent: '', cashback_fixed: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true },
+        form: { id: null, code: '', type: 'percentage', display_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true },
         formError: null,
 
         generateDescription(c) {
@@ -517,19 +530,39 @@ function couponsModule() {
                 const d = json.data || {};
                 this.coupons = d.data || [];
                 this.total = d.total || 0; this.from = d.from || 0; this.to = d.to || 0; this.lastPage = d.last_page || 1;
-                this.stats.total = this.total;
-                this.stats.active = this.coupons.filter(c => c.is_active).length;
-                this.stats.inactive = this.coupons.filter(c => !c.is_active).length;
-                this.stats.expiring_soon = this.coupons.filter(c => { if (!c.expiry_date) return false; const d = new Date(c.expiry_date); const n = new Date(); return d > n && (d - n) / 86400000 <= 7; }).length;
+                if (json.stats) {
+                    this.stats.total = json.stats.total || 0;
+                    this.stats.active = json.stats.active || 0;
+                    this.stats.inactive = json.stats.inactive || 0;
+                    this.stats.expiring_soon = json.stats.expiring_soon || 0;
+                } else {
+                    this.stats.total = this.total;
+                    this.stats.active = this.coupons.filter(c => c.is_active).length;
+                    this.stats.inactive = this.coupons.filter(c => !c.is_active).length;
+                    this.stats.expiring_soon = this.coupons.filter(c => { if (!c.expiry_date) return false; const d = new Date(c.expiry_date); const n = new Date(); return d > n && (d - n) / 86400000 <= 7; }).length;
+                }
             } catch (e) { console.error(e); } finally { this.loading = false; }
         },
 
         openModal(c = null) {
             this.formError = null;
             if (c) {
-                this.form = { id: c.id, code: c.code, type: c.type, value: c.value, min_spend: c.min_spend || '', max_discount: c.max_discount || '', cashback_percent: c.cashback_percent || '', cashback_fixed: c.cashback_fixed || '', free_product_id: c.free_product_id || '', free_qty: c.free_qty || 1, expiry_date: c.expiry_date || '', usage_limit: c.usage_limit || '', is_active: c.is_active };
+                let cType = 'none';
+                let cVal = '';
+                if (parseFloat(c.cashback_percent) > 0) {
+                    cType = 'percentage';
+                    cVal = c.cashback_percent;
+                } else if (parseFloat(c.cashback_fixed) > 0) {
+                    cType = 'fixed';
+                    cVal = c.cashback_fixed;
+                }
+                let dType = c.type;
+                if ((c.type === 'percentage' || c.type === 'fixed') && parseFloat(c.value) === 0) {
+                    dType = 'none';
+                }
+                this.form = { id: c.id, code: c.code, type: c.type, display_type: dType, value: c.value, min_spend: c.min_spend || '', max_discount: c.max_discount || '', cashback_type: cType, cashback_val: cVal, free_product_id: c.free_product_id || '', free_qty: c.free_qty || 1, expiry_date: c.expiry_date || '', usage_limit: c.usage_limit || '', is_active: c.is_active };
             } else {
-                this.form = { id: null, code: '', type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_percent: '', cashback_fixed: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true };
+                this.form = { id: null, code: '', type: 'percentage', display_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true };
             }
             new bootstrap.Modal(document.getElementById('couponModal')).show();
         },
@@ -537,9 +570,29 @@ function couponsModule() {
         async saveCoupon() {
             this.saving = true; this.formError = null;
             try {
+                let payload = JSON.parse(JSON.stringify(this.form));
+                payload.cashback_percent = null;
+                payload.cashback_fixed = null;
+                if (payload.cashback_type === 'percentage') {
+                    payload.cashback_percent = payload.cashback_val;
+                } else if (payload.cashback_type === 'fixed') {
+                    payload.cashback_fixed = payload.cashback_val;
+                }
+                delete payload.cashback_type;
+                delete payload.cashback_val;
+
+                if (payload.display_type === 'none') {
+                    payload.type = 'percentage';
+                    payload.value = 0;
+                } else {
+                    payload.type = payload.display_type;
+                }
+                delete payload.display_type;
+
+
                 const url = this.form.id ? `/api/promotions/coupons/${this.form.id}` : '/api/promotions/coupons';
                 const method = this.form.id ? 'PATCH' : 'POST';
-                const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }, body: JSON.stringify(this.form) });
+                const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }, body: JSON.stringify(payload) });
                 const json = await res.json();
                 if (!res.ok) { this.formError = Object.values(json.errors || {}).flat().join(' ') || json.message; return; }
                 bootstrap.Modal.getInstance(document.getElementById('couponModal'))?.hide();

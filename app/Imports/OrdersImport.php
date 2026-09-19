@@ -247,6 +247,9 @@ class OrdersImport implements ToCollection, WithHeadingRow
                 $couponCode = trim((string)($firstRow['coupon_code'] ?? ''));
                 if ($couponCode === '-') $couponCode = null;
 
+                $appliedOfferId = trim((string)($firstRow['applied_offer_id'] ?? ''));
+                if ($appliedOfferId === '-') $appliedOfferId = null;
+
                 $trackingNo = trim((string)($firstRow['tracking_no'] ?? ''));
                 if ($trackingNo === '-') $trackingNo = null;
 
@@ -272,6 +275,7 @@ class OrdersImport implements ToCollection, WithHeadingRow
                     'items' => $items,
                     'status' => $status,
                     'coupon_code' => $couponCode,
+                    'applied_offer_id' => $appliedOfferId,
                     'tracking_no' => $trackingNo,
                     'carrier_name' => $carrierName,
                     'wallet_amount_used' => ($walletUsed !== '' && $walletUsed !== '-') ? (float)$walletUsed : 0,

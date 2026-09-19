@@ -21,6 +21,9 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
+
+            $table->index(['reference_type', 'reference_id'], 'idx_wallet_reference');
+            $table->index('type', 'idx_wallet_type');
         });
     }
 

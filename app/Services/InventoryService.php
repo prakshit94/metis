@@ -1144,6 +1144,7 @@ class InventoryService
             }
 
             $order->update(['status' => 'delivered', 'updated_by' => auth()->id()]);
+            $this->creditOrderCashback($order);
 
             // Advanced Referral Reward Logic
             $party = Party::find($order->party_id);
@@ -1481,33 +1482,85 @@ class InventoryService
     }
 
     /**
-     * Revoke the cashback earned from an order if it is returned or reverted from delivered status.
+     * Credit the cashback earned from an order when it is successfully delivered.
      */
-    protected function revokeOrderCashback(Order $order): void
+    public function creditOrderCashback(Order $order): void
     {
         if ($order->cashback_earned > 0 && $order->party_id) {
-            $party = Party::find($order->party_id);
-            if ($party) {
-                // Prevent negative balance, cap at 0
-                $clawbackAmount = min((float) $party->wallet_balance, (float) $order->cashback_earned);
+            $credits = WalletTransaction::where('reference_type', 'cashback_earned')
+                ->where('reference_id', $order->id)
+                ->where('type', 'credit')
+                ->sum('amount');
+                
+            $debits = WalletTransaction::where('reference_type', 'cashback_revoked')
+                ->where('reference_id', $order->id)
+                ->where('type', 'debit')
+                ->sum('amount');
+                
+            $netCredited = $credits - $debits;
+            $amountToCredit = $order->cashback_earned - $netCredited;
 
-                $party->wallet_balance = max(0, $party->wallet_balance - $order->cashback_earned);
-                $party->save();
+            if ($amountToCredit > 0) {
+                $party = Party::find($order->party_id);
+                if ($party) {
+                    $party->wallet_balance += $amountToCredit;
+                    $party->save();
 
-                if ($clawbackAmount > 0) {
                     WalletTransaction::create([
                         'party_id' => $party->id,
-                        'amount' => $clawbackAmount,
-                        'type' => 'debit',
-                        'reference_type' => 'cashback_revoked',
+                        'amount' => $amountToCredit,
+                        'type' => 'credit',
+                        'reference_type' => 'cashback_earned',
                         'reference_id' => $order->id,
-                        'description' => 'Cashback revoked due to order #'.$order->order_no.' return/revert',
+                        'description' => 'Cashback earned from delivered order #'.$order->order_no,
                         'created_by' => auth()->id() ?? $order->created_by,
                     ]);
                 }
+            }
+        }
+    }
 
-                $order->cashback_earned = 0;
-                $order->saveQuietly();
+    /**
+     * Revoke the cashback earned from an order if it is returned or reverted from delivered status.
+     */
+    public function revokeOrderCashback(Order $order): void
+    {
+        if ($order->cashback_earned > 0 && $order->party_id) {
+            $credits = WalletTransaction::where('reference_type', 'cashback_earned')
+                ->where('reference_id', $order->id)
+                ->where('type', 'credit')
+                ->sum('amount');
+                
+            $debits = WalletTransaction::where('reference_type', 'cashback_revoked')
+                ->where('reference_id', $order->id)
+                ->where('type', 'debit')
+                ->sum('amount');
+                
+            $netCredited = $credits - $debits;
+
+            if ($netCredited > 0) {
+                $party = Party::find($order->party_id);
+                if ($party) {
+                    // Prevent negative balance, cap at 0
+                    $clawbackAmount = min((float) $party->wallet_balance, (float) $netCredited);
+
+                    $party->wallet_balance = max(0, $party->wallet_balance - $netCredited);
+                    $party->save();
+
+                    if ($clawbackAmount > 0) {
+                        WalletTransaction::create([
+                            'party_id' => $party->id,
+                            'amount' => $clawbackAmount,
+                            'type' => 'debit',
+                            'reference_type' => 'cashback_revoked',
+                            'reference_id' => $order->id,
+                            'description' => 'Cashback revoked due to order #'.$order->order_no.' return/revert',
+                            'created_by' => auth()->id() ?? $order->created_by,
+                        ]);
+                    }
+
+                    // DO NOT mutate $order->cashback_earned to 0! This allows safe re-delivery crediting later.
+                }
             }
         }
     }

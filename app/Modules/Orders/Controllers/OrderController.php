@@ -727,6 +727,7 @@ class OrderController extends Controller implements HasMiddleware
         $validated['applied_offer_id'] = $calc['applied_offer_id'];
         $validated['net_amount'] = $calc['grand_total'];
         $validated['applied_bogo_ids'] = $calc['applied_bogo_ids'];
+        $validated['cashback_earned'] = $calc['cashback_earned'] ?? 0;
 
         $order = $orderService->createOrder($validated);
 
@@ -1011,8 +1012,6 @@ class OrderController extends Controller implements HasMiddleware
                 'notes' => $request->input('notes') ?? 'Order delivered.',
                 'changed_by' => auth()->id(),
             ]);
-
-            $this->applyCashback($order);
         } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
         } catch (\Exception $e) {
@@ -1229,7 +1228,6 @@ class OrderController extends Controller implements HasMiddleware
                     } elseif ($targetStatus === 'delivered') {
                         if (in_array($order->status, ['dispatched', 'shipped'], true)) {
                             $inventoryService->deliverOrder($order);
-                            $this->applyCashback($order);
                             $order->statusLogs()->create([
                                 'status' => 'delivered',
                                 'notes' => 'Bulk status updated to delivered.',
@@ -1963,60 +1961,6 @@ class OrderController extends Controller implements HasMiddleware
         return array_values(array_intersect($orderedStatuses, array_unique($statuses)));
     }
 
-    private function applyCashback(Order $order): void
-    {
-        if (! $order->party_id || $order->cashback_earned > 0) {
-            return; // Already earned or no customer
-        }
-
-        $cashbackEarned = 0;
-
-        if ($order->applied_offer_id) {
-            $offer = Offer::find($order->applied_offer_id);
-            if ($offer) {
-                if ($offer->cashback_percent && $offer->cashback_percent > 0) {
-                    $cashbackEarned += ($order->net_amount * ($offer->cashback_percent / 100));
-                }
-                if ($offer->cashback_fixed && $offer->cashback_fixed > 0) {
-                    $cashbackEarned += $offer->cashback_fixed;
-                }
-            }
-        }
-
-        if ($order->coupon_code) {
-            $coupon = Coupon::where('code', $order->coupon_code)->first();
-            if ($coupon) {
-                if ($coupon->cashback_percent && $coupon->cashback_percent > 0) {
-                    $cashbackEarned += ($order->net_amount * ($coupon->cashback_percent / 100));
-                }
-                if ($coupon->cashback_fixed && $coupon->cashback_fixed > 0) {
-                    $cashbackEarned += $coupon->cashback_fixed;
-                }
-            }
-        }
-
-        if ($cashbackEarned > 0) {
-            $order->cashback_earned = $cashbackEarned;
-            $order->saveQuietly();
-
-            $party = Party::find($order->party_id);
-            if ($party) {
-                $party->wallet_balance += $cashbackEarned;
-                $party->saveQuietly();
-
-                WalletTransaction::create([
-                    'party_id' => $party->id,
-                    'amount' => $cashbackEarned,
-                    'type' => 'credit',
-                    'reference_type' => 'order',
-                    'reference_id' => $order->id,
-                    'description' => 'Cashback earned for order #'.$order->order_no,
-                    'created_by' => auth()->id() ?? $order->created_by,
-                ]);
-            }
-        }
-    }
-
     private function generateCsvExportCallback($orders)
     {
         return function () use ($orders) {
@@ -2028,7 +1972,7 @@ class OrderController extends Controller implements HasMiddleware
             fputcsv($out, [
                 'Order ID', 'Order No', 'Order Date', 'Status', 'Order Type',
                 'Order Subtotal', 'Order Tax', 'Order Discount', 'Order Total',
-                'Coupon Code', 'Wallet Used', 'Cashback Earned',
+                'Coupon Code', 'Applied Offer ID', 'Wallet Used', 'Cashback Earned',
                 'Customer First Name', 'Customer Middle Name', 'Customer Last Name',
                 'Company Name', 'Customer Email', 'Customer Phone', 'Alternate Mobile', 'Relative Name', 'Relative Phone', 'GST Number', 'PAN Number',
                 'Billing Address 1', 'Billing Address 2', 'Billing Village', 'Billing PO/BO', 'Billing Taluka', 'Billing District', 'Billing City', 'Billing State', 'Billing Pincode',
@@ -2079,7 +2023,7 @@ class OrderController extends Controller implements HasMiddleware
                 $commonOrderData = [
                     $order->id, $order->order_no, $order->order_date, $order->status, $order->type,
                     $order->total_amount, $order->tax_amount, $order->discount_amount, $order->net_amount,
-                    $order->coupon_code ?? '-', $order->wallet_amount_used, $order->cashback_earned,
+                    $order->coupon_code ?? '-', $order->applied_offer_id ?? '-', $order->wallet_amount_used, $order->cashback_earned,
                     $customerFirstName ?: '-', $customerMiddleName ?: '-', $customerLastName ?: '-',
                     $customerCompanyName ?: '-', $customerEmail ?: '-', $customerPhone ?: '-', $customerAltMobile ?: '-', $customerRelName ?: '-', $customerRelPhone ?: '-', $customerGst ?: '-', $customerPan ?: '-',
                     $billingAdd1 ?: '-', $billingAdd2 ?: '-', $billingVillage ?: '-', $billingPO ?: '-', $billingTaluka ?: '-', $billingDistrict ?: '-', $billingCity ?: '-', $billingState ?: '-', $billingPin ?: '-',
@@ -2111,7 +2055,7 @@ class OrderController extends Controller implements HasMiddleware
         $headers = [
             'Order ID', 'Order No', 'Order Date', 'Status', 'Order Type',
             'Order Subtotal', 'Order Tax', 'Order Discount', 'Order Total',
-            'Coupon Code', 'Wallet Used', 'Cashback Earned',
+            'Coupon Code', 'Applied Offer ID', 'Wallet Used', 'Cashback Earned',
             'Customer First Name', 'Customer Middle Name', 'Customer Last Name',
             'Company Name', 'Customer Email', 'Customer Phone', 'Alternate Mobile', 'Relative Name', 'Relative Phone', 'GST Number', 'PAN Number',
             'Billing Address 1', 'Billing Address 2', 'Billing Village', 'Billing PO/BO', 'Billing Taluka', 'Billing District', 'Billing City', 'Billing State', 'Billing Pincode',
@@ -2122,7 +2066,7 @@ class OrderController extends Controller implements HasMiddleware
         $sampleRecord = [
             '-', 'NEW-ORD-001', date('Y-m-d'), 'pending', 'sale',
             '-', '-', '-', '-',
-            '-', '-', '-',
+            '-', '-', '-', '-',
             'Raj', 'Kumar', 'Sharma',
             'Sharma Farms', 'raj@example.com', '9999999999', '8888888888', 'Anita Sharma', '7777777777', '22AAAAA0000A1Z5', 'AAAAA0000A',
             'House 12, Main Street', 'Near Temple', 'Jagatpur', 'Jagatpur B.O', 'Daskroi', 'Ahmedabad', 'Ahmedabad', 'Gujarat', '382470',

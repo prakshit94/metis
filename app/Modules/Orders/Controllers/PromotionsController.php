@@ -107,10 +107,10 @@ class PromotionsController extends Controller implements HasMiddleware
         ]);
 
         if (isset($data['applicable_categories'])) {
-            $data['applicable_categories'] = json_encode($data['applicable_categories']);
+            $data['applicable_categories'] = json_encode(array_values(array_unique($data['applicable_categories'])));
         }
         if (isset($data['applicable_products'])) {
-            $data['applicable_products'] = json_encode($data['applicable_products']);
+            $data['applicable_products'] = json_encode(array_values(array_unique($data['applicable_products'])));
         }
 
         $data['value'] = isset($data['value']) && $data['value'] !== '' ? (float) $data['value'] : 0;
@@ -154,10 +154,10 @@ class PromotionsController extends Controller implements HasMiddleware
         ]);
 
         if (array_key_exists('applicable_categories', $data)) {
-            $data['applicable_categories'] = $data['applicable_categories'] ? json_encode($data['applicable_categories']) : null;
+            $data['applicable_categories'] = $data['applicable_categories'] ? json_encode(array_values(array_unique($data['applicable_categories']))) : null;
         }
         if (array_key_exists('applicable_products', $data)) {
-            $data['applicable_products'] = $data['applicable_products'] ? json_encode($data['applicable_products']) : null;
+            $data['applicable_products'] = $data['applicable_products'] ? json_encode(array_values(array_unique($data['applicable_products']))) : null;
         }
 
         if (array_key_exists('value', $data) || in_array($request->input('type', $coupon->type), ['free_shipping', 'free_product'])) {
@@ -259,7 +259,14 @@ class PromotionsController extends Controller implements HasMiddleware
         $perPage = min((int) $request->input('per_page', 15), 100);
         $offers = $query->paginate($perPage);
 
-        return response()->json(['data' => $offers]);
+        $stats = [
+            'total'          => Offer::count(),
+            'active'         => Offer::where('is_active', true)->count(),
+            'bogo'           => Offer::where('type', 'bogo')->count(),
+            'order_discount' => Offer::where('type', 'order_discount')->count(),
+        ];
+
+        return response()->json(['data' => $offers, 'stats' => $stats]);
     }
 
     public function offersStore(Request $request): JsonResponse
@@ -290,7 +297,7 @@ class PromotionsController extends Controller implements HasMiddleware
         ]);
 
         if (isset($data['applicable_categories'])) {
-            $data['applicable_categories'] = json_encode($data['applicable_categories']);
+            $data['applicable_categories'] = json_encode(array_values(array_unique($data['applicable_categories'])));
         }
 
         $data['value'] = isset($data['value']) && $data['value'] !== '' ? (float) $data['value'] : 0;
@@ -302,7 +309,7 @@ class PromotionsController extends Controller implements HasMiddleware
         $productIds = $request->input('product_ids', []);
 
         $offerData = $data;
-        $offerData['applicable_products'] = empty($productIds) ? null : json_encode($productIds);
+        $offerData['applicable_products'] = empty($productIds) ? null : json_encode(array_values(array_unique($productIds)));
 
         if ($data['type'] !== 'free_product') {
             $offerData['product_id'] = null;
@@ -347,12 +354,12 @@ class PromotionsController extends Controller implements HasMiddleware
         ]);
 
         if (array_key_exists('applicable_categories', $data)) {
-            $data['applicable_categories'] = $data['applicable_categories'] ? json_encode($data['applicable_categories']) : null;
+            $data['applicable_categories'] = $data['applicable_categories'] ? json_encode(array_values(array_unique($data['applicable_categories']))) : null;
         }
 
         if ($request->has('product_ids')) {
             $productIds = $request->input('product_ids', []);
-            $data['applicable_products'] = empty($productIds) ? null : json_encode($productIds);
+            $data['applicable_products'] = empty($productIds) ? null : json_encode(array_values(array_unique($productIds)));
         }
 
         if (isset($data['type']) && $data['type'] !== 'free_product') {

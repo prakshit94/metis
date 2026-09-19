@@ -117,6 +117,29 @@ class PromotionSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            // Product Specific Cashback Coupon
+            [
+                'code' => 'PRODUCTCASHBACK',
+                'type' => 'percentage',
+                'value' => 5.00, // 5% discount
+                'min_spend' => 0,
+                'max_discount' => 500.00,
+                'applicable_categories' => null,
+                'applicable_products' => json_encode($products), // Requires these products
+                'excluded_categories' => null,
+                'excluded_products' => null,
+                'free_product_id' => null,
+                'free_qty' => 0,
+                'expiry_date' => now()->addDays(30)->toDateString(),
+                'usage_limit' => 100,
+                'used_count' => 0,
+                'status' => 'active',
+                'is_active' => true,
+                'cashback_percent' => 15.00, // 15% cashback
+                'cashback_fixed' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ];
 
         Coupon::insert($coupons);
@@ -274,6 +297,31 @@ class PromotionSeeder extends Seeder
                 'is_active' => true,
                 'used_count' => 0,
                 'cashback_percent' => null,
+                'cashback_fixed' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            // Product Specific Cashback Offer
+            [
+                'name' => 'Product Cashback Offer',
+                'type' => 'order_discount',
+                'discount_type' => 'percentage',
+                'value' => 5.00,
+                'min_spend' => 0,
+                'max_discount' => null,
+                'applicable_categories' => null,
+                'applicable_products' => json_encode($products), // Buy these specific products
+                'excluded_categories' => null,
+                'excluded_products' => null,
+                'product_id' => null,
+                'buy_qty' => 1,
+                'get_qty' => 1,
+                'starts_at' => now(),
+                'ends_at' => now()->addDays(30),
+                'priority' => 17,
+                'is_active' => true,
+                'used_count' => 0,
+                'cashback_percent' => 15.00, // 15% cashback on products
                 'cashback_fixed' => null,
                 'created_at' => now(),
                 'updated_at' => now(),

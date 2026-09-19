@@ -113,6 +113,12 @@
                                 <span>Tax Amount</span>
                                 <span class="fw-medium">₹ {{ number_format($order->tax_amount, 2) }}</span>
                             </div>
+                            @if($order->cashback_earned > 0)
+                            <div class="d-flex justify-content-between mb-3 text-info small">
+                                <span><i class="bi bi-wallet2 me-1"></i>Cashback Earned</span>
+                                <span class="fw-medium">+ ₹ {{ number_format($order->cashback_earned, 2) }}</span>
+                            </div>
+                            @endif
                             <hr class="my-3 border-light-subtle">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="h6 mb-0 text-uppercase fw-bold">Grand Total</span>
