@@ -632,11 +632,11 @@
                                                 </div>
                                             </div>
                                             <div class="d-flex flex-wrap gap-1 mb-3" x-show="getProductPromotions(p).length > 0">
-                                                <div class="position-relative" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
+                                                <div class="position-relative" x-data="{ showTooltip: false, pos: 'bottom' }" @mouseenter="showTooltip = true; pos = $event.clientY > window.innerHeight / 2 ? 'top' : 'bottom'" @mouseleave="showTooltip = false">
                                                     <span class="badge border text-bg-primary-subtle text-primary-emphasis border-primary" style="font-size: 10px; cursor: pointer;">
                                                         <i class="bi bi-tags me-1"></i> View Offers (<span x-text="getProductPromotions(p).length"></span>)
                                                     </span>
-                                                    <div x-show="showTooltip" x-transition.opacity class="position-absolute" style="bottom: 100%; z-index: 9999; left: 0; margin-bottom: 8px; width: 280px; cursor: default;" x-cloak>
+                                                    <div x-show="showTooltip" x-transition.opacity class="position-absolute" :style="pos === 'top' ? 'bottom: 100%; margin-bottom: 8px; z-index: 9999; left: 0; width: 280px; cursor: default;' : 'top: 100%; margin-top: 8px; z-index: 9999; left: 0; width: 280px; cursor: default;'" x-cloak>
                                                         <div class="card border border-secondary-subtle shadow-lg rounded-3 overflow-hidden">
                                                             <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
                                                                 <span class="fw-bold text-body" style="font-size: 12px;"><i class="bi bi-tags-fill me-1 text-primary"></i> Applicable Offers</span>
@@ -659,7 +659,7 @@
                                                             </div>
                                                         </div>
                                                         <!-- Tooltip Arrow -->
-                                                        <div class="position-absolute bg-body border-bottom border-end border-secondary-subtle" style="width: 12px; height: 12px; transform: rotate(45deg); bottom: -6px; left: 20px; z-index: -1;"></div>
+                                                        <div class="position-absolute bg-body border-secondary-subtle" :class="pos === 'top' ? 'border-bottom border-end' : 'border-top border-start'" :style="pos === 'top' ? 'width: 12px; height: 12px; transform: rotate(45deg); bottom: -6px; left: 20px; z-index: -1;' : 'width: 12px; height: 12px; transform: rotate(45deg); top: -6px; left: 20px; z-index: -1;'"></div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -725,11 +725,11 @@
                                                                   x-text="p.status"></span>
                                                         </div>
                                                         <div x-show="getProductPromotions(p).length > 0">
-                                                            <div class="position-relative d-inline-block" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
+                                                            <div class="position-relative d-inline-block" x-data="{ showTooltip: false, pos: 'bottom' }" @mouseenter="showTooltip = true; pos = $event.clientY > window.innerHeight / 2 ? 'top' : 'bottom'" @mouseleave="showTooltip = false" :style="showTooltip ? 'z-index: 1050;' : ''">
                                                                 <button type="button" class="btn btn-sm btn-outline-success rounded-pill py-0 px-2 d-inline-flex align-items-center gap-1 bg-body" style="font-size: 10px;">
                                                                     <i class="bi bi-gift-fill"></i> <span x-text="getProductPromotions(p).length + ' Offers'"></span>
                                                                 </button>
-                                                                <div x-show="showTooltip" x-transition.opacity class="position-absolute" style="top: 100%; z-index: 9999; left: 0; margin-top: 8px; width: 280px; cursor: default;" x-cloak>
+                                                                <div x-show="showTooltip" x-transition.opacity class="position-absolute" :style="pos === 'top' ? 'bottom: 100%; margin-bottom: 8px; z-index: 9999; left: 0; width: 280px; cursor: default;' : 'top: 100%; margin-top: 8px; z-index: 9999; left: 0; width: 280px; cursor: default;'" x-cloak>
                                                                     <div class="card border border-secondary-subtle shadow-lg rounded-3 overflow-hidden">
                                                                         <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 px-3 d-flex align-items-center justify-content-between">
                                                                             <span class="fw-bold text-body" style="font-size: 12px;"><i class="bi bi-tags-fill me-1 text-primary"></i> Applicable Offers</span>
@@ -752,7 +752,7 @@
                                                                         </div>
                                                                     </div>
                                                                     <!-- Tooltip Arrow -->
-                                                                    <div class="position-absolute bg-body border-top border-start border-secondary-subtle" style="width: 12px; height: 12px; transform: rotate(45deg); top: -6px; left: 20px; z-index: -1;"></div>
+                                                                    <div class="position-absolute bg-body border-secondary-subtle" :class="pos === 'top' ? 'border-bottom border-end' : 'border-top border-start'" :style="pos === 'top' ? 'width: 12px; height: 12px; transform: rotate(45deg); bottom: -6px; left: 20px; z-index: -1;' : 'width: 12px; height: 12px; transform: rotate(45deg); top: -6px; left: 20px; z-index: -1;'"></div>
                                                                 </div>
                                                             </div>
                                                         </div>
