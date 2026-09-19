@@ -621,7 +621,7 @@
                                             <label class="form-label fw-medium text-muted small">Selling Price (Inc. GST) <span class="text-danger">*</span></label>
                                             <div class="input-group mb-1">
                                                 <span class="input-group-text bg-body-secondary border-secondary border-opacity-25">₹</span>
-                                                <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.selling_price_inc_gst" step="1" min="0" required placeholder="0">
+                                                <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.selling_price_inc_gst" step="1" min="0" :max="form.mrp || ''" required placeholder="0">
                                             </div>
                                             <small class="text-muted fw-medium" x-show="form.selling_price_inc_gst && form.tax_rate_id" x-cloak>
                                                 Base (Excl): ₹<span x-text="Math.round(baseSellingPriceExcludingTax).toFixed(0)"></span>
@@ -1429,3 +1429,5 @@
 
 @push('scripts')
 @endpush
+ 
+ 

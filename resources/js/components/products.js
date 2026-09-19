@@ -1364,6 +1364,14 @@ document.addEventListener('alpine:init', () => {
         }
       }
 
+      const spGst = parseFloat(this.form.selling_price_inc_gst) || 0;
+      const mrpVal = parseFloat(this.form.mrp) || 0;
+      if (mrpVal > 0 && spGst > mrpVal) {
+        showToast('Selling Price (Inc. GST) cannot be greater than MRP.', 'warning');
+        this.activeTab = 'pricing';
+        return;
+      }
+
       if (!this.form.is_sku_enabled && !this.form.sku) {
         const prefix = this.form.name
           ? String(this.form.name)
@@ -1535,3 +1543,4 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 });
+ 
