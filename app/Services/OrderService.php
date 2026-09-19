@@ -98,12 +98,11 @@ class OrderService
                 $datePart = $today->format('dmY');   // DDMMYYYY
                 $todayStart = $today->copy()->startOfDay();
                 $todayEnd = $today->copy()->endOfDay();
-                // Atomic sequence: lock the last inserted row so concurrent requests get distinct counts
-                $dailyCount = Order::whereBetween('created_at', [$todayStart, $todayEnd])
-                    ->lockForUpdate()
-                    ->count() + 1;
-                $seq = str_pad((string) $dailyCount, 2, '0', STR_PAD_LEFT);
-                $orderNo = "ORD-{$datePart}-{$seq}";
+                $orderNo = \Illuminate\Support\Facades\Cache::lock('order_seq_' . $datePart, 10)->block(5, function () use ($datePart, $todayStart, $todayEnd) {
+                    $dailyCount = Order::whereBetween('created_at', [$todayStart, $todayEnd])->count() + 1;
+                    $seq = str_pad((string) $dailyCount, 2, '0', STR_PAD_LEFT);
+                    return "ORD-{$datePart}-{$seq}";
+                });
             }
 
             $shippingAddressFields = [];

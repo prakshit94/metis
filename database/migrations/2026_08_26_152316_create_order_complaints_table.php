@@ -29,6 +29,8 @@ return new class extends Migration
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();
+            
+            $table->index(['customer_id', 'status']);
         });
     }
 

@@ -26,8 +26,8 @@ return new class extends Migration
             $table->string('email')->nullable()->index();
             $table->string('phone')->nullable()->index();
             $table->string('alternatemobile')->nullable();
-            $table->string('relative_name')->nullable();
-            $table->string('relative_phone', 20)->nullable();
+            $table->string('relative_name')->nullable()->default(null);
+            $table->string('relative_phone', 20)->nullable()->default(null);
 
             // Source / Classification
             $table->json('source')->nullable();

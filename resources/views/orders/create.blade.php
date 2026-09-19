@@ -142,7 +142,24 @@
                                         </template>
                                     </div>
                                     <div>
-                                        <h5 class="mb-1 fw-bold" x-text="customerDisplayName"></h5>
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <h5 class="mb-0 fw-bold" x-text="customerDisplayName"></h5>
+                                            <template x-if="computedTags.length > 0">
+                                                <div class="d-flex gap-1 flex-wrap">
+                                                    <template x-for="tag in computedTags" :key="tag.name">
+                                                        <span class="badge d-inline-flex align-items-center gap-1 shadow-sm border border-black border-opacity-10" 
+                                                              :class="tag.color" 
+                                                              style="font-size: 10px;">
+                                                            <i class="bi" :class="tag.icon" style="font-size: 9px;"></i>
+                                                            <span x-text="tag.name"></span>
+                                                        </span>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                            <i class="bi bi-info-circle-fill text-black-50 cursor-help ms-1" 
+                                               style="font-size: 11px;" 
+                                               title="Smart Tags Criteria:&#10;👤 New Customer: 0 Orders&#10;🥈 Silver: 1-5 Orders&#10;🥇 Gold: 6-9 Orders&#10;⭐ VIP: 10+ Orders&#10;💵 High Spender: Delivered Revenue > ₹50,000&#10;💳 Wallet Cash: Wallet Balance > 0&#10;⚠️ High Return Risk: Returns > 30% of total orders&#10;🚫 Blacklisted: Customer is blocked"></i>
+                                        </div>
                                         <div class="small text-body-secondary d-flex align-items-center gap-2">
                                             <span class="cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.party_code).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.party_code"></span><i class="bi opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span>
                                             <span class="badge text-bg-success-subtle text-success-emphasis" x-text="customerDetails.status || 'Active'"></span>
@@ -265,10 +282,10 @@
                                                 <i class="bi bi-person-lines-fill text-primary me-2"></i>
                                                 <h6 class="fw-bold text-primary mb-0" style="text-transform: uppercase; font-size: 11px;">Contact</h6>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.phone"><span class="text-body-secondary small">Phone</span><span class="fw-bold text-body-emphasis cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><i class="bi me-1" :class="copied ? 'bi-check-lg text-success' : 'bi-telephone text-primary'" style="font-size: 9px;"></i><span x-text="customerDetails.phone"></span></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.alternatemobile"><span class="text-body-secondary small">Alt Phone</span><span class="fw-medium text-body-emphasis cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.alternatemobile).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.alternatemobile"></span><i class="bi ms-1" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.email"><span class="text-body-secondary small">Email</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block text-end cursor-pointer" style="max-width: 130px; font-size: 11px;" :title="customerDetails.email" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.email).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.email"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.relative_name"><span class="text-body-secondary small">Relative</span><span class="fw-medium text-body-emphasis text-end cursor-pointer" title="Click to copy phone" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.relative_phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.relative_name + ' (' + customerDetails.relative_phone + ')'"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.phone && String(customerDetails.phone).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Phone</span><span class="fw-bold text-body-emphasis cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><i class="bi me-1" :class="copied ? 'bi-check-lg text-success' : 'bi-telephone text-primary'" style="font-size: 9px;"></i><span x-text="customerDetails.phone"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.alternatemobile && String(customerDetails.alternatemobile).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Alt Phone</span><span class="fw-medium text-body-emphasis cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.alternatemobile).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.alternatemobile"></span><i class="bi ms-1" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.email && String(customerDetails.email).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Email</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block text-end cursor-pointer" style="max-width: 130px; font-size: 11px;" :title="customerDetails.email" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.email).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.email"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.relative_name && String(customerDetails.relative_name).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Relative</span><span class="fw-medium text-body-emphasis text-end cursor-pointer" title="Click to copy phone" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(String(customerDetails.relative_phone).trim().toLowerCase() !== 'null' ? customerDetails.relative_phone : '').then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.relative_name + (customerDetails.relative_phone && String(customerDetails.relative_phone).trim().toLowerCase() !== 'null' ? ' (' + customerDetails.relative_phone + ')' : '')"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -281,12 +298,13 @@
                                                 <i class="bi bi-building text-info me-2"></i>
                                                 <h6 class="fw-bold text-info mb-0" style="text-transform: uppercase; font-size: 11px;">Business & Identity</h6>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.company_name"><span class="text-body-secondary small">Company</span><span class="fw-bold text-body-emphasis text-truncate ms-2 cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.company_name).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.company_name"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.category"><span class="text-body-secondary small">Category</span><span class="fw-medium text-body-emphasis text-capitalize"><span class="badge bg-info text-body-emphasis bg-opacity-25" style="font-size: 9px;" x-text="customerDetails.category"></span></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.gst_no"><span class="text-body-secondary small">GST No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.gst_no).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.gst_no"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.pan_no"><span class="text-body-secondary small">PAN No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.pan_no).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.pan_no"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.company_name && String(customerDetails.company_name).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Company</span><span class="fw-bold text-body-emphasis text-truncate ms-2 cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.company_name).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.company_name"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.category && String(customerDetails.category).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Category</span><span class="fw-medium text-body-emphasis text-capitalize"><span class="badge bg-info text-body-emphasis bg-opacity-25" style="font-size: 9px;" x-text="customerDetails.category"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.gst_no && String(customerDetails.gst_no).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">GST No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.gst_no).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.gst_no"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.pan_no && String(customerDetails.pan_no).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">PAN No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.pan_no).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.pan_no"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.tax_no && String(customerDetails.tax_no).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Tax No</span><span class="fw-medium text-body-emphasis font-monospace" style="font-size: 11px;" x-text="customerDetails.tax_no"></span></div>
                                             <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.aadhaar_last4"><span class="text-body-secondary small">Aadhaar</span><span class="fw-medium text-body-emphasis font-monospace" style="font-size: 11px;" x-text="'**' + customerDetails.aadhaar_last4"></span></div>
-                                            <div class="text-center mt-2" x-show="!customerDetails.company_name && !customerDetails.gst_no && !customerDetails.pan_no && !customerDetails.category && !customerDetails.aadhaar_last4"><span class="text-body-secondary fst-italic small" style="font-size: 10px;">No business details</span></div>
+                                            <div class="text-center mt-2" x-show="!customerDetails.company_name && !customerDetails.gst_no && !customerDetails.pan_no && !customerDetails.tax_no && !customerDetails.category && !customerDetails.aadhaar_last4"><span class="text-body-secondary fst-italic small" style="font-size: 10px;">No business details</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -300,22 +318,16 @@
                                                 <h6 class="fw-bold text-success mb-0" style="text-transform: uppercase; font-size: 11px;">Agriculture</h6>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-1"><span class="text-body-secondary small">Land Area</span><span class="fw-bold text-body-emphasis" style="font-size: 11px;"><span x-text="customerDetails.land_area || '0'"></span> <span x-text="customerDetails.land_unit || ''"></span></span></div>
-                                            <div class="d-flex justify-content-between align-items-start mb-1" x-show="customerDetails.crops && customerDetails.crops.length > 0">
+                                            <div class="d-flex justify-content-between align-items-start mb-1" x-show="customerDetails.crops && Object.keys(customerDetails.crops).length > 0">
                                                 <span class="text-body-secondary small text-nowrap me-2 mt-1">Crops</span>
                                                 <div class="d-flex gap-1 flex-wrap justify-content-end mt-1">
-                                                    <template x-for="crop in (customerDetails.crops || [])"><span class="badge text-bg-success-subtle text-success-emphasis border border-success border-opacity-50" style="font-size: 9px;" x-text="crop"></span></template>
+                                                    <template x-for="crop in Object.values(customerDetails.crops || {})"><span class="badge text-bg-success-subtle text-success-emphasis border border-success border-opacity-50" style="font-size: 9px;" x-text="typeof crop === 'object' ? (crop.name || crop.title || '') : crop"></span></template>
                                                 </div>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-start mb-1" x-show="customerDetails.irrigation_type && customerDetails.irrigation_type.length > 0">
+                                            <div class="d-flex justify-content-between align-items-start mb-1" x-show="customerDetails.irrigation_type && Object.keys(customerDetails.irrigation_type).length > 0">
                                                 <span class="text-body-secondary small text-nowrap me-2 mt-1">Irrigation</span>
                                                 <div class="d-flex gap-1 flex-wrap justify-content-end mt-1">
-                                                    <template x-for="type in (customerDetails.irrigation_type || [])"><span class="badge bg-success text-white" style="font-size: 9px;" x-text="type"></span></template>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-start mb-1" x-show="customerDetails.tags && customerDetails.tags.length > 0">
-                                                <span class="text-body-secondary small text-nowrap me-2 mt-1">Tags</span>
-                                                <div class="d-flex gap-1 flex-wrap justify-content-end mt-1">
-                                                    <template x-for="tag in (customerDetails.tags || [])"><span class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;" x-text="tag"></span></template>
+                                                    <template x-for="type in Object.values(customerDetails.irrigation_type || {})"><span class="badge bg-success text-white" style="font-size: 9px;" x-text="typeof type === 'object' ? (type.name || type.title || '') : type"></span></template>
                                                 </div>
                                             </div>
                                         </div>
@@ -593,7 +605,7 @@
                         <div class="row g-3" x-show="viewMode === 'grid'">
                             <template x-for="p in filteredProducts" :key="p.id">
                                 <div class="col-sm-6 col-md-4">
-                                    <div class="card h-100 border shadow-sm transition-all" x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="isHovered ? 'position: relative; z-index: 1050;' : ''" :class="{'border-primary bg-primary bg-opacity-10': isInCart(p.id), 'bg-body': !isInCart(p.id), 'opacity-50': !isSkuEnabled(p) || getMaxAllowedStock(p) <= 0}">
+                                    <div class="card h-100 border shadow-sm transition-all" x-data="{ isHovered: false }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" :style="(isHovered ? 'position: relative; z-index: 1050; ' : '') + (isInCart(p.id) ? 'background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.25) !important; border-color: var(--bs-primary) !important; box-shadow: 0 0 0 2px var(--bs-primary) !important;' : '')" :class="{'bg-body': !isInCart(p.id), 'opacity-50': !isSkuEnabled(p) || getMaxAllowedStock(p) <= 0}">
                                         <div class="card-body p-3">
                                             <div class="d-flex gap-2 mb-3">
                                                 <div x-show="p.grade" 
@@ -689,7 +701,7 @@
                                 </thead>
                                 <tbody>
                                     <template x-for="p in filteredProducts" :key="'tbl-'+p.id">
-                                        <tr :class="{'bg-primary bg-opacity-10': isInCart(p.id), 'opacity-50': !isSkuEnabled(p) || getMaxAllowedStock(p) <= 0}">
+                                        <tr :class="{'opacity-50': !isSkuEnabled(p) || getMaxAllowedStock(p) <= 0}" :style="isInCart(p.id) ? '--bs-table-bg: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.25); --bs-table-accent-bg: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.25); box-shadow: inset 4px 0 0 var(--bs-primary);' : ''">
                                             <td class="align-middle">
                                                 <div class="d-flex align-items-start gap-3">
                                                     <div class="position-relative flex-shrink-0 cursor-pointer" @click="openProductModal(p)">
@@ -3085,7 +3097,85 @@ mapOrder(o) {
         productModalLoading: false,
         productModalTab: 'overview',
 
-        customerDetails: initialCustomer || window.__INITIAL_ORDER_CUSTOMER__ || null,
+        sanitizeCustomerData(data) {
+            if (!data || typeof data !== 'object') return data;
+            let cleaned = Array.isArray(data) ? [] : {};
+            for (let key in data) {
+                if (typeof data[key] === 'string' && data[key].trim().toLowerCase() === 'null') {
+                    cleaned[key] = null;
+                } else if (typeof data[key] === 'object' && data[key] !== null) {
+                    cleaned[key] = this.sanitizeCustomerData(data[key]);
+                } else {
+                    cleaned[key] = data[key];
+                }
+            }
+            return cleaned;
+        },
+
+        customerDetails: null, // Will be set in init()
+        
+        get computedTags() {
+            let result = [];
+            if (!this.customerDetails) return result;
+            
+            // 1. Manual Tags (From DB)
+            if (this.customerDetails.tags && Object.keys(this.customerDetails.tags).length > 0) {
+                Object.values(this.customerDetails.tags).forEach(t => {
+                    const name = typeof t === 'object' ? (t.name || t.title || JSON.stringify(t)) : t;
+                    if (name) {
+                        result.push({
+                            name: name,
+                            icon: 'bi-tag',
+                            color: 'bg-secondary text-white',
+                            tooltip: 'Manually assigned tag'
+                        });
+                    }
+                });
+            }
+            
+
+            // 2. Computed Analytics Tags
+            const wallet = Number(this.customerDetails.wallet_balance || 0);
+            const orders = this.customerDetails.orders || [];
+            const ordersCount = Math.max(this.customerDetails.orders_count || 0, orders.length);
+            
+            const deliveredOrders = orders.filter(o => o.lifecycle_status === 'delivered');
+            const deliveredRev = deliveredOrders.reduce((sum, o) => sum + Number(o.net_amount), 0);
+            const returnedOrders = orders.filter(o => o.lifecycle_status === 'returned');
+            const isBlacklisted = this.customerDetails.is_blacklisted;
+            
+            if (isBlacklisted) {
+                result.push({ name: 'Blacklisted', icon: 'bi-slash-circle-fill', color: 'bg-dark text-white', tooltip: 'Customer is manually blacklisted' });
+            }
+            if (wallet > 0) {
+                result.push({ name: 'Wallet Cash: ₹ ' + wallet.toLocaleString('en-IN', {minimumFractionDigits: 2}), icon: 'bi-wallet-fill', color: 'bg-success text-white', tooltip: 'Available Wallet Balance' });
+            }
+            
+            // Order Tiers
+            if (ordersCount === 0) {
+                result.push({ name: 'New Customer', icon: 'bi-person-plus-fill', color: 'bg-primary text-white', tooltip: '0 completed orders' });
+            } else if (ordersCount >= 1 && ordersCount <= 5) {
+                result.push({ name: 'Silver', icon: 'bi-award', color: 'bg-secondary text-white', tooltip: '1 to 5 orders placed' });
+            } else if (ordersCount >= 6 && ordersCount <= 9) {
+                result.push({ name: 'Gold', icon: 'bi-award-fill', color: 'text-bg-warning text-dark', tooltip: '6 to 9 orders placed' });
+            } else if (ordersCount >= 10) {
+                result.push({ name: 'VIP', icon: 'bi-star-fill', color: 'bg-danger text-white', tooltip: '10+ orders placed' });
+            }
+            
+            // Revenue & Risk
+            if (deliveredRev >= 50000) {
+                result.push({ name: 'High Spender', icon: 'bi-cash-stack', color: 'bg-info text-dark', tooltip: 'Over ₹50,000 in delivered revenue' });
+            }
+            if (ordersCount > 2 && returnedOrders.length > 0) {
+                const returnRate = returnedOrders.length / ordersCount;
+                if (returnRate >= 0.3) {
+                    result.push({ name: 'High Return Risk', icon: 'bi-exclamation-octagon-fill', color: 'bg-danger text-white', tooltip: 'Returns exceed 30% of total orders' });
+                }
+            }
+            
+            // Remove duplicates by name
+            return result.filter((v, i, a) => a.findIndex(t => t.name.toLowerCase() === v.name.toLowerCase()) === i);
+        },
         bottomTab: 'history',
         
         expandedOrderId: null,
@@ -3112,6 +3202,8 @@ mapOrder(o) {
         },
 
         async init() {
+            this.customerDetails = this.sanitizeCustomerData(initialCustomer || window.__INITIAL_ORDER_CUSTOMER__ || null);
+            
             // Push initial state to trap back button
             const trapBack = () => {
                 if (window.history.state !== 'trap') {
@@ -3496,7 +3588,7 @@ mapOrder(o) {
             try {
                 const res = await fetch(`/customers/${this.partyId}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                 const json = await res.json();
-                this.customerDetails = json.data;
+                this.customerDetails = this.sanitizeCustomerData(json.data);
                 this.addresses = json.data?.addresses || [];
                 this.recentOrders = json.data?.orders || [];
                 if (this.addresses.length) {
@@ -3554,13 +3646,13 @@ mapOrder(o) {
             this.futureOrderDate = order.future_order_date ? String(order.future_order_date).substring(0, 10) : '';
             this.couponCode = order.coupon_code || '';
             this.appliedOfferId = order.applied_offer_id || null;
-            this.customerDetails = order.party
+            this.customerDetails = this.sanitizeCustomerData(order.party
                 ? {
                     ...(this.customerDetails || {}),
                     ...order.party,
                     addresses: order.party.addresses || this.customerDetails?.addresses || [],
                 }
-                : this.customerDetails;
+                : this.customerDetails);
             this.addresses = order.party?.addresses || this.addresses;
             this.recentOrders = order.party?.orders || this.recentOrders;
 

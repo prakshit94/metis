@@ -215,6 +215,12 @@ class CustomerController extends Controller implements HasMiddleware
             $request->merge(['phone' => $phone]);
         }
 
+        foreach (['relative_name', 'relative_phone'] as $field) {
+            if (strtolower(trim((string)$request->input($field))) === 'null') {
+                $request->merge([$field => null]);
+            }
+        }
+
         $validated = $request->validate([
             'party_code' => ['nullable', 'string', 'max:50', 'unique:parties,party_code'],
             'firstname' => ['required', 'string', 'max:100'],
@@ -408,6 +414,12 @@ class CustomerController extends Controller implements HasMiddleware
                 $phone = substr($phone, -10);
             }
             $request->merge(['phone' => $phone]);
+        }
+
+        foreach (['relative_name', 'relative_phone'] as $field) {
+            if (strtolower(trim((string)$request->input($field))) === 'null') {
+                $request->merge([$field => null]);
+            }
         }
 
         $validated = $request->validate([
