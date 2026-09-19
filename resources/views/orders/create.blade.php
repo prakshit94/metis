@@ -636,11 +636,17 @@
                                                     <div class="text-body-tertiary text-truncate mt-1" style="font-size: 10px;" x-show="p.description" :title="p.description" x-text="p.description"></div>
                                                 </div>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-1 bg-body-tertiary rounded">
-                                                <span class="fw-bold text-primary fs-5" x-text="'₹ ' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></span>
-                                                <div>
-                                                    <span class="badge" :class="getWarehouseStock(p) > 10 ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p))"></span>
-                                                    <span x-show="p.allow_overselling" class="badge text-bg-warning-subtle text-warning-emphasis ms-1"><i class="bi bi-infinity"></i> <span x-text="getOversellStock(p)"></span></span>
+                                            <div class="d-flex justify-content-between align-items-start mb-2 px-2 py-2 bg-body-tertiary rounded">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="p.mrp > (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100))" x-text="'₹' + parseFloat(p.mrp).toFixed(2)"></span>
+                                                        <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 13px;" x-text="'₹ ' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></span>
+                                                    </div>
+                                                    <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 align-self-start" x-show="p.default_discount > 0" style="font-size: 10px;"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
+                                                </div>
+                                                <div class="d-flex flex-column align-items-end gap-2 mt-1">
+                                                    <span class="badge shadow-sm" :class="getWarehouseStock(p) > 10 ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p))"></span>
+                                                    <span x-show="p.allow_overselling" class="badge text-bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25 shadow-sm"><i class="bi bi-infinity"></i> <span x-text="getOversellStock(p)"></span></span>
                                                 </div>
                                             </div>
                                             <div class="d-flex flex-wrap gap-1 mb-3" x-show="getProductPromotions(p).length > 0">
