@@ -755,16 +755,19 @@
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link active py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#all-noti-tab" type="button" role="tab" aria-controls="all-noti-tab" aria-selected="true" style="opacity: 0.8;">
                                         All Activity
+                                        <span class="badge bg-danger rounded-pill ms-1" style="font-size: 10px;" x-show="count > 0" x-text="count"></span>
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#messages-noti-tab" type="button" role="tab" aria-controls="messages-noti-tab" aria-selected="false" style="opacity: 0.8;">
                                         Messages
+                                        <span class="badge bg-danger rounded-pill ms-1" style="font-size: 10px;" x-show="!messagesRead && {{ $unreadMessages->count() }} > 0">{{ $unreadMessages->count() }}</span>
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#alerts-noti-tab" type="button" role="tab" aria-controls="alerts-noti-tab" aria-selected="false" style="opacity: 0.8;">
                                         Alerts
+                                        <span class="badge bg-danger rounded-pill ms-1" style="font-size: 10px;" x-show="!alertsRead && {{ $systemAlerts->count() }} > 0">{{ $systemAlerts->count() }}</span>
                                     </button>
                                 </li>
                             </ul>
@@ -1270,6 +1273,7 @@ document.addEventListener('alpine:init', () => {
 });
 </script>
 @endpush
+ 
  
  
  
