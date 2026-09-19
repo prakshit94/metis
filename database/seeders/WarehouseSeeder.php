@@ -11,7 +11,7 @@ class WarehouseSeeder extends Seeder
     {
         $warehouses = [
             [
-                'name' => 'Main Ecommerce Warehouse',
+                'name' => 'Central Warehouse',
                 'code' => 'MAIN-ECOM',
                 'company_name' => 'Metis Retail Pvt Ltd',
                 'gstin' => '22AAAAA0000A1Z5',
@@ -34,7 +34,7 @@ class WarehouseSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'name' => 'Gujarat Fulfillment Center',
+                'name' => 'Gujarat Warehouse',
                 'code' => 'GJ-FC-01',
                 'company_name' => 'Metis Western Logistics',
                 'gstin' => '24DDDDD3333D4Z8',
@@ -57,7 +57,7 @@ class WarehouseSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'name' => 'Rajasthan Supply Hub',
+                'name' => 'Rajasthan Warehouse',
                 'code' => 'RJ-SH-01',
                 'company_name' => 'Metis Northern Logistics',
                 'gstin' => '08EEEEE4444E5Z9',
