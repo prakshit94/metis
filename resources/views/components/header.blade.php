@@ -485,7 +485,7 @@
     $systemAlerts = collect();
 
     // 1. Low Stock Products
-    if (\Illuminate\Support\Facades\Schema::hasTable('products') && \Illuminate\Support\Facades\Schema::hasTable('stocks')) {
+    if (\Illuminate\Support\Facades\Schema::hasTable('products') && \Illuminate\Support\Facades\Schema::hasTable('stocks') && auth()->check() && auth()->user()->can('stockmanagement-view')) {
         try {
             $lowStocks = \App\Modules\Catalog\Models\Product::where('manage_stock', true)
                 ->where('min_stock_level', '>', 0)
@@ -511,7 +511,7 @@
     }
 
     // 2. Open Complaints
-    if (\Illuminate\Support\Facades\Schema::hasTable('order_complaints')) {
+    if (\Illuminate\Support\Facades\Schema::hasTable('order_complaints') && auth()->check() && auth()->user()->can('complaints.view')) {
         try {
             $openComplaints = \App\Modules\Orders\Models\OrderComplaint::where('status', 'open')
                 ->latest()
@@ -532,7 +532,7 @@
     }
 
     // 3. Pending Leaves
-    if (\Illuminate\Support\Facades\Schema::hasTable('leaves')) {
+    if (\Illuminate\Support\Facades\Schema::hasTable('leaves') && auth()->check() && auth()->user()->can('leave-view')) {
         try {
             $pendingLeaves = \App\Modules\Users\Models\Leave::with('user')->where('status', 'Pending')
                 ->latest()
@@ -553,7 +553,7 @@
     }
 
     // 4. Pending Orders
-    if (\Illuminate\Support\Facades\Schema::hasTable('orders')) {
+    if (\Illuminate\Support\Facades\Schema::hasTable('orders') && auth()->check() && (auth()->user()->can('orders.view') || auth()->user()->can('orders.view.pending_confirmation'))) {
         try {
             $pendingOrders = \App\Modules\Orders\Models\Order::where('status', 'pending_confirmation')
                 ->latest()
@@ -574,7 +574,7 @@
     }
 
     // 5. Overdue Invoices
-    if (\Illuminate\Support\Facades\Schema::hasTable('invoices')) {
+    if (\Illuminate\Support\Facades\Schema::hasTable('invoices') && auth()->check() && auth()->user()->can('invoices.view')) {
         try {
             $overdueInvoices = \App\Modules\Orders\Models\Invoice::where('status', 'unpaid')
                 ->whereNotNull('due_date')
@@ -597,7 +597,7 @@
     }
 
     // 6. Pending Order Returns
-    if (\Illuminate\Support\Facades\Schema::hasTable('order_returns')) {
+    if (\Illuminate\Support\Facades\Schema::hasTable('order_returns') && auth()->check() && auth()->user()->can('returns.view')) {
         try {
             $pendingReturns = \App\Modules\Orders\Models\OrderReturn::where('status', 'pending')
                 ->latest()
@@ -618,7 +618,7 @@
     }
 
     // 7. Pending Refunds
-    if (\Illuminate\Support\Facades\Schema::hasTable('refunds')) {
+    if (\Illuminate\Support\Facades\Schema::hasTable('refunds') && auth()->check() && auth()->user()->can('refunds.view')) {
         try {
             $pendingRefunds = \App\Modules\Orders\Models\Refund::where('status', 'pending')
                 ->latest()
@@ -639,7 +639,7 @@
     }
 
     // 8. Failed Shipments
-    if (\Illuminate\Support\Facades\Schema::hasTable('shipments')) {
+    if (\Illuminate\Support\Facades\Schema::hasTable('shipments') && auth()->check() && auth()->user()->can('shipping-view')) {
         try {
             $failedShipments = \App\Modules\Orders\Models\Shipment::where('status', 'failed')
                 ->latest()
@@ -660,7 +660,7 @@
     }
 
     // 9. Pending Stock Adjustments
-    if (\Illuminate\Support\Facades\Schema::hasTable('inventory_adjustments')) {
+    if (\Illuminate\Support\Facades\Schema::hasTable('inventory_adjustments') && auth()->check() && auth()->user()->can('inventoryadjustment-view')) {
         try {
             $pendingAdjustments = \App\Modules\Inventory\Models\InventoryAdjustment::where('status', 'pending')
                 ->latest()
@@ -681,7 +681,7 @@
     }
 
     // 10. Recently Added Products (Last 24 hours)
-    if (\Illuminate\Support\Facades\Schema::hasTable('products')) {
+    if (\Illuminate\Support\Facades\Schema::hasTable('products') && auth()->check() && auth()->user()->can('product-view')) {
         try {
             $newProducts = \App\Modules\Catalog\Models\Product::where('created_at', '>=', now()->subDay())
                 ->latest()
@@ -1270,5 +1270,6 @@ document.addEventListener('alpine:init', () => {
 });
 </script>
 @endpush
+ 
  
  
