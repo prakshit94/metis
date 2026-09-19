@@ -3112,15 +3112,6 @@ mapOrder(o) {
         },
 
         async init() {
-            // Intercept browser refresh/close tab
-            window.addEventListener('beforeunload', (e) => {
-                if (this.customerDetails && !this.isCallLoggedOrClosed) {
-                    e.preventDefault();
-                    e.returnValue = 'You must Log a Call before leaving this profile.';
-                    return e.returnValue;
-                }
-            });
-
             // Push initial state to trap back button
             const trapBack = () => {
                 if (window.history.state !== 'trap') {
@@ -3144,16 +3135,6 @@ mapOrder(o) {
                 }
             });
 
-            // Intercept keyboard refresh shortcuts (F5, Ctrl+R, Cmd+R) to show custom modal
-            window.addEventListener('keydown', (e) => {
-                if (this.customerDetails && !this.isCallLoggedOrClosed) {
-                    if (e.key === 'F5' || (e.ctrlKey && e.key.toLowerCase() === 'r') || (e.metaKey && e.key.toLowerCase() === 'r')) {
-                        e.preventDefault();
-                        const blockedModal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('actionBlockedModal'));
-                        blockedModal.show();
-                    }
-                }
-            });
 
             // Actively block link clicks across the entire page (including header)
             document.addEventListener('click', (e) => {
@@ -3972,6 +3953,18 @@ mapOrder(o) {
             let newQty;
             if (existing >= 0) {
                 newQty = this.cart[existing].quantity + qtyToAdd;
+                const match = this.getBogoMatch(p.id);
+                if (match) {
+                    const buyQty = parseInt(match.buy_qty)||1;
+                    const getQty = parseInt(match.get_qty)||1;
+                    const cycle = buyQty + getQty;
+                    let paid = newQty - Math.floor(newQty / cycle) * getQty;
+                    let expectedFree = Math.floor(paid / buyQty) * getQty;
+                    let actualFree = Math.floor(newQty / cycle) * getQty;
+                    if (expectedFree > actualFree) {
+                        newQty += (expectedFree - actualFree);
+                    }
+                }
                 if (maxAllowed !== null && maxAllowed !== undefined && newQty > maxAllowed) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+maxAllowed+')'}}));
                     return;
@@ -3979,6 +3972,18 @@ mapOrder(o) {
                 this.cart[existing].quantity = newQty;
             } else {
                 newQty = qtyToAdd;
+                const match = this.getBogoMatch(p.id);
+                if (match) {
+                    const buyQty = parseInt(match.buy_qty)||1;
+                    const getQty = parseInt(match.get_qty)||1;
+                    const cycle = buyQty + getQty;
+                    let paid = newQty - Math.floor(newQty / cycle) * getQty;
+                    let expectedFree = Math.floor(paid / buyQty) * getQty;
+                    let actualFree = Math.floor(newQty / cycle) * getQty;
+                    if (expectedFree > actualFree) {
+                        newQty += (expectedFree - actualFree);
+                    }
+                }
                 if (maxAllowed !== null && maxAllowed !== undefined && newQty > maxAllowed) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+maxAllowed+')'}}));
                     return;
@@ -3997,6 +4002,20 @@ mapOrder(o) {
             if (newQty <= 0) {
                 this.cart.splice(idx,1);
             } else {
+                if (delta > 0 && !item.is_gift) {
+                    const match = this.getBogoMatch(item.id);
+                    if (match) {
+                        const buyQty = parseInt(match.buy_qty)||1;
+                        const getQty = parseInt(match.get_qty)||1;
+                        const cycle = buyQty + getQty;
+                        let paid = newQty - Math.floor(newQty / cycle) * getQty;
+                        let expectedFree = Math.floor(paid / buyQty) * getQty;
+                        let actualFree = Math.floor(newQty / cycle) * getQty;
+                        if (expectedFree > actualFree) {
+                            newQty += (expectedFree - actualFree);
+                        }
+                    }
+                }
                 if (item.available !== null && item.available !== undefined && newQty > item.available) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+item.available+')'}}));
                     return;
