@@ -108,7 +108,7 @@ class PageController extends Controller
         $orderStats = (clone $orderQuery)->toBase()
             ->leftJoin(DB::raw('(SELECT DISTINCT order_id FROM order_returns WHERE status = "completed") as returns_sq'), 'orders.id', '=', 'returns_sq.order_id')
             ->selectRaw('
-                COUNT(orders.id) as total_orders,
+                SUM(CASE WHEN orders.status != "future_order" THEN 1 ELSE 0 END) as total_orders,
                 SUM(CASE WHEN orders.status NOT IN ("cancelled", "future_order") AND returns_sq.order_id IS NULL THEN orders.net_amount ELSE 0 END) as total_revenue,
                 SUM(CASE WHEN orders.status IN ("delivered", "completed") AND returns_sq.order_id IS NULL THEN 1 ELSE 0 END) as total_delivered,
                 SUM(CASE WHEN orders.status IN ("delivered", "completed") AND returns_sq.order_id IS NULL THEN orders.net_amount ELSE 0 END) as rev_delivered,
