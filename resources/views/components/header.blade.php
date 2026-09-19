@@ -659,6 +659,48 @@
         } catch (\Exception $e) {}
     }
 
+    // 9. Pending Stock Adjustments
+    if (\Illuminate\Support\Facades\Schema::hasTable('inventory_adjustments')) {
+        try {
+            $pendingAdjustments = \App\Modules\Inventory\Models\InventoryAdjustment::where('status', 'pending')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($pendingAdjustments as $adj) {
+                $systemAlerts->push((object)[
+                    'id' => 'adj_' . $adj->id,
+                    'type' => 'info',
+                    'icon' => 'bi-sliders',
+                    'title' => 'Pending Stock Adjustment',
+                    'message' => "Adjustment <b>{$adj->reference_no}</b> awaits approval.",
+                    'time_ago' => $adj->created_at ? $adj->created_at->diffForHumans() : null,
+                    'link' => '/inventory/adjustments'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 10. Recently Added Products (Last 24 hours)
+    if (\Illuminate\Support\Facades\Schema::hasTable('products')) {
+        try {
+            $newProducts = \App\Modules\Catalog\Models\Product::where('created_at', '>=', now()->subDay())
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($newProducts as $prod) {
+                $systemAlerts->push((object)[
+                    'id' => 'new_prod_' . $prod->id,
+                    'type' => 'success',
+                    'icon' => 'bi-box-seam-fill',
+                    'title' => 'New Product Catalogued',
+                    'message' => "<b>{$prod->name}</b> was recently added.",
+                    'time_ago' => $prod->created_at ? $prod->created_at->diffForHumans() : null,
+                    'link' => route('catalog.products', ['search' => $prod->sku])
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
     $unreadMessages = collect();
     if (\Illuminate\Support\Facades\Schema::hasTable('chat_notifications') && auth()->check()) {
         try {
@@ -1228,4 +1270,5 @@ document.addEventListener('alpine:init', () => {
 });
 </script>
 @endpush
+ 
  
