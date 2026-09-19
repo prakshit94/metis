@@ -237,7 +237,7 @@
     </div>
 
     <!-- Create Modal Glossy Style -->
-    <div class="modal fade" id="createProgramModal" tabindex="-1" aria-labelledby="createProgramModalLabel" aria-hidden="true">
+    <div class="modal fade" id="createProgramModal" tabindex="-1" aria-labelledby="createProgramModalLabel" aria-hidden="true" @hidden.bs.modal="resetForm()">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content shadow-lg rounded-4 bg-body">
                 
@@ -344,15 +344,15 @@
                                                         
                                                         <input type="number" x-show="milestone.reward_type !== 'product'" x-model="milestone.reward_value" :name="milestone.reward_type !== 'product' ? `milestones[${index}][reward_value]` : ''" class="form-control fw-semibold border-secondary border-opacity-25 shadow-none" :required="milestone.reward_type !== 'product'" style="font-size: 13px;" :placeholder="milestone.reward_type === 'wallet' ? 'Enter Wallet Rs' : 'Enter Discount Rs'">
                                                         
-                                                        <div x-show="milestone.reward_type === 'product'" x-data="{ open: false, search: '' }" class="position-relative" @click.away="open = false">
+                                                        <div x-show="milestone.reward_type === 'product'" x-data="{ open: false, search: '', openUp: false }" class="position-relative" @click.away="open = false">
                                                             <input type="hidden" :name="milestone.reward_type === 'product' ? `milestones[${index}][reward_value]` : ''" :value="milestone.reward_value">
                                                             
-                                                            <div class="form-control fw-semibold border-secondary border-opacity-25 shadow-none d-flex align-items-center justify-content-between cursor-pointer" style="font-size: 13px; min-height: 38px;" @click="open = !open">
+                                                            <button type="button" class="form-control fw-semibold border-secondary border-opacity-25 shadow-none d-flex align-items-center justify-content-between cursor-pointer text-start" style="font-size: 13px; min-height: 38px;" :aria-expanded="open" aria-haspopup="listbox" @click="openUp = $el.getBoundingClientRect().bottom + 240 > $el.closest('.modal-body').getBoundingClientRect().bottom; open = !open">
                                                                 <span class="text-truncate" x-text="milestone.reward_value ? (allProducts.find(p => p.id == milestone.reward_value) ? allProducts.find(p => p.id == milestone.reward_value).name + (allProducts.find(p => p.id == milestone.reward_value).sku ? ' (' + allProducts.find(p => p.id == milestone.reward_value).sku + ')' : '') : 'Select a product...') : 'Select a product...'"></span>
                                                                 <i class="bi bi-chevron-down text-muted" style="font-size: 11px;"></i>
-                                                            </div>
+                                                            </button>
                                                             
-                                                            <div x-show="open" class="position-absolute w-100 bg-body border border-secondary border-opacity-25 rounded-3 shadow-lg mt-1 overflow-hidden" style="display: none; z-index: 1050; top: 100%; left: 0;">
+                                                            <div x-show="open" class="position-absolute w-100 bg-body border border-secondary border-opacity-25 rounded-3 shadow-lg overflow-hidden" :class="openUp ? 'mb-1' : 'mt-1'" :style="openUp ? 'display: none; z-index: 1050; bottom: 100%; left: 0;' : 'display: none; z-index: 1050; top: 100%; left: 0;'" role="listbox">
                                                                 <div class="p-2 bg-body-tertiary border-bottom border-secondary border-opacity-25">
                                                                     <div class="position-relative">
                                                                         <input type="text" x-model="search" class="form-control form-control-sm border-secondary border-opacity-25 shadow-none pe-4" placeholder="Search product name or SKU..." @click.stop x-ref="searchInput" x-init="$watch('open', val => { if(val) setTimeout(() => $refs.searchInput.focus(), 50) })">
@@ -361,7 +361,7 @@
                                                                 </div>
                                                                 <div class="overflow-y-auto" style="max-height: 200px;">
                                                                     <template x-for="product in allProducts.filter(p => (p.name + ' ' + (p.sku || '')).toLowerCase().includes(search.toLowerCase()))" :key="product.id">
-                                                                        <div class="px-3 py-2 cursor-pointer border-bottom border-secondary border-opacity-10 custom-hover-bg transition-all" 
+                                                                        <div class="px-3 py-2 cursor-pointer border-bottom border-secondary border-opacity-10 custom-hover-bg transition-all" role="option" :aria-selected="milestone.reward_value == product.id"
                                                                             @click="milestone.reward_value = product.id; open = false; search = ''" 
                                                                             :class="milestone.reward_value == product.id ? 'bg-primary bg-opacity-10 text-primary fw-bold' : ''">
                                                                             <span x-text="product.name" style="font-size: 12px;"></span>
@@ -410,6 +410,44 @@
 .custom-hover-opacity { transition: all 0.2s; }
 .custom-hover-opacity:hover { opacity: 1 !important; color: var(--bs-danger) !important; transform: scale(1.1); }
 .cursor-pointer { cursor: pointer; }
+
+/* Keep the program editor usable when its content is taller than the viewport. */
+#createProgramModal .modal-content {
+    max-height: calc(100vh - 1rem);
+}
+
+#createProgramModal form {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#createProgramModal .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+#createProgramModal .modal-footer {
+    flex: 0 0 auto;
+}
+
+@media (max-width: 575.98px) {
+    #createProgramModal .modal-header,
+    #createProgramModal .modal-footer {
+        padding: 1rem !important;
+    }
+
+    #createProgramModal .modal-body {
+        padding: 1rem !important;
+    }
+
+    #createProgramModal .card-body {
+        padding: 1rem !important;
+    }
+}
 </style>
 
 <script>

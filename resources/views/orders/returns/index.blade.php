@@ -350,13 +350,13 @@
                                                 <th class="ps-2">Product</th>
                                                 <th class="text-center" style="width:90px;">Requested</th>
                                                 <th class="text-center" style="width:120px;">
-                                                    <span style="color:#0ea5e9;font-weight:600;">Received</span>
+                                                    <span class="text-info fw-semibold">Received</span>
                                                 </th>
                                                 <th class="text-center" style="width:120px;">
-                                                    <span style="color:#10b981;font-weight:600;">Restock</span>
+                                                    <span class="text-success fw-semibold">Restock</span>
                                                 </th>
                                                 <th class="text-center" style="width:120px;">
-                                                    <span style="color:#ef4444;font-weight:600;">Damaged</span>
+                                                    <span class="text-danger fw-semibold">Damaged</span>
                                                 </th>
                                                 <th>Notes</th>
                                             </tr>
@@ -565,13 +565,13 @@
                                         <th class="ps-2">Product</th>
                                         <th class="text-center" style="width:90px;">Requested</th>
                                         <th class="text-center" style="width:120px;">
-                                            <span style="color:#0ea5e9;font-weight:600;">Received</span>
+                                            <span class="text-info fw-semibold">Received</span>
                                         </th>
                                         <th class="text-center" style="width:120px;">
-                                            <span style="color:#10b981;font-weight:600;">Restock</span>
+                                            <span class="text-success fw-semibold">Restock</span>
                                         </th>
                                         <th class="text-center" style="width:120px;">
-                                            <span style="color:#ef4444;font-weight:600;">Damaged</span>
+                                            <span class="text-danger fw-semibold">Damaged</span>
                                         </th>
                                         <th>Notes</th>
                                     </tr>

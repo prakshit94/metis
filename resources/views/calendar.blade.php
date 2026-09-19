@@ -103,7 +103,7 @@
                                         </label>
                                         <label class="category-item">
                                             <input type="checkbox" x-model="visibleTypes" value="reminder" class="form-check-input">
-                                            <span class="category-color" style="background: #8b5cf6;"></span>
+                                            <span class="category-color" style="background: var(--bs-purple);"></span>
                                             <span class="category-name">Reminders</span>
                                             <span class="category-count" x-text="getCategoryCount('reminder')"></span>
                                         </label>

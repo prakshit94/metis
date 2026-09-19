@@ -3,8 +3,8 @@
     $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
     $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
 @endphp
-<header class="admin-header border-bottom shadow-sm sticky-top" role="banner" style="z-index: 1040; min-height: 70px; background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
-    <nav class="navbar navbar-expand h-100 py-0" aria-label="Main navigation">
+<header class="admin-header border-bottom shadow-sm sticky-top" role="banner" style="z-index: 1040; min-height: 70px;">
+    <nav class="navbar admin-navbar navbar-expand h-100 py-0" aria-label="Main navigation">
         <div class="container-fluid align-items-center h-100 px-3 px-md-4 d-flex justify-content-between">
 
             {{-- ── LEFT SECTION (Brand & Toggle) ────────────────── --}}

@@ -145,7 +145,7 @@
                         <th scope="col" class="text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px;">Contact Info</th>
                         <th scope="col" class="text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px;">Tax Details</th>
                         <th scope="col" class="text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px;">Status</th>
-                        <th style="width: 80px;" class="text-end pe-4 text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px;">Actions</th>
+                        <th class="text-end pe-4 text-uppercase text-muted" style="width: 80px; font-size: 0.75rem; letter-spacing: 0.5px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>

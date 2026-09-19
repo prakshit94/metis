@@ -280,8 +280,8 @@
                                                 <i class="bi bi-file-earmark-text fs-3 text-muted"></i>
                                             </div>
                                         </template>
-                                        <div class="px-1 pb-1" style="font-size:9px;" class="text-truncate text-muted" x-text="formatFileSize(file.size)"></div>
-                                        <button type="button" @click="removePendingAttachment(index)" class="btn-close position-absolute top-0 end-0 m-1" style="font-size:8px;background:white;"></button>
+                                        <div class="px-1 pb-1 text-truncate text-muted" style="font-size:9px;" x-text="formatFileSize(file.size)"></div>
+                                        <button type="button" @click="removePendingAttachment(index)" class="btn-close position-absolute top-0 end-0 m-1 bg-body" style="font-size:8px;"></button>
                                     </div>
                                 </template>
                             </div>
