@@ -620,7 +620,7 @@ class OrderController extends Controller implements HasMiddleware
                         'creator:id,first_name,last_name,name',
                         'orderReturns:id,order_id,return_no,status,refund_amount',
                         'statusLogs:id,order_id,status,created_at',
-                        'shipments:id,order_id,tracking_number,status',
+                        'shipments:id,order_id,tracking_no,status',
                     ]);
                 },
             ])->withCount([
