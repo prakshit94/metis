@@ -461,8 +461,9 @@ class OrderController extends Controller implements HasMiddleware
             : ($lobStateName ? [$lobStateName] : []);
 
         $districtsList = Cache::remember('geo_districts_'.md5(implode(',', $targetStates)), 3600, function () use ($targetStates) {
-            return Village::whereIn('state_name', $targetStates)
-                ->distinct()->pluck('district_name')->filter()->sort()->values();
+            return Village::when(!empty($targetStates), function ($q) use ($targetStates) {
+                $q->whereIn('state_name', $targetStates);
+            })->distinct()->pluck('district_name')->filter()->sort()->values();
         });
 
         $talukasList = Cache::remember('geo_talukas_'.md5(implode(',', $targetStates).'_'.$request->district), 3600, function () use ($request, $targetStates) {
