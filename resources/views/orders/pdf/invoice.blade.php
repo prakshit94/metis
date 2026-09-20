@@ -442,12 +442,8 @@ $totalIGST = 0;
 
       @endforeach
    </tbody>
-</table>
-
-<br>
-
-<!-- TOTALS -->
-<table class="totals">
+   <!-- TOTALS -->
+   <tfoot class="totals">
    <tr>
       <td colspan="{{ $isInterState ? 8 : 9 }}" class="text-right bold">
          Total Taxable Value
@@ -486,12 +482,34 @@ $totalIGST = 0;
       </tr>
    @endif
 
+   @if($invoice->order->discount_amount > 0)
+   <tr>
+      <td colspan="{{ $isInterState ? 8 : 9 }}" class="text-right bold">
+         Order Discount @if($invoice->order->coupon_code) ({{ $invoice->order->coupon_code }}) @endif
+      </td>
+      <td class="text-right">
+         - {{ number_format($invoice->order->discount_amount, 2) }}
+      </td>
+   </tr>
+   @endif
+
+   @if($invoice->order->wallet_amount_used > 0)
+   <tr>
+      <td colspan="{{ $isInterState ? 8 : 9 }}" class="text-right bold">
+         Wallet Amount Used
+      </td>
+      <td class="text-right">
+         - {{ number_format($invoice->order->wallet_amount_used, 2) }}
+      </td>
+   </tr>
+   @endif
+
    <tr class="grand-total">
       <td colspan="{{ $isInterState ? 8 : 9 }}" class="text-right">
          Grand Total
       </td>
       <td class="text-right">
-         {{ number_format($invoice->net_amount, 0) }}
+         {{ number_format($invoice->net_amount, 2) }}
       </td>
    </tr>
    @if($invoice->order->cashback_earned > 0)
@@ -504,6 +522,7 @@ $totalIGST = 0;
       </td>
    </tr>
    @endif
+   </tfoot>
 </table>
 <br>
       <!-- TERMS -->
