@@ -231,8 +231,11 @@ class IndiaPostProvider implements ShippingProviderInterface
         $warehouse = $order->warehouse;
         $senderName = $warehouse ? $warehouse->name : config('app.name');
         $senderCompany = $warehouse ? ($warehouse->company_name ?: $senderName) : config('app.name');
-        $senderPhone = $warehouse && $warehouse->phone ? $warehouse->phone : '9876543210';
-        $senderPhone = preg_match('/^[6-9][0-9]{9}$/', $senderPhone) ? $senderPhone : '9876543210';
+        $senderPhoneRaw = $warehouse && $warehouse->phone ? $warehouse->phone : '9876543210';
+        $senderPhoneNum = preg_replace('/[^0-9]/', '', $senderPhoneRaw);
+        if (strlen($senderPhoneNum) > 10) $senderPhoneNum = substr($senderPhoneNum, -10);
+        $senderPhone = preg_match('/^[6-9][0-9]{9}$/', $senderPhoneNum) ? $senderPhoneNum : '9876543210';
+        
         $senderAddr = $warehouse ? ($warehouse->address_line_1 ?: 'HQ Address') : 'HQ Address';
         $senderCity = $warehouse ? ($warehouse->city ?: 'HQ City') : 'HQ City';
         $senderPin = $warehouse ? (int) $warehouse->pincode : 110001;
@@ -244,52 +247,61 @@ class IndiaPostProvider implements ShippingProviderInterface
         $receiverCompany = trim($order->party->company_name ?? '');
         if (!$receiverCompany) $receiverCompany = $receiverName;
         
-        $receiverPhone = $order->party->phone ?? '';
-        if (!preg_match('/^[6-9][0-9]{9}$/', $receiverPhone)) {
-            $receiverPhone = '9876543210'; // Fallback to avoid API crash
-        }
+        $receiverPhoneRaw = $order->party->phone ?? '';
+        $receiverPhoneNum = preg_replace('/[^0-9]/', '', $receiverPhoneRaw);
+        if (strlen($receiverPhoneNum) > 10) $receiverPhoneNum = substr($receiverPhoneNum, -10);
+        $receiverPhone = preg_match('/^[6-9][0-9]{9}$/', $receiverPhoneNum) ? $receiverPhoneNum : '9876543210';
         
         $receiverAddr = $order->shipping_address_line_1 ?? 'Receiver Addr';
         $receiverCity = $order->shipping_city ?? 'Receiver City';
         $receiverPin = (int) ($order->shipping_pincode ?? 110001);
 
+        $dueAmount = $order->net_amount - $order->total_paid;
+        $isCOD = $dueAmount > 0;
+
+        $article = [
+            'bulk_customer_id' => (string) $customId,
+            'contract_id' => (string) $contractId,
+            'barcode_no' => $this->generateBarcode($order->id),
+            'pickup_or_dropoff' => 'DROPOFF',
+            'pickup_dropoff_office_id' => (int) config('shipping.providers.india_post.pickup_dropoff_office_id'),
+            'article_type' => $articleType,
+            'physical_weight' => $totalWeightG,
+            'shape_of_article' => $shape,
+            'length' => (int) $maxLength,
+            'breadth_diameter' => (int) $maxWidth,
+            'height' => (int) $maxHeight,
+            
+            'sender_name' => substr($senderName, 0, 80),
+            'sender_company' => substr($senderCompany, 0, 80),
+            'sender_add_line_1' => substr($senderAddr, 0, 80),
+            'sender_city' => substr($senderCity, 0, 80),
+            'sender_pincode' => $senderPin,
+            'sender_mobile_no' => $senderPhone,
+            
+            'receiver_name' => substr($receiverName, 0, 80),
+            'receiver_company' => substr($receiverCompany, 0, 80),
+            'receiver_add_line_1' => substr($receiverAddr, 0, 80),
+            'receiver_city' => substr($receiverCity, 0, 80),
+            'receiver_pincode' => $receiverPin,
+            'receiver_mobile_no' => $receiverPhone,
+            
+            'alt_address_flag' => 'FALSE',
+            'pickup_address_flag' => 'FALSE',
+            'drop_off_pincode' => (int) config('shipping.providers.india_post.drop_off_pincode'),
+            'ack' => 'FALSE',
+            'reg' => 'FALSE',
+            'otp' => $otp,
+        ];
+
+        if ($isCOD) {
+            $article['cod'] = 'TRUE';
+            $article['cod_amount'] = (int) ceil($dueAmount);
+            $article['payment_mode'] = 'CO';
+        }
+
         $payload = [
-            'articles' => [
-                [
-                    'bulk_customer_id' => (string) $customId,
-                    'contract_id' => (string) $contractId,
-                    'barcode_no' => $this->generateBarcode($order->id),
-                    'pickup_or_dropoff' => 'DROPOFF',
-                    'pickup_dropoff_office_id' => (int) config('shipping.providers.india_post.pickup_dropoff_office_id'),
-                    'article_type' => $articleType,
-                    'physical_weight' => $totalWeightG,
-                    'shape_of_article' => $shape,
-                    'length' => (int) $maxLength,
-                    'breadth_diameter' => (int) $maxWidth,
-                    'height' => (int) $maxHeight,
-                    
-                    'sender_name' => substr($senderName, 0, 80),
-                    'sender_company' => substr($senderCompany, 0, 80),
-                    'sender_add_line_1' => substr($senderAddr, 0, 80),
-                    'sender_city' => substr($senderCity, 0, 80),
-                    'sender_pincode' => $senderPin,
-                    'sender_mobile_no' => $senderPhone,
-                    
-                    'receiver_name' => substr($receiverName, 0, 80),
-                    'receiver_company' => substr($receiverCompany, 0, 80),
-                    'receiver_add_line_1' => substr($receiverAddr, 0, 80),
-                    'receiver_city' => substr($receiverCity, 0, 80),
-                    'receiver_pincode' => $receiverPin,
-                    'receiver_mobile_no' => $receiverPhone,
-                    
-                    'alt_address_flag' => 'FALSE',
-                    'pickup_address_flag' => 'FALSE',
-                    'drop_off_pincode' => (int) config('shipping.providers.india_post.drop_off_pincode'),
-                    'ack' => 'FALSE',
-                    'reg' => 'FALSE',
-                    'otp' => $otp,
-                ],
-            ],
+            'articles' => [ $article ],
         ];
 
         $response = $this->apiRequest('post', "{$this->baseUrl}/process-articles/{$customId}", $payload);
@@ -505,3 +517,4 @@ class IndiaPostProvider implements ShippingProviderInterface
         }
     }
 }
+
