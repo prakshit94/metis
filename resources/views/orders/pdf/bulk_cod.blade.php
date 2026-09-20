@@ -95,7 +95,7 @@
                             Pincode: {{ optional($order->shippingAddress ?? $order->billingAddress)->pincode ?? '-' }}
                         </div>
                         <div class="col right big">
-                            COD Amount: Rs. {{ number_format($order->net_amount, 0) }}
+                            COD Amount: Rs. {{ number_format($order->net_amount, 2) }}
                         </div>
                     </div>
                 </div>
@@ -117,23 +117,10 @@
                 @php
                     $address = $order->shippingAddress ?? $order->billingAddress;
                     $shipment = $order->shipments()->latest()->first();
-                    $barcodeBase64 = null;
-                    if ($shipment && $shipment->tracking_no) {
-                        $generator = new \Picqer\Barcode\BarcodeGeneratorSVG();
-                        $barcodeBase64 = base64_encode($generator->getBarcode($shipment->tracking_no, $generator::TYPE_CODE_128));
-                    }
                 @endphp
 
-                @if($shipment && $shipment->tracking_no)
+                @if($shipment)
                 <div class="box center">
-                    <div style="font-size: 14px; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px;">
-                        Tracking No: {{ $shipment->tracking_no }}
-                    </div>
-                    @if($barcodeBase64)
-                    <div>
-                        <img src="data:image/svg+xml;base64,{{ $barcodeBase64 }}" style="height: 35px; max-width: 100%; margin-bottom: 5px;" alt="Barcode" />
-                    </div>
-                    @endif
                     <div class="muted">
                         <strong>Weight:</strong> {{ $shipment->actual_weight_g ?? '-' }} g | 
                         <strong>Dimensions:</strong> {{ $shipment->length_cm ?? '-' }}x{{ $shipment->width_cm ?? '-' }}x{{ $shipment->height_cm ?? '-' }} cm | 
