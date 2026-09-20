@@ -449,7 +449,7 @@ $totalIGST = 0;
 <!-- TOTALS -->
 <table class="totals">
    <tr>
-      <td colspan="8" class="text-right bold">
+      <td colspan="{{ $isInterState ? 8 : 9 }}" class="text-right bold">
          Total Taxable Value
       </td>
       <td class="text-right">
@@ -459,7 +459,7 @@ $totalIGST = 0;
 
    @if($isInterState)
       <tr>
-         <td colspan="8" class="text-right bold">
+         <td colspan="{{ $isInterState ? 8 : 9 }}" class="text-right bold">
             Total IGST
          </td>
          <td class="text-right">
@@ -468,7 +468,7 @@ $totalIGST = 0;
       </tr>
    @else
       <tr>
-         <td colspan="8" class="text-right bold">
+         <td colspan="{{ $isInterState ? 8 : 9 }}" class="text-right bold">
             Total CGST
          </td>
          <td class="text-right">
@@ -477,7 +477,7 @@ $totalIGST = 0;
       </tr>
 
       <tr>
-         <td colspan="8" class="text-right bold">
+         <td colspan="{{ $isInterState ? 8 : 9 }}" class="text-right bold">
             Total SGST
          </td>
          <td class="text-right">
@@ -487,7 +487,7 @@ $totalIGST = 0;
    @endif
 
    <tr class="grand-total">
-      <td colspan="8" class="text-right">
+      <td colspan="{{ $isInterState ? 8 : 9 }}" class="text-right">
          Grand Total
       </td>
       <td class="text-right">
@@ -496,7 +496,7 @@ $totalIGST = 0;
    </tr>
    @if($invoice->order->cashback_earned > 0)
    <tr>
-      <td colspan="8" class="text-right bold" style="color: #0c5460;">
+      <td colspan="{{ $isInterState ? 8 : 9 }}" class="text-right bold" style="color: #0c5460;">
          Cashback Earned
       </td>
       <td class="text-right bold" style="color: #0c5460;">
