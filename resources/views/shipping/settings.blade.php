@@ -423,6 +423,14 @@
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Bulk Customer ID *</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.bulk_customer_id" placeholder="e.g. 3000064781" style="font-size: 12px;" required>
                                             </div>
+                                            <div class="col-md-12 mt-2">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Webhook URL (For India Post)</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-link-45deg"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0 fw-semibold bg-body text-success" readonly value="{{ url('/api/webhooks/indiapost') }}" style="font-size: 12px; cursor: text;">
+                                                </div>
+                                                <div class="form-text" style="font-size: 10px;"><i class="bi bi-info-circle"></i> Share this endpoint with India Post to receive real-time automated tracking updates.</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1128,3 +1136,4 @@ document.addEventListener('alpine:init', () => {
 });
 </script>
 @endsection
+ 

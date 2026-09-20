@@ -72,8 +72,11 @@ use Illuminate\Support\Facades\Route;
 Route::post('/auth/login', [AuthController::class, 'login'])
     ->name('api.auth.login');
 
-// ─── Authenticated (Sanctum token required) ───────────────────────────────────
+// ─── Webhooks ─────────────────────────────────────────────────────────────────
+Route::post('/webhooks/indiapost', [\App\Modules\Orders\Controllers\IndiaPostWebhookController::class, 'handle'])
+    ->name('api.webhooks.indiapost');
 
+// ─── Authenticated (Sanctum token required) ───────────────────────────────────
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/shipping/settings', [ShippingSettingsController::class, 'store'])->name('api.shipping.settings.store')->middleware('permission:settings-edit|shipping-view');
     Route::get('/shipping/awb-logs/{officeId}', [ShippingSettingsController::class, 'awbLogs'])->name('api.shipping.awb-logs')->middleware('permission:shipping-view');
@@ -493,3 +496,5 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::delete('/admin/audit-logs/destroy', [AuditLogController::class, 'destroy'])->name('api.audit-logs.destroy');
 
 });
+
+ 
