@@ -295,9 +295,8 @@ class IndiaPostProvider implements ShippingProviderInterface
         ];
 
         if ($isCOD) {
-            $article['cod'] = 'TRUE';
-            $article['cod_amount'] = (int) ceil($dueAmount);
-            $article['payment_mode'] = 'CO';
+            $article['codr_cod'] = 'COD';
+            $article['value_for_codr_cod'] = (float) $dueAmount;
         }
 
         $payload = [
@@ -517,4 +516,5 @@ class IndiaPostProvider implements ShippingProviderInterface
         }
     }
 }
+
 
