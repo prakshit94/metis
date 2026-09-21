@@ -28,20 +28,38 @@ class UpdateOrderRequest extends FormRequest
             'warehouse_id' => 'required|exists:warehouses,id',
             'shipping_address_id' => [
                 'required',
+                'integer',
                 'exists:party_addresses,id',
                 function ($attribute, $value, $fail) {
+                    if (empty($value)) {
+                        $fail('A shipping address is required to place the order. Please add an address to the customer profile first.');
+                        return;
+                    }
                     $address = \App\Modules\Customers\Models\PartyAddress::find($value);
-                    if ($address && empty($address->village_id)) {
+                    if (!$address) {
+                        $fail('The selected shipping address no longer exists. Please select a valid address.');
+                        return;
+                    }
+                    if (empty($address->village_id)) {
                         $fail('The selected shipping address has an invalid or missing village. Please update the address to link it to our village database before placing the order.');
                     }
                 },
             ],
             'billing_address_id' => [
                 'required',
+                'integer',
                 'exists:party_addresses,id',
                 function ($attribute, $value, $fail) {
+                    if (empty($value)) {
+                        $fail('A billing address is required to place the order. Please add an address to the customer profile first.');
+                        return;
+                    }
                     $address = \App\Modules\Customers\Models\PartyAddress::find($value);
-                    if ($address && empty($address->village_id)) {
+                    if (!$address) {
+                        $fail('The selected billing address no longer exists. Please select a valid address.');
+                        return;
+                    }
+                    if (empty($address->village_id)) {
                         $fail('The selected billing address has an invalid or missing village. Please update the address to link it to our village database before placing the order.');
                     }
                 },

@@ -10,6 +10,7 @@ use App\Modules\Customers\Models\WalletTransaction;
 use App\Modules\Orders\Models\Coupon;
 use App\Modules\Orders\Models\Offer;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\Shipment;
 use App\Modules\Users\Models\User;
 use App\Notifications\OrderCreatedNotification;
@@ -134,33 +135,45 @@ class OrderService
                 'updated_by' => auth()->id(),
             ], $shippingAddressFields, $billingAddressFields);
 
-            $order = Order::create($orderPayload);
+            // Instantiate and disable Spatie's automatic activity log for Order creation.
+            // We fire one consolidated log at the end instead.
+            // Using new + save() (not ::create()) ensures all boot hooks still run
+            // (status timestamp, cache busting) while suppressing the auto-log.
+            $order = new Order($orderPayload);
+            $order->disableLogging();
+            $order->save();
 
-            foreach ($data['items'] as $item) {
-                $order->items()->create([
-                    'product_id' => $item['product_id'],
-                    'product_variant_id' => $item['product_variant_id'] ?? null,
-                    'batch_number' => $item['batch_number'] ?? null,
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'tax_rate' => $item['tax_rate'] ?? 0,
-                    'discount_amount' => $item['discount_amount'] ?? 0,
-                    'tax_amount' => $item['tax_amount'] ?? 0,
-                    'total_amount' => $item['total_amount']
-                        ?? (($item['quantity'] * $item['unit_price']) - ($item['discount_amount'] ?? 0)),
-                ]);
-            }
+            // Suppress per-item activity logs during initial order creation —
+            // we will fire a single consolidated log for the whole order below.
+            OrderItem::withoutEvents(function () use ($order, $data) {
+                foreach ($data['items'] as $item) {
+                    $order->items()->create([
+                        'product_id'         => $item['product_id'],
+                        'product_variant_id' => $item['product_variant_id'] ?? null,
+                        'batch_number'       => $item['batch_number'] ?? null,
+                        'quantity'           => $item['quantity'],
+                        'unit_price'         => $item['unit_price'],
+                        'tax_rate'           => $item['tax_rate'] ?? 0,
+                        'discount_amount'    => $item['discount_amount'] ?? 0,
+                        'tax_amount'         => $item['tax_amount'] ?? 0,
+                        'total_amount'       => $item['total_amount']
+                            ?? (($item['quantity'] * $item['unit_price']) - ($item['discount_amount'] ?? 0)),
+                    ]);
+                }
+            });
 
-            $order->load('items');
+            $order->load('items.product');
             $itemsTotal = (float) $order->items->sum('total_amount');
-            $taxAmount = (float) ($data['tax_amount'] ?? 0);
-            $discount = (float) ($data['discount_amount'] ?? 0);
+            $taxAmount  = (float) ($data['tax_amount'] ?? 0);
+            $discount   = (float) ($data['discount_amount'] ?? 0);
 
-            $order->update([
-                'total_amount' => $data['total_amount'] ?? $itemsTotal,
-                'tax_amount' => $taxAmount,
+            // Use updateQuietly to suppress the redundant Order "updated" activity log
+            // for the totals recalculation — it's part of the same creation flow.
+            $order->updateQuietly([
+                'total_amount'    => $data['total_amount'] ?? $itemsTotal,
+                'tax_amount'      => $taxAmount,
                 'discount_amount' => $discount,
-                'net_amount' => $data['net_amount'] ?? max(0, $itemsTotal - $discount + $taxAmount),
+                'net_amount'      => $data['net_amount'] ?? max(0, $itemsTotal - $discount + $taxAmount),
             ]);
 
             if ($order->coupon_code) {
@@ -223,6 +236,34 @@ class OrderService
                 Notification::send($admins, new OrderCreatedNotification($order->order_no, (float) $order->net_amount, clone $order->party ? clone $order->party->name : 'Unknown'));
             } catch (\Throwable) {
                 // Silently fail — notification delivery is non-critical
+            }
+
+            // Fire a single consolidated activity log for the whole order creation,
+            // replacing the noisy per-item + per-order logs.
+            try {
+                $order->loadMissing(['party', 'items.product']);
+                $customerName = $order->party?->name ?? 'Unknown Customer';
+                $itemsSummary = $order->items->map(function ($item) {
+                    $productName = $item->product?->name ?? "Product #{$item->product_id}";
+                    $qty = rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.');
+                    return "{$productName} (x{$qty})";
+                })->join(', ');
+
+                activity()
+                    ->causedBy(auth()->user())
+                    ->performedOn($order)
+                    ->withProperties([
+                        'attributes' => [
+                            'order_no'    => $order->order_no,
+                            'customer'    => $customerName,
+                            'net_amount'  => $order->net_amount,
+                            'items_count' => $order->items->count(),
+                            'items'       => $itemsSummary,
+                        ],
+                    ])
+                    ->log('created');
+            } catch (\Throwable) {
+                // Silently fail — activity log is non-critical
             }
 
             return $order->refresh();
@@ -851,12 +892,19 @@ class OrderService
                 'updated_by' => auth()->id(),
             ], $this->mapAddressFields($shippingAddr, 'shipping'), $this->mapAddressFields($billingAddr, 'billing'));
 
+            // Suppress the automatic Order "updated" activity log — we fire one
+            // consolidated log at the end instead.
+            $order->disableLogging();
             $order->update($orderPayload);
+            $order->enableLogging();
 
-            $order->items()->delete();
-            foreach ($calc['items'] as $item) {
-                $order->items()->create($item);
-            }
+            // Suppress per-item "deleted" and "created" logs during item reconciliation.
+            OrderItem::withoutEvents(function () use ($order, $calc) {
+                $order->items()->delete();
+                foreach ($calc['items'] as $item) {
+                    $order->items()->create($item);
+                }
+            });
 
             if ($order->status === 'confirmed' && $order->type === 'sale' && $order->warehouse_id) {
                 $order->load('items');
@@ -889,8 +937,8 @@ class OrderService
                 }
 
                 $order->statusLogs()->create([
-                    'status' => $newStatus,
-                    'notes' => $notes,
+                    'status'     => $newStatus,
+                    'notes'      => $notes,
                     'changed_by' => auth()->id(),
                 ]);
             }
@@ -902,6 +950,40 @@ class OrderService
                 if (! empty($calc['applied_offer_id'])) {
                     Offer::where('id', $calc['applied_offer_id'])->increment('used_count');
                 }
+            }
+
+            // Fire one consolidated activity log for the full order update.
+            try {
+                // Force-reload items.product to get the freshly saved quantities after the update.
+                // loadMissing() would return stale cached data; load() always hits the DB.
+                $order->load(['party', 'items.product']);
+                $customerName = $order->party?->name ?? 'Unknown Customer';
+                $itemsSummary = $order->items->map(function ($item) {
+                    $productName = $item->product?->name ?? "Product #{$item->product_id}";
+                    $qty = rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.');
+                    return "{$productName} (x{$qty})";
+                })->join(', ');
+
+                $statusNote = ($oldStatus !== $newStatus)
+                    ? ' · Status: ' . ucfirst(str_replace('_', ' ', $oldStatus)) . ' → ' . ucfirst(str_replace('_', ' ', $newStatus))
+                    : '';
+
+                activity()
+                    ->causedBy(auth()->user())
+                    ->performedOn($order)
+                    ->withProperties([
+                        'attributes' => [
+                            'order_no'    => $order->order_no,
+                            'customer'    => $customerName,
+                            'net_amount'  => $order->net_amount,
+                            'items_count' => $order->items->count(),
+                            'items'       => $itemsSummary,
+                            'status_note' => $statusNote,
+                        ],
+                    ])
+                    ->log('updated');
+            } catch (\Throwable) {
+                // Silently fail — activity log is non-critical
             }
 
             return $order->refresh();

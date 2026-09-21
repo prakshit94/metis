@@ -733,6 +733,7 @@ document.addEventListener('alpine:init', () => {
                         addrFormData.append('label', 'Home');
                         addrFormData.append('is_default', '1');
                         addrFormData.append('status', 'active');
+                        addrFormData.append('from_customer_creation', '1');
                         addrFormData.append('address_line_1', this.form.address_line_1);
                         if (this.form.address_line_2) addrFormData.append('address_line_2', this.form.address_line_2);
                         if (this.form.village_id) addrFormData.append('village_id', this.form.village_id);

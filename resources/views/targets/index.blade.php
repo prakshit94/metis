@@ -680,6 +680,12 @@
                                                     <option value="failed">Failed</option>
                                                 </select>
                                             </div>
+                                            <div class="col-md-3" x-show="daysCount > 0 && !isEdit">
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Total Days</label>
+                                                <div class="form-control form-control-lg fw-semibold rounded-3 bg-body-tertiary border-secondary border-opacity-25 shadow-none px-3 d-flex align-items-center" style="font-size: 14px;">
+                                                    <span x-text="daysCount"></span> <span class="ms-1 text-muted">Days</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -846,6 +852,68 @@ function targetsModule() {
         },
         clearAssignees() {
             this.form.targetable_ids = [];
+        },
+        getWorkingDays(startDate, endDate) {
+            let count = 0;
+            let current = new Date(startDate);
+            current.setHours(0,0,0,0);
+            let end = new Date(endDate);
+            end.setHours(0,0,0,0);
+            
+            while (current <= end) {
+                let dayOfWeek = current.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    count++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            if (count === 0) {
+                current = new Date(startDate);
+                current.setHours(0,0,0,0);
+                while (current <= end) {
+                    count++;
+                    current.setDate(current.getDate() + 1);
+                }
+            }
+            return count;
+        },
+        get daysCount() {
+            if (this.isEdit) {
+                if (this.form.start_date && this.form.end_date) {
+                    let start = new Date(this.form.start_date);
+                    let end = new Date(this.form.end_date);
+                    if (end >= start) {
+                        return this.getWorkingDays(start, end);
+                    }
+                }
+                return 0;
+            }
+
+            if (this.form.period_type === 'monthly') {
+                let y = parseInt(this.form.target_year);
+                let m = parseInt(this.form.target_month);
+                if (y && m) {
+                    let start = new Date(y, m - 1, 1);
+                    let end = new Date(y, m, 0);
+                    return this.getWorkingDays(start, end);
+                }
+            } else if (this.form.period_type === 'yearly') {
+                let y = parseInt(this.form.target_year);
+                if (y) {
+                    let start = new Date(y, 3, 1);
+                    let end = new Date(y + 1, 2, 31);
+                    return this.getWorkingDays(start, end);
+                }
+            } else if (this.form.period_type === 'daily') {
+                if (this.form.start_date && this.form.end_date) {
+                    let start = new Date(this.form.start_date);
+                    let end = new Date(this.form.end_date);
+                    if (end >= start) {
+                        return this.getWorkingDays(start, end);
+                    }
+                }
+            }
+            return 0;
         },
         openModal(target = null) {
             if (target) {

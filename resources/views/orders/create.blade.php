@@ -3598,9 +3598,14 @@ mapOrder(o) {
                 this.addresses = json.data?.addresses || [];
                 this.recentOrders = json.data?.orders || [];
                 if (this.addresses.length) {
-                    this.shippingAddressId = this.addresses.find(a=>a.is_default)?.id || this.addresses[0].id;
-                    this.billingAddressId = this.shippingAddressId;
-                    
+                    // Only auto-assign the default address when creating a new order.
+                    // When editing an existing order, the address is already set from
+                    // the saved order data and must not be silently overwritten here.
+                    if (!this.editingOrderId) {
+                        this.shippingAddressId = this.addresses.find(a=>a.is_default)?.id || this.addresses[0].id;
+                        this.billingAddressId = this.shippingAddressId;
+                    }
+
                     if (!this.warehouseId || String(this.warehouseId) === String(this.defaultWarehouseId)) {
                         const defaultAddress = this.addresses.find(a => String(a.id) === String(this.shippingAddressId));
                         if (defaultAddress && defaultAddress.state) {

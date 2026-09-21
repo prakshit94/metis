@@ -294,6 +294,19 @@ class AuditLogController extends Controller implements HasMiddleware
             if ($orderNo) {
                 $detail .= " (Order #{$orderNo})";
             }
+        } elseif ($subjectName === 'PartyAddress') {
+            $subject?->loadMissing('party');
+            $customerName = $subject?->party?->name;
+            if (!$customerName) {
+                $partyId = $attrs['party_id'] ?? $old['party_id'] ?? null;
+                if ($partyId) {
+                    $customerName = \App\Modules\Customers\Models\Party::find($partyId)?->name;
+                }
+            }
+            $customerName = $customerName ?? 'Customer';
+            $label = $subject?->label ?? $attrs['label'] ?? $old['label'] ?? '';
+            $subjectName = $label ? "({$label}) Address" : 'Address';
+            $detail = " for {$customerName}";
         } else {
             $name = $subject->name ?? $subject->title ?? $attrs['name'] ?? $attrs['title'] ?? null;
             if ($name) $detail = ' ' . $name;
@@ -316,9 +329,15 @@ class AuditLogController extends Controller implements HasMiddleware
                     $actionStr = $diff > 0 ? "reserved {$diff} qty" : "unreserved " . abs($diff) . " qty";
                     $transition = " <span class='text-muted' style='font-size: 0.8em;'>({$actionStr})</span>";
                 } else {
-                    $fields = implode(', ', array_map(fn($k) => str_replace('_', ' ', $k), $changedKeys));
-                    if (count($changedKeys) <= 4) {
-                        $transition = " <span class='text-muted' style='font-size: 0.8em;'>({$fields} updated)</span>";
+                    $parts = [];
+                    foreach ($changedKeys as $k) {
+                        $oldVal = is_array($old[$k] ?? null) ? json_encode($old[$k]) : ($old[$k] ?? '—');
+                        $newVal = is_array($attrs[$k] ?? null) ? json_encode($attrs[$k]) : ($attrs[$k] ?? '—');
+                        $label  = ucfirst(str_replace('_', ' ', $k));
+                        $parts[] = "<span class='text-muted' style='font-size:0.8em;'>{$label}: <s>{$oldVal}</s> → <b>{$newVal}</b></span>";
+                    }
+                    if (!empty($parts) && count($parts) <= 5) {
+                        $transition = '<br>' . implode('<br>', $parts);
                     }
                 }
             }
@@ -354,6 +373,27 @@ class AuditLogController extends Controller implements HasMiddleware
         if ($a->properties) {
             $attrs = $a->properties['attributes'] ?? [];
             $old = $a->properties['old'] ?? [];
+
+            // ── Consolidated Order logs (created / updated) ──────────────────
+            // Our OrderService fires a single rich log with customer, items, etc.
+            // Detect these early by the presence of 'customer' in attrs and
+            // return a fully pre-built description, bypassing the generic renderer.
+            if ($subjectName === 'Order' && isset($attrs['customer'])) {
+                $orderNo   = $subject ? $subject->order_no : ($attrs['order_no'] ?? null);
+                $customer  = $attrs['customer'];
+                $itemsList = $attrs['items'] ?? null;
+                $netAmount = isset($attrs['net_amount']) ? '₹' . number_format((float) $attrs['net_amount'], 2) : null;
+                $statusNote = $attrs['status_note'] ?? '';
+
+                $desc  = $a->description . " <b>Order</b>";
+                if ($orderNo)   $desc .= " <b>#$orderNo</b>";
+                if ($customer)  $desc .= " for <span class='text-primary fw-semibold'>$customer</span>";
+                if ($netAmount) $desc .= " · <span class='text-success fw-semibold'>$netAmount</span>";
+                if ($itemsList) $desc .= "<br><small class='text-muted'>Items: $itemsList</small>";
+                if ($statusNote) $desc .= "<br><small class='text-muted'>$statusNote</small>";
+
+                return $desc;
+            }
 
             // Get identifier from subject instance or fallback to attributes (e.g. for deleted models)
             if ($subjectName === 'Order') {
@@ -391,6 +431,19 @@ class AuditLogController extends Controller implements HasMiddleware
                 if ($orderNo) {
                     $detail .= " (Order #{$orderNo})";
                 }
+            } elseif ($subjectName === 'PartyAddress') {
+                $subject?->loadMissing('party');
+                $customerName = $subject?->party?->name;
+                if (!$customerName) {
+                    $partyId = $attrs['party_id'] ?? $old['party_id'] ?? null;
+                    if ($partyId) {
+                        $customerName = \App\Modules\Customers\Models\Party::find($partyId)?->name;
+                    }
+                }
+                $customerName = $customerName ?? 'Customer';
+                $label = $subject?->label ?? $attrs['label'] ?? $old['label'] ?? '';
+                $subjectName = $label ? "({$label}) Address" : 'Address';
+                $detail = " for {$customerName}";
             } else {
                 $name = $subject->name ?? $subject->title ?? $attrs['name'] ?? $attrs['title'] ?? null;
                 if ($name) $detail = ' ' . $name;
@@ -422,9 +475,15 @@ class AuditLogController extends Controller implements HasMiddleware
                         $actionStr = $diff > 0 ? "reserved {$diff} qty" : "unreserved " . abs($diff) . " qty";
                         $transition = " <span class='text-muted' style='font-size: 0.8em;'>({$actionStr})</span>";
                     } else {
-                        $fields = implode(', ', array_map(fn($k) => str_replace('_', ' ', $k), $changedKeys));
-                        if (count($changedKeys) <= 3) {
-                            $transition = " <span class='text-muted' style='font-size: 0.8em;'>({$fields} updated)</span>";
+                        $parts = [];
+                        foreach ($changedKeys as $k) {
+                            $oldVal = is_array($old[$k] ?? null) ? json_encode($old[$k]) : ($old[$k] ?? '—');
+                            $newVal = is_array($attrs[$k] ?? null) ? json_encode($attrs[$k]) : ($attrs[$k] ?? '—');
+                            $label  = ucfirst(str_replace('_', ' ', $k));
+                            $parts[] = "<span class='text-muted' style='font-size:0.8em;'>{$label}: <s>{$oldVal}</s> → <b>{$newVal}</b></span>";
+                        }
+                        if (!empty($parts) && count($parts) <= 5) {
+                            $transition = '<br>' . implode('<br>', $parts);
                         }
                     }
                 }
