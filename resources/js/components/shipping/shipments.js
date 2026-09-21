@@ -251,6 +251,11 @@ export default () => {
     selectedShipment: null,
     trackingEvents: [],
 
+    // Live India Post tracking state (read-only, no DB writes)
+    liveTrackingData: null,
+    liveTrackingLoading: false,
+    liveTrackingError: null,
+
     statusModal: null,
     trackingModal: null,
     addEventModal: null,
@@ -745,6 +750,10 @@ export default () => {
     async openTrackingModal(shipment) {
       this.selectedShipment = shipment;
       this.trackingEvents = [];
+      // Reset live tracking state so previous shipment's data doesn't bleed through
+      this.liveTrackingData = null;
+      this.liveTrackingError = null;
+      this.liveTrackingLoading = false;
       this.trackingModal?.show();
 
       try {
@@ -752,6 +761,28 @@ export default () => {
         this.trackingEvents = response.events || [];
       } catch (error) {
         showToast(error.message, 'error');
+      }
+    },
+
+
+    /**
+     * Fetch live tracking data from India Post API on demand.
+     * Pure read — does not update DB or change any shipment state.
+     */
+    async fetchLiveTracking() {
+      if (!this.selectedShipment) return;
+      this.liveTrackingLoading = true;
+      this.liveTrackingError = null;
+      this.liveTrackingData = null;
+      try {
+        const response = await this.apiRequest(
+          `${this.apiBase}/${this.selectedShipment.id}/live-tracking`
+        );
+        this.liveTrackingData = response;
+      } catch (error) {
+        this.liveTrackingError = error.message || 'Failed to fetch live tracking data.';
+      } finally {
+        this.liveTrackingLoading = false;
       }
     },
 

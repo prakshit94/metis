@@ -811,7 +811,7 @@
 
     <!-- Tracking History Modal -->
     <div class="modal fade" id="trackingModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold">
@@ -931,9 +931,170 @@
                     </div>
                         </div>
                     </div>
+
+                    {{-- Live Status from India Post — only visible for India Post shipments --}}
+                    <template x-if="selectedShipment && selectedShipment.carrier_name === 'India Post'">
+                        <div class="mt-4">
+                            <div class="d-flex align-items-center justify-content-between mb-3 ps-2">
+                                <h6 class="fw-bold mb-0">
+                                    <i class="bi bi-broadcast text-success me-2"></i>Live Status from India Post
+                                </h6>
+                                <span class="badge bg-success-subtle text-success border border-success border-opacity-25 small">
+                                    <i class="bi bi-wifi me-1"></i>Real-time API
+                                </span>
+                            </div>
+
+                            {{-- Not yet fetched --}}
+                            <template x-if="!liveTrackingData && !liveTrackingLoading && !liveTrackingError">
+                                <div class="card shadow-sm border-start border-4 border-success rounded-4">
+                                    <div class="card-body text-center py-4 text-muted">
+                                        <i class="bi bi-broadcast fs-2 d-block mb-2 text-success opacity-50"></i>
+                                        <p class="mb-2 small">Click <strong>Refresh from India Post</strong> below to fetch the latest live tracking directly from India Post.</p>
+                                        <template x-if="!selectedShipment.tracking_no">
+                                            <div class="alert alert-warning py-2 px-3 small mb-0 d-inline-flex align-items-center gap-2">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                No tracking number assigned to this shipment.
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+
+                            {{-- Loading --}}
+                            <template x-if="liveTrackingLoading">
+                                <div class="card shadow-sm border-start border-4 border-success rounded-4">
+                                    <div class="card-body text-center py-5">
+                                        <div class="spinner-border text-success mb-3" role="status" style="width:2rem;height:2rem;"></div>
+                                        <p class="text-muted small mb-0">Connecting to India Post API&hellip;</p>
+                                    </div>
+                                </div>
+                            </template>
+
+                            {{-- Error --}}
+                            <template x-if="liveTrackingError && !liveTrackingLoading">
+                                <div class="card shadow-sm border-start border-4 border-danger rounded-4">
+                                    <div class="card-body py-3">
+                                        <div class="alert alert-danger py-2 px-3 mb-0 d-flex align-items-start gap-2">
+                                            <i class="bi bi-x-circle-fill flex-shrink-0 mt-1"></i>
+                                            <div>
+                                                <strong>Could not fetch live data</strong>
+                                                <div class="small mt-1" x-text="liveTrackingError"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            {{-- Success: live data from India Post --}}
+                            <template x-if="liveTrackingData && !liveTrackingLoading">
+                                <div class="card shadow-sm border-start border-4 border-success rounded-4">
+                                    <div class="card-body p-4">
+
+                                        {{-- Delivery status + tracking number --}}
+                                        <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom border-secondary-subtle flex-wrap">
+                                            <div>
+                                                <div class="text-muted small mb-1">Current Delivery Status</div>
+                                                <span class="badge px-3 py-2 fs-6 rounded-pill"
+                                                      :class="{
+                                                          'bg-success text-white': (liveTrackingData.del_status?.del_status || '').toLowerCase() === 'delivered',
+                                                          'bg-primary text-white': (liveTrackingData.del_status?.del_status || '').toLowerCase().includes('transit') || (liveTrackingData.del_status?.del_status || '').toLowerCase().includes('dispatch'),
+                                                          'bg-warning text-dark': (liveTrackingData.del_status?.del_status || '').toLowerCase() === 'pending',
+                                                          'bg-secondary text-white': !liveTrackingData.del_status?.del_status
+                                                      }"
+                                                      x-text="(liveTrackingData.del_status?.del_status || 'Unknown').toUpperCase()">
+                                                </span>
+                                            </div>
+                                            <div class="ms-auto text-end">
+                                                <div class="text-muted small">Tracking No.</div>
+                                                <div class="fw-bold font-monospace text-primary small" x-text="liveTrackingData.tracking_no"></div>
+                                            </div>
+                                        </div>
+
+                                        {{-- Booking details compact row --}}
+                                        <template x-if="liveTrackingData.booking_details">
+                                            <div class="row g-2 mb-4 small">
+                                                <template x-if="liveTrackingData.booking_details.receiver_name">
+                                                    <div class="col-sm-6">
+                                                        <span class="text-muted">Receiver:</span>
+                                                        <span class="fw-semibold ms-1" x-text="liveTrackingData.booking_details.receiver_name"></span>
+                                                    </div>
+                                                </template>
+                                                <template x-if="liveTrackingData.booking_details.booking_date">
+                                                    <div class="col-sm-6">
+                                                        <span class="text-muted">Booked On:</span>
+                                                        <span class="fw-semibold ms-1" x-text="liveTrackingData.booking_details.booking_date"></span>
+                                                    </div>
+                                                </template>
+                                                <template x-if="liveTrackingData.booking_details.article_type || liveTrackingData.booking_details.service_type">
+                                                    <div class="col-sm-6">
+                                                        <span class="text-muted">Service:</span>
+                                                        <span class="fw-semibold ms-1" x-text="liveTrackingData.booking_details.article_type || liveTrackingData.booking_details.service_type"></span>
+                                                    </div>
+                                                </template>
+                                                <template x-if="liveTrackingData.booking_details.booking_office">
+                                                    <div class="col-sm-6">
+                                                        <span class="text-muted">Booked At:</span>
+                                                        <span class="fw-semibold ms-1" x-text="liveTrackingData.booking_details.booking_office"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+
+                                        {{-- Live tracking scan timeline --}}
+                                        <h6 class="fw-semibold mb-3 small text-uppercase text-muted">Scan Timeline</h6>
+                                        <template x-if="!liveTrackingData.tracking_details || liveTrackingData.tracking_details.length === 0">
+                                            <div class="text-center py-3 text-muted small">
+                                                <i class="bi bi-journal-x fs-4 d-block mb-2 opacity-50"></i>
+                                                No scan events available from India Post yet.
+                                            </div>
+                                        </template>
+                                        <div class="timeline" x-show="liveTrackingData.tracking_details && liveTrackingData.tracking_details.length > 0">
+                                            <template x-for="(evt, idx) in liveTrackingData.tracking_details" :key="idx">
+                                                <div class="d-flex mb-3">
+                                                    <div class="timeline-badge d-flex align-items-center justify-content-center rounded-circle me-3 flex-shrink-0"
+                                                         style="width:32px;height:32px;"
+                                                         :class="idx === 0 ? 'bg-success text-white' : 'bg-secondary bg-opacity-25 text-secondary'">
+                                                        <i :class="idx === 0 ? 'bi bi-check-circle-fill' : 'bi bi-circle'"></i>
+                                                    </div>
+                                                    <div class="w-100 border-bottom pb-3">
+                                                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-1">
+                                                            <span class="fw-semibold text-body" style="font-size:0.875rem;"
+                                                                  x-text="evt.event || evt.event_name || 'Update'"></span>
+                                                            <small class="text-muted font-monospace" style="font-size:0.72rem;"
+                                                                   x-text="[evt.event_date, evt.event_time].filter(Boolean).join(' ')"></small>
+                                                        </div>
+                                                        <div class="text-muted small mt-1" x-show="evt.office || evt.location">
+                                                            <i class="bi bi-geo-alt me-1 text-danger opacity-75"></i>
+                                                            <span x-text="evt.office || evt.location || ''"></span>
+                                                        </div>
+                                                        <div class="text-muted small mt-1 fst-italic"
+                                                             x-show="evt.description && evt.description !== evt.event"
+                                                             x-text="evt.description || ''"></div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </template>
+
+                        </div>
+                    </template>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    {{-- Refresh from India Post button — only for India Post shipments with a tracking number --}}
+                    <button type="button"
+                            class="btn btn-outline-success d-inline-flex align-items-center gap-2"
+                            x-show="selectedShipment && selectedShipment.carrier_name === 'India Post' && selectedShipment.tracking_no"
+                            @click="fetchLiveTracking()"
+                            :disabled="liveTrackingLoading">
+                        <span x-show="liveTrackingLoading" class="spinner-border spinner-border-sm" role="status"></span>
+                        <i class="bi bi-arrow-clockwise" x-show="!liveTrackingLoading"></i>
+                        <span x-text="liveTrackingLoading ? 'Fetching…' : 'Refresh from India Post'"></span>
+                    </button>
                 </div>
             </div>
         </div>

@@ -448,6 +448,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/shipments/{shipment}/status', [ShippingController::class, 'updateShipmentStatus'])->name('shipments.status');
         Route::get('/shipments/{shipment}/tracking', [ShippingController::class, 'trackingEvents'])->name('shipments.tracking');
         Route::post('/shipments/{shipment}/tracking-event', [ShippingController::class, 'addTrackingEvent'])->name('shipments.add-tracking-event');
+        Route::get('/shipments/{shipment}/live-tracking', [ShippingController::class, 'fetchLiveTracking'])->name('shipments.live-tracking');
 
         Route::get('/services', [ShippingController::class, 'servicesIndex'])->name('services.index');
         Route::get('/services/provider-options', [ShippingController::class, 'providerOptions'])->name('services.provider-options');

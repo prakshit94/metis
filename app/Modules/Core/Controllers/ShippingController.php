@@ -9,6 +9,7 @@ use App\Modules\Orders\Models\Shipment;
 use App\Modules\Orders\Models\ShipmentTrackingEvent;
 use App\Modules\Users\Models\User;
 use App\Services\InventoryService;
+use App\Services\Shipping\ShippingManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -20,7 +21,7 @@ class ShippingController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:shipping-view', only: ['shipmentsIndex', 'trackingEvents', 'servicesIndex', 'providerOptions']),
+            new Middleware('permission:shipping-view', only: ['shipmentsIndex', 'trackingEvents', 'fetchLiveTracking', 'servicesIndex', 'providerOptions']),
             new Middleware('permission:shipping-create', only: ['addTrackingEvent', 'storeService']),
             new Middleware('permission:shipping-edit', only: ['updateShipmentStatus', 'updateShipment', 'updateService', 'toggleService', 'shipmentsBulk', 'servicesBulk']),
             new Middleware('permission:shipping-delete', only: ['destroyService']),
@@ -248,6 +249,62 @@ class ShippingController extends Controller implements HasMiddleware
             'events' => $shipment->events()->orderBy('occurred_at', 'desc')->get(),
         ]);
     }
+
+    /**
+     * Fetch live tracking status from India Post API for a single shipment.
+     * Read-only: no DB writes, no status changes.
+     */
+    public function fetchLiveTracking(Shipment $shipment, ShippingManager $shippingManager): JsonResponse
+    {
+        if ($shipment->carrier_name !== 'India Post') {
+            return response()->json([
+                'error' => 'Live tracking is only available for India Post shipments.',
+            ], 422);
+        }
+
+        if (! $shipment->tracking_no) {
+            return response()->json([
+                'error' => 'This shipment does not have a tracking number assigned yet.',
+            ], 422);
+        }
+
+        try {
+            $provider = $shippingManager->driver('india_post');
+            $data = $provider->getTrackingStatus([$shipment->tracking_no]);
+
+            // Find the matching entry by article number, fallback to first result
+            $result = null;
+            foreach ($data as $entry) {
+                if (($entry['booking_details']['article_number'] ?? null) === $shipment->tracking_no) {
+                    $result = $entry;
+                    break;
+                }
+            }
+            if (! $result && ! empty($data)) {
+                $result = $data[0];
+            }
+
+            // India Post returned an empty response — tracking number not found in their system
+            if (! $result) {
+                return response()->json([
+                    'error' => 'No tracking data found in India Post for tracking number: ' . $shipment->tracking_no . '. The shipment may not have been scanned yet.',
+                ], 404);
+            }
+
+            return response()->json([
+                'tracking_no'      => $shipment->tracking_no,
+                'booking_details'  => $result['booking_details'] ?? null,
+                'del_status'       => $result['del_status'] ?? null,
+                'tracking_details' => $result['tracking_details'] ?? [],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to fetch live tracking: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
     /**
      * Add manual tracking event to shipment.
