@@ -321,7 +321,15 @@ export default () => {
       });
 
       const text = await response.text();
-      const payload = text ? JSON.parse(text) : {};
+      let payload = {};
+      try {
+        payload = text ? JSON.parse(text) : {};
+      } catch (e) {
+        if (!response.ok) {
+          throw new Error(`Server error (${response.status}): The server returned an invalid HTML response instead of JSON.`);
+        }
+        throw new Error('Received invalid JSON from server.');
+      }
 
       if (!response.ok) {
         const validation = payload?.errors ? Object.values(payload.errors).flat().join(' ') : '';
