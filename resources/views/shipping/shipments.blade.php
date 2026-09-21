@@ -455,9 +455,13 @@
                                        @change="$event.isTrusted && toggleAll($event.target.checked)"
                                        :checked="selectedItems.length === items.length && items.length > 0">
                             </th>
-                            <th @click="sortBy('shipment_no')" class="sortable">Shipment Details</th>
-                            <th>Order & Customer</th>
+                            <th @click="sortBy('shipment_no')" class="sortable">Shipment & Tracking</th>
+                            <th>Order Details</th>
+                            <th>Customer Info</th>
                             <th>Carrier & Support</th>
+                            <th>Package & Shipping</th>
+                            <th>Pricing & Taxes</th>
+                            <th>Booking & ETA</th>
                             <th @click="sortBy('status')" class="sortable">Status & Timeline</th>
                             <th style="width: 120px;" class="text-end pe-4">Actions</th>
                         </tr>
@@ -465,7 +469,7 @@
                     <tbody>
                         <template x-if="items.length === 0">
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
+                                <td colspan="10" class="text-center py-5 text-muted">
                                     <div x-show="isLoading" class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
                                     <div x-show="!isLoading">
                                         <i class="bi bi-truck fs-2 d-block mb-2 text-muted"></i>
@@ -482,6 +486,8 @@
                                            :value="String(item.id)"
                                            x-model="selectedItems">
                                 </td>
+                                
+                                <!-- Shipment & Tracking -->
                                 <td>
                                     <div class="fw-bold text-body" x-text="item.shipment_no"></div>
                                     <div class="small text-muted mt-1 d-flex align-items-center gap-1">
@@ -489,42 +495,33 @@
                                         <span class="font-monospace" x-text="item.tracking_no || 'No Tracking'"></span>
                                     </div>
                                 </td>
+                                
+                                <!-- Order Details -->
                                 <td>
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div class="fw-bold text-primary" style="font-size: 0.9rem;" x-text="item.order ? item.order.order_no : ('ORD-' + item.order_id)"></div>
-                                        <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill" style="font-size: 0.65rem;" x-text="item.order?.items?.length ? item.order.items.length + ' Items' : '-'"></span>
-                                    </div>
-                                    
+                                    <div class="fw-bold text-primary mb-1" style="font-size: 0.9rem;" x-text="item.order ? item.order.order_no : ('ORD-' + item.order_id)"></div>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill" style="font-size: 0.65rem;" x-text="item.order?.items?.length ? item.order.items.length + ' Items' : '-'"></span>
+                                </td>
+                                
+                                <!-- Customer Info -->
+                                <td>
                                     <template x-if="item.order && item.order.party">
-                                        <div class="bg-body-tertiary p-2 rounded-3 border border-secondary-subtle mb-2">
-                                            <div class="d-flex align-items-start gap-2 mb-1">
-                                                <i class="bi bi-person-badge text-secondary mt-1" style="font-size: 0.85rem;"></i>
-                                                <div class="lh-sm flex-grow-1">
-                                                    <div class="fw-semibold text-body mb-1" style="font-size: 0.8rem;" x-text="item.order.party.name || 'Unknown Customer'"></div>
-                                                    <div class="text-muted font-monospace" style="font-size: 0.75rem;">
-                                                        <i class="bi bi-telephone-fill me-1 opacity-50"></i><span x-text="item.order.party.phone || 'N/A'"></span>
-                                                    </div>
-                                                </div>
+                                        <div>
+                                            <div class="fw-semibold text-body mb-1" style="font-size: 0.8rem;" x-text="item.order.party.name || 'Unknown Customer'"></div>
+                                            <div class="text-muted font-monospace mb-1" style="font-size: 0.75rem;">
+                                                <i class="bi bi-telephone-fill me-1 opacity-50"></i><span x-text="item.order.party.phone || 'N/A'"></span>
                                             </div>
                                             <template x-if="item.order.shipping_address">
-                                                <div class="d-flex align-items-start gap-2 mt-2 pt-2 border-top border-secondary-subtle">
-                                                    <i class="bi bi-geo-alt text-danger opacity-75 mt-1" style="font-size: 0.8rem;"></i>
-                                                    <div class="text-muted lh-sm" style="font-size: 0.7rem;">
-                                                        <span x-text="item.order.shipping_address.city || ''"></span><span x-show="item.order.shipping_address.city && item.order.shipping_address.state">, </span>
-                                                        <span x-text="item.order.shipping_address.state || ''"></span>
-                                                        <div class="fw-semibold mt-1" x-show="item.order.shipping_address.pincode" x-text="'PIN: ' + item.order.shipping_address.pincode"></div>
-                                                    </div>
+                                                <div class="text-muted lh-sm" style="font-size: 0.7rem;">
+                                                    <span x-text="item.order.shipping_address.city || ''"></span><span x-show="item.order.shipping_address.city && item.order.shipping_address.state">, </span>
+                                                    <span x-text="item.order.shipping_address.state || ''"></span>
+                                                    <div class="fw-semibold mt-1" x-show="item.order.shipping_address.pincode" x-text="'PIN: ' + item.order.shipping_address.pincode"></div>
                                                 </div>
                                             </template>
                                         </div>
                                     </template>
-                                    
-                                    <template x-if="item.order && item.order.warehouse">
-                                        <div class="d-flex align-items-center gap-1 small text-muted" style="font-size: 0.7rem;">
-                                            <i class="bi bi-building me-1"></i><span class="fw-medium">Origin:</span> <span x-text="item.order.warehouse.name"></span>
-                                        </div>
-                                    </template>
                                 </td>
+                                
+                                <!-- Carrier & Support -->
                                 <td>
                                     <div class="d-flex align-items-center gap-2 mb-2">
                                         <div class="bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
@@ -532,47 +529,93 @@
                                         </div>
                                         <div class="fw-bold text-body-emphasis" style="font-size: 0.85rem;" x-text="item.carrier_name || '-'"></div>
                                     </div>
-                                    <div class="d-flex flex-wrap gap-2 mb-2">
-                                        <template x-if="item.article_type || (item.provider_response && item.provider_response.article_type)">
-                                            <span class="badge bg-secondary-subtle text-secondary-emphasis fw-medium border border-secondary-subtle shadow-sm">
-                                                <i class="bi bi-tag-fill me-1 opacity-75"></i><span x-text="item.article_type || item.provider_response.article_type"></span>
-                                            </span>
-                                        </template>
-                                        <template x-if="item.actual_weight_g">
-                                            <span class="badge bg-info-subtle text-info-emphasis fw-medium border border-info-subtle shadow-sm">
-                                                <i class="bi bi-box-seam me-1"></i><span x-text="(item.actual_weight_g / 1000).toFixed(2) + ' kg'"></span>
-                                                <template x-if="item.length_cm">
-                                                    <span class="ms-1 opacity-75 fw-normal" x-text="'(' + item.length_cm + 'x' + item.width_cm + 'x' + item.height_cm + 'cm)'"></span>
-                                                </template>
-                                            </span>
-                                        </template>
-                                        <template x-if="item.shipping_cost">
-                                            <span class="badge bg-success-subtle text-success-emphasis fw-bold border border-success-subtle shadow-sm" style="font-size: 0.8rem;">
-                                                <i class="bi bi-currency-rupee"></i><span x-text="item.shipping_cost"></span>
-                                            </span>
-                                        </template>
-                                    </div>
                                     <template x-if="item.service && item.service.providers?.length">
                                         <div class="d-flex flex-column gap-1 border-top pt-2 border-secondary-subtle">
-                                            <span class="small text-muted fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px; text-transform: uppercase;">Support Persons</span>
-                                            <template x-for="provider in [...item.service.providers].sort((a,b) => ((a.pivot && a.pivot.priority) ? parseInt(a.pivot.priority) : 999) - ((b.pivot && b.pivot.priority) ? parseInt(b.pivot.priority) : 999))" :key="provider.id">
+                                            <template x-for="provider in [...item.service.providers].sort((a,b) => ((a.pivot && a.pivot.priority) ? parseInt(a.pivot.priority) : 999) - ((b.pivot && b.pivot.priority) ? parseInt(b.pivot.priority) : 999)).slice(0, 1)" :key="provider.id">
                                                 <div class="d-flex align-items-start gap-2 small lh-sm p-1 rounded" :class="String(provider.id) === String(item.service_provider_id) ? 'bg-primary bg-opacity-10 border border-primary border-opacity-25' : ''">
                                                     <i class="bi bi-person-badge opacity-75 mt-1" :class="String(provider.id) === String(item.service_provider_id) ? 'text-primary' : 'text-secondary'" style="font-size: 0.8rem;"></i>
                                                     <div class="flex-grow-1">
                                                         <div class="d-flex justify-content-between align-items-center">
                                                             <div class="fw-semibold" :class="String(provider.id) === String(item.service_provider_id) ? 'text-primary' : 'text-body'" style="font-size: 0.8rem;" x-text="provider.name"></div>
-                                                            <div class="d-flex gap-1">
-                                                                <span x-show="String(provider.id) === String(item.service_provider_id)" class="badge bg-success rounded-pill" style="font-size: 0.55rem;">Assigned</span>
-                                                                <span class="badge rounded-pill" :class="String(provider.id) === String(item.service_provider_id) ? 'bg-primary' : 'bg-secondary'" style="font-size: 0.55rem;" x-text="'P' + (provider.pivot ? provider.pivot.priority : '-')"></span>
-                                                            </div>
                                                         </div>
-                                                        <div class="text-muted mt-1" style="font-size: 0.75rem;" x-text="[provider.phone, provider.department].filter(Boolean).join(' · ')"></div>
+                                                        <div class="text-muted mt-1" style="font-size: 0.75rem;" x-text="provider.phone || 'N/A'"></div>
                                                     </div>
                                                 </div>
                                             </template>
                                         </div>
                                     </template>
                                 </td>
+                                
+                                <!-- Package Info -->
+                                <td>
+                                    <div class="d-flex flex-column gap-2">
+                                        <template x-if="item.article_type || (item.provider_response && item.provider_response.article_type)">
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis fw-medium border border-secondary-subtle shadow-sm align-self-start">
+                                                <i class="bi bi-tag-fill me-1 opacity-75"></i><span x-text="item.article_type || item.provider_response.article_type"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="item.actual_weight_g">
+                                            <span class="badge bg-info-subtle text-info-emphasis fw-medium border border-info-subtle shadow-sm align-self-start">
+                                                <i class="bi bi-box-seam me-1"></i><span x-text="(item.actual_weight_g / 1000).toFixed(2) + ' kg'"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="item.length_cm">
+                                            <div class="small text-muted" style="font-size: 0.7rem;">
+                                                <i class="bi bi-rulers me-1 opacity-75"></i>
+                                                <span x-text="item.length_cm + 'x' + item.width_cm + 'x' + item.height_cm + 'cm'"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </td>
+                                
+                                <!-- Pricing & Taxes -->
+                                <td>
+                                    <template x-if="item.shipping_cost">
+                                        <div class="d-inline-flex flex-column gap-1">
+                                            <span class="badge bg-success-subtle text-success-emphasis fw-bold border border-success-subtle shadow-sm align-self-start" style="font-size: 0.8rem;">
+                                                <i class="bi bi-currency-rupee"></i><span x-text="item.shipping_cost"></span>
+                                            </span>
+                                            <template x-if="item.tax_components && Array.isArray(item.tax_components)">
+                                                <div class="small text-muted mt-1" style="font-size: 0.65rem;">
+                                                    <template x-for="tax in item.tax_components" :key="tax.tax_name || Math.random()">
+                                                        <div x-show="tax.tax_amount" x-text="(tax.tax_name || 'Tax') + ': ' + tax.tax_amount"></div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                            <template x-if="item.tax_components && !Array.isArray(item.tax_components) && Object.keys(item.tax_components).length > 0">
+                                                <div class="small text-muted mt-1" style="font-size: 0.65rem;">
+                                                    <div x-text="'Taxes attached'"></div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <template x-if="!item.shipping_cost">
+                                        <span class="text-muted small">-</span>
+                                    </template>
+                                </td>
+                                
+                                <!-- Booking & ETA -->
+                                <td>
+                                    <template x-if="item.estimated_delivery_date">
+                                        <div class="small text-muted mb-2 d-flex align-items-center gap-1">
+                                            <i class="bi bi-calendar-check text-success opacity-75"></i>
+                                            <span>Est: <span class="fw-medium text-dark" x-text="new Date(item.estimated_delivery_date).toLocaleDateString()"></span></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="item.booking_data && Object.keys(item.booking_data).length > 0">
+                                        <div class="small text-muted d-flex align-items-center gap-1 mb-2" title="Provider Booking Data">
+                                            <i class="bi bi-info-circle opacity-75"></i>
+                                            <span>Booking details attached</span>
+                                        </div>
+                                    </template>
+                                    <template x-if="item.order && item.order.warehouse">
+                                        <div class="d-flex align-items-center gap-1 small text-muted border-top pt-2 border-secondary-subtle mt-2" style="font-size: 0.7rem;">
+                                            <i class="bi bi-building me-1"></i><span class="fw-medium">Origin:</span> <span x-text="item.order.warehouse.name"></span>
+                                        </div>
+                                    </template>
+                                </td>
+                                
+                                <!-- Status & Timeline -->
                                 <td>
                                     <div class="mb-2">
                                         <span class="badge rounded-pill px-3 py-1.5" 
@@ -602,6 +645,8 @@
                                         </template>
                                     </div>
                                 </td>
+                                
+                                <!-- Actions -->
                                 <td class="text-end pe-4">
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">

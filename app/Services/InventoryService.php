@@ -1033,6 +1033,10 @@ class InventoryService
                 'height_cm' => $shipmentDataArr['height_cm'] ?? null,
                 'shipping_cost' => $shipmentDataArr['shipping_cost'] ?? null,
                 'provider_response' => $shipmentDataArr['provider_response'] ?? null,
+                'article_type' => $shipmentDataArr['article_type'] ?? null,
+                'tax_components' => $shipmentDataArr['tax_components'] ?? null,
+                'booking_data' => $shipmentDataArr['booking_data'] ?? null,
+                'estimated_delivery_date' => $shipmentDataArr['estimated_delivery_date'] ?? null,
             ]);
             $shipment->save();
         }, 3);

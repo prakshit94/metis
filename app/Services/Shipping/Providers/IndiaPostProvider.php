@@ -320,6 +320,9 @@ class IndiaPostProvider implements ShippingProviderInterface
                 'width_cm' => $maxWidth,
                 'height_cm' => $maxHeight,
                 'shipping_cost' => $validArticles[0]['tariff'] ?? 0,
+                'tax_components' => $validArticles[0]['taxes'] ?? $validArticles[0]['tax_components'] ?? null,
+                'booking_data' => $validArticles[0],
+                'estimated_delivery_date' => $validArticles[0]['estimated_delivery_date'] ?? $validArticles[0]['expected_delivery_date'] ?? null,
             ];
         }
 

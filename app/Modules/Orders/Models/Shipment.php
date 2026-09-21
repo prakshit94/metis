@@ -34,6 +34,9 @@ class Shipment extends Model implements Auditable
         'article_type',
         'shipping_cost',
         'provider_response',
+        'tax_components',
+        'booking_data',
+        'estimated_delivery_date',
     ];
 
     protected $casts = [
@@ -41,6 +44,9 @@ class Shipment extends Model implements Auditable
         'delivered_at' => 'datetime',
         'next_followup_date' => 'datetime',
         'provider_response' => 'array',
+        'tax_components' => 'array',
+        'booking_data' => 'array',
+        'estimated_delivery_date' => 'date',
     ];
 
     public function order()

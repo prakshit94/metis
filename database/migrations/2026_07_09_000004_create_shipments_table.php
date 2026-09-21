@@ -29,6 +29,9 @@ return new class extends Migration
             $table->string('article_type')->nullable();
             $table->decimal('shipping_cost', 10, 2)->nullable();
             $table->json('provider_response')->nullable();
+            $table->json('tax_components')->nullable();
+            $table->json('booking_data')->nullable();
+            $table->date('estimated_delivery_date')->nullable();
             $table->timestamps();
             $table->softDeletes()->index();
 
