@@ -74,7 +74,8 @@ Route::post('/auth/login', [AuthController::class, 'login'])
 
 // ─── Webhooks ─────────────────────────────────────────────────────────────────
 Route::post('/webhooks/indiapost', [\App\Modules\Orders\Controllers\IndiaPostWebhookController::class, 'handle'])
-    ->name('api.webhooks.indiapost');
+    ->name('api.webhooks.indiapost')
+    ->withoutMiddleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class]);
 
 // ─── Authenticated (Sanctum token required) ───────────────────────────────────
 Route::middleware('auth:sanctum')->group(function (): void {

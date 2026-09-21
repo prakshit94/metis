@@ -94,10 +94,10 @@ class IndiaPostWebhookController extends Controller
 
             ShipmentTrackingEvent::create([
                 'shipment_id' => $shipment->id,
-                'status' => $newStatus,
-                'location' => $location,
+                'event_name'  => $eventDescription ?: ('India Post Event: ' . $eventCode),
+                'location'    => $location,
                 'description' => $eventDescription,
-                'tracked_at' => $timestamp,
+                'occurred_at' => $timestamp,
             ]);
         }
 
